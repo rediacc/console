@@ -156,14 +156,10 @@ def pull_with_retry(image: str, platform: str) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    # ORDER, KEPT: the no-arguments refusal comes BEFORE `require_cmd docker`,
-    # so a bare invocation on a host with no docker still gets the usage line
-    # rather than a message about a binary it was never going to reach.
+    # ORDER, KEPT: the no-arguments refusal comes BEFORE `require_cmd docker`, so a bare invocation on a host with no docker still gets the usage line rather than a message about a binary it was never going to reach.
     if not argv:
         log.error(NO_IMAGES)
-        # `$0` is the path the caller typed, so this line names the port when
-        # the port is what ran. The twin's own text is otherwise identical,
-        # including the three spaces before `e.g.`.
+        # `$0` is the path the caller typed, so this line names the port when the port is what ran. The twin's own text is otherwise identical, including the three spaces before `e.g.`.
         log.error(USAGE_TAIL % sys.argv[0])
         return 1
 

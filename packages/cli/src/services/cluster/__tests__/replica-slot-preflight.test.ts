@@ -49,8 +49,7 @@ describe('replica placement asks for machine slots first', () => {
   });
 
   it('counts the DISTINCT nodes the round-robin reaches, not the replica count', async () => {
-    // Three replicas over two nodes touch two machines, so two slots. Charging
-    // three would refuse a placement that fits.
+    // Three replicas over two nodes touch two machines, so two slots. Charging three would refuse a placement that fits.
     await provisionReplicaDatastores({ ...base, replicas: 3, nodes });
 
     expect(mockAssertSlots).toHaveBeenCalledWith({ machineCount: 2 });
@@ -63,15 +62,12 @@ describe('replica placement asks for machine slots first', () => {
       /Maximum machines/
     );
 
-    // Not even the datastore snapshot ran: this is the whole point of checking
-    // early rather than discovering the wall on the third fork-attach.
+    // Not even the datastore snapshot ran: this is the whole point of checking early rather than discovering the wall on the third fork-attach.
     expect(mockExecute).not.toHaveBeenCalled();
   });
 
   it('reports the partial state when a placement dies part-way through', async () => {
-    // First replica lands, second fails: a real, working, incomplete deployment.
-    // Keyed on the replica's own tag rather than a call count, so the test does
-    // not silently start asserting the wrong replica when the dispatch sequence
+    // First replica lands, second fails: a real, working, incomplete deployment. Keyed on the replica's own tag rather than a call count, so the test does not silently start asserting the wrong replica when the dispatch sequence
     // for one replica changes.
     mockExecute.mockImplementation((options: unknown) => {
       if (JSON.stringify(options).includes('set1-r2')) {

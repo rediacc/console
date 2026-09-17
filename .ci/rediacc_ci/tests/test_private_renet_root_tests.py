@@ -67,13 +67,9 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_root_tests.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-root-tests.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_root_tests.py")
 
-# The recording `go`. Configured by its own TEXT rather than through the
-# environment: the subject advertises "No env vars", and a fixture that added
-# three would make any env-shaped divergence unattributable.
+# The recording `go`. Configured by its own TEXT rather than through the environment: the subject advertises "No env vars", and a fixture that added three would make any env-shaped divergence unattributable.
 #
-# BOTH STREAMS ARE WRITTEN AS RAW BYTES AND EACH IS FLUSHED IMMEDIATELY. Bytes,
-# because one case drives output that is not valid UTF-8 and a `str` write would
-# raise inside the fake instead of reaching the subject. The subject merges the
+# BOTH STREAMS ARE WRITTEN AS RAW BYTES AND EACH IS FLUSHED IMMEDIATELY. Bytes, because one case drives output that is not valid UTF-8 and a `str` write would raise inside the fake instead of reaching the subject. The subject merges the
 # two streams with `2>&1`, so this is what proves the merge happens; the flushes
 # make the interleaving deterministic, which an unflushed pair would not be.
 FAKE_GO = """#!/usr/bin/env python3
@@ -92,10 +88,7 @@ sys.stderr.buffer.flush()
 sys.exit(RC)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather
-# than derived: a PATH built by copying "everything except go" is a PATH nobody
-# can state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except go" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -111,8 +104,7 @@ NEEDED = (
     "ls",
 )
 
-# The three names the twin guards, and a full transcript in which all three
-# pass. `go test -v` really does print these lines in this shape.
+# The three names the twin guards, and a full transcript in which all three pass. `go test -v` really does print these lines in this shape.
 NAMES = (
     "TestSaveState_SetsOwnership",
     "TestSaveState_OwnershipMatchesMountDir",
@@ -244,8 +236,7 @@ def _run(
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     runner = "bash" if subject.suffix == ".sh" else "python3"
@@ -447,8 +438,7 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
     sample = "/a/b/twin.sh: line 20: go: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
     assert masked == "<shell>: go: command not found\nkept: line noise\n", masked
-    # And the thing it is masking really is different between the two subjects,
-    # which is the whole reason the mask exists.
+    # And the thing it is masking really is different between the two subjects, which is the whole reason the mask exists.
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, go="missing")
     raw = {}

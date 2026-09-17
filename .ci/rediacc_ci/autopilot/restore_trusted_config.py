@@ -123,8 +123,7 @@ from rediacc_ci.core import common
 
 SELF = "restore-trusted-config.py"
 
-# The set `restore-config.ts` protects on entity events (03-v2-autonomy.md:115).
-# ORDER IS OUTPUT ORDER for the manifest and for every drift report.
+# The set `restore-config.ts` protects on entity events (03-v2-autonomy.md:115). ORDER IS OUTPUT ORDER for the manifest and for every drift report.
 PROTECTED = (
     ".claude",
     ".mcp.json",
@@ -211,8 +210,7 @@ def copy_a(src: str, dest: str) -> None:
         shutil.copystat(src, dest, follow_symlinks=False)
         return
     if os.path.isdir(src):
-        # `dirs_exist_ok`, because `cp -a` MERGES into an existing tree rather
-        # than refusing it.
+        # `dirs_exist_ok`, because `cp -a` MERGES into an existing tree rather than refusing it.
         shutil.copytree(src, dest, symlinks=True, dirs_exist_ok=True)
         return
     shutil.copy2(src, dest, follow_symlinks=False)
@@ -297,8 +295,7 @@ def do_restore(checkout: str, snapshot: str, quarantine: str) -> int:
     if not quarantine:
         log.error("restore requires --quarantine")
         return 2
-    # Fail closed: without a manifest there is no trusted baseline, and
-    # restoring nothing while reporting success would be wall 4 reopened.
+    # Fail closed: without a manifest there is no trusted baseline, and restoring nothing while reporting success would be wall 4 reopened.
     if not os.path.isfile(manifest_path(snapshot)):
         log.error(
             "restore-trusted-config: snapshot manifest missing at %s (fail closed: no "
@@ -369,9 +366,7 @@ def main(argv: list[str]) -> int:
     snapshot = args.get("ARG_SNAPSHOT", "")
     quarantine = args.get("ARG_QUARANTINE", "")
 
-    # BOTH CHECKS RUN BEFORE THE SUBCOMMAND IS LOOKED AT, which is the twin's
-    # order: a bogus verb with no `--checkout` is a USAGE error, not an unknown
-    # subcommand, and a bogus verb with a missing checkout directory refuses
+    # BOTH CHECKS RUN BEFORE THE SUBCOMMAND IS LOOKED AT, which is the twin's order: a bogus verb with no `--checkout` is a USAGE error, not an unknown subcommand, and a bogus verb with a missing checkout directory refuses
     # for the directory first.
     if not (checkout and snapshot):
         log.error(USAGE)

@@ -49,10 +49,7 @@ TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "docker" / "cleanup_staging.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# THE FAKE'S STDOUT IS CONSTANT ON THE DELETE PATH. See the module docstring:
-# that is what makes the recorded argv the only witness to WHICH version id was
-# deleted. The list path answers from `FAKE_GH_MODE` so every branch of the
-# twin's response handling can be driven.
+# THE FAKE'S STDOUT IS CONSTANT ON THE DELETE PATH. See the module docstring: that is what makes the recorded argv the only witness to WHICH version id was deleted. The list path answers from `FAKE_GH_MODE` so every branch of the twin's response handling can be driven.
 FAKE_GH = r"""#!/usr/bin/python3
 import os
 import sys
@@ -96,10 +93,7 @@ elif mode == "notfound":
 sys.exit(0)
 """
 
-# What the twin needs on PATH: `dirname` for SCRIPT_DIR in both the script and
-# constants.sh, `uname`/`tr` for common.sh's detection helpers, `jq` for the two
-# filters, and `python3` because the fakes are Python. Anything not listed is
-# ABSENT, which is the point.
+# What the twin needs on PATH: `dirname` for SCRIPT_DIR in both the script and constants.sh, `uname`/`tr` for common.sh's detection helpers, `jq` for the two filters, and `python3` because the fakes are Python. Anything not listed is ABSENT, which is the point.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq", "python3")
 
 
@@ -231,9 +225,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
 
 
-# ---------------------------------------------------------------------------
-# Argument handling: every arm of the twin's `while` loop
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling: every arm of the twin's `while` loop ---------------------------------------------------------------------------
 
 
 def test_help_prints_the_usage_and_names_the_images(tmp_path) -> None:
@@ -304,9 +296,7 @@ def test_the_last_tag_wins(tmp_path) -> None:
     assert "staging-first" not in old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The four outcomes of a real run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four outcomes of a real run ---------------------------------------------------------------------------
 
 
 def test_dry_run_names_both_images_and_calls_nothing(tmp_path) -> None:
@@ -322,8 +312,7 @@ def test_dry_run_names_both_images_and_calls_nothing(tmp_path) -> None:
         "✓ [DRY-RUN] Would delete: ghcr.io/rediacc/rdc:staging-abc",
         "✓ Cleanup summary: 2 succeeded",
     ], old.stderr
-    # THE SEPARATORS ARE STDOUT, the log lines are stderr. Merging the two would
-    # hide a stream swap, which is the class these files exist for.
+    # THE SEPARATORS ARE STDOUT, the log lines are stderr. Merging the two would hide a stream swap, which is the class these files exist for.
     assert old.stdout == "\n\n", repr(old.stdout)
 
 
@@ -331,8 +320,7 @@ def test_the_happy_path_deletes_one_version_per_image(tmp_path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag", "staging-abc"])
     _agree(old, new, "happy", old_calls, new_calls)
     assert old.returncode == 0
-    # THE SHAPE, not just the verdict: list then delete, per image, id 111 both
-    # times, and the package name is the BARE image name under the org.
+    # THE SHAPE, not just the verdict: list then delete, per image, id 111 both times, and the package name is the BARE image name under the org.
     assert old_calls.splitlines() == [
         "gh\tapi\t/orgs/rediacc/packages/container/renet/versions\t--paginate",
         "gh\tapi\t-X\tDELETE\t/orgs/rediacc/packages/container/renet/versions/111",
@@ -381,8 +369,7 @@ def test_a_failing_delete_makes_the_summary_red_and_the_exit_one(tmp_path) -> No
     _agree(old, new, "delete-fails", old_calls, new_calls)
     assert old.returncode == 1
     assert "✗ Cleanup summary: 0 succeeded, 2 failed" in old.stderr
-    # AND THE REASON IS GONE. The twin's `2>/dev/null` on the delete swallows
-    # gh's "HTTP 403: packages:write required" entirely.
+    # AND THE REASON IS GONE. The twin's `2>/dev/null` on the delete swallows gh's "HTTP 403: packages:write required" entirely.
     assert "403" not in old.stderr, "the reason survived; this assertion is stale"
 
 
@@ -415,9 +402,7 @@ def test_the_delete_calls_own_stdout_is_inherited_and_interleaves(tmp_path) -> N
     assert old.stdout == "\nDELETE-ACCEPTED\nDELETE-ACCEPTED\n\n", repr(old.stdout)
 
 
-# ---------------------------------------------------------------------------
-# Defects of the twin, pinned rather than fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Defects of the twin, pinned rather than fixed ---------------------------------------------------------------------------
 
 
 def test_defect_a_missing_gh_reports_two_successes_and_exits_zero(tmp_path) -> None:
@@ -480,9 +465,7 @@ def test_a_version_carrying_a_second_tag_is_deleted_whole(tmp_path) -> None:
     assert old.returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: three streams agree, the call log does not
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: three streams agree, the call log does not ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -565,9 +548,7 @@ def test_the_merged_stream_keeps_the_twins_line_order(tmp_path) -> None:
     assert old.stdout.count("\n") >= 8, old.stdout
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_org_of_strips_the_ghcr_prefix_and_keeps_the_first_segment() -> None:
@@ -623,9 +604,7 @@ def test_the_registry_default_is_taken_on_unset_and_on_empty(monkeypatch) -> Non
     assert port.registry() == "ghcr.io/other"
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms: the restated constants and the quoted line number
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms: the restated constants and the quoted line number ---------------------------------------------------------------------------
 
 
 def test_the_constants_are_still_constants_shs() -> None:

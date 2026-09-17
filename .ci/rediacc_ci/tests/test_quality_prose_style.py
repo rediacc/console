@@ -49,9 +49,7 @@ def _fired(text, scope="markdown"):
     return [f.rule for f in ps.lint_message(text, RULES, GLOBALS, scope)]
 
 
-# ---------------------------------------------------------------------------
-# The rules file itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The rules file itself ---------------------------------------------------------------------------
 
 
 def test_the_rules_file_is_not_empty():
@@ -87,9 +85,7 @@ def test_every_rule_has_a_good_example():
     )
 
 
-# ---------------------------------------------------------------------------
-# The examples, as cases
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The examples, as cases ---------------------------------------------------------------------------
 
 EXAMPLES = [
     (rule.id, index, example) for rule in RULES for index, example in enumerate(rule.examples)
@@ -106,9 +102,7 @@ def test_example(rule_id, index, example):
     rule = BY_ID[rule_id]
     text = example["text"]
     expect = example["expect"]
-    # SCOPE MATTERS AND IS NOT ALWAYS `markdown`. R8 and R11 are scoped, and an
-    # example run under a scope its own rule excludes would assert the opposite
-    # of what it was written to assert.
+    # SCOPE MATTERS AND IS NOT ALWAYS `markdown`. R8 and R11 are scoped, and an example run under a scope its own rule excludes would assert the opposite of what it was written to assert.
     scope = "markdown" if rule.applies_to("markdown") else rule.scopes[0]
     fired = _fired(text, scope)
 
@@ -126,11 +120,7 @@ def test_example(rule_id, index, example):
         )
         return
     assert fired, "%s's bad example fired nothing: %r" % (rule_id, text)
-    # WHICH RULE HAD TO CATCH IT. `caught_by` lets an example say that the rule
-    # really covering it is a neighbour -- R11's `Your feedback...` is caught by
-    # R1's `\byour\b`, and R11 duplicating that pattern would be two spellings of
-    # one rule. Naming it is the point: without it the assertion has to soften to
-    # "something fired", and then an example quietly leaning on a neighbour is
+    # WHICH RULE HAD TO CATCH IT. `caught_by` lets an example say that the rule really covering it is a neighbour -- R11's `Your feedback...` is caught by R1's `\byour\b`, and R11 duplicating that pattern would be two spellings of one rule. Naming it is the point: without it the assertion has to soften to "something fired", and then an example quietly leaning on a neighbour is
     # indistinguishable from one its own rule covers.
     owner = example.get("caught_by", rule_id)
     if BY_ID[owner].raw_patterns or BY_ID[owner].detection == "measured":
@@ -162,9 +152,7 @@ def test_undetectable_set_is_small_and_declared():
         )
 
 
-# ---------------------------------------------------------------------------
-# The extractor, which is where the gate actually lives
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The extractor, which is where the gate actually lives ---------------------------------------------------------------------------
 
 EXTRACTION = [
     # (label, text, must_fire)
@@ -213,9 +201,7 @@ def test_extraction_has_both_directions():
     assert negative >= 10, shape
 
 
-# ---------------------------------------------------------------------------
-# Code comments
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Code comments ---------------------------------------------------------------------------
 
 
 def test_python_comments_are_prose_and_strings_are_not():
@@ -233,12 +219,8 @@ def test_python_docstrings_are_prose():
     assert [f.rule for f in findings] == ["R1"]
 
 
-# A docstring is a string ALONE on its logical line. The first version of this
-# predicate asked whether the token's LINE starts with a quote, which made every
-# element of every multi-line collection in the repository read as prose. Found
-# 2026-09-16 on this guard's own `EDGE_CASES` table, where R2 flagged the capital
-# `I` inside a test LABEL. Both directions, because "nothing is a docstring" also
-# passes a one-sided version of this.
+# A docstring is a string ALONE on its logical line. The first version of this predicate asked whether the token's LINE starts with a quote, which made every element of every multi-line collection in the repository read as prose. Found 2026-09-16 on this guard's own `EDGE_CASES` table, where R2 flagged the capital `I` inside a test LABEL. Both directions, because "nothing is a
+# docstring" also passes a one-sided version of this.
 DOCSTRING = [
     ("a module docstring", '"""Did you run it?"""\n', True),
     ("a function docstring", 'def f():\n    """Did you run it?"""\n', True),
@@ -257,9 +239,7 @@ def test_docstring_predicate(label, src, is_prose):
     assert bool(findings) == is_prose, "%s: fired %s" % (label, [f.rule for f in findings])
 
 
-# An indented block is CODE wherever it appears, and "wherever" took two rounds
-# to get right: the docstring arm landed first and the very next sweep flagged the
-# COMMENT restating the same snippet. Both token kinds, both directions.
+# An indented block is CODE wherever it appears, and "wherever" took two rounds to get right: the docstring arm landed first and the very next sweep flagged the COMMENT restating the same snippet. Both token kinds, both directions.
 INDENTED = [
     ("a comment showing a snippet", '# an example:\n#\n#     x = "says I"\n', False),
     ("an ordinary comment is still prose", "# Did you run it?\n", True),
@@ -306,9 +286,7 @@ def test_block_comments_are_prose():
     assert [f.rule for f in findings] == ["R1"]
 
 
-# ---------------------------------------------------------------------------
-# Stable ids, and the baseline's composition guard
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Stable ids, and the baseline's composition guard ---------------------------------------------------------------------------
 
 
 def _finding(path="a.md", line=3, rule="R1", text="Did you run it?"):
@@ -376,9 +354,7 @@ def test_a_clean_drain_is_allowed(tmp_path):
     assert len(ps.load_baseline(tmp_path)) == 1
 
 
-# ---------------------------------------------------------------------------
-# run_check: the anti-vacuity arms, driven end to end
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- run_check: the anti-vacuity arms, driven end to end ---------------------------------------------------------------------------
 
 
 def _tree(tmp_path, files):
@@ -522,9 +498,7 @@ def test_an_unreadable_file_is_unchecked_not_clean(tmp_path, capsys):
     assert "went UNCHECKED" in capsys.readouterr().err
 
 
-# ---------------------------------------------------------------------------
-# Reflow
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Reflow ---------------------------------------------------------------------------
 
 REFLOW = [
     ("a hard-wrapped paragraph joins", "one two\nthree four\n", "one two three four\n"),
@@ -590,30 +564,18 @@ def test_reflow_over_the_width_rewraps_and_loses_no_word():
     assert ps.reflow_markdown(out, 80) == out
 
 
-# ---------------------------------------------------------------------------
-# Reflow of source comments, where a LEXER decides what a comment is
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Reflow of source comments, where a LEXER decides what a comment is ---------------------------------------------------------------------------
 #
-# THE FIRST FIVE CASES ARE THE GATE, and each was run against the reverted
-# `^\s*#` / `^\s*//` implementation before being kept: every one of them comes
-# back corrupted there. The eleven after them are CONTRACT PINS, which the
-# reverted version also passes -- they hold behaviour that was already right
-# (directives, commented-out code, indentation, an unknown suffix) so the
-# rewrite above cannot have quietly traded one for the other. The distinction is
-# stated because a table where only some rows can fail reads, at a glance, like
-# a table where all of them can. That version rewrote 52 of the 1051 `.py` files in this
-# repository into a different `ast.dump`, because a docstring quoting an example
-# `# ...` line reads to a per-line regex exactly like the real comment paragraph
-# under it. The fixtures are shaped around the two ways that bug hides:
+# THE FIRST FIVE CASES ARE THE GATE, and each was run against the reverted `^\s*#` / `^\s*//` implementation before being kept: every one of them comes back corrupted there. The eleven after them are CONTRACT PINS, which the reverted version also passes -- they hold behaviour that was already right (directives, commented-out code, indentation, an unknown suffix) so the rewrite
+# above cannot have quietly traded one for the other. The distinction is stated because a table where only some rows can fail reads, at a glance, like a table where all of them can. That version rewrote 52 of the 1051 `.py` files in this repository into a different `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real
+# comment paragraph under it. The fixtures are shaped around the two ways that bug hides:
 #
-#   the docstring must END on the `#` line -- a `"""` on a line of its own
-#   already stops the paragraph, so the obvious fixture passes while broken
+# the docstring must END on the `#` line -- a `"""` on a line of its own already stops the paragraph, so the obvious fixture passes while broken
 #
 #   the template literal must carry NO `;` -- CODE_SHAPED_COMMENT catches the
-#   semicolon, and the broken version then passes for the wrong reason
+# semicolon, and the broken version then passes for the wrong reason
 #
-# A `/* */` span is a STOP, never a paragraph: reflowing inside one would move
-# its own asterisk alignment, and nothing asks for that.
+# A `/* */` span is a STOP, never a paragraph: reflowing inside one would move its own asterisk alignment, and nothing asks for that.
 
 REFLOW_COMMENTS = [
     (
@@ -798,18 +760,14 @@ def test_reflow_of_the_real_corpus_is_a_dry_run_by_default(tmp_path, capsys):
     before = (root / "a.md").read_text(encoding="utf-8")
     assert ps.run_reflow(root, GLOBALS, ["a.md"]) == 0
     assert (root / "a.md").read_text(encoding="utf-8") == before
-    # STDERR, not stdout. `log.info` writes to stderr here, and asserting the
-    # wrong stream is how a message that stopped being printed goes unnoticed --
-    # the assertion would still be reading an empty-by-design channel.
+    # STDERR, not stdout. `log.info` writes to stderr here, and asserting the wrong stream is how a message that stopped being printed goes unnoticed -- the assertion would still be reading an empty-by-design channel.
     assert "DRY RUN" in capsys.readouterr().err
 
     assert ps.run_reflow(root, GLOBALS, ["a.md"], write=True) == 0
     assert (root / "a.md").read_text(encoding="utf-8") == "one two three four\n"
 
 
-# ---------------------------------------------------------------------------
-# The loader refuses what it cannot trust
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The loader refuses what it cannot trust ---------------------------------------------------------------------------
 
 BAD_RULES = [
     ("no rules at all", "{}"),

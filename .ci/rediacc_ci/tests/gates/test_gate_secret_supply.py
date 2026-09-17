@@ -103,8 +103,7 @@ def test_the_blocked_names_are_printed_by_name_every_run(gate):
         if dest in ("dev-shared", "admin-bootstrap")
     ]
     if not blocked:
-        # Legal: it means the seeding landed. Then the line must be GONE, not
-        # printed empty, and this test has nothing left to assert.
+        # Legal: it means the seeding landed. Then the line must be GONE, not printed empty, and this test has nothing left to assert.
         gate.assert_not_contains(result.combined, "OPERATOR-BLOCKED", "no debt, no line")
         gate.log_pass("no blocked names remain; the line is absent rather than empty")
         return
@@ -118,8 +117,7 @@ def test_the_mirror_is_green_before_anything_is_planted(gate):
     with harness.temp_dir() as tmp:
         result = _run(_mirror(tmp))
         gate.assert_exit_code(0, result.rc, "untouched mirror (stderr: %s)" % result.err)
-        # The mirror has no private/account/.env, which is the CI shape. The
-        # skip has to be LOUD, and it must not be folded into the success line.
+        # The mirror has no private/account/.env, which is the CI shape. The skip has to be LOUD, and it must not be folded into the success line.
         gate.assert_contains(result.combined, "LOCAL ARM SKIPPED", "says the local arm did not run")
     gate.log_pass("the mirror reproduces the real verdict, and reports the arm it could not run")
 

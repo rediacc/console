@@ -162,22 +162,19 @@ from rediacc_ci import paths
 
 SELF = "browser-smoke.py"
 
-# The gate the launcher launches, and its one argument. A list rather than a
-# string so neither side can disagree about word splitting.
+# The gate the launcher launches, and its one argument. A list rather than a string so neither side can disagree about word splitting.
 GATE_ARGS = ("scripts/gates/check-browser-smoke.ts", "--selftest")
 
 NO_DOCKER_ENV = "REDIACC_SMOKE_NO_DOCKER"
 
 NOTE_NO_DOCKER = "note: docker not found, running the gate directly (needs a local Chromium)"
 
-# The registry the twin names, kept as a constant so the derivation is readable
-# at a glance: only the VERSION comes from the installed package.
+# The registry the twin names, kept as a constant so the derivation is readable at a glance: only the VERSION comes from the installed package.
 IMAGE_TEMPLATE = "mcr.microsoft.com/playwright:v%s-noble"
 
 PW_VERSION_EXPR = "require('playwright/package.json').version"
 
-# Where the workspace is bound inside the container. The twin hard-codes this
-# rather than mirroring the host path (its sibling page-density.sh does the
+# Where the workspace is bound inside the container. The twin hard-codes this rather than mirroring the host path (its sibling page-density.sh does the
 # opposite); `check-browser-smoke.ts` only ever prints `path.relative(ROOT, ...)`
 # so nothing host-meaningless escapes, but the two launchers do differ here.
 WORKDIR = "/work"
@@ -256,8 +253,7 @@ def id_value(flag: str, env: dict[str, str] | None = None) -> str:
             env=env,
         )
     except FileNotFoundError:
-        # bash: `<script>: line 50: id: command not found`, and the script
-        # carries on with an empty substitution. See divergence 3.
+        # bash: `<script>: line 50: id: command not found`, and the script carries on with an empty substitution. See divergence 3.
         print("%s: id: command not found" % SELF, file=sys.stderr)
         return ""
     # `$(...)` strips TRAILING newlines and nothing else.
@@ -307,10 +303,7 @@ def main(argv: list[str]) -> int:
     image = image_for(playwright_version())
     print("browser smoke: %s (tag derived from the installed playwright package)" % image)
     sys.stdout.flush()
-    # ORDER MATTERS AND IS THE TWIN'S: the echo happens on line 46, and the two
-    # `id` substitutions are expanded on line 51 as the exec's argv is built.
-    # A port that resolved the ids first would still exec the same command and
-    # would still exit the same way, and only the call log would show it.
+    # ORDER MATTERS AND IS THE TWIN'S: the echo happens on line 46, and the two `id` substitutions are expanded on line 51 as the exec's argv is built. A port that resolved the ids first would still exec the same command and would still exit the same way, and only the call log would show it.
     uid = id_value("-u")
     gid = id_value("-g")
     return _exec(docker_argv(root, image, uid, gid))

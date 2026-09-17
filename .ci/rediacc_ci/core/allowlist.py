@@ -91,14 +91,9 @@ from typing import NamedTuple
 
 from rediacc_ci import paths
 
-# ---------------------------------------------------------------------------
-# The quality rules, kept byte-identical to the two shared readers.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The quality rules, kept byte-identical to the two shared readers. ---------------------------------------------------------------------------
 
-# Exact-match after normalization. Copied from LOW_EFFORT_BLOCKER_PATTERNS in
-# .ci/scripts/lib/blocker-validator.sh and its TypeScript twin, in their order,
-# which is load-bearing: the message quotes the FIRST pattern that matches and a
-# reordering would change the bytes a gate prints.
+# Exact-match after normalization. Copied from LOW_EFFORT_BLOCKER_PATTERNS in .ci/scripts/lib/blocker-validator.sh and its TypeScript twin, in their order, which is load-bearing: the message quotes the FIRST pattern that matches and a reordering would change the bytes a gate prints.
 LOW_EFFORT_PHRASES: tuple[str, ...] = (
     # npm-audit ack-tier phrases
     "no fix",
@@ -173,34 +168,21 @@ LOW_EFFORT_SUBSTRINGS: tuple[str, ...] = (
 
 MIN_REASON_LENGTH = 30
 
-# The two readers' messages contain U+2014. It is written as an escape rather
-# than as the character so this file stays ASCII -- the repo's prose rules
-# forbid the literal, and the byte still has to reach the output because the
-# whole point of these strings is that they match what the gates already print.
+# The two readers' messages contain U+2014. It is written as an escape rather than as the character so this file stays ASCII -- the repo's prose rules forbid the literal, and the byte still has to reach the output because the whole point of these strings is that they match what the gates already print.
 _EM_DASH = "\u2014"
 
 _TRAILING_PUNCTUATION = re.compile(r"[.!?,;:]+$")
 
-# ---------------------------------------------------------------------------
-# The message text, as TEMPLATES, because it is now rendered in two languages.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The message text, as TEMPLATES, because it is now rendered in two languages. ---------------------------------------------------------------------------
 #
-# WHY TEMPLATES AND NOT f-STRINGS. Until 2026-09-09 these four messages existed
-# three times over: here, in `.ci/scripts/lib/blocker-validator.sh`, and again in
-# `scripts/lib/blocker-validator.ts`, each with its own quoting and its own
-# chance to drift a word. The two shells are now CLIENTS of this module, and the
-# TypeScript one renders the message itself (a subprocess per reason is too slow
+# WHY TEMPLATES AND NOT f-STRINGS. Until 2026-09-09 these four messages existed three times over: here, in `.ci/scripts/lib/blocker-validator.sh`, and again in `scripts/lib/blocker-validator.ts`, each with its own quoting and its own chance to drift a word. The two shells are now CLIENTS of this module, and the TypeScript one renders the message itself (a subprocess per reason is
+# too slow
 # for a gate that validates a whole list in a loop), so the text has to cross a
 # language boundary as DATA. `contract()` ships exactly this table.
 #
-# THE SUBSTITUTION IS ONE PASS OVER THE TEMPLATE, never over the result. A
-# BLOCKER reason is attacker-adjacent text in the only sense that matters here:
+# THE SUBSTITUTION IS ONE PASS OVER THE TEMPLATE, never over the result. A BLOCKER reason is attacker-adjacent text in the only sense that matters here:
 # somebody will eventually write a reason containing the characters `{entry}`,
-# and a naive `replace()` chain would then splice the entry id into the middle of
-# their prose and the two languages would disagree about the bytes. `_render`
-# walks the template with a regex and resolves each field from a dict, so an
-# injected value is never rescanned. `test_core_allowlist` plants exactly that
-# reason.
+# and a naive `replace()` chain would then splice the entry id into the middle of their prose and the two languages would disagree about the bytes. `_render` walks the template with a regex and resolves each field from a dict, so an injected value is never rescanned. `test_core_allowlist` plants exactly that reason.
 _FIELD = re.compile(r"\{([a-z]+)\}")
 
 MESSAGE_TEMPLATES: dict[str, tuple[str, ...]] = {
@@ -325,9 +307,7 @@ class Rejection(NamedTuple):
     message: str
 
 
-# ---------------------------------------------------------------------------
-# Parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Parsing ---------------------------------------------------------------------------
 
 
 def _patterns(comment_char: str) -> tuple[re.Pattern, re.Pattern, re.Pattern]:
@@ -355,10 +335,7 @@ def parse_text(text: str, comment_char: str = "#") -> list[Entry]:
     for number, raw in enumerate(text.split("\n"), start=1):
         stripped = raw.strip()
         if not stripped:
-            # A blank line resets the group. This is the documented contract, and
-            # it is also why `scripts/gates/check-suppression-liveness.ts:894` has to
-            # hunt for reasons that cover no entries at all: the readers walk
-            # entries, so a reason orphaned by a stray blank line is invisible.
+            # A blank line resets the group. This is the documented contract, and it is also why `scripts/gates/check-suppression-liveness.ts:894` has to hunt for reasons that cover no entries at all: the readers walk entries, so a reason orphaned by a stray blank line is invisible.
             current = ""
             continue
         match = blocker_re.match(stripped)
@@ -424,9 +401,7 @@ def load(
     return parse_file(paths.from_root(name, root=root), comment_char, missing_ok=missing_ok)
 
 
-# ---------------------------------------------------------------------------
-# Projections -- the two shapes the two readers can express
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Projections -- the two shapes the two readers can express ---------------------------------------------------------------------------
 
 
 def pairs(entries: list[Entry]) -> dict[str, str]:
@@ -456,9 +431,7 @@ def render_pairs(entries: list[Entry]) -> str:
     return "".join(rows)
 
 
-# ---------------------------------------------------------------------------
-# The BLOCKER quality contract
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The BLOCKER quality contract ---------------------------------------------------------------------------
 
 
 def normalize_reason(reason: str) -> str:
@@ -550,9 +523,7 @@ def unreasoned(entries: list[Entry]) -> list[Entry]:
     return [e for e in entries if not e.blocker]
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- what a bash or TypeScript caller can reach
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- what a bash or TypeScript caller can reach ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -594,12 +565,8 @@ def main(argv: list[str]) -> int:
         return 1 if failures else 0
 
     if verb == "verify-rows":
-        # THE BATCH FORM, for `verify_all_blockers` in the bash client. It reads
-        # `<entry>\t<reason>` rows on stdin and frames each failure as
-        # `\x1e<line-count>` followed by exactly that many lines. A COUNTED FRAME
-        # rather than a sentinel line: a sentinel is forgeable by a BLOCKER
-        # reason, which is user text, and a forged frame would let a rejection
-        # hide inside another rejection's message.
+        # THE BATCH FORM, for `verify_all_blockers` in the bash client. It reads `<entry>\t<reason>` rows on stdin and frames each failure as `\x1e<line-count>` followed by exactly that many lines. A COUNTED FRAME rather than a sentinel line: a sentinel is forgeable by a BLOCKER reason, which is user text, and a forged frame would let a rejection hide inside another rejection's
+        # message.
         if not rest:
             print("verify-rows needs a list path (used only in the message)", file=sys.stderr)
             return 2

@@ -106,8 +106,7 @@ UNDRIVABLE = "97"
 # How many bytes of the captured summary a failure message shows.
 TAIL_BYTES = 200
 
-# The subshell, transliterated line for line from check-drill-verdicts.sh:62-79.
-# `set +eu` is inside and `pipefail` is left alone, exactly as the twin has it.
+# The subshell, transliterated line for line from check-drill-verdicts.sh:62-79. `set +eu` is inside and `pipefail` is left alone, exactly as the twin has it.
 RUNNER = """
 set -euo pipefail
 if [ -f "$_DV_COMMON" ]; then
@@ -204,8 +203,7 @@ class Case:
 CASES: tuple[Case, ...] = (
     # 1. THE DEFECT: nothing asserted must not claim a pass (exit 0 is correct).
     Case("0 assertions reads as SKIPPED, never PASSED", "0", "0", "0", "0", "SKIPPED", "PASSED"),
-    # 2. THE CONTROL: a real pass must still say PASSED, or assertion 1 is
-    #    meaningless. Without it a summary hard-wired to SKIPPED would satisfy 1.
+    # 2. THE CONTROL: a real pass must still say PASSED, or assertion 1 is meaningless. Without it a summary hard-wired to SKIPPED would satisfy 1.
     Case("a passing run still reads as PASSED (control fired)", "3", "0", "0", "0", "PASSED", ""),
     # 3. A failure must be loud and non-zero.
     Case("a failing run reads as FAILED and exits non-zero", "3", "1", "0", "1", "FAILED", ""),
@@ -277,19 +275,16 @@ def main(argv: list[str] | None = None) -> int:
     log.step("Checking drill verdict logic in %s..." % DRILL_LIB)
 
     if not (root / DRILL_LIB).is_file():
-        # A HARNESS THAT VANISHED IS A FAILURE, NOT AN ABSTENTION. Two lines,
-        # because the twin prints two and the sentence runs across them.
+        # A HARNESS THAT VANISHED IS A FAILURE, NOT AN ABSTENTION. Two lines, because the twin prints two and the sentence runs across them.
         log.error("%s not found \u2014 this gate has nothing to check, which is a" % DRILL_LIB)
         log.error("failure, not a pass: a harness that vanished cannot be verified.")
         return 1
 
     # Prove the harness is reachable before trusting a single verdict.
     #
-    # THIS BRANCH CANNOT FIRE. The subshell exits 97 without printing, so the
-    # capture is EMPTY and its head is the empty string, never "97". Carried
+    # THIS BRANCH CANNOT FIRE. The subshell exits 97 without printing, so the capture is EMPTY and its head is the empty string, never "97". Carried
     # from the twin unchanged and reported as a defect rather than repaired;
-    # `assert_verdict`'s empty-result guard is what actually catches an
-    # undrivable harness. See the port notes.
+    # `assert_verdict`'s empty-result guard is what actually catches an undrivable harness. See the port notes.
     probe = run_summary(root, "1", "0")
     if probe.partition("|")[0] == UNDRIVABLE:
         log.error("Could not load drill_summary from %s." % DRILL_LIB)
@@ -311,9 +306,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A minimal harness that satisfies all four cases. Small enough to read, and
-# shaped like the real `drill_summary`: it branches on DRILL_SELFTEST first,
-# then on DRILL_FAILURES, then on DRILL_COUNT, and returns the same codes.
+# A minimal harness that satisfies all four cases. Small enough to read, and shaped like the real `drill_summary`: it branches on DRILL_SELFTEST first, then on DRILL_FAILURES, then on DRILL_COUNT, and returns the same codes.
 _GOOD_LIB = """#!/bin/bash
 drill_summary() {
     printf '  %d assertions: %d passed, %d failed\\n' \\
@@ -339,9 +332,7 @@ drill_summary() {
 }
 """
 
-# THE 2026-08-05 DEFECT ITSELF, as a fixture: a zero-assertion run that says
-# PASSED. This is the mutant the gate exists to catch, and a suite without it is
-# a suite that has never seen this gate fire.
+# THE 2026-08-05 DEFECT ITSELF, as a fixture: a zero-assertion run that says PASSED. This is the mutant the gate exists to catch, and a suite without it is a suite that has never seen this gate fire.
 _VACUOUS_LIB = plant(
     _GOOD_LIB,
     "        printf '  drill %s SKIPPED (0 assertions ran)\\n' \"$DRILL_NAME\"\n        return 0\n",
@@ -398,8 +389,7 @@ def selftest() -> int:
 
         ctl.check("CONTROL: a correct harness passes all four cases", run(_GOOD_LIB), 0)
 
-        # THE VACUITY CASE. A harness that has vanished has nothing to verify,
-        # and that is a failure rather than an abstention.
+        # THE VACUITY CASE. A harness that has vanished has nothing to verify, and that is a failure rather than an abstention.
         ctl.check("VACUITY: an absent harness is refused", run(None), 1)
 
         # PLANT 1: the founding defect. 0 assertions printing PASSED.
@@ -407,8 +397,7 @@ def selftest() -> int:
 
         # PLANT 2: a harness with no drill_summary at all. The subshell dies
         # before its printf, so the capture is empty; this is the branch that
-        # actually catches an undrivable harness, the `97` probe having been
-        # unreachable since it was written.
+        # actually catches an undrivable harness, the `97` probe having been unreachable since it was written.
         ctl.check(
             "PLANT: a harness with no drill_summary is refused",
             run("#!/bin/bash\necho nothing here\n"),
@@ -434,8 +423,7 @@ def selftest() -> int:
             1,
         )
 
-        # PLANT 4: a failing run that exits 0. The exit code was the ONLY thing
-        # the pre-existing checks read, so this is the half they could see.
+        # PLANT 4: a failing run that exits 0. The exit code was the ONLY thing the pre-existing checks read, so this is the half they could see.
         ctl.check(
             "PLANT: a failing run that exits 0 is caught",
             run(
@@ -448,8 +436,7 @@ def selftest() -> int:
             1,
         )
 
-        # PLANT 5: a selftest whose planted failure went unnoticed and which
-        # says so with the wrong words.
+        # PLANT 5: a selftest whose planted failure went unnoticed and which says so with the wrong words.
         ctl.check(
             "PLANT: a selftest that does not refuse is caught",
             run(
@@ -463,9 +450,7 @@ def selftest() -> int:
             1,
         )
 
-        # MIRROR: back to the good harness. Without this, every plant above
-        # could be firing because the fixture root was broken rather than
-        # because the plant landed.
+        # MIRROR: back to the good harness. Without this, every plant above could be firing because the fixture root was broken rather than because the plant landed.
         ctl.check("MIRROR: the good harness still passes after every plant", run(_GOOD_LIB), 0)
 
         # The driver itself, both directions, on the good harness.

@@ -127,16 +127,12 @@ from rediacc_ci.core import common
 BUCKET = "rediacc-www-media"
 
 # `CACHE_CONTROL="public, max-age=31536000"` (twin :37). ONE ARGV ELEMENT
-# CONTAINING A SPACE, which is why the differential records argv with a
-# quoting join rather than a plain space: `--cache-control 'public,
+# CONTAINING A SPACE, which is why the differential records argv with a quoting join rather than a plain space: `--cache-control 'public,
 # max-age=31536000'` and `--cache-control public, max-age=31536000` are two
 # different calls that a space-joined log renders identically.
 CACHE_CONTROL = "public, max-age=31536000"
 
-# The three legs, in the twin's order (twin :107-117), as
-# (local_path_relative_to_repo_root, remote_prefix). ORDER IS OBSERVABLE: it is
-# the order of the step lines and of the `aws` calls. Every local path keeps its
-# TRAILING SLASH because the twin's does, and `aws` is handed it as written.
+# The three legs, in the twin's order (twin :107-117), as (local_path_relative_to_repo_root, remote_prefix). ORDER IS OBSERVABLE: it is the order of the step lines and of the `aws` calls. Every local path keeps its TRAILING SLASH because the twin's does, and `aws` is handed it as written.
 TUTORIALS = ("packages/www/public/assets/tutorials/video/", "tutorials/video/")
 SOLUTIONS = ("packages/www/public/assets/videos/", "videos/")
 AUDIO = ("packages/www/public/assets/tutorials/audio/", "tutorials/audio/")
@@ -150,11 +146,7 @@ ENDPOINT_ENV = "CLOUDFLARE_R2_MEDIA_ENDPOINT"
 # spelled `auto`; a real region name makes the SigV4 signature wrong.
 AWS_DEFAULT_REGION = "auto"
 
-# The closing recipe (twin :120-124), three `log_info` calls rather than one
-# multi-line message, so it is three `✓ ` lines and the two indented ones keep
-# their two leading spaces. `\$CLOUDFLARE_R2_MEDIA_ENDPOINT` in the twin is an
-# ESCAPED dollar inside double quotes, so it reaches the terminal as a literal
-# `$CLOUDFLARE_R2_MEDIA_ENDPOINT` for the reader to paste, NOT as the endpoint
+# The closing recipe (twin :120-124), three `log_info` calls rather than one multi-line message, so it is three `✓ ` lines and the two indented ones keep their two leading spaces. `\$CLOUDFLARE_R2_MEDIA_ENDPOINT` in the twin is an ESCAPED dollar inside double quotes, so it reaches the terminal as a literal `$CLOUDFLARE_R2_MEDIA_ENDPOINT` for the reader to paste, NOT as the endpoint
 # this run used. Reproduced literally; a port that interpolated it would leak
 # the endpoint into a log that is often shared.
 CLOSING_LINES = (
@@ -164,8 +156,7 @@ CLOSING_LINES = (
     "  curl -sI https://media.rediacc.com/<path>",
 )
 
-# The four facts in the module docstring, as constants so a test can assert each
-# by name instead of restating the sentence.
+# The four facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 A_RUN_THAT_UPLOADS_NOTHING_STILL_SAYS_COMPLETE = True
 REQUIRE_VAR_CHECKS_ONLY_ITS_FIRST_ARGUMENT = True
 AN_EMPTY_CREDENTIAL_IS_NOT_CAUGHT = True

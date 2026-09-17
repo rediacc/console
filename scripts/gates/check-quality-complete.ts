@@ -124,9 +124,7 @@ export const AGGREGATOR_JOB = 'quality-complete';
  */
 export const MIN_LOCK_ENTRIES = 100;
 
-// ---------------------------------------------------------------------------
-// Receipts
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Receipts ---------------------------------------------------------------------------
 
 /** What one shard writes about itself when it finishes. */
 export interface ShardReceipt {
@@ -244,8 +242,7 @@ export function judgeReceipts(
     }
   }
 
-  // CLAUSE 2, and anything that is not `success` counts, including a value nobody
-  // has seen before. Unknown is a failure.
+  // CLAUSE 2, and anything that is not `success` counts, including a value nobody has seen before. Unknown is a failure.
   for (const r of received) {
     if (r.result !== 'success') {
       findings.push(
@@ -255,8 +252,7 @@ export function judgeReceipts(
     }
   }
 
-  // THE COMPOSITION CLAUSE. Totals that agree over different contents is the failure
-  // shape this programme keeps paying for.
+  // THE COMPOSITION CLAUSE. Totals that agree over different contents is the failure shape this programme keeps paying for.
   for (const r of received) {
     const declaredShard = want.get(shardKey(r.lane, r.index, r.of));
     if (declaredShard && declaredShard.ids.length !== r.gates) {
@@ -269,9 +265,7 @@ export function judgeReceipts(
   return findings;
 }
 
-// ---------------------------------------------------------------------------
-// The static half: the constant, the plan, and the workflow must agree
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The static half: the constant, the plan, and the workflow must agree ---------------------------------------------------------------------------
 
 /**
  * `needs:` per job, both spellings. Line-oriented on purpose, exactly like
@@ -375,9 +369,7 @@ export function wiringFindings(
   return findings;
 }
 
-// ---------------------------------------------------------------------------
-// The real run
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 function readOr(file: string, what: string): string | null {
   try {
@@ -404,8 +396,7 @@ function main(argv: readonly string[]): number {
     return 1;
   }
 
-  // ANTI-VACUITY, BOTH INPUTS, REFUSED SEPARATELY. An empty lock and an unparsed
-  // workflow produce the same confident "nothing is missing".
+  // ANTI-VACUITY, BOTH INPUTS, REFUSED SEPARATELY. An empty lock and an unparsed workflow produce the same confident "nothing is missing".
   if (lock.length < MIN_LOCK_ENTRIES) {
     console.error(
       `${RED}✗${NC} ${LOCK} holds ${lock.length} entries, under the floor of ${MIN_LOCK_ENTRIES}. ` +
@@ -441,16 +432,10 @@ function main(argv: readonly string[]): number {
     `${declared.length} declared shard(s), aggregator job ` +
     `${needs.has(AGGREGATOR_JOB) ? 'present' : 'absent'}`;
 
-  // T-SCHED B2 D5, first clause. `rewriteStrategyRegions` re-asserted from THIS side,
-  // independently of `gate-bind --write`: a `matrix.shard` list that has drifted from
-  // `SHARD_COUNTS` (hand-edited, or left stale after a count change landed without
-  // `gate-bind --write` being re-run) is Finding 2's vacuity all over again -- a job
-  // whose real matrix does not match what this aggregator believes it does.
+  // T-SCHED B2 D5, first clause. `rewriteStrategyRegions` re-asserted from THIS side, independently of `gate-bind --write`: a `matrix.shard` list that has drifted from `SHARD_COUNTS` (hand-edited, or left stale after a count change landed without `gate-bind --write` being re-run) is Finding 2's vacuity all over again -- a job whose real matrix does not match what this aggregator
+  // believes it does.
   // `gate-bind`'s own check is the first line of defense at write time; this is the
-  // second, independent one at judge time, so a bypass of one cannot silently defeat
-  // the other. Kept separate from `wiringFindings` (job-graph wiring) rather than
-  // merged into it, so that function's own fixtures do not need a real shard-strategy
-  // region added just to keep testing what they already test.
+  // second, independent one at judge time, so a bypass of one cannot silently defeat the other. Kept separate from `wiringFindings` (job-graph wiring) rather than merged into it, so that function's own fixtures do not need a real shard-strategy region added just to keep testing what they already test.
   const findings = [
     ...wiringFindings(SHARD_COUNTS, needs),
     ...rewriteStrategyRegions(workflowText, SHARD_COUNTS),
@@ -487,9 +472,7 @@ function main(argv: readonly string[]): number {
   return 1;
 }
 
-// ---------------------------------------------------------------------------
-// Controls
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 const shard = (lane: string, index: number, of: number, ids: number): Shard => ({
   lane,
@@ -521,10 +504,7 @@ const WF_SHARDED = [
   '',
 ].join('\n');
 
-// T-SCHED B2 D5, first clause: a real shard-strategy region, matching WF_SHARDED's
-// `quality-security` job, for testing the wiring between this file and
-// `rewriteStrategyRegions` rather than that function's own logic (already exhaustively
-// covered by scripts/gate-bind.ts's own selftest).
+// T-SCHED B2 D5, first clause: a real shard-strategy region, matching WF_SHARDED's `quality-security` job, for testing the wiring between this file and `rewriteStrategyRegions` rather than that function's own logic (already exhaustively covered by scripts/gate-bind.ts's own selftest).
 const WF_SHARDED_WITH_REGION = [
   'jobs:',
   '  quality-security:',

@@ -144,17 +144,12 @@ function main(): void {
     );
     for (const v of vendored) console.log(`    ${v}`);
   }
-  // Report what was actually VERIFIED, not what was opened. The stubs were `continue`d
-  // above, so counting them as pages with exactly one <main> overstated coverage by 41
-  // pages on this tree: 1,842 files minus 2 vendored printed as "1840 built page(s):
-  // exactly one <main> each", when 43 of those were redirect stubs nobody checked. A
-  // headline number that is larger than the work done is the failure this whole gate
-  // family exists to catch, so it gets an assertion rather than a careful reading.
+  // Report what was actually VERIFIED, not what was opened. The stubs were `continue`d above, so counting them as pages with exactly one <main> overstated coverage by 41 pages on this tree: 1,842 files minus 2 vendored printed as "1840 built page(s): exactly one <main> each", when 43 of those were redirect stubs nobody checked. A headline number that is larger than the work done
+  // is the failure this whole gate family exists to catch, so it gets an assertion rather than a careful reading.
   const verified = files.length - vendored.length - stubs;
   // The four buckets must account for every file opened. Written as a SUM rather than as
   // a restatement of the subtraction above: `verified !== files.length - vendored - stubs`
-  // compares an expression to itself and can never fail, which is the same vacuity this
-  // gate family exists to catch.
+  // compares an expression to itself and can never fail, which is the same vacuity this gate family exists to catch.
   const accounted = verified + stubs + vendored.length + duplicates.length + missing.length;
   if (accounted !== files.length) {
     console.error(

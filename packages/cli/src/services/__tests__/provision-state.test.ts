@@ -40,8 +40,7 @@ const { VERSION } = await import('../../version.js');
 const NOW = Date.UTC(2026, 6, 22, 12, 0, 0);
 const HOST = '192.168.111.11:22';
 
-// A real temp file: the dev-mode trust envelope is a stat fingerprint, and a
-// mocked stat would test the mock.
+// A real temp file: the dev-mode trust envelope is a stat fingerprint, and a mocked stat would test the mock.
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'provision-state-'));
 const binPath = path.join(tmpDir, 'renet');
 fs.writeFileSync(binPath, 'binary-v1');
@@ -83,9 +82,7 @@ describe('renet provision persistent cache', () => {
     expect(await getFreshProvisionEntry(HOST, null, NOW + 1)).toBeNull();
   });
 
-  // The dev-loop promise: a rebuilt bin/renet MUST miss, or the next rdc.sh
-  // invocation would skip deploying the developer's change. Dev VERSION is a
-  // constant, so only the stat fingerprint can catch this.
+  // The dev-loop promise: a rebuilt bin/renet MUST miss, or the next rdc.sh invocation would skip deploying the developer's change. Dev VERSION is a constant, so only the stat fingerprint can catch this.
   it('dev mode: hits while the source binary is unchanged, misses after a rebuild', async () => {
     await recordProvisionVerified(HOST, { hash: 'h1', arch: 'amd64', sourcePath: binPath }, NOW);
     expect(await getFreshProvisionEntry(HOST, binPath, NOW + 60_000)).not.toBeNull();

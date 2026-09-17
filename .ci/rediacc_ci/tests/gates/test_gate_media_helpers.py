@@ -71,9 +71,7 @@ def expect_green(gate, body: str, label: str) -> harness.RunResult:
     return result
 
 
-# ---------------------------------------------------------------------------
-# with_fake_bin
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- with_fake_bin ---------------------------------------------------------------------------
 
 PROBE_PATH_IS_ONLY_FAKES = """
 _probe_path_is_only_fakes() {
@@ -94,8 +92,7 @@ def test_path_is_replaced_not_prefixed(gate):
 
 def test_everything_unnamed_is_absent(gate):
     gate.log_test("THE LOAD-BEARING ASSERTION: unnamed binaries are gone")
-    # Every other media gate test's hermeticity claim is this one assertion
-    # wearing a different hat.
+    # Every other media gate test's hermeticity claim is this one assertion wearing a different hat.
     expect_green(
         gate,
         """
@@ -137,8 +134,7 @@ with_fake_bin "docker nvcc" _probe_fake_records_argv
 
 def test_a_never_called_fake_records_nothing(gate):
     gate.log_test("an empty record must be distinguishable from a broken recorder")
-    # "nvcc was never invoked" is an assertion the CUDA module's test makes, so the
-    # empty-record case has to be distinguishable from a recorder that lost the file.
+    # "nvcc was never invoked" is an assertion the CUDA module's test makes, so the empty-record case has to be distinguishable from a recorder that lost the file.
     expect_green(
         gate,
         """
@@ -171,10 +167,7 @@ with_fake_bin "flaky!7" _probe_exit_code_is_honoured
 
 def test_passthrough_admits_the_real_binary(gate):
     gate.log_test("the +name form admits the real binary")
-    # `cut`, DELIBERATELY: it is not a bash builtin, so this can only succeed if
-    # the symlink to the real binary is what answered. An earlier draft of the twin
-    # asserted on `printf` and proved nothing, because bash's builtin would have
-    # satisfied it with PATH empty.
+    # `cut`, DELIBERATELY: it is not a bash builtin, so this can only succeed if the symlink to the real binary is what answered. An earlier draft of the twin asserted on `printf` and proved nothing, because bash's builtin would have satisfied it with PATH empty.
     expect_green(
         gate,
         """
@@ -191,8 +184,7 @@ with_fake_bin "+cut" _probe_passthrough_is_the_real_binary
 
 def test_the_callers_path_is_never_touched(gate):
     gate.log_test("the restriction is scoped to a subshell")
-    # The distinction keeps a failing assertion from being followed by
-    # "rm: command not found" as the EXIT traps unwind.
+    # The distinction keeps a failing assertion from being followed by "rm: command not found" as the EXIT traps unwind.
     expect_green(
         gate,
         PROBE_PATH_IS_ONLY_FAKES
@@ -206,9 +198,7 @@ assert_eq "$PATH" "$before" "the caller's PATH must be unchanged by with_fake_bi
     gate.log_pass("the caller's PATH is untouched: the restriction is scoped to a subshell")
 
 
-# ---------------------------------------------------------------------------
-# The .ci/media scan root in check-dead-case-arms.sh
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The .ci/media scan root in check-dead-case-arms.sh ---------------------------------------------------------------------------
 
 
 def run_gate_media(media_dirs: str | None = None) -> harness.RunResult:
@@ -218,9 +208,7 @@ def run_gate_media(media_dirs: str | None = None) -> harness.RunResult:
 
 def test_media_root_is_wired_into_the_real_scan(gate, tmp_path: pathlib.Path):
     gate.log_test("the MEDIA_DIRS variable reaches the real scan")
-    # The failure this catches is not "the scanner is broken" -- the gate's own
-    # control covers that -- but "the new variable was declared and never passed to
-    # scan". Only driving the REAL gate with the root overridden tells those apart.
+    # The failure this catches is not "the scanner is broken" -- the gate's own control covers that -- but "the new variable was declared and never passed to scan". Only driving the REAL gate with the root overridden tells those apart.
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(GATE))
     media = tmp_path / "media"
@@ -257,8 +245,7 @@ def test_the_real_media_folder_is_clean_and_counted(gate):
 
 def test_an_empty_media_root_is_vacuous_not_clean(gate, tmp_path: pathlib.Path):
     gate.log_test("anti-vacuity for the new root, driven through the real gate")
-    # A root that has stopped matching files must be a FAILURE, because otherwise
-    # it is indistinguishable from a clean one.
+    # A root that has stopped matching files must be a FAILURE, because otherwise it is indistinguishable from a clean one.
     empty = tmp_path / "nothing"
     empty.mkdir()
     result = run_gate_media(str(empty))

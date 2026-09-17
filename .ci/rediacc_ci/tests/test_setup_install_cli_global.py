@@ -63,9 +63,7 @@ TREE_FILES = (
     PORT_REL,
 )
 
-# `dirname`/`uname` for common.sh's source-time detection, `tr` for `to_upper`
-# inside `parse_args`, and `ls`/`head`/`rm` because the twin runs all three and
-# their real exit statuses are what the pipefail case turns on.
+# `dirname`/`uname` for common.sh's source-time detection, `tr` for `to_upper` inside `parse_args`, and `ls`/`head`/`rm` because the twin runs all three and their real exit statuses are what the pipefail case turns on.
 PATH_MINIMUM = ("dirname", "uname", "tr", "ls", "head", "rm")
 
 FAKE_NPM = """#!{python}
@@ -217,9 +215,7 @@ def _assert_agree(old3, new3, label: str) -> None:
     assert new_fs == old_fs, f"{label}: surviving tree diverged:\nold: {old_fs}\nnew: {new_fs}"
 
 
-# ---------------------------------------------------------------------------
-# The happy path and its three closing arms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path and its three closing arms ---------------------------------------------------------------------------
 
 
 def test_the_default_run_packs_installs_and_cleans_up(tmp_path: pathlib.Path) -> None:
@@ -267,9 +263,7 @@ def test_both_present_still_reports_only_rdc(tmp_path: pathlib.Path) -> None:
     _assert_agree(old3, new3, "both-present")
 
 
-# ---------------------------------------------------------------------------
-# --package-dir
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --package-dir ---------------------------------------------------------------------------
 
 
 def test_package_dir_as_a_separate_token(tmp_path: pathlib.Path) -> None:
@@ -334,9 +328,7 @@ def test_a_positional_argument_is_ignored(tmp_path: pathlib.Path) -> None:
     _assert_agree(old3, new3, "positional")
 
 
-# ---------------------------------------------------------------------------
-# Failure paths, including the dead branch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure paths, including the dead branch ---------------------------------------------------------------------------
 
 
 def test_no_tarball_exits_2_with_zero_bytes(tmp_path: pathlib.Path) -> None:
@@ -393,9 +385,7 @@ def test_a_failing_global_install_leaves_the_tarball_behind(
     _assert_agree(old3, new3, "install-fails")
 
 
-# ---------------------------------------------------------------------------
-# Fact 1: the tarball installed is not necessarily the one just packed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fact 1: the tarball installed is not necessarily the one just packed ---------------------------------------------------------------------------
 
 
 def test_a_stale_tarball_wins_over_the_one_just_packed(tmp_path: pathlib.Path) -> None:
@@ -432,9 +422,7 @@ def test_byte_ordering_not_version_ordering(tmp_path: pathlib.Path) -> None:
     _assert_agree(old3, new3, "byte-ordering")
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_package_dir_defaults_and_overrides() -> None:

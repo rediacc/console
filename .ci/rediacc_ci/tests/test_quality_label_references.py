@@ -102,8 +102,7 @@ def _cases():
             1,
         ),
         (
-            # THE NEGATIVE HALF. Both labels declared, so the gate must be silent.
-            # Without this a port that reported everything passes every red case.
+            # THE NEGATIVE HALF. Both labels declared, so the gate must be silent. Without this a port that reported everything passes every red case.
             "declared labels are not reported",
             declarations("full-ci", "autopilot"),
             {"a.yml": search_filter("full-ci") + "\n", "b.js": js_const("autopilot") + "\n"},
@@ -131,8 +130,7 @@ def _cases():
             1,
         ),
         (
-            # THE 96355d3b5 CASE. An empty declaration file must reach the
-            # per-label loop, not kill the script at the assignment.
+            # THE 96355d3b5 CASE. An empty declaration file must reach the per-label loop, not kill the script at the assignment.
             "an EMPTY labels file reports every reference, and does not die silently",
             "",
             {"a.yml": search_filter("solo-alpha") + "\n", "b.js": js_const("solo-bravo") + "\n"},
@@ -218,8 +216,7 @@ def test_selftest_exits_zero_and_prints_a_count():
     )
     assert code == 0, err
     assert "control(s) passed" in out
-    # TWO controls per pattern, plus the structural ones. Derived from the
-    # registry rather than typed, so adding a shape without a sample reds this.
+    # TWO controls per pattern, plus the structural ones. Derived from the registry rather than typed, so adding a shape without a sample reds this.
     assert int(out.split(" control(s)")[0].strip()) >= 2 * len(gate.PATTERNS)
 
 

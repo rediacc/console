@@ -23,8 +23,7 @@ const tagName = z
   .max(63)
   .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/);
 
-// `name` for a datastore, `name:tag` for a datastore fork (flat entries,
-// matching the machine-side registry key `<parent>:<tag>`).
+// `name` for a datastore, `name:tag` for a datastore fork (flat entries, matching the machine-side registry key `<parent>:<tag>`).
 const datastoreRef = z
   .string()
   .min(1)
@@ -125,11 +124,7 @@ export const StateSchema = z.object({
       datastoreRef,
       z.object({
         attachedTo: resourceName.optional(),
-        // The machine that last held this datastore, recorded at detach.
-        // renet's registry row (the ceph pool/image record a relocation must
-        // ferry) survives only on that machine, so without this a DETACHED
-        // datastore cannot be attached anywhere else — the ferry has no
-        // source. Never cleared, only overwritten by the next detach.
+        // The machine that last held this datastore, recorded at detach. renet's registry row (the ceph pool/image record a relocation must ferry) survives only on that machine, so without this a DETACHED datastore cannot be attached anywhere else — the ferry has no source. Never cleared, only overwritten by the next detach.
         lastHolder: resourceName.optional(),
         writes: z.enum(['ceph', 'local']).optional(),
         mounted: z.boolean().optional(),
@@ -215,8 +210,7 @@ export const StateSchema = z.object({
         /** ISO timestamp of the last recorded run for this repo. */
         lastRunAt: z.string(),
         /** What produced this record. */
-        // 'snapshot' is the chunk-store write path. 'backup' is the retired
-        // rclone push, kept accepted so run histories written before the
+        // 'snapshot' is the chunk-store write path. 'backup' is the retired rclone push, kept accepted so run histories written before the
         // cutover still parse; nothing emits it. This enum and BackupRunKind
         // in packages/cli/src/services/backup/backup-runs-state.ts are the
         // same vocabulary declared twice; they must be changed together.

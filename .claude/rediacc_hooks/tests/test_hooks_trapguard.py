@@ -62,9 +62,7 @@ def assert_inject(block, want: str, payload: str, label: str, needle: str | None
     block.note(want, label, ok=ok, detail="got %s" % got)
 
 
-# THE PHANTOM PROBE's name, planted at runtime by the _phantom fixture below.
-# The rule keys on a path that is UNTRACKED and PRESENT, which is the state a
-# plumbing-built branch leaves files in, and only the filesystem separates a phantom
+# THE PHANTOM PROBE's name, planted at runtime by the _phantom fixture below. The rule keys on a path that is UNTRACKED and PRESENT, which is the state a plumbing-built branch leaves files in, and only the filesystem separates a phantom
 # from a real deletion. The name carries this process's pid so the case holds in any
 # checkout and a crashed earlier run cannot satisfy it.
 PHANTOM_NAME = "tg_phantom_probe_%d.txt" % os.getpid()
@@ -88,9 +86,7 @@ CASES = [
         inject_json("gh run view 1 --json jobs", ""),
         "trapguard CONTROL: an empty response does not fire (absence is not a cancellation)",
     ),
-    # THE SHAPE THAT WAS DEAD CODE until review of PR #567. A failure-filtered query
-    # returning [] contains no word "cancelled" by construction, because the filter
-    # removed the cancelled job, so gating on that word made this branch unreachable
+    # THE SHAPE THAT WAS DEAD CODE until review of PR #567. A failure-filtered query returning [] contains no word "cancelled" by construction, because the filter removed the cancelled job, so gating on that word made this branch unreachable
     # for the only case it existed to catch.
     inject(
         ("check_inject fires", "cancelled-run-not-passed"),
@@ -161,8 +157,7 @@ CASES = [
         ),
         "trapguard CONTROL: --cached is exempt (the index IS the subject there)",
     ),
-    # THE FALSE POSITIVE THIS RULE SHIPPED WITH, for one hour. A TRACKED file that
-    # simply lost lines is a normal diff, and the first version fired on it because
+    # THE FALSE POSITIVE THIS RULE SHIPPED WITH, for one hour. A TRACKED file that simply lost lines is a normal diff, and the first version fired on it because
     # it keyed on "the file exists". Existence narrows; tracked-ness decides.
     inject(
         ("check_inject silent", ""),
@@ -181,10 +176,7 @@ CASES = [
         ),
         "trapguard: an interrupted command whose tail was a restore is warned about",
     ),
-    # The two conditions are INDEPENDENT alternatives, not one gated behind the
-    # other, which is the exact defect review found in the sibling rule: the harness
-    # reports a kill through `interrupted` on some paths and the timeout text on
-    # others, so either alone must be enough.
+    # The two conditions are INDEPENDENT alternatives, not one gated behind the other, which is the exact defect review found in the sibling rule: the harness reports a kill through `interrupted` on some paths and the timeout text on others, so either alone must be enough.
     inject(
         ("check_inject fires", "interrupted-cleanup-skipped"),
         inject_killed(
@@ -215,10 +207,7 @@ CASES = [
         inject_killed("npm test; echo done", "Command timed out after 2m 0s", True),
         "trapguard CONTROL: interrupted with nothing to put back stays silent",
     ),
-    # history-rewrite-controls. The FIRES/CONTROL pair below differs by exactly one
-    # path segment, which is the whole point: the wider prefix is what deleted a live
-    # .gitkeep while removing 0.00 MB of history, and the narrower one is the correct
-    # command. A rule that cannot tell those two apart would not have caught it.
+    # history-rewrite-controls. The FIRES/CONTROL pair below differs by exactly one path segment, which is the whole point: the wider prefix is what deleted a live .gitkeep while removing 0.00 MB of history, and the narrower one is the correct command. A rule that cannot tell those two apart would not have caught it.
     inject(
         ("check_inject fires", "user-guide/.gitkeep"),
         inject_json(
@@ -251,8 +240,7 @@ CASES = [
         ),
         "trapguard CONTROL: the untracked audio cache prefix stays silent too",
     ),
-    # The two arms are INDEPENDENT, not nested. This one is silent on arm 1 (nothing
-    # tracked under the path) and must still fire on arm 2.
+    # The two arms are INDEPENDENT, not nested. This one is silent on arm 1 (nothing tracked under the path) and must still fire on arm 2.
     inject(
         ("check_inject fires", "history-rewrite-no-baseline"),
         inject_json(
@@ -261,8 +249,7 @@ CASES = [
         ),
         "trapguard: a message-callback fires on arm 2 even when arm 1 has nothing to say",
     ),
-    # A heredoc BODY is written, not run. Prose describing the rewrite hazard fed the
-    # matcher its own trigger words and produced a warning about a rewrite that never
+    # A heredoc BODY is written, not run. Prose describing the rewrite hazard fed the matcher its own trigger words and produced a warning about a rewrite that never
     # happened; the second control proves the stripper eats the body ONLY, so a real
     # command sharing the line-set with a heredoc still fires.
     inject(
@@ -283,14 +270,10 @@ CASES = [
         ),
         "trapguard: a real rewrite AFTER a heredoc still fires",
     ),
-    # THE JUST-IN-TIME HINT. The operator asked, 2026-08-26: "you had known how and
-    # when to use verify-rebase because you built it -- is there any hint?" There was
-    # none: `worklist.py --git` was referenced by ZERO commands, agents and docs, so
-    # the capability existed and the affordance did not. trapguard is the right
-    # surface because it never blocks and already exists to say "you just did X".
+    # THE JUST-IN-TIME HINT. The operator asked, 2026-08-26: "you had known how and when to use verify-rebase because you built it -- is there any hint?" There was none: `worklist.py --git` was referenced by ZERO commands, agents and docs, so the capability existed and the affordance did not. trapguard is the right surface because it never blocks and already exists to say "you just
+    # did X".
     #
-    # BOTH SIGNALS REQUIRED -- a rebase COMMAND and real rebase OUTPUT -- so a no-op
-    # rebase stays quiet and a mention cannot trigger it.
+    # BOTH SIGNALS REQUIRED -- a rebase COMMAND and real rebase OUTPUT -- so a no-op rebase stays quiet and a mention cannot trigger it.
     inject(
         ("check_inject fires", "rebase-unverified"),
         inject_json(
@@ -335,12 +318,9 @@ def test_every_trapguard_rule_fires_and_stays_silent_where_it_should():
     block.done()
 
 
-# --- `--git rebase-status` against a REAL halted rebase, one per conflict kind ----
-# The selftest's classifier controls prove the ARITHMETIC over hand-written stage
+# --- `--git rebase-status` against a REAL halted rebase, one per conflict kind ---- The selftest's classifier controls prove the ARITHMETIC over hand-written stage
 # tables; only a real halt proves the verb reads what git actually writes into
-# .git/rebase-merge and the index. The harness refuses to hand back a fixture that
-# did not halt, which already caught a broken fixture of its own: the two submodule
-# commits were linear, so git took the descendant and nothing conflicted.
+# .git/rebase-merge and the index. The harness refuses to hand back a fixture that did not halt, which already caught a broken fixture of its own: the two submodule commits were linear, so git took the descendant and nothing conflicted.
 GIT_FIXTURE = hookcases.ROOT / ".ci" / "scripts" / "test" / "lib" / "git-fixture.sh"
 WORKLIST = hookcases.HOOKS / "stop" / "worklist.py"
 
@@ -413,9 +393,7 @@ def test_rebase_status_reads_a_real_halt(kind):
 
 # STEP 3: resolve-gitlinks may now WRITE, and these are the two halves that make that
 # safe. The happy path resolves a real halt end to end; the guard refuses a MIXED
-# conflict set rather than half-resolving it, because a half-resolved index reads as
-# nearly done and the next --continue then fails for a reason that no longer names
-# the submodule.
+# conflict set rather than half-resolving it, because a half-resolved index reads as nearly done and the next --continue then fails for a reason that no longer names the submodule.
 @pytest.mark.xdist_group("hooks-trapguard")
 def test_resolve_gitlinks_clears_a_real_gitlink_halt():
     block = hookblocks.Block("resolve-gitlinks/happy")

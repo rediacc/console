@@ -82,9 +82,7 @@ def fixture_root(tmp_path: pathlib.Path, *tags: str) -> pathlib.Path:
     (root / ".ci/scripts/lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci/scripts/ci").mkdir(parents=True, exist_ok=True)
 
-    # A COPY of common.sh, not a symlink: `get_repo_root` walks up from the
-    # directory the file is IN, and a symlink would still report the fixture's
-    # directory, but a copy makes the fixture readable when it goes wrong.
+    # A COPY of common.sh, not a symlink: `get_repo_root` walks up from the directory the file is IN, and a symlink would still report the fixture's directory, but a copy makes the fixture readable when it goes wrong.
     shutil.copyfile(
         "%s/.ci/scripts/lib/common.sh" % diff.repo(), root / ".ci/scripts/lib/common.sh"
     )
@@ -182,9 +180,7 @@ def assert_identical(old, new, files) -> None:
             )
 
 
-# ---------------------------------------------------------------------------
-# The explicit-tag arm
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The explicit-tag arm ---------------------------------------------------------------------------
 
 
 def test_both_overrides_are_appended_after_the_siblings_three_names(
@@ -266,9 +262,7 @@ def test_the_auto_derive_arm_reads_the_fixtures_newest_tag(tmp_path: pathlib.Pat
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# The refusal arms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusal arms ---------------------------------------------------------------------------
 
 
 def test_an_invalid_tag_stops_the_script_before_the_overrides(
@@ -385,9 +379,7 @@ def test_the_scripts_own_append_names_its_own_line_when_it_fails(
     assert refusal.value.code == 1
 
 
-# ---------------------------------------------------------------------------
-# Colour, and the pins
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, and the pins ---------------------------------------------------------------------------
 
 
 def test_colour_is_emitted_on_a_terminal_by_both_sides(tmp_path: pathlib.Path) -> None:
@@ -411,8 +403,7 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
         lines = handle.read().split("\n")
     assert 'echo "WEB_TAG=${WEB_TAG}-amd64"' in lines[port.WEB_TAG_LINE - 1]
     assert 'echo "RENET_TAG=${RENET_TAG}-amd64"' in lines[port.RENET_TAG_LINE - 1]
-    # The table is a reader's index into those two lines, so it is checked
-    # against them rather than left as a comment that can quietly go stale.
+    # The table is a reader's index into those two lines, so it is checked against them rather than left as a comment that can quietly go stale.
     assert port.OVERRIDES == (("WEB_TAG", port.WEB_TAG_LINE), ("RENET_TAG", port.RENET_TAG_LINE))
     assert port.WEB_TAG_LINE < port.RENET_TAG_LINE, "web is appended first"
 

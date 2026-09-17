@@ -148,8 +148,7 @@ def test_a_plain_detached_head_allows_rather_than_refusing_blind(gate):
             0, run_guard(repo, REAL), "plain detach CONTROL: the real id still passes"
         )
         gate.log_pass("plain detach CONTROL: the real id still passes")
-        # THE PRECONDITION, without which both cases above would also pass on a
-        # detach that silently did not happen.
+        # THE PRECONDITION, without which both cases above would also pass on a detach that silently did not happen.
         abbrev = _git(gate, repo, "rev-parse", "--abbrev-ref", "HEAD")
         gate.assert_eq(
             abbrev,
@@ -200,8 +199,7 @@ def test_mid_rebase_the_branch_is_recovered_from_head_name(gate):
         (repo / "f.txt").write_text("theirs\n", encoding="utf-8")
         _git(gate, repo, "commit", "-qam", "theirs")
         _git(gate, repo, "checkout", "-q", BRANCH)
-        # The rebase is EXPECTED to fail: a halt is the state under test, so this
-        # one git call is deliberately not routed through the failing _git helper.
+        # The rebase is EXPECTED to fail: a halt is the state under test, so this one git call is deliberately not routed through the failing _git helper.
         subprocess.run(
             ["git", "-C", str(repo), "rebase", "other"],
             env={**os.environ, "GIT_EDITOR": "true"},
@@ -209,10 +207,7 @@ def test_mid_rebase_the_branch_is_recovered_from_head_name(gate):
             text=True,
             check=False,
         )
-        # ANTI-VACUITY: a rebase that did not halt leaves HEAD on the branch, where
-        # ordinary resolution works and the cases below would pass having proven
-        # nothing. `--git-path` prints a path RELATIVE to the repository, so it is
-        # joined explicitly rather than resolved against this process's cwd.
+        # ANTI-VACUITY: a rebase that did not halt leaves HEAD on the branch, where ordinary resolution works and the cases below would pass having proven nothing. `--git-path` prints a path RELATIVE to the repository, so it is joined explicitly rather than resolved against this process's cwd.
         halted = False
         for name in ("rebase-merge", "rebase-apply"):
             candidate = repo / _git(gate, repo, "rev-parse", "--git-path", name)
@@ -244,8 +239,7 @@ def test_the_guard_is_reachable_through_the_dispatcher(gate):
         gate.log_fail("the hook dispatcher is missing: %s" % paths.relative_to_root(DISPATCH))
     gate.assertions += 1
     with harness.temp_dir() as root:
-        # A payload the guard has nothing to say about: no PR-TASK id, so the only
-        # way this exits non-zero is the dispatcher failing to find the guard.
+        # A payload the guard has nothing to say about: no PR-TASK id, so the only way this exits non-zero is the dispatcher failing to find the guard.
         payload = json.dumps({"tool_input": {"command": "echo hello"}})
         env = dict(os.environ)
         env.pop("PR_HEAD_REF", None)

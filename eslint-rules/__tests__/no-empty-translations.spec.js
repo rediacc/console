@@ -37,9 +37,7 @@ export default async ({ jsonRuleTester, runCases }) => {
           errors: [{ messageId: 'nullValue', data: { key: 'greeting' } }],
         },
         {
-          // The reported key is the FULL dotted path, not the leaf segment. A
-          // rule that reported "c" would be useless in a 4000-key file and a
-          // planted-violation check would never notice the difference.
+          // The reported key is the FULL dotted path, not the leaf segment. A rule that reported "c" would be useless in a 4000-key file and a planted-violation check would never notice the difference.
           code: '{"a": {"b": {"c": ""}}}',
           errors: [{ messageId: 'emptyValue', data: { key: 'a.b.c' } }],
         },

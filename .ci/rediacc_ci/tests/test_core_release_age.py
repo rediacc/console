@@ -47,9 +47,7 @@ TWIN_REL = ".ci/scripts/lib/release-age.sh"
 TS_REL = "scripts/lib/release-age.ts"
 PORT = ".ci/rediacc_ci/core/release_age.py"
 
-# The bash driver, a string in this file rather than a script under `.ci/`:
-# ruling 7 freezes the tracked `.sh` count and a driver belongs to the TEST.
-# `$LIB` so the same driver serves the real tree and every fixture tree.
+# The bash driver, a string in this file rather than a script under `.ci/`: ruling 7 freezes the tracked `.sh` count and a driver belongs to the TEST. `$LIB` so the same driver serves the real tree and every fixture tree.
 BASH_DRIVER = """
 set -uo pipefail
 source "$LIB"
@@ -84,9 +82,7 @@ def _both(argv: list[str], *, root: pathlib.Path | None = None):
     return old, new
 
 
-# ---------------------------------------------------------------------------
-# The fixture trees
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture trees ---------------------------------------------------------------------------
 
 
 def _seed(root: pathlib.Path, *, with_ts: bool, npmrc: str | None, tsx_stub: bool) -> pathlib.Path:
@@ -101,9 +97,7 @@ def _seed(root: pathlib.Path, *, with_ts: bool, npmrc: str | None, tsx_stub: boo
         binroot = root / "node_modules" / ".bin"
         binroot.mkdir(parents=True)
         stub = binroot / "tsx"
-        # A stub that FAILS rather than one that is absent: absent would send the
-        # ladder to `npx tsx`, which resolves over the network and would make this
-        # suite depend on a registry.
+        # A stub that FAILS rather than one that is absent: absent would send the ladder to `npx tsx`, which resolves over the network and would make this suite depend on a registry.
         stub.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
         stub.chmod(0o755)
     return root
@@ -129,17 +123,14 @@ def ft_broken(tmp_path_factory):
     return _seed(tmp_path_factory.mktemp("ft_bad"), with_ts=False, npmrc=None, tsx_stub=True)
 
 
-# ---------------------------------------------------------------------------
-# 1. The verbs, byte for byte, against the real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. The verbs, byte for byte, against the real tree ---------------------------------------------------------------------------
 
 CASES = [
     ("window-seconds", ["window-seconds"]),
     ("eligible-default-window", ["eligible-epoch", "1756000000"]),
     ("eligible-explicit-window", ["eligible-epoch", "1756000000", "3600"]),
     ("eligible-window-zero", ["eligible-epoch", "1756000000", "0"]),
-    # `:179` accepts `^-?[0-9]+$`, one character wider than the two `^[0-9]+$`
-    # tests, so a pre-1970 publish epoch round-trips.
+    # `:179` accepts `^-?[0-9]+$`, one character wider than the two `^[0-9]+$` tests, so a pre-1970 publish epoch round-trips.
     ("eligible-negative-epoch", ["eligible-epoch", "-100", "86400"]),
     ("eligible-epoch-zero", ["eligible-epoch", "0", "86400"]),
     ("eligible-non-numeric", ["eligible-epoch", "not-a-number", "86400"]),
@@ -188,9 +179,7 @@ def test_the_window_fixture_is_not_vacuous(ft_ok, ft_no_npmrc):
     )
 
 
-# ---------------------------------------------------------------------------
-# 2. The unreachable delegate, which is the branch that decides fail-closed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. The unreachable delegate, which is the branch that decides fail-closed ---------------------------------------------------------------------------
 
 BROKEN_CASES = [
     ("window-seconds-falls-back", ["window-seconds"]),
@@ -223,8 +212,7 @@ def test_the_unreachable_delegate_is_loud_and_fails_closed(ft_broken):
     )
     assert expected in old[2]
     assert expected in new[2]
-    # 1900000000 is well past any eligibility, so a working delegate says ELIGIBLE.
-    # Both sides must say DEFERRED anyway.
+    # 1900000000 is well past any eligibility, so a working delegate says ELIGIBLE. Both sides must say DEFERRED anyway.
     assert old[1].strip() == new[1].strip() == "deferred"
     assert old[0] == new[0] == 0
     working, _ = _both(["deferred", "1756000000", "1900000000", "86400"])
@@ -256,9 +244,7 @@ def test_a_successful_lookup_is_memoised(ft_ok):
     assert shim.delegate_calls == calls + 1, "a DIFFERENT key must miss the memo"
 
 
-# ---------------------------------------------------------------------------
-# 3. DEFECT 1: the twin's runner memo never persists
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. DEFECT 1: the twin's runner memo never persists ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -361,18 +347,14 @@ def test_the_port_probes_exactly_once(ft_ok, counting_node, monkeypatch):
     assert old == new
 
 
-# ---------------------------------------------------------------------------
-# 4. DEFECT 2: `now` is unvalidated on the twin, and its failure is fail-OPEN
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. DEFECT 2: `now` is unvalidated on the twin, and its failure is fail-OPEN ---------------------------------------------------------------------------
 
 # (case, now, what bash arithmetic makes of it, the verdict that follows)
 NOW_SHAPES = [
     ("bare-word-resolves-as-an-unset-variable", "abc", "deferred"),
     ("subtraction", "9-9", "deferred"),
     ("hex-literal", "0x10", "deferred"),
-    # THE ONE THAT MATTERS. A number with a stray suffix is an arithmetic ERROR,
-    # `(( ))` returns 1, and the twin reports ELIGIBLE: the exact false "must
-    # upgrade" its own fail-closed rule exists to prevent.
+    # THE ONE THAT MATTERS. A number with a stray suffix is an arithmetic ERROR, `(( ))` returns 1, and the twin reports ELIGIBLE: the exact false "must upgrade" its own fail-closed rule exists to prevent.
     ("number-with-a-suffix", "1756100000x", "eligible"),
 ]
 
@@ -404,9 +386,7 @@ def test_the_port_refuses_a_now_it_cannot_read(ft_ok):
     assert shim.is_release_deferred(1756000000, 1756100000, 86400) is True
 
 
-# ---------------------------------------------------------------------------
-# 5. The ladder itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. The ladder itself ---------------------------------------------------------------------------
 
 
 def test_the_fast_rung_is_proven_before_it_is_adopted(ft_broken):
@@ -429,9 +409,7 @@ def test_the_fast_rung_is_taken_when_it_answers(ft_ok):
     assert shim.resolve_runner() == ["node", "--experimental-strip-types"]
 
 
-# ---------------------------------------------------------------------------
-# 6. The planted defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 6. The planted defects ---------------------------------------------------------------------------
 
 
 def _digest(rel: str) -> str:
@@ -458,9 +436,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path, ft_ok, ft_broken):
     """THE CONTROL FOR EVERY CASE ABOVE. Three real mutations, each caught."""
     before = _digest(PORT)
 
-    # PLANT 1: fail-OPEN on an unreachable delegate. This is the defect the twin's
-    # loud refusal exists to make impossible, and a gate carrying it would report
-    # every version as installable while the delegate was down.
+    # PLANT 1: fail-OPEN on an unreachable delegate. This is the defect the twin's loud refusal exists to make impossible, and a gate carrying it would report every version as installable while the delegate was down.
     m1 = _load_mutated(
         tmp_path,
         "        if eligible is None:\n            return True",
@@ -472,8 +448,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path, ft_ok, ft_broken):
         "the mutation did not change the verdict, so this control proves nothing"
     )
 
-    # PLANT 2: the window fallback made unconditional, which silently disables
-    # deferral tuning on every tree whose .npmrc says something else.
+    # PLANT 2: the window fallback made unconditional, which silently disables deferral tuning on every tree whose .npmrc says something else.
     m2 = _load_mutated(
         tmp_path,
         "        if answer is None or not _UNSIGNED.fullmatch(answer) or int(answer) <= 0:",

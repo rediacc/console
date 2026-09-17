@@ -31,9 +31,7 @@ MODULE = "wait_for_preview_worker"
 
 GOOD_BODY = b'{"e2e":{"keys":[{"keyId":"v1","publicKeySpki":"AAAA"}]}}'
 COLD_BODY = b'{"error":"cold"}'
-# The exact counterexample the twin's own header names: `"keys"` is present
-# (private/account/src/app.ts unconditionally emits the key) even when the
-# array is EMPTY, which is the body a mis-grepped check would wrongly accept.
+# The exact counterexample the twin's own header names: `"keys"` is present (private/account/src/app.ts unconditionally emits the key) even when the array is EMPTY, which is the body a mis-grepped check would wrongly accept.
 EMPTY_KEYS_BODY = b'{"e2e":{"keys":[]}}'
 
 

@@ -105,9 +105,7 @@ const selftest = (): number => {
 
   check('full coverage reports nothing missing', scan(d, t).missing.length === 0);
 
-  // THE CONTROL THAT MATTERS: remove one thumbnail and require the gate to name that
-  // specific doc. Asserting only the green above would pass for a function that returned
-  // an empty array unconditionally.
+  // THE CONTROL THAT MATTERS: remove one thumbnail and require the gate to name that specific doc. Asserting only the green above would pass for a function that returned an empty array unconditionally.
   fs.rmSync(path.join(t, 'beta.svg'));
   const gap = scan(d, t);
   check(
@@ -124,8 +122,7 @@ const selftest = (): number => {
   const gone = scan(d, path.join(tmp, 'no-such-dir'));
   check('a missing thumbnail directory reports every doc, not zero', gone.missing.length === 2);
 
-  // An unreadable docs dir must yield zero docs, which main() then treats as a hard
-  // failure via the floor rather than as "nothing to check".
+  // An unreadable docs dir must yield zero docs, which main() then treats as a hard failure via the floor rather than as "nothing to check".
   check(
     'an unreadable docs dir yields zero docs',
     scan(path.join(tmp, 'nope'), t).docs.length === 0

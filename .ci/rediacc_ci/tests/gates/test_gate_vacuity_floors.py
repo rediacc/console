@@ -54,12 +54,10 @@ RETIRE = paths.from_root(".ci", "scripts", "housekeeping", "retire-shadowed-secr
 SECRET_RENAME = paths.from_root("scripts", "dev", "secret-rename.py")
 ACTION_REFS = paths.from_root("scripts", "lib", "action-refs.ts")
 
-# Three of the four need no external tool, so a run in which fewer than three were
-# exercised has verified nothing worth printing a green over.
+# Three of the four need no external tool, so a run in which fewer than three were exercised has verified nothing worth printing a green over.
 MIN_EXERCISED = 3
 
-# Load the module by PATH and call the walker directly, so the CLI's usage path --
-# which exits before the walk -- cannot stand in for the walk itself.
+# Load the module by PATH and call the walker directly, so the CLI's usage path -- which exits before the walk -- cannot stand in for the walk itself.
 PY_FLOOR = """
 import importlib.util, os, sys
 path, var, val, func = sys.argv[1:5]
@@ -115,8 +113,7 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
         gate.assertions += 1
         gate.log_pass("%s refuses an impossible floor, and says VACUOUS" % label)
 
-    # 4. action-refs.ts -- the corpus is a PARAMETER, so the empty case is a real
-    #    empty tree rather than an impossible threshold. That is the stronger form.
+    # 4. action-refs.ts -- the corpus is a PARAMETER, so the empty case is a real empty tree rather than an impossible threshold. That is the stronger form.
     with harness.temp_dir() as tmp:
         (tmp / ".github" / "workflows").mkdir(parents=True)
         result = harness.run(

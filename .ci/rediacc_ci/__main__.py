@@ -43,15 +43,10 @@ import dataclasses
 import importlib
 import sys
 
-# How this program is spelled in its own messages. `./run.sh <verb>` is what a
-# person actually types for a ported verb, but a message naming run.sh would be
-# wrong for the verbs reached directly (and for `run.sh`'s own error paths), so
-# the module form is used and run.sh is named in the help text instead.
+# How this program is spelled in its own messages. `./run.sh <verb>` is what a person actually types for a ported verb, but a message naming run.sh would be wrong for the verbs reached directly (and for `run.sh`'s own error paths), so the module form is used and run.sh is named in the help text instead.
 PROGRAM = "python3 -m rediacc_ci"
 
-# Usage errors -- no verb, an unknown verb -- exit 2, matching every other argv
-# dispatcher in this package (core/env.py:398, core/ports.py:271). 1 stays what
-# it has always been: a real verdict from a handler that ran.
+# Usage errors -- no verb, an unknown verb -- exit 2, matching every other argv dispatcher in this package (core/env.py:398, core/ports.py:271). 1 stays what it has always been: a real verdict from a handler that ran.
 EXIT_USAGE = 2
 
 
@@ -71,15 +66,9 @@ class Verb:
     entry: str = "main"
 
 
-# THE VERB TABLE. One row per top-level verb `./run.sh` forwards here, and the
-# row must land in the SAME change that adds the name to `PORTED_VERBS` in
-# run.sh and deletes its arm from .ci/legacy/run-legacy.sh -- test-run-sh.sh
-# section 6 fails an orphan and an overlap alike, so a half-done port is red
-# rather than ambiguous.
+# THE VERB TABLE. One row per top-level verb `./run.sh` forwards here, and the row must land in the SAME change that adds the name to `PORTED_VERBS` in run.sh and deletes its arm from .ci/legacy/run-legacy.sh -- test-run-sh.sh section 6 fails an orphan and an overlap alike, so a half-done port is red rather than ambiguous.
 #
-# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a
-# throwaway package around a copy of this file with one probe verb planted in
-# place of the empty tuple -- the only way to exercise dispatch while the real
+# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a throwaway package around a copy of this file with one probe verb planted in place of the empty tuple -- the only way to exercise dispatch while the real
 # table is empty. Keep it on one line, in this spelling; the fixture refuses to
 # run rather than testing nothing if the replacement stops matching.
 VERBS: tuple[Verb, ...] = (
@@ -142,8 +131,7 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
     registry = VERBS if table is None else table
 
     if not argv:
-        # A USAGE ERROR, NOT A TRACEBACK, and not a silent 0 either. stderr,
-        # because stdout belongs to whatever the verb would have printed.
+        # A USAGE ERROR, NOT A TRACEBACK, and not a silent 0 either. stderr, because stdout belongs to whatever the verb would have printed.
         print("%s: no verb given." % PROGRAM, file=sys.stderr)
         print(
             "%s: run `%s --help` for the verbs this package serves." % (PROGRAM, PROGRAM),
@@ -172,21 +160,15 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
             )
         return EXIT_USAGE
 
-    # THE ONE `--` THIS PROGRAM CONSUMES, and only when it sits immediately after
-    # the verb. `./run.sh <verb> -- --flag "a b"` is how a person stops an outer
+    # THE ONE `--` THIS PROGRAM CONSUMES, and only when it sits immediately after the verb. `./run.sh <verb> -- --flag "a b"` is how a person stops an outer
     # tool from claiming `--flag`, so the separator is this dispatcher's to eat;
-    # stripping it once here is one line, and leaving it for every handler to
-    # strip is the same line written once per verb, differently each time.
-    # Everything else passes through byte for byte, INCLUDING a second `--`,
-    # which belongs to the handler's own argument grammar.
+    # stripping it once here is one line, and leaving it for every handler to strip is the same line written once per verb, differently each time. Everything else passes through byte for byte, INCLUDING a second `--`, which belongs to the handler's own argument grammar.
     if rest and rest[0] == "--":
         rest = rest[1:]
 
     code = _resolve(match)(rest)
     if code is None:
-        # A handler that falls off its end succeeded. Spelled out because the
-        # alternative -- `return code` -- makes `None` an exit status of 0 by
-        # accident of SystemExit's coercion rather than by decision.
+        # A handler that falls off its end succeeded. Spelled out because the alternative -- `return code` -- makes `None` an exit status of 0 by accident of SystemExit's coercion rather than by decision.
         return 0
     if not isinstance(code, int):
         print(

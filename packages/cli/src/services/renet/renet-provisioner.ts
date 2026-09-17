@@ -227,15 +227,13 @@ class RenetProvisionerService {
     sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
     const cacheKey = this.buildCacheKey(config);
-    // Cache-first: a fresh entry means this process already provisioned the
-    // host. Return immediately with zero remote execs and zero local file reads.
+    // Cache-first: a fresh entry means this process already provisioned the host. Return immediately with zero remote execs and zero local file reads.
     const cached = this.getFreshCacheEntry(cacheKey);
     if (cached) {
       return this.buildVerifiedResult(cached.arch, REMOTE_INSTALL_PATH);
     }
 
-    // Persistent-state second: a recent rdc process may have proven this host
-    // current already. Trust envelope (version match, TTL, dev-binary stat
+    // Persistent-state second: a recent rdc process may have proven this host current already. Trust envelope (version match, TTL, dev-binary stat
     // fingerprint) lives in provision-state.ts; a hit skips the SHA-256 over
     // the ~220MB dev binary and every provision SSH exec.
     const persisted = await getFreshProvisionEntry(
@@ -285,8 +283,7 @@ class RenetProvisionerService {
         this.doProvision(sftp, config, options)
       );
     } catch (error) {
-      // Fail open: a machine that failed to provision must not be skipped by
-      // the persistent cache on the next attempt.
+      // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -338,8 +335,7 @@ class RenetProvisionerService {
       arch: context.arch,
       provisionedAt: Date.now(),
     });
-    // Best-effort: remember the proven-current state across processes so
-    // consecutive rdc commands skip the whole cold path.
+    // Best-effort: remember the proven-current state across processes so consecutive rdc commands skip the whole cold path.
     await recordProvisionVerified(context.cacheKey, {
       hash: context.localHash,
       arch: context.arch,
@@ -478,13 +474,8 @@ class RenetProvisionerService {
     }
 
     if (localBinaryPath) {
-      // localBinaryPath is the HOST binary (e.g. private/renet/bin/renet). It is
-      // only the right thing to send when the remote runs the host's own arch:
-      // on a non-Linux host it never is (the host binary is mac/win, not the
-      // linux binary a VM needs), and on a Linux host only when the remote arch
-      // matches. Otherwise use the cross-compiled renet-linux-<arch> staged next
-      // to it by ./rdc.sh / build.sh dev. This is what lets an amd64 workstation
-      // provision an arm64 machine (and vice-versa) without building the SEA.
+      // localBinaryPath is the HOST binary (e.g. private/renet/bin/renet). It is only the right thing to send when the remote runs the host's own arch: on a non-Linux host it never is (the host binary is mac/win, not the linux binary a VM needs), and on a Linux host only when the remote arch matches. Otherwise use the cross-compiled renet-linux-<arch> staged next to it by ./rdc.sh
+      // / build.sh dev. This is what lets an amd64 workstation provision an arm64 machine (and vice-versa) without building the SEA.
       const hostArch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
       if (process.platform !== 'linux' || arch !== hostArch) {
         const dir = path.dirname(localBinaryPath);
@@ -510,10 +501,7 @@ class RenetProvisionerService {
    */
   private async detectArch(sftp: SFTPClient): Promise<RenetArch> {
     try {
-      // uname -m returns the machine hardware name, which is the most reliable
-      // cross-distribution method for architecture detection:
-      // - x86_64 for AMD64/Intel 64-bit
-      // - aarch64 for ARM64
+      // uname -m returns the machine hardware name, which is the most reliable cross-distribution method for architecture detection: - x86_64 for AMD64/Intel 64-bit - aarch64 for ARM64
       const arch = await sftp.exec('uname -m');
       const archStr = arch.trim().toLowerCase();
 
@@ -523,10 +511,7 @@ class RenetProvisionerService {
       // Default to amd64 for x86_64 and any other architecture
       return 'amd64';
     } catch {
-      // If exec fails (e.g., restricted shell), fall back to filesystem detection
-      // Check multiple paths that indicate ARM64 across different distros:
-      // - /lib/aarch64-linux-gnu: Debian/Ubuntu multiarch
-      // - /lib64/ld-linux-aarch64.so.1: RHEL/CentOS/Fedora ARM64 dynamic linker
+      // If exec fails (e.g., restricted shell), fall back to filesystem detection Check multiple paths that indicate ARM64 across different distros: - /lib/aarch64-linux-gnu: Debian/Ubuntu multiarch - /lib64/ld-linux-aarch64.so.1: RHEL/CentOS/Fedora ARM64 dynamic linker
       const arm64Paths = ['/lib/aarch64-linux-gnu', '/lib64/ld-linux-aarch64.so.1'];
       for (const p of arm64Paths) {
         if (await sftp.exists(p)) {
@@ -548,8 +533,7 @@ class RenetProvisionerService {
   ): Promise<{ hash: string | null; version: string | null }> {
     try {
       const escapedInstallPath = shellQuote(remoteInstallPath);
-      // Single SSH exec: get both hash and version. Two lines of output.
-      // Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
+      // Single SSH exec: get both hash and version. Two lines of output. Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
       const output = await sftp.exec(
         `(${escapedInstallPath} hash 2>/dev/null || sha256sum ${escapedInstallPath} | cut -d' ' -f1) && ${escapedInstallPath} version 2>/dev/null || true`
       );
@@ -569,8 +553,7 @@ class RenetProvisionerService {
    */
   private async restartRunningServices(sftp: SFTPClient): Promise<boolean> {
     try {
-      // Only restart if the service is active — is-active returns non-zero otherwise,
-      // so the && short-circuits and || true ensures the command always succeeds.
+      // Only restart if the service is active — is-active returns non-zero otherwise, so the && short-circuits and || true ensures the command always succeeds.
       const output = await sftp.exec(
         `sudo systemctl is-active --quiet ${ROUTER_SERVICE} && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
       );
@@ -601,9 +584,7 @@ class RenetProvisionerService {
       await acquireLocalLock(lockPath, {
         deadline: Date.now() + localLockTimeoutMs(),
         pollMs: LOCAL_LOCK_POLL_MS,
-        // Contention is INVISIBLE without this: the operator sees the
-        // "Provisioning renet" spinner sit there and reasonably concludes the
-        // CLI has hung, when in fact another local rdc run is ahead of them.
+        // Contention is INVISIBLE without this: the operator sees the "Provisioning renet" spinner sit there and reasonably concludes the CLI has hung, when in fact another local rdc run is ahead of them.
         onWait: (holder) => announceLockWait(cacheKey, holder),
       });
     } catch (error) {
@@ -654,8 +635,7 @@ class RenetProvisionerService {
         );
       }
       if (error instanceof Error && error.message.includes('FLOCK_TIMEOUT')) {
-        // The competing process may belong to a different workstation entirely,
-        // so unlike the local lock there is no pid worth naming here.
+        // The competing process may belong to a different workstation entirely, so unlike the local lock there is no pid worth naming here.
         throw busy(
           `Another process on the machine held the renet install lock for over 120s, so provisioning was skipped.`,
           {
@@ -707,12 +687,9 @@ class RenetProvisionerService {
     ].join('; ');
     const quotedBody = shellQuote(body);
     // `-E ${REMOTE_FLOCK_TIMEOUT_EXIT}` gives the lock-not-acquired case its own
-    // exit status. Without it flock exits 1, which the install body can also
-    // produce, so a machine busy with another operator's provision was reported
-    // as "Unexpected provisioning result: (empty output)" and looked like a
+    // exit status. Without it flock exits 1, which the install body can also produce, so a machine busy with another operator's provision was reported as "Unexpected provisioning result: (empty output)" and looked like a
     // broken install. -E is util-linux >= 2.20 (2011); the probe above still
-    // only checks for flock's presence, and an -E-less flock fails loudly rather
-    // than silently mis-reporting.
+    // only checks for flock's presence, and an -E-less flock fails loudly rather than silently mis-reporting.
     return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 -E ${REMOTE_FLOCK_TIMEOUT_EXIT} ${escapedLockPath} sh -c ${quotedBody} || { rc=$?; [ "$rc" = ${REMOTE_FLOCK_TIMEOUT_EXIT} ] && echo FLOCK_TIMEOUT >&2; exit "$rc"; }`;
   }
 }

@@ -32,8 +32,7 @@ import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
 
-// /v1/command dispatches the REAL Commander tree, which would otherwise read the
-// developer's own config off disk. This is the only stub.
+// /v1/command dispatches the REAL Commander tree, which would otherwise read the developer's own config off disk. This is the only stub.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
@@ -201,8 +200,7 @@ describe('proxy audit attribution', () => {
 
     // Shipped with the EXECUTOR's own audit-write credential...
     expect(post.authorization).toBe(`Bearer ${EXECUTOR_TOKEN}`);
-    // ...but ATTRIBUTED to the console user's token. This is the account server's
-    // signal to log the command against the person, not the executor fleet.
+    // ...but ATTRIBUTED to the console user's token. This is the account server's signal to log the command against the person, not the executor fleet.
     expect(post.body.events).toHaveLength(1);
     expect(post.body.events[0].onBehalfOfTokenId).toBe(SESSION_TOKEN_ID);
   });
@@ -216,10 +214,7 @@ describe('proxy audit attribution', () => {
   });
 
   it('without the introspected tokenId, attribution is LOST — the regression guard', async () => {
-    // Reproduce the pre-fix executor: introspection resolves the user but returns
-    // no token id. The audit event then carries no onBehalfOfTokenId, and the
-    // account server would fall back to the authenticating (executor) token's
-    // owner. This asserts exactly the failure the tokenId plumbing prevents.
+    // Reproduce the pre-fix executor: introspection resolves the user but returns no token id. The audit event then carries no onBehalfOfTokenId, and the account server would fall back to the authenticating (executor) token's owner. This asserts exactly the failure the tokenId plumbing prevents.
     returnTokenId = false;
 
     await (await runCommand()).text();

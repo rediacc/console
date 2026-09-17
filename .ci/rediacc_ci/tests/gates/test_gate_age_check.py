@@ -177,8 +177,7 @@ def test_age_truncated_history_cannot_verify(gate, tmp_path):
     """
     make_shallow_pair(gate, tmp_path, 400, "ENTRY_OLD")
 
-    # CONTROL FIRST: the same fixture with FULL history must measure the real
-    # age. Without this, -1 below could just mean "the fixture is broken".
+    # CONTROL FIRST: the same fixture with FULL history must measure the real age. Without this, -1 below could just mean "the fixture is broken".
     full_age = entry_age_days(gate, tmp_path / "full", "listfile", "ENTRY_OLD")
     if full_age < 390 or full_age > 410:
         gate.log_fail("CONTROL: full clone should measure ~400 days, got %d" % full_age)
@@ -201,18 +200,13 @@ def test_age_truncated_history_cannot_verify(gate, tmp_path):
     gate.assert_eq(in_ci.rc, 1, "CI refuses an unverifiable age")
     gate.log_pass("CI refuses an unverifiable age")
 
-    # `env -i` is the WRONG tool for unsetting one name: the subject needs PATH
-    # to find python3 and git. So the whole environment is copied and CI dropped
+    # `env -i` is the WRONG tool for unsetting one name: the subject needs PATH to find python3 and git. So the whole environment is copied and CI dropped
     # from the copy -- and it is passed with `env_replace=True`, which is the
     # part this case got wrong for as long as it existed.
     #
-    # `harness.run`'s default OVERLAYS: `dict(os.environ)` then `.update(env)`.
-    # Leaving a name out of `env` therefore removes nothing, and the ambient
-    # value survives. On a developer machine `CI` is unset anyway, so the case
-    # passed for a reason that had nothing to do with the code. A GitHub runner
+    # `harness.run`'s default OVERLAYS: `dict(os.environ)` then `.update(env)`. Leaving a name out of `env` therefore removes nothing, and the ambient value survives. On a developer machine `CI` is unset anyway, so the case passed for a reason that had nothing to do with the code. A GitHub runner
     # exports `CI=true`, the subject saw it (`[[ "${CI:-}" == "true" ]]`, the
-    # literal value and nothing else), refused instead of warning, and this
-    # assertion read `expected '0', got '1'` in run 34970782616.
+    # literal value and nothing else), refused instead of warning, and this assertion read `expected '0', got '1'` in run 34970782616.
     #
     # env_replace=True is the documented way to hand over a WHOLE environment,
     # PATH included, which is exactly what local_env is.

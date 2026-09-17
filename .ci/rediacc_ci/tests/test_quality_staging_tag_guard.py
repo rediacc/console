@@ -39,9 +39,7 @@ GUARDED = (
 UNGUARDED = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"\n'
 LITERAL = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag staging-abc123\n'
 
-# The `.py`-caller shape the scanner was widened for (agent/PLAN-w7p4w-docker-cutover.md
-# §3): same unguarded-call shape as UNGUARDED, naming the Python entry point instead
-# of the bash twin.
+# The `.py`-caller shape the scanner was widened for (agent/PLAN-w7p4w-docker-cutover.md §3): same unguarded-call shape as UNGUARDED, naming the Python entry point instead of the bash twin.
 UNGUARDED_PY = '"$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"\n'
 
 
@@ -113,9 +111,7 @@ def test_port_and_twin_agree_byte_for_byte(
     assert old_exit == want_exit
     assert new_exit == old_exit
     assert new_out == old_out, "the tally on stdout is the gate's output contract"
-    # stderr carries the port's one extra `→` line, which shadow-gate.ts reads as
-    # chatter. Everything else must match, including the FAIL lines and the two
-    # closing advice lines that the comparator reads as continuation findings.
+    # stderr carries the port's one extra `→` line, which shadow-gate.ts reads as chatter. Everything else must match, including the FAIL lines and the two closing advice lines that the comparator reads as continuation findings.
     assert [x for x in new_err.split("\n") if not x.startswith("→")] == old_err.split("\n")
 
 
@@ -172,9 +168,7 @@ def test_a_colon_in_a_caller_path_yields_a_verdict_on_both_sides(
     fail_line = ".ci/scripts/release/a guards its call against a non-staging tag (got '0' want '1')"
     assert fail_line in old_err
     assert fail_line in new_err
-    # The twin's own `grep:` error is the evidence that it did not read the file
-    # either. It is the only stderr line the two sides do not share, besides the
-    # port's `→` progress line.
+    # The twin's own `grep:` error is the evidence that it did not read the file either. It is the only stderr line the two sides do not share, besides the port's `→` progress line.
     noise = ("\u2192", "grep:")
     assert [x for x in new_err.split("\n") if not x.startswith(noise)] == [
         x for x in old_err.split("\n") if not x.startswith(noise)

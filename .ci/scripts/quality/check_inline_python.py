@@ -47,8 +47,7 @@ import re
 import subprocess
 import sys
 
-# Statement shapes that only appear in real Python. Each must match at the START
-# of a line inside a quoted region, which is what keeps prose and identifiers
+# Statement shapes that only appear in real Python. Each must match at the START of a line inside a quoted region, which is what keeps prose and identifiers
 # from scoring: a JS file may well contain the word "import", but not at the
 # head of a line inside a string, followed by a stdlib module name.
 _SIGNALS = (
@@ -64,13 +63,10 @@ _SIGNALS = (
     re.compile(r"^\s*print\s*\(", re.MULTILINE),
 )
 
-# `python -c` / `python3 -c` given anything other than a trivial literal. The
-# interpreter NAME on its own is deliberately not a signal (that is the
-# generate-tutorial-audio.ts false positive), so this needs the -c flag.
+# `python -c` / `python3 -c` given anything other than a trivial literal. The interpreter NAME on its own is deliberately not a signal (that is the generate-tutorial-audio.ts false positive), so this needs the -c flag.
 _DASH_C = re.compile(r"python3?\s+-c\b")
 
-# Quoted regions: template literals, single and double quotes. Backslash escapes
-# are honoured so an escaped quote does not end a region early.
+# Quoted regions: template literals, single and double quotes. Backslash escapes are honoured so an escaped quote does not end a region early.
 _REGION = re.compile(
     r"`(?:[^`\\]|\\.)*`" r"|'(?:[^'\\\n]|\\.)*'" r'|"(?:[^"\\\n]|\\.)*"',
     re.DOTALL,
@@ -98,18 +94,11 @@ def findings(text):
     if not out:
         # `python -c` is a CORROBORATING signal, never an independent one.
         #
-        # It was independent for exactly one revision, and it immediately
-        # produced a false positive on the very code that FIXED the original
-        # defect: once the program moved to setup-script.py, bootstrap.ts still
+        # It was independent for exactly one revision, and it immediately produced a false positive on the very code that FIXED the original defect: once the program moved to setup-script.py, bootstrap.ts still
         # reads `python3 -c ${script} ${config}` -- and ${script} is now a
-        # shell-quoted embedded CONSTANT, which is precisely what was wanted.
-        # Flagging that would punish the fix and teach the next reader that this
-        # gate is noise, which is how a gate gets deleted.
+        # shell-quoted embedded CONSTANT, which is precisely what was wanted. Flagging that would punish the fix and teach the next reader that this gate is noise, which is how a gate gets deleted.
         #
-        # If no quoted region in this file looks like Python, there is no
-        # program here for an interpolation to be part of. Whatever reaches -c
-        # came from somewhere else: from a literal, which this same rule catches
-        # in the file that holds it, or from a real .py file, which is the goal.
+        # If no quoted region in this file looks like Python, there is no program here for an interpolation to be part of. Whatever reaches -c came from somewhere else: from a literal, which this same rule catches in the file that holds it, or from a real .py file, which is the goal.
         return out
     out.extend(
         (text.count("\n", 0, m.start()) + 1, "python -c executes the embedded source flagged above")
@@ -118,10 +107,7 @@ def findings(text):
     return out
 
 
-# ---- controls ---------------------------------------------------------------
-# A detector that cannot fire would report a clean tree forever. Both directions
-# are proven before any real file is read: it must FLAG a planted program, and
-# it must CLEAR the three real, benign shapes that exist in this repo today.
+# ---- controls --------------------------------------------------------------- A detector that cannot fire would report a clean tree forever. Both directions are proven before any real file is read: it must FLAG a planted program, and it must CLEAR the three real, benign shapes that exist in this repo today.
 _MUST_FLAG = [
     (
         "a program in a template literal",

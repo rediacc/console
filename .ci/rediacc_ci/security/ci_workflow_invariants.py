@@ -94,9 +94,7 @@ from rediacc_ci import log, paths
 if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     from types import ModuleType
 
-# The finding kinds this gate can emit, in the order the analysis emits them.
-# Listed as a constant so a reader can see the whole vocabulary without walking
-# the analysis, and so `main`'s translation table can be checked against it.
+# The finding kinds this gate can emit, in the order the analysis emits them. Listed as a constant so a reader can see the whole vocabulary without walking the analysis, and so `main`'s translation table can be checked against it.
 KINDS = (
     "no-jobs",
     "ungated",
@@ -194,11 +192,7 @@ def analyse(doc: object) -> list[tuple[str, str]]:
     if candidates == 0:
         out.append(("no-candidates", "<none>"))
 
-    # ---------------------------------------------------------------- skip-release
-    # Scoped by the UPLOADER PATH, not by job name: a workflow with no
-    # `initialize` job is a different workflow, not a broken ci.yml, and keying
-    # on the names hard-failed every synthetic fixture the twin's gate test
-    # drives through WORKFLOW_FILE.
+    # ---------------------------------------------------------------- skip-release Scoped by the UPLOADER PATH, not by job name: a workflow with no `initialize` job is a different workflow, not a broken ci.yml, and keying on the names hard-failed every synthetic fixture the twin's gate test drives through WORKFLOW_FILE.
     stagers = [
         n
         for n, j in jobs.items()
@@ -293,9 +287,7 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
             "over a renamed job." % (name, workflow_file)
         )
     if kind == "no-candidates":
-        # Vacuity guard. If nobody passes a channel-derived docker_tag any more,
-        # this gate is asserting nothing and must say so rather than printing a
-        # green nobody earned.
+        # Vacuity guard. If nobody passes a channel-derived docker_tag any more, this gate is asserting nothing and must say so rather than printing a green nobody earned.
         return (
             "INVARIANT-FAIL: no-candidates: no job in %s passes a channel-derived `docker_tag`, "
             "so this gate verified nothing. Retarget or remove it deliberately." % workflow_file
@@ -332,8 +324,7 @@ def main(argv: list[str]) -> int:
         root_dir, ".github", "workflows", "ci.yml"
     )
 
-    # Anti-vacuity: a missing workflow means the gate checked nothing, and
-    # nothing checked must never read as green.
+    # Anti-vacuity: a missing workflow means the gate checked nothing, and nothing checked must never read as green.
     if not os.path.isfile(workflow_file):
         log.error(
             "INVARIANT-FAIL: workflow-missing: no file at %s (nothing to check cannot pass)"

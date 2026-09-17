@@ -87,8 +87,7 @@ ENGINE = ROOT / ".ci" / "scripts" / "ci" / "greenlight.cjs"
 TWIN = ROOT / BASH_TWIN
 CHECKER_PATH = pathlib.Path(__file__).resolve().parent / "trace_checker.cjs.fixture"
 
-# The heredoc delimiters in the twin, named here so the drift case fails on a RENAMED
-# delimiter instead of quietly comparing against an empty string.
+# The heredoc delimiters in the twin, named here so the drift case fails on a RENAMED delimiter instead of quietly comparing against an empty string.
 HEREDOC_OPEN = "cat >\"$CHECKER\" <<'CHECKER_EOF'\n"
 HEREDOC_CLOSE = "\nCHECKER_EOF\n"
 
@@ -217,17 +216,14 @@ def test_the_checker_is_byte_identical_to_the_twins(gate):
 
 
 def test_derivation_is_not_vacuous(gate, tmp_path):
-    # A checker that derives nothing passes every coverage assertion in this file, so
-    # the SIZE of the derived set is asserted BEFORE the coverage itself.
+    # A checker that derives nothing passes every coverage assertion in this file, so the SIZE of the derived set is asserted BEFORE the coverage itself.
     table = table_json(gate, tmp_path)
     out = trace(gate, table).combined
 
     keys = len([line for line in out.splitlines() if line.startswith("DERIVED ")])
     gate.assert_eq(keys, 18, "every key in the table must have a defining site and be traced")
 
-    # Every key must derive MORE than the defining workflow file it gets for free, or
-    # the job block was not found and the scan ran over nothing. The floor is 2 rather
-    # than something rounder because update_flow honestly derives exactly 2.
+    # Every key must derive MORE than the defining workflow file it gets for free, or the job block was not found and the scan ran over nothing. The floor is 2 rather than something rounder because update_flow honestly derives exactly 2.
     thin = [
         "%s %s" % (line.split()[1], line.split()[2])
         for line in out.splitlines()
@@ -235,9 +231,7 @@ def test_derivation_is_not_vacuous(gate, tmp_path):
     ]
     gate.assert_eq(thin, [], "no key may derive nothing beyond its own workflow file")
 
-    # And the fat keys must actually be fat: e2e_workers walks a dozen step scripts plus
-    # their sourced libraries, so a derivation that collapsed to the
-    # workflow-plus-a-couple shape would still clear the floor above.
+    # And the fat keys must actually be fat: e2e_workers walks a dozen step scripts plus their sourced libraries, so a derivation that collapsed to the workflow-plus-a-couple shape would still clear the floor above.
     workers = derived(out, 2, "e2e_workers")
     if not workers:
         gate.log_fail("e2e_workers derived no line at all, so its size cannot be judged")
@@ -248,9 +242,7 @@ def test_derivation_is_not_vacuous(gate, tmp_path):
     )
 
     total = sum(int(n) for n in derived(out, 2))
-    # 195 across the 18 keys as of 2026-08-08. The floor sits just under it so that any
-    # ONE key ceasing to derive drops the total through it, rather than being absorbed
-    # by slack.
+    # 195 across the 18 keys as of 2026-08-08. The floor sits just under it so that any ONE key ceasing to derive drops the total through it, rather than being absorbed by slack.
     gate.assert_eq(
         1 if total > 190 else 0,
         1,
@@ -277,10 +269,7 @@ def test_every_derived_path_is_covered(gate, tmp_path):
 
 
 def test_a_missing_entry_is_caught(gate, tmp_path):
-    # THE CONTROL. Delete ONE required entry from a copy of the table and the identical
-    # checker must go red, naming that key and that path. Two mutations, because they
-    # fail through different limbs: a path deletion exercises the coverage walk, and an
-    # emptied submodule list exercises the checkout implication.
+    # THE CONTROL. Delete ONE required entry from a copy of the table and the identical checker must go red, naming that key and that path. Two mutations, because they fail through different limbs: a path deletion exercises the coverage walk, and an emptied submodule list exercises the checkout implication.
     table = table_json(gate, tmp_path)
 
     # Mutation 1: e2e_workers loses run-e2e.sh, the script its final step runs.
@@ -302,13 +291,11 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
         "UNCOVERED e2e_workers .ci/scripts/test/run-e2e.sh not-in-closure",
         "naming the key and the exact path that went uncovered",
     )
-    # And ONLY that key: the finding must be attributed, not smeared across the table by
-    # a checker that collapses on any error.
+    # And ONLY that key: the finding must be attributed, not smeared across the table by a checker that collapses on any error.
     hits = len([ln for ln in result.combined.splitlines() if ln.startswith("UNCOVERED ")])
     gate.assert_eq(hits, 1, "exactly one finding, so the failure is attributed to one key")
 
-    # Mutation 2: renet keeps every path but stops pinning any submodule, while its job
-    # block still checks out with `submodules: true`.
+    # Mutation 2: renet keeps every path but stops pinning any submodule, while its job block still checks out with `submodules: true`.
     mutant = tmp_path / "mutant-pins.json"
     mutate_table(
         gate,
@@ -327,8 +314,7 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
         "named as the checkout implication, not as a missing path",
     )
 
-    # CONTROL FOR THE CONTROL: the unmutated table through the same invocation exits 0,
-    # so the two reds above are the mutations and not a checker that fails on everything.
+    # CONTROL FOR THE CONTROL: the unmutated table through the same invocation exits 0, so the two reds above are the mutations and not a checker that fails on everything.
     gate.assert_eq(
         trace(gate, table).rc,
         0,
@@ -338,9 +324,7 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
 
 
 def test_ancestor_coverage_respects_the_separator(gate, tmp_path):
-    # Coverage is by exact entry OR by ancestor directory, and by nothing looser. A
-    # prefix match that ignored the separator would let `.ci/scripts/te` cover
-    # `.ci/scripts/test/run-e2e.sh`, which is the shape a careless `startsWith` takes.
+    # Coverage is by exact entry OR by ancestor directory, and by nothing looser. A prefix match that ignored the separator would let `.ci/scripts/te` cover `.ci/scripts/test/run-e2e.sh`, which is the shape a careless `startsWith` takes.
     table = table_json(gate, tmp_path)
 
     mutant = tmp_path / "mutant-dir.json"

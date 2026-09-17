@@ -197,28 +197,16 @@ import time
 from rediacc_ci import log, paths
 from rediacc_ci.core import common, review_budget
 
-# --- the three comment prefixes, byte for byte from the twin ----------------
-# Deliberately DIFFERENT strings. `ATTEMPT_PREFIX` must never satisfy
-# `last_marker_sha` (a review that read nothing would suppress a later real one)
-# and `LEDGER_PREFIX` must be invisible to all three counters (a bookkeeping
-# comment would otherwise look like a review). The twin says so at :54-63.
+# --- the three comment prefixes, byte for byte from the twin ---------------- Deliberately DIFFERENT strings. `ATTEMPT_PREFIX` must never satisfy `last_marker_sha` (a review that read nothing would suppress a later real one) and `LEDGER_PREFIX` must be invisible to all three counters (a bookkeeping comment would otherwise look like a review). The twin says so at :54-63.
 MARKER_PREFIX = "<!-- claude-reviewed:"
 ATTEMPT_PREFIX = "<!-- claude-review-attempt:"
 LEDGER_PREFIX = "<!-- claude-labels:"
 
-# THE HARD WHITELIST for `--apply-labels` (twin :65-76). This is the security
-# boundary of that arm: adding a label the repo does not carry CREATES it, so an
-# unfiltered hallucinated name would appear on the repo AND fail
-# check:ci-label-inventory for everyone until someone deleted it by hand.
-# `bump-major` is DELIBERATELY ABSENT (operator ruling): a wrong minor is
-# cosmetic, a wrong major is a statement to every consumer of the version
-# stream.
+# THE HARD WHITELIST for `--apply-labels` (twin :65-76). This is the security boundary of that arm: adding a label the repo does not carry CREATES it, so an unfiltered hallucinated name would appear on the repo AND fail check:ci-label-inventory for everyone until someone deleted it by hand. `bump-major` is DELIBERATELY ABSENT (operator ruling): a wrong minor is cosmetic, a wrong
+# major is a statement to every consumer of the version stream.
 MANAGED_LABELS = ("bug", "enhancement", "documentation", "ci", "bump-minor", "bump-none")
 
-# "<name>|<color>|<description>", one row per label, created on demand
-# immediately before first use. Each row is asserted equal to `.github/labels.yml`
-# by `test-review-labels.sh`, since neither implementation can read labels.yml:
-# the post-review steps run from a staged copy of `.ci` alone.
+# "<name>|<color>|<description>", one row per label, created on demand immediately before first use. Each row is asserted equal to `.github/labels.yml` by `test-review-labels.sh`, since neither implementation can read labels.yml: the post-review steps run from a staged copy of `.ci` alone.
 CREATE_ON_DEMAND_LABELS = (
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)",
     (
@@ -227,18 +215,13 @@ CREATE_ON_DEMAND_LABELS = (
     ),
 )
 
-# Turn budget, scaled to diff size (twin :171). DENSITY, not rungs: measured the
-# same day by the same reviewer, PR #552 completed at 22.0 turns/KLOC and PR #553
-# died at 17.8, while file count did not discriminate (39 files passed where 36
-# failed). TURNS_PER_KLOC sits above the measured survivor because one survival
-# is not a floor.
+# Turn budget, scaled to diff size (twin :171). DENSITY, not rungs: measured the same day by the same reviewer, PR #552 completed at 22.0 turns/KLOC and PR #553 died at 17.8, while file count did not discriminate (39 files passed where 36 failed). TURNS_PER_KLOC sits above the measured survivor because one survival is not a floor.
 TURNS_PER_KLOC = 25
 MAX_TURNS = 140
 MIN_TURNS = 50
 
 # `${#report} -gt 60000`, then head 30000 + tail 25000 (twin :293-300). The
-# middle is dropped rather than the tail because the tail carries the
-# `json:review-findings` fence that `--post-findings` parses.
+# middle is dropped rather than the tail because the tail carries the `json:review-findings` fence that `--post-findings` parses.
 REPORT_LIMIT = 60000
 REPORT_HEAD = 30000
 REPORT_TAIL = 25000
@@ -254,20 +237,13 @@ LABELS_FENCE = "json:pr-labels"
 SCRIPT_DIR_ENV = "CLAUDE_REVIEW_GATE_SCRIPT_DIR"
 
 # `sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p'` (twin :123). Applied
-# per LINE, and the LAST match wins: the marker body is multi-line and a
-# `tail -n 1` before the sed grabbed the trailing cost line and matched nothing,
-# "silently disabling the whole review-dedup (every green push re-reviewed).
-# Found by review finding F4."
+# per LINE, and the LAST match wins: the marker body is multi-line and a `tail -n 1` before the sed grabbed the trailing cost line and matched nothing, "silently disabling the whole review-dedup (every green push re-reviewed). Found by review finding F4."
 MARKER_SHA_RE = re.compile(r".*claude-reviewed: ([0-9a-f]{40}).*")
 
 # `sed -n 's/^applied:[[:space:]]*//p'` (twin :546).
 APPLIED_RE = re.compile(r"^applied:[ \t\n\r\f\v]*")
 
-# `grep -qvE '(^docs/|^agent/|...)'` (twin :444) and its `.ci` sibling (:447).
-# `^agent/` is named EXPLICITLY rather than left to the trailing `\.md$`
-# alternative: while every file under that tree happened to end in .md the docs
-# label landed by accident, and the first sidecar, fixture or script under
-# agent/ would have silently turned a notes-only PR into an unlabelled one.
+# `grep -qvE '(^docs/|^agent/|...)'` (twin :444) and its `.ci` sibling (:447). `^agent/` is named EXPLICITLY rather than left to the trailing `\.md$` alternative: while every file under that tree happened to end in .md the docs label landed by accident, and the first sidecar, fixture or script under agent/ would have silently turned a notes-only PR into an unlabelled one.
 DOCS_ONLY_RE = re.compile(
     r"(^docs/|^agent/|^packages/www/src/content/docs/|^CLAUDE\.md$|^LICENSE$|\.md$)"
 )
@@ -277,11 +253,7 @@ CI_ONLY_RE = re.compile(r"(^\.github/|^\.ci/|^scripts/ci-runner/)")
 _WS = " \t\r\f\v"
 _WS_CLASS = r"[ \t\r\f\v]*"
 
-# --- the jq programs, verbatim from the twin --------------------------------
-# Copied character for character INCLUDING their indentation, and
-# `test_every_jq_program_is_verbatim_from_the_twin` asserts each one is still a
-# substring of the twin's source. A silently reworded program on one side is the
-# failure that makes a differential pass while the two disagree in production.
+# --- the jq programs, verbatim from the twin -------------------------------- Copied character for character INCLUDING their indentation, and `test_every_jq_program_is_verbatim_from_the_twin` asserts each one is still a substring of the twin's source. A silently reworded program on one side is the failure that makes a differential pass while the two disagree in production.
 
 RESULT_TEXT_JQ = """
             (if type == "array" then [.[] | select(.type == "result")][-1] else . end) as $r
@@ -361,9 +333,7 @@ class Aborted(Exception):  # noqa: N818 -- see Done
         self.code = code
 
 
-# ---------------------------------------------------------------------------
-# Subprocess seams. Each one mirrors ONE bash redirection shape.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Subprocess seams. Each one mirrors ONE bash redirection shape. ---------------------------------------------------------------------------
 
 
 def script_dir() -> pathlib.Path:
@@ -373,11 +343,7 @@ def script_dir() -> pathlib.Path:
     would resolve to a directory that does not exist, so the twin's own
     directory is named explicitly rather than derived from `__file__`.
     """
-    # THE NAME IS A LITERAL AT THE CALL SITE, not `os.environ.get(SCRIPT_DIR_ENV)`.
-    # `check:ci-python-env-registry` derives a module's inputs from the AST and
-    # records a non-literal as an OPAQUE `*<expr>` entry, which is a declared
-    # input nobody can grep for. `SCRIPT_DIR_ENV` stays as the constant the tests
-    # name.
+    # THE NAME IS A LITERAL AT THE CALL SITE, not `os.environ.get(SCRIPT_DIR_ENV)`. `check:ci-python-env-registry` derives a module's inputs from the AST and records a non-literal as an OPAQUE `*<expr>` entry, which is a declared input nobody can grep for. `SCRIPT_DIR_ENV` stays as the constant the tests name.
     override = os.environ.get("CLAUDE_REVIEW_GATE_SCRIPT_DIR", "")
     if override:
         return pathlib.Path(override)
@@ -467,7 +433,7 @@ def gh_retry(what: str, args: list[str], *, sleep=time.sleep) -> tuple[int, str]
             sleep(attempt * 3)
     log.error("%s: gh failed after 3 attempts (last exit %d)." % (what, rc))
     if err:
-        # `[[ -s "$err" ]] && sed 's/^/    /' "$err" >&2`.
+        # `[[ -s "$err" ]] && sed 's/^/ /' "$err" >&2`.
         for line in err.split("\n")[:-1] if err.endswith("\n") else err.split("\n"):
             sys.stderr.write("    %s\n" % line)
         sys.stderr.flush()
@@ -502,9 +468,7 @@ def _jq_test(args: list[str], *, stdin: str) -> bool:
     return proc.returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# Pure text helpers. Each is driven against the program it replaces.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure text helpers. Each is driven against the program it replaces. ---------------------------------------------------------------------------
 
 
 def sed_replacement(text: str) -> str:
@@ -649,9 +613,7 @@ def _arith_or_die(word: str, context: str) -> int:
     raise Aborted("claude-review-gate.sh: %s: %s: unbound variable" % (context, text), code=1)
 
 
-# ---------------------------------------------------------------------------
-# The two comment reads the gate does for itself.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two comment reads the gate does for itself. ---------------------------------------------------------------------------
 
 
 def last_marker_sha(repo: str, pr: str) -> str:
@@ -693,9 +655,7 @@ def last_marker_id(repo: str, pr: str) -> str:
     return last_line(out)
 
 
-# ---------------------------------------------------------------------------
-# GATE MODE
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- GATE MODE ---------------------------------------------------------------------------
 
 
 def emit(output_path: str, go: str, pr: str, head_sha: str, last_sha: str, reason: str) -> None:
@@ -829,8 +789,7 @@ def review_report_count(repo: str, pr: str, epic: str) -> tuple[int, int]:
     if rc != 0:
         return 0, rc
     if out == "":
-        # `wc -l <<<""` reads as ONE line, not zero. Guarded explicitly, exactly
-        # as the twin guards it.
+        # `wc -l <<<""` reads as ONE line, not zero. Guarded explicitly, exactly as the twin guards it.
         return 0, 0
     return len(out.split("\n")), 0
 
@@ -915,8 +874,7 @@ def run_gate() -> int:
     output_path = common.require_var("GITHUB_OUTPUT")
     # `_repo()` IS CALLED LAZILY, at each point the twin first expands
     # `${GITHUB_REPOSITORY}`. Reading it here instead would abort before
-    # `Unsupported EVENT_NAME` and before `require_var PR_NUMBER`, which are the
-    # two refusals the twin reaches first when both are unset.
+    # `Unsupported EVENT_NAME` and before `require_var PR_NUMBER`, which are the two refusals the twin reaches first when both are unset.
     epic = os.environ.get("REVIEW_EPIC", "")
     event = os.environ.get("EVENT_NAME", "")
     log.step("Deciding whether a Claude review should run (event: %s)" % (event or "unset"))
@@ -931,8 +889,7 @@ def run_gate() -> int:
             emit(output_path, "false", "", "", "", "CI run not green")
         # `workflow_run.pull_requests[]` is unreliable; resolve via the branch and
         # PIN TO THE RUN'S SHA. `headRefOid == WR_HEAD_SHA` is the "current head
-        # is green RIGHT NOW" invariant: a superseded push fails it, so a
-        # late-finishing green run for an old commit never reviews stale code.
+        # is green RIGHT NOW" invariant: a superseded push fails it, so a late-finishing green run for an old commit never reviews stale code.
         wr_head_sha = os.environ.get("WR_HEAD_SHA", "")
         repo = _repo()
         rc, pr_json = _gh(
@@ -1022,18 +979,13 @@ def run_gate() -> int:
     reports_posted, rc = review_report_count(repo, pr, epic)
     if rc != 0:
         raise Done(rc)
-    # Fetched ONCE: the cap needs the chargeable total and the per-head ceiling
-    # needs this head's own row, and paying for the same paginated listing twice
-    # on every invocation is how a cheap guard becomes an expensive one.
+    # Fetched ONCE: the cap needs the chargeable total and the per-head ceiling needs this head's own row, and paying for the same paginated listing twice on every invocation is how a cheap guard becomes an expensive one.
     attempt_states, rc = review_attempt_states(repo, pr, ATTEMPT_PREFIX)
     if rc != 0:
         raise Done(rc)
     attempts_spent = review_budget.chargeable_attempts(attempt_states)
 
-    # THE PER-HEAD CEILING, checked BEFORE the cap so the message names the real
-    # reason. Free re-attempts have to end somewhere and it cannot be the per-PR
-    # cap alone: the free ones are not charged, so without this a head that dies
-    # infra-class could be retried forever at no visible cost.
+    # THE PER-HEAD CEILING, checked BEFORE the cap so the message names the real reason. Free re-attempts have to end somewhere and it cannot be the per-PR cap alone: the free ones are not charged, so without this a head that dies infra-class could be retried forever at no visible cost.
     head_attempts, head_class = review_budget.head_attempt_state(attempt_states, head_sha)
     if review_budget.head_is_exhausted(attempt_states, head_sha):
         emit(
@@ -1052,11 +1004,7 @@ def run_gate() -> int:
             ),
         )
 
-    # Budget is what was SPENT, not what was delivered: a pass that burned its
-    # turns and posted nothing cost the same as one that posted a full report,
-    # and charging only for successes is what let a failing SHA be re-reviewed
-    # forever. PER-EPIC, because a flat count spends the whole cap on the first
-    # round and every epic reviewed later is refused forever.
+    # Budget is what was SPENT, not what was delivered: a pass that burned its turns and posted nothing cost the same as one that posted a full report, and charging only for successes is what let a failing SHA be re-reviewed forever. PER-EPIC, because a flat count spends the whole cap on the first round and every epic reviewed later is refused forever.
     review_count = review_budget.spend_total(reports_posted, attempts_spent)
     loc = pr_diff_loc(repo, pr)
     max_reviews = review_budget.cap_for(loc)
@@ -1090,8 +1038,7 @@ def run_gate() -> int:
             emit(output_path, "false", pr, head_sha, last_sha, "head already reviewed")
         # Delta since the last ACTUALLY reviewed SHA (markers never advance on
         # skips). The compare API needs no local history; on failure we fail OPEN
-        # into an incremental review rather than silently skipping. `files[]` caps
-        # at 300 entries, which cannot mask an all-gitlink diff.
+        # into an incremental review rather than silently skipping. `files[]` caps at 300 entries, which cannot mask an all-gitlink diff.
         rc, files_json = _gh(
             [
                 "api",
@@ -1150,9 +1097,7 @@ def run_gate() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --post-report
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --post-report ---------------------------------------------------------------------------
 
 
 def run_post_report() -> int:
@@ -1178,16 +1123,12 @@ def run_post_report() -> int:
         rc, out = _jq(["-r", RESULT_TEXT_JQ, execution_file], quiet=True)
         report = out if rc == 0 else ""
     if not report:
-        # Fail OPEN, not closed: `--mark` is the honesty guard and will refuse to
-        # stamp the SHA when nothing posted, so the SHA stays retryable.
+        # Fail OPEN, not closed: `--mark` is the honesty guard and will refuse to stamp the SHA when nothing posted, so the SHA stays retryable.
         log.warn("no final report text in %s; nothing to post" % (execution_file or "<unset>"))
         return 0
 
     if len(report) > REPORT_LIMIT:
-        # GitHub rejects issue-comment bodies over 65536 chars with a 422, which
-        # would fail this step and strand the SHA in a permanent retry loop. Keep
-        # the HEAD (verdict + findings prose) AND the TAIL (the findings fence
-        # `--post-findings` parses) rather than a plain truncation.
+        # GitHub rejects issue-comment bodies over 65536 chars with a 422, which would fail this step and strand the SHA in a permanent retry loop. Keep the HEAD (verdict + findings prose) AND the TAIL (the findings fence `--post-findings` parses) rather than a plain truncation.
         log.warn("report is %d chars; truncating the middle to fit the comment limit" % len(report))
         report = (
             report[:REPORT_HEAD]
@@ -1217,9 +1158,7 @@ def run_post_report() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --post-findings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --post-findings ---------------------------------------------------------------------------
 
 
 def run_post_findings() -> int:
@@ -1246,8 +1185,7 @@ def run_post_findings() -> int:
         ],
         quiet=True,
     )
-    # A mid-pagination gh failure degrades to empty -> advisory skip, never an
-    # abort that would fail this step and skip the following `--mark`.
+    # A mid-pagination gh failure degrades to empty -> advisory skip, never an abort that would fail this step and skip the following `--mark`.
     findings_json = extract_findings_fence(bodies) if rc == 0 else ""
     if not findings_json or not _jq_test(["-e", 'type == "array"'], stdin=findings_json):
         log.info("no parseable review-findings block; skipping inline comments")
@@ -1298,9 +1236,7 @@ def run_post_findings() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --apply-labels
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --apply-labels ---------------------------------------------------------------------------
 
 
 def is_managed(name: str) -> bool:
@@ -1357,10 +1293,7 @@ def run_apply_labels() -> int:
             "could not read the changed-file list for PR %s; skipping the mechanical labels" % pr
         )
     else:
-        # ALL-FILES rules, conservative by construction: one stray source file
-        # and the label does not apply. "This diff is entirely docs" and "this
-        # diff is entirely CI plumbing" are facts about the file list, so they
-        # need no model to see them and no model can talk them out of them.
+        # ALL-FILES rules, conservative by construction: one stray source file and the label does not apply. "This diff is entirely docs" and "this diff is entirely CI plumbing" are facts about the file list, so they need no model to see them and no model can talk them out of them.
         lines = changed.split("\n")
         if all(DOCS_ONLY_RE.search(line) for line in lines):
             add_desired("documentation")
@@ -1377,13 +1310,9 @@ def run_apply_labels() -> int:
         verdict = extract_labels_fence(report)
 
     if not verdict:
-        # FALLBACK: the fence may live only in the POSTED COMMENT. Observed on
-        # the feature's first live run (#559, run 31267699743): the model posted
-        # its summary itself via `gh pr comment` and put the fence THERE, while
+        # FALLBACK: the fence may live only in the POSTED COMMENT. Observed on the feature's first live run (#559, run 31267699743): the model posted its summary itself via `gh pr comment` and put the fence THERE, while
         # its final result text did not repeat it. The result text stays primary;
-        # the newest fence-bearing comment is the fallback. A forged fence cannot
-        # do more than a forged marker could: the whitelist hard-filters every
-        # label and bump-major is never applied automatically.
+        # the newest fence-bearing comment is the fallback. A forged fence cannot do more than a forged marker could: the whitelist hard-filters every label and bump-major is never applied automatically.
         rc, comment_report = _gh(
             [
                 "api",
@@ -1411,9 +1340,7 @@ def run_apply_labels() -> int:
     if not verdict:
         log.info("no json:pr-labels block in the report; mechanical labels only")
     elif not _jq_test(["-e", LABEL_VERDICT_VALID_JQ], stdin=verdict):
-        # STRICT, and malformed is treated as ABSENT rather than as a partial
-        # answer: a half-parsed verdict is how a hallucinated field would get a
-        # vote. The mechanical floor above still applies.
+        # STRICT, and malformed is treated as ABSENT rather than as a partial answer: a half-parsed verdict is how a hallucinated field would get a vote. The mechanical floor above still applies.
         log.warn("the json:pr-labels block did not validate; treating it as absent")
     else:
         _, bump = _jq(["-r", '.bump // "patch"'], stdin=verdict)
@@ -1421,10 +1348,7 @@ def run_apply_labels() -> int:
         _, kinds_compact = _jq(["-rc", ".kind // []"], stdin=verdict)
         log.info("review verdict: bump=%s kind=%s why=%s" % (bump, kinds_compact, why or "<none>"))
         if bump == "none":
-            # The ONLY verdict that subtracts a release, and safe on the model's
-            # word in a way `major` is not: a wrong `none` costs a release the
-            # next release-worthy merge picks up anyway, while a wrong `major` is
-            # a permanent statement to every consumer of the version stream.
+            # The ONLY verdict that subtracts a release, and safe on the model's word in a way `major` is not: a wrong `none` costs a release the next release-worthy merge picks up anyway, while a wrong `major` is a permanent statement to every consumer of the version stream.
             add_desired("bump-none")
         elif bump == "minor":
             add_desired("bump-minor")
@@ -1446,14 +1370,8 @@ def run_apply_labels() -> int:
             elif kind == "ci":
                 add_desired("ci")
 
-    # --- 3. reconcile against the ledger, never a blind sync ---------------
-    # The ledger records what THIS arm applied last time. Removal is scoped to
-    # that record, so a hand-applied label -- full-ci, rollback, a human's
-    # bump-minor -- is never touched no matter what the model says. It is also
-    # re-filtered through the managed set on the way out: the ledger is a PR
-    # comment, and a comment is editable by anyone with write access, so a
-    # tampered "applied:" line must not become a delete-arbitrary-label
-    # primitive.
+    # --- 3. reconcile against the ledger, never a blind sync --------------- The ledger records what THIS arm applied last time. Removal is scoped to that record, so a hand-applied label -- full-ci, rollback, a human's bump-minor -- is never touched no matter what the model says. It is also re-filtered through the managed set on the way out: the ledger is a PR comment, and a
+    # comment is editable by anyone with write access, so a tampered "applied:" line must not become a delete-arbitrary-label primitive.
     rc, ledger_bodies = _gh(
         [
             "api",
@@ -1595,9 +1513,7 @@ def run_apply_labels() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --mark
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --mark ---------------------------------------------------------------------------
 
 
 def run_mark() -> int:
@@ -1643,18 +1559,13 @@ def run_mark() -> int:
             stdin_null=True,
         )
         attempt_id = last_line(attempt_ids) if rc == 0 else ""
-        # SEE DEFECT 3: the twin nests this fetch inside another command
-        # substitution, so its failure is discarded and the count restarts at 1.
+        # SEE DEFECT 3: the twin nests this fetch inside another command substitution, so its failure is discarded and the count restarts at 1.
         states, _ = review_attempt_states(repo, pr, ATTEMPT_PREFIX)
         prior_attempts, _prior_class = review_budget.head_attempt_state(states, head_sha)
         attempts = prior_attempts + 1
 
-        # ONE MARKER PER HEAD, upserted with its own attempt count (2026-08-09).
-        # The marker used to be POSTed fresh on every failure, so N deaths on one
-        # head meant N comments and N charged units. On PR #560 an
-        # `error_max_turns` told a fully-green, autopilot-driven PR to "push a
-        # change to earn another pass" when there was no legitimate change to
-        # push, and the loop stalled behind a human.
+        # ONE MARKER PER HEAD, upserted with its own attempt count (2026-08-09). The marker used to be POSTed fresh on every failure, so N deaths on one head meant N comments and N charged units. On PR #560 an `error_max_turns` told a fully-green, autopilot-driven PR to "push a change to earn another pass" when there was no legitimate change to push, and the loop stalled behind a
+        # human.
         if (
             review_budget.class_is_infra(why)
             and attempts <= review_budget.REVIEW_FREE_REATTEMPTS_PER_HEAD
@@ -1697,10 +1608,7 @@ def run_mark() -> int:
             ):
                 log.warn("could not update the spent attempt for %s" % head_sha[:7])
         elif (
-            # `-X POST` EXPLICITLY. gh infers it from `-f`, but leaving it
-            # implicit made this write indistinguishable from a read to anything
-            # parsing the argv, including this pipeline's own test harness, which
-            # served it a fixture instead of capturing it.
+            # `-X POST` EXPLICITLY. gh infers it from `-f`, but leaving it implicit made this write indistinguishable from a read to anything parsing the argv, including this pipeline's own test harness, which served it a fixture instead of capturing it.
             _gh_write(
                 [
                     "api",
@@ -1722,15 +1630,9 @@ def run_mark() -> int:
         )
         return 0
 
-    # A marker is a CLAIM that a review happened. Step success alone proved false
-    # once: the reviewer "succeeded" with 36 permission denials and posted
-    # nothing, and the marker then suppressed the retry.
+    # A marker is a CLAIM that a review happened. Step success alone proved false once: the reviewer "succeeded" with 36 permission denials and posted nothing, and the marker then suppressed the retry.
     #
-    # EVERY BOOKKEEPING PREFIX IS EXCLUDED, not just the marker. The guard asks
-    # "did this review produce OUTPUT", and only a report or an inline comment
-    # answers that. Counting the attempt marker or the label ledger would let the
-    # pipeline satisfy its own honesty guard with a comment it wrote seconds
-    # earlier about itself.
+    # EVERY BOOKKEEPING PREFIX IS EXCLUDED, not just the marker. The guard asks "did this review produce OUTPUT", and only a report or an inline comment answers that. Counting the attempt marker or the label ledger would let the pipeline satisfy its own honesty guard with a comment it wrote seconds earlier about itself.
     repo = _repo()
     rc, recent_ids = _gh_raw(
         [
@@ -1769,8 +1671,7 @@ def run_mark() -> int:
         )
         raise Done(1)
 
-    # Cost transparency (operator request). Best-effort: a missing or unparseable
-    # file never blocks marking.
+    # Cost transparency (operator request). Best-effort: a missing or unparseable file never blocks marking.
     cost_line = ""
     if execution_file and os.path.isfile(execution_file):
         rc, cost_line = _jq(["-r", COST_JQ, execution_file], quiet=True)
@@ -1814,9 +1715,7 @@ def run_mark() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Entry point ---------------------------------------------------------------------------
 
 
 def _repo() -> str:

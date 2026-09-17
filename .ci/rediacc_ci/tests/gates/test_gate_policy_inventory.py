@@ -39,14 +39,11 @@ from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_policy_inventory.py")
 TS_SEAM = paths.from_root("scripts", "lib", "policy-paths.ts")
-# `REFUSED_FILE` in the gate. Kept as a literal rather than imported: the gate is a
-# hyphen-free script under `.ci/scripts/quality/`, not a package module, and every
-# other reference to it in this file is a subprocess argument.
+# `REFUSED_FILE` in the gate. Kept as a literal rather than imported: the gate is a hyphen-free script under `.ci/scripts/quality/`, not a package module, and every other reference to it in this file is a subprocess argument.
 REFUSED_FILE = ".ci/config/bws-secret-map.json"
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
-# A floor, not a count: sixteen names live in both lists today, and a list that
-# has collapsed below this is a reader pointed at nothing. The EQUALITY of the
+# A floor, not a count: sixteen names live in both lists today, and a list that has collapsed below this is a reader pointed at nothing. The EQUALITY of the
 # two lists is the gate's job; this only refuses a vacuous corpus here.
 MIN_KNOWN_NAMES = 15
 
@@ -54,8 +51,7 @@ MIN_KNOWN_NAMES = 15
 def test_policy_path_is_a_pure_join(gate):
     gate.log_test("policy_path resolves against a root that contains nothing at all")
     with harness.temp_dir() as empty:
-        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles. A helper that
-        # stat'ed anything would have to either raise or answer a second
+        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles. A helper that stat'ed anything would have to either raise or answer a second
         # location here; a pure join cannot tell the difference and says so.
         answered = policy_paths.policy_path(".deps-upgrade-blocklist", empty)
         gate.assert_eq(
@@ -63,8 +59,7 @@ def test_policy_path_is_a_pure_join(gate):
             str(empty / ".ci" / "policy" / ".deps-upgrade-blocklist"),
             "resolves against a root containing no .ci directory at all",
         )
-        # THE `rmdir` HALF, stated the way the bash twin states it: rmdir refuses
-        # a non-empty directory, so this line fails if anything was created.
+        # THE `rmdir` HALF, stated the way the bash twin states it: rmdir refuses a non-empty directory, so this line fails if anything was created.
         empty.rmdir()
         gate.assert_eq(
             empty.exists(), False, "and the fixture root rmdir'd, so nothing was created either"
@@ -84,17 +79,14 @@ def test_unknown_name_is_refused_loudly(gate):
     gate.assert_contains(caught or "", "is not a known policy file", "says what went wrong")
     gate.assert_contains(caught or "", ".audit-allowlist", "names the valid set")
     gate.assert_contains(caught or "", "POLICY_FILES", "names where to add a genuinely new one")
-    # THE SAME REFUSAL ON THE OTHER ENTRY POINT. `policy_rel` is a second door
-    # into the same name set, and a door that validates nothing is how a typo
-    # gets a plausible relative path instead of an exception.
+    # THE SAME REFUSAL ON THE OTHER ENTRY POINT. `policy_rel` is a second door into the same name set, and a door that validates nothing is how a typo gets a plausible relative path instead of an exception.
     rel_caught = None
     try:
         policy_paths.policy_rel(".audit-allowlst")
     except policy_paths.UnknownPolicyFileError as exc:
         rel_caught = str(exc)
     gate.assert_eq(rel_caught is not None, True, "policy_rel refuses the same typo")
-    # CONTROL: a name that IS policy answers, so the two checks above are not
-    # simply "everything raises".
+    # CONTROL: a name that IS policy answers, so the two checks above are not simply "everything raises".
     gate.assert_eq(
         policy_paths.policy_rel(".audit-allowlist"),
         ".ci/policy/.audit-allowlist",
@@ -137,9 +129,7 @@ def test_every_known_name_resolves_to_a_real_file(gate):
 def test_differential_against_the_typescript_twin(gate):
     gate.log_test("both seams answer the same paths, byte for byte, under one fixture root")
     if not TSX.is_file():
-        # A MISSING TOOL IS A LOUD FAILURE, not a skip: a differential that
-        # cannot run has proved nothing, and reporting that as a pass is the
-        # exact vacuity this suite exists to refuse.
+        # A MISSING TOOL IS A LOUD FAILURE, not a skip: a differential that cannot run has proved nothing, and reporting that as a pass is the exact vacuity this suite exists to refuse.
         gate.log_fail(
             "the workspace tsx binary is missing at %s, so the differential could not run "
             "at all -- which is a FAILURE and not a pass. Fix: npm install && npm run "
@@ -160,8 +150,7 @@ def test_differential_against_the_typescript_twin(gate):
             True,
             "and both answered something (%d paths, floor %d)" % (len(ts_answer), MIN_KNOWN_NAMES),
         )
-        # NEITHER implementation may have touched the fixture root. The twin's
-        # rmdir proof, applied to the pair rather than to one side.
+        # NEITHER implementation may have touched the fixture root. The twin's rmdir proof, applied to the pair rather than to one side.
         gate.assert_eq(
             sorted(p.name for p in root.iterdir()),
             [],
@@ -189,13 +178,8 @@ def _fixture_tree(root: pathlib.Path, ts_list, py_list, disk) -> None:
         p = policy_paths.policy_path(name, root)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("# BLOCKER: fixture\n", encoding="utf-8")
-    # DIRECTION 7's SUBJECT, present and clean. The gate asserts every run that
-    # `.ci/policy/README.md` section 6's refusal of this file still holds, and one
-    # of the three clauses is that the file EXISTS -- a refusal about a file that is
-    # gone is a stale paragraph, not a decision. A fixture tree without it is
-    # therefore a legitimately RED tree, which is what the clean control below would
-    # otherwise be measuring. If the gate's REFUSED_FILE constant ever moves, this
-    # writes the wrong path and that control reds loudly rather than drifting.
+    # DIRECTION 7's SUBJECT, present and clean. The gate asserts every run that `.ci/policy/README.md` section 6's refusal of this file still holds, and one of the three clauses is that the file EXISTS -- a refusal about a file that is gone is a stale paragraph, not a decision. A fixture tree without it is therefore a legitimately RED tree, which is what the clean control below
+    # would otherwise be measuring. If the gate's REFUSED_FILE constant ever moves, this writes the wrong path and that control reds loudly rather than drifting.
     refused = root / REFUSED_FILE
     refused.parent.mkdir(parents=True, exist_ok=True)
     refused.write_text('{"refreshed_at": "2026-01-01T00:00:00Z", "secrets": {}}\n', "utf-8")
@@ -205,8 +189,7 @@ def test_the_gate_reds_through_its_environment_seam(gate):
     gate.log_test("POLICY_INVENTORY_ROOT points the gate at another tree, and it reds there")
     base = [".audit-allowlist", ".ci-parity-exempt"]
     with harness.temp_dir() as root:
-        # The 2026-09-07 shape: one more file on disk than the TypeScript list
-        # knows about. This is what the real drift looked like.
+        # The 2026-09-07 shape: one more file on disk than the TypeScript list knows about. This is what the real drift looked like.
         _fixture_tree(
             root, base, [*base, ".deps-upgrade-blocklist"], [*base, ".deps-upgrade-blocklist"]
         )
@@ -221,8 +204,7 @@ def test_the_gate_reds_through_its_environment_seam(gate):
             drifted.out, "control(s) passed", "with its own controls run first, on stdout"
         )
     with harness.temp_dir() as root:
-        # CONTROL, and it is the half that matters: the same gate, the same
-        # environment seam, an AGREEING tree. Without it the case above passes
+        # CONTROL, and it is the half that matters: the same gate, the same environment seam, an AGREEING tree. Without it the case above passes
         # for a gate that fails on everything.
         _fixture_tree(root, base, base, base)
         clean = harness.run(
@@ -255,8 +237,7 @@ def test_the_recorded_refusal_is_asserted_through_the_env_seam(gate):
             reasoned.err, "no longer failing", "and it says which predicate clause changed"
         )
     with harness.temp_dir() as root:
-        # CONTROL: the same seam, the same fixture, nothing flipped. Without it the
-        # two cases above pass for a gate that reds on every tree it is handed.
+        # CONTROL: the same seam, the same fixture, nothing flipped. Without it the two cases above pass for a gate that reds on every tree it is handed.
         _fixture_tree(root, base, base, base)
         clean = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
@@ -271,8 +252,7 @@ def test_the_recorded_refusal_is_asserted_through_the_env_seam(gate):
 def test_the_gate_refuses_a_tree_it_cannot_see(gate):
     gate.log_test("a corpus the gate cannot read is a refusal, never a quiet pass")
     with harness.temp_dir() as root:
-        # No seams, no policy directory: the gate must say it cannot see its
-        # subject rather than reporting agreement between two empty sets.
+        # No seams, no policy directory: the gate must say it cannot see its subject rather than reporting agreement between two empty sets.
         result = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
@@ -288,10 +268,7 @@ def test_the_gate_refuses_a_tree_it_cannot_see(gate):
 
 def test_the_five_migrated_readers_go_through_the_seam(gate):
     gate.log_test("the readers W4 P4a migrated import the seam and hold no literal")
-    # NAMED, not discovered. These are the five sites the plan enumerated, and
-    # naming them is what makes a REGRESSION visible: a discovery loop over
-    # "files that import policy_paths" would shrink silently as readers were
-    # rewritten, and report success on the empty set.
+    # NAMED, not discovered. These are the five sites the plan enumerated, and naming them is what makes a REGRESSION visible: a discovery loop over "files that import policy_paths" would shrink silently as readers were rewritten, and report success on the empty set.
     readers = [
         ".ci/rediacc_ci/quality/go_deps.py",
         ".ci/rediacc_ci/quality/plan_housekeeping.py",

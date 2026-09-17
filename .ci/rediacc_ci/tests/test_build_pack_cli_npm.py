@@ -70,12 +70,10 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "pack_cli_npm.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/pack-cli-npm.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/pack_cli_npm.py")
 
-# The recording `jq`. It performs the twin's ACTUAL transformation rather than
-# echoing a canned manifest, because observable 7 compares the resulting
+# The recording `jq`. It performs the twin's ACTUAL transformation rather than echoing a canned manifest, because observable 7 compares the resulting
 # package.json and a canned answer would make that comparison vacuous. Both
 # subjects run this same fake, so whatever it does, it does identically to both;
-# what is under test is whether each one CALLS it with the same argv and then
-# moves the output into place.
+# what is under test is whether each one CALLS it with the same argv and then moves the output into place.
 FAKE_JQ = """#!/usr/bin/env python3
 import json, os, pathlib, sys
 LOG = %(log)r
@@ -94,8 +92,7 @@ data["version"] = version
 sys.stdout.write(json.dumps(data, indent=2) + "\\n")
 """
 
-# The recording `npm`. Creates whatever tarballs the case asks for, in
-# --pack-destination, and prints the last one the way `npm pack` prints a name.
+# The recording `npm`. Creates whatever tarballs the case asks for, in --pack-destination, and prints the last one the way `npm pack` prints a name.
 FAKE_NPM = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -115,10 +112,7 @@ for name in PRODUCES:
 sys.exit(RC)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather
-# than derived: a PATH built by copying "everything except npm" is a PATH nobody
-# can state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except npm" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -135,13 +129,10 @@ NEEDED = (
     "rm",
 )
 
-# The manifest the fixture starts from. Two keys beyond `version`, so a port
-# that rewrote the file wholesale instead of editing one field would show up in
-# observable 7.
+# The manifest the fixture starts from. Two keys beyond `version`, so a port that rewrote the file wholesale instead of editing one field would show up in observable 7.
 BASE_MANIFEST = {"name": "@rediacc/cli", "version": "0.0.0-dev", "private": False}
 
-# `<path>: line <n>: ` -- bash's prefix on a `cd` diagnostic, and the port's own
-# equivalent. Masked only in the two tests that are ABOUT that divergence.
+# `<path>: line <n>: ` -- bash's prefix on a `cd` diagnostic, and the port's own equivalent. Masked only in the two tests that are ABOUT that divergence.
 LINE_PREFIX = re.compile(r"^[^\n]*: line \d+: ", re.MULTILINE)
 
 
@@ -260,14 +251,11 @@ def _run(
         ),
         "HOME": str(root.parent),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # LC_ALL/LANG: see the module docstring. `ls | head -1` versus a code
-        # point sort agree under C and are not guaranteed to elsewhere.
+        # LC_ALL/LANG: see the module docstring. `ls | head -1` versus a code point sort agree under C and are not guaranteed to elsewhere.
         "LC_ALL": "C",
         "LANG": "C",
         # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the
-        # COPY under the fixture is what runs, so the package has to come from
-        # the real checkout. This is the only thing the fixture borrows from
-        # outside itself.
+        # COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     if version is not None:
@@ -584,9 +572,7 @@ def test_select_tarball_is_the_twins_ordering():
         "rediacc-cli-1.0.0-rc.1.tgz",
     ]
     script = 'cd "$1" && ls rediacc-cli-*.tgz 2>/dev/null | head -1'
-    # A directory rather than an argument list, because `ls` sorts what the SHELL
-    # globbed off the filesystem and handing it a pre-sorted argv would test the
-    # test.
+    # A directory rather than an argument list, because `ls` sorts what the SHELL globbed off the filesystem and handing it a pre-sorted argv would test the test.
     with tempfile.TemporaryDirectory() as scratch:
         for name in names:
             (pathlib.Path(scratch) / name).write_text("x", encoding="utf-8")

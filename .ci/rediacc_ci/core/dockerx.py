@@ -98,29 +98,21 @@ import time
 
 from rediacc_ci import proc
 
-# `docker` has no interactive prompt of its own, but it does have two ways to
-# make output unusable in a capture: a plugin's colour, and the CLI hint lines it
-# appends to some commands. Both are switched off so a parsed value is the value.
+# `docker` has no interactive prompt of its own, but it does have two ways to make output unusable in a capture: a plugin's colour, and the CLI hint lines it appends to some commands. Both are switched off so a parsed value is the value.
 NONINTERACTIVE = {
     "DOCKER_CLI_HINTS": "false",
     "NO_COLOR": "1",
     "CLICOLOR": "0",
 }
 
-# `docker info` against a dead engine "can sit for a long time" -- .ci/lib/setup.sh:573,
-# which is why that site is one of the twelve `timeout(1)` calls in the tree. 30
-# matches the number it chose. Nothing here is unbounded.
+# `docker info` against a dead engine "can sit for a long time" -- .ci/lib/setup.sh:573, which is why that site is one of the twelve `timeout(1)` calls in the tree. 30 matches the number it chose. Nothing here is unbounded.
 DEFAULT_TIMEOUT = 30.0
 
-# The repo's cannot-run code. Duplicated as a literal on purpose, exactly as
-# shfmt.sh:60 and check-python-lint.sh:191 duplicate it: pool.ts:86-89 explains
-# that shell gates cannot import a TypeScript constant, so the value is written
-# where it is used with the reference beside it.
+# The repo's cannot-run code. Duplicated as a literal on purpose, exactly as shfmt.sh:60 and check-python-lint.sh:191 duplicate it: pool.ts:86-89 explains that shell gates cannot import a TypeScript constant, so the value is written where it is used with the reference beside it.
 CANNOT_RUN_RC = 77
 NOT_INSTALLED_RC = proc.SPAWN_FAILED_RC
 
-# The four states, and the four failures they map to. Strings, not an Enum: these
-# are printed into operator-facing messages and compared in tests.
+# The four states, and the four failures they map to. Strings, not an Enum: these are printed into operator-facing messages and compared in tests.
 STATE_ABSENT = "absent"
 STATE_UNREACHABLE = "unreachable"
 STATE_DENIED = "permission-denied"
@@ -133,16 +125,12 @@ FAILURE_DENIED = STATE_DENIED
 FAILURE_TIMED_OUT = "timed-out"
 FAILURE_FAILED = "failed"
 
-# Every state in which the answer is "no verdict was reached". `docker frobnicate`
-# is deliberately NOT here: the engine answered and the command was wrong, which
-# is a finding.
+# Every state in which the answer is "no verdict was reached". `docker frobnicate` is deliberately NOT here: the engine answered and the command was wrong, which is a finding.
 CANNOT_RUN_STATES = frozenset({STATE_ABSENT, STATE_UNREACHABLE, STATE_DENIED, STATE_UNKNOWN})
 
 # Matched case-insensitively against STDERR. The first entry is docker 29's
 # current wording, captured verbatim on 2026-09-06; the second and third are the
-# older phrasings, kept because a CI runner or a developer laptop may be on an
-# older CLI and a classifier that only knows today's string silently degrades
-# every one of those machines to FAILED.
+# older phrasings, kept because a CI runner or a developer laptop may be on an older CLI and a classifier that only knows today's string silently degrades every one of those machines to FAILED.
 _UNREACHABLE_MARKERS = (
     "failed to connect to the docker api",
     "cannot connect to the docker daemon",
@@ -150,18 +138,13 @@ _UNREACHABLE_MARKERS = (
     "error during connect",
     "the docker client must be run with elevated privileges",
 )
-# TESTED BEFORE the unreachable markers. A permission failure on the socket also
-# says "cannot connect to the docker daemon socket", so an unreachable-first test
-# would tell the operator to start an engine that is already running.
+# TESTED BEFORE the unreachable markers. A permission failure on the socket also says "cannot connect to the docker daemon socket", so an unreachable-first test would tell the operator to start an engine that is already running.
 _DENIED_MARKERS = (
     "permission denied while trying to connect",
     "got permission denied",
 )
-# A reworded permission failure that this table has not seen still says these
-# words, and a docker message that says them means the socket refused THIS USER.
-# Kept as its own table rather than as an inline `if` so a test can empty it and
-# show that the ordering above is load bearing: a heuristic hidden in a branch is
-# one a control cannot reach, and an unreachable control is not a control.
+# A reworded permission failure that this table has not seen still says these words, and a docker message that says them means the socket refused THIS USER. Kept as its own table rather than as an inline `if` so a test can empty it and show that the ordering above is load bearing: a heuristic hidden in a branch is one a control cannot reach, and an unreachable control is not a
+# control.
 _DENIED_WEAK_MARKERS = ("permission denied",)
 
 
@@ -470,10 +453,7 @@ def state(env: dict[str, str] | None = None, *, host: str | None = None) -> str:
     return STATE_UNKNOWN
 
 
-# The operator-facing next action for each state. Kept as data rather than as
-# branches in a print, because check-python-lint.sh:170-180 records what a wrong
-# one costs: a session that trusts an unusable message concludes the work cannot
-# be done locally and ships it to CI instead.
+# The operator-facing next action for each state. Kept as data rather than as branches in a print, because check-python-lint.sh:170-180 records what a wrong one costs: a session that trusts an unusable message concludes the work cannot be done locally and ships it to CI instead.
 _ADVICE = {
     STATE_ABSENT: (
         "docker is not on PATH.\n"
@@ -578,9 +558,7 @@ def container_names(
     )
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface a shell gate uses for its 77
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface a shell gate uses for its 77 ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -629,9 +607,7 @@ def main(argv: list[str]) -> int:
             print(server_version(host=host))
         except DockerError as exc:
             print("docker: %s" % exc, file=sys.stderr)
-            # 77 ONLY for the three cannot-run states. A malformed answer from a
-            # live engine is a finding and exits 1, which is the distinction that
-            # keeps 77 meaningful.
+            # 77 ONLY for the three cannot-run states. A malformed answer from a live engine is a finding and exits 1, which is the distinction that keeps 77 meaningful.
             return CANNOT_RUN_RC if exc.failure in CANNOT_RUN_STATES else 1
         return 0
 

@@ -51,8 +51,7 @@ ROOT = paths.repo_root()
 SUBJECT = ROOT / "scripts" / "dev" / "scrub-sentinel.sh"
 VERSION = "v9.99.99"
 
-# Credentials that cannot work, on an endpoint that cannot resolve. The point is
-# an EMPTY/unreachable prefix, which is what the regression is about.
+# Credentials that cannot work, on an endpoint that cannot resolve. The point is an EMPTY/unreachable prefix, which is what the regression is about.
 BAD_CREDENTIALS = {
     "CLOUDFLARE_R2_ACCESS_KEY_ID": "invalid",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "invalid",
@@ -153,8 +152,7 @@ def test_the_tool_branch_is_announced_and_not_a_silent_skip(gate):
     try:
         fired = False
         try:
-            # `tool_gate` calls `gate.log_fail`, which RAISES. A separate harness
-            # is used so the refusal is observed rather than failing this case.
+            # `tool_gate` calls `gate.log_fail`, which RAISES. A separate harness is used so the refusal is observed rather than failing this case.
             probe = harness.Harness(__name__, "ci-arm-probe")
             if not aws_present():
                 tool_gate(probe)

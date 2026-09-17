@@ -84,8 +84,7 @@ def drop_condition_from_validate_install(source: str) -> tuple[str, int]:
             and line.rstrip().endswith(":")
         ):
             in_job = False
-        # Tolerate a trailing `&&`: the condition stopped being the last clause
-        # when the skip_release gate was added after it (2026-08-26).
+        # Tolerate a trailing `&&`: the condition stopped being the last clause when the skip_release gate was added after it (2026-08-26).
         if in_job and line.strip().rstrip("&").strip() == CONDITION:
             cut += 1
             # The preceding line now dangles an `&&`; trim it so the YAML parses.
@@ -112,8 +111,7 @@ def test_the_historical_defect_is_rejected(gate, tmp_path: pathlib.Path):
         cwd=paths.repo_root(),
     )
     if show.rc != 0:
-        # NOT A PASS AND NOT A SILENT SKIP: a missing object is not evidence of a
-        # working gate, so it is named on the way past.
+        # NOT A PASS AND NOT A SILENT SKIP: a missing object is not evidence of a working gate, so it is named on the way past.
         gate.log_info("SKIP: commit %s is not reachable in this checkout" % HISTORICAL_COMMIT)
         gate.log_pass(
             "SKIP the historical case: %s is unreachable here, so no verdict either way"
@@ -136,8 +134,7 @@ def test_the_historical_defect_is_rejected(gate, tmp_path: pathlib.Path):
 def test_dropping_the_condition_is_caught(gate, tmp_path: pathlib.Path):
     gate.log_test("a synthetic mutation of the CURRENT file, so the proof cannot rot")
     mutated, cut = drop_condition_from_validate_install(REAL.read_text(encoding="utf-8"))
-    # If the shape drifts so far that the mutation stops landing, this fails
-    # LOUDLY instead of the test quietly checking nothing.
+    # If the shape drifts so far that the mutation stops landing, this fails LOUDLY instead of the test quietly checking nothing.
     gate.assert_eq(cut, 1, "expected to cut exactly 1 line inside validate-install")
     mut = tmp_path / "ci-mutated.yml"
     mut.write_text(mutated, encoding="utf-8")

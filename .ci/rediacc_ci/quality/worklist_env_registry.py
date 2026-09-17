@@ -101,9 +101,7 @@ KINDS = ("flag", "tuning", "path", "handle", "corpus")
 WHY_REQUIRED = frozenset({"flag", "handle", "corpus"})
 WHY_MIN_CHARS = 60
 
-# The environment-reading call shapes. `pop` and `setdefault` are deliberately
-# absent: neither appears in this tree, and adding a shape nothing uses is a
-# branch no control can reach.
+# The environment-reading call shapes. `pop` and `setdefault` are deliberately absent: neither appears in this tree, and adding a shape nothing uses is a branch no control can reach.
 GET_FUNCS = frozenset({"get", "getenv"})
 
 FLAG_DEFAULTS = frozenset({"on", "off", "1", "0", ""})
@@ -431,11 +429,7 @@ REGISTRY_OVERRIDE = os.environ.get("WORKLIST_REGISTRY_OVERRIDE_FILE", "")
 
 
 def run(root=None):
-    # The override applies ONLY to the real invocation (no explicit root, i.e.
-    # `run()` from main()). selftest()'s own controls always pass an explicit
-    # fixture root, and must never be redirected onto a plant test's tmp
-    # registry that happens to be sitting in the same process's environment --
-    # that would make every OTHER control's fixture registry silently wrong.
+    # The override applies ONLY to the real invocation (no explicit root, i.e. `run()` from main()). selftest()'s own controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp registry that happens to be sitting in the same process's environment -- that would make every OTHER control's fixture registry silently wrong.
     use_override = root is None and REGISTRY_OVERRIDE
     root = pathlib.Path(root or paths.repo_root())
     registry_path = (
@@ -451,8 +445,7 @@ def run(root=None):
             "refusals, because every registered name would then read as dead." % scanned
         )
     findings, stats = evaluate(registry, reads)
-    # An exclusion that excludes nothing is a claim about the tree that has
-    # stopped being true, and it is the half of the exclusion contract that rots.
+    # An exclusion that excludes nothing is a claim about the tree that has stopped being true, and it is the half of the exclusion contract that rots.
     if excluded == 0 and exclusions:
         findings.append(
             "the declared exclusions %s matched ZERO tracked paths. An exclusion "
@@ -500,9 +493,7 @@ def main(argv=None):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 
 _FIXTURE_PY = """import os
 
@@ -645,8 +636,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER, and it is the one that decides whether the exclusion
-        # is doing anything. WORKLIST_GHOST is named in agent/PLAN.md and
+        # ANTI-SILENCER, and it is the one that decides whether the exclusion is doing anything. WORKLIST_GHOST is named in agent/PLAN.md and
         # nowhere else; it must NOT appear as a read, in either direction.
         root = _fixture(tmp)
         findings, _ = run(root)
@@ -667,9 +657,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER: a Python WRITE is not a read either. src.py assigns
-        # os.environ["WORKLIST_LIMIT"], which must not register as a REQUIRED
-        # subscript read.
+        # ANTI-SILENCER: a Python WRITE is not a read either. src.py assigns os.environ["WORKLIST_LIMIT"], which must not register as a REQUIRED subscript read.
         root = _fixture(tmp)
         _, stats = run(root)
         check(

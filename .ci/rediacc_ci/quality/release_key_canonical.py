@@ -138,19 +138,13 @@ BUILD_PKG_REL = (".ci", "scripts", "build", "build-linux-pkg.sh")
 # The twin's own seam, kept by name so one harness drives either implementation.
 ROOT_ENV = "RELEASE_KEY_ROOT"
 
-# The throwaway key. Its passphrase is a literal in the twin and is a literal
-# here: it protects nothing, and a generated one would make the "wrong passphrase"
-# control depend on a value the reader cannot see.
-# THE SUPPRESSION ON THE NEXT LINE IS NOT A SILENCING. bandit is right that this
+# The throwaway key. Its passphrase is a literal in the twin and is a literal here: it protects nothing, and a generated one would make the "wrong passphrase" control depend on a value the reader cannot see. THE SUPPRESSION ON THE NEXT LINE IS NOT A SILENCING. bandit is right that this
 # is a hardcoded credential; it protects a key generated and thrown away inside a
-# temp GNUPGHOME for the length of one process, and it is the twin's literal.
-# Replacing it with a random value would cost the "wrong passphrase" control its
-# readability and would change nothing about what is protected.
+# temp GNUPGHOME for the length of one process, and it is the twin's literal. Replacing it with a random value would cost the "wrong passphrase" control its readability and would change nothing about what is protected.
 PASSPHRASE = "gate-throwaway-passphrase"  # noqa: S105
 KEY_UID = "Release Key Gate <gate@example.invalid>"
 
-# RFC 4880 wraps armor base64 at 64 columns. The weld produces one line far
-# longer, and that over-long line is the structural signature Go rejects.
+# RFC 4880 wraps armor base64 at 64 columns. The weld produces one line far longer, and that over-long line is the structural signature Go rejects.
 ARMOR_COLUMNS = 64
 
 # `gate_finish 8` in the twin. A battery that did not run is not a green one.
@@ -163,8 +157,7 @@ GUARD_LITERAL = "|| canon_rc=$?"
 # `grep -c 'canonicalise-gpg-key.sh'` -- likewise fixed.
 CANON_LITERAL = "canonicalise-gpg-key.sh"
 
-# `grep -v '^\s*#'`, with the POSIX class written out. Python's `\s` would also
-# match U+00A0, which would drop a line grep keeps.
+# `grep -v '^\s*#'`, with the POSIX class written out. Python's `\s` would also match U+00A0, which would drop a line grep keeps.
 COMMENT_LINE_RE = re.compile(r"^[ \t\v\f\r]*#")
 
 # `grep -c 'BEGIN PGP PRIVATE KEY BLOCK'`.
@@ -372,9 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
     if shutil.which("gpg") is None:
-        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, and this
-        # wording is also the comparator's refusal vocabulary: "nothing here was
-        # verified" suspends a differential rather than scoring it.
+        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, and this wording is also the comparator's refusal vocabulary: "nothing here was verified" suspends a differential rather than scoring it.
         print(
             "✗ gpg is not installed, so nothing here was verified (CI installs it; locally: "
             "sudo apt-get install -y gnupg)",
@@ -445,9 +436,7 @@ def main(argv: list[str] | None = None) -> int:
             "1" if longest_body_line(_read(welded)) > ARMOR_COLUMNS else "0",
             "1",
         )
-        # The precondition the whole repair rests on, and the reason the build's
-        # own fingerprint check could not catch this: gpg reads the welded block
-        # happily.
+        # The precondition the whole repair rests on, and the reason the build's own fingerprint check could not catch this: gpg reads the welded block happily.
         welded_colons = _gpg(["--show-keys", "--with-colons", str(welded)], gnupghome).stdout or ""
         tally.check(
             "CONTROL: gpg still reads the welded key, which is why it slipped through",
@@ -458,22 +447,17 @@ def main(argv: list[str] | None = None) -> int:
         repaired = tmp / "repaired.asc"
         shutil.copyfile(welded, repaired)
         # 0 = was already canonical, 10 = REPAIRED. Both are success here; only 1
-        # is failure. Treating any non-zero as failure is what this gate did
-        # before the repair signal existed, and it turned a working repair into
-        # "canonicaliser-failed".
+        # is failure. Treating any non-zero as failure is what this gate did before the repair signal existed, and it turned a working repair into "canonicaliser-failed".
         canon_rc = _run_canon(canon, repaired, PASSPHRASE)
         tally.check("a welded key reports REPAIRED, not 'already fine'", str(canon_rc), "10")
 
-        # CONTROL: an already-canonical key must NOT claim a repair, or the signal
-        # is noise and the next person mutes it.
+        # CONTROL: an already-canonical key must NOT claim a repair, or the signal is noise and the next person mutes it.
         good_probe = tmp / "good-probe.asc"
         shutil.copyfile(good, good_probe)
         good_rc = _run_canon(canon, good_probe, PASSPHRASE)
         tally.check("CONTROL: an already-canonical key reports 0, not 10", str(good_rc), "0")
 
-        # The caller runs under `set -e`, so a BARE call to a script exiting 10
-        # aborts the whole build -- which is exactly the production case the
-        # signal exists for.
+        # The caller runs under `set -e`, so a BARE call to a script exiting 10 aborts the whole build -- which is exactly the production case the signal exists for.
         tally.check(
             "build-linux-pkg.sh guards that non-zero exit", guard_count_field(build_pkg), "1"
         )
@@ -490,26 +474,19 @@ def main(argv: list[str] | None = None) -> int:
             tally.check(
                 "...and the repaired key is still the SAME key", _first_fpr(repaired_colons), fpr
             )
-            # If the re-export dropped the passphrase, nfpm's NFPM_*_PASSPHRASE
-            # would be wrong and signing would fail with a confusing error
-            # somewhere else.
+            # If the re-export dropped the passphrase, nfpm's NFPM_*_PASSPHRASE would be wrong and signing would fail with a confusing error somewhere else.
             tally.check(
                 "...and it is still passphrase-protected",
                 str(literal_count(_read(repaired), PROTECTED_LITERAL)),
                 "1",
             )
-            # IMPORT IS NOT THE TEST. gpg imports a protected secret key without
-            # the passphrase -- it stores it still encrypted -- so an import that
-            # succeeds proves nothing about protection. Signing is what needs the
-            # passphrase, and it is what nfpm does, so that is what is asserted.
+            # IMPORT IS NOT THE TEST. gpg imports a protected secret key without the passphrase -- it stores it still encrypted -- so an import that succeeds proves nothing about protection. Signing is what needs the passphrase, and it is what nfpm does, so that is what is asserted.
             tally.check(
                 "...and it can still SIGN with the right passphrase",
                 _sign_with(tmp, repaired, PASSPHRASE, "right"),
                 "signed",
             )
-            # CONTROL: without this, a re-export that stripped the passphrase
-            # would pass the assertion above while having silently removed the
-            # protection.
+            # CONTROL: without this, a re-export that stripped the passphrase would pass the assertion above while having silently removed the protection.
             tally.check(
                 "CONTROL: and it REFUSES to sign with the wrong one",
                 _sign_with(tmp, repaired, "wrong-pass", "wrong"),
@@ -518,8 +495,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             tally.check("the canonicaliser repairs a welded key", "canonicaliser-failed", "1")
 
-        # The build must actually CALL it, or this gate proves a function nothing
-        # uses.
+        # The build must actually CALL it, or this gate proves a function nothing uses.
         tally.check(
             "build-linux-pkg.sh calls the canonicaliser",
             call_count_field(build_pkg),
@@ -586,9 +562,7 @@ def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) 
     return "signed" if signed.returncode == 0 else "refused"
 
 
-# A four-line armor block in the shape gpg emits: BEGIN, blank, body, body, END.
-# The base every plant below mutates, and asserted CANONICAL first: without that,
-# each plant would "fire" against a fixture that was already malformed.
+# A four-line armor block in the shape gpg emits: BEGIN, blank, body, body, END. The base every plant below mutates, and asserted CANONICAL first: without that, each plant would "fire" against a fixture that was already malformed.
 _ARMOR = (
     "-----BEGIN PGP PRIVATE KEY BLOCK-----\n"
     "\n"
@@ -653,8 +627,7 @@ def selftest() -> int:
     )
     ctl.check("VACUITY: welding nothing yields nothing", weld(""), "")
     # ONLY THE FIRST PAIR. `done=1` is what stops it, and a welder that joined
-    # every pair would produce a fixture the canonicaliser might repair
-    # differently.
+    # every pair would produce a fixture the canonicaliser might repair differently.
     ctl.check(
         "MIRROR: only ONE weld happens, however many body lines there are",
         weld("-----B-----\n\nA\nB\nC\nD\nE\n-----E-----\n"),
@@ -716,9 +689,7 @@ def selftest() -> int:
     ctl.check("VACUITY: no fpr record yields the empty string", _first_fpr("sec:u:2048::\n"), "")
     ctl.check("VACUITY: empty colon output yields the empty string", _first_fpr(""), "")
 
-    # -- the tally's own contract --------------------------------------------
-    # THE TWO LINES THIS BLOCK PRINTS ARE THE SUBJECT, NOT A FAILURE. The tally
-    # is what is under test here, so its own `  FAIL  ...` and `✗ selftest: ...`
+    # -- the tally's own contract -------------------------------------------- THE TWO LINES THIS BLOCK PRINTS ARE THE SUBJECT, NOT A FAILURE. The tally is what is under test here, so its own ` FAIL ...` and `✗ selftest: ...`
     # land on stderr on purpose; a reader scanning for red would otherwise take
     # them for the selftest failing.
     tally = _GateTally()

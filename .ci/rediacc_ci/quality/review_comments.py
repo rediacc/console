@@ -186,11 +186,9 @@ LOW_EFFORT_PATTERNS = (
 # The inline floor. See the port notes for why it is not the summary floor.
 INLINE_MIN_CHARS = 10
 
-# "A reply to the whole summary must clear a higher bar than a one-line inline
-# thread. Same floor check-review-report-replies.sh uses for the same reason."
+# "A reply to the whole summary must clear a higher bar than a one-line inline thread. Same floor check-review-report-replies.sh uses for the same reason."
 SUMMARY_MIN_CHARS = 30
-# "...and one that only clears that floor still has to prove it is ABOUT the
-# review, which it does one of two ways (see the reply rule below)."
+# "...and one that only clears that floor still has to prove it is ABOUT the review, which it does one of two ways (see the reply rule below)."
 SUMMARY_LONGFORM_CHARS = 200
 
 TRAILING_PUNCT = re.compile(r"[.!?]*$")
@@ -249,12 +247,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
                     pass
                 else:
                     # `out="$(gh "$@" ...)"` in `_gh_probe`: COMMAND SUBSTITUTION
-                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the
-                    # stripped value with `printf '%s'`. That matters because
-                    # `check-review-comments.sh` compares the result against the
-                    # literal `"[]"`, and an unstripped `"[]\n"` takes the other
-                    # branch. Found by the differential, on a specimen with no
-                    # inline comments.
+                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the stripped value with `printf '%s'`. That matters because `check-review-comments.sh` compares the result against the literal `"[]"`, and an unstripped `"[]\n"` takes the other branch. Found by the differential, on a specimen with no inline comments.
                     return proc.stdout.rstrip("\n")
         if attempt < GH_ATTEMPTS:
             _warn(
@@ -459,11 +452,7 @@ def main(argv: list[str] | None = None) -> int:
         summary_id = str(summary.get("id"))
         summary_author = ((summary.get("user") or {}).get("login")) or ""
         summary_created = summary.get("created_at")
-        # `jq -r '.body' | tr '\n' ' '` ADDS A TRAILING SPACE, because `jq -r`
-        # terminates its output with a newline and `tr` turns that newline into a
-        # space too. The excerpt therefore ends `... "` rather than `..."`, and a
-        # port that translated only the body's INTERNAL newlines produced a
-        # one-character difference on every summary. Found by the differential.
+        # `jq -r '.body' | tr '\n' ' '` ADDS A TRAILING SPACE, because `jq -r` terminates its output with a newline and `tr` turns that newline into a space too. The excerpt therefore ends `... "` rather than `..."`, and a port that translated only the body's INTERNAL newlines produced a one-character difference on every summary. Found by the differential.
         summary_head = clip(((summary.get("body") or "") + "\n").replace("\n", " "), 120)
         reply = summary_reply(issue_comments, summary)
         if reply is not None:
@@ -744,11 +733,7 @@ def selftest() -> int:
     cited = summary_reply(
         [
             summary,
-            # PAST THE 30-CHARACTER FLOOR AND WELL SHORT OF 200: the citation is
-            # what makes it count, and the substance check runs FIRST, so a
-            # 24-character citation would be rejected as low effort before clause
-            # (d) ever saw it. That is the twin's order, and getting it wrong here
-            # is how a control asserts the opposite of the code.
+            # PAST THE 30-CHARACTER FLOOR AND WELL SHORT OF 200: the citation is what makes it count, and the substance check runs FIRST, so a 24-character citation would be rejected as low effort before clause (d) ever saw it. That is the twin's order, and getting it wrong here is how a control asserts the opposite of the code.
             {
                 "id": 17,
                 "user": human,

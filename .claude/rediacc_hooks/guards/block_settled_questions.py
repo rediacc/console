@@ -78,11 +78,7 @@ CHAIN = "pre-ask"
 TWIN = "pre-ask/block-settled-questions.sh"
 ORDER = 3
 
-# The clause anchor. Without it a sentence ABOUT the rule is refused as if it
-# were the rule being broken -- "Should I explain in the report why we never
-# commit unasked?" -- which is the mention-vs-target class reaching the pre-ask
-# chain, where check_guard_mention_anchoring.py cannot see it because it globs
-# pre-bash only.
+# The clause anchor. Without it a sentence ABOUT the rule is refused as if it were the rule being broken -- "Should I explain in the report why we never commit unasked?" -- which is the mention-vs-target class reaching the pre-ask chain, where check_guard_mention_anchoring.py cannot see it because it globs pre-bash only.
 DEFECT = (
     "if hookio.grep_q(CLAUSE, between):\n            return hookio.ALLOW",
     "if False:\n            return hookio.ALLOW",
@@ -96,22 +92,13 @@ PERMISSION = (
 )
 OBJECT = r"commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge|worktree"
 
-# ---- ANCHOR: the permission must GOVERN the object, not merely precede it ----
-# Both regexes hit anywhere in the question, so a sentence ABOUT the rule was
-# refused as if it were the rule being broken:
+# ---- ANCHOR: the permission must GOVERN the object, not merely precede it ---- Both regexes hit anywhere in the question, so a sentence ABOUT the rule was refused as if it were the rule being broken:
 #
-#   "Should I explain in the report why we never commit unasked?"
-#    ^^^^^^^^ PERMISSION                        ^^^^^^ OBJECT   -> exit 2
+# "Should I explain in the report why we never commit unasked?" ^^^^^^^^ PERMISSION ^^^^^^ OBJECT -> exit 2
 #
-# That is the mention-vs-target class -- the same one that hit four pre-bash
-# guards on 2026-08-28 -- reaching the pre-ask chain, which
-# check_guard_mention_anchoring.py does not probe (it globs pre-bash only).
+# That is the mention-vs-target class -- the same one that hit four pre-bash guards on 2026-08-28 -- reaching the pre-ask chain, which check_guard_mention_anchoring.py does not probe (it globs pre-bash only).
 #
-# ANCHOR, DO NOT NARROW: the object list stays exactly as it was. What is added
-# is that no CLAUSE BOUNDARY may sit between the permission and the object. A
-# subordinating conjunction or a comma means the object belongs to a different
-# clause, which is precisely what "a sentence about it" looks like. The direct
-# forms this guard exists for have nothing between them: "should i commit",
+# ANCHOR, DO NOT NARROW: the object list stays exactly as it was. What is added is that no CLAUSE BOUNDARY may sit between the permission and the object. A subordinating conjunction or a comma means the object belongs to a different clause, which is precisely what "a sentence about it" looks like. The direct forms this guard exists for have nothing between them: "should i commit",
 # "shall i open a pr", "do you want me to create a branch".
 CLAUSE = (
     r"(^|[^a-z])(why|whether|that|because|how|when|if|before|after|unless|since|instead)"
@@ -170,9 +157,7 @@ EDGE_CASES = [
     ("a comma is a clause boundary too", "Should I, before the merge, run the suite?"),
     # The object sits BEFORE the permission phrase. Left refusing, deliberately.
     ("the object before the permission", "The commit is staged, should i proceed?"),
-    # 2026-09-16: the worktree/branch routing class, added live -- "shouldn't
-    # have asked ... it should also catch the worktree and branching
-    # questions". Same two-condition shape, new object and permission forms.
+    # 2026-09-16: the worktree/branch routing class, added live -- "shouldn't have asked ... it should also catch the worktree and branching questions". Same two-condition shape, new object and permission forms.
     (
         "worktree routing question",
         "Where should this work happen: a new worktree, or the current checkout?",
@@ -227,8 +212,7 @@ def _record(ev, question, perm_hit, obj_hit):
     row = {
         "ts": stamp,
         "session": session,
-        # `--arg question "$(printf '%s' "$QUESTION" | head -c 500)"`: 500
-        # BYTES, not characters, which is what `head -c` counts.
+        # `--arg question "$(printf '%s' "$QUESTION" | head -c 500)"`: 500 BYTES, not characters, which is what `head -c` counts.
         "question": question.encode("utf-8", "surrogateescape")[:500].decode(
             "utf-8", "surrogateescape"
         ),
@@ -244,20 +228,11 @@ def _record(ev, question, perm_hit, obj_hit):
 
 
 def run(ev):
-    # jq IS NOT GUARANTEED HERE, and this comment used to claim it was: "jq is
-    # guaranteed here: require-jq.sh runs first in this same chain and fails closed
-    # without it." That is false. The AskUserQuestion matcher in
-    # .claude/settings.json contains exactly ONE hook -- this one -- so nothing runs
-    # ahead of it. Without jq the command substitution below produced an empty
-    # QUESTION and the `[ -z ... ]` guard passed the question through SILENTLY: a
-    # gate that cannot fire, wearing a comment that promised it could.
+    # jq IS NOT GUARANTEED HERE, and this comment used to claim it was: "jq is guaranteed here: require-jq.sh runs first in this same chain and fails closed without it." That is false. The AskUserQuestion matcher in .claude/settings.json contains exactly ONE hook -- this one -- so nothing runs ahead of it. Without jq the command substitution below produced an empty QUESTION and the
+    # `[ -z ... ]` guard passed the question through SILENTLY: a gate that cannot fire, wearing a comment that promised it could.
     #
-    # The handling is now explicit and it FAILS OPEN ON PURPOSE, which is the
-    # opposite of the rule for the Stop gates next door. A missing jq is this
-    # hook's problem, not the session's, and blocking a legitimate question over a
-    # missing binary is the precise failure the "narrow on purpose" note above
-    # exists to prevent. So: pass the question, and SAY that it went unexamined
-    # rather than pretending it was examined and cleared.
+    # The handling is now explicit and it FAILS OPEN ON PURPOSE, which is the opposite of the rule for the Stop gates next door. A missing jq is this hook's problem, not the session's, and blocking a legitimate question over a missing binary is the precise failure the "narrow on purpose" note above exists to prevent. So: pass the question, and SAY that it went unexamined rather
+    # than pretending it was examined and cleared.
     if not hookio.have("jq"):
         ev.warn(NO_JQ)
         return hookio.ALLOW
@@ -290,8 +265,7 @@ def run(ev):
         if hookio.grep_q(CLAUSE, between):
             return hookio.ALLOW
     # else: the object sits BEFORE the permission phrase. Left refusing,
-    # deliberately: this anchor exists to stop a false positive, and guessing at
-    # an unmeasured word order is how anchoring turns into narrowing.
+    # deliberately: this anchor exists to stop a false positive, and guessing at an unmeasured word order is how anchoring turns into narrowing.
 
     _record(ev, question, perm_hit, obj_hit)
     ev.warn_raw(MESSAGE)

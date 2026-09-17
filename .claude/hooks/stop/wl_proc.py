@@ -34,9 +34,7 @@ _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci"
 if _CI.is_dir() and str(_CI) not in sys.path:
     sys.path.insert(0, str(_CI))
 
-# The two codes, given values here as well as re-exported, so a caller can branch on
-# them even in a tree where the runner itself did not load. They are the codes the call
-# sites were already synthesising by hand in their `except` arms.
+# The two codes, given values here as well as re-exported, so a caller can branch on them even in a tree where the runner itself did not load. They are the codes the call sites were already synthesising by hand in their `except` arms.
 TIMEOUT_RC = 124
 SPAWN_FAILED_RC = 127
 

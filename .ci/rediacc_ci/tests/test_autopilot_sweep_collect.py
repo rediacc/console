@@ -63,11 +63,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 STATE_HEADER = "### Autopilot state (machine-maintained, do not edit)"
 BOT = "autopilot-bot"
 
-# Everything the two subjects and the two bash scripts they call need on PATH.
-# Derived by DRIVING them, not by reading: `tr` is there because `parse_args`
-# shells out to `to_upper` once per flag, `awk` because `state-comment.sh`
-# parses the state line with it, and `mktemp`/`rm` because `sweep-campaigns.sh`
-# makes and traps a work directory.
+# Everything the two subjects and the two bash scripts they call need on PATH. Derived by DRIVING them, not by reading: `tr` is there because `parse_args` shells out to `to_upper` once per flag, `awk` because `state-comment.sh` parses the state line with it, and `mktemp`/`rm` because `sweep-campaigns.sh` makes and traps a work directory.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -81,8 +77,7 @@ PATH_MINIMUM = (
     "mktemp",
     "mkdir",
     "rm",
-    # `_gh_probe`'s backoff is an external `sleep`, so a PATH without it turns
-    # every retry case into a 127 from the twin and a pass from the port.
+    # `_gh_probe`'s backoff is an external `sleep`, so a PATH without it turns every retry case into a 127 from the twin and a pass from the port.
     "sleep",
 )
 
@@ -171,8 +166,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str], **gh_env: s
         "FAKE_GH_LOG": str(log),
     }
     env.update(gh_env)
-    # `sys.executable`, not "python3": the PATH above is a STUB with twelve
-    # symlinks on it and no interpreter, which is the point of it.
+    # `sys.executable`, not "python3": the PATH above is a STUB with twelve symlinks on it and no interpreter, which is the point of it.
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     proc = subprocess.run(
         [*runner, str(subject), *argv],
@@ -402,9 +396,7 @@ def test_defect_an_unwritable_out_is_announced_as_an_empty_sweep() -> None:
         assert b"grep: nodir/out.txt: No such file or directory" in tail, side[2]
         # The count is EMPTY where the total should be. That is the defect.
         assert b"sweeper:  armed PR(s) = 2 label-armed U 1 campaign-armed" in side[2], side[2]
-    # SHAPE, properly: mask the one line that carries the implementation's own
-    # name and compare EVERYTHING else byte for byte, so a port that also moved
-    # the message, or lost a line after it, still fails.
+    # SHAPE, properly: mask the one line that carries the implementation's own name and compare EVERYTHING else byte for byte, so a port that also moved the message, or lost a line after it, still fails.
     assert _mask_redirection(old[2]) == _mask_redirection(new[2]), (old[2], new[2])
 
 

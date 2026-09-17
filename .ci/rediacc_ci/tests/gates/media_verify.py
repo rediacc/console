@@ -49,11 +49,9 @@ MEDIA_DIR = MEDIA_ROOT / ".ci" / "media"
 # See the docstring: resolved now, while the caller's real PATH is still in effect.
 _BASH = shutil.which("bash") or "/bin/bash"
 
-# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06
-# router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh,
+# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh,
 # which made that file a third origin overnight; four separate absence assertions
-# had to be widened by hand to notice, and missing one of them would not have
-# shown up as a failure.
+# had to be widened by hand to notice, and missing one of them would not have shown up as a failure.
 MEDIA_ORIGIN_RELPATHS = ("run.sh", "media.sh", ".ci/legacy/run-legacy.sh")
 
 
@@ -412,11 +410,7 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
     """
     repo = media_chain_sandbox(directory)
 
-    # REFUSE TO PROCEED THROUGH A SYMLINK. Every arm below WRITES to an origin
-    # inside the sandbox, and if the sandbox ever goes back to symlinking
-    # .ci/legacy those writes land in the real checkout. A guard rather than a
-    # comment, because the damage is silent and lands in another workstream's
-    # 1,300-line file.
+    # REFUSE TO PROCEED THROUGH A SYMLINK. Every arm below WRITES to an origin inside the sandbox, and if the sandbox ever goes back to symlinking .ci/legacy those writes land in the real checkout. A guard rather than a comment, because the damage is silent and lands in another workstream's 1,300-line file.
     if (repo / ".ci" / "legacy").is_symlink():
         gate.log_fail(
             "the sandbox symlinked .ci/legacy -- planting an origin here would write "
@@ -446,9 +440,7 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
             "not ownership"
         )
 
-    # PARKED AT THE SANDBOX ROOT, not beside the file it came from. A name under
-    # .ci/legacy/ would read as a claim that such a path exists, and the folder's
-    # documentation gate checks every .ci/ path a media file names.
+    # PARKED AT THE SANDBOX ROOT, not beside the file it came from. A name under .ci/legacy/ would read as a claim that such a path exists, and the folder's documentation gate checks every .ci/ path a media file names.
     legacy = repo / ".ci" / "legacy" / "run-legacy.sh"
     parked = repo / "absent-origin"
     legacy.rename(parked)

@@ -67,17 +67,14 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# `for dir in cli npm apt rpm apk archlinux` (:37). ORDER MATTERS to the call
-# log, which is how this port is proved equivalent.
+# `for dir in cli npm apt rpm apk archlinux` (:37). ORDER MATTERS to the call log, which is how this port is proved equivalent.
 FORMATS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
 
 # The `-promoted` suffix the promotion-simulation test creates (:41).
 PROMOTED_SUFFIX = "-promoted"
 
 # The five `${VAR:?msg}` guards (:25-33), in order, as (name, message). The
-# messages are the twin's verbatim, including the two that name the R2_* ->
-# AWS_* bridge -- the header says promote-stable.yml stayed red for seven runs
-# because a missing bridge surfaced as "NoCredentials" instead.
+# messages are the twin's verbatim, including the two that name the R2_* -> AWS_* bridge -- the header says promote-stable.yml stayed red for seven runs because a missing bridge surfaced as "NoCredentials" instead.
 REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("CHANNEL", "CHANNEL is required (e.g. pr-123)"),
     ("RELEASES_BUCKET", "RELEASES_BUCKET is required"),
@@ -92,8 +89,7 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ),
 )
 
-# The defect named in the module docstring, as a constant so a test can assert
-# it by name instead of restating the sentence.
+# The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
 A_REFUSED_DELETE_READS_AS_DELETED = True
 
 

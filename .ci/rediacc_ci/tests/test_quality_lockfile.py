@@ -303,11 +303,8 @@ def test_no_test_in_this_file_can_reach_the_real_npx() -> None:
     """
     source = pathlib.Path(lf.__file__).read_text(encoding="utf-8")
     spawn_sites = [line for line in source.split("\n") if "subprocess.run(" in line]
-    # Three, and only three: run_lint, run_resolve, resolve_failure_detail. A
-    # fourth would be a spawn nobody reviewed.
+    # Three, and only three: run_lint, run_resolve, resolve_failure_detail. A fourth would be a spawn nobody reviewed.
     assert len(spawn_sites) == 3, spawn_sites
-    # And the literal `npx` is built in exactly two places, both of them argv
-    # helpers this file pins byte for byte above. A third would be an argv the
-    # differential never compared.
+    # And the literal `npx` is built in exactly two places, both of them argv helpers this file pins byte for byte above. A third would be an argv the differential never compared.
     builders = [line for line in source.split("\n") if line.strip().startswith('return ["npx"')]
     assert len(builders) == 2, builders

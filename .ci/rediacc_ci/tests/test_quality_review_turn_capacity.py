@@ -94,8 +94,7 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
 
 
 CASES = [
-    # THE NEGATIVE HALF, first, because it is the one whose absence would make
-    # every other case meaningless.
+    # THE NEGATIVE HALF, first, because it is the one whose absence would make every other case meaningless.
     ("a healthy continuous budget is silent", HEALTHY, 0),
     (
         "the pre-incident rung shape starves at its top",
@@ -218,13 +217,8 @@ def test_selftest_exits_zero_and_prints_a_count():
     )
     assert code == 0, err
     assert "control(s) passed" in out
-    # 11, DOWN FROM 12, and the reason matters because lowering a floor is
-    # normally the wrong move. The control that went was
-    # "the control's mutation actually changes the text", which asserted for
-    # ONE plant what `rediacc_ci.controls.plant()` now refuses for all five:
-    # coverage went UP while the count went down. If this number ever needs
-    # lowering again without a matching line in the gate's own derived floor,
-    # that is controls quietly not running, which is what this asserts.
+    # 11, DOWN FROM 12, and the reason matters because lowering a floor is normally the wrong move. The control that went was "the control's mutation actually changes the text", which asserted for ONE plant what `rediacc_ci.controls.plant()` now refuses for all five: coverage went UP while the count went down. If this number ever needs lowering again without a matching line in the
+    # gate's own derived floor, that is controls quietly not running, which is what this asserts.
     assert int(out.split(" control(s)")[0].strip()) >= 11
 
 

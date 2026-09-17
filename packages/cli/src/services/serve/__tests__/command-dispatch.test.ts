@@ -62,16 +62,11 @@ function synthEntry(positionals: ContractPositional[]): ContractCommand {
 }
 
 describe('buildArgv', () => {
-  // `repo list` is the flag vehicle here: after the §2.3 reshape the repo verbs
-  // that take a `<ref>` require a positional, so they throw "needs <ref>" before
-  // any flag logic runs. `repo list` keeps `--machine`/`--cluster` as filters and
-  // has NO positional, so it exercises the flag mechanics cleanly.
+  // `repo list` is the flag vehicle here: after the §2.3 reshape the repo verbs that take a `<ref>` require a positional, so they throw "needs <ref>" before any flag logic runs. `repo list` keeps `--machine`/`--cluster` as filters and has NO positional, so it exercises the flag mechanics cleanly.
   it('is the argv a local rdc would have been given', () => {
     const argv = buildArgv(entryFor('repo list'), { machine: 'prod-1' });
 
-    // --output json and --yes are forced, never taken from the caller: the
-    // executor has no terminal to render a table into and nobody to answer a
-    // prompt. They lead, because they are root options.
+    // --output json and --yes are forced, never taken from the caller: the executor has no terminal to render a table into and nobody to answer a prompt. They lead, because they are root options.
     expect(argv.slice(0, 3)).toEqual(['--output', 'json', '--yes']);
     expect(argv).toContain('repo');
     expect(argv).toContain('list');
@@ -174,8 +169,7 @@ describe('positionals', () => {
   it('reads positionals off a parsed command index-for-index, skipping the empty ones', () => {
     const entry = synthEntry([pos('ref', { required: true }), pos('rest', { variadic: true })]);
 
-    // processedArgs is what Commander fills, aligned with registeredArguments and
-    // therefore with entry.positionals: index 0 is <ref>, index 1 is [rest...].
+    // processedArgs is what Commander fills, aligned with registeredArguments and therefore with entry.positionals: index 0 is <ref>, index 1 is [rest...].
     const withBoth = { processedArgs: ['shop', ['a', 'b']] } as unknown as Command;
     expect(positionalsFromCommand(entry, withBoth)).toEqual({ ref: 'shop', rest: ['a', 'b'] });
 
@@ -201,11 +195,7 @@ describe('prepareCommand', () => {
 });
 
 describe('prepareCommand enforces proxyCapable (SEC-1)', () => {
-  // The executor must refuse every command the contract marks non-proxyable, not
-  // just interactive and `other`-plane ones. The client's --proxy refusal is
-  // advisory: a request can reach /v1/command without going through the CLI, so
-  // this is where the boundary actually holds. Each of these would, if it ran on
-  // the executor, act on the executor's own host or hand back its held secrets.
+  // The executor must refuse every command the contract marks non-proxyable, not just interactive and `other`-plane ones. The client's --proxy refusal is advisory: a request can reach /v1/command without going through the CLI, so this is where the boundary actually holds. Each of these would, if it ran on the executor, act on the executor's own host or hand back its held secrets.
 
   it.each([
     // config plane: returns the executor's OWN decrypted config in plaintext.
@@ -224,16 +214,13 @@ describe('prepareCommand enforces proxyCapable (SEC-1)', () => {
   ])('refuses %s, however the policy is written', (pathKey, params) => {
     const entry = getCommand(pathKey);
     if (!entry) throw new Error(`"${pathKey}" is missing from the contract`);
-    // Guard the premise: these are exactly the commands the contract says are
-    // not proxyable. If one flips to proxyCapable, this test should be revisited,
-    // not silently pass.
+    // Guard the premise: these are exactly the commands the contract says are not proxyable. If one flips to proxyCapable, this test should be revisited, not silently pass.
     expect(entry.proxyCapable).toBe(false);
     expect(() => prepareCommand(pathKey, params)).toThrow(CommandRejected);
   });
 
   it('refuses EVERY non-proxyable command in the contract, with a reason', () => {
-    // The exhaustive version of the cases above: no non-proxyable command is
-    // dispatchable, and each refusal carries the contract's own explanation.
+    // The exhaustive version of the cases above: no non-proxyable command is dispatchable, and each refusal carries the contract's own explanation.
     for (const entry of CLI_CONTRACT.commands) {
       if (entry.proxyCapable) continue;
       let rejected: unknown;

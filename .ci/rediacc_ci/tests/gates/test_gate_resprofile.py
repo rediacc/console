@@ -212,16 +212,13 @@ def test_seed_refuses_empty_corpus(gate):
     gate.log_test("accumulation is silent; an EMPTY seed is refused")
     with harness.temp_dir() as work:
         root = build_fixture(gate, work)
-        # The twin reaches this case with a baseline already seeded by the case
-        # above, so seeding again is ACCUMULATION rather than a first seed. The
-        # rebuild would otherwise quietly turn this into a different assertion.
+        # The twin reaches this case with a baseline already seeded by the case above, so seeding again is ACCUMULATION rather than a first seed. The rebuild would otherwise quietly turn this into a different assertion.
         first = run_gate(root, "--seed", str(work / "quiet"))
         gate.assert_exit_code(0, first.rc, "the fixture is seeded before accumulation is tested")
         # F rises, J rises: allowed.
         accumulate = run_gate(root, "--seed", str(work / "caps"))
         gate.assert_exit_code(0, accumulate.rc, "accumulating is the silent direction")
-        # An EMPTY corpus must be refused: a baseline seeded from nothing enshrines
-        # nothing. The twin's first draft asserted a "silent shrink" refusal that
+        # An EMPTY corpus must be refused: a baseline seeded from nothing enshrines nothing. The twin's first draft asserted a "silent shrink" refusal that
         # could never fire, because seeds accumulate; this case is what exposed it.
         empty = work / "empty"
         empty.mkdir()
@@ -238,10 +235,7 @@ def test_mutant_wall_scaling_removed(gate):
         module = root / ".claude" / "hooks" / "stop" / "wl_profile.py"
         source = module.read_text(encoding="utf-8")
         old = 'int(s["t_ms"] * k)'
-        # THE MUTATION IS ASSERTED BEFORE THE RUN. The twin's first draft used a
-        # sed that silently matched nothing after a formatter re-wrap: the gate ran
-        # UNMUTATED, enforced the planted E6 (exit 1), and the case read that as
-        # "wrong exit code" rather than "no mutant".
+        # THE MUTATION IS ASSERTED BEFORE THE RUN. The twin's first draft used a sed that silently matched nothing after a formatter re-wrap: the gate ran UNMUTATED, enforced the planted E6 (exit 1), and the case read that as "wrong exit code" rather than "no mutant".
         gate.assert_eq(source.count(old), 1, "the mutation site must appear exactly once")
         module.write_text(source.replace(old, 's["t_ms"]'), encoding="utf-8")
         if 's2["t_ms"] = s["t_ms"]' not in module.read_text(encoding="utf-8"):

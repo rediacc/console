@@ -41,12 +41,9 @@ import ts from 'typescript';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCAN_DIR = 'scripts';
-// THE ONE LIST. It was declared here and never read: the matcher below spelled the same
-// four names again inside its own regex literal, so the repository held two copies of the
-// control-name set and nothing kept them equal. `check:lint:tooling` reported the unused
+// THE ONE LIST. It was declared here and never read: the matcher below spelled the same four names again inside its own regex literal, so the repository held two copies of the control-name set and nothing kept them equal. `check:lint:tooling` reported the unused
 // constant, which is the visible half; the invisible half is that adding a fifth control
-// name here would have changed nothing at all. Deleting the constant would have removed
-// the symptom and left the duplication, so the regex is derived from it instead.
+// name here would have changed nothing at all. Deleting the constant would have removed the symptom and left the duplication, so the regex is derived from it instead.
 const CONTROL_NAMES = new Set(['check', 'ck', 'control', 'assertEq']);
 const CONTROL_ALTERNATION = [...CONTROL_NAMES].join('|');
 const MIN_SUBJECTS = 40;
@@ -136,9 +133,7 @@ function selftest(): boolean {
     JSON.stringify(scanFile(NESTED, 'c.ts'))
   );
 
-  // AN INTERPOLATION IS CODE, and this control caught the detector's own first
-  // version doing the wrong thing. That version also walked for CallExpressions
-  // "inside a template" -- but literal TEXT is never parsed into a call, so the
+  // AN INTERPOLATION IS CODE, and this control caught the detector's own first version doing the wrong thing. That version also walked for CallExpressions "inside a template" -- but literal TEXT is never parsed into a call, so the
   // only CallExpressions a template contains are the live ones in its `${}`.
   // It flagged them, and this control failed until that half was deleted.
   const INTERP = ["const s = `${check('called from an interpolation', true)}`;"].join('\n');
@@ -148,9 +143,7 @@ function selftest(): boolean {
     JSON.stringify(scanFile(INTERP, 'd.ts'))
   );
 
-  // A quoted (non-template) string holding the same text: also inert, but this
-  // detector deliberately does NOT claim it -- one-line strings are not where
-  // fixtures live, and claiming them would flag prose in error messages.
+  // A quoted (non-template) string holding the same text: also inert, but this detector deliberately does NOT claim it -- one-line strings are not where fixtures live, and claiming them would flag prose in error messages.
   check(
     'a single-quoted string is out of scope, stated rather than silently missed',
     scanFile("const m = 'see check(\\'x\\', true)';", 'e.ts').length === 0
@@ -171,11 +164,8 @@ function main(argv: string[]): number {
     return 1;
   }
   const dir = path.join(REPO_ROOT, SCAN_DIR);
-  // RECURSIVE, and that is not a style choice. This was a flat readdirSync of
-  // `scripts/`, whose subject was the 125 check-*.ts sitting there. W9 P2 moved
-  // them one directory down to scripts/gates/ and the corpus fell from 136 to 11,
-  // which the MIN_SUBJECTS floor below caught as a refusal rather than reporting
-  // a clean tree over eleven files. A depth-1 enumerator answers a question about
+  // RECURSIVE, and that is not a style choice. This was a flat readdirSync of `scripts/`, whose subject was the 125 check-*.ts sitting there. W9 P2 moved them one directory down to scripts/gates/ and the corpus fell from 136 to 11, which the MIN_SUBJECTS floor below caught as a refusal rather than reporting a clean tree over eleven files. A depth-1 enumerator answers a question
+  // about
   // a directory; the question this gate asks is about the tooling TREE, so it
   // walks, and the next move costs it nothing.
   const files = fs

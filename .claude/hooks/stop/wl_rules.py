@@ -33,19 +33,10 @@ import time
 
 # -- What a model-authored order is allowed to tell a session to DO ----------
 #
-# BOTH judged rules interpolate model text into an order the session then acts on,
-# so the question "may this order write?" belongs here rather than in either one.
-# It is answered DIFFERENTLY by each, and the difference is the whole point:
+# BOTH judged rules interpolate model text into an order the session then acts on, so the question "may this order write?" belongs here rather than in either one. It is answered DIFFERENTLY by each, and the difference is the whole point:
 #
-#   wl_classsweep  a sweep ENUMERATES. It has an intrinsic read-only guarantee, so
-#                  the full write set is refused.
-#   wl_bravedefault a braver DEFAULT may legitimately write -- "delete the stale
-#                  baseline entries" is exactly the kind of action that rule exists
-#                  to push a session toward -- so only TREE_DESTROYING is refused.
-#                  That subset is never acceptable on any path in this repo: the
-#                  working tree carries other sessions' uncommitted work, and a
-#                  brave DEFAULT is worse than a sweep order because it EXECUTES on
-#                  a timer with nobody reading it first.
+# wl_classsweep a sweep ENUMERATES. It has an intrinsic read-only guarantee, so the full write set is refused. wl_bravedefault a braver DEFAULT may legitimately write -- "delete the stale baseline entries" is exactly the kind of action that rule exists to push a session toward -- so only TREE_DESTROYING is refused. That subset is never acceptable on any path in this repo: the
+# working tree carries other sessions' uncommitted work, and a brave DEFAULT is worse than a sweep order because it EXECUTES on a timer with nobody reading it first.
 WRITE_VERBS = frozenset(
     (
         "rm",
@@ -69,8 +60,7 @@ WRITE_VERBS = frozenset(
         "shutdown",
     )
 )
-# git subcommands that discard work or publish. `git grep` / `git ls-files` are what
-# a sweep should use, so git itself is never denied -- only these second words.
+# git subcommands that discard work or publish. `git grep` / `git ls-files` are what a sweep should use, so git itself is never denied -- only these second words.
 WRITE_GIT = frozenset(
     ("checkout", "restore", "stash", "clean", "reset", "rm", "mv", "push", "commit")
 )
@@ -105,20 +95,10 @@ def names_tree_destroying(text):
     return names_write(text, verbs=frozenset(), git_subs=TREE_DESTROYING)
 
 
-# ACTS THIS REPO RESERVES TO AN EXPLICIT OPERATOR ASK. CLAUDE.md's first standing
-# order is that the deliverable is an UNCOMMITTED working tree: no commit, no
-# branch, no push, no PR unless the operator asked for it in that task, and
-# approving a plan is not that ask. So an order that tells a session to commit is
-# a rule instructing a standing-order violation -- which is exactly what happened
-# on 2026-09-02, when the brave-default rule's own next_action read "Rename ...
-# then commit to the open branch" and the session silently did the rename part
-# only. A rule that has to be quietly disobeyed is a broken rule.
+# ACTS THIS REPO RESERVES TO AN EXPLICIT OPERATOR ASK. CLAUDE.md's first standing order is that the deliverable is an UNCOMMITTED working tree: no commit, no branch, no push, no PR unless the operator asked for it in that task, and approving a plan is not that ask. So an order that tells a session to commit is a rule instructing a standing-order violation -- which is exactly what
+# happened on 2026-09-02, when the brave-default rule's own next_action read "Rename ... then commit to the open branch" and the session silently did the rename part only. A rule that has to be quietly disobeyed is a broken rule.
 #
-# PROSE, NOT ARGV. The offending text was "commit to the open branch" with no
-# `git` in it, so the git-subcommand matcher above could never have seen it.
-# Hence a phrase matcher: it wants the version-control sense of the word and not
-# the ordinary English one, because "commit to option A" means DECIDE and is
-# precisely the bravery this rule exists to encourage.
+# PROSE, NOT ARGV. The offending text was "commit to the open branch" with no `git` in it, so the git-subcommand matcher above could never have seen it. Hence a phrase matcher: it wants the version-control sense of the word and not the ordinary English one, because "commit to option A" means DECIDE and is precisely the bravery this rule exists to encourage.
 OPERATOR_RESERVED_RE = re.compile(
     r"(?<![\w-])(?:"
     r"git\s+(?:commit|push|merge|tag)"

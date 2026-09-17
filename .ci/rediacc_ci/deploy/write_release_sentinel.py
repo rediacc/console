@@ -186,10 +186,7 @@ def write_sentinel(product: str, version_tag: str, channel: str, commit_sha: str
     bucket = rsv.bucket()
     key = "%s/%s/%s" % (product, version_tag, rsv.SENTINEL_KEY)
 
-    # Defense in depth: never seal a prefix that has no binaries. Writing
-    # `.released` over an empty prefix manufactures the corrupt
-    # "sealed-but-empty" state (sentinel blocks re-upload, every versioned
-    # install 404s).
+    # Defense in depth: never seal a prefix that has no binaries. Writing `.released` over an empty prefix manufactures the corrupt "sealed-but-empty" state (sentinel blocks re-upload, every versioned install 404s).
     bin_count = rsv.binary_count("%s/%s/" % (product, version_tag))
     if bin_count is None:
         # `bin_count="$(rsv_binary_count ...)"` failing under `set -e`. The
@@ -205,9 +202,7 @@ def write_sentinel(product: str, version_tag: str, channel: str, commit_sha: str
     payload = build_payload(version_tag, channel, commit_sha, product, released_at_now())
 
     log.step("writing sentinel: s3://%s/%s" % (bucket, key))
-    # `printf '%s' "$payload" | aws s3 cp - s3://...` under `set -euo pipefail`:
-    # this script, unlike its two verify- siblings, keeps pipefail ON, so a
-    # failing aws aborts the run.
+    # `printf '%s' "$payload" | aws s3 cp - s3://...` under `set -euo pipefail`: this script, unlike its two verify- siblings, keeps pipefail ON, so a failing aws aborts the run.
     proc = subprocess.run(
         [
             "aws",
@@ -315,8 +310,7 @@ def main(argv: list[str]) -> int:
     log.info("release %s on %s is sealed" % (version_tag, channel))
 
     # Ratchet advance is intentionally NOT done here; cd-v2.yml's tag-and-release
-    # job owns `.ci/config/release-contract-floor.txt` and already holds the
-    # app-token that can commit it.
+    # job owns `.ci/config/release-contract-floor.txt` and already holds the app-token that can commit it.
     return 0
 
 

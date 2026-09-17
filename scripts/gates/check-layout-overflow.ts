@@ -120,8 +120,7 @@ export function declarationBlocks(css: string, startLine = 1): Block[] {
         if (css[k] === '{') depth++;
         else if (css[k] === '}') depth--;
       }
-      // Comments are SKIPPED during the walk but still sit inside the slice, so a rule
-      // preceded by a `/* ... */` note would otherwise report the note as its selector.
+      // Comments are SKIPPED during the walk but still sit inside the slice, so a rule preceded by a `/* ... */` note would otherwise report the note as its selector.
       const selector = css
         .slice(sel, j)
         .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -208,22 +207,13 @@ export function judgeBlock(block: Block, file: string): OverflowFinding[] {
   }
   // RULE 3: `white-space: nowrap` on an element that is IN NORMAL FLOW.
   //
-  // WHY THIS EXISTS, and why rules 1 and 2 could not see it. Both require the box to be
-  // out of flow (`position: absolute|fixed`). A wave re-introduced
+  // WHY THIS EXISTS, and why rules 1 and 2 could not see it. Both require the box to be out of flow (`position: absolute|fixed`). A wave re-introduced
   // `.comparison-table .metric-label { white-space: nowrap }` on a plain table cell;
-  // "Dedicated Account Manager" is 269px on its own, which drove the table's min-content
-  // width to 557px and scrolled a 390px page. The gate was green throughout, because a
-  // statically positioned cell is neither shape it was built for.
+  // "Dedicated Account Manager" is 269px on its own, which drove the table's min-content width to 557px and scrolled a 390px page. The gate was green throughout, because a statically positioned cell is neither shape it was built for.
   //
-  // A stylesheet cannot know how long the text will be, so this CANNOT be a hard
-  // failure. It is a SHRINK-ONLY inventory: every `nowrap` in normal flow is baselined,
-  // and the gate fails when a NEW one appears. That is exactly the event that caused the
-  // defect. An existing nowrap that is genuinely safe stays baselined and costs nothing.
+  // A stylesheet cannot know how long the text will be, so this CANNOT be a hard failure. It is a SHRINK-ONLY inventory: every `nowrap` in normal flow is baselined, and the gate fails when a NEW one appears. That is exactly the event that caused the defect. An existing nowrap that is genuinely safe stays baselined and costs nothing.
   //
-  // Residual, stated rather than implied: this cannot prove a page does not overflow.
-  // Only measuring `scrollWidth > clientWidth` on a RENDERED page can, and attribution
-  // must be by bisection, because three causes have now been found on three pages and no
-  // property-matching rule catches all three.
+  // Residual, stated rather than implied: this cannot prove a page does not overflow. Only measuring `scrollWidth > clientWidth` on a RENDERED page can, and attribution must be by bisection, because three causes have now been found on three pages and no property-matching rule catches all three.
   if (
     d.get('white-space') === 'nowrap' &&
     position !== 'absolute' &&
@@ -297,10 +287,7 @@ function selftest(): boolean {
     JSON.stringify(honeypot)
   );
 
-  // ---- PLANT 2: the pseudo-element tooltip, from pricing-page.css:1804.
-  // THIS IS THE ONE A BROWSER SCAN CANNOT SEE. `querySelectorAll('*')` returns no
-  // pseudo-elements, so two independent runtime hunts reported a clean page while this
-  // rule was widening it by 133 px.
+  // ---- PLANT 2: the pseudo-element tooltip, from pricing-page.css:1804. THIS IS THE ONE A BROWSER SCAN CANNOT SEE. `querySelectorAll('*')` returns no pseudo-elements, so two independent runtime hunts reported a clean page while this rule was widening it by 133 px.
   const TOOLTIP = `.cf-feature-info::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -443,9 +430,7 @@ function main(): void {
     }
   }
 
-  // FLOOR. The stylesheets are not in the obvious place (the main sheet lives under
-  // public/, not src/), so a path that quietly stops matching is a real risk here, and
-  // "zero offending rules" would be its output.
+  // FLOOR. The stylesheets are not in the obvious place (the main sheet lives under public/, not src/), so a path that quietly stops matching is a real risk here, and "zero offending rules" would be its output.
   if (blocks < MIN_BLOCKS) {
     console.error(
       `✗ Refusing to run: only ${blocks} declaration block(s) parsed under ${www}, below the ` +
@@ -454,16 +439,13 @@ function main(): void {
     process.exit(1);
   }
 
-  // static-nowrap is SHRINK-ONLY: the stylesheet cannot know how long a string is, so
-  // the existing set is frozen and only a NEW one fails. Rules 1 and 2 stay hard.
+  // static-nowrap is SHRINK-ONLY: the stylesheet cannot know how long a string is, so the existing set is frozen and only a NEW one fails. Rules 1 and 2 stay hard.
   const NOWRAP_BASELINE = 'scripts/data/static-nowrap-baseline.json';
   const nowrapKey = (f: OverflowFinding) => `${f.file}:${f.selector}`;
   const nowrapFound = findings.filter((f) => f.rule === 'static-nowrap');
   const hard = findings.filter((f) => f.rule !== 'static-nowrap');
   if (argv.includes('--write-baseline')) {
-    // COMPOSITION. "Shrink-only" was enforced on the read path only, so a reseed could
-    // drop several nowrap entries, absorb one fresh one, and still print a smaller
-    // number. Keys carry the SELECTOR, so a rewritten rule re-keys its entry.
+    // COMPOSITION. "Shrink-only" was enforced on the read path only, so a reseed could drop several nowrap entries, absorb one fresh one, and still print a smaller number. Keys carry the SELECTOR, so a rewritten rule re-keys its entry.
     const entries = nowrapFound.map(nowrapKey).sort();
     const had = fs.existsSync(NOWRAP_BASELINE);
     const previous: string[] = had
@@ -505,12 +487,8 @@ function main(): void {
   findings = [...hard, ...newNowrap];
   // A baselined finding that has been FIXED is a hard error, not a note.
   //
-  // This printed a friendly line and still exited 0, which is precisely how a stale entry
-  // survives: nobody re-reads the log of a green gate. One sat here undetected through a
-  // whole wave (`blog/index.astro:.post-date`, retired by a template rewrite) and was
-  // found by a person reading output, not by the gate. check-em-dash-surfaces.ts:329 treats
-  // the identical condition as exit 1, and it is the one that is right: a shrink-only
-  // baseline whose shrinking is never enforced does not shrink.
+  // This printed a friendly line and still exited 0, which is precisely how a stale entry survives: nobody re-reads the log of a green gate. One sat here undetected through a whole wave (`blog/index.astro:.post-date`, retired by a template rewrite) and was found by a person reading output, not by the gate. check-em-dash-surfaces.ts:329 treats the identical condition as exit 1, and
+  // it is the one that is right: a shrink-only baseline whose shrinking is never enforced does not shrink.
   const staleNowrap = knownNowrap.size - nowrapFound.length;
   if (staleNowrap > 0) {
     console.error(

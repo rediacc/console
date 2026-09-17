@@ -113,9 +113,7 @@ STAGE_FLAG_DISABLED = (
 GH_ATTEMPTS = 3
 GH_BACKOFF_SECONDS = 3
 
-# THE TWIN'S jq PROGRAM, VERBATIM, comment and all. See the module docstring for
-# why it is not reimplemented. Changing a character here changes when a PR is
-# declared done.
+# THE TWIN'S jq PROGRAM, VERBATIM, comment and all. See the module docstring for why it is not reimplemented. Changing a character here changes when a PR is declared done.
 DONE_PROGRAM = """
             {
                 ci_green: (.ci_green // false),
@@ -227,8 +225,7 @@ def check_done(fixture: str) -> tuple[int, bytes]:
         # `verdict="$(jq ...)"` under `set -e`: jq's own status, jq's own
         # message already on stderr, and nothing printed to stdout.
         return rc, b""
-    # `printf '%s\\n' "$verdict"`: the substitution stripped jq's newline and
-    # printf puts exactly one back, so a multi-document fixture prints its
+    # `printf '%s\\n' "$verdict"`: the substitution stripped jq's newline and printf puts exactly one back, so a multi-document fixture prints its
     # verdicts on their own lines and then fails the `== "true"` test.
     line = verdict.rstrip(b"\n") + b"\n"
     rc, done = _jq(["-r", ".done"], stdin=verdict.rstrip(b"\n") + b"\n")
@@ -248,8 +245,7 @@ def require_write_flag(env: dict[str, str] | None = None) -> bool:
 
 def main(argv: list[str], *, sleeper=time.sleep) -> int:
     # `cmd="${1:-}"; shift || true`: the first argument is the subcommand and
-    # is NOT a flag, so it never reaches parse_args. With no arguments at all
-    # the subcommand is the empty string, which lands in the unknown arm.
+    # is NOT a flag, so it never reaches parse_args. With no arguments at all the subcommand is the empty string, which lands in the unknown arm.
     cmd = argv[0] if argv else ""
     rest = argv[1:]
     try:
@@ -308,8 +304,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
         )
         rc, head_sha = _jq(["-r", ".sha"], stdin=body)
         if not ok or rc != 0:
-            # `pipefail`: the rightmost non-zero status wins, which is jq's
-            # when jq failed and the probe's 1 when it did not.
+            # `pipefail`: the rightmost non-zero status wins, which is jq's when jq failed and the probe's 1 when it did not.
             return rc if rc != 0 else 1
         head = head_sha.rstrip(b"\n").decode("utf-8", "surrogateescape")
 

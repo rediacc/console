@@ -32,9 +32,7 @@ function configWithPolicy(): RdcConfig {
     version: 1,
     defaults: { language: 'en', datastoreSize: '95%' },
     encryption: { mode: 'plaintext' },
-    // Deep-cloned: commit entries hold a live reference to the value, so a
-    // shared fixture object would let the "tampered" config mutate the original
-    // and hide the very difference this file is testing for.
+    // Deep-cloned: commit entries hold a live reference to the value, so a shared fixture object would let the "tampered" config mutate the original and hide the very difference this file is testing for.
     policy: structuredClone(POLICY),
   };
 }
@@ -78,8 +76,7 @@ describe('policy document in the config', () => {
   });
 
   it('the schema accepts exactly what the policy engine validates', () => {
-    // One definition, two consumers: if these ever diverged, the executor could
-    // honor a document the config would not store, or vice versa.
+    // One definition, two consumers: if these ever diverged, the executor could honor a document the config would not store, or vice versa.
     expect(PolicyDocumentSchema.safeParse(POLICY).success).toBe(true);
   });
 });

@@ -56,8 +56,7 @@ function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
   const raw = config.policy;
   if (raw === undefined) return undefined;
 
-  // Re-validate even though the config schema already types this field. The
-  // config may have arrived from a remote store, and a document that the schema
+  // Re-validate even though the config schema already types this field. The config may have arrived from a remote store, and a document that the schema
   // let through in a `.loose()` parse must still be a well-formed rule set
   // before anything is authorized against it.
   const parsed = PolicyDocumentSchema.safeParse(raw);

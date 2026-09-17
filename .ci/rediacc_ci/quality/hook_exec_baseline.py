@@ -88,24 +88,14 @@ class RefusalError(Exception):
 BASELINE_NAME = "hook-exec-baseline.json"
 SETTINGS_REL = (".claude", "settings.json")
 
-# The counter lives in the `.claude` hook package, not here, and importing it
-# costs one sys.path hop.
+# The counter lives in the `.claude` hook package, not here, and importing it costs one sys.path hop.
 #
-# ANCHORED ON THIS FILE, NOT ON `paths.from_root()`, and the difference is the
-# whole of a bug this gate had for about twenty minutes on 2026-09-09.
-# `from_root()` honours $REDIACC_CI_ROOT, which is the root of the tree being
+# ANCHORED ON THIS FILE, NOT ON `paths.from_root()`, and the difference is the whole of a bug this gate had for about twenty minutes on 2026-09-09. `from_root()` honours $REDIACC_CI_ROOT, which is the root of the tree being
 # JUDGED; the counter is part of the INSTRUMENT and travels with the gate.
-# Written the other way, pointing the gate at a fixture made it look for
-# `rediacc_hooks` INSIDE the fixture and die with `ModuleNotFoundError` -- and
-# the selftest did not catch it, because `selftest()` resolves the counter once
-# before any fixture root is set. It was the first run against a scratch copy of
-# the REAL tree that found it, which is the argument for doing that run.
-# `check_language_policy.py:120-133` makes the same distinction about its
-# validator, in the same words, for the same reason.
+# Written the other way, pointing the gate at a fixture made it look for `rediacc_hooks` INSIDE the fixture and die with `ModuleNotFoundError` -- and the selftest did not catch it, because `selftest()` resolves the counter once before any fixture root is set. It was the first run against a scratch copy of the REAL tree that found it, which is the argument for doing that run.
+# `check_language_policy.py:120-133` makes the same distinction about its validator, in the same words, for the same reason.
 #
-# THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many
-# processes does a Bash call cost" is exactly the drift this gate exists to stop,
-# and it would be a drift the gate could not see.
+# THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many processes does a Bash call cost" is exactly the drift this gate exists to stop, and it would be a drift the gate could not see.
 _HOOK_PKG_PARENT = pathlib.Path(
     os.environ.get("HOOK_EXEC_COUNTER_DIR")
     or pathlib.Path(__file__).resolve().parents[3] / ".claude"
@@ -114,8 +104,7 @@ _HOOK_PKG_PARENT = pathlib.Path(
 
 def _load_counter():
     """`rediacc_hooks.execcount`, imported through one documented path hop."""
-    # `paths.on_sys_path` IS the "insert it once" this used to spell by hand,
-    # and it is the package's own resolver rather than a fourth copy of the idiom.
+    # `paths.on_sys_path` IS the "insert it once" this used to spell by hand, and it is the package's own resolver rather than a fourth copy of the idiom.
     parent = str(_HOOK_PKG_PARENT)
     paths.on_sys_path(parent)
     try:
@@ -296,11 +285,7 @@ def run(root=None):
 def main(argv=None):
     argv = list(argv or [])
     if "--selftest" in argv:
-        # `selftest()` returns TRUE when a control FAILED, which is the contract
-        # `controls_first` reads it under. The first draft of this line had the
-        # sense inverted and `--selftest` exited 1 on a fully green run: caught by
-        # the gate test driving the flag as a process, never by the controls
-        # themselves, which never look at their own exit code.
+        # `selftest()` returns TRUE when a control FAILED, which is the contract `controls_first` reads it under. The first draft of this line had the sense inverted and `--selftest` exited 1 on a fully green run: caught by the gate test driving the flag as a process, never by the controls themselves, which never look at their own exit code.
         return 1 if selftest() else 0
     rc = controls_first("hook exec baseline", selftest)
     if rc:
@@ -336,9 +321,7 @@ def main(argv=None):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 
 
 def _fixture(tmp, settings_text, baseline_obj):
@@ -353,13 +336,9 @@ def _fixture(tmp, settings_text, baseline_obj):
     return root
 
 
-# WRITTEN AS A LITERAL, NOT json.dumps. The plants below substitute exact
-# substrings into it, and a serialiser is free to choose its own whitespace: the
+# WRITTEN AS A LITERAL, NOT json.dumps. The plants below substitute exact substrings into it, and a serialiser is free to choose its own whitespace: the
 # first draft used json.dumps(indent=2) and every needle missed, which
-# `plant()` caught by raising rather than by handing the gate clean input. The
-# fixture is small on purpose but NOT trivial -- it carries an unanchored
-# matcher, a wildcard group and a non-tool event, which are the three shapes the
-# comparison has separate code for.
+# `plant()` caught by raising rather than by handing the gate clean input. The fixture is small on purpose but NOT trivial -- it carries an unanchored matcher, a wildcard group and a non-tool event, which are the three shapes the comparison has separate code for.
 _CLEAN_SETTINGS = """{
   "hooks": {
     "PreToolUse": [
@@ -522,19 +501,13 @@ def selftest():
         (root / ".claude" / "settings.json").write_text(_CLEAN_SETTINGS, encoding="utf-8")
         check("VACUITY: a missing baseline file is a REFUSAL", _refuses(root))
 
-    # THE INSTRUMENT ITSELF. This control exists because the bug it describes was
-    # live and every control above still passed: they all resolve the counter once,
-    # before any fixture root is set, so none of them could see a counter path that
-    # followed the judged tree. A missing counter must be a loud refusal naming the
-    # directory, never a traceback that reads as flake.
+    # THE INSTRUMENT ITSELF. This control exists because the bug it describes was live and every control above still passed: they all resolve the counter once, before any fixture root is set, so none of them could see a counter path that followed the judged tree. A missing counter must be a loud refusal naming the directory, never a traceback that reads as flake.
     #
     # THE sys.modules PURGE IS NOT BOILERPLATE. Without it this control passed
     # while asserting nothing: `rediacc_hooks` is already imported by the time it
-    # runs, so `from rediacc_hooks import execcount` succeeds no matter what
-    # sys.path says, and the refusal branch is unreachable inside a warm process.
+    # runs, so `from rediacc_hooks import execcount` succeeds no matter what sys.path says, and the refusal branch is unreachable inside a warm process.
     # The gate itself always runs cold, so the branch IS live where it matters;
-    # simulating cold is what makes the control a claim about that branch rather
-    # than about the import cache.
+    # simulating cold is what makes the control a claim about that branch rather than about the import cache.
     global _HOOK_PKG_PARENT  # noqa: PLW0603
     saved_parent = _HOOK_PKG_PARENT
     saved_modules = {k: v for k, v in sys.modules.items() if k.split(".")[0] == "rediacc_hooks"}

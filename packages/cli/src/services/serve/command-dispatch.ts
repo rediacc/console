@@ -317,11 +317,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   const { argv, entry } = args.prepared;
   const started = Date.now();
 
-  // Per-dispatch config freshness: configService memoizes a ResourceState
-  // view per process, which in a long-lived serve process freezes the
-  // repository/machine world at first use while clients may rewrite the
-  // config between dispatches — the same staleness class the executor daemon
-  // hit (it built vaults from a boot snapshot). Reset both layers up front.
+  // Per-dispatch config freshness: configService memoizes a ResourceState view per process, which in a long-lived serve process freezes the repository/machine world at first use while clients may rewrite the config between dispatches — the same staleness class the executor daemon hit (it built vaults from a boot snapshot). Reset both layers up front.
   configFileStorage.clearCache();
   configService.resetResourceView();
 
@@ -332,11 +328,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let functionName: string | undefined;
   let machineName: string | undefined;
 
-  // Every machine call a served command makes runs detached and is FOLLOWED to
-  // completion: the executor cannot assume the client's connection outlives the
-  // work, so it starts a job that survives a drop and streams its spool back.
-  // `onJobStarted` fires once per job so the route can announce a re-attach
-  // point. The detach decision defaults to the contract's `detachable` and is
+  // Every machine call a served command makes runs detached and is FOLLOWED to completion: the executor cannot assume the client's connection outlives the work, so it starts a job that survives a drop and streams its spool back. `onJobStarted` fires once per job so the route can announce a re-attach point. The detach decision defaults to the contract's `detachable` and is
   // overridden by the route when it must (deps.detach).
   const detached = args.detached ?? entry.detachable;
   const recordingExecutor: Executor = {

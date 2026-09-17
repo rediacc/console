@@ -17,8 +17,7 @@ const mockRemoveRepository = vi.hoisted(() => vi.fn());
 const mockGetLocalMachine = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ ip: '127.0.0.1', user: 'root' })
 );
-// The recorded-placement read (#74): repo-executor's recordedDatastoreMount
-// resolves the parent's datastore from the whole config, not from the repo row.
+// The recorded-placement read (#74): repo-executor's recordedDatastoreMount resolves the parent's datastore from the whole config, not from the repo row.
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-resources.js', () => ({
@@ -160,9 +159,7 @@ describe('repo fork — hard-isolate of secrets', () => {
   });
 
   it('static: repo-fork.ts source must not reference parentConfig.secrets', () => {
-    // Lightweight guard against future foot-guns. If someone adds
-    // `secrets: parentConfig.secrets` to the addRepository call, this fires
-    // and forces an explicit conversation about the threat model.
+    // Lightweight guard against future foot-guns. If someone adds `secrets: parentConfig.secrets` to the addRepository call, this fires and forces an explicit conversation about the threat model.
     const src = readFileSync(resolve(__dirname, '..', 'repo-fork.ts'), 'utf-8');
     expect(src).not.toMatch(/parentConfig\.secrets/);
   });
@@ -325,19 +322,13 @@ describe('repo fork — orchestration', () => {
 
 // ── #74 on the fork verb ────────────────────────────────────────────────────
 //
-// renet resolves a repo's datastore from the MACHINE VAULT (`p.Datastore()` ->
-// `AddDatastore`, private/renet/pkg/functions/commands/repository.go), never
+// renet resolves a repo's datastore from the MACHINE VAULT (`p.Datastore()` -> `AddDatastore`, private/renet/pkg/functions/commands/repository.go), never
 // from the params bag, and `renet repository fork` looks for the PARENT image
-// under exactly that `--datastore` path
-// (private/renet/cmd/renet/repository_fork.go). `executeRepoFunction` learned
+// under exactly that `--datastore` path (private/renet/cmd/renet/repository_fork.go). `executeRepoFunction` learned
 // to declare it for up/down/status/validate/ownership/template; fork never did,
-// because it drives the executor directly instead of going through that helper.
-// So a fork of a repo living in a named datastore hunted for its parent on the
-// machine's default docker datastore, where the parent has never been.
+// because it drives the executor directly instead of going through that helper. So a fork of a repo living in a named datastore hunted for its parent on the machine's default docker datastore, where the parent has never been.
 //
-// These assert on what reaches the EXECUTOR, which is the only channel renet
-// reads. Asserting that the command "knew" the datastore would pass while the
-// wire stayed wrong — the same trap #74 documents for repo create.
+// These assert on what reaches the EXECUTOR, which is the only channel renet reads. Asserting that the command "knew" the datastore would pass while the wire stayed wrong — the same trap #74 documents for repo create.
 describe('repo fork — datastore declaration (#74)', () => {
   /** A config whose `app` family is placed on a named datastore. */
   function placedOnDatastore(): void {
@@ -371,8 +362,7 @@ describe('repo fork — datastore declaration (#74)', () => {
   });
 
   it('says nothing for a machine-placed parent, leaving the machine default in place', async () => {
-    // The fallback is CORRECT here and must not become a declaration: a repo on
-    // the implicit default datastore has no named mount to name.
+    // The fallback is CORRECT here and must not become a declaration: a repo on the implicit default datastore has no named mount to name.
     await handleForkAction('app', 'staging', { machine: 'hostinger' });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);

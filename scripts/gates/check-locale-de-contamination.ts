@@ -163,9 +163,7 @@ const NATIVE_SCRIPT: Record<string, RegExp> = {
   zh: /[一-鿿]/,
 };
 
-// A typo here is silent otherwise: `NATIVE_SCRIPT.jp` would never match the `ja` file, so
-// `ja` would fall to the German-marker path and lose its strongest signal. Checked at
-// module load against the one declaration of the locale set.
+// A typo here is silent otherwise: `NATIVE_SCRIPT.jp` would never match the `ja` file, so `ja` would fall to the German-marker path and lose its strongest signal. Checked at module load against the one declaration of the locale set.
 for (const key of Object.keys(NATIVE_SCRIPT)) {
   if (!isSiteLocale(key)) {
     throw new Error(
@@ -206,10 +204,7 @@ function latinWords(text: string): string[] {
 }
 
 function looksGerman(text: string): boolean {
-  // ß and the German opening quote „ are German and nothing else we ship. The English
-  // curly quote “ deliberately is NOT in here: it appears in English-language citations
-  // that every locale carries verbatim, and including it produced exactly that false
-  // positive in es, fr and tr.
+  // ß and the German opening quote „ are German and nothing else we ship. The English curly quote “ deliberately is NOT in here: it appears in English-language citations that every locale carries verbatim, and including it produced exactly that false positive in es, fr and tr.
   if (/[ß„]/.test(text)) return true;
   const words = latinWords(text);
   if (words.some((w) => GERMAN_FUNCTION_WORDS.has(w.toLowerCase()))) return true;
@@ -222,9 +217,7 @@ function readLocale(root: string, layout: 'dir' | 'flat', locale: string): Local
     try {
       return flatten(JSON.parse(fs.readFileSync(file, 'utf-8')));
     } catch (e) {
-      // A malformed locale file is another gate's problem. Anything else -- a bad
-      // regex, a missing helper -- is a bug HERE, and swallowing it would make this
-      // gate report zero findings while looking healthy.
+      // A malformed locale file is another gate's problem. Anything else -- a bad regex, a missing helper -- is a bug HERE, and swallowing it would make this gate report zero findings while looking healthy.
       if (e instanceof SyntaxError) return null;
       throw e;
     }
@@ -259,13 +252,8 @@ function listLocales(root: string, layout: 'dir' | 'flat'): string[] {
     layout === 'flat'
       ? fs
           .readdirSync(root)
-          // Dot-prefixed files are sidecar manifests, not locales.
-          // packages/www/src/i18n/translations holds `.naturalized-hashes.json` and
-          // `.translation-hashes.json`, 2.2 MB of CRC data that this gate was reading and
-          // flattening as if they were two extra locales on every run. Harmless in
-          // findings -- no key of theirs matches a German key -- but they counted towards
-          // `targets`, which is the DENOMINATOR of the crowd filter, so the exemption
-          // threshold was computed against 14 locales where 12 exist.
+          // Dot-prefixed files are sidecar manifests, not locales. packages/www/src/i18n/translations holds `.naturalized-hashes.json` and `.translation-hashes.json`, 2.2 MB of CRC data that this gate was reading and flattening as if they were two extra locales on every run. Harmless in findings -- no key of theirs matches a German key -- but they counted towards `targets`, which
+          // is the DENOMINATOR of the crowd filter, so the exemption threshold was computed against 14 locales where 12 exist.
           .filter((f) => !f.startsWith('.') && f.endsWith('.json'))
           .map((f) => f.slice(0, -'.json'.length))
           .sort()
@@ -305,9 +293,7 @@ export function findGermanContamination(root: string, layout: 'dir' | 'flat'): F
   );
   const german = data[SOURCE_LOCALE] ?? {};
   const english = data[ENGLISH_LOCALE] ?? {};
-  // In the flat layout each locale's keys live under its OWN filename, so the German
-  // file for a www key is de.json while the target's is ar.json. Normalise that here,
-  // otherwise every flat-layout lookup misses and the gate silently finds nothing.
+  // In the flat layout each locale's keys live under its OWN filename, so the German file for a www key is de.json while the target's is ar.json. Normalise that here, otherwise every flat-layout lookup misses and the gate silently finds nothing.
   const fileIn = (locale: string, file: string): string =>
     layout === 'flat' ? `${locale}.json` : file;
 
@@ -326,22 +312,13 @@ export function findGermanContamination(root: string, layout: 'dir' | 'flat'): F
         const text = textOf(value);
         if (latinWords(text).length < 2) continue;
 
-        // POSITIVE LANGUAGE EVIDENCE, computed before the crowd filter so the crowd
-        // filter can be conditioned on it. (Named for the predicate, not the language:
-        // `german` is already the German CATALOG in this scope.)
+        // POSITIVE LANGUAGE EVIDENCE, computed before the crowd filter so the crowd filter can be conditioned on it. (Named for the predicate, not the language: `german` is already the German CATALOG in this scope.)
         const isGermanText = looksGerman(text);
 
-        // NOT SHARED BY THE CROWD -- but only for values carrying no evidence of being a
-        // specific language.
+        // NOT SHARED BY THE CROWD -- but only for values carrying no evidence of being a specific language.
         //
-        // This filter was unconditional, and that hid 59 genuinely corrupted keys. Most
-        // of account-web's team.json was German across ar, ja, ru and zh IDENTICALLY,
-        // and "identical in four locales" is exactly what the filter reads as
-        // "language-neutral string". It is the wrong reading: a citation or a product
-        // name is shared because it belongs to no language, whereas shared CORRUPTION is
-        // shared because one bad translation pass wrote the same German into all four.
-        // The two are told apart by asking whether the value looks German -- which is
-        // already computed above and was simply not consulted here.
+        // This filter was unconditional, and that hid 59 genuinely corrupted keys. Most of account-web's team.json was German across ar, ja, ru and zh IDENTICALLY, and "identical in four locales" is exactly what the filter reads as "language-neutral string". It is the wrong reading: a citation or a product name is shared because it belongs to no language, whereas shared CORRUPTION
+        // is shared because one bad translation pass wrote the same German into all four. The two are told apart by asking whether the value looks German -- which is already computed above and was simply not consulted here.
         //
         // The exemption therefore applies only when the value is NOT identifiable German.
         // A citation ("Veeam Data Protection Trends Report 2021") still passes; a German
@@ -443,19 +420,15 @@ function selftest(): boolean {
   check('German text planted in the Arabic file is reported', keys(), ['ar:empty']);
   reseed();
 
-  // Same defect in a Latin-script locale, where the script test cannot help and the
-  // German-marker path has to carry it.
+  // Same defect in a Latin-script locale, where the script test cannot help and the German-marker path has to carry it.
   write('fr', { ...base.fr, empty: GERMAN });
   check('German text planted in the French file is reported', keys(), ['fr:empty']);
   reseed();
 
   // SHARED CORRUPTION, which the crowd filter used to swallow whole.
   //
-  // The same German value written into ar, ja, ru and zh by one bad translation pass
-  // looks, to an unconditional "most locales carry this" test, exactly like a
-  // language-neutral string. It is not, and the difference is measurable: this value
-  // carries German function words. It hid 59 genuinely corrupted keys in account-web's
-  // team.json before the filter learned to consult that evidence.
+  // The same German value written into ar, ja, ru and zh by one bad translation pass looks, to an unconditional "most locales carry this" test, exactly like a language-neutral string. It is not, and the difference is measurable: this value carries German function words. It hid 59 genuinely corrupted keys in account-web's team.json before the filter learned to consult that
+  // evidence.
   for (const locale of ['ar', 'ja', 'ru', 'zh']) write(locale, { ...base[locale], empty: GERMAN });
   check('one German value shared by four locales is reported, not exempted as neutral', keys(), [
     'ar:empty',
@@ -465,8 +438,7 @@ function selftest(): boolean {
   ]);
   reseed();
 
-  // The three false-positive classes that the first drafts reported, each pinned so a
-  // future loosening of a filter fails here instead of in someone's review.
+  // The three false-positive classes that the first drafts reported, each pinned so a future loosening of a filter fails here instead of in someone's review.
   check(
     'a unit shared with German is not reported (control)',
     findGermanContamination(root, 'dir').filter((f) => f.key === 'size').length,
@@ -514,8 +486,7 @@ function selftest(): boolean {
   );
   reseed();
 
-  // Flat layout (packages/www), where the German values live in de.json rather than in
-  // a same-named file. Getting this wrong finds nothing while looking healthy.
+  // Flat layout (packages/www), where the German values live in de.json rather than in a same-named file. Getting this wrong finds nothing while looking healthy.
   const flatRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'locale-de-flat-'));
   const writeFlat = (locale: string, obj: unknown): void =>
     fs.writeFileSync(path.join(flatRoot, `${locale}.json`), JSON.stringify(obj));
@@ -551,8 +522,7 @@ function main(): void {
   if (argv.includes('--selftest')) {
     process.exit(selftest() ? 0 : 1);
   }
-  // Control first, always. Same reasoning as check-i18n-cross-locale.ts: a gate whose
-  // fire-proof never runs is indistinguishable from a gate that always passes.
+  // Control first, always. Same reasoning as check-i18n-cross-locale.ts: a gate whose fire-proof never runs is indistinguishable from a gate that always passes.
   if (!argv.includes('--skip-control') && !selftest()) process.exit(1);
 
   const base = path.resolve(arg('--root') ?? REPO_ROOT);
@@ -575,10 +545,7 @@ function main(): void {
   if (argv.includes('--write-baseline')) {
     const ids = findings.map(idOf).sort();
 
-    // COMPOSITION. This file's header is the one OTHER gates cite as the model for "the
-    // baseline only shrinks", and it did not enforce that on the write path either: the
-    // reseed below was unconditional, so a drain could shed findings, absorb a fresh one,
-    // and print a smaller number. Being the precedent is exactly why it had to be fixed.
+    // COMPOSITION. This file's header is the one OTHER gates cite as the model for "the baseline only shrinks", and it did not enforce that on the write path either: the reseed below was unconditional, so a drain could shed findings, absorb a fresh one, and print a smaller number. Being the precedent is exactly why it had to be fixed.
     const had = fs.existsSync(baselineFile);
     const previous = loadBaseline(baselineFile);
     const verdict = writeBaselineVerdict({

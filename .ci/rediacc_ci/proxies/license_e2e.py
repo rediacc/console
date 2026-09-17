@@ -61,15 +61,9 @@ def run() -> int:
     p.need_file(
         str(root / "private" / "renet" / "go.mod"), "git submodule update --init private/renet"
     )
-    # `need_file`, not `need_exec`, matching the twin's `proxy_need_file` (mere
-    # `-e` existence): `license-mint` is a Go SOURCE directory built on demand
-    # by the subject, not a prebuilt executable sitting on disk.
+    # `need_file`, not `need_exec`, matching the twin's `proxy_need_file` (mere `-e` existence): `license-mint` is a Go SOURCE directory built on demand by the subject, not a prebuilt executable sitting on disk.
     #
-    # The path is built with the SAME unresolved `../..` the twin's
-    # `"$PROXY_DIR/../../private/license-mint"` carries (`:31`), not the clean
-    # equivalent -- both sides must print byte-identical missing-requirement
-    # text, and pathlib does not collapse `..` on its own the way a `cd`
-    # would.
+    # The path is built with the SAME unresolved `../..` the twin's `"$PROXY_DIR/../../private/license-mint"` carries (`:31`), not the clean equivalent -- both sides must print byte-identical missing-requirement text, and pathlib does not collapse `..` on its own the way a `cd` would.
     p.need_file(
         str(
             root / ".ci" / "scripts" / "test" / "proxies" / ".." / ".." / "private" / "license-mint"
@@ -79,10 +73,7 @@ def run() -> int:
     p.need_passwordless_sudo()
     p.preflight()
 
-    # Read separately on purpose, as the twin does: this subject writes every
-    # log line to stderr and nothing at all to stdout, so a merged capture
-    # would hide that the stdout side is empty by design rather than by
-    # breakage.
+    # Read separately on purpose, as the twin does: this subject writes every log line to stderr and nothing at all to stdout, so a merged capture would hide that the stdout side is empty by design rather than by breakage.
     proc = subprocess.run([subject], capture_output=True, text=True, check=False)
     rc = proc.returncode
     both = proc.stdout + proc.stderr

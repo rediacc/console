@@ -116,8 +116,7 @@ export function paramsFromCommand(
   for (const option of entry.options) {
     const value = opts[optionKey(option.long)];
     if (value === undefined) continue;
-    // A switch the operator did not pass is absent, not false. Sending `false`
-    // would be harmless but noisy in the audit record of what was asked for.
+    // A switch the operator did not pass is absent, not false. Sending `false` would be harmless but noisy in the audit record of what was asked for.
     if (!option.valueTaking && value === false) continue;
     params[option.long] = value;
   }
@@ -243,15 +242,11 @@ export async function runCommandThroughProxy(
     machine ? { machine } : undefined
   );
 
-  // Whatever the command printed at the executor is printed here, verbatim, so
-  // `rdc --proxy repo status` shows what `rdc repo status` shows.
+  // Whatever the command printed at the executor is printed here, verbatim, so `rdc --proxy repo status` shows what `rdc repo status` shows.
   if (outcome.stdout) writeStdout(`${outcome.stdout}\n`);
   if (outcome.stderr) writeStderr(`${outcome.stderr}\n`);
 
-  // Renet's own output has normally been rendered live already, arriving as
-  // `output` events the same way it streams to a terminal locally. Print the
-  // capture only when none of it came through, so a run never ends silently and
-  // nothing is ever shown twice.
+  // Renet's own output has normally been rendered live already, arriving as `output` events the same way it streams to a terminal locally. Print the capture only when none of it came through, so a run never ends silently and nothing is ever shown twice.
   if (!outcome.renderedLiveOutput && outcome.renetStdout) {
     writeStdout(
       outcome.renetStdout.endsWith('\n') ? outcome.renetStdout : `${outcome.renetStdout}\n`

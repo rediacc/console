@@ -157,15 +157,13 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its usage line and in the bash-diagnostic
-# stand-ins.
+# The twin's own name, carried in its usage line and in the bash-diagnostic stand-ins.
 SELF = "clone-d1.sh"
 
 # `EXPORT_ATTEMPTS=3` (twin :90) and the `sleep 10` between them (twin :99).
 # RETRIED because `d1 export` stages through R2 and R2 fails transiently in ways
 # that have nothing to do with the database; the twin's header records the two
-# distinct R2 errors seen on 2026-08-07 that motivated it. A database that
-# genuinely cannot be exported still fails, three times over.
+# distinct R2 errors seen on 2026-08-07 that motivated it. A database that genuinely cannot be exported still fails, three times over.
 EXPORT_ATTEMPTS = 3
 EXPORT_RETRY_SECONDS = 10
 
@@ -173,29 +171,21 @@ EXPORT_RETRY_SECONDS = 10
 # verbatim. Wrangler prints a pre-signed R2 URL valid for one hour; leaking it
 # into a CI log is a database download link in plain text.
 #
-# NOT A PIPE INTO `grep -v`, and the twin's comment explains why at length: the
-# old form died silently two ways under `pipefail` (a failing wrangler whose
-# message was lost, and a SUCCESSFUL export whose entire output was the filtered
-# lines, which made `grep -v` exit 1 and kill the step with nothing to show).
-# Capture first, redact after, report wrangler's own status.
+# NOT A PIPE INTO `grep -v`, and the twin's comment explains why at length: the old form died silently two ways under `pipefail` (a failing wrangler whose message was lost, and a SUCCESSFUL export whose entire output was the filtered lines, which made `grep -v` exit 1 and kill the step with nothing to show). Capture first, redact after, report wrangler's own status.
 REDACT_PATTERN = r"r2.cloudflarestorage.com\|valid for one hour"
 
-# The transaction strip (twin :126). D1 rejects raw BEGIN/COMMIT in SQL imports,
-# and these arrive from `sqlite3 .dump` during sanitisation or from the export.
+# The transaction strip (twin :126). D1 rejects raw BEGIN/COMMIT in SQL imports, and these arrive from `sqlite3 .dump` during sanitisation or from the export.
 STRIP_TRANSACTIONS_SED = (
     "/^BEGIN TRANSACTION;$/d; /^COMMIT;$/d; /^BEGIN;$/d; /^SAVEPOINT /d; /^RELEASE /d"
 )
 
-# The DROP generator (twin :135). Handles `CREATE TABLE name(`,
-# ``CREATE TABLE `name` (`` and `CREATE TABLE IF NOT EXISTS "name" (`.
+# The DROP generator (twin :135). Handles `CREATE TABLE name(`, ``CREATE TABLE `name` (`` and `CREATE TABLE IF NOT EXISTS "name" (`.
 DROP_STATEMENTS_SED = (
     r's/^CREATE TABLE \(IF NOT EXISTS \)\?[`"]*\([a-zA-Z_][a-zA-Z0-9_]*\)[`"]*.*'
     r'/DROP TABLE IF EXISTS "\2";/p'
 )
 
-# The FK safety wrapper written around the dump (twin :131-137). D1 exports
-# tables alphabetically rather than in dependency order, so the import needs
-# both pragmas or a child row lands before its parent table exists.
+# The FK safety wrapper written around the dump (twin :131-137). D1 exports tables alphabetically rather than in dependency order, so the import needs both pragmas or a child row lands before its parent table exists.
 IMPORT_HEADER = ("PRAGMA defer_foreign_keys=ON;", "PRAGMA foreign_keys=OFF;")
 IMPORT_FOOTER = ("PRAGMA foreign_keys=ON;",)
 
@@ -212,12 +202,10 @@ USAGE = "Usage: clone-d1.sh --source <db-name> --target <db-name> [--wrangler-co
 # DEFECT C.
 REQUIRED_VAR = "CLOUDFLARE_API_TOKEN"
 
-# `"$SCRIPT_DIR/sanitize-d1.sql"` (twin :117), relative to the repository root
-# so the missing-file path is checkable without guessing at an absolute one.
+# `"$SCRIPT_DIR/sanitize-d1.sql"` (twin :117), relative to the repository root so the missing-file path is checkable without guessing at an absolute one.
 SANITIZE_SQL_RELATIVE = (".ci", "scripts", "deploy", "sanitize-d1.sql")
 
-# The four defects in the module docstring, as constants a test can assert by
-# name instead of restating the sentence.
+# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
 THE_SANITIZE_PATH_CANNOT_WORK = True
 A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS = True
 THE_ACCOUNT_ID_GUARD_THE_HEADER_PROMISES_IS_ABSENT = True
@@ -445,12 +433,7 @@ def run_export(source_db: str, tmpdir: str) -> int:
                 "wrangler d1 export %s failed (exit %d) on attempt %d/%d; retrying in 10s"
                 % (source_db, export_rc, attempt, EXPORT_ATTEMPTS)
             )
-            # THE EXTERNAL `sleep`, not `time.sleep`. The twin execs sleep(1)
-            # and `set -e` reaches it, so a `sleep` that is missing or refuses
-            # ends the run rather than being silently skipped. It is also the
-            # only way the wait is visible in a call log, which is what lets a
-            # differential prove the retry waited rather than infer it from a
-            # wall-clock gap it cannot see.
+            # THE EXTERNAL `sleep`, not `time.sleep`. The twin execs sleep(1) and `set -e` reaches it, so a `sleep` that is missing or refuses ends the run rather than being silently skipped. It is also the only way the wait is visible in a call log, which is what lets a differential prove the retry waited rather than infer it from a wall-clock gap it cannot see.
             status = _run(["sleep", str(EXPORT_RETRY_SECONDS)])
             if status:
                 raise BashExitError(status)
@@ -480,8 +463,7 @@ def sanitize(tmpdir: str, root: str) -> None:
     if status:
         raise BashExitError(status)
 
-    # DEFECT A: this open is the one that fails, and it fails before any data
-    # can move. bash reports its own redirection error and exits 1.
+    # DEFECT A: this open is the one that fails, and it fails before any data can move. bash reports its own redirection error and exits 1.
     with _open_for_redirect(sanitize_sql) as handle:
         status = _run(["sqlite3", temp_db], stdin=handle)
     if status:
@@ -495,8 +477,7 @@ def sanitize(tmpdir: str, root: str) -> None:
     # `rm -f`: a missing file is not an error.
     _run(["rm", "-f", temp_db])
 
-    # `log_info "Sanitized ($(wc -l <f) lines)"`: a command SUBSTITUTION again,
-    # so a missing file is a diagnostic and an empty count rather than an exit.
+    # `log_info "Sanitized ($(wc -l <f) lines)"`: a command SUBSTITUTION again, so a missing file is a diagnostic and an empty count rather than an exit.
     log.info("Sanitized (%s lines)" % wc_lines(export_sql))
 
 
@@ -539,8 +520,7 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
     log.step("Verifying foreign key integrity")
     _, fk_result = _capture(fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL)
 
-    # `echo "$FK_RESULT" | jq ...`: echo appends a newline, so jq's input is
-    # never truly empty, and jq's own status is discarded either way.
+    # `echo "$FK_RESULT" | jq ...`: echo appends a newline, so jq's input is never truly empty, and jq's own status is discarded either way.
     _flush()
     jq = subprocess.run(
         ["jq", FK_JQ],
@@ -574,9 +554,7 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
     log.info("FK integrity check passed (0 violations)")
 
 
-# A bash NAME, used to tell "this expression mentions an unset variable" from
-# "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that
-# is a bad NUMBER, and bash treats the two cases differently.
+# A bash NAME, used to tell "this expression mentions an unset variable" from "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that is a bad NUMBER, and bash treats the two cases differently.
 BASH_NAME = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_][A-Za-z0-9_]*")
 
 # A complete bash arithmetic literal: optional sign, then hex, octal or decimal.
@@ -640,8 +618,7 @@ def bash_arithmetic_gt_zero(text: str) -> bool:
     if name:
         raise BashUnboundError(name.group(0))
     if stripped[0].isdigit():
-        # `[[: 08: value too great for base (error token is "08")`, verbatim
-        # apart from bash's own `<file>: line <n>:` prefix.
+        # `[[: 08: value too great for base (error token is "08")`, verbatim apart from bash's own `<file>: line <n>:` prefix.
         print(
             '%s: [[: %s: value too great for base (error token is "%s")'
             % (SELF, stripped, stripped),
@@ -681,8 +658,7 @@ def main(argv: list[str]) -> int:
         log.step("Exporting D1 database: %s" % source_db)
         export_rc = run_export(source_db, tmpdir)
 
-        # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters
-        # everything out. Its stdout is the script's stdout.
+        # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
         _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])
 
         if export_rc != 0:
@@ -715,8 +691,7 @@ def main(argv: list[str]) -> int:
     except BashExitError as exc:
         return exc.code
     finally:
-        # `trap 'rm -rf "$TMPDIR"' EXIT` (twin :57), which prints nothing and
-        # cannot change the status.
+        # `trap 'rm -rf "$TMPDIR"' EXIT` (twin :57), which prints nothing and cannot change the status.
         shutil.rmtree(tmpdir, ignore_errors=True)
 
     return 0

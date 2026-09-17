@@ -121,9 +121,7 @@ export const runCases = (tester, ruleId, rule, cases) => {
   const invalid = cases.invalid ?? [];
   const failures = [];
 
-  // RuleTester delegates to describe/it when they exist. Supplying them turns
-  // its throw-on-first-failure into per-case isolation without reimplementing
-  // any of its assertions.
+  // RuleTester delegates to describe/it when they exist. Supplying them turns its throw-on-first-failure into per-case isolation without reimplementing any of its assertions.
   const prevDescribe = RuleTester.describe;
   const prevIt = RuleTester.it;
   RuleTester.describe = (_name, body) => body();

@@ -87,8 +87,7 @@ REVIEW_MODE = "review-response"
 # The `prompt` heredoc marker's fixed half. The random half is appended per run.
 DELIM_PREFIX = "AUTOPILOT_PROMPT_EOF_"
 
-# Bytes of entropy in the random half. 16 bytes -> 32 hex characters, matching
-# `head -c 16 /dev/urandom`.
+# Bytes of entropy in the random half. 16 bytes -> 32 hex characters, matching `head -c 16 /dev/urandom`.
 DELIM_BYTES = 16
 
 
@@ -179,8 +178,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as exc:
-        # QUIRK 3 of the twin's parse_args: `printf -v` refuses a key that is
-        # not a valid shell identifier and takes the script down with exit 2.
+        # QUIRK 3 of the twin's parse_args: `printf -v` refuses a key that is not a valid shell identifier and takes the script down with exit 2.
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)
         return exc.code
 
@@ -202,25 +200,16 @@ def main(argv: list[str]) -> int:
         exc.report()
         return exc.code
 
-    # OPENED BEFORE ANYTHING IS COMPOSED, matching bash: a group's redirection is
-    # established before the group runs, so an unwritable `--out` fails first and
-    # `cat` never runs. The OSError arm therefore covers BOTH the open and every
-    # write, which is right: bash reports a redirection failure and a write
-    # failure the same way, with the same exit code.
+    # OPENED BEFORE ANYTHING IS COMPOSED, matching bash: a group's redirection is established before the group runs, so an unwritable `--out` fails first and `cat` never runs. The OSError arm therefore covers BOTH the open and every write, which is right: bash reports a redirection failure and a write failure the same way, with the same exit code.
     try:
         with open(out_path, "wb") as handle:
             try:
                 for chunk in compose_chunks(prompts, fx, template):
                     handle.write(chunk)
-                    # FLUSHED PER CHUNK, matching a fresh `cat` process per
-                    # input: the bytes must be on the fd before the NEXT input
-                    # gets a chance to fail.
+                    # FLUSHED PER CHUNK, matching a fresh `cat` process per input: the bytes must be on the fd before the NEXT input gets a chance to fail.
                     handle.flush()
             except common.RefusalError as exc:
-                # `cat`'s own message, on stderr, exit 1, with the file left
-                # exactly as far along as bash would have left it. Nothing is
-                # cleaned up, on purpose: the twin leaves the partial file too,
-                # and a port that deleted it would hide the evidence.
+                # `cat`'s own message, on stderr, exit 1, with the file left exactly as far along as bash would have left it. Nothing is cleaned up, on purpose: the twin leaves the partial file too, and a port that deleted it would hide the evidence.
                 print(exc.lines[0], file=sys.stderr, flush=True)
                 return exc.code
     except OSError as exc:
@@ -233,8 +222,7 @@ def main(argv: list[str]) -> int:
 
     if mode == REVIEW_MODE:
         payload = "%s/review-payload.json" % fx
-        # `[[ ! -s ... ]]`: missing OR empty. An empty payload file is the shape
-        # a failed fetch leaves behind, so size is the right test, not existence.
+        # `[[ ! -s ... ]]`: missing OR empty. An empty payload file is the shape a failed fetch leaves behind, so size is the right test, not existence.
         if not (os.path.isfile(payload) and os.path.getsize(payload) > 0):
             log.error(
                 "review-response round with no review payload fixture at %s; "

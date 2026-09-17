@@ -53,14 +53,12 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_account.py"
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The canonical shape of the line the twin reads, copied from
-# `workers/account/wrangler.eu.toml:40-43`.
+# The canonical shape of the line the twin reads, copied from `workers/account/wrangler.eu.toml:40-43`.
 FIXTURE_TOML = (
     '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-db-eu"\ndatabase_id = "x"\n'
 )
 
-# What the real binaries on the scratch PATH must be. `grep`, `head` and `sed`
-# are the database-name pipeline on BOTH sides (the port shells out to the same
+# What the real binaries on the scratch PATH must be. `grep`, `head` and `sed` are the database-name pipeline on BOTH sides (the port shells out to the same
 # three); `uname` and `dirname` are what `common.sh` needs at source time.
 PATH_MINIMUM = ("grep", "head", "sed", "tr", "uname", "dirname")
 
@@ -97,8 +95,7 @@ if rc:
 sys.stdout.write("added 1 package\\n")
 """
 
-# A `wrangler` that is never invoked. Its only job is to be FOUND by
-# `command -v` / `shutil.which`, which is half of the npm-install condition.
+# A `wrangler` that is never invoked. Its only job is to be FOUND by `command -v` / `shutil.which`, which is half of the npm-install condition.
 FAKE_WRANGLER = "#!/usr/bin/python3\nraise SystemExit('the fake wrangler must never run')\n"
 
 BASE_ENV = {
@@ -212,9 +209,7 @@ def _twin_source() -> str:
     return TWIN.read_text(encoding="utf-8")
 
 
-# ---------------------------------------------------------------------------
-# The harness itself, which is a claim before it is a tool
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The harness itself, which is a claim before it is a tool ---------------------------------------------------------------------------
 
 
 def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
@@ -244,9 +239,7 @@ def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
     assert "REDIACC_CI_ROOT" not in _twin_source()
 
 
-# ---------------------------------------------------------------------------
-# The happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
 def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
@@ -330,9 +323,7 @@ def test_the_account_id_is_not_stripped(tmp_path: pathlib.Path) -> None:
     _assert_agree(old, new, "account-id-unstripped", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_a_missing_region_refuses_and_the_divergence_is_bash_only(tmp_path: pathlib.Path) -> None:
@@ -428,9 +419,7 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path)
     assert old_calls == new_calls == ""
 
 
-# ---------------------------------------------------------------------------
-# The database-name pipeline, including the two defects it has
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The database-name pipeline, including the two defects it has ---------------------------------------------------------------------------
 
 
 def test_a_config_with_no_database_name_refuses(tmp_path: pathlib.Path) -> None:
@@ -508,9 +497,7 @@ def test_a_tab_indented_unspaced_assignment_still_parses(tmp_path: pathlib.Path)
     _assert_agree(old, new, "tabbed", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The install branch and the two child failures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The install branch and the two child failures ---------------------------------------------------------------------------
 
 
 def test_a_wrangler_on_path_skips_the_install(tmp_path: pathlib.Path) -> None:
@@ -556,9 +543,7 @@ def test_a_failed_migration_stops_before_the_deploy(tmp_path: pathlib.Path) -> N
     _assert_agree(old, new, "migration-failed", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms: the port copies three things out of the twin
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms: the port copies three things out of the twin ---------------------------------------------------------------------------
 
 
 def test_the_sed_program_and_the_needle_are_still_the_twins(tmp_path: pathlib.Path) -> None:

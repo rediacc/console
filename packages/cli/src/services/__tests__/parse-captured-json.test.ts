@@ -26,9 +26,7 @@ describe('parseCapturedJson (bridge relay capture)', () => {
   });
 
   it('parses a RAW single-line JSON array with no relay prefix', () => {
-    // The regression that broke the baseline tests: the old `[^\]]+` strip ate
-    // the whole array (its only `]` is the closing bracket). The identifier-only
-    // prefix strip must leave a bare array untouched.
+    // The regression that broke the baseline tests: the old `[^\]]+` strip ate the whole array (its only `]` is the closing bracket). The identifier-only prefix strip must leave a bare array untouched.
     const stdout = '[{"name":"a"},{"name":"b"}]';
     const records = parseCapturedJson<{ name: string }[]>(stdout);
     expect(records.map((r) => r.name)).toEqual(['a', 'b']);

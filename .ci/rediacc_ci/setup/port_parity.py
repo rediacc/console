@@ -89,22 +89,17 @@ EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_CANNOT_RUN = 77
 
-# The bash side, by path. Named once so a move is one edit and so the "has the
-# flip happened" question has exactly one answer.
+# The bash side, by path. Named once so a move is one edit and so the "has the flip happened" question has exactly one answer.
 TWIN = pathlib.Path(".ci") / "lib" / "setup.sh"
 LEDGER = pathlib.Path(".ci") / "shadow" / "e1-setup.observations.jsonl"
 
-# `shadow-gate --assert --k 5` is what recorded this ledger, so 5 is not a
-# number chosen here: it is the K the plan box asked for, restated where the
-# standing check can see it. Lowering it is a decision a reviewer must see.
+# `shadow-gate --assert --k 5` is what recorded this ledger, so 5 is not a number chosen here: it is the K the plan box asked for, restated where the standing check can see it. Lowering it is a decision a reviewer must see.
 LEDGER_K = 5
 
 # `setup_*` definitions in the bash, by the same anchor `function_body` uses.
 BASH_DEF_RE = re.compile(r"^(setup_[a-z_]+)\(\) \{", re.MULTILINE)
 
-# bash name -> the `host.py` name that ports it. The SAME table
-# `shadow_driver.PY_FOR` holds, and it is deliberately not imported from there:
-# that module is the differential harness and it will be deleted with the bash,
+# bash name -> the `host.py` name that ports it. The SAME table `shadow_driver.PY_FOR` holds, and it is deliberately not imported from there: that module is the differential harness and it will be deleted with the bash,
 # while this gate outlives both. A3 is what keeps the two honest while both
 # exist.
 PORTED_AS = {
@@ -134,9 +129,7 @@ class Shape:
     uncalled: int = 0
 
 
-# ---------------------------------------------------------------------------
-# readers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- readers ---------------------------------------------------------------------------
 
 
 def run_setup_order(source: str, keys: tuple[str, ...]) -> list[str]:
@@ -181,9 +174,7 @@ def _mentions(line: str, key: str) -> bool:
         return True
     if re.search(r'\bbridge\.(call|capture)\(\s*f?[\'"]%s\b' % re.escape(key), line):
         return True
-    # The two inline phases. `init-submodules.sh` appears as a path fragment in
-    # `ctx.run`, and the drift check is reached through a helper whose name is
-    # the phase's own subject, so both are matched by the literal inside a call.
+    # The two inline phases. `init-submodules.sh` appears as a path fragment in `ctx.run`, and the drift check is reached through a helper whose name is the phase's own subject, so both are matched by the literal inside a call.
     if key in ("init-submodules.sh", "check:env-credential-drift"):
         return ('"%s"' % key in line) or ("_credential_drift(" in line and key.startswith("check:"))
     return False
@@ -194,13 +185,8 @@ def bash_defined(text: str) -> list[str]:
     return BASH_DEF_RE.findall(text)
 
 
-# A shell function can only be CALLED from shell. Everything else that spells
-# the name is prose about it, and after this port there is a lot of that: the
-# `PORTED_AS` table above, `phases.DEFINED_BUT_UNCALLED`, `host.py`'s header and
-# `shadow_driver.DRIVABLE` all name `setup_docker_probe` without calling it.
-# The first version of `bash_uncalled` scanned every tracked file and therefore
-# reported the dead function as LIVE, killed by the port's own documentation of
-# it. Measured 2026-09-09: five Python mentions, zero shell callers.
+# A shell function can only be CALLED from shell. Everything else that spells the name is prose about it, and after this port there is a lot of that: the `PORTED_AS` table above, `phases.DEFINED_BUT_UNCALLED`, `host.py`'s header and `shadow_driver.DRIVABLE` all name `setup_docker_probe` without calling it. The first version of `bash_uncalled` scanned every tracked file and
+# therefore reported the dead function as LIVE, killed by the port's own documentation of it. Measured 2026-09-09: five Python mentions, zero shell callers.
 SHELL_SUFFIXES = (".sh", ".bash")
 SHELL_SHEBANG = re.compile(rb"^#![^\n]*\b(ba)?sh\b")
 
@@ -231,9 +217,7 @@ def bash_uncalled(root: pathlib.Path, names: list[str]) -> list[str]:
     other direction would report a live function as dead and invite its deletion.
     """
     # `untracked=True` and `existing=True`: a brand-new caller is untracked on the
-    # commit that adds it, and this predicate's whole job is to say what nothing
-    # calls, so missing the new caller would report a live function as dead.
-    # `.ci/rediacc_ci/gitx.py:421` records the same argument for the same flag.
+    # commit that adds it, and this predicate's whole job is to say what nothing calls, so missing the new caller would report a live function as dead. `.ci/rediacc_ci/gitx.py:421` records the same argument for the same flag.
     tracked = gitx.ls_files(root=root, untracked=True, existing=True)
     wanted = set(names)
     called: set[str] = set()
@@ -283,17 +267,13 @@ def ledger_trees(root: pathlib.Path) -> tuple[int, str]:
             ids.add(tree.get("id", ""))
         else:
             bad.add(tree.get("id", ""))
-    # A TREE THAT EVER DISAGREED STAYS DISAGREEING, the same rule
-    # `assertEquivalent` applies: the id is the content of both implementations,
-    # so two verdicts over one id means the comparison is nondeterministic.
+    # A TREE THAT EVER DISAGREED STAYS DISAGREEING, the same rule `assertEquivalent` applies: the id is the content of both implementations, so two verdicts over one id means the comparison is nondeterministic.
     ids -= bad
     ids.discard("")
     return len(ids), ""
 
 
-# ---------------------------------------------------------------------------
-# the audit
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the audit ---------------------------------------------------------------------------
 
 
 def audit(root: pathlib.Path, shape: Shape) -> list[str]:
@@ -413,9 +393,7 @@ def _compare(label: str, want: list[str], got: list[str]) -> list[str]:
     return findings
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 
 
 def selftest(*, verbose: bool = True) -> int:
@@ -464,10 +442,7 @@ def selftest(*, verbose: bool = True) -> int:
         order,
         ["setup_node_toolchain", "check_node_version", "init-submodules.sh", "setup_gh_cli"],
     )
-    # THE COMMENT CASE ON ITS OWN, because the list above would still have
-    # passed if the comment had been counted AND the real call had been counted
-    # at the same index. A source where the ONLY mention is a comment is the
-    # unambiguous form of the claim.
+    # THE COMMENT CASE ON ITS OWN, because the list above would still have passed if the comment had been counted AND the real call had been counted at the same index. A source where the ONLY mention is a comment is the unambiguous form of the claim.
     comment_only = (
         "def run_setup(ctx, options, constants):\n"
         "    # host.gh_cli( is named here and nowhere else\n"
@@ -525,9 +500,7 @@ def selftest(*, verbose: bool = True) -> int:
     return EXIT_OK if ctl.report() else EXIT_FINDINGS
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -563,9 +536,7 @@ def main(argv: list[str]) -> int:
         print("✗ setup port parity: %d finding(s)." % len(findings), file=sys.stderr)
         return EXIT_FINDINGS
 
-    # PRINT THE SHAPE. `-1` means "not applicable in this state of the
-    # migration", which is a different fact from zero and is spelled differently
-    # so a reader can tell the flip has happened by reading the line.
+    # PRINT THE SHAPE. `-1` means "not applicable in this state of the migration", which is a different fact from zero and is spelled differently so a reader can tell the flip has happened by reading the line.
     print(
         "ok   setup port parity: %d phase(s) in the table, %d reached by run_setup, "
         "%s by the bash setup(), %s setup_* function(s) in %s (%d uncalled), "

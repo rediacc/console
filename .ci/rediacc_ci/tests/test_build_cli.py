@@ -59,16 +59,9 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "build_cli.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/build-cli.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_cli.py")
 
-# The recording `npm`. `FAIL` names the script that must fail (`build:cli` or
-# `build:bundle`), so a case can fail the bundle while the workspace build
-# succeeds -- the two are separate `if`s in the twin and a port could easily
-# collapse them.
+# The recording `npm`. `FAIL` names the script that must fail (`build:cli` or `build:bundle`), so a case can fail the bundle while the workspace build succeeds -- the two are separate `if`s in the twin and a port could easily collapse them.
 #
-# It reports on STDOUT with a `call: ` prefix rather than through a log-step
-# helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any
-# line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted,
-# so a fake that reported like `common.sh` would make every ledger row read
-# VACUOUS_BOTH_EMPTY. `call: ` is what the ledger's `--finding-re` scopes to.
+# It reports on STDOUT with a `call: ` prefix rather than through a log-step helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a fake that reported like `common.sh` would make every ledger row read VACUOUS_BOTH_EMPTY. `call: ` is what the ledger's `--finding-re` scopes to.
 FAKE_NPM = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -96,14 +89,10 @@ with pathlib.Path(LOG).open("a", encoding="utf-8") as fh:
 sys.stdout.write("total 4.0K\\n-rw-r--r-- 1 u u 12 Jan  1 00:00 index.js\\n")
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. `ls` is NOT
-# here: it is a fake, and listing it would let the real one win the symlink race
-# in `_binder`.
+# Everything both subjects need once PATH is rebuilt from scratch. `ls` is NOT here: it is a fake, and listing it would let the real one win the symlink race in `_binder`.
 NEEDED = ("bash", "sh", "python3", "env", "uname", "dirname", "cat", "mkdir", "rm")
 
-# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the
-# shape the port reproduces with its own path. Masked ONLY in the test that is
-# about that divergence.
+# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the shape the port reproduces with its own path. Masked ONLY in the test that is about that divergence.
 LINE_PREFIX = re.compile(r"^[^\n]*: line \d+: ", re.MULTILINE)
 
 
@@ -204,8 +193,7 @@ def _run(
         "LC_ALL": "C",
         "LANG": "C",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -276,8 +264,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
     new = _run(PORT_REL, root_b, **run_kw)
 
     if run_kw.get("exclude"):
-        # The one case whose stderr carries the INTERPRETER's diagnostic rather
-        # than the script's. Compared with the `<path>: line <n>: ` prefix
+        # The one case whose stderr carries the INTERPRETER's diagnostic rather than the script's. Compared with the `<path>: line <n>: ` prefix
         # masked; `test_a_missing_npm_agrees_on_the_branch_and_not_on_the_
         # diagnostic` is where that divergence is asserted in both directions.
         old = {**old, "stderr": LINE_PREFIX.sub("<prog>: line N: ", old["stderr"])}

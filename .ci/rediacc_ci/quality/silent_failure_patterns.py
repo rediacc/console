@@ -128,9 +128,7 @@ from rediacc_ci.controls import Controls
 # The scopes: every shell script under these two root-relative directories.
 SCAN_DIRS = (".ci/scripts", "scripts/dev")
 
-# The four matchers, transliterated from the twin's `-v` values. They are EREs
-# there and are valid Python patterns unchanged, which is the whole reason they
-# are quoted rather than rewritten: a "clearer" spelling is a different matcher.
+# The four matchers, transliterated from the twin's `-v` values. They are EREs there and are valid Python patterns unchanged, which is the whole reason they are quoted rather than rewritten: a "clearer" spelling is a different matcher.
 PIPE_HEADS_RE = re.compile(r"(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)")
 # Class 2: a redaction filter as the pipeline SINK.
 REDACT_SINK_RE = re.compile(r"2>&1 *[|] *grep -v")
@@ -139,8 +137,7 @@ SINK_RE = re.compile(r"[|] *(wc -l|head|tail|awk|jq)")
 # A line is guarded if it carries one of these.
 GUARD_RE = re.compile(r"[|][|] *(true|echo|return|exit|continue|:)")
 
-# Condition heads are exempt from BOTH classes: an if/while pipeline is consumed
-# as a test, so pipefail cannot abort the script there.
+# Condition heads are exempt from BOTH classes: an if/while pipeline is consumed as a test, so pipefail cannot abort the script there.
 CONDITION_HEAD_RE = re.compile(r"^[ \t]*(if|elif|while|until) ")
 
 # The waiver comment. Whitelists the NEXT non-blank, non-comment line.
@@ -148,21 +145,17 @@ WAIVER_RE = re.compile(r"# *silent-failure-ok")
 
 # Blank and comment lines are skipped outright, and a comment also clears a
 # dangling waiver only in the sibling gate; here a comment is simply `next`, so
-# a waiver survives an intervening comment. That asymmetry between the two gates
-# is real and is preserved.
+# a waiver survives an intervening comment. That asymmetry between the two gates is real and is preserved.
 BLANK_RE = re.compile(r"^[ \t]*$")
 COMMENT_RE = re.compile(r"^[ \t]*#")
 
-# The file-level pre-filter. See the port notes for why this differs from the
-# per-line tracker and why the class has three characters in it.
+# The file-level pre-filter. See the port notes for why this differs from the per-line tracker and why the class has three characters in it.
 STRICT_FILE_RE = re.compile(r"^set [+\\-]([euo]*pipefail|euo +pipefail|e |eu |eo |euo)")
 
 # The per-line strict-mode tracker.
 SET_LINE_RE = re.compile(r"^set [+\\-]e")
 
-# The suffix the twin appends to a class-2 finding. Quoted whole because the
-# parenthetical is advice the reader acts on, and re-wording it would change the
-# finding text the differential compares.
+# The suffix the twin appends to a class-2 finding. Quoted whole because the parenthetical is advice the reader acts on, and re-wording it would change the finding text the differential compares.
 REDACT_SUFFIX = " (redaction-filter sink: capture to a file, redact after, test the head's own rc)"
 
 
@@ -188,8 +181,7 @@ def scan_text(text: str, label: str) -> list[str]:
     strict = False
     skip_next = False
     for number, line in enumerate(text.split("\n"), start=1):
-        # NO `next` HERE. See the port notes: the twin falls through, so a `set`
-        # line is also scanned for pipeline shapes on the way past.
+        # NO `next` HERE. See the port notes: the twin falls through, so a `set` line is also scanned for pipeline shapes on the way past.
         if SET_LINE_RE.search(line) and "pipefail" in line:
             if "set -" in line:
                 strict = True
@@ -251,8 +243,7 @@ def collect(root: pathlib.Path) -> list[str]:
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # `grep -qE` on an unreadable file returns non-zero, so the twin
-            # skips it. Same outcome, same silence, same blind spot.
+            # `grep -qE` on an unreadable file returns non-zero, so the twin skips it. Same outcome, same silence, same blind spot.
             continue
         if not file_is_strict(text):
             continue
@@ -276,9 +267,7 @@ def main(argv: list[str] | None = None) -> int:
         if arg == "--json":
             json_output = True
         elif arg in ("--help", "-h"):
-            # The twin prints its own header back with `sed -n '2,30p' | sed
-            # 's/^# \\?//'`. The equivalent here is the module docstring, which
-            # is where that header now lives.
+            # The twin prints its own header back with `sed -n '2,30p' | sed 's/^# \\?//'`. The equivalent here is the module docstring, which is where that header now lives.
             print(__doc__ or "")
             return 0
         else:
@@ -295,12 +284,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if json_output:
-        # Assembled by hand in the twin with a `sed` escaping pass. `json.dumps`
-        # on each field produces the same document for every input the sed
-        # handles and the right one for the inputs it does not (a tab, a control
-        # character), so this is the one place the port is deliberately not a
-        # transliteration. Stated out loud because "the port fixed a bug" is a
-        # claim a reviewer must be able to see.
+        # Assembled by hand in the twin with a `sed` escaping pass. `json.dumps` on each field produces the same document for every input the sed handles and the right one for the inputs it does not (a tab, a control character), so this is the one place the port is deliberately not a transliteration. Stated out loud because "the port fixed a bug" is a claim a reviewer must be able
+        # to see.
         rows = []
         for finding in findings:
             path, _, rest = finding.partition(":")
@@ -430,13 +415,8 @@ def selftest() -> int:
     )
     ctl.falsy("MIRROR: a file with no set line does not qualify", file_is_strict("echo hi"))
 
-    # -- THE INHERITED DEFECT, PINNED SO IT CANNOT BE FORGOTTEN -------------
-    # This gate has no anti-vacuity floor: a corpus that collapses to zero files
-    # produces "No unguarded pipefail-risk pipelines found" and exit 0. That is
-    # the twin's behaviour, and a port that changed it would be attesting to a
-    # verdict the twin does not reach. The control below asserts the CURRENT,
-    # WRONG answer on purpose, so the day the twin grows a floor this line goes
-    # red and names the file that has to follow it.
+    # -- THE INHERITED DEFECT, PINNED SO IT CANNOT BE FORGOTTEN ------------- This gate has no anti-vacuity floor: a corpus that collapses to zero files produces "No unguarded pipefail-risk pipelines found" and exit 0. That is the twin's behaviour, and a port that changed it would be attesting to a verdict the twin does not reach. The control below asserts the CURRENT, WRONG answer
+    # on purpose, so the day the twin grows a floor this line goes red and names the file that has to follow it.
     with tempfile.TemporaryDirectory() as tmp:
         empty = pathlib.Path(tmp)
         ctl.check(

@@ -127,8 +127,7 @@ def _run(
     )
 
 
-# One monotonic counter for the whole module, so two calls inside one test never
-# share a summary path. Names, not `tempfile`, so a failure names the call.
+# One monotonic counter for the whole module, so two calls inside one test never share a summary path. Names, not `tempfile`, so a failure names the call.
 _CALLS: list[None] = []
 
 
@@ -168,9 +167,7 @@ def assert_same(
     assert new_body == old_body
 
 
-# ---------------------------------------------------------------------------
-# Usage refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Usage refusals ---------------------------------------------------------------------------
 
 
 def test_unset_sample_file_is_a_usage_error(tmp_path: pathlib.Path) -> None:
@@ -187,9 +184,7 @@ def test_empty_sample_file_variable_is_also_unset(tmp_path: pathlib.Path) -> Non
     assert_same(old, new, ob, nb)
 
 
-# ---------------------------------------------------------------------------
-# The missing-profile branch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The missing-profile branch ---------------------------------------------------------------------------
 
 
 def test_absent_sample_file_warns_and_still_writes_a_panel(tmp_path: pathlib.Path) -> None:
@@ -243,9 +238,7 @@ def test_empty_strict_is_false_not_a_third_state(tmp_path: pathlib.Path) -> None
     assert_same(old, new, ob, nb)
 
 
-# ---------------------------------------------------------------------------
-# The normal path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The normal path ---------------------------------------------------------------------------
 
 
 def test_healthy_profile_renders_panel_notice_and_no_findings(tmp_path: pathlib.Path) -> None:
@@ -276,8 +269,7 @@ def test_declared_and_hard_are_forwarded_only_when_non_empty(tmp_path: pathlib.P
     )
     assert "62% of the 10m 0s declared timeout, 53% of the 11m 40s slim hard cap" in ob
     assert_same(old, new, ob, nb)
-    # Empty means DO NOT PASS THE FLAG, so the aggregator keeps its own default
-    # and the panel is byte-identical to the one with the variables absent.
+    # Empty means DO NOT PASS THE FLAG, so the aggregator keeps its own default and the panel is byte-identical to the one with the variables absent.
     with_empty = run_both(tmp_path, {**base, "PROFILER_DECLARED_S": "", "PROFILER_HARD_S": ""})
     without = run_both(tmp_path, base)
     assert_same(with_empty[0], with_empty[1], with_empty[2], with_empty[3])
@@ -312,9 +304,7 @@ def test_note_is_appended_after_the_panel(tmp_path: pathlib.Path) -> None:
     assert_same(old, new, ob, nb)
 
 
-# ---------------------------------------------------------------------------
-# Findings, strict and non-strict
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Findings, strict and non-strict ---------------------------------------------------------------------------
 
 
 def test_too_few_samples_warns_but_does_not_fail(tmp_path: pathlib.Path) -> None:
@@ -377,9 +367,7 @@ def test_host_leak_emits_a_notice_with_verdict_none(tmp_path: pathlib.Path) -> N
     assert_same(old, new, ob, nb)
 
 
-# ---------------------------------------------------------------------------
-# The trim, and the advisory fallback it causes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The trim, and the advisory fallback it causes ---------------------------------------------------------------------------
 
 
 def test_oversized_panel_is_trimmed_and_says_so(tmp_path: pathlib.Path) -> None:
@@ -438,15 +426,12 @@ def test_non_numeric_budget_is_a_bash_diagnostic_only(tmp_path: pathlib.Path) ->
     assert old.stdout == new.stdout
     assert ob == nb
     assert "**Panel trimmed:**" not in ob
-    # Asked of the running bash: 5.3 says "integer expected" where 5.2 says
-    # "integer expression expected", and CI runs 5.2.
+    # Asked of the running bash: 5.3 says "integer expected" where 5.2 says "integer expression expected", and CI runs 5.2.
     assert bash_dialect.integer_expected() in old.stderr
     assert new.stderr == ""
 
 
-# ---------------------------------------------------------------------------
-# GITHUB_STEP_SUMMARY unset: the `/dev/stdout` default
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- GITHUB_STEP_SUMMARY unset: the `/dev/stdout` default ---------------------------------------------------------------------------
 
 
 def test_summary_defaults_to_stdout_and_keeps_its_order(tmp_path: pathlib.Path) -> None:
@@ -467,9 +452,7 @@ def test_summary_defaults_to_stdout_and_keeps_its_order(tmp_path: pathlib.Path) 
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_escape_workflow_command_matches_the_twins_three_substitutions() -> None:
@@ -498,9 +481,7 @@ def test_read_lines_drops_an_unterminated_final_record(tmp_path: pathlib.Path) -
     assert profiler_panel._read_lines(f) == ["one", "two"]
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this suite red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this suite red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
@@ -515,13 +496,8 @@ def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -
     broken = tmp_path / "profiler_panel_broken.py"
     broken.write_text(broken_src, encoding="utf-8")
 
-    # AN ADVISORY CARRYING A LITERAL `%` IS WHAT THE ESCAPING IS FOR, and the
-    # first draft of this plant used a healthy slim profile and DID NOT FIRE:
-    # every `advise()` return in report.awk:340-418 is percent-free, so the
-    # escaper was never reached and a port with no escaping at all agreed. The
-    # `%` reaches the advisory through the RUNNER LABEL, which the action passes
-    # straight in and which two arms interpolate verbatim ("keep <rn>: ..."), so
-    # the fixture is a non-slim box whose label carries one.
+    # AN ADVISORY CARRYING A LITERAL `%` IS WHAT THE ESCAPING IS FOR, and the first draft of this plant used a healthy slim profile and DID NOT FIRE: every `advise()` return in report.awk:340-418 is percent-free, so the escaper was never reached and a port with no escaping at all agreed. The `%` reaches the advisory through the RUNNER LABEL, which the action passes straight in and
+    # which two arms interpolate verbatim ("keep <rn>: ..."), so the fixture is a non-slim box whose label carries one.
     sample = tmp_path / "pct.tsv"
     write_meta(sample, runner="big%box", ceil_cpu=4000, ceil_mem=16 * 1024 * 1024 * 1024)
     append_samples(sample, 37, cpu=2000)

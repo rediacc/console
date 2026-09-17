@@ -106,9 +106,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The pure counting helper, against synthetic text -- no subprocess at all
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure counting helper, against synthetic text -- no subprocess at all ---------------------------------------------------------------------------
 
 
 def test_count_matches_each_control_class_independently() -> None:

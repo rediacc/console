@@ -108,19 +108,16 @@ def main(argv: list[str]) -> int:
         capture_output=True,
         text=True,
     )
-    # `2>/dev/null` in the twin: a failing `docker ps` is treated as "no names",
-    # not as an error worth surfacing here.
+    # `2>/dev/null` in the twin: a failing `docker ps` is treated as "no names", not as an error worth surfacing here.
     names = set(ps.stdout.splitlines()) if ps.returncode == 0 else set()
 
     for container in CONTAINERS:
         if container not in names:
             continue
         print(f"  Force removing: {container}", flush=True)
-        # `2>/dev/null` in the twin, stdout NOT redirected: docker's own stdout
-        # (it echoes the container name back on both verbs) reaches the real
+        # `2>/dev/null` in the twin, stdout NOT redirected: docker's own stdout (it echoes the container name back on both verbs) reaches the real
         # stdout, same as the twin. `capture_output=True` here would silently
-        # swallow it -- a real divergence this port had until the differential's
-        # fake docker was taught to reproduce the echo and catch it.
+        # swallow it -- a real divergence this port had until the differential's fake docker was taught to reproduce the echo and catch it.
         _docker(["stop", container], stderr=subprocess.DEVNULL)
         _docker(["rm", container], stderr=subprocess.DEVNULL)
 

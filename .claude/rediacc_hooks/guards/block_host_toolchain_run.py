@@ -77,47 +77,22 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-host-toolchain-run.sh"
 ORDER = 35
 
-# The host-bound arm, added 2026-08-28. Without it a command reaching into a
-# component with its own `.venv` is routed into the container, where the venv's
-# absolute shebangs and host glibc do not exist: the measured symptom was
-# `ModuleNotFoundError: No module named anyio`.
+# The host-bound arm, added 2026-08-28. Without it a command reaching into a component with its own `.venv` is routed into the container, where the venv's absolute shebangs and host glibc do not exist: the measured symptom was `ModuleNotFoundError: No module named anyio`.
 DEFECT = ("if hostbound:", "if False:")
 
-# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff
-# format ...` failed with "npm error could not determine executable to run",
-# and the session reading that failure concluded "no ruff binary resolves in
-# this shell" and hand-patched two files instead of running the tool. The real
-# ruff (0.16.1, the pinned version) was on PATH the entire time. npx resolves
+# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff format ...` failed with "npm error could not determine executable to run", and the session reading that failure concluded "no ruff binary resolves in this shell" and hand-patched two files instead of running the tool. The real ruff (0.16.1, the pinned version) was on PATH the entire time. npx resolves
 # its argument as an NPM PACKAGE NAME; none of this repo's pinned non-JS
-# toolchain binaries are npm packages, so npx can never run them, whether or
-# not they are actually installed. This fires on the shape alone, independent
-# of host tool state, because the diagnosis is "wrong verb", not "missing tool".
+# toolchain binaries are npm packages, so npx can never run them, whether or not they are actually installed. This fires on the shape alone, independent of host tool state, because the diagnosis is "wrong verb", not "missing tool".
 NPX_TOOLS = ("ruff", "go", "shfmt", "shellcheck", "actionlint")
 
 # gate key -> the host binary it needs. Extend this table when a gate acquires
 # a new toolchain dependency; the entry is what makes the refusal specific
 # enough to act on, and a gate absent from it is never routed.
 #
-# AN ENTRY BELONGS HERE ONLY IF THE GATE FAILS WITHOUT THE BINARY ON PATH.
-# Three of the original six did not, and each produced a confident, specific
-# refusal of a gate that works:
-#   check:ci-shell-lint    shellcheck.sh calls toolchain_acquire
-#   check:ci-shell-format  shfmt.sh      calls toolchain_acquire
-#   check:ci-actionlint    downloads a pinned, checksum-verified release
-# toolchain_acquire fetching the PIN is the entire point of that helper --
-# its own comment says a bare `command -v` accepts any version and "a stale
-# binary on a developer's PATH silently decided this gate's verdict".
-# Measured 2026-08-27 with neither tool on PATH: shfmt.sh acquired v3.13.1
-# and reported "Shell script formatting passed", exit 0.
-# Check for toolchain_acquire in the gate's script before adding an entry.
-# NO check:ci-actionlint ENTRY, DELIBERATELY. That gate provisions its own
-# tool: .ci/scripts/security/actionlint.sh uses actionlint from PATH if it is
-# there and otherwise downloads a pinned, checksum-verified release, refusing
-# any version with no recorded checksum. Verified 2026-08-27 with no
-# actionlint on this host: "actionlint clean across 29 workflow file(s)".
-# Listing it here sent a working gate into the fix-the-image branch, which is
-# confident and specific advice to do work that buys nothing. Only add a gate
-# here if it genuinely fails without the binary on PATH.
+# AN ENTRY BELONGS HERE ONLY IF THE GATE FAILS WITHOUT THE BINARY ON PATH. Three of the original six did not, and each produced a confident, specific refusal of a gate that works: check:ci-shell-lint shellcheck.sh calls toolchain_acquire check:ci-shell-format shfmt.sh calls toolchain_acquire check:ci-actionlint downloads a pinned, checksum-verified release toolchain_acquire
+# fetching the PIN is the entire point of that helper -- its own comment says a bare `command -v` accepts any version and "a stale binary on a developer's PATH silently decided this gate's verdict". Measured 2026-08-27 with neither tool on PATH: shfmt.sh acquired v3.13.1 and reported "Shell script formatting passed", exit 0. Check for toolchain_acquire in the gate's script before
+# adding an entry. NO check:ci-actionlint ENTRY, DELIBERATELY. That gate provisions its own tool: .ci/scripts/security/actionlint.sh uses actionlint from PATH if it is there and otherwise downloads a pinned, checksum-verified release, refusing any version with no recorded checksum. Verified 2026-08-27 with no actionlint on this host: "actionlint clean across 29 workflow file(s)".
+# Listing it here sent a working gate into the fix-the-image branch, which is confident and specific advice to do work that buys nothing. Only add a gate here if it genuinely fails without the binary on PATH.
 NEEDS = (
     ("check:ci-python-lint", "ruff"),
     ("check:ci-renet", "go"),
@@ -126,37 +101,25 @@ NEEDS = (
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
 #
-# `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and
-# printed "R2_MEDIA_* env vars not set". Every one of those words was load-bearing
-# and the run still read as a publish: the site had new files in packages/www, and
-# nothing reached media.rediacc.com.
+# `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and printed "R2_MEDIA_* env vars not set". Every one of those words was load-bearing and the run still read as a publish: the site had new files in packages/www, and nothing reached media.rediacc.com.
 #
-# The credentials are not meant to be in the shell. They live in
-# private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that
+# The credentials are not meant to be in the shell. They live in private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that
 # needs them and does not source it does not fail; it half-succeeds, which is worse.
 # So require the sourcing to be VISIBLE in the command.
 #
-# Extend the table when another command grows a credential dependency. Match on
-# something specific to that command, never on a bare tool name.
+# Extend the table when another command grows a credential dependency. Match on something specific to that command, never on a bare tool name.
 NEEDS_ENV = (
     ("sync-media-from-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("sync-media-to-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("--publish-www", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )
 
-# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint`
-# in the command), so a session running the tool directly -- `ruff format <files>`,
-# not `npm run check:ci-python-lint` -- was invisible to it. That gap is real
-# independent of the npx incident above: this catches the correctly-shaped direct
-# command too, when the host genuinely lacks the tool.
+# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
 BARE_TOOLS = ("ruff", "go", "shfmt", "shellcheck", "actionlint")
 
 DEVBOX_LABEL = "label=com.rediacc.devbox.worktree"
 
-# The three docker worlds this guard's tail distinguishes, driven rather than
-# described. Without them the differential only ever sees whichever devbox this
-# machine happens to be running, and the two NOTE branches plus the refusal are
-# a coin toss decided by another session's `devbox up`.
+# The three docker worlds this guard's tail distinguishes, driven rather than described. Without them the differential only ever sees whichever devbox this machine happens to be running, and the two NOTE branches plus the refusal are a coin toss decided by another session's `devbox up`.
 ENVS = [
     ("no-devbox", {}, {"docker": "#!/bin/sh\nexit 0\n"}),
     (
@@ -266,9 +229,7 @@ def _is_invoked(key, scan):
     interp = r"(bash|sh|zsh|source|\.|npm[{S}]+run|npx)"
     # ONE `rx()` OVER THE WHOLE PATTERN. The first cut put the middle class outside it,
     # so `{S}` stayed literal and `[^{S};&|]` read as "not {, S, }, ; & or |" -- which
-    # matches a SPACE, letting the pattern skip the whole command and find the key
-    # anywhere. Every mention case still blocked and the failure looked like the anchor
-    # not working rather than the class being wrong.
+    # matches a SPACE, letting the pattern skip the whole command and find the key anywhere. Every mention case still blocked and the failure looked like the anchor not working rather than the class being wrong.
     pat = hookio.rx(r"(^|[;&|(]|\$\(|`|" + interp + r"[{S}]+)[{S}]*[^{S};&|]*" + re.escape(key))
     return hookio.grep_q(pat, scan)
 
@@ -359,12 +320,8 @@ def run(ev):
             continue
         # THE HOST IS ASKED, NOT ASSUMED. A developer who has installed ruff should
         # not be pushed into a container for it; the point is to stop a MISSING tool
-        # being recorded as a property of the repo.
-        # `command -v` resolves a name on PATH and says NOTHING about whether it can be
-        # executed: on bash 5.3.9 it returns 0 for a mode-0600 file. A half-installed
-        # ruff/go/shfmt would therefore read as "the host is fine" and this guard would
-        # decline to route the gate, which is the exact outcome it exists to prevent wearing
-        # the face of a guard that simply did not fire. `test -x` asks the real question.
+        # being recorded as a property of the repo. `command -v` resolves a name on PATH and says NOTHING about whether it can be executed: on bash 5.3.9 it returns 0 for a mode-0600 file. A half-installed ruff/go/shfmt would therefore read as "the host is fine" and this guard would decline to route the gate, which is the exact outcome it exists to prevent wearing the face of a
+        # guard that simply did not fire. `test -x` asks the real question.
         # Verified 2026-08-27: command -v rc=0 and test -x rc=1 on the same file.
         if _have_executable(tool):
             continue
@@ -387,32 +344,20 @@ def run(ev):
 
     # HOST-BOUND WORK MUST NOT BE ROUTED. Measured 2026-08-28.
     #
-    # Routing into the devbox is only correct when the command can actually RUN
-    # there. Two whole families cannot, and both live in this repo:
+    # Routing into the devbox is only correct when the command can actually RUN there. Two whole families cannot, and both live in this repo:
     #
-    #   * the eight Python pipelines under private/growth (and private/generative)
-    #     each carry their own `.venv`, built against the HOST interpreter. A venv
-    #     is not portable into a container: absolute shebangs, host glibc. Routing
-    #     `video_pipeline/run.sh` into the devbox produced
-    #     `ModuleNotFoundError: No module named anyio` -- the container has aws and
-    #     none of the pipeline's dependencies.
-    #   * node_modules is deliberately NOT shared between host and container
+    # * the eight Python pipelines under private/growth (and private/generative) each carry their own `.venv`, built against the HOST interpreter. A venv is not portable into a container: absolute shebangs, host glibc. Routing `video_pipeline/run.sh` into the devbox produced `ModuleNotFoundError: No module named anyio` -- the container has aws and none of the pipeline's
+    # dependencies. * node_modules is deliberately NOT shared between host and container
     #     (different glibc; CLAUDE.md, REDIACC_NPM_RUNTIME). private/account
-    #     carries a host-built one.
+    # carries a host-built one.
     #
-    # So before routing, ask whether the command reaches into a directory that owns
-    # a host-built toolchain. If it does, the container is the WRONG destination and
-    # saying so is more useful than a block the reader has to argue with. This is
-    # the submodule / non-submodule split: a root-repo gate is portable, a
-    # submodule or pipeline with its own venv is not.
+    # So before routing, ask whether the command reaches into a directory that owns a host-built toolchain. If it does, the container is the WRONG destination and saying so is more useful than a block the reader has to argue with. This is the submodule / non-submodule split: a root-repo gate is portable, a submodule or pipeline with its own venv is not.
     hostbound = ""
     for tok in _split_glob(scan):
         if tok.startswith("-"):
             continue
         cand = tok.removeprefix("./")
-        # Start at the token ITSELF when it names a directory. Starting at its parent
-        # skipped the very case this guard is for: `--prefix private/growth/video_pipeline`
-        # walked from private/growth and never saw the venv one level down.
+        # Start at the token ITSELF when it names a directory. Starting at its parent skipped the very case this guard is for: `--prefix private/growth/video_pipeline` walked from private/growth and never saw the venv one level down.
         if pathlib.Path("%s/%s" % (repo_root, cand)).is_dir():
             directory = "%s/%s" % (repo_root, cand)
         else:
@@ -430,10 +375,7 @@ def run(ev):
         if hostbound != "":
             break
 
-    # LABEL and ROUTE differ for a gate-key hit ("check:ci-python-lint needs 'ruff'",
-    # routed as "npm run check:ci-python-lint") versus a bare-tool hit ("go needs 'go'"
-    # read wrong, and "npm run go" is not a command that exists). BARE is set above by
-    # whichever of the two loops matched.
+    # LABEL and ROUTE differ for a gate-key hit ("check:ci-python-lint needs 'ruff'", routed as "npm run check:ci-python-lint") versus a bare-tool hit ("go needs 'go'" read wrong, and "npm run go" is not a command that exists). BARE is set above by whichever of the two loops matched.
     if bare:
         label = "this command"
         route = "./run.sh devbox exec -- %s" % cmd
@@ -458,9 +400,7 @@ def run(ev):
         )
         return hookio.ALLOW
 
-    # The container must actually be able to help, or this is a wall rather than a
-    # route. If it is not running, or lacks the tool too, say so and let the command
-    # proceed -- the gate's own refusal is then the honest answer.
+    # The container must actually be able to help, or this is a wall rather than a route. If it is not running, or lacks the tool too, say so and let the command proceed -- the gate's own refusal is then the honest answer.
     cid_out = hookio.run_out(["docker", "ps", "--filter", DEVBOX_LABEL, "--format", "{{.Names}}"])
     # `| head -1`: the first record, or "" when there is none.
     records, _ = hookio._records(hookio._printf_line(cid_out) if cid_out else "")

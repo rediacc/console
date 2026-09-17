@@ -82,8 +82,7 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
     [
         # THE ASYMMETRY OVER A MISSING FILE. The guard control is a PIPELINE
         # whose second grep reads an empty stdin and prints "0"; the call control
-        # is a DIRECT grep that never opens a stream and prints nothing. A port
-        # that returned 0 for both would disagree on one compared line.
+        # is a DIRECT grep that never opens a stream and prints nothing. A port that returned 0 for both would disagree on one compared line.
         pytest.param(None, 0, 2, "(got '' want '1')", id="no-build-script-at-all"),
         pytest.param(0, 1, 1, "guards that non-zero exit (got '0' want '1')", id="no-guard"),
         pytest.param(2, 0, 2, "guards that non-zero exit (got '2' want '1')", id="two-guards"),
@@ -99,9 +98,7 @@ def test_port_and_twin_agree(
     assert old_exit == 1
     assert new_exit == old_exit
     assert new_out == old_out, "the ok-tally on stdout is the gate's output contract"
-    # stderr differs ONLY where the twin's grep writes its own "No such file"
-    # warning, which is chatter to `scripts/lib/shadow-gate.ts` and is the one
-    # documented residual divergence of this port.
+    # stderr differs ONLY where the twin's grep writes its own "No such file" warning, which is chatter to `scripts/lib/shadow-gate.ts` and is the one documented residual divergence of this port.
     assert new_err.split("\n") == [
         x for x in old_err.split("\n") if not x.startswith(("grep:", "ugrep:"))
     ]
@@ -143,9 +140,7 @@ def test_a_missing_canonicaliser_fails_on_both_sides(tmp_path: pathlib.Path) -> 
     assert new_err == old_err
 
 
-# ---------------------------------------------------------------------------
-# The decision functions, driven directly. Both directions for every rule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
 _ARMOR = (
     "-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nAAAA\nBBBB\nCCCC\n"
@@ -174,8 +169,7 @@ def test_the_welder_joins_exactly_one_pair_and_keeps_the_content() -> None:
         "-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nAAAA\nBBBBCCCC\n"
         "-----END PGP PRIVATE KEY BLOCK-----\n"
     )
-    # THE STRUCTURAL SIGNATURE: the body grew a longer line, which is what
-    # RFC 4880's 64-column wrap forbids and Go's armor decoder rejects.
+    # THE STRUCTURAL SIGNATURE: the body grew a longer line, which is what RFC 4880's 64-column wrap forbids and Go's armor decoder rejects.
     assert gate.longest_body_line(welded) > gate.longest_body_line(_ARMOR)
     assert welded.replace("\n", "") == _ARMOR.replace("\n", "")
 

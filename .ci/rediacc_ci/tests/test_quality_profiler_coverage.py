@@ -99,9 +99,7 @@ def _corpus() -> list[pathlib.Path]:
     return found
 
 
-# ---------------------------------------------------------------------------
-# The extractors, over the repository's own workflows
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The extractors, over the repository's own workflows ---------------------------------------------------------------------------
 
 
 def test_job_keys_agrees_with_the_twin_on_every_real_workflow() -> None:
@@ -111,8 +109,7 @@ def test_job_keys_agrees_with_the_twin_on_every_real_workflow() -> None:
         got = pc.job_keys(pc.records(wf.read_text(encoding="utf-8")))
         assert got == want, wf.name
         total += len(got)
-    # THE SHAPE, NOT JUST THE VERDICT: a parse that collapsed to nothing would
-    # make every comparison above trivially true.
+    # THE SHAPE, NOT JUST THE VERDICT: a parse that collapsed to nothing would make every comparison above trivially true.
     assert total >= 60, "the two agreed on only %d job(s)" % total
 
 
@@ -142,8 +139,7 @@ def test_runs_on_and_is_caller_agree_with_the_twin(tmp_path: pathlib.Path) -> No
             assert pc.is_caller(block) == (caller == "yes"), "%s:%s" % (wf.name, job)
             seen_runner += 1 if want else 0
             seen_caller += 1 if caller else 0
-    # BOTH DIRECTIONS MUST BE REPRESENTED in the corpus, or the agreement above
-    # is an agreement about one answer.
+    # BOTH DIRECTIONS MUST BE REPRESENTED in the corpus, or the agreement above is an agreement about one answer.
     assert seen_runner > 0, "no job in the corpus declares runs-on"
     assert seen_caller > 0, "no reusable-workflow caller in the corpus"
 
@@ -194,9 +190,7 @@ def test_declared_inputs_agrees_with_the_twin_on_the_real_action() -> None:
     assert len(want) >= 1, "the action declares no inputs, so the parser proves nothing"
 
 
-# ---------------------------------------------------------------------------
-# The shapes the real corpus does not contain
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The shapes the real corpus does not contain ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(

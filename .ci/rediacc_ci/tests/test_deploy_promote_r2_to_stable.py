@@ -59,13 +59,8 @@ if typing.TYPE_CHECKING:
 # SHARED WITH THE HOTFIX DIFFERENTIAL ON PURPOSE. Both drive scripts that
 # hard-code `/tmp/promote-<dir>`; the group is what stops them colliding.
 #
-# WIDENED 2026-09-15 TO `deploy-fixed-tmp`, WHICH NOW ALSO COVERS
-# test_deploy_simulate_promotion.py. Renaming only the other two modules would
-# have split THIS pair and reintroduced, here, the exact collision being fixed
-# there -- the group name is the mutex, so every module sharing a fixed /tmp
-# path has to share one name. The three modules that do are this one, the hotfix
-# differential (`/tmp/promote-<dir>`, `/tmp/config`, `/tmp/script`) and the
-# simulate differential (`/tmp/config`).
+# WIDENED 2026-09-15 TO `deploy-fixed-tmp`, WHICH NOW ALSO COVERS test_deploy_simulate_promotion.py. Renaming only the other two modules would have split THIS pair and reintroduced, here, the exact collision being fixed there -- the group name is the mutex, so every module sharing a fixed /tmp path has to share one name. The three modules that do are this one, the hotfix
+# differential (`/tmp/promote-<dir>`, `/tmp/config`, `/tmp/script`) and the simulate differential (`/tmp/config`).
 pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
@@ -87,10 +82,7 @@ BASE_ENV = {
     "CLOUDFLARE_API_TOKEN": "tok-fixture",
 }
 
-# The bucket fixture. Two entries are there specifically to drive fact 1 in the
-# port's docstring: `cli/edge/latest-linux.yml` matches the shared phase-1
-# exclude `latest*.yml` and no `cli` phase-2 include, and
-# `rpm/edge/repodata/comps.xml` matches `repodata/*` and no rpm phase-2 include.
+# The bucket fixture. Two entries are there specifically to drive fact 1 in the port's docstring: `cli/edge/latest-linux.yml` matches the shared phase-1 exclude `latest*.yml` and no `cli` phase-2 include, and `rpm/edge/repodata/comps.xml` matches `repodata/*` and no rpm phase-2 include.
 DEFAULT_BUCKET = {
     "cli/edge/rdc-linux-x64": "rdc binary bytes\n",
     "cli/edge/manifest.json": '{"version":"1.2.3"}\n',
@@ -365,9 +357,7 @@ def _urls(calls: str) -> list[str]:
     return []
 
 
-# ---------------------------------------------------------------------------
-# The happy path and the phase order
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path and the phase order ---------------------------------------------------------------------------
 
 
 def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
@@ -385,9 +375,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
     ], old.stdout
     assert old.stderr == ""
 
-    # PRINT THE SHAPE: five downloads, five phase-1 syncs, seven phase-2 syncs
-    # (apt and rpm make two each), one purge. A collapse in any of those numbers
-    # is what a "they both printed the same six lines" comparison would miss.
+    # PRINT THE SHAPE: five downloads, five phase-1 syncs, seven phase-2 syncs (apt and rpm make two each), one purge. A collapse in any of those numbers is what a "they both printed the same six lines" comparison would miss.
     calls = _aws(old_calls)
     assert len(calls) == 17, calls
     assert len([c for c in calls if c[1] == "cp"]) == 5
@@ -418,8 +406,7 @@ def test_the_phase_order_is_bytes_then_metadata_then_signatures(tmp_path) -> Non
     assert len(rpm) == 3, rpm
     assert "repodata/primary*" in rpm[1]
     assert "repodata/repomd.xml*" in rpm[2]
-    # THE SIGNING METADATA IS LAST, which is the property that cannot be
-    # reordered without breaking a repo mid-promotion.
+    # THE SIGNING METADATA IS LAST, which is the property that cannot be reordered without breaking a repo mid-promotion.
     assert "repodata/repomd.xml*" not in rpm[1], "2a must not carry 2b's signing metadata"
 
 
@@ -444,8 +431,7 @@ def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
     assert 'CONTENT<<<$c = if ($e) { "edge" } else { "stable" }\n>>>' in old_calls
     assert "baseurl=https://releases.rediacc.com/rpm/stable/" in old_calls
     assert "Server = https://releases.rediacc.com/archlinux/stable/" in old_calls
-    # AND THE EDGE SPELLING NEVER LEAVES: the rewritten body is the only one
-    # uploaded, which is what "before phase 2" means.
+    # AND THE EDGE SPELLING NEVER LEAVES: the rewritten body is the only one uploaded, which is what "before phase 2" means.
     assert "baseurl=https://releases.rediacc.com/rpm/edge/" not in old_calls
 
 
@@ -467,9 +453,7 @@ def test_an_absent_rewrite_target_does_not_end_the_run(tmp_path) -> None:
     assert old.stdout.splitlines()[5] == "R2 promotion complete: edge v1.2.3 -> stable"
 
 
-# ---------------------------------------------------------------------------
-# The four named facts
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four named facts ---------------------------------------------------------------------------
 
 
 def test_defect_phase_filtered_files_are_purged_but_never_uploaded(tmp_path) -> None:
@@ -558,9 +542,7 @@ def test_defect_the_vacuity_floor_runs_after_the_uploads(tmp_path) -> None:
     assert old.stdout == "Promoting cli/edge/ -> cli/stable/ (2-phase)\n"
 
 
-# ---------------------------------------------------------------------------
-# Refusals and failures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals and failures ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -645,9 +627,7 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
     assert "curl" not in old_calls
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -685,9 +665,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert apt_new[1][apt_new[1].index("--include") + 1] == "Release*"
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers and the filter tables, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers and the filter tables, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_directory_order_is_the_twins() -> None:
@@ -791,10 +769,7 @@ def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
     for name in names:
         assert 'os.environ.get("%s"' % name in source, name
 
-    # THE STRONG HALF: ask THE GATE'S OWN SCANNER, not a substring search. If
-    # `check:ci-python-env-registry` cannot derive a name, registering it would
-    # be a STALE entry and leaving it out would be an undeclared input, so the
-    # two sets must be equal in both directions.
+    # THE STRONG HALF: ask THE GATE'S OWN SCANNER, not a substring search. If `check:ci-python-env-registry` cannot derive a name, registering it would be a STALE entry and leaving it out would be an undeclared input, so the two sets must be equal in both directions.
     tree = ast.parse(source, filename=str(PORT_FILE))
     derived = python_env_registry.scan_module(
         str(PORT_FILE),

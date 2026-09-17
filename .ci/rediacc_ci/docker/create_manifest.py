@@ -58,9 +58,7 @@ import sys
 
 from rediacc_ci import log
 
-# ---------------------------------------------------------------------------
-# The twin's constants
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
 # `.ci/config/constants.sh:162`. `:-` takes the default on unset OR empty.
 REGISTRY_DEFAULT = "ghcr.io/rediacc"
@@ -74,12 +72,10 @@ PLATFORM_NEEDLES = ("Platform:", "Name:")
 PLATFORM_HEAD = 10
 
 # `set -u` death sites: the line of each `VAR="$2"` assignment in the twin, so
-# the port prints bash's own message including the line number. Pinned against
-# the twin by the differential.
+# the port prints bash's own message including the line number. Pinned against the twin by the differential.
 UNBOUND_LINES = {"--image": 43, "--image-path": 47, "--tag": 51}
 
-# The `docker buildx imagetools create` call site (twin :134). Named only so the
-# `command not found` message can carry the same line number bash would.
+# The `docker buildx imagetools create` call site (twin :134). Named only so the `command not found` message can carry the same line number bash would.
 DOCKER_CREATE_LINE = 134
 
 
@@ -296,8 +292,7 @@ def verify_manifest(manifest_tag: str) -> None:
 
     log.info("Manifest verified: %s" % manifest_tag)
 
-    # The SECOND inspect, with `2>/dev/null` and the pipeline. Its exit status is
-    # swallowed by the twin's `|| true`, so nothing here reads it.
+    # The SECOND inspect, with `2>/dev/null` and the pipeline. Its exit status is swallowed by the twin's `|| true`, so nothing here reads it.
     _flush()
     try:
         shown = subprocess.run(
@@ -308,9 +303,7 @@ def verify_manifest(manifest_tag: str) -> None:
             check=False,
         )
     except (FileNotFoundError, PermissionError):
-        # SILENT, like the twin: `2>/dev/null` on the command suppresses bash's
-        # own `command not found` too (see `_docker`). Unreachable in practice,
-        # because the quiet call above already proved the binary exists.
+        # SILENT, like the twin: `2>/dev/null` on the command suppresses bash's own `command not found` too (see `_docker`). Unreachable in practice, because the quiet call above already proved the binary exists.
         return
     for line in platform_lines(shown.stdout):
         print(line, flush=True)
@@ -351,8 +344,7 @@ def main(argv: list[str]) -> int:
 
     sources = source_images(image_path, opts.tag)
 
-    # `set -e` at the top level: a failing `create_manifest` kills the script
-    # right here, with no summary and no verification.
+    # `set -e` at the top level: a failing `create_manifest` kills the script right here, with no summary and no verification.
     if not create_manifest(manifest_tag, sources):
         return 1
 

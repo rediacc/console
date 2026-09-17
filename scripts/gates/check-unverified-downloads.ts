@@ -179,12 +179,9 @@ function runControls(): string[] {
   const stage = `COPY --from=builder /out/app /app\n`;
   if (scan('c', stage).length !== 0) bad.push('a build-stage COPY was flagged as a registry ref');
 
-  // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a
-  // lookalike host carry a real entry inside it. Each negative below passed under
-  // the old `url.includes(token)` form.
+  // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a lookalike host carry a real entry inside it. Each negative below passed under the old `url.includes(token)` form.
   // `kind` is 'fetch' | 'image'; 'download' is not a member, and the `as Finding`
-  // cast was hiding that rather than expressing intent -- TS2352 refused it because
-  // the two types do not overlap. isAllowed reads only f.url (see :136-152), so the
+  // cast was hiding that rather than expressing intent -- TS2352 refused it because the two types do not overlap. isAllowed reads only f.url (see :136-152), so the
   // value is arbitrary here; it just has to be one the type actually admits.
   const at = (url: string): Finding => ({ file: 'c', line: 1, url, kind: 'fetch' });
   const host = ['awscli.amazonaws.com'];
@@ -241,10 +238,7 @@ function main(): void {
   }
 
   // --recurse-submodules, NOT a bare `git ls-files`. private/{account,renet,growth}
-  // are submodules, and a bare listing cannot see inside them -- so five Dockerfiles
-  // sat outside this gate's view while it reported "every remote artifact" verified.
-  // A gate whose scope silently excludes half the build surface is the shape of
-  // green-while-blind this file exists to prevent.
+  // are submodules, and a bare listing cannot see inside them -- so five Dockerfiles sat outside this gate's view while it reported "every remote artifact" verified. A gate whose scope silently excludes half the build surface is the shape of green-while-blind this file exists to prevent.
   const list = (args: string): string[] => {
     try {
       return execSync(`git ls-files ${args}`, { cwd: ROOT, encoding: 'utf-8' })
@@ -258,8 +252,7 @@ function main(): void {
   const withSubs = list('--recurse-submodules');
   const files = [...new Set([...tracked, ...withSubs])];
 
-  // A submodule that is not checked out contributes nothing, and that must be
-  // stated rather than counted as clean.
+  // A submodule that is not checked out contributes nothing, and that must be stated rather than counted as clean.
   const missingSubs = withSubs.filter((f) => !fs.existsSync(path.join(ROOT, f)));
   if (missingSubs.length > 0) {
     console.log(
@@ -311,8 +304,7 @@ function main(): void {
   process.exit(1);
 }
 
-// Only run when invoked directly. Importing this module (the gate test does, and so
-// does any sibling that wants `scan`) must not execute the whole check.
+// Only run when invoked directly. Importing this module (the gate test does, and so does any sibling that wants `scan`) must not execute the whole check.
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   main();
 }

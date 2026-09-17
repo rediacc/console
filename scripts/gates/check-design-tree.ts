@@ -140,9 +140,7 @@ function docLeaves(): Set<string> {
         .split(/\s+/)
         .filter(Boolean);
 
-    // The noun may carry a trailing colon (`rdc ops:  up down …`). It is a table
-    // separator, not part of the name: without it the row parses as the invocation
-    // `rdc ops up` and the positional-syntax detector reds on the design doc.
+    // The noun may carry a trailing colon (`rdc ops: up down …`). It is a table separator, not part of the name: without it the row parses as the invocation `rdc ops up` and the positional-syntax detector reds on the design doc.
     const header = line.match(/^rdc\s+([^\s:]+):?\s*(.*)$/);
     if (header) {
       flush();
@@ -162,9 +160,7 @@ function docLeaves(): Set<string> {
 const cli = cliLeaves();
 const doc = docLeaves();
 
-// A leaf the doc draws is satisfied if the CLI has it, OR if it is an actionable
-// parent the CLI models as a group (the doc writes `repo replicate <ref>` for a
-// parent that also runs), OR if it is a group whose children the CLI has.
+// A leaf the doc draws is satisfied if the CLI has it, OR if it is an actionable parent the CLI models as a group (the doc writes `repo replicate <ref>` for a parent that also runs), OR if it is a group whose children the CLI has.
 const cliPrefixes = new Set<string>();
 for (const leaf of cli) {
   const parts = leaf.split(' ');

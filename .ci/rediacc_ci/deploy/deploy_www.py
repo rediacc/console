@@ -120,19 +120,15 @@ if typing.TYPE_CHECKING:
 SELF = "deploy-www.sh"
 
 # `WORKER_DIR="$REPO_ROOT/workers/www"` (twin :17), relative to the repo root
-# `common.sh`'s own location resolves to. NOT cwd: the twin can be invoked from
-# anywhere and `.ci/legacy/run-legacy.sh:245` does exactly that.
+# `common.sh`'s own location resolves to. NOT cwd: the twin can be invoked from anywhere and `.ci/legacy/run-legacy.sh:245` does exactly that.
 WORKER_SUBDIR = ("workers", "www")
 
-# `wrangler.toml` (twin :19) and the generated `wrangler.preview.toml`
-# (twin :90, :137, :140, :141). The second is written into the worker directory
-# and removed on the success path only.
+# `wrangler.toml` (twin :19) and the generated `wrangler.preview.toml` (twin :90, :137, :140, :141). The second is written into the worker directory and removed on the success path only.
 PRODUCTION_CONFIG = "wrangler.toml"
 PREVIEW_CONFIG = "wrangler.preview.toml"
 
 # `PR_NUM="${ARG_NAME#pr-}"` and `DB_NAME="account-db-pr-${PR_NUM}"`
-# (twin :64-65). The prefix strip is a `#` expansion, so it removes `pr-` only
-# when the name actually starts with it (fact 3 in the module docstring).
+# (twin :64-65). The prefix strip is a `#` expansion, so it removes `pr-` only when the name actually starts with it (fact 3 in the module docstring).
 NAME_PREFIX = "pr-"
 DB_NAME_TEMPLATE = "account-db-pr-%s"
 
@@ -147,22 +143,18 @@ PROTECTED_DATABASES = ("account-db", "edge-account-db")
 JSON_START_SED = "/^[[:space:]]*[{[]/,$p"
 UUID_JQ = ".uuid // empty"
 
-# The three facts in the module docstring, as constants so a test can assert
-# each by name instead of restating the sentence.
+# The three facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 PRODUCTION_GUARD_IS_UNREACHABLE = True
 A_VALUELESS_NAME_DEPLOYS_A_WORKER_CALLED_TRUE = True
 A_NON_PR_NAME_IS_ACCEPTED_VERBATIM = True
 
 # The generated preview config (twin :90-133), byte for byte after expansion.
 #
-# THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an
-# escape rather than as the character itself, for the reason in the
-# module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the
+# THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the
 # twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no
 # command substitution in the emitted bytes.
 #
-# `%s` three times, in the twin's order: the worker name, then the database name
-# and its UUID at the bottom.
+# `%s` three times, in the twin's order: the worker name, then the database name and its UUID at the bottom.
 PREVIEW_TOML = """name = "%s"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
@@ -383,8 +375,7 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
         return 1
     log.info("Created D1 database %s (UUID: %s)" % (db_name, db_uuid))
 
-    # `cat >wrangler.preview.toml <<TOML` (twin :90). RELATIVE to the worker
-    # directory, because the twin has already `cd`-ed there.
+    # `cat >wrangler.preview.toml <<TOML` (twin :90). RELATIVE to the worker directory, because the twin has already `cd`-ed there.
     config = worker_dir / PREVIEW_CONFIG
     config.write_text(preview_toml(worker_name, db_name, db_uuid), encoding="utf-8")
 
@@ -398,8 +389,7 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
     if status != 0:
         return status  # `set -e`, config left behind again
 
-    # `rm -f wrangler.preview.toml` (twin :141). Only on the success path, which
-    # is why a failed deploy leaves a generated config in the worker directory.
+    # `rm -f wrangler.preview.toml` (twin :141). Only on the success path, which is why a failed deploy leaves a generated config in the worker directory.
     with contextlib.suppress(FileNotFoundError):  # `-f`
         config.unlink()
     return 0
@@ -419,21 +409,13 @@ def main(argv: list[str]) -> int:
         log.error("www worker not found at %s" % worker_dir)
         return 1
 
-    # `cd "$WORKER_DIR"` (twin :24). Every later relative path is the worker
-    # directory's, and `npx` resolves its local `node_modules/.bin` from cwd.
+    # `cd "$WORKER_DIR"` (twin :24). Every later relative path is the worker directory's, and `npx` resolves its local `node_modules/.bin` from cwd.
     os.chdir(worker_dir)
 
-    # `require_var CLOUDFLARE_API_TOKEN` then `require_var CLOUDFLARE_ACCOUNT_ID`
-    # (twin :26-27), IN THAT ORDER: a run missing both names the token.
+    # `require_var CLOUDFLARE_API_TOKEN` then `require_var CLOUDFLARE_ACCOUNT_ID` (twin :26-27), IN THAT ORDER: a run missing both names the token.
     #
-    # THE TWO NAMES ARE ALSO READ HERE WITH LITERAL KEYS, and the redundancy is
-    # deliberate. `check:ci-python-env-registry` derives a module's declared
-    # inputs by walking the AST for `os.environ[...]` / `os.environ.get(...)`,
-    # and it cannot see a read that happens inside `core.common.require_var`.
-    # Without these two reads `CLOUDFLARE_ACCOUNT_ID` is an input nobody
-    # declared. The REFUSAL still goes through `require_var`, because its
-    # message and exit status are the twin's and restating them here would let
-    # the two drift.
+    # THE TWO NAMES ARE ALSO READ HERE WITH LITERAL KEYS, and the redundancy is deliberate. `check:ci-python-env-registry` derives a module's declared inputs by walking the AST for `os.environ[...]` / `os.environ.get(...)`, and it cannot see a read that happens inside `core.common.require_var`. Without these two reads `CLOUDFLARE_ACCOUNT_ID` is an input nobody declared. The REFUSAL
+    # still goes through `require_var`, because its message and exit status are the twin's and restating them here would let the two drift.
     credentials = {
         "CLOUDFLARE_API_TOKEN": os.environ.get("CLOUDFLARE_API_TOKEN", ""),
         "CLOUDFLARE_ACCOUNT_ID": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
@@ -454,10 +436,7 @@ def main(argv: list[str]) -> int:
     # `export CLOUDFLARE_API_TOKEN` after the strip: children see the clean one.
     os.environ["CLOUDFLARE_API_TOKEN"] = strip_newlines(os.environ["CLOUDFLARE_API_TOKEN"])
 
-    # `if [[ ! -d "node_modules" ]]` (twin :36). RELATIVE, so the worker
-    # directory's, and unlike `deploy-account.sh` there is no `command -v
-    # wrangler` half: a machine with a global wrangler still runs `npm install`
-    # here when the worker directory has no `node_modules`.
+    # `if [[ ! -d "node_modules" ]]` (twin :36). RELATIVE, so the worker directory's, and unlike `deploy-account.sh` there is no `command -v wrangler` half: a machine with a global wrangler still runs `npm install` here when the worker directory has no `node_modules`.
     if not (worker_dir / "node_modules").is_dir():
         status = _run(["npm", "install"])
         if status != 0:

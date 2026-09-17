@@ -39,10 +39,7 @@ import sys
 
 SELF = "check-soak-period.py"
 
-# The exact twin expression, run verbatim so both sides parse EDGE_DATE
-# through the identical `date` invocation chain. `$1` is the edge date,
-# substituted positionally rather than interpolated into the script text so a
-# value containing shell metacharacters cannot change what runs.
+# The exact twin expression, run verbatim so both sides parse EDGE_DATE through the identical `date` invocation chain. `$1` is the edge date, substituted positionally rather than interpolated into the script text so a value containing shell metacharacters cannot change what runs.
 _DATE_EXPR = 'date -d "$1" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$1" +%s 2>/dev/null'
 
 
@@ -69,8 +66,7 @@ def main(argv: list[str]) -> int:
     )
     now_epoch_proc = subprocess.run(["date", "+%s"], capture_output=True, text=True, check=False)
     if edge_epoch_proc.returncode != 0 or now_epoch_proc.returncode != 0:
-        # Silent, matching the twin's `set -e` abort on both date attempts
-        # failing -- see the module docstring.
+        # Silent, matching the twin's `set -e` abort on both date attempts failing -- see the module docstring.
         raise SystemExit(1)
 
     edge_epoch = int(edge_epoch_proc.stdout.strip())

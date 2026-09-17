@@ -3,8 +3,7 @@ import type { MachineConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
 import type { SubscriptionTokenState } from '../account/subscription-auth.js';
 
-// A well-formed signing-key fingerprint (16-char lowercase hex). writeRepoLicense
-// now names the license file after this and rejects anything else.
+// A well-formed signing-key fingerprint (16-char lowercase hex). writeRepoLicense now names the license file after this and rejects anything else.
 const VALID_KEY_ID = 'fc6a12b178711e65';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -229,9 +228,7 @@ describe('refreshRepoLicensesBatch', () => {
   }
 
   it('does NOT force re-issuance for invalid_signature (dates preserved, no reissue loop)', async () => {
-    // Per the per-signer layout, a foreign file is never selected — so an
-    // invalid_signature means the machine's OWN key cannot validate its own
-    // file. That must fail fast at operate time, not loop reissuing here.
+    // Per the per-signer layout, a foreign file is never selected — so an invalid_signature means the machine's OWN key cannot validate its own file. That must fail fast at operate time, not loop reissuing here.
     seedSingleRepoWithStatus('invalid_signature');
 
     mockAccountServerFetch.mockResolvedValueOnce({
@@ -476,8 +473,7 @@ describe('refreshRepoLicensesBatch', () => {
       const scan = mockExec.mock.calls
         .map((c) => c[0] as string)
         .find((c) => c.includes('license-scan'));
-      // Without this flag a repo in a named datastore is invisible to refresh:
-      // it still expires and still blocks backups, it is just never looked at.
+      // Without this flag a repo in a named datastore is invisible to refresh: it still expires and still blocks backups, it is just never looked at.
       expect(scan).toContain('--all-datastores');
     });
 
@@ -497,9 +493,7 @@ describe('refreshRepoLicensesBatch', () => {
 
       await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
-      // renet reads ONE population per repo and treats the other as absent, so
-      // an unscoped write here would read back as `missing`, trigger a reissue,
-      // and loop forever burning the monthly issuance quota.
+      // renet reads ONE population per repo and treats the other as absent, so an unscoped write here would read back as `missing`, trigger a reissue, and loop forever burning the monthly issuance quota.
       const scopedDir = `/var/lib/rediacc/license/datastores/${DS_ID}/repos/${NAMED_REPO}`;
       const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
       const teeCommands = mockExecStreaming.mock.calls.map((c) => c[0] as string);
@@ -523,9 +517,7 @@ describe('refreshRepoLicensesBatch', () => {
 
       await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
-      // The plain default datastore carries no descriptor, so renet keeps
-      // reading repos/<guid>/ for it. Scoping those would orphan every
-      // existing licence on every existing machine.
+      // The plain default datastore carries no descriptor, so renet keeps reading repos/<guid>/ for it. Scoping those would orphan every existing licence on every existing machine.
       const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
       expect(execCommands).toContain(
         `sudo mkdir -p "/var/lib/rediacc/license/repos/${NAMED_REPO}"`

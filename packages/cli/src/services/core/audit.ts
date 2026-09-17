@@ -149,8 +149,7 @@ class AuditService {
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);
-        // unref: a pending flush timeout must never hold the event loop open
-        // after the command has finished (it added ~5s to every wall time).
+        // unref: a pending flush timeout must never hold the event loop open after the command has finished (it added ~5s to every wall time).
         timer.unref();
       });
       await Promise.race([request, timeout]);

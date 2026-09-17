@@ -55,17 +55,12 @@ EXPIRY = ROOT / ".ci" / "config" / "bws-token-expiry.json"
 
 # `expires` HAS THREE STATES and this reader used to accept only one of them.
 #
-# It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError
-# and returns, so a single non-date row silently disabled the WHOLE warning -- including
+# It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError and returns, so a single non-date row silently disabled the WHOLE warning -- including
 # for the other rows, which is the worst direction. That was invisible while the file held
 # exactly one dated token; the 2026-09-09 split into a never-expiring local account and an
 # unverified CI one is what made it reachable.
 #
-# Bitwarden's own default is no expiry ("When the token Expires. By default, Never." --
-# bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and
-# "unknown" has to stay distinct from it: null is a claim that the token never expires,
-# "unknown" is a record that nobody checked. Collapsing them would let an unverified CI
-# credential read as safe forever.
+# Bitwarden's own default is no expiry ("When the token Expires. By default, Never." -- bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and "unknown" has to stay distinct from it: null is a claim that the token never expires, "unknown" is a record that nobody checked. Collapsing them would let an unverified CI credential read as safe forever.
 NEVER = "never"
 UNKNOWN = "unknown"
 
@@ -122,20 +117,12 @@ def warn_if_token_expiring() -> None:
     where = EXPIRY.relative_to(ROOT)
     warn_days = int(doc.get("warn_days", 5))
 
-    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script
-    # in scripts/dev/ derives applied-vs-pending from the live system --
-    # apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read
-    # R2, this script's own map carries refreshed_at behind a staleness gate.
-    # A hand-written date is the one shape that cannot self-check, so it gets the
-    # nearest thing: a fingerprint of the token's client id. Mint a new token
-    # without updating the file and this says so, instead of the date quietly
-    # describing a token that no longer exists.
+    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/dev/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
+    # thing: a fingerprint of the token's client id. Mint a new token without updating the file and this says so, instead of the date quietly describing a token that no longer exists.
     #
     # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one
     # declared entry, only that entry's date is the one in force; the others
-    # describe accounts this process is not using. When it matches NONE, the file
-    # describes something else entirely and every date below is about the wrong
-    # account -- that is louder than any expiry warning, so it returns.
+    # describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.
     fp = _live_client_fingerprint()
     declared = {str(e.get("client_id_sha256", "")) for e, _ in tokens}
     if fp:
@@ -159,8 +146,7 @@ def warn_if_token_expiring() -> None:
 
     today = dt.datetime.now(dt.UTC).date()
     shouted = False
-    # A row with no countdown is REPORTED, not warned about, and never sorted against a
-    # date. Silence here would be indistinguishable from "checked, and fine".
+    # A row with no countdown is REPORTED, not warned about, and never sorted against a date. Silence here would be indistinguishable from "checked, and fine".
     for entry, expires in [(e, d) for e, d in tokens if not isinstance(d, dt.date)]:
         if expires is UNKNOWN:
             print(
@@ -216,11 +202,7 @@ def main() -> int:
     if not bws or not Path(bws).exists():
         die("bws not found; install it as .devcontainer/Dockerfile does, or pass --bws")
 
-    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not
-    # detect a non-tty and wraps `--output json` in truecolor ANSI escapes even
-    # when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0
-    # binary). Without it every run of this script died on the json.JSONDecodeError
-    # below -- i.e. it had never worked from a pipe, which is the only way it runs.
+    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not detect a non-tty and wraps `--output json` in truecolor ANSI escapes even when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0 binary). Without it every run of this script died on the json.JSONDecodeError below -- i.e. it had never worked from a pipe, which is the only way it runs.
     proc = subprocess.run(
         [bws, "--color", "no", "secret", "list", str(project), "--output", "json"],
         capture_output=True,

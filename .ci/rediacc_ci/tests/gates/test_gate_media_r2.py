@@ -91,8 +91,7 @@ def test_the_ownership_assertion_can_fail(gate):
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
     gate.log_test("CONTROL FOR THE CASES BELOW: the module seam must be load-bearing")
-    # `--audio-only` is the flag that keeps this from syncing the whole media
-    # bucket, and the credentialed case asserts it BY NAME. Drop it in a copy of
+    # `--audio-only` is the flag that keeps this from syncing the whole media bucket, and the credentialed case asserts it BY NAME. Drop it in a copy of
     # the module and that assertion must stop holding; if it still held, the case
     # would be reading something other than the module under test.
     with harness.temp_dir() as d:
@@ -127,8 +126,7 @@ def test_the_cache_is_optional_in_both_directions(gate):
     with harness.temp_dir() as d:
         calls = stage_sync_scripts(d)
 
-        # NO CREDENTIALS. The load-bearing direction: a fresh checkout must still
-        # be able to run the pipeline.
+        # NO CREDENTIALS. The load-bearing direction: a fresh checkout must still be able to run the pipeline.
         with harness.fake_bin(BASE_SPEC):
             result = run_r2(
                 d,

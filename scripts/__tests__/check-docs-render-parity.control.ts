@@ -101,11 +101,7 @@ function buildFixture(): string {
   return root;
 }
 
-// Composed rather than spelled out. A literal like
-// `packages/www/src/content/docs/de/control.md` is a path into a synthetic
-// fixture tree that exists only under a temp root, but it reads exactly like a
-// repo path -- and `gate-test:gate-paths-exist` flagged it as a dead path
-// constant, correctly, because from the outside the two are indistinguishable.
+// Composed rather than spelled out. A literal like `packages/www/src/content/docs/de/control.md` is a path into a synthetic fixture tree that exists only under a temp root, but it reads exactly like a repo path -- and `gate-test:gate-paths-exist` flagged it as a dead path constant, correctly, because from the outside the two are indistinguishable.
 const DOCS_SRC = ['packages/www/src/content/docs', 'de', 'control.md'];
 const DOCS_DIST = ['packages/www/dist', 'de', 'docs/control', 'index.html'];
 
@@ -141,8 +137,7 @@ const CASES: Case[] = [
   {
     name: 'the heading appears only in chrome outside .article-content',
     plant: (root) => {
-      // The German heading is in the sidebar, the article body is English. A
-      // whole-page assertion would call this a pass.
+      // The German heading is in the sidebar, the article body is English. A whole-page assertion would call this a pass.
       fs.writeFileSync(dePage(root), page(ENGLISH, `${GERMAN}-de`), 'utf8');
     },
     wantExit: 'non-zero',

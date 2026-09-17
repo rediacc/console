@@ -123,16 +123,14 @@ from rediacc_ci.controls import Controls
 # subject and the thing the fix message tells the reader to regenerate.
 COMMITTED_REL = "packages/cli/scripts/command-tree.json"
 
-# The two child commands, as the twin spells them. Lists rather than strings
-# because there is no shell here and nothing needs word splitting.
+# The two child commands, as the twin spells them. Lists rather than strings because there is no shell here and nothing needs word splitting.
 BUILD_CMD = ["npm", "run", "build:packages"]
 EXPORT_CMD = ["npx", "tsx", "packages/cli/scripts/export-command-tree.ts", "--output"]
 
-# `head -40` in the twin: enough of a diff to see what moved, short enough that a
-# regenerated tree does not bury the fix instructions under 4000 lines.
+# `head -40` in the twin: enough of a diff to see what moved, short enough that a regenerated tree does not bury the fix instructions under 4000 lines.
 DIFF_CAP = 40
 
-# The four-space indent `sed 's/^/    /'` applies to every diff line.
+# The four-space indent `sed 's/^/ /'` applies to every diff line.
 DIFF_INDENT = "    "
 
 
@@ -227,9 +225,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return status
 
-        # ANTI-VACUITY, before any comparison. An exporter that wrote nothing
-        # leaves the twin diffing the committed tree against emptiness and
-        # blaming the committed tree.
+        # ANTI-VACUITY, before any comparison. An exporter that wrote nothing leaves the twin diffing the committed tree against emptiness and blaming the committed tree.
         if not live.is_file() or live.stat().st_size == 0:
             log.error(
                 "command-tree: the exporter exited 0 but wrote no tree, so its verdict "
@@ -293,8 +289,7 @@ def _shims(bin_dir: pathlib.Path, build_status: int, export_body: str) -> None:
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice."""
     # floor=17 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot
-    # fail. See rediacc_ci.controls for the five drifted copies that taught it.
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.
     ctl = Controls("command-tree", floor=17, verbose=True)
     saved_cwd = os.getcwd()
     saved_env = dict(os.environ)
@@ -315,11 +310,7 @@ def selftest() -> int:
             else:
                 source = root / "exported.json"
                 source.write_text(exported, encoding="utf-8")
-                # `cat` is an external command, so the shim directory is
-                # PREPENDED to the real PATH rather than replacing it. Stated
-                # because the sibling port `peer_deps` replaces PATH outright and
-                # the two selftests would otherwise look inconsistent for no
-                # reason a reader could see.
+                # `cat` is an external command, so the shim directory is PREPENDED to the real PATH rather than replacing it. Stated because the sibling port `peer_deps` replaces PATH outright and the two selftests would otherwise look inconsistent for no reason a reader could see.
                 body = 'cat "%s" > "$OUT"' % source
             _shims(root / "bin", build_status, body)
             os.environ[paths.ROOT_ENV] = str(root)
@@ -337,9 +328,7 @@ def selftest() -> int:
     ctl.check("PLANT: a committed tree that lost a command is STALE", run(tree_a, tree_b), 1)
     ctl.check("PLANT: a committed tree with an EXTRA command is STALE", run(tree_b, tree_a), 1)
 
-    # Byte equality, not parsed equality: see the port notes. A reformat of the
-    # SAME content is a real finding here, and the mirror proves the gate is not
-    # comparing parsed JSON by accident.
+    # Byte equality, not parsed equality: see the port notes. A reformat of the SAME content is a real finding here, and the mirror proves the gate is not comparing parsed JSON by accident.
     reformatted = json.dumps(json.loads(tree_a), indent=4) + "\n"
     ctl.check("BYTES: a reformatted but equivalent tree is STALE", run(tree_a, reformatted), 1)
     ctl.check(
@@ -350,8 +339,7 @@ def selftest() -> int:
 
     ctl.check("PLANT: a missing committed tree is refused", run(None, tree_a), 1)
 
-    # VACUITY, four ways. Every one of these is a tree the twin calls STALE, or
-    # GREEN, having verified nothing.
+    # VACUITY, four ways. Every one of these is a tree the twin calls STALE, or GREEN, having verified nothing.
     ctl.check("VACUITY: an exporter that writes nothing is refused", run(tree_a, None), 1)
     ctl.check("VACUITY: an exporter that writes an empty file is refused", run(tree_a, ""), 1)
     ctl.check("VACUITY: two EMPTY trees are refused, not called equal", run("", ""), 1)
@@ -360,8 +348,7 @@ def selftest() -> int:
         run("[]\n", "[]\n"),
         1,
     )
-    # And the mirror, so the floor is not simply firing on everything: the
-    # smallest real tree, one command, is enough.
+    # And the mirror, so the floor is not simply firing on everything: the smallest real tree, one command, is enough.
     smallest = json.dumps({"name": "rdc"}) + "\n"
     ctl.check("FLOOR MIRROR: a one-command tree is enough", run(smallest, smallest), 0)
 

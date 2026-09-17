@@ -153,20 +153,15 @@ from itertools import zip_longest
 
 from rediacc_ci import paths
 
-# <root>/.devcontainer/toolchain.env, as parts rather than a joined string so the
-# separator is the platform's and the path is greppable one component at a time.
+# <root>/.devcontainer/toolchain.env, as parts rather than a joined string so the separator is the platform's and the path is greppable one component at a time.
 PINS_RELPATH = (".devcontainer", "toolchain.env")
 
 # THE ONLY LINES THAT ARE PINS, and the pattern is copied from the bash rather
 # than re-derived: `grep -E '^[A-Z][A-Z0-9_]*='` at toolchain.sh:45. Both readers
-# must agree about what a pin line is, because one of them feeds $GITHUB_ENV and
-# the other decides a gate's verdict.
+# must agree about what a pin line is, because one of them feeds $GITHUB_ENV and the other decides a gate's verdict.
 PAIR_RE = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$")
 
-# The tool -> key mapping, mirroring the `case` in `toolchain_pin_for`
-# (.ci/scripts/lib/toolchain.sh:107-117). Kept as data because the tests compare
-# it against the arms of that case, so a tool added to one and not the other is a
-# red rather than a silent "no pin defined".
+# The tool -> key mapping, mirroring the `case` in `toolchain_pin_for` (.ci/scripts/lib/toolchain.sh:107-117). Kept as data because the tests compare it against the arms of that case, so a tool added to one and not the other is a red rather than a silent "no pin defined".
 TOOL_KEYS = {
     "shfmt": "SHFMT_VERSION",
     "shellcheck": "SHELLCHECK_VERSION",
@@ -178,8 +173,7 @@ TOOL_KEYS = {
     "pytest": "PYTEST_VERSION",
 }
 
-# The two Node keys, named because they are different KINDS of number and the
-# difference is the one this file's history is made of. NODE_VERSION is the major
+# The two Node keys, named because they are different KINDS of number and the difference is the one this file's history is made of. NODE_VERSION is the major
 # CI installs; NODE_VERSION_MIN is the oldest release the repo agrees to run on,
 # and nothing installs it -- every consumer only compares against it.
 NODE_MAJOR_KEY = "NODE_VERSION"
@@ -190,9 +184,7 @@ NODE_FLOOR_KEY = "NODE_VERSION_MIN"
 # observable -- `vgo1.2` loses both prefixes, `gov1.2` loses only the `go`.
 VERSION_PREFIXES = ("v", "go")
 
-# The leading dotted-numeric run, matching `grep -oE '^[0-9]+(\.[0-9]+)*'` at
-# toolchain.sh:91. Anchored, so `go version go1.26.6 linux/arm64` does not yield
-# a number from the middle of the line after the prefixes come off.
+# The leading dotted-numeric run, matching `grep -oE '^[0-9]+(\.[0-9]+)*'` at toolchain.sh:91. Anchored, so `go version go1.26.6 linux/arm64` does not yield a number from the middle of the line after the prefixes come off.
 NUMERIC_RUN_RE = re.compile(r"^[0-9]+(?:\.[0-9]+)*")
 
 
@@ -344,21 +336,15 @@ def normalize_version(text: str) -> str:
     # read `raw = text.strip()` until 2026-09-10, which made the port ACCEPT an
     # input the twin refuses. Measured on both sides, same input:
     #
-    #   printf '  3.1'  ->  bash toolchain.sh:88-93   refuses (grep is anchored
-    #                       at `^`, and a leading space is not a digit)
-    #                   ->  normalize_version("  3.1")  returned "3.1"
+    # printf ' 3.1' -> bash toolchain.sh:88-93 refuses (grep is anchored at `^`, and a leading space is not a digit) -> normalize_version(" 3.1") returned "3.1"
     #
-    # The permissive direction is the wrong one for this function: it feeds
-    # `parse_version`, `compare` and `at_least`, so a padded string would have
-    # compared as a version where the bash floor check would have refused it.
-    # `NUMERIC_RUN_RE` is already anchored, so dropping the strip is the whole
+    # The permissive direction is the wrong one for this function: it feeds `parse_version`, `compare` and `at_least`, so a padded string would have compared as a version where the bash floor check would have refused it. `NUMERIC_RUN_RE` is already anchored, so dropping the strip is the whole
     # fix; a TRAILING space or newline still normalises on both sides, because
     # the anchored run simply stops before it.
     raw = text
     # BOTH prefixes, in order, each at most once -- NOT "the first one that
     # matches". `${out#v}` and `${out#go}` are two consecutive statements in the
-    # bash, so `vgo1.2` loses both and normalises to `1.2`. The first draft here
-    # broke out of the loop after the first hit and the frozen-bash differential
+    # bash, so `vgo1.2` loses both and normalises to `1.2`. The first draft here broke out of the loop after the first hit and the frozen-bash differential
     # caught it on exactly that input; the loop is written open for that reason.
     for prefix in VERSION_PREFIXES:
         raw = raw.removeprefix(prefix)
@@ -417,123 +403,62 @@ def same_major(have: str, want: str) -> bool:
     return parse_version(have)[0] == parse_version(want)[0]
 
 
-# ---------------------------------------------------------------------------
-# THE PROBING AND ACQUISITION HALF (W7P5-b, 2026-09-10)
+# --------------------------------------------------------------------------- THE PROBING AND ACQUISITION HALF (W7P5-b, 2026-09-10)
 #
-# Everything above this line was ported in W6P2 and covers `toolchain_load`,
-# `toolchain_pairs`, `toolchain_keys`, `toolchain_pin_for` and the comparison.
-# Everything below is the REST OF THE TWIN: `toolchain_probe_version`,
-# `toolchain_check`, `toolchain_lane`, `toolchain_report`, `toolchain_cache_dir`
-# and the whole acquisition apparatus (`_toolchain_need_checksums`,
-# `_toolchain_sha256sum`, `_toolchain_os`, `_toolchain_download_shfmt`,
-# `_toolchain_acquire_shfmt`, `_toolchain_acquire_shellcheck`,
-# `toolchain_acquire`). Six real sourcers of the twin, re-measured 2026-09-10
+# Everything above this line was ported in W6P2 and covers `toolchain_load`, `toolchain_pairs`, `toolchain_keys`, `toolchain_pin_for` and the comparison. Everything below is the REST OF THE TWIN: `toolchain_probe_version`, `toolchain_check`, `toolchain_lane`, `toolchain_report`, `toolchain_cache_dir` and the whole acquisition apparatus (`_toolchain_need_checksums`,
+# `_toolchain_sha256sum`, `_toolchain_os`, `_toolchain_download_shfmt`, `_toolchain_acquire_shfmt`, `_toolchain_acquire_shellcheck`, `toolchain_acquire`). Six real sourcers of the twin, re-measured 2026-09-10
 # with `grep -rnP '^\s*(source|\.)\s+.*\btoolchain\.sh'`:
-# `.ci/bootstrap.sh:75`, `.ci/legacy/run-legacy.sh:46`,
-# `.ci/scripts/quality/check-python-lint.sh:139`,
-# `.ci/scripts/security/shellcheck.sh:24`, `.ci/scripts/security/shfmt.sh:19`,
-# `.ci/scripts/test/gates/test-toolchain.sh:25`. NOT the "466" in the programme
-# plan, which is this file's LINE COUNT.
+# `.ci/bootstrap.sh:75`, `.ci/legacy/run-legacy.sh:46`, `.ci/scripts/quality/check-python-lint.sh:139`, `.ci/scripts/security/shellcheck.sh:24`, `.ci/scripts/security/shfmt.sh:19`, `.ci/scripts/test/gates/test-toolchain.sh:25`. NOT the "466" in the programme plan, which is this file's LINE COUNT.
 #
-# --------------------------------------------------------------------------
-# DEFECT 1, REPRODUCED NOT FIXED, AND IT IS THE CONSEQUENTIAL ONE:
-# `toolchain.sh --verify` CANNOT FAIL.
-# --------------------------------------------------------------------------
-# `.ci/scripts/lib/toolchain.sh:167` states the contract in the file's own
-# words: "toolchain.sh --verify   exit 1 if any pinned tool is absent or
-# mismatched". It does not, and cannot. The dispatch block at :211-221 is
-# positioned at line 211 with 245 more lines of function definitions after it,
-# and NONE of its `--report`, `--verify` or `--env` arms calls `exit` (only the
-# usage arm does, at :218). So control falls out of the `fi`, defines the
-# acquisition helpers, and the script exits with the status of the last function
-# definition, which is always 0.
+# -------------------------------------------------------------------------- DEFECT 1, REPRODUCED NOT FIXED, AND IT IS THE CONSEQUENTIAL ONE: `toolchain.sh --verify` CANNOT FAIL. -------------------------------------------------------------------------- `.ci/scripts/lib/toolchain.sh:167` states the contract in the file's own words: "toolchain.sh --verify exit 1 if any pinned tool
+# is absent or mismatched". It does not, and cannot. The dispatch block at :211-221 is positioned at line 211 with 245 more lines of function definitions after it, and NONE of its `--report`, `--verify` or `--env` arms calls `exit` (only the usage arm does, at :218). So control falls out of the `fi`, defines the acquisition helpers, and the script exits with the status of the last
+# function definition, which is always 0.
 #
 # Driven live on 2026-09-10, bash 5.3.9:
 #
 #     PATH=/usr/bin:/bin bash .ci/scripts/lib/toolchain.sh --verify
-#       lane: host
-#         tool        pinned    actual          status
-#         shfmt       3.13.1    absent          MISMATCH
-#         shellcheck  0.10.0    absent          MISMATCH
-#         ruff        0.16.1    absent          MISMATCH
-#         actionlint  1.7.12    absent          MISMATCH
-#         go          1.26.6    absent          MISMATCH
-#         node        22        absent          MISMATCH
+# lane: host tool pinned actual status shfmt 3.13.1 absent MISMATCH shellcheck 0.10.0 absent MISMATCH ruff 0.16.1 absent MISMATCH actionlint 1.7.12 absent MISMATCH go 1.26.6 absent MISMATCH node 22 absent MISMATCH
 #       EXIT=0
 #
 # Six MISMATCH lines and a green exit. `toolchain_report --verify` (the
 # FUNCTION) is correct and returns 1; only the script's dispatch throws that
 # away.
 #
-# BLAST RADIUS, MEASURED. `--verify` has ZERO call sites anywhere in the tree
-# (`grep -rn 'toolchain\.sh --'` finds only `--report` and `--env`), so nothing
-# is green today because of it. It is a gate-shaped verb that is advertised in
-# the file's own help text and would be always-green the moment anyone wired it
-# into CI, which is exactly the vacuity class this programme exists to remove.
+# BLAST RADIUS, MEASURED. `--verify` has ZERO call sites anywhere in the tree (`grep -rn 'toolchain\.sh --'` finds only `--report` and `--env`), so nothing is green today because of it. It is a gate-shaped verb that is advertised in the file's own help text and would be always-green the moment anyone wired it into CI, which is exactly the vacuity class this programme exists to
+# remove.
 #
-# THE SAME DEFECT HAS A LIVE VARIANT ON `--env`, which DOES have two call sites
-# (`.github/workflows/ci-quality.yml:171` and `:1897`, both
-# `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`). Driven live against a
-# fake root with no pins file:
+# THE SAME DEFECT HAS A LIVE VARIANT ON `--env`, which DOES have two call sites (`.github/workflows/ci-quality.yml:171` and `:1897`, both `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`). Driven live against a fake root with no pins file:
 #
-#     bash /tmp/tcroot/.ci/scripts/lib/toolchain.sh --env
+# bash /tmp/tcroot/.ci/scripts/lib/toolchain.sh --env
 #       EXIT=0, ZERO bytes on stdout
-#       stderr: grep: /tmp/tcroot/.devcontainer/toolchain.env: No such file
+# stderr: grep: /tmp/tcroot/.devcontainer/toolchain.env: No such file
 #
-# A missing or unreadable pins file therefore appends NOTHING to $GITHUB_ENV and
-# the step stays green, after which every later step in the job sees unset pins.
-# `set -eo pipefail` (the Actions default) does not help, because the script
-# genuinely exits 0. `--report` is the third arm and behaves the same way:
-# `toolchain_report` returns 2 on a missing pins file, and the script still
+# A missing or unreadable pins file therefore appends NOTHING to $GITHUB_ENV and the step stays green, after which every later step in the job sees unset pins. `set -eo pipefail` (the Actions default) does not help, because the script genuinely exits 0. `--report` is the third arm and behaves the same way: `toolchain_report` returns 2 on a missing pins file, and the script still
 # exits 0.
 #
-# THIS PORT DOES NOT REPRODUCE THE ALWAYS-ZERO EXIT, and the asymmetry is
-# deliberate: the defect lives in the SCRIPT'S DISPATCH, not in the library
+# THIS PORT DOES NOT REPRODUCE THE ALWAYS-ZERO EXIT, and the asymmetry is deliberate: the defect lives in the SCRIPT'S DISPATCH, not in the library
 # function, and this module is the library. `report()` returns the twin's
 # function-level rc, `main("verify")` honours it, and `test_core_toolchain.py`
-# pins that the twin's dispatch still has the bug, so the pin goes red the day
-# somebody fixes the twin.
+# pins that the twin's dispatch still has the bug, so the pin goes red the day somebody fixes the twin.
 #
-# --------------------------------------------------------------------------
-# DEFECT 2, REPRODUCED NOT FIXED: "CHECKSUM MISMATCH" IS PRINTED WHEN THERE IS
-# NO CHECKSUM TOOL TO MISMATCH WITH.
-# --------------------------------------------------------------------------
-# `_toolchain_sha256sum` (:282-291) exists precisely so that "a verifier that
-# cannot run must not read as a verifier that failed" (:264-265), and it does
+# -------------------------------------------------------------------------- DEFECT 2, REPRODUCED NOT FIXED: "CHECKSUM MISMATCH" IS PRINTED WHEN THERE IS NO CHECKSUM TOOL TO MISMATCH WITH. -------------------------------------------------------------------------- `_toolchain_sha256sum` (:282-291) exists precisely so that "a verifier that cannot run must not read as a verifier that
+# failed" (:264-265), and it does
 # return a distinct message when neither `sha256sum` nor `shasum` is present.
-# BOTH CALL SITES THEN DISCARD IT: `:344` and `:429` are
-# `... | _toolchain_sha256sum -c - >/dev/null 2>&1`, and the `2>/dev/null`
-# swallows the very message the helper was written to print.
+# BOTH CALL SITES THEN DISCARD IT: `:344` and `:429` are `... | _toolchain_sha256sum -c - >/dev/null 2>&1`, and the `2>/dev/null` swallows the very message the helper was written to print.
 #
-# Driven live on 2026-09-10 with a PATH holding only the coreutils the function
-# needs and a stub `curl`, so that neither hashing tool is reachable:
+# Driven live on 2026-09-10 with a PATH holding only the coreutils the function needs and a stub `curl`, so that neither hashing tool is reachable:
 #
-#     toolchain: shfmt checksum MISMATCH -- refusing to install
-#       expected fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1
-#     toolchain: no sha256 tool on PATH (need sha256sum or shasum) -- cannot verify a download
-#       actual
+# toolchain: shfmt checksum MISMATCH -- refusing to install expected fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1 toolchain: no sha256 tool on PATH (need sha256sum or shasum) -- cannot verify a download actual
 #
-# The distinguishing line survives only because the SECOND, unredirected call
-# inside the `actual` line leaks it, and it lands out of order (before the line
-# it belongs to) with an EMPTY `actual`. The headline still says MISMATCH.
+# The distinguishing line survives only because the SECOND, unredirected call inside the `actual` line leaks it, and it lands out of order (before the line it belongs to) with an EMPTY `actual`. The headline still says MISMATCH.
 # 2 call sites; both download helpers. It fails CLOSED, so nothing unverified is
 # installed and it is not security-relevant; it is a diagnosis defect, and the
 # comment above it claims otherwise.
 #
-# `sha256_of` below uses `hashlib`, so this port has no verifier that can be
-# absent. That is the same argument `.ci/lib/find-port.sh` made when its own
-# `_sha256sum_portable` died in W7 phase 1, and the twin's comment at :274-277
-# already anticipates it.
+# `sha256_of` below uses `hashlib`, so this port has no verifier that can be absent. That is the same argument `.ci/lib/find-port.sh` made when its own `_sha256sum_portable` died in W7 phase 1, and the twin's comment at :274-277 already anticipates it.
 #
-# --------------------------------------------------------------------------
-# DEFECT 3, DOCUMENTATION ONLY: TWO COMMENTS ARE STALE IN THE DIRECTION THAT
-# TELLS A READER TO ADD A CONSTANT THAT IS ALREADY THERE.
-# --------------------------------------------------------------------------
-# `:328-331` says "Only the LINUX_* pair exists in constants.sh today, so a Mac
-# lands in the refusal below". `:401-404` says "adding the two DARWIN_*
-# constants is all a Mac needs". Both DARWIN pairs have since been added:
-# `SHFMT_SHA256_DARWIN_AMD64`/`_ARM64` at `.ci/config/constants.sh:280-281` and
-# `SHELLCHECK_SHA256_DARWIN_X86_64`/`_AARCH64` at `:262-263`. No behaviour is
+# -------------------------------------------------------------------------- DEFECT 3, DOCUMENTATION ONLY: TWO COMMENTS ARE STALE IN THE DIRECTION THAT TELLS A READER TO ADD A CONSTANT THAT IS ALREADY THERE. -------------------------------------------------------------------------- `:328-331` says "Only the LINUX_* pair exists in constants.sh today, so a Mac lands in the refusal
+# below". `:401-404` says "adding the two DARWIN_* constants is all a Mac needs". Both DARWIN pairs have since been added: `SHFMT_SHA256_DARWIN_AMD64`/`_ARM64` at `.ci/config/constants.sh:280-281` and `SHELLCHECK_SHA256_DARWIN_X86_64`/`_AARCH64` at `:262-263`. No behaviour is
 # wrong; the comments describe a tree that no longer exists.
 # ---------------------------------------------------------------------------
 
@@ -544,42 +469,28 @@ def same_major(have: str, want: str) -> bool:
 CACHE_ENV_ORDER = ("CI_TEMP", "RUNNER_TEMP", "TMPDIR")
 CACHE_DIR_NAME = "rediacc-toolchain"
 
-# The SHA256 pins live in `.ci/config/constants.sh` rather than in
-# `toolchain.env`, because the Dockerfile has no use for them. Only these two
+# The SHA256 pins live in `.ci/config/constants.sh` rather than in `toolchain.env`, because the Dockerfile has no use for them. Only these two
 # families are read here; the constants file holds others (nfpm, actionlint)
 # that belong to other acquirers.
 SHA_KEY_RE = re.compile(r"^(?:SHFMT|SHELLCHECK)_SHA256_[A-Z0-9_]+$")
 
 # `readonly NAME="value"` as constants.sh writes it. Anchored and quote-aware
-# rather than a loose split, so a commented-out line or a `readonly` inside a
-# heredoc cannot contribute a checksum.
+# rather than a loose split, so a commented-out line or a `readonly` inside a heredoc cannot contribute a checksum.
 CONSTANTS_ASSIGN_RE = re.compile(r'^readonly\s+([A-Z][A-Z0-9_]*)="([^"]*)"\s*$', re.MULTILINE)
 
-# The two probe guards `_toolchain_need_checksums` (:249) reads before deciding
-# whether to source constants.sh at all. Reproduced by name because WHICH two
-# they are is observable: exporting either one suppresses the file read
-# entirely, so the other family then resolves from the environment or not at all.
+# The two probe guards `_toolchain_need_checksums` (:249) reads before deciding whether to source constants.sh at all. Reproduced by name because WHICH two they are is observable: exporting either one suppresses the file read entirely, so the other family then resolves from the environment or not at all.
 CHECKSUM_PROBE_KEYS = ("SHELLCHECK_SHA256_LINUX_X86_64", "SHFMT_SHA256_LINUX_AMD64")
 
-# The six tools `toolchain_report` walks, IN ITS ORDER (:196). Order is
-# observable: the report prints one row per tool in this sequence.
+# The six tools `toolchain_report` walks, IN ITS ORDER (:196). Order is observable: the report prints one row per tool in this sequence.
 #
-# uv and pytest are pinned and probeable and are deliberately NOT here. The
-# twin's reason at :189-195: `--verify` returns non-zero on any MISMATCH and
-# runs in lanes that have no business owning a Python toolchain, so a host
-# without uv would start failing a check it passed yesterday for a tool it is
-# not being asked to have. `.ci/bootstrap.sh --check` reports those two, and it
-# can also FIX the answer.
+# uv and pytest are pinned and probeable and are deliberately NOT here. The twin's reason at :189-195: `--verify` returns non-zero on any MISMATCH and runs in lanes that have no business owning a Python toolchain, so a host without uv would start failing a check it passed yesterday for a tool it is not being asked to have. `.ci/bootstrap.sh --check` reports those two, and it can
+# also FIX the answer.
 REPORT_TOOLS = ("shfmt", "shellcheck", "ruff", "actionlint", "go", "node")
 
-# The tools with a dedicated acquisition arm (:458-460). Everything else falls
-# through to a bare re-check.
+# The tools with a dedicated acquisition arm (:458-460). Everything else falls through to a bare re-check.
 ACQUIRE_TOOLS = ("shfmt", "shellcheck")
 
-# uname -m to the arch spelling each UPSTREAM uses in its asset names. Two
-# tables, not one, because the two projects disagree: shfmt publishes
-# `amd64`/`arm64`, shellcheck publishes `x86_64`/`aarch64`, and collapsing them
-# would 404 on one of the two.
+# uname -m to the arch spelling each UPSTREAM uses in its asset names. Two tables, not one, because the two projects disagree: shfmt publishes `amd64`/`arm64`, shellcheck publishes `x86_64`/`aarch64`, and collapsing them would 404 on one of the two.
 SHFMT_ARCH = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
 SHELLCHECK_ARCH = {
     "x86_64": "x86_64",
@@ -737,9 +648,7 @@ def checksums(
     return merged
 
 
-# ---------------------------------------------------------------------------
-# Version probing: what a binary says it is
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Version probing: what a binary says it is ---------------------------------------------------------------------------
 
 
 def _probe_argv(tool: str, binary: str) -> list[str]:
@@ -790,25 +699,19 @@ def _probe_extract(tool: str, out: str) -> str:
         picked = []
         for line in lines:
             if line.startswith("version:"):
-                # `-F': *'`: the separator is a colon followed by any run of
-                # spaces, so field 2 is what follows `version:` with its padding
-                # already eaten.
+                # `-F': *'`: the separator is a colon followed by any run of spaces, so field 2 is what follows `version:` with its padding already eaten.
                 fields = re.split(r": *", line)
                 picked.append(fields[1] if len(fields) > 1 else "")
         return "\n".join(picked)
     if tool in ("ruff", "uv", "go"):
         # `awk '{print $N}'`: ruff and uv take field 2 (`ruff 0.16.1`), go takes
-        # field 3 (`go version go1.26.4 linux/arm64`). One table rather than two
-        # arms, because the ONLY thing that differs is the index and a reader
-        # comparing this against the bash should see that immediately.
+        # field 3 (`go version go1.26.4 linux/arm64`). One table rather than two arms, because the ONLY thing that differs is the index and a reader comparing this against the bash should see that immediately.
         index = 2 if tool == "go" else 1
         picked = []
         for line in lines:
             fields = line.split()
             picked.append(fields[index] if len(fields) > index else "")
-        # `awk` emits a line for EVERY input line, including a blank one for a
-        # line with fewer fields than asked for. The trailing-newline strip that
-        # `$(...)` performs is what keeps that from becoming a stray record.
+        # `awk` emits a line for EVERY input line, including a blank one for a line with fewer fields than asked for. The trailing-newline strip that `$(...)` performs is what keeps that from becoming a stray record.
         return "\n".join(picked).rstrip("\n")
     if tool == "pytest":
         first = lines[0] if lines else ""
@@ -859,17 +762,13 @@ def probe_version(tool: str, binary: str | None = None, *, timeout: int = 60) ->
             timeout=timeout,
         )
     except (OSError, subprocess.SubprocessError):
-        # `$("$bin" --version 2>/dev/null)` with no such binary yields "" and a
-        # non-zero status the assignment swallows, so the twin also lands on the
-        # empty-output branch rather than aborting.
+        # `$("$bin" --version 2>/dev/null)` with no such binary yields "" and a non-zero status the assignment swallows, so the twin also lands on the empty-output branch rather than aborting.
         return None
     answer = _probe_numeric(_probe_extract(tool, proc.stdout))
     return answer or None
 
 
-# ---------------------------------------------------------------------------
-# The question every gate asks
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The question every gate asks ---------------------------------------------------------------------------
 
 
 def check(tool: str, *, pins: dict[str, str] | None = None, path: str | None = None) -> CheckResult:
@@ -892,11 +791,7 @@ def check(tool: str, *, pins: dict[str, str] | None = None, path: str | None = N
     except PinError as exc:
         if tool not in TOOL_KEYS:
             return CheckResult(tool, None, 2, ("toolchain: no pin defined for '%s'" % tool,))
-        # An absent or empty KEY. The bash reaches this through
-        # `[[ -n "$pin" ]]` at :134 rather than through pin_for's own failure,
-        # because `toolchain_pin_for` returns "" with STATUS 0 for a known tool
-        # whose key is unset. Two bash branches, one Python exception, same two
-        # messages and same rc.
+        # An absent or empty KEY. The bash reaches this through `[[ -n "$pin" ]]` at :134 rather than through pin_for's own failure, because `toolchain_pin_for` returns "" with STATUS 0 for a known tool whose key is unset. Two bash branches, one Python exception, same two messages and same rc.
         del exc
         return CheckResult(
             tool,
@@ -1006,19 +901,11 @@ def report(
     return out, rc
 
 
-# ---------------------------------------------------------------------------
-# Acquisition: getting the tool, not just asking about it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Acquisition: getting the tool, not just asking about it ---------------------------------------------------------------------------
 #
-# A PATH binary AT THE PIN always wins, so a developer's own install is honoured
-# and CI does not re-download on every invocation. Two acquisition models,
-# chosen per tool by what the upstream actually offers:
+# A PATH binary AT THE PIN always wins, so a developer's own install is honoured and CI does not re-download on every invocation. Two acquisition models, chosen per tool by what the upstream actually offers:
 #
-#   go install @vX  (shfmt) -- Go verifies the module against its checksum
-#       database, which is a stronger guarantee than a hash recorded here.
-#       shfmt publishes no checksums file at all, so this is also the only
-#       verified option available for it.
-#   download + recorded sha256 (shellcheck) -- a prebuilt Haskell binary.
+# go install @vX (shfmt) -- Go verifies the module against its checksum database, which is a stronger guarantee than a hash recorded here. shfmt publishes no checksums file at all, so this is also the only verified option available for it. download + recorded sha256 (shellcheck) -- a prebuilt Haskell binary.
 
 
 def shfmt_url(want: str, os_key: str, arch: str) -> str:
@@ -1091,11 +978,9 @@ def download_shfmt(
         ]
     cache.mkdir(parents=True, exist_ok=True)
     url = shfmt_url(want, os_key, arch)
-    # A PRIVATE TEMP PER PROCESS, mirroring `mktemp "$cache/shfmt.XXXXXXXX"` in
-    # the twin. The shared `$bin.tmp` both sides used to write was a data-
+    # A PRIVATE TEMP PER PROCESS, mirroring `mktemp "$cache/shfmt.XXXXXXXX"` in the twin. The shared `$bin.tmp` both sides used to write was a data-
     # corruption race under any concurrent acquisition; the twin carries the
-    # measurement (8 racers, 7 failures, a false "checksum MISMATCH") and the
-    # reasoning. `.replace()` is the atomic rename the fix turns on.
+    # measurement (8 racers, 7 failures, a false "checksum MISMATCH") and the reasoning. `.replace()` is the atomic rename the fix turns on.
     fd, tmp_name = tempfile.mkstemp(prefix="shfmt.", dir=str(cache))
     os.close(fd)
     tmp = pathlib.Path(tmp_name)
@@ -1104,8 +989,7 @@ def download_shfmt(
         return None, ["toolchain: could not download shfmt from %s" % url]
     actual = sha256_of(tmp)
     if actual != sha:
-        # DEFECT 2 CANNOT HAPPEN HERE: `actual` is always a real digest, so this
-        # headline is only ever printed when there genuinely was a mismatch.
+        # DEFECT 2 CANNOT HAPPEN HERE: `actual` is always a real digest, so this headline is only ever printed when there genuinely was a mismatch.
         messages.append("toolchain: shfmt checksum MISMATCH -- refusing to install")
         messages.append("  expected %s" % sha)
         messages.append("  actual   %s" % actual)
@@ -1148,17 +1032,11 @@ def acquire_shfmt(want: str, *, env: dict[str, str] | None = None) -> tuple[str 
     if proc.returncode != 0:
         # FALLS BACK TO THE DOWNLOAD, matching the twin. `command -v go` asks
         # whether go is PRESENT; the pin check asks whether it is the RIGHT
-        # version. CI's quality-security lane answered yes and no respectively,
-        # so this branch ran, failed, and made shfmt unacquirable while the
-        # static lane -- with no go at all -- downloaded it in 0.6s. The message
-        # is emitted BEFORE the fallback's own, because the twin echoes then
-        # calls, and the differential compares the stream in order.
+        # version. CI's quality-security lane answered yes and no respectively, so this branch ran, failed, and made shfmt unacquirable while the static lane -- with no go at all -- downloaded it in 0.6s. The message is emitted BEFORE the fallback's own, because the twin echoes then calls, and the differential compares the stream in order.
         found, messages = download_shfmt(want, cache, binary, env=env)
         return found, ["toolchain: go install shfmt@v%s failed" % want, *messages]
     if not os.access(str(binary), os.X_OK):
-        # The twin's `[[ -x "$bin" ]] || return 1` at :378 is SILENT, and that
-        # is reproduced: a message here would be a line the differential sees on
-        # one side only.
+        # The twin's `[[ -x "$bin" ]] || return 1` at :378 is SILENT, and that is reproduced: a message here would be a line the differential sees on one side only.
         return None, []
     return str(binary), []
 
@@ -1218,10 +1096,7 @@ def acquire_shellcheck(
             ),
         ]
     cache.mkdir(parents=True, exist_ok=True)
-    # PRIVATE STAGING DIR, mirroring `mktemp -d "$cache/sc.XXXXXXXX"` in the
-    # twin. Both the archive and the extraction used to target the shared
-    # `$cache`, so two concurrent acquisitions could leave a half-written
-    # `shellcheck` at the final path, executable, for a third process to run.
+    # PRIVATE STAGING DIR, mirroring `mktemp -d "$cache/sc.XXXXXXXX"` in the twin. Both the archive and the extraction used to target the shared `$cache`, so two concurrent acquisitions could leave a half-written `shellcheck` at the final path, executable, for a third process to run.
     stage = pathlib.Path(tempfile.mkdtemp(prefix="sc.", dir=str(cache)))
     tmp = stage / "sc.tar.xz"
     url = shellcheck_url(want, os_key, arch)
@@ -1245,14 +1120,8 @@ def acquire_shellcheck(
         check=False,
     )
     if proc.returncode != 0:
-        # THE TWIN NO LONGER LEAKS THE ARCHIVE HERE, and neither does this. It
-        # used to: `tar ... || return 1` with the `rm -f "$tmp"` on the NEXT
-        # line left a multi-megabyte `sc.tar.xz` in the cache forever, and this
-        # port reproduced that rather than tidying, because the cache
-        # directory's contents are observable to a caller that lists it. Private
-        # staging changed the arithmetic -- one file overwritten in place became
-        # an unbounded pile of randomly named directories -- so both sides now
-        # tear the staging dir down on every exit path.
+        # THE TWIN NO LONGER LEAKS THE ARCHIVE HERE, and neither does this. It used to: `tar ... || return 1` with the `rm -f "$tmp"` on the NEXT line left a multi-megabyte `sc.tar.xz` in the cache forever, and this port reproduced that rather than tidying, because the cache directory's contents are observable to a caller that lists it. Private staging changed the arithmetic -- one
+        # file overwritten in place became an unbounded pile of randomly named directories -- so both sides now tear the staging dir down on every exit path.
         shutil.rmtree(stage, ignore_errors=True)
         return None, []
     staged = stage / "shellcheck"
@@ -1308,9 +1177,7 @@ def acquire(
     return (again.binary if again.ok else None), list(again.messages)
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface a bash caller reaches
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface a bash caller reaches ---------------------------------------------------------------------------
 
 
 def _fail(message: str) -> int:
@@ -1394,15 +1261,11 @@ def main(argv: list[str]) -> int:
     if verb in ("report", "verify"):
         # `verify` EXITS NON-ZERO ON A MISMATCH, which `toolchain.sh --verify`
         # does not; see DEFECT 1 in the acquisition section. The lines are
-        # identical, only the exit code differs, so a differential over the
-        # OUTPUT still compares clean while the verdict here is usable.
+        # identical, only the exit code differs, so a differential over the OUTPUT still compares clean while the verdict here is usable.
         try:
             lines, rc = report(verb == "verify")
         except PinError as exc:
-            # `toolchain_report` opens with `toolchain_load || return 2`, so a
-            # missing or unreadable pins file is rc 2 and NOT a table full of
-            # blanks. Reproduced here rather than left to raise, because an
-            # unhandled traceback is a third outcome the twin does not have.
+            # `toolchain_report` opens with `toolchain_load || return 2`, so a missing or unreadable pins file is rc 2 and NOT a table full of blanks. Reproduced here rather than left to raise, because an unhandled traceback is a third outcome the twin does not have.
             print(str(exc), file=sys.stderr)
             return 2
         for line in lines:
@@ -1443,11 +1306,9 @@ def main(argv: list[str]) -> int:
         for message in messages:
             print(message, file=sys.stderr)
         if binary is None:
-            # 2 is "you asked something I have no answer for" and covers BOTH of
-            # the twin's rc-2 exits at :450 (no such tool) and :454 (the pin is
+            # 2 is "you asked something I have no answer for" and covers BOTH of the twin's rc-2 exits at :450 (no such tool) and :454 (the pin is
             # empty); 1 is "I tried and could not get it". `acquire` signals the
-            # empty-pin case with its one message, which is why the test for it
-            # is on the message and not on the tool name alone.
+            # empty-pin case with its one message, which is why the test for it is on the message and not on the tool name alone.
             empty_pin = any("is empty" in message for message in messages)
             return 2 if (rest[0] not in TOOL_KEYS or empty_pin) else 1
         print(binary)

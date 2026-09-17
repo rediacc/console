@@ -62,12 +62,9 @@ MOVED = (
     "_tutorial_video_pool",
 )
 
-# THE CALLER'S REPORT BLOCK, REPRODUCED VERBATIM. `www_tutorials_video`, `_media` and
-# `_watch` all end the same way: run the pool, then `if compgen -G` to print the list
-# and return 1. Two of the three call the pool BARE, so under `set -e` a non-zero
+# THE CALLER'S REPORT BLOCK, REPRODUCED VERBATIM. `www_tutorials_video`, `_media` and `_watch` all end the same way: run the pool, then `if compgen -G` to print the list and return 1. Two of the three call the pool BARE, so under `set -e` a non-zero
 # return from it skips that block entirely. Running the pool alone therefore cannot
-# tell the fixed behaviour from the broken one -- both end with failure files on disk
-# and a non-zero somewhere -- which is why this reproduces the CALLER.
+# tell the fixed behaviour from the broken one -- both end with failure files on disk and a non-zero somewhere -- which is why this reproduces the CALLER.
 POOL_WITH_CALLER_REPORT = """
     printf "a\\ten\\nb\\tfr\\n" | _tutorial_video_pool 2 "PREFIX"
     if compgen -G "PREFIX".* >/dev/null; then
@@ -206,8 +203,7 @@ def test_auto_jobs_is_bounded_by_cpu_memory_and_a_ceiling(gate):
             with harness.fake_bin("nproc awk +chmod +uname") as fake:
                 script_machine(fake.dir, cores, gib)
                 # STDOUT ALONE. The number is the return value; every log_* line is
-                # stderr, and the pool READS this stream. Keeping them apart is the
-                # assertion, not a convenience.
+                # stderr, and the pool READS this stream. Keeping them apart is the assertion, not a convenience.
                 script = "\n".join(
                     [
                         "ROOT_DIR='%s'" % d,
@@ -252,9 +248,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
             gate.assert_eq(max_overlap(trace), 2, "at most --jobs renders may be in flight at once")
             gate.assert_eq(failure_files(d, "fail"), [], "a clean run leaves no failure files")
 
-        # 2. FEWER ITEMS THAN --jobs, so the loop never reaches `wait -n`. The pool
-        #    records the failure and returns 0, which is what lets the caller's
-        #    `compgen -G` block print the "Failed tutorials:" list.
+        # 2. FEWER ITEMS THAN --jobs, so the loop never reaches `wait -n`. The pool records the failure and returns 0, which is what lets the caller's `compgen -G` block print the "Failed tutorials:" list.
         with harness.fake_bin("flock nice npx +sleep +chmod +cat +wc +uname") as fake:
             trace2 = d / "trace2"
             script_renderer(fake.dir, trace2, 1)
@@ -275,17 +269,10 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
                 "the failure file names the pair",
             )
 
-        # 3. THE DEFECT THIS PINS, AND THE FIX THAT CLOSED IT. Once the queue reaches
-        #    --jobs the pool calls `wait -n`, which returns the REAPED JOB'S exit
-        #    status. Under the `set -euo pipefail` that run.sh and common.sh both set,
-        #    a non-zero there aborted _tutorial_video_pool on the spot, so the report
-        #    block never ran: the list was never printed and the per-pair files were
-        #    abandoned in /tmp. Reproduced 2026-09-06 and fixed in pool.sh
-        #    (`wait -n || true`, plus an explicit `return 0`).
+        # 3. THE DEFECT THIS PINS, AND THE FIX THAT CLOSED IT. Once the queue reaches --jobs the pool calls `wait -n`, which returns the REAPED JOB'S exit status. Under the `set -euo pipefail` that run.sh and common.sh both set, a non-zero there aborted _tutorial_video_pool on the spot, so the report block never ran: the list was never printed and the per-pair files were abandoned
+        # in /tmp. Reproduced 2026-09-06 and fixed in pool.sh (`wait -n || true`, plus an explicit `return 0`).
         #
-        #    rc is 1 either way, so IT IS NOT THE EVIDENCE. The report line is: before
-        #    the fix nothing printed it, and the sibling job was still in flight when
-        #    the pool's shell died, so its failure file was a race.
+        # rc is 1 either way, so IT IS NOT THE EVIDENCE. The report line is: before the fix nothing printed it, and the sibling job was still in flight when the pool's shell died, so its failure file was a race.
         with harness.fake_bin("flock nice npx +sleep +chmod +cat +wc +uname") as fake:
             trace3 = d / "trace3"
             script_renderer(fake.dir, trace3, 1)
@@ -319,10 +306,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
                 "both failed pairs write their own file, and the pool now waits for both",
             )
 
-        # 4. THE CONTROL, and the red half of a red-then-green. A copy of pool.sh with
-        #    `|| true` and the explicit `return 0` taken back out -- which is exactly
-        #    the pre-fix source -- must make case 3 fail. If the report still appeared,
-        #    the assertion carrying the fix would be proving nothing.
+        # 4. THE CONTROL, and the red half of a red-then-green. A copy of pool.sh with `|| true` and the explicit `return 0` taken back out -- which is exactly the pre-fix source -- must make case 3 fail. If the report still appeared, the assertion carrying the fix would be proving nothing.
         mutant = d / "mutant"
         mutant.mkdir()
         lines = MODULE.read_text(encoding="utf-8").splitlines(keepends=True)

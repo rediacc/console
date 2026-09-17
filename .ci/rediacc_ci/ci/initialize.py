@@ -148,11 +148,7 @@ import time
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# ---------------------------------------------------------------------------
-# Twin line numbers. Bash prints these inside its own diagnostics, so they are
-# part of the observable output rather than documentation.
-# `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every
-# one of them from the twin.
+# --------------------------------------------------------------------------- Twin line numbers. Bash prints these inside its own diagnostics, so they are part of the observable output rather than documentation. `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every one of them from the twin.
 # ---------------------------------------------------------------------------
 
 #: `echo "${key}=${value}" >>"$OUTPUT_FILE"` -- the redirect that names the file
@@ -193,13 +189,8 @@ GIT_TAG_LINE = 280
 RESOLVE_VERSION_NEXT_LINE = 288
 RESOLVE_VERSION_CURRENT_LINE = 290
 
-# ---------------------------------------------------------------------------
-# The five sibling scripts, spelled exactly as the twin spells them: RELATIVE to
-# the repo root, which both implementations have already chdir'd to. Absolute
-# paths would be tidier and would also stop the fixture in the differential from
-# working, because the fixture's whole mechanism is that a relative path lands in
-# the fixture tree.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The five sibling scripts, spelled exactly as the twin spells them: RELATIVE to the repo root, which both implementations have already chdir'd to. Absolute paths would be tidier and would also stop the fixture in the differential from working, because the fixture's whole mechanism is that a relative path
+# lands in the fixture tree. ---------------------------------------------------------------------------
 DETECT_POINTER_BUMP = ".ci/scripts/ci/detect-pointer-bump.sh"
 GENERATE_TAG = ".ci/scripts/ci/generate-tag.sh"
 DISPATCH_RELEASE = ".ci/scripts/ci/dispatch-release.sh"
@@ -399,8 +390,7 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
     stated design, not an accident, so it is reproduced exactly.
     """
     sys.stdout.flush()
-    # The CHILD's environment, built once and handed to the child. Deliberately
-    # not an alias this module then reads its own variables through.
+    # The CHILD's environment, built once and handed to the child. Deliberately not an alias this module then reads its own variables through.
     child_env = {**os.environ, "GITHUB_OUTPUT": ""}
     try:
         proc = subprocess.run(
@@ -413,9 +403,7 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
         )
         merged = proc.stdout
     except OSError:
-        # bash writes its `No such file or directory` to the command's stderr,
-        # which the `2>&1` has already pointed into the pipe, so grep eats it and
-        # the substitution is empty. Same shape here.
+        # bash writes its `No such file or directory` to the command's stderr, which the `2>&1` has already pointed into the pipe, so grep eats it and the substitution is empty. Same shape here.
         merged = ""
     lines = [line for line in merged.split("\n") if line.startswith("decision:")]
     return "\n".join(lines)
@@ -442,9 +430,7 @@ def main(argv: list[str]) -> int:
 
 
 def run(check_only: str, output_file: str) -> int:
-    # -----------------------------------------------------------------------
-    # Step 1: validate the GH_PAT secret
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 1: validate the GH_PAT secret -----------------------------------------------------------------------
     log.step("Validating required secrets...")
     if not os.environ.get("GITHUB_PAT", ""):
         log.error("ERROR: GITHUB_PAT is required but not set")
@@ -454,9 +440,7 @@ def run(check_only: str, output_file: str) -> int:
         return 1
     log.info("GH_PAT secret is configured")
 
-    # -----------------------------------------------------------------------
-    # Step 2: bot detection
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 2: bot detection -----------------------------------------------------------------------
     log.step("Checking commit author...")
     is_bot, message = is_bot_commit(
         os.environ.get("GITHUB_EVENT_NAME", ""), os.environ.get("COMMIT_AUTHOR", "")
@@ -476,9 +460,7 @@ def run(check_only: str, output_file: str) -> int:
         log.info("Check-only mode, skipping submodule and tag generation")
         return 0
 
-    # -----------------------------------------------------------------------
-    # Step 3: submodules
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 3: submodules -----------------------------------------------------------------------
     log.step("Initializing private submodules...")
 
     pat = os.environ.get("GITHUB_PAT", "")
@@ -513,21 +495,16 @@ def run(check_only: str, output_file: str) -> int:
             return 1
         log.info("Submodules initialized successfully")
 
-    # -----------------------------------------------------------------------
-    # Step 4: pointer-bump fast-path detection
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 4: pointer-bump fast-path detection -----------------------------------------------------------------------
     log.step("Detecting pointer-bump-only push...")
     # `${OUTPUT_FILE:+--output "$OUTPUT_FILE"}` unquoted: the inner quotes survive
-    # the expansion, so a path with spaces stays ONE word (driven), and an unset
-    # OUTPUT_FILE contributes zero words rather than one empty one.
+    # the expansion, so a path with spaces stays ONE word (driven), and an unset OUTPUT_FILE contributes zero words rather than one empty one.
     forwarded = ["--output", output_file] if output_file else []
     if run_inherit([DETECT_POINTER_BUMP, *forwarded], DETECT_POINTER_BUMP_LINE) != 0:
         log.warn("detect-pointer-bump.sh errored; running full CI")
         write_output("pointer_bump_only", "false", output_file)
 
-    # -----------------------------------------------------------------------
-    # Step 5: the three image tags
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 5: the three image tags -----------------------------------------------------------------------
     log.step("Generating CI tags...")
 
     status, renet_tag = run_capture(
@@ -555,9 +532,7 @@ def run(check_only: str, output_file: str) -> int:
     log.info("Web tag: %s (console commit)" % web_tag)
     log.info("RDC tag: %s (console commit)" % rdc_tag)
 
-    # -----------------------------------------------------------------------
-    # Step 6: bump type
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 6: bump type -----------------------------------------------------------------------
     log.step("Detecting bump type from PR labels...")
     status, bump_type = run_capture([DETECT_BUMP_TYPE, "--verbose"], DETECT_BUMP_TYPE_LINE)
     if status != 0:
@@ -565,9 +540,7 @@ def run(check_only: str, output_file: str) -> int:
     log.info("Bump type: %s" % bump_type)
     write_output("bump_type", bump_type, output_file)
 
-    # -----------------------------------------------------------------------
-    # Step 6b: does this commit earn a release
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 6b: does this commit earn a release -----------------------------------------------------------------------
     if (
         os.environ.get("GITHUB_EVENT_NAME", "") == "push"
         and os.environ.get("GITHUB_REF", "") == "refs/heads/main"
@@ -578,9 +551,7 @@ def run(check_only: str, output_file: str) -> int:
         if decision == "decision: skip":
             write_output("skip_release", "true", output_file)
 
-    # -----------------------------------------------------------------------
-    # Step 6c: next version, from a tag list this refuses to guess at
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 6c: next version, from a tag list this refuses to guess at -----------------------------------------------------------------------
     log.step("Calculating next version from git tags...")
 
     # DEFECT A. `${GITHUB_REPOSITORY}` under `set -u`: UNSET is fatal here and
@@ -599,8 +570,7 @@ def run(check_only: str, output_file: str) -> int:
     fetch_ok = False
     for attempt in range(1, FETCH_ATTEMPTS + 1):
         sys.stdout.flush()
-        # `2>` truncates on every attempt, so only the LAST attempt's stderr is
-        # ever reported.
+        # `2>` truncates on every attempt, so only the LAST attempt's stderr is ever reported.
         with open(tag_fetch_err, "wb") as errfile:
             try:
                 status = subprocess.run(
@@ -622,8 +592,7 @@ def run(check_only: str, output_file: str) -> int:
             "Could not fetch tags after %d attempts; refusing to compute a version from a tag "
             "list that may be stale." % FETCH_ATTEMPTS
         )
-        # FETCH_URL embeds the app token, and git echoes the remote in its errors,
-        # so git's stderr is redacted rather than printed raw.
+        # FETCH_URL embeds the app token, and git echoes the remote in its errors, so git's stderr is redacted rather than printed raw.
         with open(tag_fetch_err, "rb") as errfile:
             sys.stderr.flush()
             sys.stderr.buffer.write(redact(errfile.read(), os.environ.get("GITHUB_PAT", "")))
@@ -634,13 +603,8 @@ def run(check_only: str, output_file: str) -> int:
 
     status, tag_list = run_capture(["git", "tag", "-l", "v*", "--sort=-v:refname"], GIT_TAG_LINE)
     if status != 0:
-        # A FAILED READ IS NOT AN EMPTY ONE. git's own status leaves the
-        # assignment and `set -e` carries it out, with no message of the
-        # script's own -- `test_a_failing_tag_read_dies_silently_under_pipefail`
-        # pins exactly that. It is also why the twin's pipe could not simply
-        # become `mapfile -t < <(git tag ...)`: a process substitution's status
-        # is not checked, so a failing git would arrive here as an empty tag
-        # list and be reported as "no v* tag exists".
+        # A FAILED READ IS NOT AN EMPTY ONE. git's own status leaves the assignment and `set -e` carries it out, with no message of the script's own -- `test_a_failing_tag_read_dies_silently_under_pipefail` pins exactly that. It is also why the twin's pipe could not simply become `mapfile -t < <(git tag ...)`: a process substitution's status is not checked, so a failing git would
+        # arrive here as an empty tag list and be reported as "no v* tag exists".
         return status
     latest_tag = tag_list.split("\n", 1)[0]
     if not latest_tag:
@@ -661,14 +625,11 @@ def run(check_only: str, output_file: str) -> int:
     if status != 0:
         return status
     write_output("next_version", next_version, output_file)
-    # The nested substitution's status is DISCARDED by bash: the outer log_info
-    # succeeds either way, so a failing `--current` only empties the parenthesis.
+    # The nested substitution's status is DISCARDED by bash: the outer log_info succeeds either way, so a failing `--current` only empties the parenthesis.
     _, current_version = run_capture([RESOLVE_VERSION, "--current"], RESOLVE_VERSION_CURRENT_LINE)
     log.info("Next version: %s (from tag: %s)" % (next_version, current_version))
 
-    # -----------------------------------------------------------------------
-    # Step 6d: on push-to-main every tag carries the version, to bust the cache
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 6d: on push-to-main every tag carries the version, to bust the cache -----------------------------------------------------------------------
     tags = {"RENET": renet_tag, "WEB": web_tag, "RDC": rdc_tag}
     if os.environ.get("GITHUB_EVENT_NAME", "") == "push":
         log_parts = []
@@ -681,9 +642,7 @@ def run(check_only: str, output_file: str) -> int:
         # DEFECT B: one comma, no space.
         log.info("Push event: versioned tags - %s" % LOG_PARTS_SEPARATOR.join(log_parts))
 
-    # -----------------------------------------------------------------------
-    # Step 7: which images the registry already has
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- Step 7: which images the registry already has -----------------------------------------------------------------------
     log.step("Checking image cache in registry...")
 
     exists = {

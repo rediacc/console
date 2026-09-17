@@ -158,49 +158,38 @@ from rediacc_ci import log
 # for this port's own refusals, which the twin has no analogue for.
 SELF = "upload-to-r2.sh"
 
-# `.ci/config/constants.sh:201` and `:213`. Restated rather than sourced, for the
-# reason in the docstring, and pinned against constants.sh by a staleness alarm.
+# `.ci/config/constants.sh:201` and `:213`. Restated rather than sourced, for the reason in the docstring, and pinned against constants.sh by a staleness alarm.
 BUCKET_DEFAULT = "rediacc-releases"
 MAX_RELEASE_VERSIONS = 20
 
-# `CACHE_CONTROL_MUTABLE` / `CACHE_CONTROL_IMMUTABLE` (:176-177). The immutable
-# policy is legitimate HERE, unlike in `upload-repos-to-r2.sh`, because the URL
-# itself carries the version: `cli/v1.2.3/rdc-linux-x64` never serves other bytes.
+# `CACHE_CONTROL_MUTABLE` / `CACHE_CONTROL_IMMUTABLE` (:176-177). The immutable policy is legitimate HERE, unlike in `upload-repos-to-r2.sh`, because the URL itself carries the version: `cli/v1.2.3/rdc-linux-x64` never serves other bytes.
 CACHE_CONTROL_MUTABLE = "no-cache"
 CACHE_CONTROL_IMMUTABLE = "public, max-age=31536000, immutable"
 
 # `if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]`, which appears five
-# times (:113, :382, :409, :416, :451). A `pr-N` channel has no tag contract, so
-# neither the bump-none refusal, the versioned prefix, the retention tracker nor
-# the cleanup applies to it.
+# times (:113, :382, :409, :416, :451). A `pr-N` channel has no tag contract, so neither the bump-none refusal, the versioned prefix, the retention tracker nor the cleanup applies to it.
 RELEASE_CHANNELS = ("stable", "edge")
 
-# The `case` arms of `skip_release_requested` (:106-109). A SET of SPELLINGS,
-# because the twin lists each one rather than lowercasing: `TrUe` and `Y` are NOT
+# The `case` arms of `skip_release_requested` (:106-109). A SET of SPELLINGS, because the twin lists each one rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would suppress a release the
-# twin publishes. These lines sit between the SKIP_RELEASE_GUARD_BEGIN/END
-# markers that `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh`
-# splits the twin on to assemble its mutants.
+# twin publishes. These lines sit between the SKIP_RELEASE_GUARD_BEGIN/END markers that `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin on to assemble its mutants.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
 
-# The three credentials checked, IN ORDER, when `--dry-run` is absent (:146). The
-# first missing one wins, and the loop is what makes that observable.
+# The three credentials checked, IN ORDER, when `--dry-run` is absent (:146). The first missing one wins, and the loop is what makes that observable.
 REQUIRED_CREDENTIALS = (
     "CLOUDFLARE_R2_ACCESS_KEY_ID",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
     "CLOUDFLARE_R2_ENDPOINT",
 )
 
-# The four defects in the module docstring, named so a test can pin each by name
-# instead of restating the sentence.
+# The four defects in the module docstring, named so a test can pin each by name instead of restating the sentence.
 AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER = True
 AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY = True
 A_FAILED_TRACKER_READ_RESETS_THE_WINDOW = True
 A_MALFORMED_TRACKER_IS_OVERWRITTEN_EMPTY = True
 
 # `sed -n '/^write_once_guard()/,/^}/p'`, the same range
-# `.ci/rediacc_ci/deploy/write_once_guard_check.py:120-121` uses: from the
-# definition line to the first line that is a closing brace at column 0.
+# `.ci/rediacc_ci/deploy/write_once_guard_check.py:120-121` uses: from the definition line to the first line that is a closing brace at column 0.
 GUARD_START = re.compile(r"^write_once_guard\(\)")
 GUARD_END = re.compile(r"^\}")
 
@@ -542,8 +531,7 @@ class Uploader:
             )
             raise BashExitError(1)
 
-        # The guard reads both as globals. constants.sh is deliberately not
-        # sourced, so they are handed over through the environment instead.
+        # The guard reads both as globals. constants.sh is deliberately not sourced, so they are handed over through the environment instead.
         os.environ["RELEASES_BUCKET"] = self.bucket
         os.environ["DRY_RUN"] = "true" if self.dry_run else "false"
         _flush()
@@ -576,8 +564,7 @@ class Uploader:
         if not existing:
             existing = "[]"
 
-        # `command -v jq &>/dev/null`. `shutil.which` differs only for a shell
-        # FUNCTION or alias named jq, which a script bash spawns cannot inherit.
+        # `command -v jq &>/dev/null`. `shutil.which` differs only for a shell FUNCTION or alias named jq, which a script bash spawns cannot inherit.
         if shutil.which("jq") is None:
             log.warn("jq not available, skipping version tracking for %s" % prefix)
             return ""
@@ -588,11 +575,7 @@ class Uploader:
         )
         pruned = _jq(["jq", "-r", ".[%d:][]" % max_versions], updated + "\n")
         kept = _jq(["jq", ".[:%d]" % max_versions], updated + "\n")
-        # THE LAST COMMAND IS THE ONE THAT CAN STILL ABORT THE SCRIPT. A command
-        # substitution takes the status of its final command, so a failing
-        # `r2_put` here DOES become the assignment's status and errexit fires in
-        # the caller, while every jq above it is swallowed. That asymmetry is
-        # bash's, not this port's, and it is defect 4's other half.
+        # THE LAST COMMAND IS THE ONE THAT CAN STILL ABORT THE SCRIPT. A command substitution takes the status of its final command, so a failing `r2_put` here DOES become the assignment's status and errexit fires in the caller, while every jq above it is swallowed. That asymmetry is bash's, not this port's, and it is defect 4's other half.
         self.r2_put(kept, tracker_path, quiet=True)
         # `$( )` strips the trailing newlines of the whole function's stdout.
         return pruned.rstrip("\n")
@@ -745,9 +728,7 @@ def _upload_cli(run: Uploader, cli_dir: str) -> None:
     if os.path.isfile(manifest):
         run.r2_cp(manifest, r2_path("cli", run.channel, "manifest.json"))
 
-    # `latest.json` LAST, to avoid pointing the channel at bytes not yet there.
-    # DEFECT 1 LIVES ON THIS LINE: it is unconditional, so an empty `dist/cli`
-    # publishes a pointer to a version with no binaries.
+    # `latest.json` LAST, to avoid pointing the channel at bytes not yet there. DEFECT 1 LIVES ON THIS LINE: it is unconditional, so an empty `dist/cli` publishes a pointer to a version with no binaries.
     run.r2_put('{"version":"%s"}' % run.version, r2_path("cli", run.channel, "latest.json"))
 
     if run.channel in RELEASE_CHANNELS:
@@ -802,9 +783,7 @@ def main(argv: list[str]) -> int:
 
     root = repo_root()
     cli_dir = parsed["cli_dir"] or os.path.join(root, "dist", "cli")
-    # PACKAGES_DIR is defaulted and then never read again, exactly as in the twin
-    # (:79, `--packages-dir` is documented DEPRECATED). Kept so the flag still
-    # takes a value rather than falling through to `Unknown option`.
+    # PACKAGES_DIR is defaulted and then never read again, exactly as in the twin (:79, `--packages-dir` is documented DEPRECATED). Kept so the flag still takes a value rather than falling through to `Unknown option`.
     _packages_dir = parsed["packages_dir"] or os.path.join(root, "dist", "packages")
 
     if not channel:
@@ -837,8 +816,7 @@ def main(argv: list[str]) -> int:
                 log.error("Missing required environment variable: %s" % name)
                 return 1
 
-        # `export`ed for the `aws` child. R2 speaks S3, and a missing bridge
-        # surfaces as an unhelpful credentials error rather than a missing name.
+        # `export`ed for the `aws` child. R2 speaks S3, and a missing bridge surfaces as an unhelpful credentials error rather than a missing name.
         os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID", "")
         os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "")
         os.environ["AWS_DEFAULT_REGION"] = "auto"

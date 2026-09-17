@@ -42,10 +42,7 @@ COMMON_REL = ".ci/scripts/lib/common.sh"
 # The www twin and its port, copied in for the one cross-pair case below.
 WWW_TWIN_REL = ".ci/scripts/build/build-www.sh"
 
-# Everything the port imports, transitively. `build_www` is here because
-# `build_json` reuses its `run_npm`: the two twins are byte-identical through
-# `:23` and duplicating the npm-invocation logic would be a second thing to
-# drift.
+# Everything the port imports, transitively. `build_www` is here because `build_json` reuses its `run_npm`: the two twins are byte-identical through `:23` and duplicating the npm-invocation logic would be a second thing to drift.
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
@@ -58,9 +55,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `dirname` for `get_repo_root` (common.sh:207), `uname` because sourcing
-# common.sh runs `detect_os`/`detect_arch` at :509-510, `mkdir` for the fake.
-# Anything not listed is ABSENT.
+# `dirname` for `get_repo_root` (common.sh:207), `uname` because sourcing common.sh runs `detect_os`/`detect_arch` at :509-510, `mkdir` for the fake. Anything not listed is ABSENT.
 PATH_MINIMUM = ("dirname", "uname", "mkdir")
 
 FAKE_NPM = """#!/bin/bash
@@ -196,9 +191,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
@@ -214,9 +207,7 @@ def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
     assert shutil.which("node", path=dropped) is None
 
 
-# ---------------------------------------------------------------------------
-# The four exit paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four exit paths ---------------------------------------------------------------------------
 
 
 def test_a_complete_build_prints_three_lines_and_exits_zero(tmp_path) -> None:
@@ -257,9 +248,7 @@ def test_a_failing_npm_is_reported_as_a_failed_build(tmp_path) -> None:
     _agree(old, new, "npm-fail", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The shared defects, and the one thing that is this pair's alone
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The shared defects, and the one thing that is this pair's alone ---------------------------------------------------------------------------
 
 
 def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
@@ -314,9 +303,7 @@ def test_the_two_twins_say_different_things_about_the_same_failure(tmp_path) -> 
     assert "www build output" not in www_side.stderr
 
 
-# ---------------------------------------------------------------------------
-# The `cd`, the stream discipline, and the real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The `cd`, the stream discipline, and the real tree ---------------------------------------------------------------------------
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
@@ -359,9 +346,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
     assert proc.stdout.strip() == str(ROOT)
 
 
-# ---------------------------------------------------------------------------
-# The control: this differential can actually fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:

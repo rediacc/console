@@ -39,10 +39,7 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/quality/check-pr-description.sh"
 MODULE = "pr_description"
 
-# ROUTED BY URL, because the gate no longer makes the same call twice with a
-# different --jq. It reads the REST PR object for the count and the head SHA,
-# then that head commit for its date. A stub that still answered `pr view` would
-# make both sides fail identically and this file would agree about nothing.
+# ROUTED BY URL, because the gate no longer makes the same call twice with a different --jq. It reads the REST PR object for the count and the head SHA, then that head commit for its date. A stub that still answered `pr view` would make both sides fail identically and this file would agree about nothing.
 GH_STUB = """#!/bin/bash
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/fxdata"
 if [ "$1" = "api" ]; then
@@ -130,8 +127,7 @@ FRESH = {
 
 CASES = [
     ("a 90-minute-old description on a 5-commit PR is stale", STALE, 1),
-    # THE NEGATIVE HALF, and it cannot live in the ledger: it exits 0 printing
-    # only chatter, which the comparator refuses to score.
+    # THE NEGATIVE HALF, and it cannot live in the ledger: it exits 0 printing only chatter, which the comparator refuses to score.
     ("a description edited 10 minutes before the last commit is fresh", FRESH, 0),
     (
         "a description edited AFTER the last commit is always OK",
@@ -264,9 +260,7 @@ def test_neither_side_reads_the_commit_list_through_gh_pr_view():
         encoding="utf-8"
     )
 
-    # COMMENTS ARE STRIPPED FIRST. Both files EXPLAIN the retired call by name,
-    # and a check that could not tell an explanation from a call would force the
-    # next reader to delete the record of why the call was retired.
+    # COMMENTS ARE STRIPPED FIRST. Both files EXPLAIN the retired call by name, and a check that could not tell an explanation from a call would force the next reader to delete the record of why the call was retired.
     def code_only(text: str) -> str:
         return "\n".join(line for line in text.split("\n") if not line.lstrip().startswith("#"))
 

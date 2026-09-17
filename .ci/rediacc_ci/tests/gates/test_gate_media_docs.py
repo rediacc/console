@@ -119,11 +119,7 @@ def dangling_ci_paths(*files: pathlib.Path) -> list[str]:
                 continue
             if not (ROOT / token).exists():
                 # `${f#"$ROOT/"}` in bash, which strips the prefix when it is there
-                # and leaves the path alone when it is not. `is_relative_to` asks the
-                # question directly rather than raising and swallowing, which matters
-                # because the control cases below scan FIXTURE files under tmp_path:
-                # those are genuinely outside the repo and must print their full path,
-                # not be mistaken for an error.
+                # and leaves the path alone when it is not. `is_relative_to` asks the question directly rather than raising and swallowing, which matters because the control cases below scan FIXTURE files under tmp_path: those are genuinely outside the repo and must print their full path, not be mistaken for an error.
                 relative = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
                 findings.append("%s: %s" % (relative, token))
     return findings
@@ -182,9 +178,7 @@ def non_ancestor_commits(repo: pathlib.Path, doc: pathlib.Path) -> list[str]:
 
 def test_every_ci_path_the_media_files_name_exists(gate):
     files = media_owned_files()
-    # ANTI-VACUITY FIRST. A scan over an empty file list finds nothing wrong, and
-    # would keep on finding nothing wrong after this folder was renamed out from
-    # under it.
+    # ANTI-VACUITY FIRST. A scan over an empty file list finds nothing wrong, and would keep on finding nothing wrong after this folder was renamed out from under it.
     if len(files) < 12:
         gate.log_fail(
             "the media file list collapsed to %d entries; the scan below would pass "
@@ -200,8 +194,7 @@ def test_every_ci_path_the_media_files_name_exists(gate):
 
 
 def test_the_dangling_path_scan_can_fail(gate, tmp_path):
-    # CONTROL, in both directions. The scan is a pattern match with a character class
-    # and a filter, which is the shape that goes quiet without announcing it.
+    # CONTROL, in both directions. The scan is a pattern match with a character class and a filter, which is the shape that goes quiet without announcing it.
     stale = tmp_path / "stale.sh"
     stale.write_text("# see .ci/media/no-such-file.sh for details\n", encoding="utf-8")
     if not dangling_ci_paths(stale):
@@ -224,11 +217,8 @@ def test_the_dangling_path_scan_can_fail(gate, tmp_path):
             "set of files in a comment"
         )
 
-    # A FILE THAT NAMES NO .ci PATH AT ALL. This is the case that killed the bash gate
-    # silently before its `|| true`: grep exits 1, pipefail propagates it, set -e ends
-    # the script mid-assertion, and the operator sees exit 1 with an empty stderr.
-    # Python cannot fail that way, but the claim -- the scan survives a file with
-    # nothing in it and returns -- is language-independent, so the case stays.
+    # A FILE THAT NAMES NO .ci PATH AT ALL. This is the case that killed the bash gate silently before its `|| true`: grep exits 1, pipefail propagates it, set -e ends the script mid-assertion, and the operator sees exit 1 with an empty stderr. Python cannot fail that way, but the claim -- the scan survives a file with nothing in it and returns -- is language-independent, so the
+    # case stays.
     nopaths = tmp_path / "nopaths.sh"
     nopaths.write_text("zzz_no_paths_here() { :; }\n", encoding="utf-8")
     gate.assert_eq(
@@ -244,8 +234,7 @@ def test_the_dangling_path_scan_can_fail(gate, tmp_path):
 
 
 def test_the_coverage_probe_still_measures_something(gate):
-    # ONE fast test rather than the whole set: this is a gate, and a full probe run
-    # drives every media gate test. What is under test is the instrument, not the number.
+    # ONE fast test rather than the whole set: this is a gate, and a full probe run drives every media gate test. What is under test is the instrument, not the number.
     result = harness.run([str(COVERAGE), "--only", "r2"], timeout=600)
     if result.rc != 0:
         gate.log_fail("the coverage probe failed to run: %s" % result.combined)
@@ -254,9 +243,7 @@ def test_the_coverage_probe_still_measures_something(gate):
     )
     gate.assert_contains(result.combined, "TOTAL", "the probe must print a total")
 
-    # NON-VACUITY, which for a coverage tool is the whole risk. A probe whose trace
-    # parsing has silently stopped matching reports every module at zero, and zero is
-    # also what a genuinely untested module looks like.
+    # NON-VACUITY, which for a coverage tool is the whole risk. A probe whose trace parsing has silently stopped matching reports every module at zero, and zero is also what a genuinely untested module looks like.
     percent = None
     for line in result.combined.splitlines():
         fields = line.split()
@@ -279,8 +266,7 @@ def test_the_coverage_probe_still_measures_something(gate):
 def test_the_coverage_seam_does_not_perturb_the_run(gate, tmp_path):
     # THE CLAIM COVERAGE.SH MAKES ABOUT ITSELF, asserted rather than believed. The
     # first design of this probe forced SHELLOPTS=xtrace into every child shell, and
-    # eight of the ten media gate tests then failed, because media_run_module captures
-    # merged stdout and stderr and the behaviour cases assert on that text.
+    # eight of the ten media gate tests then failed, because media_run_module captures merged stdout and stderr and the behaviour cases assert on that text.
     trace = tmp_path / "trace"
     off = harness.run(["bash", str(MEDIA_R2_TWIN)], timeout=600)
     on = harness.run(
@@ -294,8 +280,7 @@ def test_the_coverage_seam_does_not_perturb_the_run(gate, tmp_path):
             "tracing changed what the gate test printed:\n--- off ---\n%s\n--- on ---\n%s"
             % (off.out, on.out)
         )
-    # And the trace must actually have been written, or the comparison above is
-    # between two untraced runs and proves nothing at all.
+    # And the trace must actually have been written, or the comparison above is between two untraced runs and proves nothing at all.
     if not (trace.is_file() and trace.stat().st_size > 0):
         gate.log_fail(
             "MEDIA_COVERAGE_FILE produced no trace, so the two runs compared above were "
@@ -330,8 +315,7 @@ def test_the_r2_doc_names_the_file_that_defines_each_media_function_it_names(gat
 
 
 def test_the_function_home_scan_can_fail(gate, tmp_path):
-    # CONTROL, both directions, against fixture docs rather than the real one. run.sh
-    # is the exact wrong home this check was written for, so it is the one planted.
+    # CONTROL, both directions, against fixture docs rather than the real one. run.sh is the exact wrong home this check was written for, so it is the one planted.
     wrong = tmp_path / "wrong.md"
     wrong.write_text("`www_tutorial_audio_restore` lives in `run.sh`\n", encoding="utf-8")
     if not misplaced_function_homes(wrong):
@@ -364,11 +348,7 @@ def test_every_commit_the_r2_doc_cites_is_in_this_history(gate):
             "either way"
         )
 
-    # A SHALLOW CLONE CANNOT ANSWER THIS, and saying so beats both a silent skip and a
-    # red that is about the checkout rather than the doc. CI's quality-security job
-    # checks out with fetch-depth: 0 paired with filter: blob:none, so the assertion
-    # does run there. The control beside this one runs either way, so the checker is
-    # never left unproven.
+    # A SHALLOW CLONE CANNOT ANSWER THIS, and saying so beats both a silent skip and a red that is about the checkout rather than the doc. CI's quality-security job checks out with fetch-depth: 0 paired with filter: blob:none, so the assertion does run there. The control beside this one runs either way, so the checker is never left unproven.
     shallow = harness.run([git, "-C", str(ROOT), "rev-parse", "--is-shallow-repository"])
     if shallow.out.strip() == "true":
         gate.log_info(
@@ -393,11 +373,7 @@ def test_every_commit_the_r2_doc_cites_is_in_this_history(gate):
 
 
 def test_the_commit_citation_scan_can_fail(gate, tmp_path):
-    # CONTROL, in a throwaway repository, because the real doc has exactly one correct
-    # citation and a scan with nothing to find proves nothing. Two divergent branches
-    # give a commit that RESOLVES and is not an ancestor, which is the exact shape a
-    # rewritten SHA has and the shape a scan built on `git cat-file -e` alone would
-    # wave through.
+    # CONTROL, in a throwaway repository, because the real doc has exactly one correct citation and a scan with nothing to find proves nothing. Two divergent branches give a commit that RESOLVES and is not an ancestor, which is the exact shape a rewritten SHA has and the shape a scan built on `git cat-file -e` alone would wave through.
     git = harness.require_tool("git", "install git")
     repo = tmp_path / "repo"
     repo.mkdir(parents=True, exist_ok=True)
@@ -409,8 +385,7 @@ def test_the_commit_citation_scan_can_fail(gate, tmp_path):
         return result
 
     # `--initial-branch=main` on purpose: a fixture whose HEAD points at a branch the
-    # runner's init.defaultBranch does not create is the second shape of the
-    # empty-fixture trap test-fetch-depth-safety.sh exists for.
+    # runner's init.defaultBranch does not create is the second shape of the empty-fixture trap test-fetch-depth-safety.sh exists for.
     run_git("init", "-q", "--initial-branch=main")
     run_git("config", "user.email", "probe@example.com")
     run_git("config", "user.name", "probe")
@@ -445,8 +420,7 @@ def test_the_commit_citation_scan_can_fail(gate, tmp_path):
     if not non_ancestor_commits(repo, junk_doc):
         gate.log_fail("the scan accepted a citation git cannot resolve at all")
 
-    # AND THE LENGTH CEILING, which is why the zone id in the real doc is not a
-    # finding. A 32-hex token is not a commit citation in this file's vocabulary.
+    # AND THE LENGTH CEILING, which is why the zone id in the real doc is not a finding. A 32-hex token is not a commit citation in this file's vocabulary.
     zone_doc = tmp_path / "zone.md"
     zone_doc.write_text("zone `9e802649c143c9cefd811d8fd671d31c`\n", encoding="utf-8")
     gate.assert_eq(
@@ -474,9 +448,7 @@ def test_no_media_module_is_without_a_test(gate):
 
 
 def test_the_untested_module_report_can_fail(gate, tmp_path):
-    # CONTROL, in all three directions the report has. Without it the assertion above
-    # is a command that printed a reassuring sentence, and a coverage tool whose corpus
-    # has collapsed prints exactly that sentence.
+    # CONTROL, in all three directions the report has. Without it the assertion above is a command that printed a reassuring sentence, and a coverage tool whose corpus has collapsed prints exactly that sentence.
     mods = tmp_path / "mods"
     gates = tmp_path / "gates"
     empty = tmp_path / "empty"
@@ -526,9 +498,7 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         "with every module named in code the probe must pass: %s" % result.combined,
     )
 
-    # AND THE VACUOUS CORPUS, which is the failure this whole check guards against
-    # elsewhere: an empty module list reports nothing wrong and looks identical to a
-    # folder in which everything is tested.
+    # AND THE VACUOUS CORPUS, which is the failure this whole check guards against elsewhere: an empty module list reports nothing wrong and looks identical to a folder in which everything is tested.
     result = probe(empty, gates)
     gate.assert_exit_code(
         1, result.rc, "an empty module folder must be refused, not reported as clean"

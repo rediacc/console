@@ -56,26 +56,15 @@ def pytest_report_header() -> str:
     )
 
 
-# `tryfirst` IS LOAD-BEARING, NOT TIDINESS. Without it this hook does NOTHING
-# and does it silently.
+# `tryfirst` IS LOAD-BEARING, NOT TIDINESS. Without it this hook does NOTHING and does it silently.
 #
-# xdist reads the group in the WORKER (xdist/remote.py:236) from a
-# `pytest_collection_modifyitems` that carries NO hookimpl decorator, so it runs
-# at DEFAULT priority -- and pluggy calls it before a default-priority conftest
-# impl. By the time this ran, xdist had already frozen `item._nodeid`, so every
-# marker added here was ignored and every test distributed freely.
+# xdist reads the group in the WORKER (xdist/remote.py:236) from a `pytest_collection_modifyitems` that carries NO hookimpl decorator, so it runs at DEFAULT priority -- and pluggy calls it before a default-priority conftest impl. By the time this ran, xdist had already frozen `item._nodeid`, so every marker added here was ignored and every test distributed freely.
 #
-# MEASURED on a minimal 8-test repro, one group for everything, `-n 8
-# --dist loadgroup`, against a 3.57s ungrouped reference:
+# MEASURED on a minimal 8-test repro, one group for everything, `-n 8 --dist loadgroup`, against a 3.57s ungrouped reference:
 #
-#   static @pytest.mark.xdist_group in the file    18.23s   honoured
-#   added by this hook, default priority            3.90s   IGNORED
-#   added by this hook with tryfirst               17.88s   honoured
+# static @pytest.mark.xdist_group in the file 18.23s honoured added by this hook, default priority 3.90s IGNORED added by this hook with tryfirst 17.88s honoured
 #
-# The 3.90s row is the failure mode: a green run, the right number of tests, and
-# no grouping at all. On the real corpus this was the difference between 1015.50s
-# and 381.41s -- and, worse than the time, it left test_core_ports.py's
-# deterministic 20000-port scan UNGUARDED while appearing to be guarded.
+# The 3.90s row is the failure mode: a green run, the right number of tests, and no grouping at all. On the real corpus this was the difference between 1015.50s and 381.41s -- and, worse than the time, it left test_core_ports.py's deterministic 20000-port scan UNGUARDED while appearing to be guarded.
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Mark every item whose module declares a shared resource.
@@ -93,9 +82,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     if not config.pluginmanager.hasplugin("xdist"):
         return
     unsafe = _real_tree_twins()
-    # Memoised per module, because `group_for` is cheap but `item.module` is
-    # asked about nine thousand times and the answer cannot differ between two
-    # items of the same module.
+    # Memoised per module, because `group_for` is cheap but `item.module` is asked about nine thousand times and the answer cannot differ between two items of the same module.
     seen: dict[str, str | None] = {}
     for item in items:
         module = getattr(item, "module", None)

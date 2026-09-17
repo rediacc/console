@@ -123,9 +123,7 @@ function selftest(): number {
   ran += 1;
   console.log('  PASS  CONTROL: removing the orphan clears it');
 
-  // CONTROL: a comment introducing a REAL next step is the normal shape and by
-  // far the commonest one in this tree. Policing it would make the usual
-  // outcome a false positive.
+  // CONTROL: a comment introducing a REAL next step is the normal shape and by far the commonest one in this tree. Policing it would make the usual outcome a false positive.
   const legit = [
     '      - name: A step',
     '        run: echo hi',
@@ -182,8 +180,7 @@ function main(): void {
     .filter((n) => n.endsWith('.yml') || n.endsWith('.yaml'))
     .sort();
   // A NAMED FLOOR, not merely "> 0". Zero is the obvious collapse; the quiet one
-  // is a directory move that leaves the glob finding a couple of workflows while
-  // the rest go unchecked, and a tick over 2 reads exactly like a tick over 27.
+  // is a directory move that leaves the glob finding a couple of workflows while the rest go unchecked, and a tick over 2 reads exactly like a tick over 27.
   if (files.length < MIN_WORKFLOWS) {
     console.error(
       `✗ VACUOUS: found only ${files.length} workflow file(s), below the floor of ` +

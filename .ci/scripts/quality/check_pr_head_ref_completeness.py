@@ -142,36 +142,21 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 SCAN_ROOTS = [".ci/scripts", "scripts"]
-# NOT "gates": `scripts/gates/` is where the real registered TS gates live,
-# including this gate's own two founding motivating cases
-# (check-pr-epic-block.ts, check-pr-task-trailers.ts, named in the module
-# docstring above). Excluding it left this gate blind to both since the day
-# it was written -- "test" and "__tests__" already cover the bash-side test
-# fixtures (`.ci/scripts/test/gates/*.sh`) that "gates" was presumably meant
-# to protect, without also swallowing the production directory.
+# NOT "gates": `scripts/gates/` is where the real registered TS gates live, including this gate's own two founding motivating cases (check-pr-epic-block.ts, check-pr-task-trailers.ts, named in the module docstring above). Excluding it left this gate blind to both since the day it was written -- "test" and "__tests__" already cover the bash-side test fixtures
+# (`.ci/scripts/test/gates/*.sh`) that "gates" was presumably meant to protect, without also swallowing the production directory.
 EXCLUDE_DIR_PARTS = {"test", "__tests__", "fixtures"}
 
 BASH_PREFERENCE = re.compile(r"\$\{PR_HEAD_REF(?::-|\})")
 TS_PREFERENCE = re.compile(r"process\.env\.PR_HEAD_REF")
 
-# A reader that fails LOUD when the variable is unset (rather than silently
-# falling through to git) has already solved the problem itself and does not
-# need a workflow-level setter. Matched as "the reader's own text names both
-# the variable and an explicit refusal", so a real future case is still
-# caught if the loud-failure text ever drifts away from the variable.
-# DELIBERATELY NOT APPLIED TO CHECK 2 -- see the module docstring.
+# A reader that fails LOUD when the variable is unset (rather than silently falling through to git) has already solved the problem itself and does not need a workflow-level setter. Matched as "the reader's own text names both the variable and an explicit refusal", so a real future case is still caught if the loud-failure text ever drifts away from the variable. DELIBERATELY NOT
+# APPLIED TO CHECK 2 -- see the module docstring.
 LOUD_FAILURE = re.compile(r"PR_HEAD_REF[^\n]{0,80}(unset|refus|is required)", re.IGNORECASE)
 
-# Vacuity floors. Both corpora are enumerated, and an enumerator that finds
-# nothing prints a tick indistinguishable from a clean tree.
+# Vacuity floors. Both corpora are enumerated, and an enumerator that finds nothing prints a tick indistinguishable from a clean tree.
 MIN_READERS = 2
-# SIX setter steps exist today: ci.yml x1 (`:673`), ci-quality.yml x4 (`:538`,
-# `:665`, `:1114`, `:1121`) and claude-review-reusable.yml x1 (`:139`). The
-# floor sits ONE below, not AT, the live count: a floor equal to the corpus
-# turns every legitimate retirement into a red, which is how a floor stops
-# being a vacuity guard and starts being a freeze. `ci-quality.yml:2200` was
-# the seventh until its key was deleted as dead, and that retirement is exactly
-# the shape this headroom is for.
+# SIX setter steps exist today: ci.yml x1 (`:673`), ci-quality.yml x4 (`:538`, `:665`, `:1114`, `:1121`) and claude-review-reusable.yml x1 (`:139`). The floor sits ONE below, not AT, the live count: a floor equal to the corpus turns every legitimate retirement into a red, which is how a floor stops being a vacuity guard and starts being a freeze. `ci-quality.yml:2200` was the
+# seventh until its key was deleted as dead, and that retirement is exactly the shape this headroom is for.
 MIN_SETTER_STEPS = 5
 
 SETTER_VARS = ("PR_HEAD_REF", "GITHUB_HEAD_REF")
@@ -254,13 +239,9 @@ def find_invoking_steps(reader: Path, npm_map: dict[str, str]) -> list[tuple[str
     return hits
 
 
-# ---------------------------------------------------------------------------
-# CHECK 2: expression -> triggers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 2: expression -> triggers ---------------------------------------------------------------------------
 
-# Events on which each context is populated. The PR family is deliberately
-# wide: `github.event.pull_request` exists on every event whose payload carries
-# a pull request, not only on `pull_request` itself.
+# Events on which each context is populated. The PR family is deliberately wide: `github.event.pull_request` exists on every event whose payload carries a pull request, not only on `pull_request` itself.
 PR_PAYLOAD_EVENTS = frozenset(
     {
         "pull_request",
@@ -269,8 +250,7 @@ PR_PAYLOAD_EVENTS = frozenset(
         "pull_request_review_comment",
     }
 )
-# `github.head_ref` / `github.base_ref` are narrower than the payload: the
-# runner populates them only for the two pull-request *trigger* events.
+# `github.head_ref` / `github.base_ref` are narrower than the payload: the runner populates them only for the two pull-request *trigger* events.
 HEAD_REF_EVENTS = frozenset({"pull_request", "pull_request_target"})
 ISSUE_PAYLOAD_EVENTS = frozenset({"issue_comment", "issues"})
 COMMENT_PAYLOAD_EVENTS = frozenset({"issue_comment", "pull_request_review_comment"})
@@ -290,11 +270,9 @@ UNIVERSAL_CONTEXTS = frozenset(
     }
 )
 
-# Three verdicts, and the caller must handle all three:
-#   "exact"   -> covered on precisely this set of events
-#   "all"     -> non-empty on every event
+# Three verdicts, and the caller must handle all three: "exact" -> covered on precisely this set of events "all" -> non-empty on every event
 #   "unknown" -> not modelled; treated as covering everything, and COUNTED so
-#                the gate cannot go quiet by failing to understand its corpus
+# the gate cannot go quiet by failing to understand its corpus
 Verdict = tuple[str, set]
 
 EVENT_EQ = re.compile(r"github\.event_name\s*==\s*'([A-Za-z_]+)'")
@@ -578,8 +556,7 @@ class WorkflowSet:
         if c[0] in "'\"":
             return ("all", set()) if len(c) > 2 else ("exact", set())
         if re.match(r"^[A-Za-z_]+\s*\(", c):
-            # `format(...)` and friends: a function call producing a literal-shaped
-            # value. Non-empty on every event.
+            # `format(...)` and friends: a function call producing a literal-shaped value. Non-empty on every event.
             return ("all", set()) if c.startswith("format") else ("unknown", set())
         if c.startswith("github.event.pull_request."):
             return ("exact", set(PR_PAYLOAD_EVENTS))
@@ -820,8 +797,7 @@ def controls() -> None:
         if not got_present or got_present[0][3] is not True:
             fail("a step invoking the reader WITH PR_HEAD_REF was not detected as satisfying it")
 
-        # The reader-detection regex itself: must fire on the bash form, and
-        # a loud-failure reader must be exempt.
+        # The reader-detection regex itself: must fire on the bash form, and a loud-failure reader must be exempt.
         if not BASH_PREFERENCE.search(reader.read_text()):
             fail("the bash preference pattern did not match its own fixture")
         loud = tdp / "loud.sh"
@@ -870,12 +846,8 @@ def controls_check2() -> None:
                 "appending `|| github.ref_name` (the f1ce6911f fix) did not silence the "
                 f"finding: {[f.render() for f in fixed]}"
             )
-        # SILENT FOR THE RIGHT REASON. Found by mutation 2026-09-16: drop
-        # `github.ref_name` from UNIVERSAL_CONTEXTS and the clause falls to the
-        # UNKNOWN arm, which also silences this fixture -- so the assertion above
-        # alone cannot tell "the fix is understood" from "the fix is unreadable",
-        # and a later edit could quietly stop modelling the very context the fix
-        # is made of. The unknown tally is what separates them.
+        # SILENT FOR THE RIGHT REASON. Found by mutation 2026-09-16: drop `github.ref_name` from UNIVERSAL_CONTEXTS and the clause falls to the UNKNOWN arm, which also silences this fixture -- so the assertion above alone cannot tell "the fix is understood" from "the fix is unreadable", and a later edit could quietly stop modelling the very context the fix is made of. The unknown
+        # tally is what separates them.
         if unknown:
             fail(
                 "the f1ce6911f fix went silent via the UNKNOWN arm, not because "
@@ -1067,8 +1039,7 @@ def main() -> int:
     for reader in readers:
         steps = find_invoking_steps(reader, npm_map)
         if not steps:
-            # Not every reader is invoked from a workflow (e.g. a script only
-            # ever run by hand or by another script). Nothing to check.
+            # Not every reader is invoked from a workflow (e.g. a script only ever run by hand or by another script). Nothing to check.
             unresolved.append(str(reader))
             continue
         checked += 1

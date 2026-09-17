@@ -77,14 +77,8 @@ US = "\x1f"
 RS = "\x1e"
 
 ROOT = guardcorpus.repo_root()
-# THE ORACLE ROOT. The bash originals moved out of `.claude/hooks/` at the P7
-# cutover: nothing registers them any more, and
-# `.ci/scripts/quality/check_hooks_resolvable.py` is right to refuse an
-# unregistered guard sitting in a chain directory ("a guard nobody calls is worse
-# than no guard: it reads as coverage"). They are kept, byte for byte, because
-# this file is what they are FOR -- see oracles/README.md. `TWIN` is unchanged and
-# still chain-qualified, so it is a key into this root rather than a path into the
-# live tree.
+# THE ORACLE ROOT. The bash originals moved out of `.claude/hooks/` at the P7 cutover: nothing registers them any more, and `.ci/scripts/quality/check_hooks_resolvable.py` is right to refuse an unregistered guard sitting in a chain directory ("a guard nobody calls is worse than no guard: it reads as coverage"). They are kept, byte for byte, because this file is what they are FOR --
+# see oracles/README.md. `TWIN` is unchanged and still chain-qualified, so it is a key into this root rather than a path into the live tree.
 ORACLES = ROOT / ".claude" / "oracles"
 ARTIFACT_DIR = pathlib.Path(__file__).resolve().parent / ".artifacts"
 
@@ -94,10 +88,7 @@ FULL = os.environ.get("REDIACC_GUARD_DIFF_FULL", "") not in ("", "0")
 # docstring is the natural home for a file-header block.
 COMMENT_RATIO_FLOOR = 0.90
 
-# Every line of an original naming a DATE, an ISSUE, a REVIEW ROUND or a
-# FILE:LINE. The ratio cannot see these -- prose can be padded while the one
-# paragraph naming a dated incident is dropped -- so they are extracted
-# mechanically and each must survive somewhere in the port.
+# Every line of an original naming a DATE, an ISSUE, a REVIEW ROUND or a FILE:LINE. The ratio cannot see these -- prose can be padded while the one paragraph naming a dated incident is dropped -- so they are extracted mechanically and each must survive somewhere in the port.
 ARCHAEOLOGY = (
     r"\b20\d\d-\d\d-\d\d\b",
     r"#\d+",
@@ -107,21 +98,13 @@ ARCHAEOLOGY = (
 )
 
 
-# ---------------------------------------------------------------------------
-# The stub environment
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The stub environment ---------------------------------------------------------------------------
 
-# `gh`, stubbed to the shape every guard here already treats as its fail-open
-# path: nothing on stdout, a non-zero exit. Guards that need it to SUCCEED
-# declare their own stub through `ENVS` on the port module, exactly as the
-# suite's own `stub_gh` and `_gc_shim` helpers do for the same guards.
+# `gh`, stubbed to the shape every guard here already treats as its fail-open path: nothing on stdout, a non-zero exit. Guards that need it to SUCCEED declare their own stub through `ENVS` on the port module, exactly as the suite's own `stub_gh` and `_gc_shim` helpers do for the same guards.
 #
-# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they
-# would not call it at the same MOMENT. The bash side runs the whole corpus
+# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they would not call it at the same MOMENT. The bash side runs the whole corpus
 # first and the Python side follows; a PR that changes state in between turns
-# into a field that differs, reported as a port defect. Measured cost of the
-# real thing on one case: a network round trip per invocation, times several
-# hundred cases, times two sides.
+# into a field that differs, reported as a port defect. Measured cost of the real thing on one case: a network round trip per invocation, times several hundred cases, times two sides.
 DEFAULT_STUBS = {
     "gh": "#!/bin/sh\nexit 1\n",
 }
@@ -137,25 +120,12 @@ def _stub_dir(tmp_path, stubs):
     return directory
 
 
-# ---------------------------------------------------------------------------
-# Named git fixtures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Named git fixtures ---------------------------------------------------------------------------
 #
-# WHY THEY EXIST, and the control that demanded them. Roughly half these guards
-# read local git state -- a branch name, whether the branch is ahead of its
-# remote, whether a worktree is dirty. Run against THIS checkout they all take
-# one branch of their logic, whichever branch this worktree happens to be in,
-# and `test_every_guard_discriminates` then reports the guard as answering
-# identically on every case. That is not a nuisance: it is the control saying
-# the comparison could not have failed. `block_merge_with_unpushed` was the
-# first port to trip it, on the first run, because no `origin/<branch>` ref
-# exists in a feature worktree and the guard fails open on every input.
+# WHY THEY EXIST, and the control that demanded them. Roughly half these guards read local git state -- a branch name, whether the branch is ahead of its remote, whether a worktree is dirty. Run against THIS checkout they all take one branch of their logic, whichever branch this worktree happens to be in, and `test_every_guard_discriminates` then reports the guard as answering
+# identically on every case. That is not a nuisance: it is the control saying the comparison could not have failed. `block_merge_with_unpushed` was the first port to trip it, on the first run, because no `origin/<branch>` ref exists in a feature worktree and the guard fails open on every input.
 #
-# So a module names the git worlds its twin distinguishes, the harness builds
-# each one ONCE per session, and both sides are pointed at it through
-# CLAUDE_PROJECT_DIR. The repositories are built with `git init`, never cloned
-# and never fetched: no network, and nothing outside the temporary directory is
-# read or written.
+# So a module names the git worlds its twin distinguishes, the harness builds each one ONCE per session, and both sides are pointed at it through CLAUDE_PROJECT_DIR. The repositories are built with `git init`, never cloned and never fetched: no network, and nothing outside the temporary directory is read or written.
 FIXTURE_TOKEN = "{FIXTURE:%s}"  # noqa: S105
 
 
@@ -198,15 +168,12 @@ def _build_repo(path, branch, ahead):
     return path
 
 
-# Exposed for a port module's own `FIXTURES` table: `build_repo(path, branch,
-# ahead)` is the whole vocabulary most git guards need, and re-deriving it per
-# module would be four copies of `git init` semantics.
+# Exposed for a port module's own `FIXTURES` table: `build_repo(path, branch, ahead)` is the whole vocabulary most git guards need, and re-deriving it per module would be four copies of `git init` semantics.
 build_repo = _build_repo
 git_in = _git
 
 FIXTURE_BUILDERS = {
-    # A feature branch with two commits the remote has never seen. This is the
-    # 2026-09-01 near-miss shape: pushed head, later commit still local.
+    # A feature branch with two commits the remote has never seen. This is the 2026-09-01 near-miss shape: pushed head, later commit still local.
     "git-ahead": lambda p: _build_repo(p, "0831-1", 2),
     # The same branch, fully pushed. The ALLOW side of the same guard.
     "git-synced": lambda p: _build_repo(p, "0831-1", 0),
@@ -270,10 +237,7 @@ def _base_env(stub_dir, extra, work=None):
         "CLAUDE_PROJECT_DIR": str(ROOT),
         "LC_ALL": "C",
         "TZ": "UTC",
-        # Deliberately NOT inherited. `test_shellscan_differential` records the
-        # same reasoning: a differential that depends on the caller's
-        # environment is one that passes for the wrong reason, and an inherited
-        # GIT_INDEX_FILE would reach every `git ls-files` in this chain.
+        # Deliberately NOT inherited. `test_shellscan_differential` records the same reasoning: a differential that depends on the caller's environment is one that passes for the wrong reason, and an inherited GIT_INDEX_FILE would reach every `git ls-files` in this chain.
     }
     env.update(extra)
     if work is not None:
@@ -292,20 +256,13 @@ def environments(module):
     return getattr(module, "ENVS", None) or [("default", {}, {})]
 
 
-# ---------------------------------------------------------------------------
-# Building the case list
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Building the case list ---------------------------------------------------------------------------
 
 
-# The event a chain's guards are handed, when a port's EDGE_CASES entry is a
-# bare string. A module whose twin reads `file_path` or `tool_name` declares its
+# The event a chain's guards are handed, when a port's EDGE_CASES entry is a bare string. A module whose twin reads `file_path` or `tool_name` declares its
 # case as a dict instead and gets exactly that document.
 #
-# THE FIRST CUT PUT THE BARE COMMAND ON STDIN, and the anti-vacuity control is
-# what found it: every edge case became an unparseable payload, `jq` returned
-# "" for all of them, and each one exercised only the guard's empty-command
-# branch. It passed the differential (both sides agree on nonsense) while
-# testing none of the shapes it named, which is the exact failure this file's
+# THE FIRST CUT PUT THE BARE COMMAND ON STDIN, and the anti-vacuity control is what found it: every edge case became an unparseable payload, `jq` returned "" for all of them, and each one exercised only the guard's empty-command branch. It passed the differential (both sides agree on nonsense) while testing none of the shapes it named, which is the exact failure this file's
 # controls exist for.
 CHAIN_BUILDER = {
     "pre-bash": "bash_json",
@@ -386,12 +343,7 @@ def build_cases(twinned=True):
         module = guards.load(stem)
         if (module.TWIN is not None) != twinned:
             continue
-        # THE SUITE'S KEY, which since the P7 cutover is the MODULE and not the
-        # twin: a case reads `check 2 guards/block_x.py`, because that is the key
-        # `check-hook-integrity.sh` inventories the live guard under and one
-        # spelling has to drive the suite, the coverage gate and this corpus.
-        # TWIN still names the bash original and is used, a few lines down, to
-        # find it in the oracle tree.
+        # THE SUITE'S KEY, which since the P7 cutover is the MODULE and not the twin: a case reads `check 2 guards/block_x.py`, because that is the key `check-hook-integrity.sh` inventories the live guard under and one spelling has to drive the suite, the coverage gate and this corpus. TWIN still names the bash original and is used, a few lines down, to find it in the oracle tree.
         key = "guards/%s.py" % stem
         named = own.get(key, [])
         seen = set()
@@ -421,21 +373,13 @@ def build_cases(twinned=True):
 
 
 CASES, HARVEST_STATS, POOL = build_cases()
-# The untwinned guards' cases, built the same way and run against the PYTHON side
-# only. A separate list rather than a flag on each row, for the index-alignment
-# reason `build_cases` states.
+# The untwinned guards' cases, built the same way and run against the PYTHON side only. A separate list rather than a flag on each row, for the index-alignment reason `build_cases` states.
 NATIVE_CASES, _NATIVE_STATS, _NATIVE_POOL = build_cases(twinned=False)
 
 
-# ---------------------------------------------------------------------------
-# The two sides
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two sides ---------------------------------------------------------------------------
 
-# The bash driver. A string rather than a checked-in `.sh` for the reason
-# `test_shellscan_differential` gives: this workstream moves `.claude` to
-# Python, and a second language checked in beside the port would be the thing
-# the language gate exists to refuse. Written to a temporary directory, it is
-# not a second language in the tree.
+# The bash driver. A string rather than a checked-in `.sh` for the reason `test_shellscan_differential` gives: this workstream moves `.claude` to Python, and a second language checked in beside the port would be the thing the language gate exists to refuse. Written to a temporary directory, it is not a second language in the tree.
 DRIVER = r"""#!/usr/bin/env bash
 IN_DIR="$1"; ORACLES="$2"; WORK="$3"
 US=$'\037'
@@ -486,20 +430,12 @@ def parse_stream(text):
     return records
 
 
-# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a
-# PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks
-# env -i bash once per case across 6017 cases, about 18,000 processes, and this module's tests are otherwise pure in-process comparison -- so
-# without this declaration its cases scatter across every worker and each one pays
+# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks env -i bash once per case across 6017 cases, about 18,000 processes, and this module's tests are otherwise pure in-process comparison -- so without this declaration its cases scatter across every worker and each one pays
 # the full driver again.
 #
-# Measured 2026-09-07: this file and test_shellscan_differential.py together serve
-# 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000
-# forks of duplicated setup before a single one of those tests does useful work,
-# which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs
-# 1013.59s on a quiesced box).
+# Measured 2026-09-07: this file and test_shellscan_differential.py together serve 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000 forks of duplicated setup before a single one of those tests does useful work, which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs 1013.59s on a quiesced box).
 #
-# The group pins all of this module's tests to ONE worker, so the fixture is built
-# once. It is INERT without `--dist loadgroup`, so it changes nothing today.
+# The group pins all of this module's tests to ONE worker, so the fixture is built once. It is INERT without `--dist loadgroup`, so it changes nothing today.
 XDIST_GROUP = "hooks-guards"
 
 
@@ -533,10 +469,7 @@ def bash_results(tmp_path_factory):
     stdout = proc.stdout.decode("utf-8", "surrogateescape")
     stderr = proc.stderr.decode("utf-8", "surrogateescape")
     assert proc.returncode == 0, "driver failed: %s" % stderr
-    # The driver itself must be silent. It is the only thing standing between
-    # "the two sides agreed" and "the two sides ran different experiments and
-    # agreed anyway": a driver that cannot build a case's environment says so
-    # here and nowhere else.
+    # The driver itself must be silent. It is the only thing standing between "the two sides agreed" and "the two sides ran different experiments and agreed anyway": a driver that cannot build a case's environment says so here and nowhere else.
     assert stderr == "", (
         "the bash driver wrote to stderr, so at least one case did not run as asked and "
         "every comparison below is between two different experiments:\n%s" % stderr[:4000]
@@ -601,9 +534,7 @@ def render(diffs, stem, label, payload):
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# The corpus, before anything is compared against it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus, before anything is compared against it ---------------------------------------------------------------------------
 
 
 def test_corpus_is_real_and_large_enough():
@@ -675,9 +606,7 @@ def test_every_port_has_a_present_twin():
         )
 
 
-# ---------------------------------------------------------------------------
-# The differential
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -729,9 +658,7 @@ def test_every_untwinned_guard_discriminates(bash_results):
     stderr, so an exit-code-only test would be wrong about them.
     """
     if not NATIVE_CASES:
-        # An EMPTY set is a pass, not a skip: `check:ci-pytest` refuses a skip,
-        # and a repository with no untwinned guards is an honest state rather
-        # than an unrun test. See the NO_DIVERGENCE sentinel below, same lesson.
+        # An EMPTY set is a pass, not a skip: `check:ci-pytest` refuses a skip, and a repository with no untwinned guards is an honest state rather than an unrun test. See the NO_DIVERGENCE sentinel below, same lesson.
         assert not guards.untwinned(), (
             "%d guard(s) declare TWIN = None but NATIVE_CASES is empty, so none of them was "
             "exercised here" % len(guards.untwinned())
@@ -759,9 +686,7 @@ def test_the_differential_can_fail(tmp_path, bash_results):
     """
     work = bash_results["work"]
     unproven = []
-    # BOTH LISTS. This control compares the port against ITSELF-WITH-A-BUG and
-    # never touches the bash side, so it works identically for an untwinned
-    # guard -- and an untwinned guard needs it MORE, being the one with no
+    # BOTH LISTS. This control compares the port against ITSELF-WITH-A-BUG and never touches the bash side, so it works identically for an untwinned guard -- and an untwinned guard needs it MORE, being the one with no
     # oracle. Leaving NATIVE_CASES out here would have made `TWIN = None` skip
     # the one anti-vacuity control that does not depend on an oracle at all.
     all_cases = list(CASES) + list(NATIVE_CASES)
@@ -807,23 +732,15 @@ def test_the_differential_can_fail(tmp_path, bash_results):
     )
 
 
-# ---------------------------------------------------------------------------
-# Declared divergences
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Declared divergences ---------------------------------------------------------------------------
 
 DIVERGENCES = divergence_cases()
 
-# THE EMPTY SET IS A PASS, NOT A SKIP, and that distinction was live red at HEAD.
-# Every port's KNOWN_DIVERGENCES is empty today (block_long_sleep's dissolved when
-# its twin was fixed to force base ten on 2026-09-06), so `parametrize` was handed
-# an empty list, and pytest turns an empty parameter set into a SKIP:
+# THE EMPTY SET IS A PASS, NOT A SKIP, and that distinction was live red at HEAD. Every port's KNOWN_DIVERGENCES is empty today (block_long_sleep's dissolved when its twin was fixed to force base ten on 2026-09-06), so `parametrize` was handed an empty list, and pytest turns an empty parameter set into a SKIP:
 #
-#   SKIPPED [1] test_guards_differential.py:694: got empty parameter set for
-#   (stem, label, payload, reason)
+# SKIPPED [1] test_guards_differential.py:694: got empty parameter set for (stem, label, payload, reason)
 #
-# `check:ci-pytest` refuses a skip on purpose ("pytest exited 0 but reports 8467
-# passed out of 8468 collected. A skipped or deselected test is not a passing one,
-# and the difference is invisible in the exit code"), so the whole gate exited 1
+# `check:ci-pytest` refuses a skip on purpose ("pytest exited 0 but reports 8467 passed out of 8468 collected. A skipped or deselected test is not a passing one, and the difference is invisible in the exit code"), so the whole gate exited 1
 # while nothing was wrong. The honest empty state was being reported as an unrun
 # test. A sentinel row runs the SAME function, asserts the table really is empty,
 # and returns; the moment a port declares a divergence the sentinel disappears and
@@ -876,9 +793,7 @@ def test_declared_divergence_is_still_exactly_that(tmp_path, stem, label, payloa
     )
 
 
-# ---------------------------------------------------------------------------
-# Section 5c of the driver contract: comment archaeology
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Section 5c of the driver contract: comment archaeology ---------------------------------------------------------------------------
 
 
 def bash_comment_bytes(path):
@@ -944,10 +859,7 @@ def test_comment_ratio_and_archaeology(bash_results):
     for stem in guards.stems():
         module = guards.load(stem)
         if module.TWIN is None:
-            # NO ORACLE MEANS NO RATIO, because the ratio is `port bytes / twin
-            # bytes` and the denominator does not exist. Stated as a skip with a
-            # reason rather than a `bash_bytes or 1` fallback, which would have
-            # scored every untwinned guard at a ratio of `py_bytes` and passed
+            # NO ORACLE MEANS NO RATIO, because the ratio is `port bytes / twin bytes` and the denominator does not exist. Stated as a skip with a reason rather than a `bash_bytes or 1` fallback, which would have scored every untwinned guard at a ratio of `py_bytes` and passed
             # for a reason nobody intended. The archaeology sweep is the twin's
             # dated evidence surviving into the port; there is no twin, so there
             # is nothing to have survived.

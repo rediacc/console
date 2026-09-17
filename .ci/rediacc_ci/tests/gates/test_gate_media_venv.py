@@ -97,9 +97,7 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
                 "the mutation did not apply, so this control would pass for the wrong reason"
             )
         (mutant / "venv.sh").write_text(mutated, encoding="utf-8")
-        # cuda.sh travels with it: media_run_module sources both from `module_dir`,
-        # and a directory holding only the mutant would fail on the cross-module edge
-        # rather than on the plant.
+        # cuda.sh travels with it: media_run_module sources both from `module_dir`, and a directory holding only the mutant would fail on the cross-module edge rather than on the plant.
         shutil.copy2(media_verify.MEDIA_DIR / "cuda.sh", mutant / "cuda.sh")
         with harness.fake_bin("+uname"):
             result = run_venv(d / "empty", "ensure_generative_repo", module_dir=mutant)
@@ -125,9 +123,7 @@ def test_ensure_generative_repo_diagnoses_all_three_states(gate):
         (d / "nogit" / "private" / "generative").mkdir(parents=True)
         (d / "good" / "private" / "generative" / ".git").mkdir(parents=True)
 
-        # NO FAKES AT ALL beyond uname: this function shells out to nothing, and
-        # proving that is worth an empty PATH. If it ever grows a dependency, these
-        # three cases report it as not-found.
+        # NO FAKES AT ALL beyond uname: this function shells out to nothing, and proving that is worth an empty PATH. If it ever grows a dependency, these three cases report it as not-found.
         with harness.fake_bin("+uname"):
             result = run_venv(d / "empty", "ensure_generative_repo")
             gate.assert_exit_code(1, result.rc, "a missing private/generative must fail")
@@ -183,9 +179,7 @@ def test_ensure_python_installed_keys_on_the_interpreter(gate):
 def test_ensure_audio_system_deps_installs_only_what_is_missing(gate):
     gate.log_test("nothing missing means nothing installed; something missing must be NAMED")
     with harness.temp_dir() as d:
-        # python3 is faked as a success-with-no-output, which is what makes
-        # `import ensurepip` succeed and keeps the versioned python<X.Y>-venv package
-        # out of the missing list.
+        # python3 is faked as a success-with-no-output, which is what makes `import ensurepip` succeed and keeps the versioned python<X.Y>-venv package out of the missing list.
         with harness.fake_bin("python3 ffmpeg ffprobe sox apt-get sudo +uname") as fake:
             result = run_venv(d, "ensure_audio_system_deps")
             gate.assert_exit_code(
@@ -237,10 +231,7 @@ def test_install_generative_python_deps_drives_pip_and_stamps(gate):
             )
             gate.assert_contains(pip_calls, "install qwen-tts", "qwen-tts is installed")
             gate.assert_contains(pip_calls, "install qwen-asr", "qwen-asr is installed")
-            # THE CROSS-MODULE EDGE. install_flash_attn_if_supported lives in cuda.sh,
-            # and with `import flash_attn` succeeding it returns before touching pip
-            # again. If the edge were broken the run would have died with "command not
-            # found" above rather than reaching this line.
+            # THE CROSS-MODULE EDGE. install_flash_attn_if_supported lives in cuda.sh, and with `import flash_attn` succeeding it returns before touching pip again. If the edge were broken the run would have died with "command not found" above rather than reaching this line.
             gate.assert_not_contains(
                 pip_calls, "flash-attn", "flash-attn is skipped when it already imports"
             )

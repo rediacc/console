@@ -53,8 +53,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
-  // Keep the real error classes (loadRemote branches on RemoteUnreachableError
-  // via instanceof) but stub the adapter itself.
+  // Keep the real error classes (loadRemote branches on RemoteUnreachableError via instanceof) but stub the adapter itself.
   const original = await importOriginal<typeof import('../../adapters/remote-config-adapter.js')>();
   return { ...original, RemoteConfigAdapter: MockRemoteConfigAdapter };
 });
@@ -128,8 +127,7 @@ describe('ConfigServiceBase remote integration', () => {
     const mod = await import('../config/config-base.js');
     ConfigServiceBase = mod.ConfigServiceBase;
     service = new ConfigServiceBase();
-    // The config-name override is a module-level singleton (config-name.ts), so
-    // reset it between tests — a prior test's setRuntimeConfig would otherwise leak.
+    // The config-name override is a module-level singleton (config-name.ts), so reset it between tests — a prior test's setRuntimeConfig would otherwise leak.
     service.setRuntimeConfig(null);
 
     // Ensure we don't pick up env vars
@@ -300,8 +298,7 @@ describe('ConfigServiceBase remote integration', () => {
 
       const state = await service.getResourceState();
 
-      // v3: encryption is a storage-layer transform, so config-base feeds
-      // LocalResourceState a decrypted config (no master-password arg).
+      // v3: encryption is a storage-layer transform, so config-base feeds LocalResourceState a decrypted config (no master-password arg).
       expect(mockLocalResourceStateLoad).toHaveBeenCalledWith(localConfig, 'rediacc');
       expect(state).toBe(mockLocalState);
     });

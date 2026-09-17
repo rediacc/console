@@ -29,40 +29,24 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-worktree-add.sh"
 ORDER = 29
 
-# THE WRAPPER SAILED STRAIGHT PAST THE FIRST CHECK, and removing the second one
-# puts it back: `./run.sh worktree create` runs the banned command through a
-# script whose text never contains it.
+# THE WRAPPER SAILED STRAIGHT PAST THE FIRST CHECK, and removing the second one puts it back: `./run.sh worktree create` runs the banned command through a script whose text never contains it.
 DEFECT = ("if hookio.grep_q(RUN_SH_CREATE, scan):", "if False:")
 
 # Command position: line start (or wrapper-payload line start), or after
 # ; & | ( $( or a backtick. `git -C <path> worktree add ...` still matches
 # since -C is a flag between `git` and `worktree`, not a new command.
 #
-# PORT NOTE. The bash writes this pattern inside DOUBLE quotes, so `\\\$\\(`
-# reaches grep as `\$\(` and the backtick is bare. Here the pattern is a raw
-# Python string, so the same ERE is spelled once instead of twice.
+# PORT NOTE. The bash writes this pattern inside DOUBLE quotes, so `\\\$\\(` reaches grep as `\$\(` and the backtick is bare. Here the pattern is a raw Python string, so the same ERE is spelled once instead of twice.
 GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
 
 WORKTREE_ADD = GIT_AT_CMD + hookio.rx(r"worktree[{S}]+add([{S}]|$)")
 
-# THE WRAPPER SAILED STRAIGHT PAST THE CHECK ABOVE. `./run.sh worktree create`
-# reaches scripts/dev/worktree.sh, which runs `git worktree add -b ...` -- the
-# exact command this hook exists to stop -- but the text the hook sees never
-# contains "git worktree add", so it matched nothing. The block was literal, and
-# the wrapper is not literal.
+# THE WRAPPER SAILED STRAIGHT PAST THE CHECK ABOVE. `./run.sh worktree create` reaches scripts/dev/worktree.sh, which runs `git worktree add -b ...` -- the exact command this hook exists to stop -- but the text the hook sees never contains "git worktree add", so it matched nothing. The block was literal, and the wrapper is not literal.
 #
-# This got more urgent, not less: `worktree create` now also brings a devbox up,
-# so the bypass costs a multi-GB image pull and a held port block on top of the
-# unwanted checkout.
+# This got more urgent, not less: `worktree create` now also brings a devbox up, so the bypass costs a multi-GB image pull and a held port block on top of the unwanted checkout.
 #
-# NO "am I an agent?" SNIFF, deliberately. The operator's `!`-prefixed command
-# runs in the SAME session with the SAME environment, so any such test would
-# block the sanctioned path too. The `!` prefix bypasses PreToolUse hooks
-# entirely, which is the whole mechanism -- there is nothing here to detect.
-# The `(bash|sh)[[:space:]]+` prefix is not decoration: `bash
-# scripts/dev/worktree.sh create` puts the INTERPRETER in command position, not
-# the script, so a command-position-anchored match misses it entirely. Caught by
-# driving both forms through this hook rather than reading the regex.
+# NO "am I an agent?" SNIFF, deliberately. The operator's `!`-prefixed command runs in the SAME session with the SAME environment, so any such test would block the sanctioned path too. The `!` prefix bypasses PreToolUse hooks entirely, which is the whole mechanism -- there is nothing here to detect. The `(bash|sh)[[:space:]]+` prefix is not decoration: `bash scripts/dev/worktree.sh
+# create` puts the INTERPRETER in command position, not the script, so a command-position-anchored match misses it entirely. Caught by driving both forms through this hook rather than reading the regex.
 RUN_SH_CREATE = hookio.rx(
     r"(^|[;&|(]|\$\(|`)[{S}]*((bash|sh)[{S}]+)?(\./)?(run\.sh|[A-Za-z0-9_./-]*worktree\.sh)[{S}]+(worktree[{S}]+)?create([{S}]|$)"
 )

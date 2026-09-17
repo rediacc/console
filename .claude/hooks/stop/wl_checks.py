@@ -38,79 +38,43 @@ import worklist_messages as M
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
 
-# Consecutive stops that may move nothing before the hook demands a planning or
-# investigation agent. Three is the operator's number, not a guess.
+# Consecutive stops that may move nothing before the hook demands a planning or investigation agent. Three is the operator's number, not a guess.
 STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
-# How recently the in-flight item must have been refreshed for the session to count as
-# SUPERVISING a long background job rather than having forgotten it.
+# How recently the in-flight item must have been refreshed for the session to count as SUPERVISING a long background job rather than having forgotten it.
 #
-# 70, matching POLL_FULL_MAX_MIN below and for the same reason: JUST OVER the hourly
-# work loop. A session on an hourly cron refreshes its item once an hour, so any
-# threshold under 60 leaves a window every hour where a perfectly healthy campaign
-# reads as unsupervised. It was 45 for exactly one evening and fired twice that way --
-# at 46 and 48 minutes, both times on a batch that was running fine and reported again
-# minutes later. A threshold tighter than the reporting cadence does not detect
-# neglect, it just re-times the false alarm.
+# 70, matching POLL_FULL_MAX_MIN below and for the same reason: JUST OVER the hourly work loop. A session on an hourly cron refreshes its item once an hour, so any threshold under 60 leaves a window every hour where a perfectly healthy campaign reads as unsupervised. It was 45 for exactly one evening and fired twice that way -- at 46 and 48 minutes, both times on a batch that was
+# running fine and reported again minutes later. A threshold tighter than the reporting cadence does not detect neglect, it just re-times the false alarm.
 STUCK_SUPERVISED_MAX_MIN = int(os.environ.get("WORKLIST_STUCK_SUPERVISED_MAX_MIN", "70"))
 
-# v12 CI-WAITING FORCE (operator, 2026-07-30: "is current session sitting for
-# CI pipeline? If so, it should FORCE current session to work on waiting
-# items!!! There is no valid reason to wait."). When every running background
-# task is a CI watch, deferrals that have sat at least CI_FORCE_MIN_AGE are
-# demanded, CI_FORCE_PER_STOP at a time. The age floor is itself an exit: a
-# deferral re-justified with a fresh WHY/HOW leaves the demand window, so an
-# honest answer -- not only doing the work -- always reaches an allowed stop.
+# v12 CI-WAITING FORCE (operator, 2026-07-30: "is current session sitting for CI pipeline? If so, it should FORCE current session to work on waiting items!!! There is no valid reason to wait."). When every running background task is a CI watch, deferrals that have sat at least CI_FORCE_MIN_AGE are demanded, CI_FORCE_PER_STOP at a time. The age floor is itself an exit: a deferral
+# re-justified with a fresh WHY/HOW leaves the demand window, so an honest answer -- not only doing the work -- always reaches an allowed stop.
 CI_FORCE_MIN_AGE = int(os.environ.get("WORKLIST_CI_FORCE_MIN_AGE", "15"))
 CI_FORCE_PER_STOP = int(os.environ.get("WORKLIST_CI_FORCE_PER_STOP", "3"))
 
 DESIGN_DOCS = os.environ.get("WORKLIST_DESIGN_DOCS", "docs/ci-overhaul")
 DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
-# What counts as "the program surface": changing these is changing the thing the
-# design docs describe.
+# What counts as "the program surface": changing these is changing the thing the design docs describe.
 PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claude").split()
 
-# ---- v9 poll constants ------------------------------------------------------
-# The poll cron is recognised by SCHEDULE SHAPE, not by id or prompt text:
-# schedules are structural, survive restarts, and a work cron cannot claim the
-# shape without also BECOMING a 5-minute loop.
-# A BACKOFF LADDER, not a single cadence: 5 -> 10 -> 20 -> 40 -> 60 minutes.
+# ---- v9 poll constants ------------------------------------------------------ The poll cron is recognised by SCHEDULE SHAPE, not by id or prompt text: schedules are structural, survive restarts, and a work cron cannot claim the shape without also BECOMING a 5-minute loop. A BACKOFF LADDER, not a single cadence: 5 -> 10 -> 20 -> 40 -> 60 minutes.
 #
-# The cadence was a bare literal while its two immediate neighbours below are both env-backed,
-# which made it the one knob in this block nobody could turn -- and it is the expensive one. A
-# quiet session at `*/5` pays 12 poll firings an hour forever, and this session ran ~25
-# consecutive empty polls before anyone noticed the cost.
+# The cadence was a bare literal while its two immediate neighbours below are both env-backed, which made it the one knob in this block nobody could turn -- and it is the expensive one. A quiet session at `*/5` pays 12 poll firings an hour forever, and this session ran ~25 consecutive empty polls before anyone noticed the cost.
 #
-# Each rung DOUBLES, so a session that keeps finding an empty inbox keeps halving its own
-# overhead: 12/hr -> 6 -> 3 -> 1.5 -> 1. The ladder is capped at 60 minutes because the
-# fast-path horizon is 70 (POLL_FULL_MAX_MIN below) -- a poll slower than that could never
-# take the silent path, so every firing would pay the full battery and the backoff would
+# Each rung DOUBLES, so a session that keeps finding an empty inbox keeps halving its own overhead: 12/hr -> 6 -> 3 -> 1.5 -> 1. The ladder is capped at 60 minutes because the fast-path horizon is 70 (POLL_FULL_MAX_MIN below) -- a poll slower than that could never take the silent path, so every firing would pay the full battery and the backoff would
 # start costing more than it saves. `0 * * * *` is the hourly top rung; `*/60` is not valid
 # cron for it.
 #
-# Escalation is not automatic: the Stop hook TELLS the session when a doubling is due (see
-# poll_backoff_tip) and the session performs the CronDelete/CronCreate itself, so the change
-# is visible in the transcript rather than happening behind the operator's back. A session
-# that receives a real request should drop back to `*/5` by the same mechanism.
+# Escalation is not automatic: the Stop hook TELLS the session when a doubling is due (see poll_backoff_tip) and the session performs the CronDelete/CronCreate itself, so the change is visible in the transcript rather than happening behind the operator's back. A session that receives a real request should drop back to `*/5` by the same mechanism.
 #
-# Deliberately an allowlist of the ladder rungs, not an open dial: an arbitrary `*/7` would
-# silently desynchronise from the windows that assume this shape.
+# Deliberately an allowlist of the ladder rungs, not an open dial: an arbitrary `*/7` would silently desynchronise from the windows that assume this shape.
 #
-# THE HOURLY RUNG AT :00 ONLY, and why widening it is WRONG (learned the hard way 2026-08-07).
-# The shape above collides with the CronCreate contract, which tells every session to avoid the
-# :00 and :30 marks so the fleet does not hit the API on the same instant, and offers
-# "hourly -> `7 * * * *`" as its example. A session that obeyed both got its poll cron counted
-# as a second WORK cron and was ordered to delete the cron the previous stop had ordered it to
-# create. Observed live with `37 * * * *`.
+# THE HOURLY RUNG AT :00 ONLY, and why widening it is WRONG (learned the hard way 2026-08-07). The shape above collides with the CronCreate contract, which tells every session to avoid the :00 and :30 marks so the fleet does not hit the API on the same instant, and offers "hourly -> `7 * * * *`" as its example. A session that obeyed both got its poll cron counted as a second WORK
+# cron and was ordered to delete the cron the previous stop had ordered it to create. Observed live with `37 * * * *`.
 #
-# The obvious fix -- accept any `<minute> * * * *` -- was tried and REVERTED: it took the
-# harness from 1 failure to 168. An hourly WORK cron (`17 * * * *`) is indistinguishable from
-# an hourly POLL cron by schedule alone, so widening turns every one of them into a phantom
-# second poll cron and the "one poll cron is the shape" check fires against itself. `:00` is
-# arbitrary but UNAMBIGUOUS, which is the property that matters here.
+# The obvious fix -- accept any `<minute> * * * *` -- was tried and REVERTED: it took the harness from 1 failure to 168. An hourly WORK cron (`17 * * * *`) is indistinguishable from an hourly POLL cron by schedule alone, so widening turns every one of them into a phantom second poll cron and the "one poll cron is the shape" check fires against itself. `:00` is arbitrary but
+# UNAMBIGUOUS, which is the property that matters here.
 #
-# The collision is instead resolved by POLL_COMMAND_RE below: an additive second signal that
-# reads what the cron RUNS. That extends the schedule-shape decision recorded above rather than
-# replacing it -- shape stays sufficient on its own, so nothing that works today stops working.
+# The collision is instead resolved by POLL_COMMAND_RE below: an additive second signal that reads what the cron RUNS. That extends the schedule-shape decision recorded above rather than replacing it -- shape stays sufficient on its own, so nothing that works today stops working.
 POLL_SCHEDULE_RE = re.compile(
     os.environ.get("WORKLIST_POLL_SCHEDULE_RE", r"^(\*/(5|10|20|40)( \*){4}|0( \*){4})$")
 )
@@ -129,18 +93,13 @@ POLL_BACKOFF_LADDER = [
     (40, "*/40 * * * *"),
     (60, "0 * * * *"),
 ]
-# A poll marker older than this cannot vouch for THIS stop. The marker is
-# single-use (consumed on first sight), so the window only needs to cover one
+# A poll marker older than this cannot vouch for THIS stop. The marker is single-use (consumed on first sight), so the window only needs to cover one
 # poll turn; too small merely costs one full battery, the safe direction.
 POLL_WINDOW_S = int(os.environ.get("WORKLIST_POLL_WINDOW_S", "600"))
-# The fast path expires: at most this many minutes since the last banked
-# baseline before a poll stop pays the battery again. Just over the hourly
-# work loop, so the shape is one full report per hour with free polls
-# between, and a session cannot live on polls alone.
+# The fast path expires: at most this many minutes since the last banked baseline before a poll stop pays the battery again. Just over the hourly work loop, so the shape is one full report per hour with free polls between, and a session cannot live on polls alone.
 POLL_FULL_MAX_MIN = int(os.environ.get("WORKLIST_POLL_FULL_MAX_MIN", "70"))
 # Request ids are sha1[:8], so 8 hex chars; a #id on a Remaining line is only
-# accepted if it also resolves in the .requests log, so a task id that happens
-# to be 8 digits cannot satisfy the state by shape alone.
+# accepted if it also resolves in the .requests log, so a task id that happens to be 8 digits cannot satisfy the state by shape alone.
 XSESSION_ID_RE = re.compile(r"#([0-9a-f]{8})\b")
 
 
@@ -161,10 +120,7 @@ def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
         return ""  # the shape checks own this case; do not pile on
     sched = " ".join(str(polls[0].get("schedule", "")).split())
     rungs = [s for _, s in POLL_BACKOFF_LADDER]
-    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an
-    # exact string compare, so an hourly poll at any minute but :00 used to fall through
-    # `not in rungs` and silently lose its ladder message -- same root cause as the
-    # classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
+    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an exact string compare, so an hourly poll at any minute but :00 used to fall through `not in rungs` and silently lose its ladder message -- same root cause as the classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
     canon = canonical_poll_schedule(sched)
     if canon not in rungs:
         return ""
@@ -183,21 +139,11 @@ def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
     return M.N_POLL_BACKOFF % (int(quiet_min), cur_min, sched, nxt, nxt_min)
 
 
-# ---- v17: the NO-OP WAKE LADDER ---------------------------------------------
-# WHY (operator, 2026-08-04): "normally there is exponential backoff for the
-# stop hook. It seems it's running every 5 mins." The ladder above existed and
-# never fired usefully during a pure background wait: it measures INBOX quiet
-# time, so it says nothing about a session whose wakes are empty for every
-# other reason, and it is queued behind the very report it is trying to
-# replace at one advisory section per stop.
+# ---- v17: the NO-OP WAKE LADDER --------------------------------------------- WHY (operator, 2026-08-04): "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins." The ladder above existed and never fired usefully during a pure background wait: it measures INBOX quiet time, so it says nothing about a session whose wakes are empty for every
+# other reason, and it is queued behind the very report it is trying to replace at one advisory section per stop.
 #
-# This is the missing half: the hook counts wakes on which it can PROVE
-# nothing moved, and once it has three in a row the whole stop collapses to
-# one line asking for the next rung. Three, not one, because the streak is
-# what makes the claim honest -- a single quiet wake happens constantly
-# between two real ones -- and because at */5 three wakes is 15 minutes, the
-# same window as the background check-in it stands in for, so the collapsed
-# message can never arrive sooner than the report it replaces.
+# This is the missing half: the hook counts wakes on which it can PROVE nothing moved, and once it has three in a row the whole stop collapses to one line asking for the next rung. Three, not one, because the streak is what makes the claim honest -- a single quiet wake happens constantly between two real ones -- and because at */5 three wakes is 15 minutes, the same window as the
+# background check-in it stands in for, so the collapsed message can never arrive sooner than the report it replaces.
 QUIET_WAKES_TO_RESCHEDULE = int(os.environ.get("WORKLIST_QUIET_WAKES", "3"))
 
 
@@ -273,10 +219,7 @@ def quiet_wake_note(live_crons, streak):
         return ""
     sched = " ".join(str(polls[0].get("schedule", "")).split())
     rungs = [s for _, s in POLL_BACKOFF_LADDER]
-    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an
-    # exact string compare, so an hourly poll at any minute but :00 used to fall through
-    # `not in rungs` and silently lose its ladder message -- same root cause as the
-    # classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
+    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an exact string compare, so an hourly poll at any minute but :00 used to fall through `not in rungs` and silently lose its ladder message -- same root cause as the classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
     canon = canonical_poll_schedule(sched)
     if canon not in rungs:
         return ""
@@ -451,11 +394,7 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False, ow
     and this fires as designed.
     """
     # tasks are (id, subject, status); the STATUS is what has to move.
-    # v14 gap 2: `own_stamp` (the newest upd stamp across this session's own
-    # worklist items) rides both signatures. The v13 night proved the harness
-    # task list alone is too narrow an evidence base: a session shipping
-    # commits and ticking worklist items hourly read as "stuck 92 stops"
-    # because its long-horizon harness tasks legitimately never flipped.
+    # v14 gap 2: `own_stamp` (the newest upd stamp across this session's own worklist items) rides both signatures. The v13 night proved the harness task list alone is too narrow an evidence base: a session shipping commits and ticking worklist items hourly read as "stuck 92 stops" because its long-horizon harness tasks legitimately never flipped.
     # Worklist activity is real movement; a genuinely stuck session produces
     # none, so the catch is intact.
     base = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks)) + "@" + (own_stamp or "")
@@ -479,8 +418,7 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False, ow
     if hit and exempt:
         # A running agent excuses the ordinary fire, but not forever.
         hit = [i for i in hit if counts[i] >= limits[i] * 3]
-        # ...unless the session is demonstrably watching it. See the docstring:
-        # the overrun targets a forgotten watch, not a supervised long job.
+        # ...unless the session is demonstrably watching it. See the docstring: the overrun targets a forgotten watch, not a supervised long job.
         if supervised:
             hit = []
         why = "exempt-overrun" if hit else ""
@@ -497,38 +435,15 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False, ow
 # ---- citations and completion evidence --------------------------------------
 
 CITE_RE = re.compile(
-    # LEADING DOT ALLOWED. `\b[\w]` cannot start on a dot, so `.ci/x.sh:9`
-    # matched but CAPTURED `ci/x.sh`, which resolves to nothing on disk. That
-    # silently excluded `.ci/`, `.github/` and `.claude/`, which is most of this
-    # program's surface: a citation check that looked strict was unsatisfiable
+    # LEADING DOT ALLOWED. `\b[\w]` cannot start on a dot, so `.ci/x.sh:9` matched but CAPTURED `ci/x.sh`, which resolves to nothing on disk. That silently excluded `.ci/`, `.github/` and `.claude/`, which is most of this program's surface: a citation check that looked strict was unsatisfiable
     # for exactly the paths it most needed to accept. Caught by the check firing
-    # on a tick of mine that cited .ci/scripts/autopilot/autopilot-gate.sh.
-    # `astro` and `css` added 2026-08-19. They were missing, and the omission
-    # was not cosmetic: 107 tracked .astro files and 19 .css files could not be
-    # cited AT ALL, and .astro is the primary component format in packages/www.
-    # So a session doing www work could not cite the files it had just changed,
-    # which pushes it toward citing something unrelated or not ticking. Found by
-    # a tick of mine being refused while citing main.css and BaseLayout.astro.
-    # `mdx`, `svg`, `cast`, `txt` added 2026-08-19, the SAME class of gap as the
-    # astro/css one directly above and found the same way: a tick of mine citing
-    # tutorial-create-repo.mdx:15 was refused as evidence-free. 260 tracked .mdx
-    # files (every tutorial doc), 86 .svg, 18 .cast and 14 .txt could not be cited
-    # AT ALL. Binary formats (png, pdf) stay OUT on purpose: a line number in a
-    # binary cites nothing.
-    # EXTENSIONLESS ROOT DOTFILES, added 2026-09-06. Same class as the three
-    # gaps above and found the same way: a tick of mine citing .gitignore:9 was
-    # refused as evidence-free. The first branch requires a `.<ext>` suffix, and
-    # a name like `.gitignore` or `.dead-bash-allowlist` has its only dot at the
-    # FRONT, so 22 of this repo's 24 tracked root dotfiles could not be cited AT
-    # ALL. That set is not incidental: it is every one of the 16 allowlists and
-    # blocklists the whole suppressions discipline is built on, plus .gitignore,
-    # .npmrc, .gitattributes and .gitmodules. A session draining an allowlist
-    # entry, which is exactly the work that most needs a record, could not cite
-    # the file it had just edited. The branch carries no slash on purpose, so it
+    # on a tick of mine that cited .ci/scripts/autopilot/autopilot-gate.sh. `astro` and `css` added 2026-08-19. They were missing, and the omission was not cosmetic: 107 tracked .astro files and 19 .css files could not be cited AT ALL, and .astro is the primary component format in packages/www. So a session doing www work could not cite the files it had just changed, which pushes
+    # it toward citing something unrelated or not ticking. Found by a tick of mine being refused while citing main.css and BaseLayout.astro. `mdx`, `svg`, `cast`, `txt` added 2026-08-19, the SAME class of gap as the astro/css one directly above and found the same way: a tick of mine citing tutorial-create-repo.mdx:15 was refused as evidence-free. 260 tracked .mdx files (every
+    # tutorial doc), 86 .svg, 18 .cast and 14 .txt could not be cited AT ALL. Binary formats (png, pdf) stay OUT on purpose: a line number in a binary cites nothing. EXTENSIONLESS ROOT DOTFILES, added 2026-09-06. Same class as the three gaps above and found the same way: a tick of mine citing .gitignore:9 was refused as evidence-free. The first branch requires a `.<ext>` suffix,
+    # and a name like `.gitignore` or `.dead-bash-allowlist` has its only dot at the FRONT, so 22 of this repo's 24 tracked root dotfiles could not be cited AT ALL. That set is not incidental: it is every one of the 16 allowlists and blocklists the whole suppressions discipline is built on, plus .gitignore, .npmrc, .gitattributes and .gitmodules. A session draining an allowlist
+    # entry, which is exactly the work that most needs a record, could not cite the file it had just edited. The branch carries no slash on purpose, so it
     # reaches root dotfiles and cannot swallow the `.ci` prefix of a real path;
-    # the first branch is tried first and wins for anything with an extension.
-    # Over-matching is cheap here anyway: citation_state still has to RESOLVE the
-    # path on disk, so a stray `.foo:3` in prose fails there rather than passing.
+    # the first branch is tried first and wins for anything with an extension. Over-matching is cheap here anyway: citation_state still has to RESOLVE the path on disk, so a stray `.foo:3` in prose fails there rather than passing.
     r"(?<![\w./-])("
     r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
     r"|\.[\w][\w-]*"
@@ -631,30 +546,16 @@ def completion_evidence(root, text):
     ordering back out -- pinned by case 96b in test-worklist-v5.sh."""
     if RUN_ID_RE.search(text) or EXIT_RE.search(text) or URL_RE.search(text):
         return True
-    # EVERY citation, not just the first. citation_state uses CITE_RE.search and
-    # stops at the first match, which is right for its own job (a forcing
+    # EVERY citation, not just the first. citation_state uses CITE_RE.search and stops at the first match, which is right for its own job (a forcing
     # function on ONE claim) and wrong here: this asks "did the completion leave
-    # a RECORD at all", and a tick carrying five resolving citations plus one
-    # typo'd path was reported as evidence-free because the typo happened to come
-    # first. Found live 2026-08-14 on a tick whose line cited a bare
-    # "05-docs-and-decommission.md" ahead of four full, resolving paths.
+    # a RECORD at all", and a tick carrying five resolving citations plus one typo'd path was reported as evidence-free because the typo happened to come first. Found live 2026-08-14 on a tick whose line cited a bare "05-docs-and-decommission.md" ahead of four full, resolving paths.
     for m in CITE_RE.finditer(text or ""):
         if citation_state(root, m.group(0))[0]:
             return True
-    # LONGEST candidates first, then the cap. The cap bounds git calls (above),
-    # but taking the first five in TEXT order spent the entire budget on short
-    # hex tokens that can never be object ids. Every rendered line opens with
-    # the mandatory session tag TWICE (`- [x] (0ad063bf) (0ad063bf) ...`), and
-    # cited worklist item ids are 8 hex as well, so an item that cross-references
-    # its siblings poisons its own evidence check -- the more carefully it is
-    # written, the more certainly it fails. Found live 2026-08-23 on a tick whose
-    # only real SHA sat at position 6, behind
+    # LONGEST candidates first, then the cap. The cap bounds git calls (above), but taking the first five in TEXT order spent the entire budget on short hex tokens that can never be object ids. Every rendered line opens with the mandatory session tag TWICE (`- [x] (0ad063bf) (0ad063bf) ...`), and cited worklist item ids are 8 hex as well, so an item that cross-references its
+    # siblings poisons its own evidence check -- the more carefully it is written, the more certainly it fails. Found live 2026-08-23 on a tick whose only real SHA sat at position 6, behind
     # ['0ad063bf', '0ad063bf', '23d99308', 'ebe8b570', 'e263d2cc']; it blocked
-    # five consecutive stops while carrying a tree hash that resolves. This is
-    # the same shape as the CITE_RE fix above, which this arm never received.
-    # Ordering by length is the cheap discriminator: a 40-hex object id outranks
-    # an 8-hex id, and ties keep first-seen order so the choice stays
-    # deterministic.
+    # five consecutive stops while carrying a tree hash that resolves. This is the same shape as the CITE_RE fix above, which this arm never received. Ordering by length is the cheap discriminator: a 40-hex object id outranks an 8-hex id, and ties keep first-seen order so the choice stays deterministic.
     seen, cands = set(), []
     for i, m in enumerate(SHA_RE.finditer(text)):
         tok = m.group(0)
@@ -667,13 +568,8 @@ def completion_evidence(root, text):
     return False
 
 
-# v16: an issue reference is a URL, and completion_evidence passes on ANY URL
-# by shape, so `--tick <me> <id> 'filed as .../issues/560'` closed a finding.
-# That is the loophole the fix-in-session rule outlaws: filing settles nothing
-# unless one of the three last-resort doors applies, and the tick has to say
-# WHICH. Shape-only, the same division of labor as the WHY/HOW gate: whether
-# the named door is TRUE is the judge's question, and every new tick already
-# flows into the reggate/judge path.
+# v16: an issue reference is a URL, and completion_evidence passes on ANY URL by shape, so `--tick <me> <id> 'filed as .../issues/560'` closed a finding. That is the loophole the fix-in-session rule outlaws: filing settles nothing unless one of the three last-resort doors applies, and the tick has to say WHICH. Shape-only, the same division of labor as the WHY/HOW gate: whether the
+# named door is TRUE is the judge's question, and every new tick already flows into the reggate/judge path.
 ISSUE_REF_RE = re.compile(r"\S*github\.com/\S+/issues/\d+\S*|\bissues?\s+#\d+", re.IGNORECASE)
 DOOR_RE = re.compile(r"door:(operator-only|operator-deferred|no-write-access)")
 
@@ -694,31 +590,16 @@ def issue_only_evidence(root, text):
     return not completion_evidence(root, ISSUE_REF_RE.sub(" ", text))
 
 
-# Does this deferral's own WHY depend on the CI wait, or on something the wait
-# cannot remove? The CI-waiting force below tells a session to execute a DEFAULT
-# "because the wait was the only reason to hold it", and for a justified deferral
-# that sentence is BACKWARDS: a justified one is precisely the one whose reason is
-# written down, and the reason is usually not the run.
+# Does this deferral's own WHY depend on the CI wait, or on something the wait cannot remove? The CI-waiting force below tells a session to execute a DEFAULT "because the wait was the only reason to hold it", and for a justified deferral that sentence is BACKWARDS: a justified one is precisely the one whose reason is written down, and the reason is usually not the run.
 #
-# THE FAILURE, 2026-09-04: an item deferred with "the remaining act is irreversible
-# and outward-facing, gh secret delete cannot be undone" was told, four stops
-# running, to execute its DEFAULT because the wait was all that held it. The
-# session had to decline each time and re-justify, which is a round trip spent
-# arguing with a template.
+# THE FAILURE, 2026-09-04: an item deferred with "the remaining act is irreversible and outward-facing, gh secret delete cannot be undone" was told, four stops running, to execute its DEFAULT because the wait was all that held it. The session had to decline each time and re-justify, which is a round trip spent arguing with a template.
 #
-# Textual, not a model call: this runs on every stop and the question is cheap. The
-# test is deliberately asymmetric -- only a WHY that NAMES the wait gets the
-# "execute it now" instruction, so an unparseable or unusual reason falls to the
-# safe side and asks the session rather than ordering it.
+# Textual, not a model call: this runs on every stop and the question is cheap. The test is deliberately asymmetric -- only a WHY that NAMES the wait gets the "execute it now" instruction, so an unparseable or unusual reason falls to the safe side and asks the session rather than ordering it.
 _WAIT_WHY = re.compile(
     r"\b(wait(ing)?|in flight|CI run|the run|pipeline|until (CI|the run)|green)\b",
     re.IGNORECASE,
 )
-# CHECKED FIRST, because a bare keyword match reads a DENIAL as an admission. The
-# real deferral that exposed this opens "what blocks it is not the wait, it is that
-# the remaining act is irreversible" -- and the positive pattern above happily finds
-# `wait` in it. A session that writes down why the run is NOT its blocker must not be
-# told the run was its only blocker.
+# CHECKED FIRST, because a bare keyword match reads a DENIAL as an admission. The real deferral that exposed this opens "what blocks it is not the wait, it is that the remaining act is irreversible" -- and the positive pattern above happily finds `wait` in it. A session that writes down why the run is NOT its blocker must not be told the run was its only blocker.
 _NOT_WAIT_WHY = re.compile(
     r"\bnot\s+(?:the\s+)?(?:wait(?:ing)?|blocked\s+on|waiting\s+on)\b"
     r"|\bis\s+NOT\s+waiting\b"
@@ -744,28 +625,12 @@ def deferral_is_justified(rec):
     return bool(j.get("why") and j.get("how"))
 
 
-# ---- v21: THE IDLE-STALL GATE ----------------------------------------------
-# WHY (operator, 2026-08-26): "it's very annoying that neither you have
-# background agent nor running monitor/shell but you do stop even with
-# remaining items! I see they're not blocked because of dependencies/questioning
-# to me. You misuse the intention of the stop hook."
+# ---- v21: THE IDLE-STALL GATE ---------------------------------------------- WHY (operator, 2026-08-26): "it's very annoying that neither you have background agent nor running monitor/shell but you do stop even with remaining items! I see they're not blocked because of dependencies/questioning to me. You misuse the intention of the stop hook."
 #
-# The loophole was NOT that open items pass unnoticed -- `open-items` has always
-# been a violation. It is that `open-items` sits in the ROTATING tier, so the
-# cadence gate (see CADENCE_MAX_PAUSES and the `pause` computation in run_stop)
-# ALLOWS the stop as long as the assistant said something new since the last
-# demand. Case 214 pins exactly that: block -> new message -> allow. And the cap
-# on consecutive pauses resets whenever the outstanding key set SHRINKS, so
-# clearing any one rotating check -- a STATE.md rewrite, a refreshed brief, a
-# plan touch-up -- refills the pause budget. Together those make an endless
-# supply of hook-satisfying non-work: do one thing, stop, be pushed back, do one
-# thing, stop.
+# The loophole was NOT that open items pass unnoticed -- `open-items` has always been a violation. It is that `open-items` sits in the ROTATING tier, so the cadence gate (see CADENCE_MAX_PAUSES and the `pause` computation in run_stop) ALLOWS the stop as long as the assistant said something new since the last demand. Case 214 pins exactly that: block -> new message -> allow. And the
+# cap on consecutive pauses resets whenever the outstanding key set SHRINKS, so clearing any one rotating check -- a STATE.md rewrite, a refreshed brief, a plan touch-up -- refills the pause budget. Together those make an endless supply of hook-satisfying non-work: do one thing, stop, be pushed back, do one thing, stop.
 #
-# This gate is in the ALWAYS tier, which is the one thing the cadence cannot
-# pause (guard A). It fires ONLY on the shape the operator described -- open
-# work, nobody else carrying it, and nothing left the open state this turn --
-# and every one of its three exits (tick, lease, defer) is completable by the
-# session alone in the same turn, so it converts into action rather than a
+# This gate is in the ALWAYS tier, which is the one thing the cadence cannot pause (guard A). It fires ONLY on the shape the operator described -- open work, nobody else carrying it, and nothing left the open state this turn -- and every one of its three exits (tick, lease, defer) is completable by the session alone in the same turn, so it converts into action rather than a
 # deadlock.
 
 #: A '## Remaining' line ASSERTING that an item has no blocker. That claim is
@@ -827,22 +692,15 @@ def unblocked_claims(last_msg, limit=6):
 #
 # The original detector matched `found,? not fixed` at line-lead and nothing
 # else, so every near-synonym walked past it. Measured against one real session
-# (2026-08-26): "Reported, not fixed (not my file)", "Agent finding I didn't
-# fix", and "Findings in code I do not own -- not fixed, reported" ALL escaped,
-# and the findings sat unfixed until the operator asked for them by hand. The
+# (2026-08-26): "Reported, not fixed (not my file)", "Agent finding I didn't fix", and "Findings in code I do not own -- not fixed, reported" ALL escaped, and the findings sat unfixed until the operator asked for them by hand. The
 # rule they violate is the same one in every case; only the wording differed.
 #
-# Deliberately anchored at line-lead and stripped of quoted/backticked spans,
-# on the V_FOUND_NOT_FIXED precedent: a gate that cannot survive being written
-# about is too broad, and this file and CLAUDE.md both discuss the rule.
+# Deliberately anchored at line-lead and stripped of quoted/backticked spans, on the V_FOUND_NOT_FIXED precedent: a gate that cannot survive being written about is too broad, and this file and CLAUDE.md both discuss the rule.
 DEFERRED_FINDING_RE = re.compile(
     r"^[ \t>*_#-]{0,6}(?:"
     r"(?:found|reported|flagged|noticed|spotted)\s*[,:-]?\s*(?:but\s+)?not\s+fixed"
     r"|(?:findings?|defects?|issues?)\b[^\n]{0,60}?\bnot\s+fixed"
-    # This one alternative is allowed to sit mid-line, because the phrasing that
-    # escaped in practice was "- Agent finding I didn't fix: ..." -- the admission
-    # trails the subject rather than leading it. Still bounded to a LIST line, so
-    # ordinary prose in a paragraph does not reach it.
+    # This one alternative is allowed to sit mid-line, because the phrasing that escaped in practice was "- Agent finding I didn't fix: ..." -- the admission trails the subject rather than leading it. Still bounded to a LIST line, so ordinary prose in a paragraph does not reach it.
     r"|[^\n]{0,80}?\b(?:did\s+not|didn't|have\s+not|haven't)\s+fix(?:ed)?\b"
     r"|not\s+fixed\s*[,(]?\s*(?:reported|flagged|not\s+my)"
     r")",
@@ -991,10 +849,7 @@ def cron_memory(worklist, session_id, live_count, declared_done=False):
             p.write_text(str(live_count))
         remembered = live_count
     if declared_done and live_count == 0 and remembered >= 1:
-        # FORGET the high-water mark, do not merely skip this one stop. Without
-        # the reset the declaration would clear the block once and the check
-        # would fire again on the next stop, and the next, forever -- which is
-        # exactly what happened to the session that found this. A loop declared
+        # FORGET the high-water mark, do not merely skip this one stop. Without the reset the declaration would clear the block once and the check would fire again on the next stop, and the next, forever -- which is exactly what happened to the session that found this. A loop declared
         # finished is finished; if a new one starts, live_count climbs above 0
         # again and the mark rebuilds itself on its own.
         with contextlib.suppress(OSError):
@@ -1025,15 +880,8 @@ def docs_drift(root):
         return "absent", 0, str(docs)
     n = C._git(root, "rev-list", "--count", "%s..HEAD" % base, "--", *PROGRAM_SURFACE)
     drift = int(n) if n.isdigit() else 0
-    # UNCOMMITTED doc edits count. The baseline above is the last COMMIT
-    # touching the docs, and this repo's standing rule is that work stays
-    # uncommitted until the operator asks for it. Without this, a session
-    # that dutifully updated the design docs was told at EVERY stop that
-    # they had drifted, and the only way to satisfy the check was to commit
-    # -- which that same rule forbids doing unilaterally. The check could
-    # not distinguish "nobody updated the docs" from "somebody did, and is
-    # not allowed to commit yet", so it demanded the one action it must not
-    # provoke.
+    # UNCOMMITTED doc edits count. The baseline above is the last COMMIT touching the docs, and this repo's standing rule is that work stays uncommitted until the operator asks for it. Without this, a session that dutifully updated the design docs was told at EVERY stop that they had drifted, and the only way to satisfy the check was to commit -- which that same rule forbids doing
+    # unilaterally. The check could not distinguish "nobody updated the docs" from "somebody did, and is not allowed to commit yet", so it demanded the one action it must not provoke.
     if drift > DOCS_DRIFT_MAX and C._git(root, "status", "--porcelain", "--", DESIGN_DOCS):
         return "pending", drift, str(docs)
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
@@ -1041,58 +889,31 @@ def docs_drift(root):
 
 # ---- v16: the plan-file convention (agent/PLAN-<slug>.md) -----------------
 #
-# A plan is the DURABLE design record: committed, so it survives compaction and
-# a lost machine. That is what distinguishes it from the per-session
-# agent/<me>/ directories beside it, whose STATE.md is the volatile cursor. A
-# plan sits one level UP, at the tree root, because it belongs to the work
-# rather than to whoever happened to write it.
-# Plans are historical once executed, so only draft/executing/UNKNOWN ones are
+# A plan is the DURABLE design record: committed, so it survives compaction and a lost machine. That is what distinguishes it from the per-session agent/<me>/ directories beside it, whose STATE.md is the volatile cursor. A plan sits one level UP, at the tree root, because it belongs to the work rather than to whoever happened to write it. Plans are historical once executed, so only
+# draft/executing/UNKNOWN ones are
 # surfaced; done and superseded appear as a count. An unparseable Status line
-# reads as UNKNOWN and is shown LOUDLY, per the V_PR_UNREADABLE convention
-# that a check which cannot read must say so rather than pass quietly.
+# reads as UNKNOWN and is shown LOUDLY, per the V_PR_UNREADABLE convention that a check which cannot read must say so rather than pass quietly.
 #
 # Cost: SessionStart and PostCompact only. The Stop battery and the poll fast
 # path never read plan files; the guide's single os.path.exists probe per
 # TRIAGED item is the only plan-related work on the stop path.
 #
-# HANDOFF CHECKLISTS ARE THE EXCEPTION, and deliberately so (v20,
-# wl_checklist). agent/programs/<slug>/CHECKLIST.md IS the enforcement point, so the
-# full Stop battery does read those files -- a gate that refuses to look at
-# its own subject is not a gate. The poll fast path still never opens one:
-# checklists_sig() is stat-only and its result is banked in the pollbase
-# beside the world signature, so a live or changed checklist forfeits the
-# silent path without ever charging a poll for a read. A repo that keeps no
-# handoffs pays one glob and nothing else.
+# HANDOFF CHECKLISTS ARE THE EXCEPTION, and deliberately so (v20, wl_checklist). agent/programs/<slug>/CHECKLIST.md IS the enforcement point, so the full Stop battery does read those files -- a gate that refuses to look at its own subject is not a gate. The poll fast path still never opens one: checklists_sig() is stat-only and its result is banked in the pollbase beside the world
+# signature, so a live or changed checklist forfeits the silent path without ever charging a poll for a read. A repo that keeps no handoffs pays one glob and nothing else.
 
-# Accepts the shape the plans in this repo ACTUALLY use, which the first
-# version did not: `**Status: DESIGNED, not started. <prose>**`. Requiring a
-# bare `Status: word` line meant five of twelve real plans parsed as UNKNOWN --
-# a FORMAT mismatch reported as a content problem, which would have sent someone
-# rewriting perfectly good plans to satisfy a regex. Optional markdown emphasis,
+# Accepts the shape the plans in this repo ACTUALLY use, which the first version did not: `**Status: DESIGNED, not started. <prose>**`. Requiring a bare `Status: word` line meant five of twelve real plans parsed as UNKNOWN -- a FORMAT mismatch reported as a content problem, which would have sent someone rewriting perfectly good plans to satisfy a regex. Optional markdown emphasis,
 # and the first word wins with any trailing prose ignored.
 #
-# SECOND ROUND OF THE SAME BUG, 2026-08-25. The anchored form still required
-# `Status:` to START a line, and two more real plans state it mid-line:
-#     agent/PLAN-test-advisor.md          Owner: b7baf3ee · 2026-08-24 · status: BUILT
-#     agent/PLAN-chunk-store-browse-server.md   Branch: `0815-1`. Status: design only, ...
-# Both parsed UNKNOWN, and UNKNOWN is loud by design, so the stop hook told a
-# session to go fix two plans that were already accurate and were not even its
-# own. Exactly the failure the paragraph above describes, in a new format.
+# SECOND ROUND OF THE SAME BUG, 2026-08-25. The anchored form still required `Status:` to START a line, and two more real plans state it mid-line: agent/PLAN-test-advisor.md Owner: b7baf3ee · 2026-08-24 · status: BUILT agent/PLAN-chunk-store-browse-server.md Branch: `0815-1`. Status: design only, ... Both parsed UNKNOWN, and UNKNOWN is loud by design, so the stop hook told a
+# session to go fix two plans that were already accurate and were not even its own. Exactly the failure the paragraph above describes, in a new format.
 #
-# So: try the anchored form first (unchanged precedence, so a real leading
-# `Status:` line always wins), then fall back to `Status:` anywhere in the
-# header block. The fallback is case-insensitive because `status: BUILT` is
-# what the deviating plans write.
+# So: try the anchored form first (unchanged precedence, so a real leading `Status:` line always wins), then fall back to `Status:` anywhere in the header block. The fallback is case-insensitive because `status: BUILT` is what the deviating plans write.
 PLAN_STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:\s*([A-Za-z-]+)", re.MULTILINE)
 PLAN_STATUS_INLINE_RE = re.compile(r"\bStatus\*{0,2}:\s*([A-Za-z-]+)", re.IGNORECASE)
 PLAN_HEADER_LINES = 10
-# `Owner: <session-prefix>` in the same header block. plan_drift_rows is scoped to the
-# plans THIS session owns, so it needs to read the field, not just the status.
+# `Owner: <session-prefix>` in the same header block. plan_drift_rows is scoped to the plans THIS session owns, so it needs to read the field, not just the status.
 PLAN_OWNER_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:\s*[`'\"]?([0-9A-Za-z_-]{4,})", re.MULTILINE)
-# `compacted` joins the two original words for the same reason they are here: a
-# compacted record is HISTORY, so plans_block counts it rather than listing it as
-# live work, and plan_status_excerpt never picks one as "the newest live plan".
-# `parked` is deliberately NOT here -- its work is unfinished, so it stays visible.
+# `compacted` joins the two original words for the same reason they are here: a compacted record is HISTORY, so plans_block counts it rather than listing it as live work, and plan_status_excerpt never picks one as "the newest live plan". `parked` is deliberately NOT here -- its work is unfinished, so it stays visible.
 PLAN_DONE_STATES = ("done", "superseded", "compacted")
 PLAN_EXCERPT_CHARS = 1500
 PLAN_DRIFT_MAX = int(os.environ.get("WORKLIST_PLAN_DRIFT_MAX", "5"))
@@ -1104,9 +925,7 @@ def plan_dir(root):
     return S.agent_plan_dir(root)
 
 
-# A session id, as a whole token: 8 hex from the CLI, 12 from the old markdown.
-# An `Owner:` value that is not one of these cannot be a session, so it must not
-# be compared against one -- see plan_owner.
+# A session id, as a whole token: 8 hex from the CLI, 12 from the old markdown. An `Owner:` value that is not one of these cannot be a session, so it must not be compared against one -- see plan_owner.
 PLAN_OWNER_ID_RE = re.compile(r"\b([0-9a-fA-F]{8}|[0-9a-fA-F]{12})\b")
 # A plan that says it is unowned is UNOWNED, whoever drafted it.
 PLAN_UNOWNED_RE = re.compile(r"\bunowned\b", re.IGNORECASE)
@@ -1216,49 +1035,27 @@ def plan_drift_rows(root, fold, session_id, plan_max_read=12):
 
     rows = []
     for rel, status, _lines in recs[:plan_max_read]:
-        # OWNERSHIP, the half this check was missing. The docstring above has always
-        # promised "a PEER's items moving is not a reason to rewrite MY plan", but the
-        # scoping was applied only to the ITEMS: any executing plan in agent/ was then
-        # matched against them, so MY items moving demanded I rewrite a plan whose
-        # header says `Owner: <someone else>`. That is the exact shape recorded at
-        # PLAN_STATUS_RE above -- "two plans that were already accurate and were not
-        # even its own" -- where only the status half was fixed. A plan with no Owner
-        # line stays in scope, matching the untagged-item rule in C.owned_by_me.
+        # OWNERSHIP, the half this check was missing. The docstring above has always promised "a PEER's items moving is not a reason to rewrite MY plan", but the scoping was applied only to the ITEMS: any executing plan in agent/ was then matched against them, so MY items moving demanded I rewrite a plan whose header says `Owner: <someone else>`. That is the exact shape recorded at
+        # PLAN_STATUS_RE above -- "two plans that were already accurate and were not even its own" -- where only the status half was fixed. A plan with no Owner line stays in scope, matching the untagged-item rule in C.owned_by_me.
         owner = plan_owner(root, rel)
         if not C.owned_by_me(owner, session_id):
             continue
-        # ONLY `executing` (and UNKNOWN, which is loud by design). A plan that
-        # SAYS it is being executed while this session's work moved past it is a
-        # direct contradiction, and that is the whole signal.
+        # ONLY `executing` (and UNKNOWN, which is loud by design). A plan that SAYS it is being executed while this session's work moved past it is a direct contradiction, and that is the whole signal.
         #
-        # `draft` and `ready` are deliberately exempt: a proposal not yet started
-        # is not made wrong by unrelated work happening elsewhere.
-        # The first cut flagged every non-done plan and produced TWELVE rows at
-        # once, most of them drafts this session had never touched -- a wall that
-        # teaches the reader to skip the check, which is worse than not having
-        # it. Drafts still surface at SessionStart and PostCompact, where
-        # orientation is the point and enforcement is not.
+        # `draft` and `ready` are deliberately exempt: a proposal not yet started is not made wrong by unrelated work happening elsewhere. The first cut flagged every non-done plan and produced TWELVE rows at once, most of them drafts this session had never touched -- a wall that teaches the reader to skip the check, which is worse than not having it. Drafts still surface at
+        # SessionStart and PostCompact, where orientation is the point and enforcement is not.
         if str(status).lower() not in ("executing", "unknown"):
             continue
         try:
             mtime = (pathlib.Path(root) / rel).stat().st_mtime
         except OSError:
-            # Unreadable is REPORTED, never silently skipped: a plan the check
-            # cannot stat is exactly the one worth naming out loud, per the
-            # V_PR_UNREADABLE convention that a check which cannot read must say
-            # so rather than pass quietly.
+            # Unreadable is REPORTED, never silently skipped: a plan the check cannot stat is exactly the one worth naming out loud, per the V_PR_UNREADABLE convention that a check which cannot read must say so rather than pass quietly.
             rows.append((rel, "UNREADABLE"))
             continue
-        # HOW MUCH work moved past it, not merely whether ANY did. A single
-        # tick is not a plan going stale, and treating it as one made the check
-        # UNSATISFIABLE: update the plan, tick the next item, and it is stale
-        # again before you have drawn breath. That is the same self-inflicted
-        # churn `state_world_sig` was fixed for -- a document staled by the very
-        # bookkeeping that follows refreshing it.
+        # HOW MUCH work moved past it, not merely whether ANY did. A single tick is not a plan going stale, and treating it as one made the check UNSATISFIABLE: update the plan, tick the next item, and it is stale again before you have drawn breath. That is the same self-inflicted churn `state_world_sig` was fixed for -- a document staled by the very bookkeeping that follows
+        # refreshing it.
         #
-        # The threshold is what makes the exit real: update the plan and it stays
-        # quiet for the next few ticks, which is exactly how long a plan actually
-        # stays accurate.
+        # The threshold is what makes the exit real: update the plan and it stays quiet for the next few ticks, which is exactly how long a plan actually stays accurate.
         moved = sum(
             1
             for r in mine
@@ -1267,8 +1064,7 @@ def plan_drift_rows(root, fold, session_id, plan_max_read=12):
         if moved >= PLAN_DRIFT_MIN_MOVES:
             note = "%s, %d item(s) moved since" % (status, moved)
             if str(status).lower() == "unknown":
-                # The reader here has no context by construction. Give them the
-                # subject and the files rather than only the complaint.
+                # The reader here has no context by construction. Give them the subject and the files rather than only the complaint.
                 title, files = plan_orientation(root, rel)
                 if title:
                     note += ' -- "%s"' % title
@@ -1279,13 +1075,10 @@ def plan_drift_rows(root, fold, session_id, plan_max_read=12):
     return rows
 
 
-# An UNKNOWN plan is the one a fresh context most needs help with, so it gets
-# the most help rather than the least.
+# An UNKNOWN plan is the one a fresh context most needs help with, so it gets the most help rather than the least.
 PLAN_ORIENT_BYTES = int(os.environ.get("WORKLIST_PLAN_ORIENT_BYTES", "8192"))
 PLAN_ORIENT_FILES = int(os.environ.get("WORKLIST_PLAN_ORIENT_FILES", "4"))
-# A path-shaped token: at least one directory separator and a known source or
-# doc extension. Deliberately narrow -- a prose sentence containing a slash is
-# not a file, and a wrong pointer is worse than none for a reader with no context.
+# A path-shaped token: at least one directory separator and a known source or doc extension. Deliberately narrow -- a prose sentence containing a slash is not a file, and a wrong pointer is worse than none for a reader with no context.
 _PLAN_PATH_RE = re.compile(
     r"[A-Za-z0-9_.\-]+(?:/[A-Za-z0-9_.\-]+)+\.(?:go|ts|tsx|js|py|sh|md|json|yml|yaml|toml|sql)"
 )
@@ -1402,22 +1195,14 @@ def plans_block(root):
     if state != PI.CENSUS_FRESH:
         rows = PI.census_rows(root, plan_records=plan_records, plan_box_census=plan_box_census)
     head = PI.banner(state, detail, len(stats))
-    # NEWEST FIRST, restored from the `stat` pass rather than from the committed
-    # file. `plan_records` has always sorted this way and `plan_status_excerpt`
-    # takes `live[0]` as "the newest live plan", so an index that dropped mtime
-    # would silently change which plan a compacted session gets excerpted. The
-    # sort is stable, so the by-path order inside an mtime tie is the same order
+    # NEWEST FIRST, restored from the `stat` pass rather than from the committed file. `plan_records` has always sorted this way and `plan_status_excerpt` takes `live[0]` as "the newest live plan", so an index that dropped mtime would silently change which plan a compacted session gets excerpted. The sort is stable, so the by-path order inside an mtime tie is the same order
     # `sorted(d.glob(...))` gave the old path.
     mtimes = {rel: mt for rel, _sz, mt in stats}
     rows = sorted(rows, key=lambda r: -mtimes.get(r[0], 0.0))
     live = [r for r in rows if r[1] not in PLAN_DONE_STATES]
     if not live:
-        # PLANS EXIST BUT NONE ARE LIVE. This used to return ("", []), which made
-        # "every plan is done" indistinguishable from "this project has no plans"
-        # -- both printed nothing. It is a real and reportable state, so it now
-        # renders its summary lines. The `not stats` guard above still returns
-        # ("", []) for a project with no plans at all, which is the case the
-        # early return was actually written for.
+        # PLANS EXIST BUT NONE ARE LIVE. This used to return ("", []), which made "every plan is done" indistinguishable from "this project has no plans" -- both printed nothing. It is a real and reportable state, so it now renders its summary lines. The `not stats` guard above still returns ("", []) for a project with no plans at all, which is the case the early return was
+        # actually written for.
         tail = _plan_census_summary(rows)
         return (head + "\n".join(tail)) if tail else "", []
     lines = []
@@ -1570,9 +1355,7 @@ def poll_fast_path(worklist, session_id, event):
     mark = pollmark_path(worklist, (session_id or "unknown")[:8])
     try:
         fresh = time.time() - mark.stat().st_mtime <= POLL_WINDOW_S
-        # CONSUMED either way, before any other verdict: one poll vouches for
-        # at most one stop, and a marker lingering into an operator-facing
-        # turn must not silence that turn's report.
+        # CONSUMED either way, before any other verdict: one poll vouches for at most one stop, and a marker lingering into an operator-facing turn must not silence that turn's report.
         mark.unlink()
     except OSError:
         return False
@@ -1587,9 +1370,7 @@ def poll_fast_path(worklist, session_id, event):
     except (OSError, ValueError, KeyError, TypeError):
         return False
     root = C.project_root(C.project_start(event))
-    # v20: a LIVE or CHANGED handoff checklist forfeits the silent path. The
-    # battery is where checklist obligations are adjudicated, and this is the
-    # stat-only half of that contract: no checklist is opened here, only
+    # v20: a LIVE or CHANGED handoff checklist forfeits the silent path. The battery is where checklist obligations are adjudicated, and this is the stat-only half of that contract: no checklist is opened here, only
     # stat'd, and an old baseline missing the keys reads as cl_live=-1 and
     # forfeits. Done and superseded checklists bank cl_live=0, so a settled
     # program costs polls nothing.
@@ -1600,8 +1381,7 @@ def poll_fast_path(worklist, session_id, event):
             return False
     except Exception:  # noqa: BLE001 -- a broken forfeit costs the battery, never an allow
         return False
-    # The fold is loaded BEFORE the signature check since v17, because the
-    # signature is now derived from this session's items rather than from the
+    # The fold is loaded BEFORE the signature check since v17, because the signature is now derived from this session's items rather than from the
     # shared files' bytes; passing it here keeps the store parsed once.
     fold = S.load(worklist, sync=False)
     if (
@@ -1631,8 +1411,7 @@ def poll_fast_path(worklist, session_id, event):
             age = C.stamp_age_min(rec.get("upd", ""))
             if age is not None and age >= S.DEFER_WINDOW_MIN:
                 return False  # the autonomy window closed; the battery says so
-            # v12 forfeits: anything that could BLOCK on the full battery
-            # (the justification demand, the CI-waiting force) forfeits the
+            # v12 forfeits: anything that could BLOCK on the full battery (the justification demand, the CI-waiting force) forfeits the
             # silent path; the report-only audit rides the hourly horizon.
             if age is not None and age >= S.JUSTIFY_AGE_MIN and not deferral_is_justified(rec):
                 return False
@@ -1658,11 +1437,9 @@ def poll_fast_path(worklist, session_id, event):
                 rec.get("upd", ""),
             ):
                 return False  # a blocking rung is DUE, not merely past its age
-    # Ask whether a rung would actually FIRE, never whether the age is past a
-    # threshold. The ladder is latched, so a long-lived subject fires once and
+    # Ask whether a rung would actually FIRE, never whether the age is past a threshold. The ladder is latched, so a long-lived subject fires once and
     # then goes quiet; comparing raw age here made the forfeit outlive the
-    # report and pinned a 298-minute task's poll stops to the full battery
-    # forever. See wl_liveness.blocking_rung_due.
+    # report and pinned a 298-minute task's poll stops to the full battery forever. See wl_liveness.blocking_rung_due.
     for tid, seen in (state_doc.get("tasks_seen") or {}).items():
         if seen.get("status") == "in_progress" and wl_liveness.blocking_rung_due(
             state_doc,
@@ -1678,10 +1455,7 @@ def poll_fast_path(worklist, session_id, event):
         return False  # the inbox is the poll's whole subject; deliver it loudly
     if wl_requests.escalate_requests(worklist, session_id, dry_run=True):
         return False  # due escalations happen on a full stop that reports them
-    # v15: in a pure background wait the 15-minute worker check-in rides the
-    # full battery, so a due check-in forfeits the silent path. By this point
-    # in the function no open item and no expired deferral survived, which is
-    # exactly the pure-wait shape.
+    # v15: in a pure background wait the 15-minute worker check-in rides the full battery, so a due check-in forfeits the silent path. By this point in the function no open item and no expired deferral survived, which is exactly the pure-wait shape.
     if live_bg:
         _bg_age = C.stamp_age_min((state_doc.get("bgwait") or {}).get("at", ""))
         # An unseeded clock stays silent (seeding happens on full stops, and
@@ -1691,36 +1465,18 @@ def poll_fast_path(worklist, session_id, event):
     return True
 
 
-# ---- v11: the store-derived stop guide --------------------------------------
-# WHY (operator, 2026-07-30): "--list should be used always on stop hook to
-# output enforced guided instructions." The defect this fixes is structural:
-# v10 stamped every item and the hand-authored Remaining prose never read the
-# store, so the tracing existed and the report ignored it. The guide is
-# emitted on EVERY full stop, allow and block alike, so the session bases its
-# report on the store instead of memory.
+# ---- v11: the store-derived stop guide -------------------------------------- WHY (operator, 2026-07-30): "--list should be used always on stop hook to output enforced guided instructions." The defect this fixes is structural: v10 stamped every item and the hand-authored Remaining prose never read the store, so the tracing existed and the report ignored it. The guide is emitted
+# on EVERY full stop, allow and block alike, so the session bases its report on the store instead of memory.
 #
-# BOUNDED HARD, because the live store folds 831 items (550 KB as a raw
-# --list) and this hook fires from a 5-minute poll cron: only the ACTIONABLE
-# slice is emitted (open, in-flight, deferrals and expired leases -- never
-# [x]), at most GUIDE_MAX lines, each capped, and a cap that drops anything
-# SAYS SO with the count, because a silent cap reads as "that is everything".
+# BOUNDED HARD, because the live store folds 831 items (550 KB as a raw --list) and this hook fires from a 5-minute poll cron: only the ACTIONABLE slice is emitted (open, in-flight, deferrals and expired leases -- never [x]), at most GUIDE_MAX lines, each capped, and a cap that drops anything SAYS SO with the count, because a silent cap reads as "that is everything".
 
-# How many unheeded PostToolUse nudges before the Stop hook blocks. Three at the
-# 10-minute throttle is half an hour of being asked and not complying, which is
-# well past any legitimate relaunch window.
+# How many unheeded PostToolUse nudges before the Stop hook blocks. Three at the 10-minute throttle is half an hour of being asked and not complying, which is well past any legitimate relaunch window.
 WAITER_GRACE_NUDGES = int(os.environ.get("WORKLIST_WAITER_GRACE_NUDGES", "3"))
 GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
-# How long a SUBMODULE POINTER MOVED warning stays latched for one (path, sha)
-# signature. Time-boxed on purpose: a permanent acknowledgement would go silent
-# on a pointer somebody forgot, and a forgotten pointer ships whatever the
-# parent last recorded. A move to a new sha re-fires immediately regardless.
+# How long a SUBMODULE POINTER MOVED warning stays latched for one (path, sha) signature. Time-boxed on purpose: a permanent acknowledgement would go silent on a pointer somebody forgot, and a forgotten pointer ships whatever the parent last recorded. A move to a new sha re-fires immediately regardless.
 SUBMODULE_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_LATCH_MIN", "15"))
-# How long the same warning stays latched once a session has RECORDED a decision
-# about that exact (path, sha). Longer than the bare latch by a lot, and still
-# NOT permanent, because the reason the bare latch is time-boxed applies here
-# too: a decision can go stale, and a pointer nobody revisits ships whatever the
-# parent last recorded. A day means a decided pointer stops interrupting a
-# working session and still gets re-examined tomorrow.
+# How long the same warning stays latched once a session has RECORDED a decision about that exact (path, sha). Longer than the bare latch by a lot, and still NOT permanent, because the reason the bare latch is time-boxed applies here too: a decision can go stale, and a pointer nobody revisits ships whatever the parent last recorded. A day means a decided pointer stops interrupting
+# a working session and still gets re-examined tomorrow.
 SUBMODULE_DECIDED_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_DECIDED_LATCH_MIN", "1440"))
 
 
@@ -1762,20 +1518,11 @@ def submodule_decision_recorded(root, path, sha):
                 text = led.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
-            # TWO PASSES, because the decision is the ITEM and not any one event.
-            # A tick is `ev: state` with `s: "x"` -- that is the schema, not a
-            # guess: the store has no "tick" or "done" event kind at all, and a
-            # first draft looking for one matched nothing and would have shipped
-            # a predicate that could never fire. The other state value is "?" for
-            # a deferral, and a deferral is explicitly NOT a decision.
+            # TWO PASSES, because the decision is the ITEM and not any one event. A tick is `ev: state` with `s: "x"` -- that is the schema, not a guess: the store has no "tick" or "done" event kind at all, and a first draft looking for one matched nothing and would have shipped a predicate that could never fire. The other state value is "?" for a deferral, and a deferral is
+            # explicitly NOT a decision.
             #
-            # The sha usually appears in the item's TITLE, on its `add` event,
-            # rather than in the tick evidence, and that is not an accident: a
-            # submodule commit is a gitlink and never an object in this
-            # repository, so `completion_evidence` REFUSES a tick whose only
-            # evidence is such a sha. The tick therefore describes the decision in
-            # prose while the title carries the pair. Matching one line at a time
-            # misses that, which a both-direction test caught here.
+            # The sha usually appears in the item's TITLE, on its `add` event, rather than in the tick evidence, and that is not an accident: a submodule commit is a gitlink and never an object in this repository, so `completion_evidence` REFUSES a tick whose only evidence is such a sha. The tick therefore describes the decision in prose while the title carries the pair. Matching
+            # one line at a time misses that, which a both-direction test caught here.
             ticked = set()
             events = []
             for line in text.splitlines():
@@ -1793,34 +1540,21 @@ def submodule_decision_recorded(root, path, sha):
                     return True
         return False
     except (OSError, ValueError, TypeError):
-        # NARROW ON PURPOSE, and still fail-safe: these are what a missing store,
-        # an unreadable ledger or a malformed row can raise. A blind `except`
-        # here would also swallow a real programming error in this function and
-        # report "no decision", which is the safe DIRECTION but hides the bug
-        # forever. This runs in the stop hook of every session in the worktree,
-        # so a mistake is not local, but neither is a defect nobody can see.
+        # NARROW ON PURPOSE, and still fail-safe: these are what a missing store, an unreadable ledger or a malformed row can raise. A blind `except` here would also swallow a real programming error in this function and report "no decision", which is the safe DIRECTION but hides the bug forever. This runs in the stop hook of every session in the worktree, so a mistake is not local,
+        # but neither is a defect nobody can see.
         return False
 
 
 GUIDE_TEXT_CHARS = 90
 
-# The allow-report diet (operator, 2026-07-31: "Why I see such a big
-# output?"). Slow-moving advisory sections re-show only when their content
-# changes or after this many minutes, whichever comes first.
+# The allow-report diet (operator, 2026-07-31: "Why I see such a big output?"). Slow-moving advisory sections re-show only when their content changes or after this many minutes, whichever comes first.
 REPORT_REFRESH_MIN = int(os.environ.get("WORKLIST_REPORT_REFRESH_MIN", "360"))
 BACKOFF_NOTE_MIN = int(os.environ.get("WORKLIST_BACKOFF_NOTE_MIN", "60"))
 
 # ---- the allow-report OUTPUT QUEUE ------------------------------------------
 # The diet above deduplicated sections; this bounds how many reach one stop.
-# Sections are ENQUEUED AT COMPUTE TIME, at their producer's call site, never
-# in the emit block -- because emit() exits the process, and three producers
-# (the liveness ladder, dead-session archiving, request escalation) spend a
-# one-shot budget BEFORE the block emit at run_stop's violations branch. Their
-# text was only ever appended on the allow path, so a stop that blocked for an
-# unrelated reason swallowed them for good: the rung is recorded, the item is
-# already [~], the [?] is already appended, and nothing re-fires. An entry
-# that lands in the state doc the moment its producer spends that budget
-# survives a block, a judge block, a crash and a restart.
+# Sections are ENQUEUED AT COMPUTE TIME, at their producer's call site, never in the emit block -- because emit() exits the process, and three producers (the liveness ladder, dead-session archiving, request escalation) spend a one-shot budget BEFORE the block emit at run_stop's violations branch. Their text was only ever appended on the allow path, so a stop that blocked for an
+# unrelated reason swallowed them for good: the rung is recorded, the item is already [~], the [?] is already appended, and nothing re-fires. An entry that lands in the state doc the moment its producer spends that budget survives a block, a judge block, a crash and a restart.
 OUTQ_PER_STOP = int(os.environ.get("WORKLIST_REPORT_PER_STOP", "1"))
 OUTQ_MAX = int(os.environ.get("WORKLIST_OUTQ_MAX", "40"))
 
@@ -1876,10 +1610,7 @@ def outq_add(
     q = _outq(state_doc)
     items = q["items"]
     sig = hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
-    # A one-shot's entry key carries its own sig, so two different bodies under
-    # one section name never overwrite each other. There is deliberately NO
-    # shown-ledger for sticky keys: a one-shot producer cannot re-fire, so a
-    # ledger that could suppress one is a way to lose it. Showing one twice is
+    # A one-shot's entry key carries its own sig, so two different bodies under one section name never overwrite each other. There is deliberately NO shown-ledger for sticky keys: a one-shot producer cannot re-fire, so a ledger that could suppress one is a way to lose it. Showing one twice is
     # cosmetic; dropping one is the failure this queue exists to prevent.
     ekey = "%s:%s" % (key, sig) if sticky else key
     cur = next((e for e in items if e.get("key") == ekey), None)
@@ -1900,16 +1631,13 @@ def outq_add(
             )
             added = True
     elif cur is not None and not on_change:
-        # Identity is the KEY alone: the backoff tip's wording carries a live
-        # minute counter, so a content hash would re-enqueue it every stop.
-        # The freshest wording rides the position the entry already earned.
+        # Identity is the KEY alone: the backoff tip's wording carries a live minute counter, so a content hash would re-enqueue it every stop. The freshest wording rides the position the entry already earned.
         if cur.get("text") != text:
             cur["text"], cur["sig"] = text, sig
             added = True
     elif cur is not None:
         if cur.get("sig") != sig:
-            # Changed content re-enqueues AT ITS PRIORITY: a new seq sends it
-            # to the back of its own class rather than jumping the queue.
+            # Changed content re-enqueues AT ITS PRIORITY: a new seq sends it to the back of its own class rather than jumping the queue.
             q["seq"] = int(q.get("seq") or 0) + 1
             cur["text"], cur["sig"], cur["seq"] = text, sig, q["seq"]
             cur["at"] = C.stamp_now()
@@ -1980,9 +1708,7 @@ def agent_hint_queue(worklist, session_id, state_doc, haystack):
     """
     corpus, errors = A.load_corpus(A.agents_dir())
     if errors:
-        # LOUD, and its own section: a corpus this hook cannot read is exactly
-        # the silent-degradation this feature exists to end. Priority 3 too --
-        # it is still advice, and it must not displace a real report section.
+        # LOUD, and its own section: a corpus this hook cannot read is exactly the silent-degradation this feature exists to end. Priority 3 too -- it is still advice, and it must not displace a real report section.
         outq_add(
             worklist,
             session_id,
@@ -2063,11 +1789,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         plan = tri.get("plan", "") if tri.get("v") == "plan-subagent" else ""
         if plan and st in (" ", ">"):
             if root is None:
-                # No event in scope here -- guided_slice takes none. Passing one
-                # was a NameError that failed SOFT: the caller wraps this in a
-                # bare except and replaces the whole guide with "WORKLIST GUIDE
-                # unavailable", so the operator's entire worklist surface would
-                # have degraded silently on any triaged-BIG item.
+                # No event in scope here -- guided_slice takes none. Passing one was a NameError that failed SOFT: the caller wraps this in a bare except and replaces the whole guide with "WORKLIST GUIDE unavailable", so the operator's entire worklist surface would have degraded silently on any triaged-BIG item.
                 root = C.project_root(C.project_start())
             if not os.path.exists(os.path.join(root, plan)):
                 rows.append(
@@ -2097,13 +1819,8 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 wtag = "worker:%s%s" % (wid or "?", " [%s]" % osw if osw else "")
                 if rec.get("lease_tolerated"):
                     wtag += " (lease expired, worker verified alive: auto-honored; renew or tick when it lands)"
-                # THE DEADLINE IS RENDERED RELATIVE AS WELL AS ABSOLUTE, because the
-                # absolute form alone is misread the moment the reader's LOCAL date has
-                # rolled over while UTC has not. Measured 2026-09-08T22:37Z: local was
-                # already 2026-09-09 00:37 CEST, the item carried `until:2026-09-08T23:36Z`,
-                # and the stop-gate judge read that as "in the past" and refused a
-                # legitimate stop. `lease_state` had it right all along -- it compares in
-                # UTC -- so nothing was wrong except what the line SHOWED.
+                # THE DEADLINE IS RENDERED RELATIVE AS WELL AS ABSOLUTE, because the absolute form alone is misread the moment the reader's LOCAL date has rolled over while UTC has not. Measured 2026-09-08T22:37Z: local was already 2026-09-09 00:37 CEST, the item carried `until:2026-09-08T23:36Z`, and the stop-gate judge read that as "in the past" and refused a legitimate stop.
+                # `lease_state` had it right all along -- it compares in UTC -- so nothing was wrong except what the line SHOWED.
                 wtag += C.lease_remaining_tag(rec["line"])
                 rows.append(
                     (
@@ -2146,8 +1863,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                         % (rid, age, txt, left),
                     )
                 )
-        # The design EXISTS: advertise where it lives, so the guide points at
-        # the plan instead of leaving the next session to find it.
+        # The design EXISTS: advertise where it lives, so the guide points at the plan instead of leaving the next session to find it.
         if plan and len(rows) > before:
             prio, line = rows[-1]
             rows[-1] = (prio, line + "\n        plan: %s" % plan)
@@ -2180,29 +1896,16 @@ def mark_context_fresh(event, why):
 
 
 def handle_session_start(event):
-    # FIRST statement, not last: the design-docs/plans blocks below return
-    # early when a project has neither, and such a project would otherwise
-    # never be marked.
+    # FIRST statement, not last: the design-docs/plans blocks below return early when a project has neither, and such a project would otherwise never be marked.
     source = str(event.get("source") or "").strip().lower()
     mark_context_fresh(event, "session-start:" + (source or "unknown"))
     # COMPACT IS NOT A NEW SESSION. Claude Code fires SessionStart with
     # source=compact on every compaction, on TOP of the PostCompact hook, and
-    # this handler used to ignore the source entirely: a session working on
-    # something else got "READ ALL OF THEM before acting" pointed at the
-    # standing program docs, mid-task, as if it had just started. It is also
-    # a straight duplicate -- handle_post_compact already re-points at
-    # DESIGN_DOCS and already hands back the durable plans, plus STATE.md,
-    # RULES.md and the trap titles, which is the briefing a compacted session
-    # actually needs. So compaction is handled in exactly one place: mark the
-    # context fresh (the judge stamp depends on it) and say nothing here.
+    # this handler used to ignore the source entirely: a session working on something else got "READ ALL OF THEM before acting" pointed at the standing program docs, mid-task, as if it had just started. It is also a straight duplicate -- handle_post_compact already re-points at DESIGN_DOCS and already hands back the durable plans, plus STATE.md, RULES.md and the trap titles, which
+    # is the briefing a compacted session actually needs. So compaction is handled in exactly one place: mark the context fresh (the judge stamp depends on it) and say nothing here.
     if source == "compact":
         return
-    # TWO INDEPENDENT BLOCKS, and the structure is the point. This used to
-    # RETURN EARLY when the design-docs directory was absent, which meant a
-    # project keeping plans but no docs/ci-overhaul got nothing at all: the
-    # plans block would have been eaten by a check about a different thing.
-    # Each block is built on its own and the hook emits when EITHER has
-    # something to say.
+    # TWO INDEPENDENT BLOCKS, and the structure is the point. This used to RETURN EARLY when the design-docs directory was absent, which meant a project keeping plans but no docs/ci-overhaul got nothing at all: the plans block would have been eaten by a check about a different thing. Each block is built on its own and the hook emits when EITHER has something to say.
     root = C.project_root(C.project_start(event))
     docs = pathlib.Path(root) / DESIGN_DOCS
     blocks, summary = [], []
@@ -2222,9 +1925,7 @@ def handle_session_start(event):
         blocks.append(
             M.CTX_SESSION_START % (" ".join(PROGRAM_SURFACE), DESIGN_DOCS, listing, stale)
         )
-        # "pending" is NOT silence: the docs were updated but the edit is
-        # uncommitted, so a fresh session must be told a commit is owed rather
-        # than inferring from a clean line that nothing is outstanding.
+        # "pending" is NOT silence: the docs were updated but the edit is uncommitted, so a fresh session must be told a commit is owed rather than inferring from a clean line that nothing is outstanding.
         if state == "drifted":
             note = " (DRIFTED by %d commits)" % drift
         elif state == "pending":
@@ -2238,10 +1939,7 @@ def handle_session_start(event):
     if listing:
         blocks.append(M.CTX_PLANS % listing)
         summary.append("%d open plan(s) in agent/" % len(live))
-    # A THIRD independent block, for the reason the two above are independent:
-    # a repo with live handoff checklists and no design docs and no plans must
-    # still be told about the checklists, because the Stop hook will block on
-    # them and a session that has never heard of them cannot act.
+    # A THIRD independent block, for the reason the two above are independent: a repo with live handoff checklists and no design docs and no plans must still be told about the checklists, because the Stop hook will block on them and a session that has never heard of them cannot act.
     cl_listing, cl_n = wl_checklist.checklists_block(root)
     if cl_listing:
         blocks.append(M.CTX_CHECKLISTS % cl_listing)
@@ -2260,34 +1958,22 @@ def handle_session_start(event):
 
 
 def handle_post_compact(event):
-    # FIRST statement, for the same reason as handle_session_start, and this
-    # is the case the marker is genuinely load-bearing for: a compacted
-    # session KEEPS its state doc, so the judge-reason signature below would
-    # otherwise read as unchanged and hand it the stamp alone.
+    # FIRST statement, for the same reason as handle_session_start, and this is the case the marker is genuinely load-bearing for: a compacted session KEEPS its state doc, so the judge-reason signature below would otherwise read as unchanged and hand it the stamp alone.
     mark_context_fresh(event, "post-compact")
-    # PostCompact hook: the model has just lost its context. Hand the
-    # documents straight back as additionalContext so continuity does not
-    # depend on it remembering to go looking. Since the agent-notes split this
-    # returns MORE than the old handover ever could: STATE.md in full,
-    # RULES.md in full, and the TRAPS.md titles -- the first time a compacted
-    # session gets the standing rules at all, delivered exactly once per
+    # PostCompact hook: the model has just lost its context. Hand the documents straight back as additionalContext so continuity does not depend on it remembering to go looking. Since the agent-notes split this returns MORE than the old handover ever could: STATE.md in full, RULES.md in full, and the TRAPS.md titles -- the first time a compacted session gets the standing rules at
+    # all, delivered exactly once per
     # compaction. Full TRAPS.md is deliberately excluded (designed to grow);
     # titles plus the path is the same economy the judge uses.
     root = C.project_root(C.project_start(event))
     sid = event.get("session_id", "")
-    # THE PROMPT CARRIES RESIDUE, NOT TITLES. A trap whose Enforced-By resolves
-    # to a live gate or hook is enforced whether or not anyone reads about it,
+    # THE PROMPT CARRIES RESIDUE, NOT TITLES. A trap whose Enforced-By resolves to a live gate or hook is enforced whether or not anyone reads about it,
     # so spending prompt on its title buys nothing; a JUDGMENT-ONLY trap is
-    # enforced by attention alone, which is exactly what a prompt can supply.
-    # 48 titles -> 43 residue sentences today, and the ratio improves every time
-    # a trap gets mechanized, which is the incentive worth creating.
+    # enforced by attention alone, which is exactly what a prompt can supply. 48 titles -> 43 residue sentences today, and the ratio improves every time a trap gets mechanized, which is the incentive worth creating.
     traps = S.trap_prompt_lines(root)
     traps_block = "\n".join("  - " + h for h in traps) or "  (none recorded)"
     # Bound before the arms so the agent-hint haystack below has one shape on
     # both of them; only the arm that reads a section fills it. There is no
-    # third, no-branch arm any more (2026-08-18): the document is keyed on the
-    # session, so a detached HEAD can no longer cost a compacted session its
-    # briefing -- which was the worst possible moment to withhold it.
+    # third, no-branch arm any more (2026-08-18): the document is keyed on the session, so a detached HEAD can no longer cost a compacted session its briefing -- which was the worst possible moment to withhold it.
     text = ""
     # shape + presence only, but for THIS session's own section.
     state, _age, text = S.agent_state_state(root, session_id=sid)
@@ -2311,20 +1997,13 @@ def handle_post_compact(event):
             S.agent_traps_path(root),
             traps_block,
         )
-    # AFTER the briefing, on BOTH arms. Own section first is the point: a
-    # compacted session reads top-down, and the block it must act on is its
-    # own. On the missing arm this is the whole state content there is --
-    # before sections, that arm returned none at all, so a compacted session
-    # sharing a checkout was told to reconstruct from nothing while a peer's
-    # section sat in the file unread.
+    # AFTER the briefing, on BOTH arms. Own section first is the point: a compacted session reads top-down, and the block it must act on is its own. On the missing arm this is the whole state content there is -- before sections, that arm returned none at all, so a compacted session sharing a checkout was told to reconstruct from nothing while a peer's section sat in the file
+    # unread.
     if peers:
         msg += "\n\n" + M.CTX_POSTCOMPACT_PEERS % peers
-    # v16: the durable half of the briefing, appended to BOTH arms above.
-    # STATE.md says what is true right now and can be missing or
+    # v16: the durable half of the briefing, appended to BOTH arms above. STATE.md says what is true right now and can be missing or
     # stale; a plan file says what was DESIGNED and is committed, so it is
-    # the one artifact a compacted session can always fall back on. The
-    # newest non-done plan's '## Status' section rides along, capped, because
-    # that section is exactly the progress cursor the lost context held.
+    # the one artifact a compacted session can always fall back on. The newest non-done plan's '## Status' section rides along, capped, because that section is exactly the progress cursor the lost context held.
     listing, live = plans_block(root)
     if listing:
         msg += "\n\n" + M.CTX_PLANS % listing
@@ -2337,13 +2016,9 @@ def handle_post_compact(event):
     cl_listing, _cl_n = wl_checklist.checklists_block(root)
     if cl_listing:
         msg += "\n\n" + M.CTX_CHECKLISTS % cl_listing
-    # v21: the specialist-agent hint, and this is the highest-value delivery it
-    # has. Post-compaction is precisely when a session has forgotten that a
-    # specialist exists, and additionalContext is read rather than skimmed.
-    # ONCE PER COMPACTION BY CONSTRUCTION, so it needs no rate limiting and no
+    # v21: the specialist-agent hint, and this is the highest-value delivery it has. Post-compaction is precisely when a session has forgotten that a specialist exists, and additionalContext is read rather than skimmed. ONCE PER COMPACTION BY CONSTRUCTION, so it needs no rate limiting and no
     # ledger; the haystack is the document the session just got back plus its
-    # own open items. Suppressed rather than guarded, because a compaction that
-    # cannot hand back the briefing is a far worse outcome than a missing hint.
+    # own open items. Suppressed rather than guarded, because a compaction that cannot hand back the briefing is a far worse outcome than a missing hint.
     with contextlib.suppress(Exception):
         if A.ENABLED:
             items = []
@@ -2355,11 +2030,9 @@ def handle_post_compact(event):
                 msg += "\n\n" + M.N_AGENT_HINT % (hit[0], hit[0], ", ".join(hit[2][:6]))
     # W12 P2.3. A compaction has just thrown away whatever this session knew about
     # WHY the files it has in flight are the shape they are; those files have not
-    # changed. So the compacted plan records that name them go into the same
-    # briefing, from the working tree's own dirty list.
+    # changed. So the compacted plan records that name them go into the same briefing, from the working tree's own dirty list.
     #
-    # ADDS NOTHING WHEN NOTHING MATCHES -- `why_for_paths` returns "" -- and never
-    # raises: this is one append to a briefing that must be emitted either way.
+    # ADDS NOTHING WHEN NOTHING MATCHES -- `why_for_paths` returns "" -- and never raises: this is one append to a briefing that must be emitted either way.
     with contextlib.suppress(Exception):
         import wl_planrec as _R  # noqa: PLC0415 -- optional; the briefing must not need it
 
@@ -2430,16 +2103,10 @@ def phantom_identities(worklist, session_id, fold, reqs):
             "is being flagged. A wiped TMPDIR is the usual cause." % worklist.parent
         )
     stopped = {p.name.split(".lastevent-")[-1][:-5] for p in seen}
-    # THE WHOLE STORE, not the legacy file, and BOTH the writer and the owner
-    # of each event. Reading one path here would have made every identity in
+    # THE WHOLE STORE, not the legacy file, and BOTH the writer and the owner of each event. Reading one path here would have made every identity in
     # the tracked store invisible; reading `by` alone made every identity
-    # invisible after a COMPACTION, which rewrites the writer of the entire
-    # history to "compact" while preserving the owner. The derivation now lives
-    # in wl_store.identity_activity, shared with --reassign's age gate, because
-    # two different answers to "is this identity a phantom" is how the backstop
-    # and its repair verb drifted apart in the first place -- the backstop saw
-    # nobody to report while --reassign refused the very items it was pointed
-    # at as "has written no events at all".
+    # invisible after a COMPACTION, which rewrites the writer of the entire history to "compact" while preserving the owner. The derivation now lives in wl_store.identity_activity, shared with --reassign's age gate, because two different answers to "is this identity a phantom" is how the backstop and its repair verb drifted apart in the first place -- the backstop saw nobody to
+    # report while --reassign refused the very items it was pointed at as "has written no events at all".
     _act = S.identity_activity(worklist)
     counts = {k: n for k, (n, _) in _act.items()}
     first_at = {k: at for k, (_, at) in _act.items()}
@@ -2501,8 +2168,7 @@ def _agent_state_because(astate, aage):
         base = "; your world signature moved since it was written"
         return " (%s)" % base.lstrip("; ") if aage is None else " (%d min old%s)" % (aage, base)
     if astate == "waitled":
-        # Also age-irrelevant, and the cause has to be stated or the reader
-        # rewrites the same ordering: the document leads its '## Next action'
+        # Also age-irrelevant, and the cause has to be stated or the reader rewrites the same ordering: the document leads its '## Next action'
         # with a wait, which hands the next session "sit and watch" as its
         # instruction and survives compaction to say it again.
         return (
@@ -2513,34 +2179,19 @@ def _agent_state_because(astate, aage):
     return ""
 
 
-# ---- v22: THE SOLO GRIND ADVISORY -------------------------------------------
-# WHY (operator, 2026-08-19): "we're on an inefficient way for the remaining
-# items! Normally, for each wave we should use sub-agents that way we can go in
-# parallel and save context for the current session."
+# ---- v22: THE SOLO GRIND ADVISORY ------------------------------------------- WHY (operator, 2026-08-19): "we're on an inefficient way for the remaining items! Normally, for each wave we should use sub-agents that way we can go in parallel and save context for the current session."
 #
-# The session it was said to had ~39 open items and was working them ONE AT A
-# TIME in its own context, with zero writer teammates, on waves whose file sets
+# The session it was said to had ~39 open items and was working them ONE AT A TIME in its own context, with zero writer teammates, on waves whose file sets
 # were naturally disjoint. Nothing was wrong with any single decision; the
-# failure was only visible in aggregate, which is exactly the shape a human
-# notices and a per-stop check does not.
+# failure was only visible in aggregate, which is exactly the shape a human notices and a per-stop check does not.
 #
-# ADVISORY, never blocking, and the asymmetry is deliberate. The DETECTABLE half
-# is a fact: this many open items, this many live teammates. The half that
-# decides whether delegation is right is a JUDGEMENT the hook cannot make --
-# items can be strictly sequential (the i18n cascade is), interdependent, or too
-# small to be worth a brief. Blocking on a fact that only sometimes implies the
-# remedy would teach sessions to route around it, and a session that spawns two
-# agents onto serial work has been made worse, not better.
+# ADVISORY, never blocking, and the asymmetry is deliberate. The DETECTABLE half is a fact: this many open items, this many live teammates. The half that decides whether delegation is right is a JUDGEMENT the hook cannot make -- items can be strictly sequential (the i18n cascade is), interdependent, or too small to be worth a brief. Blocking on a fact that only sometimes implies
+# the remedy would teach sessions to route around it, and a session that spawns two agents onto serial work has been made worse, not better.
 #
-# ONCE PER EPISODE, not once per stop. It re-arms only after the queue drops
-# back under the floor, so a long wave is asked once rather than nagged for
-# hours -- the same reason the no-op ladder needs a streak before it speaks.
+# ONCE PER EPISODE, not once per stop. It re-arms only after the queue drops back under the floor, so a long wave is asked once rather than nagged for hours -- the same reason the no-op ladder needs a streak before it speaks.
 SOLO_GRIND_MIN_ITEMS = int(os.environ.get("WORKLIST_SOLO_MIN", "12"))
 
-# How long a teammate's unread report may sit before it stops being news and
-# becomes a debt. The first rung matches BG_REPORT_MIN's 15 minutes -- the
-# interval this file already treats as "long enough that a session should have
-# noticed" -- and the second is three of those.
+# How long a teammate's unread report may sit before it stops being news and becomes a debt. The first rung matches BG_REPORT_MIN's 15 minutes -- the interval this file already treats as "long enough that a session should have noticed" -- and the second is three of those.
 UNREAD_ROTATE_MIN = float(os.environ.get("WORKLIST_UNREAD_ROTATE_MIN", "15"))
 UNREAD_INVARIANT_MIN = float(os.environ.get("WORKLIST_UNREAD_INVARIANT_MIN", "45"))
 
@@ -2569,98 +2220,54 @@ def solo_grind_due(n_open, n_teammates, state_doc):
     Returns False the moment any teammate is live: the session has already made
     the call, and repeating the advice at that point is noise.
     """
-    # int() at the boundary, NOT a bare comparison. live_teammate_transcripts
-    # returns None when it has no view to report, and a try/except around the
-    # CALL does not catch a bad RETURN: the first suite run after this landed
-    # crashed the whole hook with "'>' not supported between instances of
-    # 'NoneType' and 'int'". A fact-gatherer that cannot answer must read as
-    # "no teammates seen", which is the conservative direction here (it lets
-    # the advisory speak) rather than silently suppressing it.
+    # int() at the boundary, NOT a bare comparison. live_teammate_transcripts returns None when it has no view to report, and a try/except around the CALL does not catch a bad RETURN: the first suite run after this landed crashed the whole hook with "'>' not supported between instances of 'NoneType' and 'int'". A fact-gatherer that cannot answer must read as "no teammates seen",
+    # which is the conservative direction here (it lets the advisory speak) rather than silently suppressing it.
     n_teammates = int(n_teammates or 0)
     n_open = int(n_open or 0)
     if n_open < SOLO_GRIND_MIN_ITEMS or n_teammates > 0:
         # Episode over. Re-arm so a queue that grows again is asked again.
         state_doc.pop("solognd", None)
         return False
-    # THE STAMP IS NO LONGER WRITTEN HERE. It is registered as a display-time
-    # latch by the caller (see spend_display_latches in run_stop): this function
-    # runs on every stop, and writing `solognd` from it burned the one mention
-    # this advisory ever gets on stops that never rendered it. The DISARM above
-    # stays at compute time -- it is not a suppression, it is the episode
-    # genuinely being over.
+    # THE STAMP IS NO LONGER WRITTEN HERE. It is registered as a display-time latch by the caller (see spend_display_latches in run_stop): this function runs on every stop, and writing `solognd` from it burned the one mention this advisory ever gets on stops that never rendered it. The DISARM above stays at compute time -- it is not a suppression, it is the episode genuinely being
+    # over.
     return not state_doc.get("solognd")
 
 
-# ---- CADENCE (operator-approved 2026-08-15, PLAN-stop-hook-cadence.md sec 3) --
-# The operator's ask: "1 report/update 1 others/order flow" -- the hook should
-# not demand on every single stop, because a context that is never allowed to
-# finish a thought reports worse, not better.
+# ---- CADENCE (operator-approved 2026-08-15, PLAN-stop-hook-cadence.md sec 3) -- The operator's ask: "1 report/update 1 others/order flow" -- the hook should not demand on every single stop, because a context that is never allowed to finish a thought reports worse, not better.
 #
-# THE ACCEPTANCE TEST, and it is the plan's own sentence: the cadence must make
-# it easier to be HEARD, not easier to STOP. Every guard below exists because
-# the obvious implementation fails that test.
+# THE ACCEPTANCE TEST, and it is the plan's own sentence: the cadence must make it easier to be HEARD, not easier to STOP. Every guard below exists because the obvious implementation fails that test.
 CADENCE_MAX_PAUSES = int(os.environ.get("WORKLIST_CADENCE_MAX", "3"))
 
-# Guard C. These block on the hook's OWN failure to get an honest verdict, or on
-# the evidence discipline that keeps the ledger from becoming a lie. Pausing any
-# of them would let a session stop by simply saying something new, which is the
-# precise regression the cadence must not become.
+# Guard C. These block on the hook's OWN failure to get an honest verdict, or on the evidence discipline that keeps the ledger from becoming a lie. Pausing any of them would let a session stop by simply saying something new, which is the precise regression the cadence must not become.
 JUDGE_TIER_KEYS = frozenset(
     {"unjustified", "defer-expired", "completion", "undefaulted", "no-remaining"}
 )
 
 
-# ---------------------------------------------------------------------------
-# v21: THE PRIORITY LADDER (operator, 2026-08-28: "Stop hook should have a list
+# --------------------------------------------------------------------------- v21: THE PRIORITY LADDER (operator, 2026-08-28: "Stop hook should have a list
 # for prioritization items to pick for each case. There should be list of 'has
-# to show with this order' until we check all of them, we should not be able to
-# say 'but this stop is YOURS'.")
+# to show with this order' until we check all of them, we should not be able to say 'but this stop is YOURS'.")
 #
-# WHAT WAS WRONG. Rotation was LRU over check keys with the BATTERY'S LINE ORDER
-# as the tiebreak, and every never-served key ties at -1, so the first stop of a
-# crowded session picked whichever check happened to be written earliest in this
-# file. Measured on the failing night: 23 rotating keys sorted ahead of
-# `no-waiter-asked`, so "you asked a peer and nothing is listening" could not be
-# reached until the twenty-fourth stop -- while its five-rung ladder burned a
-# rung per stop, unseen. Line order is a shape of the source file. It is not a
-# statement about which unfinished thing matters most, and it was being read as
-# one.
+# WHAT WAS WRONG. Rotation was LRU over check keys with the BATTERY'S LINE ORDER as the tiebreak, and every never-served key ties at -1, so the first stop of a crowded session picked whichever check happened to be written earliest in this file. Measured on the failing night: 23 rotating keys sorted ahead of `no-waiter-asked`, so "you asked a peer and nothing is listening" could not
+# be reached until the twenty-fourth stop -- while its five-rung ladder burned a rung per stop, unseen. Line order is a shape of the source file. It is not a statement about which unfinished thing matters most, and it was being read as one.
 #
-# THE LADDER IS THE STATEMENT, made explicit and orderable. Four tiers, and the
-# order is an argument about WHO IS STUCK, not about how alarming a message is:
+# THE LADDER IS THE STATEMENT, made explicit and orderable. Four tiers, and the order is an argument about WHO IS STUCK, not about how alarming a message is:
 #
-#   T_MISSION (0)   The thing this session was ASKED to do is not done. Read off
-#                   markdown checkboxes that already exist -- the worklist's
-#                   `- [ ]` items, agent/programs/<slug>/CHECKLIST.md's
-#                   deliverable and wave boxes, and the pr-babysit finish line.
-#                   Nothing else can matter more, because everything else is
-#                   housekeeping around work that has not landed. This is the
-#                   operator's own example: "if there is an open-pr and if it's
-#                   red we must continue to work until making it green."
+# T_MISSION (0) The thing this session was ASKED to do is not done. Read off markdown checkboxes that already exist -- the worklist's `- [ ]` items, agent/programs/<slug>/CHECKLIST.md's deliverable and wave boxes, and the pr-babysit finish line. Nothing else can matter more, because everything else is housekeeping around work that has not landed. This is the operator's own example:
+# "if there is an open-pr and if it's red we must continue to work until making it green."
 #
-#   T_OWED (1)      Somebody ELSE is blocked, and cannot see that this session
-#                   stood down. A peer's request, an answer this session asked
+# T_OWED (1) Somebody ELSE is blocked, and cannot see that this session stood down. A peer's request, an answer this session asked
 #                   for and is not listening for, a teammate's finished report.
-#                   Above integrity because a stalled peer is a stalled second
-#                   session, and hook blindness only costs this one.
+# Above integrity because a stalled peer is a stalled second session, and hook blindness only costs this one.
 #
-#   T_INTEGRITY (2) A gate, the hook, or the evidence ledger cannot SEE. Its
-#                   silence is not evidence, so nothing below it can be trusted
+# T_INTEGRITY (2) A gate, the hook, or the evidence ledger cannot SEE. Its silence is not evidence, so nothing below it can be trusted
 #                   while it is outstanding.
 #
-#   T_HYGIENE (3)   Everything else: STATE.md, the brief, docs drift, a
-#                   submodule pointer, a stale PR body. Real, and last. This is
-#                   the DEFAULT, so a new check is hygiene until somebody argues
-#                   it up -- which is the safe direction for a ladder whose top
-#                   tier can never be rotated away.
+# T_HYGIENE (3) Everything else: STATE.md, the brief, docs drift, a submodule pointer, a stale PR body. Real, and last. This is the DEFAULT, so a new check is hygiene until somebody argues it up -- which is the safe direction for a ladder whose top tier can never be rotated away.
 #
-# T_MISSION ALSO DEFEATS THE CADENCE PAUSE. That is the operator's sentence
-# rendered as code: the "but this stop is YOURS" stand-down may spend the
-# DEMAND, but never while the asked-for work is still unfinished.
+# T_MISSION ALSO DEFEATS THE CADENCE PAUSE. That is the operator's sentence rendered as code: the "but this stop is YOURS" stand-down may spend the DEMAND, but never while the asked-for work is still unfinished.
 #
-# MATCHING IS BY EXACT KEY OR BY `prefix:` -- several checks are scoped per
-# subject (`cl-producing:<slug>`, `agent-pushback:<agent>`), and a ladder that
-# only understood whole keys would silently drop every one of them to hygiene.
+# MATCHING IS BY EXACT KEY OR BY `prefix:` -- several checks are scoped per subject (`cl-producing:<slug>`, `agent-pushback:<agent>`), and a ladder that only understood whole keys would silently drop every one of them to hygiene.
 T_MISSION, T_OWED, T_INTEGRITY, T_HYGIENE = 0, 1, 2, 3
 
 PRIORITY_LADDER = (
@@ -2668,24 +2275,18 @@ PRIORITY_LADDER = (
         T_MISSION,
         frozenset(
             {
-                # The worklist's own `- [ ]` boxes, and the two states that turn
-                # a parked box back into an order.
+                # The worklist's own `- [ ]` boxes, and the two states that turn a parked box back into an order.
                 "open-items",
                 "defer-expired",
                 "undefaulted",
-                # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave
-                # boxes, same four-state markdown the worklist uses.
+                # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
                 "cl-producing",
                 "cl-flip",
                 "cl-waves",
-                # The pr-babysit finish line, box by box (green / ready /
-                # reviewed / threads), and the red that keeps it unticked.
+                # The pr-babysit finish line, box by box (green / ready / reviewed / threads), and the red that keeps it unticked.
                 "pr-finish",
                 "ci-red",
-                # Not a genuine CI failure (CI_NONBLOCKING_CONTEXTS keeps it out
-                # of "ci-red" on purpose) but the local session has context a
-                # remote job does not, so it joins ci-red's tier rather than
-                # sitting in hygiene where it could be starved by real work.
+                # Not a genuine CI failure (CI_NONBLOCKING_CONTEXTS keeps it out of "ci-red" on purpose) but the local session has context a remote job does not, so it joins ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "review-red",
             }
         ),
@@ -2702,9 +2303,7 @@ PRIORITY_LADDER = (
                 "bg-report",
                 "unread-reports",
                 "agent-pushback",
-                # NB `ladder-ping` is an outq advisory, not a vadd key, so it
-                # is deliberately absent: test-always-tier.py fails on a ladder
-                # entry that no check can ever produce.
+                # NB `ladder-ping` is an outq advisory, not a vadd key, so it is deliberately absent: test-always-tier.py fails on a ladder entry that no check can ever produce.
                 "ladder-investigate",
                 "ladder-gone",
                 "ladder-idle",
@@ -2750,11 +2349,9 @@ PRIORITY_LADDER = (
 )
 
 # The invariant (`always=True`) tier is deliberately SCARCE -- this file's own
-# warning, at the sweep prompt below, is that "a prompt that fires always is a
-# prompt that gets skimmed". So on a stop where several invariants are
+# warning, at the sweep prompt below, is that "a prompt that fires always is a prompt that gets skimmed". So on a stop where several invariants are
 # outstanding, at most this many are QUOTED IN FULL; the rest are NAMED, one
-# line each, with their opening line. Nothing is dropped, and the count in the
-# header stays truthful either way.
+# line each, with their opening line. Nothing is dropped, and the count in the header stays truthful either way.
 ALWAYS_FULL_MAX = int(os.environ.get("WORKLIST_ALWAYS_FULL_MAX", "2"))
 
 
@@ -2792,10 +2389,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     """
     sp = wl_planfid.state_path(worklist, session_id)
     state, forgot = wl_planfid.load_state(sp)
-    # ONE line, never silence, on every path out of here -- the same fail-safe
-    # contract wl_reggate states for its own marker. The first draft returned it
-    # only from the blocking branch, which meant a corrupt marker on a stop with
-    # no plan (the common shape) forgot every settled verdict and said nothing.
+    # ONE line, never silence, on every path out of here -- the same fail-safe contract wl_reggate states for its own marker. The first draft returned it only from the blocking branch, which meant a corrupt marker on a stop with no plan (the common shape) forgot every settled verdict and said nothing.
     lost = " [plan-fidelity marker was corrupt; settled verdicts forgotten]" if forgot else ""
     plan_path, scanned = wl_planfid.scan_plan_exit(
         event.get("transcript_path", ""), int(state.get("scanned") or 0)
@@ -2805,8 +2399,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     state["scanned"] = max(int(scanned or 0), 0)
     plan_text = wl_planfid.read_plan(state.get("plan") or "")
     if not plan_text:
-        # No approved plan in this session, which is the common case and must
-        # stay free: no model call, no note, no violation.
+        # No approved plan in this session, which is the common case and must stay free: no model call, no note, no violation.
         wl_planfid.save_state(sp, state)
         return lost
     tasks = wl_planfid.plan_tasks(plan_text)
@@ -2834,10 +2427,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     kind, payload, detail = wl_planfid.apply_planfid_verdict(
         pf, plan_text, mine, sig, lines, me8, C.ITEM
     )
-    # ONE call site for every non-error outcome, placed BEFORE the branching so a
-    # branch added later cannot be added without passing through it. The settle
-    # verdicts carry their own name (`faithful` / `deferred` / `unevidenced`),
-    # which is the distinction the whole log exists to count.
+    # ONE call site for every non-error outcome, placed BEFORE the branching so a branch added later cannot be added without passing through it. The settle verdicts carry their own name (`faithful` / `deferred` / `unevidenced`), which is the distinction the whole log exists to count.
     wl_planfid.record_verdict(
         worklist,
         session_id,
@@ -2854,15 +2444,11 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     if kind == "malformed":
         return (M.V_PLANFID_DEGRADED % ("the judge returned %s" % payload)[:160]) + lost
     if kind == "settle":
-        # STICKY by plan signature, never by item set: a settled plan is not
-        # re-asked, and editing the plan reopens the question. Keying on the
-        # items instead would re-pay the call on every item a correct
-        # decomposition adds.
+        # STICKY by plan signature, never by item set: a settled plan is not re-asked, and editing the plan reopens the question. Keying on the items instead would re-pay the call on every item a correct decomposition adds.
         state.setdefault("settled", {})[sig] = {
             "verdict": payload,
             # Only meaningful for `unevidenced`; see wl_planfid.is_settled for
-            # why that verdict expires when the worklist grows and the other
-            # two do not.
+            # why that verdict expires when the worklist grows and the other two do not.
             "items": len(mine),
             "detail": detail[:200],
             "at": C.stamp_now(),
@@ -2934,24 +2520,14 @@ def run_stop(event, event_ok, worklist, hook_file):
     report."""
     session_id = event.get("session_id", "")
     me8 = (session_id or "unknown")[:8]
-    # SESSION-SCOPED, like `.stuck-<sid8>` and `.state-<sid8>` beside it. It was
-    # a single shared `.blocks` for the whole worktree, so one peer's clean allow
-    # deleted MY judge streak and one peer's block inflated it. With ~48
-    # addressable sessions here that is not a rare race, it is the normal case,
-    # and every decision keyed off the streak was reading someone else's work.
-    # Fixed before the cadence lands because the cadence's cap is the next thing
-    # to key off block streaks, and a shared counter would make the cap fire on
-    # a stranger's behaviour.
+    # SESSION-SCOPED, like `.stuck-<sid8>` and `.state-<sid8>` beside it. It was a single shared `.blocks` for the whole worktree, so one peer's clean allow deleted MY judge streak and one peer's block inflated it. With ~48 addressable sessions here that is not a rare race, it is the normal case, and every decision keyed off the streak was reading someone else's work. Fixed before
+    # the cadence lands because the cadence's cap is the next thing to key off block streaks, and a shared counter would make the cap fire on a stranger's behaviour.
     counter = worklist.with_suffix(".blocks-%s" % me8)
     root = C.project_root(C.project_start(event))
 
-    # ---- v9: the no-op inbox-poll fast path (see WHY v9) --------------------
-    # SILENT by design: a verified no-op poll stop exits 0 with NO output at
-    # all, because at a 5-minute cadence even a one-line systemMessage is a
+    # ---- v9: the no-op inbox-poll fast path (see WHY v9) -------------------- SILENT by design: a verified no-op poll stop exits 0 with NO output at all, because at a 5-minute cadence even a one-line systemMessage is a
     # context fire-hose. Every condition inside is recomputed from artifacts;
-    # any exception falls through to the full battery, never into an allow.
-    # (A silent stop deliberately skips the .lastevent capture below, so the
-    # last FULL stop's event stays available for debugging.)
+    # any exception falls through to the full battery, never into an allow. (A silent stop deliberately skips the .lastevent capture below, so the last FULL stop's event stays available for debugging.)
     if event_ok:
         try:
             if poll_fast_path(worklist, session_id, event):
@@ -2966,8 +2542,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     _resprofile_report(worklist, session_id, state_doc)
 
     archived, orphaned = [], []
-    # Dead-session cleanup runs before classification so a tombstoned item is
-    # invisible to this very pass. Never let it break the gate.
+    # Dead-session cleanup runs before classification so a tombstoned item is invisible to this very pass. Never let it break the gate.
     projects_dir = os.environ.get("WORKLIST_PROJECTS_DIR") or (
         os.path.dirname(event["transcript_path"]) if event.get("transcript_path") else ""
     )
@@ -2980,8 +2555,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- cleanup must never break gating
         archived, orphaned = [], []
     if archived:
-        # STICKY, and queued HERE rather than in the allow tail: the store is
-        # already flipped to [~], so an archived item never reports twice.
+        # STICKY, and queued HERE rather than in the allow tail: the store is already flipped to [~], so an archived item never reports twice.
         outq_add(
             worklist,
             session_id,
@@ -2993,9 +2567,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             sticky=True,
         )
 
-    # v6: escalate unanswerable requests BEFORE classifying items, so a
-    # freshly appended `- [?]` is classified by this very stop. Then classify
-    # the log for this session's own obligations. Neither may break gating.
+    # v6: escalate unanswerable requests BEFORE classifying items, so a freshly appended `- [?]` is classified by this very stop. Then classify the log for this session's own obligations. Neither may break gating.
     req_escalated = []
     try:
         req_escalated = wl_requests.escalate_requests(worklist, session_id)
@@ -3026,19 +2598,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         req_to_me, req_bcast, req_answered, req_open_mine = [], [], [], []
 
     lines = fold.lines()
-    # v14 gap 4: computed HERE (it used to sit below) so classification can
-    # tolerate an expired lease whose worker the OS still shows RUNNING: a
-    # full CI battery legitimately outlives the 120-minute lease cap, and the
-    # v13 night cost three manual renewals for a watcher that was verifiably
-    # alive the whole time. A worker the OS cannot see keeps failing closed.
+    # v14 gap 4: computed HERE (it used to sit below) so classification can tolerate an expired lease whose worker the OS still shows RUNNING: a full CI battery legitimately outlives the 120-minute lease cap, and the v13 night cost three manual renewals for a watcher that was verifiably alive the whole time. A worker the OS cannot see keeps failing closed.
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
-    # v18: REAP A ROSTER THE SESSION CANNOT VERIFY. After a compaction, or an
-    # operator reopening the session, the harness still reports every teammate
-    # ever spawned as `running` -- measured: 20 claimed, exactly 1 transcript
-    # still growing. That roster drives real checks (_in_pure_wait, the
-    # 15-minute BG_REPORT_MIN obligation, confirmed_waiters), so a permanently
-    # stale one means a session is told it supervises twenty workers forever and
-    # confirms phantoms every fifteen minutes -- ritual without signal.
+    # v18: REAP A ROSTER THE SESSION CANNOT VERIFY. After a compaction, or an operator reopening the session, the harness still reports every teammate ever spawned as `running` -- measured: 20 claimed, exactly 1 transcript still growing. That roster drives real checks (_in_pure_wait, the 15-minute BG_REPORT_MIN obligation, confirmed_waiters), so a permanently stale one means a
+    # session is told it supervises twenty workers forever and confirms phantoms every fifteen minutes -- ritual without signal.
     _bg_dropped, _bg_unknown = [], 0
     # A roster heuristic must never wedge a stop, so every failure is swallowed.
     with contextlib.suppress(Exception):
@@ -3051,17 +2614,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     )
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
-    # v14 introduced brief_text precisely because rec["text"] accumulates every
-    # update forever and "every block that mentioned it printed them all"
-    # (wl_store.brief_text docstring). classify_items duly renders OPEN items
-    # through brief_line... and then hands deferred and in-flight back as raw
-    # records, so these two call sites reached past the fix to the full text.
+    # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
     #
-    # [?] and [>] are exactly the states a long-running item lives in, so the
-    # two states that accumulate the most history were the two still printing
-    # all of it. Measured on this session: one [>] item carried 75,672 chars
-    # (~19k tokens) and was replayed on EVERY block, which made the stop hook
-    # the single largest consumer of the context it was trying to protect.
+    # [?] and [>] are exactly the states a long-running item lives in, so the two states that accumulate the most history were the two still printing all of it. Measured on this session: one [>] item carried 75,672 chars (~19k tokens) and was replayed on EVERY block, which made the stop hook the single largest consumer of the context it was trying to protect.
     #
     # Nothing is discarded: the full text stays in the append-only store and in
     # `--list`; only the human-facing render is brief, which is the rule the
@@ -3147,8 +2702,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     try:
         reg_state, reg_forgot = wl_reggate.load_reggate(reg_marker)
         if reg_forgot:
-            # STICKY: load_reggate has already discarded the marker, so the
-            # flag is true only on the discovering pass.
+            # STICKY: load_reggate has already discarded the marker, so the flag is true only on the discovering pass.
             outq_add(
                 worklist,
                 session_id,
@@ -3161,11 +2715,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
         reg_cur_tasks = C.task_statuses(session_id, event.get("transcript_path"))
         if not reg_state["head"]:
-            # FAIL SAFE: first sight (or a corrupt marker just discarded)
-            # initialises to the present and asks nothing this stop. Seeding
-            # the check-script hashes here is what keeps prove_new_gate from
-            # ever treating the ~90 pre-existing gates as candidates, and
-            # seeding task statuses is what keeps I7 from demanding evidence
+            # FAIL SAFE: first sight (or a corrupt marker just discarded) initialises to the present and asks nothing this stop. Seeding the check-script hashes here is what keeps prove_new_gate from ever treating the ~90 pre-existing gates as candidates, and seeding task statuses is what keeps I7 from demanding evidence
             # for completions that predate the marker.
             reg_state["head"] = C._git(root, "rev-parse", "HEAD")
             reg_state["seen_ticks"] = wl_reggate.mine_tick_ids(lines, session_id)
@@ -3173,8 +2723,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             reg_state["task_status"] = {i: st for i, (st, _s) in reg_cur_tasks.items()}
             wl_reggate.save_reggate(reg_marker, reg_state)
         else:
-            # I7: a task that FLIPPED to completed since the last stop must
-            # carry evidence (checked in the violations pass below).
+            # I7: a task that FLIPPED to completed since the last stop must carry evidence (checked in the violations pass below).
             prev_ts = reg_state.get("task_status") or {}
             reg_done_tasks = [
                 (i, sub)
@@ -3185,9 +2734,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 root, lines, session_id, reg_state
             )
             if len(reg_new_ticks) > wl_reggate.TICK_FLOOD:
-                # The v10 upgrade guard: a flood of "new" ticks is rendering
-                # drift, not a burst of fixes. Absorb, say so once, keep any
-                # commit-derived signals.
+                # The v10 upgrade guard: a flood of "new" ticks is rendering drift, not a burst of fixes. Absorb, say so once, keep any commit-derived signals.
                 reg_flood = len(reg_new_ticks)
                 reg_state["seen_ticks"] = sorted(
                     set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
@@ -3210,11 +2757,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
             # QUEUE DEPTH IS REPORTED, not hidden in the marker. The reggate asks
             # about ONE fix per stop; without this the operator sees a single
-            # question and has no way to know eight more are behind it. Not a
-            # worklist item per queued fix, deliberately: a `- [?]` carrying a
-            # `reggate:` token is exactly what apply_regression_verdict settles as
-            # 'deferred', so auto-creating those lines would settle the whole
-            # queue unasked and turn the gate into a no-op.
+            # question and has no way to know eight more are behind it. Not a worklist item per queued fix, deliberately: a `- [?]` carrying a `reggate:` token is exactly what apply_regression_verdict settles as 'deferred', so auto-creating those lines would settle the whole queue unasked and turn the gate into a no-op.
             reg_queued = sum(1 for d in reg_signals if d.startswith("(") and "queued" in d)
             if reg_queued:
                 outq_add(
@@ -3237,18 +2780,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_signals, reg_ids = [], []
             elif not reg_ids and reg_head and reg_head != reg_state["head"]:
-                # Only non-fix or doc-only-fix commits landed: nothing to ask,
-                # ever, so the marker just advances.
+                # Only non-fix or doc-only-fix commits landed: nothing to ask, ever, so the marker just advances.
                 reg_state["head"] = reg_head
                 reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
                 wl_reggate.save_reggate(reg_marker, reg_state)
             elif reg_banked and not reg_ids:
-                # BANKED, NOT ASKED, HEAD UNCHANGED. A stop with only docs-only ticks and
-                # no new commit fell through both branches above and saved nothing, so
-                # the same ticks were rediscovered and re-filtered on every later stop
-                # forever -- caught in review, not by a control. This is the missing
-                # third case: nothing to ask, nothing to advance the head for, but real
-                # ids to mark seen.
+                # BANKED, NOT ASKED, HEAD UNCHANGED. A stop with only docs-only ticks and no new commit fell through both branches above and saved nothing, so the same ticks were rediscovered and re-filtered on every later stop forever -- caught in review, not by a control. This is the missing third case: nothing to ask, nothing to advance the head for, but real ids to mark seen.
                 reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
                 wl_reggate.save_reggate(reg_marker, reg_state)
     except Exception:  # noqa: BLE001 -- detection must never break gating
@@ -3260,12 +2797,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     judged_ok = None
     verdict = None
     tasks = C.pending_tasks(session_id, event.get("transcript_path"))
-    # THE EVENT ALREADY CARRIES ALL OF THIS. Transcript parsing, a flush retry
-    # and a whole-turn accumulator were built before a captured Stop payload
-    # showed `last_assistant_message`, `session_crons` and `background_tasks`
-    # sitting in it. The transcript path stays as a FALLBACK for older payloads,
-    # but the event is authoritative: it is exact, unraced, and immune to the
-    # narration-block bug that made this check fire on its own author.
+    # THE EVENT ALREADY CARRIES ALL OF THIS. Transcript parsing, a flush retry and a whole-turn accumulator were built before a captured Stop payload showed `last_assistant_message`, `session_crons` and `background_tasks` sitting in it. The transcript path stays as a FALLBACK for older payloads, but the event is authoritative: it is exact, unraced, and immune to the narration-block
+    # bug that made this check fire on its own author.
     last_msg = event.get("last_assistant_message") or ""
     msg_readable = bool(last_msg)
     if not msg_readable:
@@ -3273,14 +2806,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             event.get("transcript_path", ""), want=REMAINING_HEADING
         )
     live_crons = event.get("session_crons") or []
-    # v9: the two-cron shape. The poll cron is identified by schedule shape
-    # and is deliberately NOT a work wake-up: it wakes the session only when
-    # another session acts.
+    # v9: the two-cron shape. The poll cron is identified by schedule shape and is deliberately NOT a work wake-up: it wakes the session only when another session acts.
     live_poll_crons = [c for c in live_crons if is_poll_cron(c)]
     live_work_crons = [c for c in live_crons if not is_poll_cron(c)]
-    # live_bg is computed above, beside classify_items, since v14 gap 4.
-    # Keep the raw event: when a check fires wrongly the first question is always
-    # "what did the hook actually receive", and that is unanswerable afterwards.
+    # live_bg is computed above, beside classify_items, since v14 gap 4. Keep the raw event: when a check fires wrongly the first question is always "what did the hook actually receive", and that is unanswerable afterwards.
     with contextlib.suppress(OSError):
         worklist.with_suffix(".lastevent-%s.json" % me8).write_text(
             json.dumps({k: v for k, v in event.items() if k != "transcript"}, indent=2),
@@ -3289,24 +2818,16 @@ def run_stop(event, event_ok, worklist, hook_file):
     briefs = S.read_briefs(worklist)
     bstate, bage, others_briefs = S.brief_state(worklist, session_id, briefs)
     lstate, lnext, llabel, _others_loops, lcrons = S.loop_state(worklist, session_id)
-    # The world signature is computed ONCE, after every shared-state write of
-    # this stop (sync, cleanup, escalation), and reused by the STATE.md check,
-    # the poll baseline and the judge cache, so all three describe one world.
+    # The world signature is computed ONCE, after every shared-state write of this stop (sync, cleanup, escalation), and reused by the STATE.md check, the poll baseline and the judge cache, so all three describe one world.
     cur_sig = S.world_sig(
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
-    # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a
-    # session's own bookkeeping (lease renewals, update notes) does not stale
-    # the document it just refreshed. Polls and the judge keep cur_sig.
+    # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a session's own bookkeeping (lease renewals, update notes) does not stale the document it just refreshed. Polls and the judge keep cur_sig.
     st_sig = S.state_world_sig(
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
-    # session_id, not blank: the verdict is about THIS session's own section.
-    # Without it the check judged whichever document happened to be on disk, so
-    # a peer's write reset everyone's clock and -- worse than a skipped stop --
-    # the adopt below banked the PEER'S world signature as this session's own,
-    # making a document describing someone else's world read as this one's
-    # recovery artifact.
+    # session_id, not blank: the verdict is about THIS session's own section. Without it the check judged whichever document happened to be on disk, so a peer's write reset everyone's clock and -- worse than a skipped stop -- the adopt below banked the PEER'S world signature as this session's own, making a document describing someone else's world read as this one's recovery
+    # artifact.
     astate, aage, _atext = S.agent_state_state(
         root,
         session_id=session_id,
@@ -3314,13 +2835,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         saved_sig=state_doc.get("state_sig"),
     )
     if astate == "ok":
-        # ADOPT: an "ok" verdict banks the signature so a second session
-        # arriving in the checkout inherits the document instead of being
-        # ordered to rewrite it. The adopt fires ONLY on "ok" -- banking on a
-        # "stale" verdict would let the next stop compare cur_sig against a
-        # signature recorded DURING the block, find them equal, and allow: a
-        # gate that clears itself without a rewrite (control T7b pins this by
-        # asserting it blocks TWICE on an unchanged world). Must sit above
+        # ADOPT: an "ok" verdict banks the signature so a second session arriving in the checkout inherits the document instead of being ordered to rewrite it. The adopt fires ONLY on "ok" -- banking on a "stale" verdict would let the next stop compare cur_sig against a signature recorded DURING the block, find them equal, and allow: a gate that clears itself without a rewrite
+        # (control T7b pins this by asserting it blocks TWICE on an unchanged world). Must sit above
         # S.save_state below; emit() exits, so anything written after a later
         # emit path never lands.
         state_doc["state_sig"] = st_sig
@@ -3332,54 +2848,29 @@ def run_stop(event, event_ok, worklist, hook_file):
         + ["[>] " + f for f in in_flight]
     )
     something_remains = bool(remaining_lines)
-    # ACTIONABLE remainder, which is NOT the same as "something remains".
-    # A `[?]` is by construction the one shape this session cannot advance: it
-    # is parked on an operator decision or an operator-only capability. When
-    # every remaining line is a `[?]`, "nothing moved" is the CORRECT outcome
-    # rather than a stall, and the stuck check's remedy -- delegate to a Plan or
-    # Explore agent -- cannot work, because the constraint is authority, not
-    # knowledge. Measured 2026-08-15: the two survivors were "set four Worker
-    # secrets with the operator's Cloudflare session" and "delete the last
+    # ACTIONABLE remainder, which is NOT the same as "something remains". A `[?]` is by construction the one shape this session cannot advance: it is parked on an operator decision or an operator-only capability. When every remaining line is a `[?]`, "nothing moved" is the CORRECT outcome rather than a stall, and the stuck check's remedy -- delegate to a Plan or Explore agent --
+    # cannot work, because the constraint is authority, not knowledge. Measured 2026-08-15: the two survivors were "set four Worker secrets with the operator's Cloudflare session" and "delete the last
     # restore path once a machine has round-tripped a repo"; no agent can return
-    # an approach to either, so the check could only be satisfied by spawning a
-    # decorative agent, i.e. by gaming it. `[>]` still counts as actionable: work
-    # on a worker genuinely can stall, and the bg-wait check reports it separately.
+    # an approach to either, so the check could only be satisfied by spawning a decorative agent, i.e. by gaming it. `[>]` still counts as actionable: work on a worker genuinely can stall, and the bg-wait check reports it separately.
     actionable_remains = bool(open_items or tasks or in_flight)
-    # v14 gap 6: BANK a message that carries a '## Remaining' section, keyed
-    # to the structural world sig. A later stop on an UNCHANGED world (a
-    # forfeited poll, a bookkeeping-only turn) is then not ordered to re-type
+    # v14 gap 6: BANK a message that carries a '## Remaining' section, keyed to the structural world sig. A later stop on an UNCHANGED world (a forfeited poll, a bookkeeping-only turn) is then not ordered to re-type
     # a byte-identical table; any real move changes st_sig and the demand
-    # returns. Banked before the battery so the stop that writes the report
-    # banks it even when it blocks for some other reason.
+    # returns. Banked before the battery so the stop that writes the report banks it even when it blocks for some other reason.
     if msg_readable and REMAINING_HEADING.search(last_msg or ""):
         state_doc["last_report_sig"] = st_sig
 
-    # ---- v15 PURE BACKGROUND WAIT (operator, 2026-07-31): "sometimes you
-    # only have background jobs and wait for them without any other pending
-    # task. The hook should respect that but have information about them,
+    # ---- v15 PURE BACKGROUND WAIT (operator, 2026-07-31): "sometimes you only have background jobs and wait for them without any other pending task. The hook should respect that but have information about them,
     # with a 15 min timeout to have a report, since they may stuck."
-    # The state: live background work, no open items, no expired deferral.
-    # In it, waiting is LEGITIMATE (the judge is told so below), and the
-    # hook's demand shrinks to a bounded 15-minute check-in whose facts the
-    # hook gathers ITSELF from each worker's output stream (mtime/size),
-    # because file growth is evidence no self-report can fake. Latched on
-    # fire, so the check-in costs one focused block per window, never a
-    # drumbeat.
+    # The state: live background work, no open items, no expired deferral. In it, waiting is LEGITIMATE (the judge is told so below), and the hook's demand shrinks to a bounded 15-minute check-in whose facts the hook gathers ITSELF from each worker's output stream (mtime/size), because file growth is evidence no self-report can fake. Latched on fire, so the check-in costs one
+    # focused block per window, never a drumbeat.
     bg_facts, bgwait_due, bgwait_prev, bgwait_next = [], False, "", ""
     _bg_actionable = []
     bg_verdicts = {}
     _in_pure_wait = False
-    # v18: A CONFIRMED INBOX WAITER IS A PUSH CHANNEL, NOT A JOB TO SUPERVISE.
-    # wl_wait.py blocks until something new arrives for this session and then
-    # EXITS, and its exit is the harness notification that wakes the session. So
-    # its liveness IS its report: there is nothing a 15-minute check-in could
-    # learn that the waiter's own exit will not deliver, and nothing a poll cron
-    # delivers that it does not deliver sooner. Both relaxations below are keyed
-    # on `confirmed` and on nothing weaker, because a waiter nobody can see on
-    # the OS is exactly the case where those checks still earn their keep.
+    # v18: A CONFIRMED INBOX WAITER IS A PUSH CHANNEL, NOT A JOB TO SUPERVISE. wl_wait.py blocks until something new arrives for this session and then EXITS, and its exit is the harness notification that wakes the session. So its liveness IS its report: there is nothing a 15-minute check-in could learn that the waiter's own exit will not deliver, and nothing a poll cron delivers
+    # that it does not deliver sooner. Both relaxations below are keyed on `confirmed` and on nothing weaker, because a waiter nobody can see on the OS is exactly the case where those checks still earn their keep.
     #
-    # Computed only when a waiter is actually declared, so the ordinary busy stop
-    # pays no extra process-table read.
+    # Computed only when a waiter is actually declared, so the ordinary busy stop pays no extra process-table read.
     _waiters_confirmed = []
     if live_bg:
         try:
@@ -3388,8 +2879,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _waiters_confirmed = wl_liveness.confirmed_waiters(live_bg, bg_verdicts)
         except Exception:  # noqa: BLE001 -- a suppression heuristic must never wedge a stop
             _waiters_confirmed = []
-    # EVERY live task must be a confirmed waiter, not merely one of them. A
-    # session waiting on a real long job AND holding a waiter still owes the
+    # EVERY live task must be a confirmed waiter, not merely one of them. A session waiting on a real long job AND holding a waiter still owes the
     # check-in for the real job; relaxing on "any waiter present" would let one
     # waiter silence supervision of everything else running beside it.
     _only_waiters = bool(_waiters_confirmed) and len(_waiters_confirmed) == len(live_bg)
@@ -3401,10 +2891,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         if not _expired_any:
             _in_pure_wait = True
-            # v19: the wait is only PURE if the harness queue is also empty of
-            # work this session could do right now. A pending task with no
-            # unresolved blocker makes the check-in fire (even for a
-            # waiter-only roster) and name it, instead of certifying the wait.
+            # v19: the wait is only PURE if the harness queue is also empty of work this session could do right now. A pending task with no unresolved blocker makes the check-in fire (even for a waiter-only roster) and name it, instead of certifying the wait.
             try:
                 _bg_actionable = C.actionable_tasks(session_id, event.get("transcript_path"))
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
@@ -3414,10 +2901,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
                 bg_facts = []
             try:
-                # Read on EVERY pure-wait stop since v17, not only when the
-                # check-in is due: the no-op ladder keys on it, and a worker
-                # dying is the one change a byte-level view cannot see.
-                # v18: reuse the read the waiter probe above already paid for.
+                # Read on EVERY pure-wait stop since v17, not only when the check-in is due: the no-op ladder keys on it, and a worker dying is the one change a byte-level view cannot see. v18: reuse the read the waiter probe above already paid for.
                 if not bg_verdicts:
                     bg_verdicts = wl_liveness.verify_background(live_bg)
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
@@ -3427,55 +2911,31 @@ def run_stop(event, event_ok, worklist, hook_file):
             _age = C.stamp_age_min(_last)
             bgwait_prev = _bgw.get("fired", "")
             if _age is None:
-                # First sight of the wait state SEEDS the clock silently: the
-                # check-in is "you have been waiting 15 minutes, report",
-                # never "you started waiting, report".
+                # First sight of the wait state SEEDS the clock silently: the check-in is "you have been waiting 15 minutes, report", never "you started waiting, report".
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
             elif _age >= wl_liveness.BG_REPORT_MIN:
-                # RESTAMPED EITHER WAY, fired only when something other than a
-                # confirmed waiter is running. Suppressing without restamping
-                # would leave the clock expired, so the first stop after any
-                # ordinary background job joined the waiter would fire the
-                # check-in INSTANTLY -- the "you started waiting, report"
-                # behaviour the seed above exists to prevent, reintroduced
-                # through the back door.
+                # RESTAMPED EITHER WAY, fired only when something other than a confirmed waiter is running. Suppressing without restamping would leave the clock expired, so the first stop after any ordinary background job joined the waiter would fire the check-in INSTANTLY -- the "you started waiting, report" behaviour the seed above exists to prevent, reintroduced through the back
+                # door.
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
                 if not _only_waiters or _bg_actionable:
                     bgwait_due = True
             bgwait_next = C.stamp_ahead(wl_liveness.BG_REPORT_MIN)
     if not _in_pure_wait:
-        # v17 THE LATCH RESET, and it is a fix not a tidy-up. The clock was
-        # only ever WRITTEN inside the wait state, so leaving it (an open item
-        # appears, a deferral expires, the workers finish) froze the stamp.
+        # v17 THE LATCH RESET, and it is a fix not a tidy-up. The clock was only ever WRITTEN inside the wait state, so leaving it (an open item appears, a deferral expires, the workers finish) froze the stamp.
         # Re-entering a wait an hour later then found _age >= 15 on the FIRST
-        # stop back and fired the check-in immediately -- precisely the "you
-        # started waiting, report" behaviour the seed above exists to prevent,
-        # and the reason a session that flickers in and out of waiting saw the
-        # roster demand over and over. Dropping the key re-seeds it silently.
+        # stop back and fired the check-in immediately -- precisely the "you started waiting, report" behaviour the seed above exists to prevent, and the reason a session that flickers in and out of waiting saw the roster demand over and over. Dropping the key re-seeds it silently.
         state_doc.pop("bgwait", None)
 
-    # STUCK DETECTION. Runs before the others so the count advances on every
-    # stop, including the ones where something else already fired: a session
-    # blocked three times running on the same check has also moved nothing.
+    # STUCK DETECTION. Runs before the others so the count advances on every stop, including the ones where something else already fired: a session blocked three times running on the same check has also moved nothing.
     # SUPERVISED = a live background task AND an in-flight item the session is still
     # refreshing. Only that pair distinguishes "watching a long job" from "left a watch
     # running and wandered off"; a forgotten watch cannot refresh the item, because
-    # refreshing it is precisely what nobody is doing.
-    # CORRELATED, not just "some [>] item is fresh": a session can hold two
-    # concurrent leases, one genuinely tracking the live background task and
-    # one unrelated and still being renewed for some other reason. Taking the
-    # freshest across ALL in-flight records let the unrelated one silence the
-    # exempt-overrun even while the item tracking the ACTUAL watched job had
-    # gone stale -- exactly the forgotten-watch case this exemption exists to
-    # exclude. Only records whose worker:<id> tag names a task in live_bg can
-    # supervise it (mirrors wl_liveness.ladder's wid-not-in-now_bg check).
-    # v14 addendum: AN OPEN OPERATOR REQUEST IS SUPERVISION. When this
-    # session's own question to the operator is posted, unanswered, and
+    # refreshing it is precisely what nobody is doing. CORRELATED, not just "some [>] item is fresh": a session can hold two concurrent leases, one genuinely tracking the live background task and one unrelated and still being renewed for some other reason. Taking the freshest across ALL in-flight records let the unrelated one silence the exempt-overrun even while the item tracking
+    # the ACTUAL watched job had gone stale -- exactly the forgotten-watch case this exemption exists to exclude. Only records whose worker:<id> tag names a task in live_bg can supervise it (mirrors wl_liveness.ladder's wid-not-in-now_bg check). v14 addendum: AN OPEN OPERATOR REQUEST IS SUPERVISION. When this session's own question to the operator is posted, unanswered, and
     # unresolved, the ball is verifiably out of its court; a terminal-hold
-    # state (all work done, DEFAULT: hold) otherwise re-fires the
-    # exempt-overrun every 3x rounds forever off long-lived teammate tasks.
+    # state (all work done, DEFAULT: hold) otherwise re-fires the exempt-overrun every 3x rounds forever off long-lived teammate tasks.
     # Counting continues; the moment the request is answered or acked the
     # suppression lifts by itself.
     _supervised = False
@@ -3501,10 +2961,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         except Exception:  # noqa: BLE001 -- never let a suppression heuristic wedge a stop
             _supervised = False
 
-    # Newest own stamp PLUS the own item set (id+state): stamps are
-    # second-resolution, so two moves inside one second would otherwise read
-    # as none, and an added-then-ticked item is movement even when the clock
-    # cannot show it.
+    # Newest own stamp PLUS the own item set (id+state): stamps are second-resolution, so two moves inside one second would otherwise read as none, and an added-then-ticked item is movement even when the clock cannot show it.
     _mine = [r for r in fold.items if C.owned_by_me(r.get("owner"), session_id)]
     _own_stamp = "%s#%s" % (
         max((str(r.get("upd") or "") for r in _mine), default=""),
@@ -3520,9 +2977,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         own_stamp=_own_stamp,
     )
 
-    # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked
-    # or allowed: the poll-baseline lesson), and the state doc is saved before
-    # any emit below.
+    # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked or allowed: the poll-baseline lesson), and the state doc is saved before any emit below.
     ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     worker_rows, worker_verdicts = [], {}
     try:
@@ -3533,8 +2988,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- liveness must never break gating
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     if ladder_pings:
-        # STICKY AND CLASS 0. Sticky because ladder() has already recorded the
-        # fired rung against the item's stamp, so the text cannot be
+        # STICKY AND CLASS 0. Sticky because ladder() has already recorded the fired rung against the item's stamp, so the text cannot be
         # regenerated until the item moves; class 0 because the wording is a
         # direct instruction that becomes a block at the 90-minute rung.
         outq_add(
@@ -3548,9 +3002,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     S.save_state(worklist, session_id, state_doc)
 
-    # ---- v11: the store-derived guide, present on EVERY full stop (allow
-    # and block alike), so the session reports from the store, not memory.
-    # Never breaks gating, and a broken guide SAYS SO rather than vanishing.
+    # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
     try:
         guide = guided_slice(fold, session_id, worker_verdicts, me8, root)
     except Exception as exc:  # noqa: BLE001
@@ -3558,15 +3010,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s"
             % (str(exc)[:160])
         )
-    # v18: AN EMPTY GUIDE IS NOT INFORMATION. "no actionable items in the
-    # store" was a deliberate v11 choice -- "a short honest line, never
-    # ambiguous silence" -- and the operator has now overruled it on the same
-    # breath as the wakeup section ("silent when there is nothing to act on...
-    # efficient ai context usage"), quoting a stop whose entire output was this
-    # line followed by the wakeup times. The ambiguity argument has also aged
-    # out: the poll fast path already exits with zero bytes many times an hour,
-    # so silence is the session's normal signal for "nothing to do" rather than
-    # something it has to guess about. The line is dropped from every emit
+    # v18: AN EMPTY GUIDE IS NOT INFORMATION. "no actionable items in the store" was a deliberate v11 choice -- "a short honest line, never ambiguous silence" -- and the operator has now overruled it on the same breath as the wakeup section ("silent when there is nothing to act on... efficient ai context usage"), quoting a stop whose entire output was this line followed by the
+    # wakeup times. The ambiguity argument has also aged out: the poll fast path already exits with zero bytes many times an hour, so silence is the session's normal signal for "nothing to do" rather than something it has to guess about. The line is dropped from every emit
     # path; a guide with real rows, and the unavailable-guide bug report, are
     # both untouched.
     guide_empty = guide == M.GUIDE_EMPTY
@@ -3575,68 +3020,39 @@ def run_stop(event, event_ok, worklist, hook_file):
     # Every block path appends the guide as a trailing section; this keeps the
     # separator with the content, so a suppressed guide leaves no blank tail.
     guide_tail = "" if guide_empty else "\n\n" + guide
-    # THE NEXT WAKEUPS SECTION USED TO RIDE THE GUIDE HERE, and it is deleted
-    # rather than shortened (operator, 2026-08-04: "we don't need to print next
-    # wakeup times. We should just track the hook moments and notify/warn when
-    # needed. let's go for efficient ai context usage"). It printed every
-    # scheduled task's next firing and prompt label on EVERY full stop, which
-    # is a recurring context cost for a fact that is already in the harness and
-    # that no reader ever had to act on. The schedules are still tracked -- the
-    # cron-shape checks, the poll backoff ladder, the loop-death detector and
-    # the judge's loop line all read session_crons directly -- and the one
-    # genuinely actionable thing the section carried is now its own warning
-    # (broken_schedules, below), which is silent when there is nothing wrong.
+    # THE NEXT WAKEUPS SECTION USED TO RIDE THE GUIDE HERE, and it is deleted rather than shortened (operator, 2026-08-04: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage"). It printed every scheduled task's next firing and prompt label on EVERY full stop, which is a recurring
+    # context cost for a fact that is already in the harness and that no reader ever had to act on. The schedules are still tracked -- the cron-shape checks, the poll backoff ladder, the loop-death detector and the judge's loop line all read session_crons directly -- and the one genuinely actionable thing the section carried is now its own warning (broken_schedules, below), which
+    # is silent when there is nothing wrong.
 
-    # ---- v13: keyed, tiered violations (operator, 2026-07-31: "single and
-    # focused message at a time"). Each entry is (key, always, text) -- KEEP THE
+    # ---- v13: keyed, tiered violations (operator, 2026-07-31: "single and focused message at a time"). Each entry is (key, always, text) -- KEEP THE
     # TUPLE 3-WIDE; six unpack sites below depend on it, and the priority ladder
-    # is derived from the key rather than carried as a fourth field precisely so
-    # that stays true. `always` marks the INVARIANT tier, which is never rotated
+    # is derived from the key rather than carried as a fourth field precisely so that stays true. `always` marks the INVARIANT tier, which is never rotated
     # away; everything else rotates one per stop, ordered by the ladder at
     # PRIORITY_LADDER above.
     #
     # THE ADMISSION RULE FOR `always=True`, written down because it was
-    # previously only implied and three checks violated it while nobody could
-    # point at the sentence they broke. A check is an INVARIANT iff at least one
-    # of these holds:
+    # previously only implied and three checks violated it while nobody could point at the sentence they broke. A check is an INVARIANT iff at least one of these holds:
     #
-    #   I1  COMPUTE-TIME BUDGET. The producer spends a latch, bumps a counter,
-    #       or pays for an API call while computing its text. Hiding that text
-    #       spends the budget on a line nobody read. (`plan-fidelity` pays for a
+    # I1 COMPUTE-TIME BUDGET. The producer spends a latch, bumps a counter, or pays for an API call while computing its text. Hiding that text spends the budget on a line nobody read. (`plan-fidelity` pays for a
     #       model call; `no-waiter-asked` bumps its ladder rung; `submodule` and
-    #       `solo-grind` stamp a suppression window.)
+    # `solo-grind` stamp a suppression window.)
     #
-    #   I2  SOMEONE ELSE PAYS. The remedy is owed to a party that cannot observe
-    #       this session's silence -- a peer blocked on a request, an answer this
-    #       session asked for and is not listening for.
+    # I2 SOMEONE ELSE PAYS. The remedy is owed to a party that cannot observe this session's silence -- a peer blocked on a request, an answer this session asked for and is not listening for.
     #
-    #   I3  HOOK INTEGRITY. The hook or a gate cannot see, so its silence is not
-    #       evidence and nothing below it can be trusted.
+    # I3 HOOK INTEGRITY. The hook or a gate cannot see, so its silence is not evidence and nothing below it can be trusted.
     #
-    # COROLLARY THAT KEEPS THE TIER SMALL: a check qualifying ONLY under I1
-    # should have its latch moved to display time rather than be promoted -- see
-    # `submodule` and `solo-grind`, which now stamp only on the stop that
-    # actually showed them. And when several invariants are outstanding at once,
+    # COROLLARY THAT KEEPS THE TIER SMALL: a check qualifying ONLY under I1 should have its latch moved to display time rather than be promoted -- see `submodule` and `solo-grind`, which now stamp only on the stop that actually showed them. And when several invariants are outstanding at once,
     # at most ALWAYS_FULL_MAX are quoted in full and the rest are NAMED; the tier
     # buys un-rotatability, not unlimited column inches.
     violations = []
 
-    # Checks whose text is carried verbatim through a cadence pause. The rule
-    # is not "important" -- every check here is important -- it is WHO PAYS for
-    # the silence. These are the ones where another session is already blocked,
-    # so a label like "requests" tells this session to stand down while telling
-    # the peer nothing at all.
+    # Checks whose text is carried verbatim through a cadence pause. The rule is not "important" -- every check here is important -- it is WHO PAYS for the silence. These are the ones where another session is already blocked, so a label like "requests" tells this session to stand down while telling the peer nothing at all.
     #
     # DERIVED FROM THE LADDER SINCE 2026-08-28, not hand-listed. The old literal
     # named exactly `{"requests", "no-waiter-asked", "no-waiter"}` -- i.e. the
-    # file had already identified the three checks where another party pays and
-    # left all three ROTATABLE, so each could be starved 23 keys deep by a check
-    # that had nothing to do with anyone else. That mismatch IS the seam this
-    # version closes: "somebody else is blocked" is now a TIER, the carry list
-    # reads it, and the three originals are additionally invariants under I2 (so
+    # file had already identified the three checks where another party pays and left all three ROTATABLE, so each could be starved 23 keys deep by a check that had nothing to do with anyone else. That mismatch IS the seam this version closes: "somebody else is blocked" is now a TIER, the carry list reads it, and the three originals are additionally invariants under I2 (so
     # for them the pause is defeated outright and this list is belt to braces).
-    # Anything the ladder calls T_OWED is carried, with no second place to
-    # remember to add it.
+    # Anything the ladder calls T_OWED is carried, with no second place to remember to add it.
     def carried_through_pause(key):
         return check_tier(key) == T_OWED
 
@@ -3645,19 +3061,10 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- LATCHES THAT MUST BE SPENT AT DISPLAY TIME, NOT COMPUTE TIME.
     #
-    # A handful of checks suppress themselves after speaking once: `submodule`
-    # writes a time-boxed `subptr` window, `solo-grind` writes `solognd` and
-    # never asks again. Both used to stamp that state inside their vadd block --
-    # i.e. on the stop that COMPUTED them, whether or not the session ever saw a
-    # word of it. So a rotation miss (or, since the cadence landed, a paused
-    # stop) silently opened a suppression window for a message nobody read, and
-    # the mechanism was strictly worse than having no latch at all: it went
-    # quiet about a real pointer AND left no trace of having done so.
+    # A handful of checks suppress themselves after speaking once: `submodule` writes a time-boxed `subptr` window, `solo-grind` writes `solognd` and never asks again. Both used to stamp that state inside their vadd block -- i.e. on the stop that COMPUTED them, whether or not the session ever saw a word of it. So a rotation miss (or, since the cadence landed, a paused stop)
+    # silently opened a suppression window for a message nobody read, and the mechanism was strictly worse than having no latch at all: it went quiet about a real pointer AND left no trace of having done so.
     #
-    # This is the tier comment's I1 corollary in code. Rather than promote these
-    # two to the invariant tier -- which would fix the swallowing by making them
-    # unskippable, at the cost of the scarcity that tier depends on -- the latch
-    # moves to the moment the text is actually rendered. Register the mutation
+    # This is the tier comment's I1 corollary in code. Rather than promote these two to the invariant tier -- which would fix the swallowing by making them unskippable, at the cost of the scarcity that tier depends on -- the latch moves to the moment the text is actually rendered. Register the mutation
     # here; `spend_display_latches` runs it for the keys this stop really shows.
     display_latch = {}
 
@@ -3668,11 +3075,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 fn()
 
     if bgwait_due:
-        # A silent stream alone cannot distinguish "stuck" from "a poll loop
-        # that prints only at the end", so OS-verify before accusing: a
-        # worker whose process is confirmed alive is reported in those
-        # words. Fired live 2026-07-31 on a healthy `until ... completed`
-        # CI watch, 29 minutes silent by design.
+        # A silent stream alone cannot distinguish "stuck" from "a poll loop that prints only at the end", so OS-verify before accusing: a worker whose process is confirmed alive is reported in those words. Fired live 2026-07-31 on a healthy `until ... completed` CI watch, 29 minutes silent by design.
         _bg_verd = bg_verdicts
         _rows = []
         for tid, desc, age, size, stale in bg_facts:
@@ -3688,15 +3091,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                         " (a loop that prints only at the end is healthy)"
                     )
                 elif stale:
-                    # DO NOT soften this to "finished, or died". It was tried on
-                    # 2026-09-04 after a completed one-shot `--answer` was accused, and
-                    # cases 163f and 180e caught it within the hour: 163f's control KILLS
-                    # a live waiter and requires the verdict to flip back to POSSIBLY
-                    # STUCK, which is the only proof the alive-detection is not vacuous.
-                    # A vanished process is a DEAD WORKER and a FINISHED one-shot alike,
-                    # and nothing here can tell them apart -- so the accusation stays and
-                    # the reader disambiguates from the stream. The real defect behind the
-                    # false positive is the harness reporting a completed task as
+                    # DO NOT soften this to "finished, or died". It was tried on 2026-09-04 after a completed one-shot `--answer` was accused, and cases 163f and 180e caught it within the hour: 163f's control KILLS a live waiter and requires the verdict to flip back to POSSIBLY STUCK, which is the only proof the alive-detection is not vacuous. A vanished process is a DEAD WORKER
+                    # and a FINISHED one-shot alike, and nothing here can tell them apart -- so the accusation stays and the reader disambiguates from the stream. The real defect behind the false positive is the harness reporting a completed task as
                     # `running`; see the v18 note above, same shape for teammates.
                     _suffix = "  <- POSSIBLY STUCK, investigate or restart"
                 else:
@@ -3746,11 +3142,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ),
             )
     if stuck_fired and actionable_remains:
-        # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
-        # status AND HEAD did not advance" for every tier, which is FALSE for
-        # the tasks-only tier: that one fires precisely BECAUSE commits do not
-        # count, so it fires while HEAD is moving. A blocker that overstates
-        # its own evidence teaches the session to distrust it.
+        # TIER-ACCURATE HEADLINE. This used to assert "not one task changed status AND HEAD did not advance" for every tier, which is FALSE for the tasks-only tier: that one fires precisely BECAUSE commits do not count, so it fires while HEAD is moving. A blocker that overstates its own evidence teaches the session to distrust it.
         vadd(
             "stuck",
             True,
@@ -3769,12 +3161,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items)),
         )
-    # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the
-    # rotating `open-items` it backstops. It must not be rotated or paused: the
-    # whole failure is that `open-items` CAN be, so a copy of it in the same
-    # tier would buy nothing. Wrapped, because a stall detector that crashes a
-    # stop is worse than one that is absent -- on any exception the ordinary
-    # `open-items` block above still stands.
+    # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the rotating `open-items` it backstops. It must not be rotated or paused: the whole failure is that `open-items` CAN be, so a copy of it in the same tier would buy nothing. Wrapped, because a stall detector that crashes a stop is worse than one that is absent -- on any exception the ordinary `open-items` block
+    # above still stands.
     try:
         _stall_fired, _stall_why = idle_stall(
             state_doc, fold, session_id, open_items, live_bg, in_flight
@@ -3785,10 +3173,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _stall_fired:
         _rows = "\n".join("    " + i for i in open_items[:8])
         if _stall_claims:
-            # The tell rides the stall rather than becoming a second block: it
-            # is the same refusal with sharper evidence, and two always-tier
-            # messages saying one thing is how a gate teaches itself to be
-            # skimmed.
+            # The tell rides the stall rather than becoming a second block: it is the same refusal with sharper evidence, and two always-tier messages saying one thing is how a gate teaches itself to be skimmed.
             _rows += "\n  and your own message says they are not blocked:\n" + "\n".join(
                 "    " + c for c in _stall_claims
             )
@@ -3799,20 +3184,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_UNBLOCKED_CLAIM % (len(open_items), "\n".join("    " + c for c in _stall_claims)),
         )
-    # ---- v23 THE PENDING-ASK GATE (wl_admit.pending_ask), ALWAYS tier, and
-    # directly beside idle-stall because it is the same failure through a
-    # different door: a stop that yields the operator's turn without needing to.
-    # The detector, its regexes and its state signature all live in wl_admit --
-    # this file is ~5,000 lines and is what every stop-gate change has to be read
-    # against, so it gets the call site and the key and nothing else.
+    # ---- v23 THE PENDING-ASK GATE (wl_admit.pending_ask), ALWAYS tier, and directly beside idle-stall because it is the same failure through a different door: a stop that yields the operator's turn without needing to. The detector, its regexes and its state signature all live in wl_admit -- this file is ~5,000 lines and is what every stop-gate change has to be read against, so it
+    # gets the call site and the key and nothing else.
     #
-    # ALWAYS, not rotating, for the reason case 214 pins: the cadence can pause
-    # a rotating check, and a PAUSED stop still ends the turn. Ending the turn is
-    # precisely the cost this gate exists to remove, so a rotating copy of it
-    # would buy nothing.
+    # ALWAYS, not rotating, for the reason case 214 pins: the cadence can pause a rotating check, and a PAUSED stop still ends the turn. Ending the turn is precisely the cost this gate exists to remove, so a rotating copy of it would buy nothing.
     #
-    # WRAPPED, because a stall detector that crashes a stop is worse than one
-    # that is absent. On any exception the rest of the battery still stands.
+    # WRAPPED, because a stall detector that crashes a stop is worse than one that is absent. On any exception the rest of the battery still stands.
     try:
         _pa_tools, _ = wl_admit.turn_tools(event.get("transcript_path", ""))
         _pa_deferred = wl_admit.defer_created(state_doc, fold, session_id)
@@ -3823,26 +3200,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("pending-ask", True, M.V_PENDING_ASK % (_pa_line, me8))
     # ---- THE SWEEP PROMPT, and its whole value is WHEN it fires.
     #
-    # Not on a stall (idle-stall owns that), not on every stop (a prompt that
-    # fires always is a prompt that gets skimmed). It fires at the one moment
-    # that is genuinely cheap: the queue is EMPTY, nothing is in flight, and
-    # something just left the open state -- i.e. work finished cleanly and the
-    # session is about to walk away with its context still warm.
+    # Not on a stall (idle-stall owns that), not on every stop (a prompt that fires always is a prompt that gets skimmed). It fires at the one moment that is genuinely cheap: the queue is EMPTY, nothing is in flight, and something just left the open state -- i.e. work finished cleanly and the session is about to walk away with its context still warm.
     #
-    # That is exactly when the findings noticed in passing get abandoned. The
-    # operator had to ask for them by hand ("let's also fix all what you've
-    # found on the way") after a session reported several and fixed none.
+    # That is exactly when the findings noticed in passing get abandoned. The operator had to ask for them by hand ("let's also fix all what you've found on the way") after a session reported several and fixed none.
     # Rediscovery costs a whole session; asking here costs one line.
     #
-    # ROTATING, not always: it is a nudge, not a refusal, and "there was
-    # nothing" is a complete answer.
+    # ROTATING, not always: it is a nudge, not a refusal, and "there was nothing" is a complete answer.
     try:
-        # COUPLED TO idle_stall'S EARLY-RETURN TEXT, and said out loud because
-        # the first version of this line looked for "closed" -- a word that
-        # string never contains -- so the prompt could never have fired. A
-        # silently vacuous nudge is worse than no nudge. The test below pins
-        # both halves, so changing that string turns a test red instead of
-        # turning this check off.
+        # COUPLED TO idle_stall'S EARLY-RETURN TEXT, and said out loud because the first version of this line looked for "closed" -- a word that string never contains -- so the prompt could never have fired. A silently vacuous nudge is worse than no nudge. The test below pins both halves, so changing that string turns a test red instead of turning this check off.
         _just_closed = "left the open state" in str(_stall_why or "")
         _sweep_moment = (
             not open_items and not in_flight and not live_bg and bool(fold) and _just_closed
@@ -3859,11 +3224,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_UNDEFAULTED % (len(undefaulted), "\n".join("    " + d[:150] for d in undefaulted)),
         )
-    # ---- v10 AUTONOMY: a DEFAULT past its window is EXECUTED, not restated.
-    # The operator: "usually I went through the 'Recommended' action". So the
+    # ---- v10 AUTONOMY: a DEFAULT past its window is EXECUTED, not restated. The operator: "usually I went through the 'Recommended' action". So the
     # recommendation IS the decision once the window closes; the block demands
-    # the execution (bounded per stop, so a migrated backlog drains as a queue
-    # rather than a wall). Fresh deferrals still just report.
+    # the execution (bounded per stop, so a migrated backlog drains as a queue rather than a wall). Fresh deferrals still just report.
     expired = [
         r
         for r in deferred_recs
@@ -3889,9 +3252,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     # ---- v12 JUSTIFICATION: a [?] must earn its seat. New deferrals are
     # gated at --defer; the markdown inbox and older sessions can still park
-    # one without a WHY/HOW, so those are demanded once aged -- bounded, the
-    # same drain shape as the expired queue. Expired items are excluded: they
-    # already carry the stronger execute-the-DEFAULT demand above.
+    # one without a WHY/HOW, so those are demanded once aged -- bounded, the same drain shape as the expired queue. Expired items are excluded: they already carry the stronger execute-the-DEFAULT demand above.
     expired_ids = {r["id"] for r in expired}
     unjustified = [
         r
@@ -3933,19 +3294,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "never briefed" if seen is None else "last seen %dm ago" % seen,
                     # THE WHOLE BODY, deliberately. The operator relayed a finding
                     # by hand because it lived in a commit message nobody reads;
-                    # a truncated block that points at --requests re-creates that
-                    # defect, because reading the rest is again a choice. The
-                    # payload rides inside the obstacle. Bounded by
-                    # REQUEST_BODY_MAX at write time, so this cannot balloon.
+                    # a truncated block that points at --requests re-creates that defect, because reading the rest is again a choice. The payload rides inside the obstacle. Bounded by REQUEST_BODY_MAX at write time, so this cannot balloon.
                     r["body"],
                 )
             )
         vadd(
-            # INVARIANT under I2 since 2026-08-28. Its own comment two lines
-            # above says "the payload rides inside the obstacle" -- the block IS
-            # the delivery of a peer's message. A delivery mechanism that can be
-            # rotated 23 keys deep is not one, and the peer cannot see that this
-            # session decided to read about docs drift instead.
+            # INVARIANT under I2 since 2026-08-28. Its own comment two lines above says "the payload rides inside the obstacle" -- the block IS the delivery of a peer's message. A delivery mechanism that can be rotated 23 keys deep is not one, and the peer cannot see that this session decided to read about docs drift instead.
             "requests",
             True,
             M.V_REQUESTS_WAITING % (len(req_to_me) + len(req_bcast), "\n".join(rows), me8, me8),
@@ -3954,10 +3308,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         rows = []
         for r in req_answered:
             rows.append("    #%s (you asked: %s)" % (r["id"], r["body"][:120]))
-            # Full answer/decline text, same reasoning as the request body
-            # above: this block IS the delivery, and a truncation would make
-            # the crucial detail depend on the asker choosing to run
-            # --requests. Both are REQUEST_BODY_MAX-bounded at write time.
+            # Full answer/decline text, same reasoning as the request body above: this block IS the delivery, and a truncation would make the crucial detail depend on the asker choosing to run --requests. Both are REQUEST_BODY_MAX-bounded at write time.
             for a in r["answers"]:
                 rows.append(
                     "      ANSWER by %s at %s: %s"
@@ -3993,9 +3344,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else M.V_COMPLETION_TASKS % "\n".join("    " + t for t in ev_tasks),
             ),
         )
-    # Persist ONLY the transitions that passed: an unevidenced completion
-    # keeps its previous status in the marker, so it is re-detected and
-    # re-checked next stop rather than slipping through on a later block.
+    # Persist ONLY the transitions that passed: an unevidenced completion keeps its previous status in the marker, so it is re-detected and re-checked next stop rather than slipping through on a later block.
     if reg_state is not None and reg_state.get("head"):
         try:
             held = {t.split()[0].lstrip("#") for t in ev_tasks}
@@ -4012,36 +3361,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                 wl_reggate.save_reggate(reg_marker, reg_state)
         except Exception:  # noqa: BLE001 -- bookkeeping must never break gating
             pass
-    # ---- I6 static idle detection sits BELOW the Remaining scan since v9,
-    # because a VERIFIED waiting-cross-session task counts as having a wake-up.
-    # THE WORK GATE. A brief goes stale when the WORLD moves, not when the clock
-    # does: a sentence that still describes what this session is doing is still
-    # true at 91 minutes, and demanding a rewrite of an accurate sentence is
-    # noise that trains the reader to dismiss the check. Same contract the
-    # STATE.md check already runs on, and the same signature, so the two cannot
-    # disagree about whether anything happened.
+    # ---- I6 static idle detection sits BELOW the Remaining scan since v9, because a VERIFIED waiting-cross-session task counts as having a wake-up. THE WORK GATE. A brief goes stale when the WORLD moves, not when the clock does: a sentence that still describes what this session is doing is still true at 91 minutes, and demanding a rewrite of an accurate sentence is noise that
+    # trains the reader to dismiss the check. Same contract the STATE.md check already runs on, and the same signature, so the two cannot disagree about whether anything happened.
     #
-    # Only the STALE verdict is gated. "missing" still fires unconditionally: a
-    # session that never briefed is invisible to its peers no matter how quiet
-    # the world is, and that is the case the roster exists for.
+    # Only the STALE verdict is gated. "missing" still fires unconditionally: a session that never briefed is invisible to its peers no matter how quiet the world is, and that is the case the roster exists for.
     #
-    # Note this does NOT touch sole_live_session, which reads the brief's raw
-    # timestamp rather than this verdict, so the liveness oracle keeps its
-    # wall-clock meaning while the nag stops firing on an unchanged world.
-    # ---- INTENT (plan section 4). Two effects, both deliberately small.
+    # Note this does NOT touch sole_live_session, which reads the brief's raw timestamp rather than this verdict, so the liveness oracle keeps its wall-clock meaning while the nag stops firing on an unchanged world. ---- INTENT (plan section 4). Two effects, both deliberately small.
     _intent, _intent_expired = S.live_intent(worklist, session_id)
-    # v18 THE EXPIRED INTENT THAT COVERED NOTHING OPEN. V_INTENT_EXPIRED tells
-    # the reader "what it covered is still outstanding" -- and the check never
-    # verified that. It fired live on an intent whose ONE covered item had been
-    # ticked with evidence, so the message asserted something demonstrably
-    # false. A check that says the wrong thing is worse than one that stays
-    # quiet: it trains the reader to skim the whole battery.
+    # v18 THE EXPIRED INTENT THAT COVERED NOTHING OPEN. V_INTENT_EXPIRED tells the reader "what it covered is still outstanding" -- and the check never verified that. It fired live on an intent whose ONE covered item had been ticked with evidence, so the message asserted something demonstrably false. A check that says the wrong thing is worse than one that stays quiet: it trains
+    # the reader to skim the whole battery.
     #
-    # Firing is SUPPRESSED only when every covered id resolves to a closed
-    # item. Two cases keep it firing on purpose: an intent that named NOTHING
-    # (absence of a claim is not proof the claim was met), and a covered id
-    # this fold cannot resolve (unreadable is not the same as done -- the
-    # V_PR_UNREADABLE rule).
+    # Firing is SUPPRESSED only when every covered id resolves to a closed item. Two cases keep it firing on purpose: an intent that named NOTHING (absence of a claim is not proof the claim was met), and a covered id this fold cannot resolve (unreadable is not the same as done -- the V_PR_UNREADABLE rule).
     _cov_ids = list(_intent_expired.get("covers") or []) if _intent_expired else []
     _by_id = {r["id"]: r for r in fold.items}
 
@@ -4069,9 +3399,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     brief_world_moved = state_doc.get("brief_sig") != st_sig
     if bstate == "stale" and not brief_world_moved:
         bstate = "ok"
-    # A LIVE INTENT answers this check's whole question. Only the STALE verdict:
-    # `missing` still fires, because a session that never briefed is invisible to
-    # its peers no matter what it has told the hook.
+    # A LIVE INTENT answers this check's whole question. Only the STALE verdict: `missing` still fires, because a session that never briefed is invisible to its peers no matter what it has told the hook.
     if bstate == "stale" and _intent:
         bstate = "ok"
     if bstate != "ok":
@@ -4087,28 +3415,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                 me8,
             ),
         )
-    # ---- PLAN DRIFT. Binds the session to its own committed design record.
-    # Costs one glob plus the first 10 lines of each non-done plan, and only on
-    # a branch that HAS a plan directory: a project not using the convention
-    # pays the glob and nothing else. Rotating tier, not always: a stale plan is
-    # a real debt but never an integrity failure, and it must not outrank the
-    # checks that stop work being abandoned.
-    # NOT gated on something_remains, and that was a real bug in the first cut.
-    # `something_remains` means open ITEMS, not an unfinished message, so gating
-    # on it meant a session that had ticked everything was never told its plan
-    # was stale -- which is precisely the moment it matters most: the work is
-    # finished and the committed record still says `executing`. The exit is
-    # satisfiable either way (edit the plan, or set its Status), so this cannot
-    # become a nag with no way out.
+    # ---- PLAN DRIFT. Binds the session to its own committed design record. Costs one glob plus the first 10 lines of each non-done plan, and only on a branch that HAS a plan directory: a project not using the convention pays the glob and nothing else. Rotating tier, not always: a stale plan is a real debt but never an integrity failure, and it must not outrank the checks that
+    # stop work being abandoned. NOT gated on something_remains, and that was a real bug in the first cut. `something_remains` means open ITEMS, not an unfinished message, so gating on it meant a session that had ticked everything was never told its plan was stale -- which is precisely the moment it matters most: the work is finished and the committed record still says `executing`.
+    # The exit is satisfiable either way (edit the plan, or set its Status), so this cannot become a nag with no way out.
     try:
         _pdrift = plan_drift_rows(root, fold, session_id)
     except Exception:  # noqa: BLE001 -- a plan read must never break the battery
         _pdrift = []
     if _pdrift:
-        # CAPPED, with the remainder COUNTED rather than dropped: twelve rows in
-        # one block is a context bomb, and the no-silent-caps doctrine says a
-        # gate that truncates must say what it truncated or it reads as "that is
-        # all of them". Newest-first, so the plans nearest the work lead.
+        # CAPPED, with the remainder COUNTED rather than dropped: twelve rows in one block is a context bomb, and the no-silent-caps doctrine says a gate that truncates must say what it truncated or it reads as "that is all of them". Newest-first, so the plans nearest the work lead.
         _shown = _pdrift[:PLAN_DRIFT_MAX]
         _rest = len(_pdrift) - len(_shown)
         vadd(
@@ -4122,33 +3437,20 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
 
-    # ---- PLAN FILE vs WORKLIST (wl_planfile). The sibling of plan-drift above:
-    # that one asks "has the plan gone stale against the work", this one asks
-    # "are the plan's own checkbox TASKS tracked at all". Different questions,
-    # and neither implies the other -- a plan can be freshly rewritten and still
-    # have eighteen boxes nothing tracks, which is exactly what was measured on
+    # ---- PLAN FILE vs WORKLIST (wl_planfile). The sibling of plan-drift above: that one asks "has the plan gone stale against the work", this one asks "are the plan's own checkbox TASKS tracked at all". Different questions, and neither implies the other -- a plan can be freshly rewritten and still have eighteen boxes nothing tracks, which is exactly what was measured on
     # agent/PLAN-secret-namespace-migration.md on 2026-09-02.
     #
-    # AN ADVISORY, NOT A `vadd`, and the reason is a deadlock rather than
-    # politeness: a plan carrying 18 open tasks would, as a block, refuse every
-    # turn of every session in this repo until a multi-week migration finished.
-    # See wl_planfile's design note 1. The queue also supplies the whole noise
+    # AN ADVISORY, NOT A `vadd`, and the reason is a deadlock rather than politeness: a plan carrying 18 open tasks would, as a block, refuse every turn of every session in this repo until a multi-week migration finished. See wl_planfile's design note 1. The queue also supplies the whole noise
     # policy for free -- OUTQ_PER_STOP=1, plus outq_add's content signature,
-    # which re-fires the moment the untracked set changes and otherwise stays
-    # quiet for REPORT_REFRESH_MIN.
+    # which re-fires the moment the untracked set changes and otherwise stays quiet for REPORT_REFRESH_MIN.
     #
-    # PRIORITY 2, alongside the other real advisories and above the agent hint
-    # at 3: the operator asked for this specifically, so it should not queue
-    # behind a suggestion, but it must not outrank a report a peer is blocked on
-    # at 1. ONE plan per stop, the newest with findings, remainder counted.
+    # PRIORITY 2, alongside the other real advisories and above the agent hint at 3: the operator asked for this specifically, so it should not queue behind a suggestion, but it must not outrank a report a peer is blocked on at 1. ONE plan per stop, the newest with findings, remainder counted.
     try:
         _pf_rows, _pf_unread = wl_planfile.plan_rows(
             root, plan_records(root), fold, session_id, plan_owner
         )
         if _pf_rows:
-            # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all`
-            # owns both the cap and the remainder line that `render`'s n_more_plans
-            # used to carry, so the call site no longer does that arithmetic.
+            # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic.
             _pf_text = wl_planfile.render_all(_pf_rows, _pf_unread)
             if _pf_text:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
@@ -4163,19 +3465,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     # Before the PR checks, because a moved pointer changes what the PR IS.
     moves = wl_ci.submodule_pointer_moves(root)
     if moves:
-        # LATCHED PER (path, target sha), NOT silenced. Before this, an
-        # unpushed pointer re-fired on EVERY stop, including after a deliberate
-        # decision to keep it unpushed for now -- so a session doing exactly the
-        # right thing was told off once a minute, which is how a real warning
-        # becomes wallpaper.
+        # LATCHED PER (path, target sha), NOT silenced. Before this, an unpushed pointer re-fired on EVERY stop, including after a deliberate decision to keep it unpushed for now -- so a session doing exactly the right thing was told off once a minute, which is how a real warning becomes wallpaper.
         #
-        # The latch is TIME-BOXED, never permanent, and that distinction is the
-        # whole design. A permanent "I acknowledged this" flag would go silent
-        # on a pointer somebody genuinely forgot, which is worse than the noise
-        # it removes: the check exists because a forgotten pointer ships whatever
-        # the parent last recorded. So it re-fires every SUBMODULE_LATCH_MIN, and
-        # a pointer moving to a NEW sha re-fires immediately because the
-        # signature changes.
+        # The latch is TIME-BOXED, never permanent, and that distinction is the whole design. A permanent "I acknowledged this" flag would go silent on a pointer somebody genuinely forgot, which is worse than the noise it removes: the check exists because a forgotten pointer ships whatever the parent last recorded. So it re-fires every SUBMODULE_LATCH_MIN, and a pointer moving to a
+        # NEW sha re-fires immediately because the signature changes.
         _sub_sig = hashlib.sha1(
             "|".join("%s@%s" % (p, b) for p, _a, b, _w in moves).encode("utf-8")
         ).hexdigest()[:12]
@@ -4183,11 +3476,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _same = _sub.get("sig") == _sub_sig
         _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
         # A RECORDED DECISION LENGTHENS THE LATCH; it never removes it. See
-        # submodule_decision_recorded: the third door (leave it, never stage it)
-        # is invisible to this warning, so a session that decided correctly was
-        # told off every fifteen minutes. A day is long enough to stop
-        # interrupting the work and short enough that a stale decision is
-        # re-examined rather than enshrined.
+        # submodule_decision_recorded: the third door (leave it, never stage it) is invisible to this warning, so a session that decided correctly was told off every fifteen minutes. A day is long enough to stop interrupting the work and short enough that a stale decision is re-examined rather than enshrined.
         _decided = all(submodule_decision_recorded(root, p, b) for p, _a, b, _w in moves)
         _latch = SUBMODULE_DECIDED_LATCH_MIN if _decided else SUBMODULE_LATCH_MIN
         _due = (not _same) or _sub_age is None or _sub_age >= _latch
@@ -4201,19 +3490,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
                 ),
             )
-            # DISPLAY-TIME, see spend_display_latches: stamping here used to
-            # open the suppression window on a stop that rotated the text away.
+            # DISPLAY-TIME, see spend_display_latches: stamping here used to open the suppression window on a stop that rotated the text away.
             display_latch["submodule"] = lambda sig=_sub_sig: state_doc.__setitem__(
                 "subptr", {"sig": sig, "at": C.stamp_now()}
             )
     elif state_doc.get("subptr"):
-        # Pointers match again (pushed, or reverted): drop the latch so the next
-        # genuine move fires at once rather than inheriting a stale window.
+        # Pointers match again (pushed, or reverted): drop the latch so the next genuine move fires at once rather than inheriting a stale window.
         state_doc.pop("subptr", None)
-    # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before
-    # the freshness check because a saturated queue changes what that check
-    # should say. A slack-granter must fail toward pressure: any error here
-    # reads as "unknown", which is exactly today's behavior.
+    # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before the freshness check because a saturated queue changes what that check should say. A slack-granter must fail toward pressure: any error here reads as "unknown", which is exactly today's behavior.
     try:
         qstate, qdetail = wl_ci.ci_queue_state(root, worklist, session_id)
     except Exception:  # noqa: BLE001 -- blindness must not grant slack
@@ -4242,15 +3526,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         # The change-or-window latch is for slow-moving advisories; applying it
         # here would mute an actionable note for six hours after one showing.
         outq_add(worklist, session_id, state_doc, "ci-queue", queue_note, 0, refresh_min=0)
-    # v10: CI trouble on the open PR. Structurally BELOW the poll fast path
-    # (which exits the process above), so a 5-minute no-op poll never pays for
-    # it. `live_bg` is already running-only, which ci_watch_armed relies on.
+    # v10: CI trouble on the open PR. Structurally BELOW the poll fast path (which exits the process above), so a 5-minute no-op poll never pays for it. `live_bg` is already running-only, which ci_watch_armed relies on.
     # ci_report is a non-blocking note; it rides the allow path AND is appended
-    # to the block body, so a downgraded CI failure cannot vanish behind an
-    # unrelated violation.
-    # A hand-rolled CI watch blocks the turn. Structurally ABOVE ci_trouble
-    # because it needs no network at all: it reads the live background roster
-    # the caller already has. Unconditional by design -- see V_ADHOC_WATCH.
+    # to the block body, so a downgraded CI failure cannot vanish behind an unrelated violation. A hand-rolled CI watch blocks the turn. Structurally ABOVE ci_trouble because it needs no network at all: it reads the live background roster the caller already has. Unconditional by design -- see V_ADHOC_WATCH.
     try:
         _adhoc_id, _adhoc_blob = wl_ci.adhoc_watch(live_bg)
     except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
@@ -4280,12 +3558,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _rows = cidetail["hard"] or cidetail["soft"]
         _txt = wl_ci.ci_rows_text(_rows, cidetail["info"])
         _pr = cidetail["info"].get("pr", "?")
-        # THE COMMITS THAT COULD HAVE CAUSED IT, printed with the red rather than left for
-        # the session to think of. It demands nothing and adds no blocking path -- it only
-        # appends facts to a block already being emitted -- so it cannot become a wall.
-        # This has to be MECHANICAL and live here: `C.emit` below ends in `sys.exit(0)`,
-        # upstream of `wl_judge.run_judge`, so a judged rule could never fire on a red-CI
-        # stop at all.
+        # THE COMMITS THAT COULD HAVE CAUSED IT, printed with the red rather than left for the session to think of. It demands nothing and adds no blocking path -- it only appends facts to a block already being emitted -- so it cannot become a wall. This has to be MECHANICAL and live here: `C.emit` below ends in `sys.exit(0)`, upstream of `wl_judge.run_judge`, so a judged rule
+        # could never fire on a red-CI stop at all.
         _histkind, _hist = wl_histfirst.apply_verdict(root, _rows, None)
         if _histkind == "fire":
             _txt = "%s\n\n%s" % (_txt, _hist)
@@ -4301,8 +3575,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "failed job is not counted here). The run is still %s.%s"
                     % (
                         "in progress, so more jobs may appear" if cidetail["live"] else "final",
-                        # Partial sight is still partial: say so rather than let
-                        # the list read as complete.
+                        # Partial sight is still partial: say so rather than let the list read as complete.
                         ""
                         if not cidetail["info"].get("truncated")
                         else " NOTE: only the first %d of %s checks were read, so this list may be incomplete."
@@ -4332,13 +3605,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _txt,
             )
     elif cistate == "ok":
-        # CI is genuinely clean. Separate from the hard/soft bucket above ON
-        # PURPOSE: "Review Complete" is deliberately excluded from ci_classify
-        # (CI_NONBLOCKING_CONTEXTS) so it can never read as a CI failure, but
-        # that exclusion also means a red "Review Complete" was previously
-        # INVISIBLE here -- identical to a fully clean head. This session has
-        # the context (what it just pushed, what the review is about) that a
-        # remote job does not, so it is the right place to surface it.
+        # CI is genuinely clean. Separate from the hard/soft bucket above ON PURPOSE: "Review Complete" is deliberately excluded from ci_classify (CI_NONBLOCKING_CONTEXTS) so it can never read as a CI failure, but that exclusion also means a red "Review Complete" was previously INVISIBLE here -- identical to a fully clean head. This session has the context (what it just pushed,
+        # what the review is about) that a remote job does not, so it is the right place to surface it.
         try:
             rstate, rdetail = wl_ci.review_red(
                 root,
@@ -4390,37 +3658,20 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
     #
-    # THE OPERATOR'S OWN EXAMPLE for the priority ladder: "if there is an
-    # open-pr and if it's red we must continue to work until making it green.
-    # That should be determined by our markdown tasks. You know we already have
-    # empty/checked boxes."
+    # THE OPERATOR'S OWN EXAMPLE for the priority ladder: "if there is an open-pr and if it's red we must continue to work until making it green. That should be determined by our markdown tasks. You know we already have empty/checked boxes."
     #
-    # `ci-red` already blocks on the red -- but it has a HARD CEILING of
-    # CI_MAX_BLOCKS and then downgrades to a report, for good reasons that are
-    # about a red nobody here can fix. Nothing then held the WAVE open. A
-    # session could reach green, leave the PR sitting in draft with the review
-    # never requested and threads unresolved, and stop clean: every check on the
-    # board was satisfied while the thing it was asked to do was unfinished.
-    # That is the state a mission tier exists to refuse.
+    # `ci-red` already blocks on the red -- but it has a HARD CEILING of CI_MAX_BLOCKS and then downgrades to a report, for good reasons that are about a red nobody here can fix. Nothing then held the WAVE open. A session could reach green, leave the PR sitting in draft with the review never requested and threads unresolved, and stop clean: every check on the board was satisfied
+    # while the thing it was asked to do was unfinished. That is the state a mission tier exists to refuse.
     #
     # THE FOUR BOXES ARE READ OFF `.claude/commands/pr-babysit.md`, not invented
     # here -- "The console PR rides as a draft until green; stops at green +
     # Claude-reviewed + threads-resolved PRs; never merges."
     #
-    # WHAT GATES IT, so it cannot become a tax on every session that happens to
-    # have a PR: a pr-babysit ROUND LOG must exist for this branch. That file is
-    # the wave's own artifact (wl_roundlog.roundlog_path, the path the skill
-    # already writes), so the check fires for a session running the loop and is
-    # structurally silent for one that is not.
+    # WHAT GATES IT, so it cannot become a tax on every session that happens to have a PR: a pr-babysit ROUND LOG must exist for this branch. That file is the wave's own artifact (wl_roundlog.roundlog_path, the path the skill already writes), so the check fires for a session running the loop and is structurally silent for one that is not.
     #
-    # THE LAST TWO BOXES ARE STORE-BACKED, and deliberately not guessed. The
-    # hook cannot see a `<!-- claude-reviewed: <sha> -->` marker or a resolved
-    # review thread without spending another GraphQL round trip, and a box that
-    # ticks itself on an unreliable read is worse than one the session ticks
+    # THE LAST TWO BOXES ARE STORE-BACKED, and deliberately not guessed. The hook cannot see a `<!-- claude-reviewed: <sha> -->` marker or a resolved review thread without spending another GraphQL round trip, and a box that ticks itself on an unreliable read is worse than one the session ticks
     # with evidence. So they are covered by a TICKED worklist item carrying
-    # `pr:<n>/reviewed` / `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage
-    # agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence
-    # discipline every other tick carries.
+    # `pr:<n>/reviewed` / `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence discipline every other tick carries.
     try:
         _prf_info = None
         if cistate == "ok":
@@ -4428,10 +3679,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         elif cistate in ("trouble", "downgraded", "soft", "watched") and isinstance(cidetail, dict):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
-        # The branch is read LOCALLY. `agent_branch` is not bound until the
-        # unread-reports surface several hundred lines below, and referencing it
-        # here raised UnboundLocalError -- caught by the fail-closed arm, which
-        # turned the whole check into a HOOK BUG banner on the proving case.
+        # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case.
         # That is the arm working; it is not a reason to leave it reachable.
         _prf_branch = C.git_branch(root) or ""
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
@@ -4474,14 +3722,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     if ci_report:
         # Class 0, volatile, refresh_min=0 for the same reason as the queue
-        # note: ci_trouble recomputes this from the live run every stop, and a
-        # PR that is still red must keep saying so. Case 128 pins it: the
-        # downgraded note is what remains after the block budget is spent, so
-        # latching it would leave a red PR reported exactly once.
+        # note: ci_trouble recomputes this from the live run every stop, and a PR that is still red must keep saying so. Case 128 pins it: the downgraded note is what remains after the block budget is spent, so latching it would leave a red PR reported exactly once.
         outq_add(worklist, session_id, state_doc, "ci-report", ci_report, 0, refresh_min=0)
-    # v9: count WORK crons only. With two crons, a dead work loop behind a
-    # surviving 5-minute poll was invisible to a total-count high-water mark,
-    # and the work loop dying quietly is the exact failure the operator named.
+    # v9: count WORK crons only. With two crons, a dead work loop behind a surviving 5-minute poll was invisible to a total-count high-water mark, and the work loop dying quietly is the exact failure the operator named.
     loop_died, had_crons = cron_memory(
         worklist, session_id, len(live_work_crons), loop_finished_declared(last_msg)
     )
@@ -4489,16 +3732,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("loop-died", False, M.V_LOOP_DIED % had_crons)
     # THE PUSH-BACK: the session just declared something impossible in a domain
     # a written specialist covers. `always=True` because this is a latched
-    # one-shot whose producer marks state at COMPUTE time -- rotating the text
-    # away would spend the latch on a line nobody ever saw, which is the exact
-    # bug the `always` tier exists to prevent.
+    # one-shot whose producer marks state at COMPUTE time -- rotating the text away would spend the latch on a line nobody ever saw, which is the exact bug the `always` tier exists to prevent.
     #
-    # It is a BLOCK rather than an advisory, and that is the operator's own
-    # standard applied to their own request: "a document an agent can skip is
-    # not a control". The advisory tier already carries the topic hint, and the
-    # session this was built for had ALREADY been shown that file. One
-    # unskippable challenge per specialist is the smallest thing that could
-    # have changed the outcome.
+    # It is a BLOCK rather than an advisory, and that is the operator's own standard applied to their own request: "a document an agent can skip is not a control". The advisory tier already carries the topic hint, and the session this was built for had ALREADY been shown that file. One unskippable challenge per specialist is the smallest thing that could have changed the outcome.
     with contextlib.suppress(Exception):  # never wedge a stop on a prompt
         _pb, _pb_errs = A.pushback_for((last_msg or "") + "\n" + "\n".join(remaining_lines))
         if _pb:
@@ -4516,28 +3752,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _pb_seen[_pb_name] = C.stamp_now()
                 S.save_state(worklist, session_id, state_doc)
     # Explicit state mapping, NOT `!= "ok"`: a missing DIRECTORY gets the
-    # bootstrap wall exactly once per session, latched on agent_boot_told,
-    # rather than the block every other bad verdict earns.
+    # bootstrap wall exactly once per session, latched on agent_boot_told, rather than the block every other bad verdict earns.
     #
-    # THE "no-branch" ARM IS GONE (2026-08-18). It existed only because the
-    # document's path needed a branch to resolve, and it made this check
-    # REPORT-ONLY on a detached HEAD -- which this operator gets on every
-    # interactive rebase, so the one artifact designed to survive compaction
-    # went unenforced for the whole of one. Keying the path on the session
-    # removed the cause instead of softening the symptom, and `agent_note` and
-    # the `agent-blind` note went with it: a note describing a state that can
-    # no longer occur is a check that cannot fire.
+    # THE "no-branch" ARM IS GONE (2026-08-18). It existed only because the document's path needed a branch to resolve, and it made this check REPORT-ONLY on a detached HEAD -- which this operator gets on every interactive rebase, so the one artifact designed to survive compaction went unenforced for the whole of one. Keying the path on the session removed the cause instead of
+    # softening the symptom, and `agent_note` and the `agent-blind` note went with it: a note describing a state that can no longer occur is a check that cannot fire.
     #
-    # A live intent answers the STALE verdict only. `missing`, `thin`, `bloated`
-    # and `aimless` are about the DOCUMENT's shape and content, which no
-    # statement of plan can substitute for.
+    # A live intent answers the STALE verdict only. `missing`, `thin`, `bloated` and `aimless` are about the DOCUMENT's shape and content, which no statement of plan can substitute for.
     if astate == "stale" and _intent:
         astate = "ok"
-    # `waitled` is in this tuple and its absence was a real hole: the rule was
-    # enforced at WRITE time by the verb and invisible at READ time here, so a
-    # document that predates the rule, or one written by any path that bypasses
-    # the verb, would sail through the Stop check forever. A rule enforced on
-    # only one of two paths is a rule with a documented way around it.
+    # `waitled` is in this tuple and its absence was a real hole: the rule was enforced at WRITE time by the verb and invisible at READ time here, so a document that predates the rule, or one written by any path that bypasses the verb, would sail through the Stop check forever. A rule enforced on only one of two paths is a rule with a documented way around it.
     # v22 SOLO GRIND. Advisory tier (always=False) so the cadence can pause it:
     # it is a prompt to think, not a fact that must be answered this turn.
     try:
@@ -4571,9 +3794,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
     elif astate == "no-dir":
-        # The latch used to key on the BRANCH, so one session whose checkout
-        # changed branch met the same wall a second time. It keys on the slug
-        # the wall actually names, which cannot change under a live session.
+        # The latch used to key on the BRANCH, so one session whose checkout changed branch met the same wall a second time. It keys on the slug the wall actually names, which cannot change under a live session.
         _boot_key = S.agent_session_slug(session_id)
         if state_doc.get("agent_boot_told") != _boot_key:
             vadd(
@@ -4589,20 +3810,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                 False,
                 M.V_AGENT_STILL_ABSENT % S.agent_session_slug(session_id),
             )
-    # REPORT-ONLY, and it must stay that way: a session that cannot see its
-    # peers cannot be expected to respect them, but a peer's document is never
-    # this session's obligation. Class 2 volatile, recomputed every stop,
-    # exactly like the blind note above.
+    # REPORT-ONLY, and it must stay that way: a session that cannot see its peers cannot be expected to respect them, but a peer's document is never this session's obligation. Class 2 volatile, recomputed every stop, exactly like the blind note above.
     #
-    # PEERS ARE SIBLING DIRECTORIES NOW (2026-08-14), not sections of one
-    # shared file. The split is precisely what stops a peer's write destroying
-    # this session's document -- but the visibility it replaced must survive
-    # it, or the migration trades one silent failure (a clobber) for another (a
-    # session that no longer knows anyone else is here). So this reads every
-    # sibling agent/<peer>/STATE.md instead of one file, and keeps the row
-    # shape byte-identical. It still touches NOTHING: an every-turn hook that
-    # writes inside a peer's directory is the fastest route back to the clobber
-    # this layout exists to prevent, so it only NAMES what it sees.
+    # PEERS ARE SIBLING DIRECTORIES NOW (2026-08-14), not sections of one shared file. The split is precisely what stops a peer's write destroying this session's document -- but the visibility it replaced must survive it, or the migration trades one silent failure (a clobber) for another (a session that no longer knows anyone else is here). So this reads every sibling
+    # agent/<peer>/STATE.md instead of one file, and keeps the row shape byte-identical. It still touches NOTHING: an every-turn hook that writes inside a peer's directory is the fastest route back to the clobber this layout exists to prevent, so it only NAMES what it sees.
     try:
         _all = S.agent_peer_sections(root, session_id)
         _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
@@ -4613,10 +3824,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             % (
                 s["owner"],
                 int(max(0.0, (_now - s["ts"]) / 60.0)),
-                # NOT "reap-eligible" any more: nothing prunes another
-                # session's directory, so a label promising that would be a
-                # check that cannot fire. What the horizon still tells the
-                # reader honestly is that this peer looks gone.
+                # NOT "reap-eligible" any more: nothing prunes another session's directory, so a label promising that would be a check that cannot fire. What the horizon still tells the reader honestly is that this peer looks gone.
                 "   ABANDONED" if id(s) in _reap_ids else "",
             )
             for s in _all
@@ -4632,39 +3840,21 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except OSError:
         pass  # no document, or an unreadable one: the astate branches above own that
-    # v18: unread sub-agent reports, on ORDINARY stops as well as at the two
-    # boundaries wl_report already covers by hook. SessionStart and PostCompact
+    # v18: unread sub-agent reports, on ORDINARY stops as well as at the two boundaries wl_report already covers by hook. SessionStart and PostCompact
     # catch a fresh or compacted session; this catches the far commoner case of
-    # a long-running session whose teammate finished twenty minutes ago and
-    # whose SendMessage has since scrolled out of reach.
+    # a long-running session whose teammate finished twenty minutes ago and whose SendMessage has since scrolled out of reach.
     #
-    # IT GRADUATES, since 2026-08-28. The old rule here was "REPORT-ONLY, never
-    # a violation", on the stated grounds that "there is no honest evidence a
-    # stop could demand for 'I read it'". That grounds is simply untrue:
-    # `wl_report.py --read <me> <id>` is exactly such evidence, and the advisory
-    # ALREADY PRINTS THAT COMMAND two lines below its own excuse.
+    # IT GRADUATES, since 2026-08-28. The old rule here was "REPORT-ONLY, never a violation", on the stated grounds that "there is no honest evidence a stop could demand for 'I read it'". That grounds is simply untrue: `wl_report.py --read <me> <id>` is exactly such evidence, and the advisory ALREADY PRINTS THAT COMMAND two lines below its own excuse.
     #
-    # And the cost of the excuse was measured, not theorised: `outq_drain` has
-    # exactly one call site, on the ALLOW path, so a continuously blocking
-    # session never sees a queued advisory at all. One session carried FOUR
-    # unread teammate reports through 57 consecutive blocking stops and was
-    # never once told. A teammate's finished report is the clearest case of
-    # somebody else having paid to produce something this session is not
-    # reading, which is the T_OWED tier's whole definition.
+    # And the cost of the excuse was measured, not theorised: `outq_drain` has exactly one call site, on the ALLOW path, so a continuously blocking session never sees a queued advisory at all. One session carried FOUR unread teammate reports through 57 consecutive blocking stops and was never once told. A teammate's finished report is the clearest case of somebody else having paid
+    # to produce something this session is not reading, which is the T_OWED tier's whole definition.
     #
-    # THE LADDER, so it stays proportionate to how long the report has waited:
-    #   < UNREAD_ROTATE_MIN      advisory only, as before -- a report that
-    #                            landed minutes ago is news, not a debt.
+    # THE LADDER, so it stays proportionate to how long the report has waited: < UNREAD_ROTATE_MIN advisory only, as before -- a report that landed minutes ago is news, not a debt.
     #   >= UNREAD_ROTATE_MIN     a rotating violation at T_OWED.
     #   >= UNREAD_INVARIANT_MIN, an invariant: at that age the advisory queue
-    #   or any [SILENT] one       has demonstrably not delivered it, and a
-    #                             [SILENT] report is the case that is
-    #                             indistinguishable from a healthy agent unless
-    #                             somebody looks.
+    # or any [SILENT] one has demonstrably not delivered it, and a [SILENT] report is the case that is indistinguishable from a healthy agent unless somebody looks.
     #
-    # The branch is read HERE and nowhere else on this path now: the report
-    # store is keyed per branch in TMPDIR (wl_report.store_root), which is a
-    # different tree from agent/ and keeps its own key.
+    # The branch is read HERE and nowhere else on this path now: the report store is keyed per branch in TMPDIR (wl_report.store_root), which is a different tree from agent/ and keeps its own key.
     agent_branch = C.git_branch(root)
     try:
         _unread = wl_report.unread(
@@ -4703,16 +3893,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                 outq_add(worklist, session_id, state_doc, "unread-reports", _ur_text, 2)
     except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
         pass
-    # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh`
-    # refuses permission-shaped git questions and, until now, left no trace
-    # anywhere the operator looks -- which .claude/hooks/test-hooks.sh names as
-    # the flaw in its own design: "a false positive is invisible by
-    # construction: the operator never learns what was not asked". The hook now
+    # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh` refuses permission-shaped git questions and, until now, left no trace anywhere the operator looks -- which .claude/hooks/test-hooks.sh names as the flaw in its own design: "a false positive is invisible by construction: the operator never learns what was not asked". The hook now
     # appends one row per refusal; this is the read side.
     #
     # ROTATING AND ADVISORY, never a violation. A refusal is the gate working;
-    # the only thing worth saying is that the file exists, has rows, and is
-    # where a wrong refusal becomes visible.
+    # the only thing worth saying is that the file exists, has rows, and is where a wrong refusal becomes visible.
     try:
         _ar_n, _ar_path = wl_admit.ask_refusals(worklist, session_id)
         if _ar_n:
@@ -4728,14 +3913,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         pass
     # v19 L2: identities that write to this store but have never stopped. The
     # CLI check refuses them at the door from now on; this is the backstop for
-    # what it cannot reach -- history already written, and the deliberate hole
-    # where the environment cannot name the caller.
+    # what it cannot reach -- history already written, and the deliberate hole where the environment cannot name the caller.
     #
-    # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP defaults to
-    # 1 and outq_drain is highest-priority-first, so a priority-2 note can queue
-    # behind others for many stops. An identity split is not something to
-    # ration. REPORT-ONLY: this runs on every session's Stop path and the repair
-    # is not always this session's to make.
+    # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP defaults to 1 and outq_drain is highest-priority-first, so a priority-2 note can queue behind others for many stops. An identity split is not something to ration. REPORT-ONLY: this runs on every session's Stop path and the repair is not always this session's to make.
     try:
         _phantoms, _blind = phantom_identities(worklist, session_id, fold, all_reqs)
         _wp = str(pathlib.Path(hook_file).resolve())
@@ -4761,15 +3941,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         vadd("docs-drift", False, M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
-    # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) --------
-    # WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the
-    # next session seed the worklist. Prose gates nothing, so a handoff whose
-    # PROMPT.md was ignored or compacted away dropped program work silently
-    # and nobody found out. CHECKLIST.md is the machine-readable half of the
-    # same handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping,
-    # the file is the truth) and waves are store-linked through the
-    # `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather
-    # than promised. The two signature values are computed here because the
+    # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
+    # handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping, the file is the truth) and waves are store-linked through the `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather than promised. The two signature values are computed here because the
     # pollbase banks them below; see wl_checklist for the adjudication.
     cl_sig_now, cl_live_now = "", -1
     try:
@@ -4783,50 +3956,26 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_add(worklist, session_id, state_doc, _k, _t, _p)
     except Exception as exc:  # noqa: BLE001 -- fail CLOSED: a blind gate must say so
         vadd("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])
-    # v9: the two-cron shape (operator directive). A looped session carries
-    # exactly one 5-minute inbox poll beside at most one work loop.
-    # v18: a CONFIRMED waiter satisfies this in place of a poll cron. The check
+    # v9: the two-cron shape (operator directive). A looped session carries exactly one 5-minute inbox poll beside at most one work loop. v18: a CONFIRMED waiter satisfies this in place of a poll cron. The check
     # exists so that a looped session has SOME inbox delivery mechanism; the
-    # waiter is a strictly better one (seconds of latency instead of up to the
-    # cron period, and no turn spent on an empty inbox), so demanding a cron
-    # beside it would be demanding the worse mechanism for its own sake.
+    # waiter is a strictly better one (seconds of latency instead of up to the cron period, and no turn spent on an empty inbox), so demanding a cron beside it would be demanding the worse mechanism for its own sake.
     if live_crons and not live_poll_crons and not _waiters_confirmed:
         vadd("no-poll", False, M.V_NO_POLL_CRON % (me8, me8))
     # v18: REQUIRE a waiter -- but ONLY of a session that has been told and has
     # ignored it. The operator asked to "force contexts to run in background";
-    # my first attempt keyed on "no confirmed waiter right now" and was WRONG in
-    # both of its branches, measured rather than argued:
+    # my first attempt keyed on "no confirmed waiter right now" and was WRONG in both of its branches, measured rather than argued:
     #
-    #   as a VIOLATION it broke 16 unrelated cases in this suite, because a
-    #   looped session with a peer is the NORMAL state, and -- worse -- a waiter
-    #   legitimately exits every time it fires, so the condition is true in
-    #   exactly the window the session is supposed to be in. It punished the
-    #   correct behaviour.
+    # as a VIOLATION it broke 16 unrelated cases in this suite, because a looped session with a peer is the NORMAL state, and -- worse -- a waiter legitimately exits every time it fires, so the condition is true in exactly the window the session is supposed to be in. It punished the correct behaviour.
     #
-    #   as a REPORT it was worse still: a sticky outq entry on every such stop
-    #   permanently occupied a slot in a bounded queue and starved the real
-    #   sections (cases 173/174 released nothing at all).
+    # as a REPORT it was worse still: a sticky outq entry on every such stop permanently occupied a slot in a bounded queue and starved the real sections (cases 173/174 released nothing at all).
     #
-    # So the trigger is the IGNORED COUNT the PostToolUse nudge maintains. The
-    # nudge does the forcing -- every 10 minutes, with the exact command, at no
-    # cost when satisfied -- and it DECAYS the moment a waiter appears. This is
-    # only the backstop for a session that has been asked WAITER_GRACE_NUDGES
-    # times over half an hour and has not complied.
+    # So the trigger is the IGNORED COUNT the PostToolUse nudge maintains. The nudge does the forcing -- every 10 minutes, with the exact command, at no cost when satisfied -- and it DECAYS the moment a waiter appears. This is only the backstop for a session that has been asked WAITER_GRACE_NUDGES times over half an hour and has not complied.
     #
-    # THE GATE WAS `live_work_crons` AND THAT COULD NEVER FIRE FOR THE SESSION
-    # IT WAS BUILT FOR. Measured 2026-08-27, live and recorded a few lines below
-    # in this very file: a session with no cron directory at all had an empty
-    # `live_work_crons`, so this check was structurally unreachable for it. The
+    # THE GATE WAS `live_work_crons` AND THAT COULD NEVER FIRE FOR THE SESSION IT WAS BUILT FOR. Measured 2026-08-27, live and recorded a few lines below in this very file: a session with no cron directory at all had an empty `live_work_crons`, so this check was structurally unreachable for it. The
     # workaround was to add `no-waiter-asked` beside it; the gate itself was
-    # never repaired, so the general case stayed dead. It now ALSO accepts
-    # `wl_wait.outstanding_work(...)` -- the SAME predicate the PostToolUse
-    # nudge uses to decide whether to nudge at all -- so the two ends of this
-    # mechanism cannot disagree about whether the session still owes anything.
+    # never repaired, so the general case stayed dead. It now ALSO accepts `wl_wait.outstanding_work(...)` -- the SAME predicate the PostToolUse nudge uses to decide whether to nudge at all -- so the two ends of this mechanism cannot disagree about whether the session still owes anything.
     #
-    # A UNION, NOT A REPLACEMENT, and the difference is a case this suite
-    # already pins: 163w models a looped session with a work cron and an EMPTY
-    # board, which is a session that can perfectly well be sent work and must
-    # still be listening. Swapping the gate outright would have silenced the
+    # A UNION, NOT A REPLACEMENT, and the difference is a case this suite already pins: 163w models a looped session with a work cron and an EMPTY board, which is a session that can perfectly well be sent work and must still be listening. Swapping the gate outright would have silenced the
     # very check the case exists for. A cron is one way to have work; open
     # items and leases are another; neither is the definition of it.
     try:
@@ -4845,29 +3994,17 @@ def run_stop(event, event_ok, worklist, hook_file):
         ]
         if _peers and wl_wait.nudges_ignored(worklist, me8) >= WAITER_GRACE_NUDGES:
             vadd(
-                # INVARIANT under I2. By the time this fires the session has
-                # ignored WAITER_GRACE_NUDGES PostToolUse nudges over half an
-                # hour with a live peer present: peers can address it and it
-                # cannot hear them. Nobody on the other end can observe that.
+                # INVARIANT under I2. By the time this fires the session has ignored WAITER_GRACE_NUDGES PostToolUse nudges over half an hour with a live peer present: peers can address it and it cannot hear them. Nobody on the other end can observe that.
                 "no-waiter",
                 True,
                 M.V_NO_WAITER
                 % (len(_peers), str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"), me8),
             )
-        # A LAPSE IS NOT THE SAME THING AS NEVER HAVING ARMED ONE, and until the
-        # tombstone (wl_wait.tombstone) the hook could not tell them apart --
-        # wait() unlinked its heartbeat on BOTH exits, so a waiter that had died
-        # left exactly what a session that never listened leaves: nothing. With
-        # the nudge counter also reset by the arming, the net effect was that
-        # arming one 60-minute waiter BOUGHT 30+ minutes of guaranteed silence
-        # after it lapsed. That is a perverse incentive rather than a gap.
+        # A LAPSE IS NOT THE SAME THING AS NEVER HAVING ARMED ONE, and until the tombstone (wl_wait.tombstone) the hook could not tell them apart -- wait() unlinked its heartbeat on BOTH exits, so a waiter that had died left exactly what a session that never listened leaves: nothing. With the nudge counter also reset by the arming, the net effect was that arming one 60-minute
+        # waiter BOUGHT 30+ minutes of guaranteed silence after it lapsed. That is a perverse incentive rather than a gap.
         #
-        # NO GRACE HERE, deliberately, and this is the one place the waiter
-        # machinery is allowed to be impatient: the nudge ladder's whole
-        # justification is that a session which merely COULD receive work should
-        # not be punished for not having volunteered. A session whose waiter
-        # exited already volunteered, was told on the way out to relaunch, and
-        # did not. There is nothing left to establish.
+        # NO GRACE HERE, deliberately, and this is the one place the waiter machinery is allowed to be impatient: the nudge ladder's whole justification is that a session which merely COULD receive work should not be punished for not having volunteered. A session whose waiter exited already volunteered, was told on the way out to relaunch, and did not. There is nothing left to
+        # establish.
         elif _peers:
             _lapse_why, _lapse_age = wl_wait.waiter_lapsed(worklist, me8)
             if _lapse_why:
@@ -4883,35 +4020,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                         me8,
                     ),
                 )
-    # ASKING IS A COMMITMENT TO LISTEN, and the check above cannot express that.
-    # It needs THREE things before it fires -- a live non-poll work cron, a live
-    # peer, and WAITER_GRACE_NUDGES ignored PostToolUse nudges (half an hour) --
-    # which is a fair trade for a session that merely COULD receive work.
+    # ASKING IS A COMMITMENT TO LISTEN, and the check above cannot express that. It needs THREE things before it fires -- a live non-poll work cron, a live peer, and WAITER_GRACE_NUDGES ignored PostToolUse nudges (half an hour) -- which is a fair trade for a session that merely COULD receive work.
     #
-    # It is the wrong trade for a session that has ASKED something and is
-    # waiting on the reply. Measured 2026-08-27, live: this session had no cron
-    # directory at all, so `live_work_crons` was empty and the check could NEVER
-    # fire for it, while it held an open request to a peer last seen minutes
-    # earlier and no waiter running. It would have stopped and waited forever
+    # It is the wrong trade for a session that has ASKED something and is waiting on the reply. Measured 2026-08-27, live: this session had no cron directory at all, so `live_work_crons` was empty and the check could NEVER fire for it, while it held an open request to a peer last seen minutes earlier and no waiter running. It would have stopped and waited forever
     # for an answer it had no way to hear.
     #
-    # Posting a request is the session choosing to depend on an answer, so no
-    # grace period is warranted: one stop is enough. Scoped to recipients that
-    # can actually reply -- an `operator` request is answered by a human at a
-    # shell and needs no waiter, and a peer that has not briefed inside the dead
-    # window cannot be waited on either.
+    # Posting a request is the session choosing to depend on an answer, so no grace period is warranted: one stop is enough. Scoped to recipients that can actually reply -- an `operator` request is answered by a human at a shell and needs no waiter, and a peer that has not briefed inside the dead window cannot be waited on either.
     #
-    # `_waiters_confirmed` is the right liveness source and not merely the
-    # convenient one: confirmed_waiters() accepts only the OS-verified verdict,
-    # so `suspect` and `unverifiable` do not buy the trade. The whole argument
+    # `_waiters_confirmed` is the right liveness source and not merely the convenient one: confirmed_waiters() accepts only the OS-verified verdict, so `suspect` and `unverifiable` do not buy the trade. The whole argument
     # for relaxing anything here is that the process's EXIT is the wake-up,
-    # which is worth nothing if nobody can see the process.
-    # A POLL CRON IS A LISTENER, JUST A SLOWER ONE, and the first draft of this
-    # check forgot that -- it blocked a session that was polling on a cadence,
-    # which two existing cases correctly called a legitimate idle. V_NO_WAITER's
-    # own text says the two are complementary rather than alternatives: a waiter
-    # is faster, a cron sees things a waiter cannot. Either one means the answer
-    # will be heard, which is the whole obligation here.
+    # which is worth nothing if nobody can see the process. A POLL CRON IS A LISTENER, JUST A SLOWER ONE, and the first draft of this check forgot that -- it blocked a session that was polling on a cadence, which two existing cases correctly called a legitimate idle. V_NO_WAITER's own text says the two are complementary rather than alternatives: a waiter is faster, a cron sees
+    # things a waiter cannot. Either one means the answer will be heard, which is the whole obligation here.
     _ask_ladder_n = wl_wait.ask_nolisten_count(worklist, me8)
     if req_open_mine and not _waiters_confirmed and not live_poll_crons:
         _ask_dead = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
@@ -4930,23 +4049,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             _waiter_py = str(pathlib.Path(__file__).resolve().parent / "wl_wait.py")
             _hook_py = str(pathlib.Path(__file__).resolve().parent / "worklist.py")
             vadd(
-                # INVARIANT under I1 AND I2, and the headline promotion of this
-                # change. I1: bump_ask_nolisten() below advances the five-rung
-                # ladder at COMPUTE time, so every stop that rotated this away
-                # still burned a rung -- the tier comment's claim that
-                # "everything else is recomputed from artifacts each stop, so
-                # showing one at a time loses nothing" was FALSE here, and
-                # R_FOCUS_MORE's "rotation forgets nothing" was a lie in exactly
-                # the case the operator hit. Measured: with ~23 rotating keys
+                # INVARIANT under I1 AND I2, and the headline promotion of this change. I1: bump_ask_nolisten() below advances the five-rung ladder at COMPUTE time, so every stop that rotated this away still burned a rung -- the tier comment's claim that "everything else is recomputed from artifacts each stop, so showing one at a time loses nothing" was FALSE here, and
+                # R_FOCUS_MORE's "rotation forgets nothing" was a lie in exactly the case the operator hit. Measured: with ~23 rotating keys
                 # ahead of it, the FIRST sighting landed at round >= 5, the
-                # terminal rung, so rungs 2-4 (the only ones carrying new
-                # information) were unreachable in a crowded session and rung
-                # 5's "it has now asked %d times" was false. I2: the session
-                # asked a peer for something and is not listening for the reply.
+                # terminal rung, so rungs 2-4 (the only ones carrying new information) were unreachable in a crowded session and rung 5's "it has now asked %d times" was false. I2: the session asked a peer for something and is not listening for the reply.
                 #
-                # As an invariant, compute time and display time coincide, so
-                # the bump becomes correct where it stands and the ladder walks
-                # 1 -> 2 -> 3 -> 4 -> 5. No relocation needed.
+                # As an invariant, compute time and display time coincide, so the bump becomes correct where it stands and the ladder walks 1 -> 2 -> 3 -> 4 -> 5. No relocation needed.
                 "no-waiter-asked",
                 True,
                 _rung
@@ -4966,28 +4074,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         elif _ask_ladder_n:
             wl_wait.reset_ask_nolisten(worklist, me8)
     elif _ask_ladder_n:
-        # THE RESET IS THE OTHER HALF OF THE LADDER. Without it the counter only
-        # ever grows, so a session that complied once would still be greeted at
-        # round 5 the next time it asked anything -- the ladder would measure
-        # its history rather than its current behaviour, and rung 5's "it has
-        # now asked 5 times" would be a lie.
+        # THE RESET IS THE OTHER HALF OF THE LADDER. Without it the counter only ever grows, so a session that complied once would still be greeted at round 5 the next time it asked anything -- the ladder would measure its history rather than its current behaviour, and rung 5's "it has now asked 5 times" would be a lie.
         wl_wait.reset_ask_nolisten(worklist, me8)
 
     # v20: THE OTHER HALF OF THE SAME MECHANISM. Everything above forces a busy
     # session to LISTEN; nothing ever told a finished one to STOP, so a drained
-    # session kept a process alive for up to an hour and was nagged on every
-    # tool call to relaunch it. Observed live 2026-08-19: zero open items, zero
-    # background jobs, VMs torn down, still being told it was NOT LISTENING.
+    # session kept a process alive for up to an hour and was nagged on every tool call to relaunch it. Observed live 2026-08-19: zero open items, zero background jobs, VMs torn down, still being told it was NOT LISTENING.
     #
-    # `_only_waiters` is the guard that matters, not `_waiters_confirmed`
-    # alone: a session whose OTHER background jobs are still running is not
-    # drained, and their reports arrive through this very channel -- telling it
-    # to stop listening would make it deaf to the workers it is supervising.
+    # `_only_waiters` is the guard that matters, not `_waiters_confirmed` alone: a session whose OTHER background jobs are still running is not drained, and their reports arrive through this very channel -- telling it to stop listening would make it deaf to the workers it is supervising.
     #
-    # A REPORT, NEVER A VIOLATION. An orphan waiter costs a process, not
-    # correctness, and a stop that BLOCKED on it would keep the session alive
-    # to argue about the thing it is being told to shut down -- the same
-    # backwards trade the nudge's own history above records.
+    # A REPORT, NEVER A VIOLATION. An orphan waiter costs a process, not correctness, and a stop that BLOCKED on it would keep the session alive to argue about the thing it is being told to shut down -- the same backwards trade the nudge's own history above records.
     if _waiters_confirmed and _only_waiters and not actionable_remains:
         outq_add(
             worklist,
@@ -5018,10 +4114,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     if len(live_poll_crons) > 1:
         vadd("many-poll-crons", False, M.V_MANY_POLL_CRONS % len(live_poll_crons))
-    # v18: the surviving half of the deleted NEXT WAKEUPS section. A schedule
-    # this hook cannot parse is invisible to every check above -- it is neither
-    # a poll cron nor a countable work cron -- so it must be said out loud
-    # rather than left implicit in a list nobody prints any more.
+    # v18: the surviving half of the deleted NEXT WAKEUPS section. A schedule this hook cannot parse is invisible to every check above -- it is neither a poll cron nor a countable work cron -- so it must be said out loud rather than left implicit in a list nobody prints any more.
     try:
         _broken_scheds = broken_schedules(event)
     except Exception:  # noqa: BLE001 -- a shape check must never wedge a stop
@@ -5032,9 +4125,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_BROKEN_SCHEDULE % (len(_broken_scheds), "\n".join(_broken_scheds)),
         )
-    # A "blocked on you" claim the operator never confirmed is a guess about
-    # someone else's intent, and it is how work parks itself indefinitely. The
-    # confirmed form carries the operator's own words back.
+    # A "blocked on you" claim the operator never confirmed is a guess about someone else's intent, and it is how work parks itself indefinitely. The confirmed form carries the operator's own words back.
     unconfirmed = [
         i
         for i, _, _ in tasks
@@ -5043,14 +4134,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     ]
     if unconfirmed:
         vadd("unconfirmed", False, M.V_UNCONFIRMED % ", ".join("#" + i for i in unconfirmed))
-    # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)"
-    # in the app, so a Remaining section that omits one of those six is out of
-    # sync with what they are looking at. Every open task id must appear.
+    # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)" in the app, so a Remaining section that omits one of those six is out of sync with what they are looking at. Every open task id must appear.
     missing_ids = [i for i, _, _ in tasks if not re.search(r"#%s\b" % re.escape(i), last_msg or "")]
-    # EVERY REMAINING ITEM MUST DECLARE ITS STATE. "who it is blocked on" is not
-    # the same question as "is anyone working it": a list where six items all look
-    # alike cannot tell the operator what is moving and what is parked. The word
-    # must also AGREE with the harness, which is the list they see in their app.
+    # EVERY REMAINING ITEM MUST DECLARE ITS STATE. "who it is blocked on" is not the same question as "is anyone working it": a list where six items all look alike cannot tell the operator what is moving and what is parked. The word must also AGREE with the harness, which is the list they see in their app.
     state_re = re.compile(
         r"\b(ongoing|in progress|in-progress|in_progress|pending|blocked|parked|waiting-cross-session)\b",
         re.IGNORECASE,
@@ -5071,16 +4157,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 unstated.append(tid)
                 continue
             word = found.group(1).lower()
-            # A BLOCKER IS A CLAIM ABOUT REALITY, SO IT NEEDS A SOURCE.
-            # Scoped deliberately narrow. Exempt anything already backed by
-            # machinery this hook can SEE: a running background task or a live
-            # lease means there is a real, named object being waited on, and
-            # "blocked on the operator" has its own check above. What survives
-            # the filter is exactly the Wave C class: a prose blocker naming a
-            # phase of this project, which is the one shape nobody can check.
-            # v9: waiting-cross-session is exempt from the file citation
-            # because its request id IS the citation, verified in xsession_ok
-            # across the request's whole lifecycle.
+            # A BLOCKER IS A CLAIM ABOUT REALITY, SO IT NEEDS A SOURCE. Scoped deliberately narrow. Exempt anything already backed by machinery this hook can SEE: a running background task or a live lease means there is a real, named object being waited on, and "blocked on the operator" has its own check above. What survives the filter is exactly the Wave C class: a prose blocker
+            # naming a phase of this project, which is the one shape nobody can check. v9: waiting-cross-session is exempt from the file citation because its request id IS the citation, verified in xsession_ok across the request's whole lifecycle.
             if word == "waiting-cross-session":
                 ok, detail = xsession_ok(line, all_reqs, session_id)
                 if ok:
@@ -5099,12 +4177,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- I6: static idle detection (v8; below the scan since v9) ------------
     # Disjoint from the stuck detector by geometry: stuck is active-but-futile
     # and needs three stops; this is inactive-with-nothing-inbound, whose
-    # deadliest form produces NO further stops, so the counter never fires.
-    # Scoped to tasks: open [ ] items and undefaulted [?] already block above,
-    # and a worklist of defaulted [?] is time-boxed autonomy, which may stop.
-    # v9: only WORK crons count as a wake-up (a poll fires but advances
-    # nothing by itself), and a VERIFIED waiting-cross-session task is exempt,
-    # because the enforced poll delivers the answer that unblocks it.
+    # deadliest form produces NO further stops, so the counter never fires. Scoped to tasks: open [ ] items and undefaulted [?] already block above, and a worklist of defaulted [?] is time-boxed autonomy, which may stop. v9: only WORK crons count as a wake-up (a poll fires but advances nothing by itself), and a VERIFIED waiting-cross-session task is exempt, because the enforced
+    # poll delivers the answer that unblocks it.
     idle_tasks = [
         i
         for i, _, _ in tasks
@@ -5116,8 +4190,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if xw_bad:
         vadd("xsession", False, M.V_XSESSION_BAD % ("\n".join("    " + b for b in xw_bad), me8))
     # ---- v10: the blocking ladder rungs. Rung 1 (ping) NEVER blocks; it
-    # rides the report below. Each blocking rung fired at most once per
-    # (item, stamp) -- see wl_liveness.ladder.
+    # rides the report below. Each blocking rung fired at most once per (item, stamp) -- see wl_liveness.ladder.
     facts = "\n".join("    " + w for w in worker_rows) or "    (no background tasks running)"
     if ladder_inv:
         vadd(
@@ -5135,9 +4208,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if ladder_idle:
         # ITS OWN VERDICT, not folded into `gone`. A gone worker is absent from
         # the harness list; an idle one FINISHED ITS TURN and said so in its own
-        # transcript, and may still be resumable. Same remedies, different fact,
-        # and conflating them would put "is not in the harness list any more" in
-        # front of a teammate that is merely between turns.
+        # transcript, and may still be resumable. Same remedies, different fact, and conflating them would put "is not in the harness list any more" in front of a teammate that is merely between turns.
         vadd(
             "ladder-idle",
             True,
@@ -5150,14 +4221,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_LADDER_RESOLVE % ("\n".join("    " + s for s in ladder_res), facts, me8),
         )
-    # ---- v12 CI-WAITING FORCE. The observed failure, three times in one
-    # night: the only thing in flight is a CI watch, the run is healthy, and
-    # the stop is a Remaining table while 30+ aged [?] sit untouched. When
-    # watching CI is ALL the in-flight work, waiting is not a valid stop:
-    # the aged backlog is demanded, oldest first, bounded per stop. Every
-    # named item has a single-turn solo exit (do it and tick, execute its
-    # DEFAULT early, or re-justify with --defer, which resets its age below
-    # CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
+    # ---- v12 CI-WAITING FORCE. The observed failure, three times in one night: the only thing in flight is a CI watch, the run is healthy, and the stop is a Remaining table while 30+ aged [?] sit untouched. When watching CI is ALL the in-flight work, waiting is not a valid stop: the aged backlog is demanded, oldest first, bounded per stop. Every named item has a single-turn solo
+    # exit (do it and tick, execute its DEFAULT early, or re-justify with --defer, which resets its age below CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
     ci_watching, watch_desc = wl_ci.ci_watch_only(live_bg)
     if ci_watching:
         backlog = [
@@ -5183,9 +4248,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "'<evidence>'; the wait was the only reason to hold it" % (me8, r["id"])
                     )
                 else:
-                    # Its WHY names something the run cannot settle, so ordering the
-                    # DEFAULT here would order past a reason this session already
-                    # wrote down and the judge already audited.
+                    # Its WHY names something the run cannot settle, so ordering the DEFAULT here would order past a reason this session already wrote down and the judge already audited.
                     verb = (
                         "the WAIT is not what holds this one -- its WHY says: %s. "
                         "Advance whatever part of it you own and --update %s %s, or "
@@ -5204,13 +4267,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
             vadd("ci-waiting", False, M.V_CI_WAITING % (watch_desc, len(backlog), "\n".join(rows)))
     # CLAUDE.md rule 2 says discovery is always in scope and FIXING is the default;
-    # the "found, not fixed" list is meant as a last resort, not a parking bay. A
-    # session that ends every turn with one has converted a fixing rule into a
-    # reporting habit, which is exactly what the operator objected to.
-    # ANCHORED TO A LINE START, because the first version matched the phrase
-    # ANYWHERE and promptly fired on a message that was DESCRIBING this very
-    # check ("2. \"Found, not fixed\" is now a blocking phrase"). A gate that
-    # cannot survive being written about is too broad. A real list leads a line,
+    # the "found, not fixed" list is meant as a last resort, not a parking bay. A session that ends every turn with one has converted a fixing rule into a reporting habit, which is exactly what the operator objected to. ANCHORED TO A LINE START, because the first version matched the phrase ANYWHERE and promptly fired on a message that was DESCRIBING this very check ("2. \"Found,
+    # not fixed\" is now a blocking phrase"). A gate that cannot survive being written about is too broad. A real list leads a line,
     # optionally behind markdown emphasis or a heading marker; a mention sits
     # mid-sentence or inside quotes or backticks, none of which match here.
     if uncited:
@@ -5221,8 +4279,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         re.IGNORECASE | re.MULTILINE,
     ):
         vadd("found-not-fixed", False, M.V_FOUND_NOT_FIXED)
-    # The same rule, the phrasings the narrow pattern above never saw. Kept as a
-    # SEPARATE key so the original stays exactly as pinned by its own tests.
+    # The same rule, the phrasings the narrow pattern above never saw. Kept as a SEPARATE key so the original stays exactly as pinned by its own tests.
     try:
         _deferred = deferred_findings(last_msg or "")
     except Exception:  # noqa: BLE001 -- a detector must never crash a stop
@@ -5237,14 +4294,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:
         vadd("mislabelled", False, M.V_MISLABELLED % "; ".join(mislabelled))
-    # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded
-    # transcript scan, incremental after the first stop), and it spends a model
-    # call only when a plan EXISTS and the tracked items look coarse against it.
-    # A degraded run is QUEUED rather than blocked or dropped: the queue survives
-    # the block stops this session is likely to be having, so the note lands on
-    # the first clean one instead of vanishing. The trade is that a session which
-    # never reaches a clean stop is told late, the same trade the agent hint
-    # already makes and for the same reason.
+    # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded transcript scan, incremental after the first stop), and it spends a model call only when a plan EXISTS and the tracked items look coarse against it. A degraded run is QUEUED rather than blocked or dropped: the queue survives the block stops this session is likely to be having, so the note lands on the
+    # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
     if not wl_judge.JUDGE_DISABLED:
         _pf_note = ""
         try:
@@ -5255,11 +4306,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_add(
                 worklist, session_id, state_doc, "planfid-degraded", _pf_note, 1, refresh_min=60
             )
-    # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything
-    # is honestly parked is a legitimate state, and blocking on it would nag a
-    # session that is correctly waiting. The case that actually matters -- driving
-    # something while the operator's list still shows it pending -- is caught by
-    # the agreement check above, which fires when the message says "ongoing" and
+    # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything is honestly parked is a legitimate state, and blocking on it would nag a session that is correctly waiting. The case that actually matters -- driving something while the operator's list still shows it pending -- is caught by the agreement check above, which fires when the message says "ongoing" and
     # the harness disagrees.
     if tasks and REMAINING_HEADING.search(last_msg or "") and missing_ids:
         vadd(
@@ -5281,8 +4328,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     elif (
         something_remains
         and not REMAINING_HEADING.search(last_msg or "")
-        # v14 gap 6: an unchanged world accepts the banked report instead of
-        # demanding a byte-identical restatement.
+        # v14 gap 6: an unchanged world accepts the banked report instead of demanding a byte-identical restatement.
         and state_doc.get("last_report_sig") != st_sig
     ):
         vadd(
@@ -5291,18 +4337,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]),
         )
 
-    # ---- v17 THE NO-OP WAKE LADDER. Placed HERE, after the whole battery has
-    # run and before anything is emitted, because "nothing changed" is only
-    # provable once every check has had its say: the streak advances on a wake
-    # where the ONLY thing the hook had to offer was the background check-in,
-    # and the signature says even that had no new bytes behind it.
+    # ---- v17 THE NO-OP WAKE LADDER. Placed HERE, after the whole battery has run and before anything is emitted, because "nothing changed" is only provable once every check has had its say: the streak advances on a wake where the ONLY thing the hook had to offer was the background check-in, and the signature says even that had no new bytes behind it.
     #
-    # WHAT IS NEVER SUPPRESSED: every other violation key. An open item, a
-    # missing evidence tick, an expired deferral, a stuck-rounds block, a
-    # hook-integrity failure -- any one of them makes the wake not quiet, so
-    # this branch is not reached and the normal battery blocks as before. Only
-    # the ADVISORY layer stands down: the worker roster, the guide, the judge
-    # stamp and the queued report sections.
+    # WHAT IS NEVER SUPPRESSED: every other violation key. An open item, a missing evidence tick, an expired deferral, a stuck-rounds block, a hook-integrity failure -- any one of them makes the wake not quiet, so this branch is not reached and the normal battery blocks as before. Only the ADVISORY layer stands down: the worker roster, the guide, the judge stamp and the queued
+    # report sections.
     quiet_note = ""
     if _in_pure_wait:
         _other = [v for v in violations if v[0] != "bg-report"]
@@ -5314,52 +4352,33 @@ def run_stop(event, event_ok, worklist, hook_file):
         state_doc.pop("quietwake", None)
     # Saved EAGERLY. The counter is bookkeeping that must survive every exit
     # below, and one of them (the WORKLIST_FOCUS=off block) emits without
-    # saving at all -- exactly the shape that made the output queue lose
-    # latched sections before it was moved to compute-time persistence.
+    # saving at all -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
     S.save_state(worklist, session_id, state_doc)
     if quiet_note:
-        # The only violation that can be outstanding here is the check-in, and
-        # it is STOOD DOWN rather than delivered: this emit replaces the block
-        # entirely. Its window is deliberately not marked as fired, so the
-        # "last delivered" stamp the roster prints stays true and the next
-        # genuinely eventful stop still owes it.
+        # The only violation that can be outstanding here is the check-in, and it is STOOD DOWN rather than delivered: this emit replaces the block entirely. Its window is deliberately not marked as fired, so the "last delivered" stamp the roster prints stays true and the next genuinely eventful stop still owes it.
         bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
         counter.unlink(missing_ok=True)
         S.save_state(worklist, session_id, state_doc)
         C.emit({"systemMessage": quiet_note})
     if bgwait_due:
-        # Delivered for real (this stop emits it either way below), so the
-        # stamp the next check-in prints is banked here and saved eagerly:
+        # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly:
         # the WORKLIST_FOCUS=off block path emits without saving.
         state_doc.setdefault("bgwait", {})["fired"] = C.stamp_now()
         S.save_state(worklist, session_id, state_doc)
 
-    # ---- THE CADENCE GATE. One report turn between hook demands. -----------
-    # Sits immediately before the block so every check has already been
-    # computed: a paused stop still KNOWS everything, it just does not spend the
-    # operator's turn demanding it again.
+    # ---- THE CADENCE GATE. One report turn between hook demands. ----------- Sits immediately before the block so every check has already been computed: a paused stop still KNOWS everything, it just does not spend the operator's turn demanding it again.
     cad = state_doc.setdefault("cadence", {})
     cad_off = os.environ.get("WORKLIST_CADENCE", "on").lower() in ("off", "0", "no")
     always_now = any(a for _k, a, _t in violations)
-    # (F) THE MISSION TIER DEFEATS THE PAUSE, exactly as the always tier does,
-    # and this is the operator's sentence made executable: "There should be list
-    # of 'has to show with this order' until we check all of them, we should not
-    # be able to say 'but this stop is YOURS'."
+    # (F) THE MISSION TIER DEFEATS THE PAUSE, exactly as the always tier does, and this is the operator's sentence made executable: "There should be list of 'has to show with this order' until we check all of them, we should not be able to say 'but this stop is YOURS'."
     #
-    # Guard (E) already refuses the pause while `actionable_remains` -- an open
-    # item, a pending task, a live lease -- and that covers `open-items`. It does
-    # NOT cover the shape the operator actually named: a red PR, an unticked
-    # program wave, a wave that never reached its finish line. None of those is
-    # a worklist item, so a session with an empty board and a red CI could be
-    # handed its quiet turn while the thing it was ASKED to do sat unfinished.
-    # (F) is the difference between "nothing is in my queue" and "the job is
-    # done", and only the second one earns a stand-down.
+    # Guard (E) already refuses the pause while `actionable_remains` -- an open item, a pending task, a live lease -- and that covers `open-items`. It does NOT cover the shape the operator actually named: a red PR, an unticked program wave, a wave that never reached its finish line. None of those is a worklist item, so a session with an empty board and a red CI could be handed its
+    # quiet turn while the thing it was ASKED to do sat unfinished. (F) is the difference between "nothing is in my queue" and "the job is done", and only the second one earns a stand-down.
     mission_now = any(check_tier(k) == T_MISSION for k, _a, _t in violations)
     rot_now = [k for k, a, _t in violations if not a]
     judge_now = any(k in JUDGE_TIER_KEYS for k, _a, _t in violations)
     msg_sig = hashlib.sha1((last_msg or "").encode("utf-8", "replace")).hexdigest()[:16]
-    # (D) The cap resets whenever the outstanding set SHRINKS, mirroring
-    # exempt-overrun: a session that is actually clearing checks has earned
+    # (D) The cap resets whenever the outstanding set SHRINKS, mirroring exempt-overrun: a session that is actually clearing checks has earned
     # another pause; one that is standing still has not.
     if len(rot_now) < int(cad.get("rot") or 0):
         cad["n"] = 0
@@ -5373,45 +4392,21 @@ def run_stop(event, event_ok, worklist, hook_file):
         # (F) so does the mission tier -- see above.
         and not mission_now
         and rot_now
-        # (B) only if the assistant actually SAID something new. Without this a
-        # session emits an empty turn after every block and buys a free allow
-        # every other stop -- the exact regression.
+        # (B) only if the assistant actually SAID something new. Without this a session emits an empty turn after every block and buys a free allow every other stop -- the exact regression.
         and msg_sig != cad.get("msg")
         # (C) the judge and evidence tiers are never paused.
         and not judge_now
-        # (E) NOTHING LEFT TO ADVANCE. Operator, 2026-08-27: the pause message
-        # fires "too often. It should be the last chance, since we usually have
-        # lots to do!"
+        # (E) NOTHING LEFT TO ADVANCE. Operator, 2026-08-27: the pause message fires "too often. It should be the last chance, since we usually have lots to do!"
         #
-        # Guards (A)-(D) all ask about the CHECKS -- which tier, whether the
-        # message changed, how many pauses have been spent. None of them asks
-        # the only question that decides whether ending the turn is defensible:
-        # is there work in hand. So a session holding open items got its turn
-        # handed back for having produced a defensible report, which is exactly
-        # the bar CLAUDE.md refuses: "the bar for stopping is 'there is
-        # genuinely nothing I can advance', not 'I have produced a defensible
-        # report'."
+        # Guards (A)-(D) all ask about the CHECKS -- which tier, whether the message changed, how many pauses have been spent. None of them asks the only question that decides whether ending the turn is defensible: is there work in hand. So a session holding open items got its turn handed back for having produced a defensible report, which is exactly the bar CLAUDE.md refuses: "the
+        # bar for stopping is 'there is genuinely nothing I can advance', not 'I have produced a defensible report'."
         #
-        # `actionable_remains` is the file's existing answer to that question
-        # (open items, pending tasks, or a live `[>]` lease) and is already what
-        # the stuck gate and the waiter-drained check consult, so the pause now
-        # reads the same fact they do rather than a second definition of "busy".
+        # `actionable_remains` is the file's existing answer to that question (open items, pending tasks, or a live `[>]` lease) and is already what the stuck gate and the waiter-drained check consult, so the pause now reads the same fact they do rather than a second definition of "busy".
         #
-        # CADENCE_MAX_PAUSES STAYS AT 3, deliberately, and the argument runs
-        # both ways. FOR lowering it to 1: the operator asked for a "last
-        # chance", and a cap of 1 makes that literal -- one stand-down per
-        # outstanding set, then demands forever. AGAINST, which is why it did
-        # not move: the cap and this guard measure different things, and with
-        # (E) in place the cap is no longer what was misfiring. A stop that
-        # reaches here now has NOTHING actionable -- no open item, no task, no
-        # lease -- and what is outstanding is a rotating nag (docs drift, a
-        # dead loop, an uncited claim). Three quiet turns on a session with no
-        # work in hand is not the every-other-stop stand-down the operator
+        # CADENCE_MAX_PAUSES STAYS AT 3, deliberately, and the argument runs both ways. FOR lowering it to 1: the operator asked for a "last chance", and a cap of 1 makes that literal -- one stand-down per outstanding set, then demands forever. AGAINST, which is why it did not move: the cap and this guard measure different things, and with (E) in place the cap is no longer what was
+        # misfiring. A stop that reaches here now has NOTHING actionable -- no open item, no task, no lease -- and what is outstanding is a rotating nag (docs drift, a dead loop, an uncited claim). Three quiet turns on a session with no work in hand is not the every-other-stop stand-down the operator
         # described; it is the ordinary shape of a session waiting on something
-        # external. Lowering the cap would also silently retune every
-        # WORKLIST_CADENCE_MAX-dependent case for a reason unrelated to the
-        # complaint. If routine pausing survives (E), lower it then, with the
-        # measurement that shows it -- not on the same hunch twice.
+        # external. Lowering the cap would also silently retune every WORKLIST_CADENCE_MAX-dependent case for a reason unrelated to the complaint. If routine pausing survives (E), lower it then, with the measurement that shows it -- not on the same hunch twice.
         and not actionable_remains
         and int(cad.get("n") or 0) < CADENCE_MAX_PAUSES
     )
@@ -5423,13 +4418,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
         # ALLOWED, but never SILENT. The checks are still outstanding and the
         # operator still gets to see that they are; what the pause spends is the
-        # DEMAND, not the information. A pause that hid the list would be the
-        # mute button this design is supposed to avoid being.
+        # DEMAND, not the information. A pause that hid the list would be the mute button this design is supposed to avoid being.
         #
-        # Nothing is skipped by exiting here. The judge only runs on a stop
-        # where `violations` is empty, and this branch is unreachable unless it
-        # is non-empty, so under the pre-cadence code this stop would have
-        # emitted a block and never consulted the judge either.
+        # Nothing is skipped by exiting here. The judge only runs on a stop where `violations` is empty, and this branch is unreachable unless it is non-empty, so under the pre-cadence code this stop would have emitted a block and never consulted the judge either.
         C.emit(
             {
                 "systemMessage": M.N_CADENCE_PAUSE
@@ -5440,9 +4431,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     CADENCE_MAX_PAUSES,
                     # CROSS-SESSION OBLIGATIONS SURVIVE THE PAUSE INTACT. A
                     # session may defer its OWN work for a turn; deferring a
-                    # peer without telling it is a different thing, and the
-                    # peer cannot see that this session stood down. Carried in
-                    # full, not summarised -- the whole defect was a summary.
+                    # peer without telling it is a different thing, and the peer cannot see that this session stood down. Carried in full, not summarised -- the whole defect was a summary.
                     (
                         M.N_CADENCE_PAUSE_CARRIED
                         % "".join(
@@ -5460,16 +4449,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         cad["owed"] = "report"
         cad["msg"] = msg_sig
         S.save_state(worklist, session_id, state_doc)
-    # A CLEAN STOP CONSUMES THE DEBT. The hook owes a quiet turn to a session it
-    # just interrupted, not a voucher redeemable whenever that session next
-    # happens to be blocked.
+    # A CLEAN STOP CONSUMES THE DEBT. The hook owes a quiet turn to a session it just interrupted, not a voucher redeemable whenever that session next happens to be blocked.
     #
-    # Found by case "a CLI-added item blocks like any open item": block, then a
-    # clean allow, then a new item -- and the new item was PAUSED, because the
-    # debt from the first block was still banked. The session had already been
+    # Found by case "a CLI-added item blocks like any open item": block, then a clean allow, then a new item -- and the new item was PAUSED, because the debt from the first block was still banked. The session had already been
     # heard in between, so it was owed nothing; the effect was two consecutive
-    # allows and a new item that never once surfaced. That is not
-    # "1 report / 1 demand", it is one demand and an indefinitely deferred pass.
+    # allows and a new item that never once surfaced. That is not "1 report / 1 demand", it is one demand and an indefinitely deferred pass.
     elif cad.get("owed") or cad.get("n"):
         cad.pop("owed", None)
         cad["n"] = 0
@@ -5477,13 +4461,9 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     if violations and not pause:
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
-        # Bank BEFORE emitting, because emit() exits the process and this is
-        # the path a busy session actually takes. See bank_pollbase.
+        # Bank BEFORE emitting, because emit() exits the process and this is the path a busy session actually takes. See bank_pollbase.
         bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
-        # The reggate fail-safe promises ONE line, never silence, even on a
-        # stop that blocks for other reasons. ci_report and queue_note ride
-        # along rather than blocking: a downgraded CI failure or a saturated
-        # queue must stay visible on a stop that blocks for something else.
+        # The reggate fail-safe promises ONE line, never silence, even on a stop that blocks for other reasons. ci_report and queue_note ride along rather than blocking: a downgraded CI failure or a saturated queue must stay visible on a stop that blocks for something else.
         sysmsg_tail = (
             "" if not reg_forgot else " [reggate marker was corrupt; settled verdicts forgotten]"
         )
@@ -5491,10 +4471,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             "\n\n" + queue_note if queue_note else ""
         )
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
-            # EVERY violation is rendered on this path, so every display latch
-            # is genuinely spent. Saved explicitly because this branch emits
-            # (and therefore exits) without reaching the save below -- the same
-            # trap the queue's compute-time persistence was moved for.
+            # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
             spend_display_latches([k for k, _a, _t in violations])
             S.save_state(worklist, session_id, state_doc)
             C.emit(
@@ -5516,17 +4493,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
-        # ---- v13 FOCUSED BLOCK (default). One rotating check per stop, the
-        # ALWAYS tier in full when present, everything else a bare count. The
-        # guide deliberately does NOT ride blocks any more (operator,
+        # ---- v13 FOCUSED BLOCK (default). One rotating check per stop, the ALWAYS tier in full when present, everything else a bare count. The guide deliberately does NOT ride blocks any more (operator,
         # 2026-07-31, superseding the v11 every-full-stop mandate); the wakeup
-        # section that used to ride beside it is gone entirely as of v18. The
-        # guide still leads every allow stop, and the one check that needs store data
-        # (no-remaining) carries its own slice inside its text. Rotation is
-        # LRU over check KEYS: prune what is no longer outstanding, serve the
-        # least-recently-served, break ties by the battery's own order (which
-        # is already severity-shaped). Worst-case wait for any rotating check
-        # is (distinct outstanding checks - 1) stops.
+        # section that used to ride beside it is gone entirely as of v18. The guide still leads every allow stop, and the one check that needs store data (no-remaining) carries its own slice inside its text. Rotation is LRU over check KEYS: prune what is no longer outstanding, serve the least-recently-served, break ties by the battery's own order (which is already severity-shaped).
+        # Worst-case wait for any rotating check is (distinct outstanding checks - 1) stops.
         focus = state_doc.setdefault("focus", {})
         seq = int(focus.get("seq") or 0) + 1
         focus["seq"] = seq
@@ -5538,40 +4508,20 @@ def run_stop(event, event_ok, worklist, hook_file):
         pick = None
         if rot:
             order = {v[0]: i for i, v in enumerate(rot)}
-            # Covered keys sort LAST, and are NEVER removed from `violations`, so
-            # the header count stays truthful and nothing is silently forgotten.
+            # Covered keys sort LAST, and are NEVER removed from `violations`, so the header count stays truthful and nothing is silently forgotten.
             # An intent reorders attention; it does not make work disappear.
             _covered = set((_intent or {}).get("covers") or [])
-            # THE LADDER REPLACES LINE ORDER AS THE TIEBREAK, and its position
-            # in this key is the whole design decision -- so read the ordering
-            # before changing it.
+            # THE LADDER REPLACES LINE ORDER AS THE TIEBREAK, and its position in this key is the whole design decision -- so read the ordering before changing it.
             #
-            # WHAT WAS WRONG: every never-served key ties at `-1`, and the tie
-            # was broken by `order[...]`, i.e. by where a `vadd` call happens to
-            # sit in a 5,000-line file. That is not a statement about priority,
-            # and it decided the FIRST pick of every crowded session. Measured on
-            # the failing night: 23 rotating keys sorted ahead of
-            # `no-waiter-asked`.
+            # WHAT WAS WRONG: every never-served key ties at `-1`, and the tie was broken by `order[...]`, i.e. by where a `vadd` call happens to sit in a 5,000-line file. That is not a statement about priority, and it decided the FIRST pick of every crowded session. Measured on the failing night: 23 rotating keys sorted ahead of `no-waiter-asked`.
             #
-            # WHY TIER SITS AFTER `served` AND NOT BEFORE IT. Before it, a
-            # T_MISSION check is re-picked on every single stop until satisfied
-            # and the lower tiers STARVE -- docs drift, a stale PR body and an
-            # unpushed submodule pointer become unreachable for as long as one
-            # item is open, which is most of a session. After it, the ladder is
-            # WALKED IN ORDER instead: on the first stop every key is unserved,
+            # WHY TIER SITS AFTER `served` AND NOT BEFORE IT. Before it, a T_MISSION check is re-picked on every single stop until satisfied and the lower tiers STARVE -- docs drift, a stale PR body and an unpushed submodule pointer become unreachable for as long as one item is open, which is most of a session. After it, the ladder is WALKED IN ORDER instead: on the first stop
+            # every key is unserved,
             # so tier decides and MISSION goes first; the next stop takes the
             # next-most-stale, which is the highest remaining tier; and the cycle
-            # repeats by staleness with tier breaking every tie. That is the
-            # operator's sentence read literally -- "has to show with this order
-            # UNTIL WE CHECK ALL OF THEM" -- rather than "show the first one
-            # forever".
+            # repeats by staleness with tier breaking every tie. That is the operator's sentence read literally -- "has to show with this order UNTIL WE CHECK ALL OF THEM" -- rather than "show the first one forever".
             #
-            # The part of the request that starvation was reaching for is
-            # delivered by two other mechanisms, both stronger: T_MISSION
-            # defeats the cadence pause (guard F), so the session cannot be
-            # released while the job is unfinished, and the genuinely
-            # unskippable checks are invariants, which never enter this sort at
-            # all.
+            # The part of the request that starvation was reaching for is delivered by two other mechanisms, both stronger: T_MISSION defeats the cadence pause (guard F), so the session cannot be released while the job is unfinished, and the genuinely unskippable checks are invariants, which never enter this sort at all.
             pick = min(
                 rot,
                 key=lambda v: (
@@ -5582,29 +4532,18 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ),
             )
             served[pick[0]] = seq
-        # The keys this stop will actually RENDER: every invariant (quoted in
-        # full or named in the collapse below -- either counts as shown, since
-        # both put the check in front of the reader) plus the one rotating pick.
+        # The keys this stop will actually RENDER: every invariant (quoted in full or named in the collapse below -- either counts as shown, since both put the check in front of the reader) plus the one rotating pick.
         spend_display_latches(
             [k for k, a, _t in violations if a] + ([pick[0]] if pick is not None else [])
         )
         S.save_state(worklist, session_id, state_doc)
-        # ---- THE COLLAPSE. Invariants are ORDERED by the ladder (not by where
-        # their vadd sits in this file), at most ALWAYS_FULL_MAX are QUOTED in
-        # full, and every remaining one is NAMED on one line with its opening
-        # sentence.
+        # ---- THE COLLAPSE. Invariants are ORDERED by the ladder (not by where their vadd sits in this file), at most ALWAYS_FULL_MAX are QUOTED in full, and every remaining one is NAMED on one line with its opening sentence.
         #
-        # The tier buys UN-ROTATABILITY, and that is all it should buy. This
-        # file's own warning at the sweep prompt -- "a prompt that fires always
-        # is a prompt that gets skimmed" -- is the constraint, and three
-        # promotions in one change is exactly when it starts to bite: five full
-        # blocks on one stop is not five times the attention, it is one skim.
+        # The tier buys UN-ROTATABILITY, and that is all it should buy. This file's own warning at the sweep prompt -- "a prompt that fires always is a prompt that gets skimmed" -- is the constraint, and three promotions in one change is exactly when it starts to bite: five full blocks on one stop is not five times the attention, it is one skim.
         #
         # NOTHING IS DROPPED, and that is the difference between this and
         # rotation. Every invariant is named on every stop; at most two are
-        # quoted. A named one still tells the session which obligation exists
-        # and, because these messages all put their verdict on line one, roughly
-        # what it is.
+        # quoted. A named one still tells the session which obligation exists and, because these messages all put their verdict on line one, roughly what it is.
         _inv = sorted(
             ((k, t) for k, a, t in violations if a),
             key=lambda kt: check_tier(kt[0]),
@@ -5620,19 +4559,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
         if pick is not None:
             shown.append(pick[2])
-        # COUNTED AGAINST THE VIOLATIONS, not against `shown`. `shown` may now
-        # carry one synthetic entry (the collapse block) and fewer entries than
-        # invariants, so `len(violations) - len(shown)` would report a number
-        # that is not the number of anything. What the reader needs is how many
-        # outstanding checks got neither a quote nor a name, which is exactly
-        # the rotating ones this stop did not pick.
+        # COUNTED AGAINST THE VIOLATIONS, not against `shown`. `shown` may now carry one synthetic entry (the collapse block) and fewer entries than invariants, so `len(violations) - len(shown)` would report a number that is not the number of anything. What the reader needs is how many outstanding checks got neither a quote nor a name, which is exactly the rotating ones this stop
+        # did not pick.
         n_more = len(rot) - (1 if pick is not None else 0)
         C.emit(
             {
-                # SURFACED, not len(shown): `shown` may carry the synthetic
-                # collapse block, which is one entry standing for several
-                # checks. Every invariant is surfaced (quoted or named) plus at
-                # most one rotating pick.
+                # SURFACED, not len(shown): `shown` may carry the synthetic collapse block, which is one entry standing for several checks. Every invariant is surfaced (quoted or named) plus at most one rotating pick.
                 "systemMessage": "Stop hook: %d check(s) outstanding, surfacing %d.%s"
                 % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail),
                 "decision": "block",
@@ -5646,20 +4578,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             }
         )
 
-    # ---- static checks clean. Ask a model whether stopping is honest. -------
-    # v7: a fix-signal stop consults the judge even with an empty queue,
-    # because "I fixed it, all done" is exactly the stop the regression
-    # question exists for. v10: an identical world and message within the
-    # cache TTL reuses the last clean "stop" verdict instead of re-paying the
+    # ---- static checks clean. Ask a model whether stopping is honest. ------- v7: a fix-signal stop consults the judge even with an empty queue, because "I fixed it, all done" is exactly the stop the regression question exists for. v10: an identical world and message within the cache TTL reuses the last clean "stop" verdict instead of re-paying the
     # call; fix signals always miss (they change the world signature).
     #
-    # v12 DEFERRAL AUDIT (operator: "Haiku should ask 'Why' and 'How'
-    # questions... there is no human rights with him"). Aged JUSTIFIED
-    # deferrals ride the same judge call as an extra section, so a stop never
+    # v12 DEFERRAL AUDIT (operator: "Haiku should ask 'Why' and 'How' questions... there is no human rights with him"). Aged JUSTIFIED deferrals ride the same judge call as an extra section, so a stop never
     # pays a second model invocation; unjustified ones were demanded
-    # statically above and never reach here. Bounded batch, oldest first, and
-    # a banked "valid" verdict is keyed to the item's upd stamp, so an
-    # untouched item is interrogated exactly once per generation.
+    # statically above and never reach here. Bounded batch, oldest first, and a banked "valid" verdict is keyed to the item's upd stamp, so an untouched item is interrogated exactly once per generation.
     audit_cache = state_doc.setdefault("defer_audit", {})
     for k in [k for k in audit_cache if k not in fold.by_id]:
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
@@ -5684,25 +4608,18 @@ def run_stop(event, event_ok, worklist, hook_file):
             audit_batch.append(r)
             if len(audit_batch) >= S.DEFER_AUDIT_BATCH:
                 break
-    # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop and is
-    # measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It
+    # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It
     # decides only whether to SPEND a model call; it is never the last word on a
     # negative, because the regexes provably miss the euphemistic phrasings.
     #
-    # Tier R records the hit HERE, before anything that can fail. A hit banked
-    # only after a successful verdict would vanish exactly when the judge times
-    # out, which is when the record matters most.
+    # Tier R records the hit HERE, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
     admit_text = wl_admit.turn_text(event.get("transcript_path", "")) or last_msg
     admit_sig = wl_admit.turn_sig(admit_text)
     admit_settled, _admit_corrupt = wl_admit.load_settled(worklist, session_id)
     admit_hits = [] if admit_sig in admit_settled else wl_admit.prefilter(admit_text)
     if admit_hits:
         wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
-        # THE JUDGE-SKIPPED PATH. The main judge runs only when something
-        # remains or a fix signal fired. A stop with a clean board and an
-        # admission in its final message would otherwise be seen by nobody, and
-        # that is a likely shape: the session finished its work, and says on the
-        # way out that it broke something along the way.
+        # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
         if not ((something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED):
             _ad, _aerr = wl_judge.run_admission(admit_text)
             if _aerr:
@@ -5734,9 +4651,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         streak = int(counter.read_text()) if counter.exists() else 0
         # THE JUDGE IS ASKED ABOUT ITS OWN HISTORY, not the battery's. `counter`
         # counts every stop block from every check; the prompt calls the number
-        # "times this gate has already said continue" and tells the judge to
-        # distrust itself above 3. On 2026-09-04 it read 69 while the judge had
-        # spoken a handful of times. See wl_judge.continue_streak.
+        # "times this gate has already said continue" and tells the judge to distrust itself above 3. On 2026-09-04 it read 69 while the judge had spoken a handful of times. See wl_judge.continue_streak.
         judge_log = wl_judge.judge_log_path(worklist, me8)
         judge_streak = wl_judge.continue_streak(judge_log)
         reg_scripts = wl_reggate.package_scripts(root) if reg_signals else {}
@@ -5749,11 +4664,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 or "  (none)",
             }
-            # ARTIFACT-DERIVED HINT, appended only when git says every
-            # non-bookkeeping file in the fix-set is gate machinery. It never
+            # ARTIFACT-DERIVED HINT, appended only when git says every non-bookkeeping file in the fix-set is gate machinery. It never
             # skips a fix-set; it gives question (0) something to bite on.
-            # See wl_reggate.gate_only_fixset. Suppressed on any failure: a
-            # hint must never raise into the stop path.
+            # See wl_reggate.gate_only_fixset. Suppressed on any failure: a hint must never raise into the stop path.
             with contextlib.suppress(Exception):
                 if wl_reggate.gate_only_fixset(root, reg_ids):
                     reg_extra += M.REGGATE_GATE_MAINTENANCE
@@ -5790,9 +4703,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if verdict is None:
             # The judge's loop line prefers the COMPUTED truth from the live
             # cron expansion; the declared .loop record is only the fallback
-            # when no cron is visible, because its stamped next-fire goes
-            # stale on write (operator, 2026-07-30: the hook was not giving
-            # the correct message).
+            # when no cron is visible, because its stamped next-fire goes stale on write (operator, 2026-07-30: the hook was not giving the correct message).
             if live_work_crons:
                 _wc = live_work_crons[0]
                 _wnext = C.cron_next(str(_wc.get("schedule", "")))
@@ -5842,36 +4753,20 @@ def run_stop(event, event_ok, worklist, hook_file):
                 extra=reg_extra
                 + audit_extra
                 + queue_extra
-                # Only on a firing stop, so an ordinary judge call is
-                # byte-identical to what it was before this existed.
+                # Only on a firing stop, so an ordinary judge call is byte-identical to what it was before this existed.
                 + (M.ADMISSION_PROMPT if admit_hits else ""),
-                # Headings only (operator decision 2026-07-30): titles of
-                # hard-won facts let the judge tell a real constraint from an
-                # excuse, without turning a file designed to grow forever into
-                # a per-stop cost multiplier.
+                # Headings only (operator decision 2026-07-30): titles of hard-won facts let the judge tell a real constraint from an excuse, without turning a file designed to grow forever into a per-stop cost multiplier.
                 #
-                # COST IS STATED PER HEADING, DELIBERATELY, because the total
-                # is a moving target and every attempt to pin it here has
-                # rotted. It read "~145 tokens" and was stale by ~5x. That was
-                # corrected to a measured 43-heading total on 2026-08-23, and
-                # the very next appended entry staled it again -- twice more
-                # the same day, at 44 and 45. Three corrections in one session
-                # is the file telling you the shape of the number is wrong,
-                # not the value.
+                # COST IS STATED PER HEADING, DELIBERATELY, because the total is a moving target and every attempt to pin it here has rotted. It read "~145 tokens" and was stale by ~5x. That was corrected to a measured 43-heading total on 2026-08-23, and the very next appended entry staled it again -- twice more the same day, at 44 and 45. Three corrections in one session is the
+                # file telling you the shape of the number is wrong, not the value.
                 #
-                # Measured 2026-08-23 over 45 real headings: ~70 chars each
-                # once the "  - " prefix is counted, so ~17 tokens per entry.
-                # Multiply by `grep -c '^## ' docs/agent-reference/TRAPS.md`
+                # Measured 2026-08-23 over 45 real headings: ~70 chars each once the " - " prefix is counted, so ~17 tokens per entry. Multiply by `grep -c '^## ' docs/agent-reference/TRAPS.md`
                 # for today's figure rather than trusting a number written
-                # here. The ceiling is bounded by S.TRAP_HEADING_CAP: at 120
-                # headings that is ~8,400 chars, ~2,100 tokens, which is the
-                # only figure in this comment that cannot rot, because the cap
-                # is enforced in code at wl_store.trap_headings().
+                # here. The ceiling is bounded by S.TRAP_HEADING_CAP: at 120 headings that is ~8,400 chars, ~2,100 tokens, which is the only figure in this comment that cannot rot, because the cap is enforced in code at wl_store.trap_headings().
                 traps=S.trap_prompt_lines(root),
             )
         if err is not None:
-            # FAIL CLOSED, by operator instruction. A judge that cannot answer
-            # must not become the way out.
+            # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
             counter.write_text(str(streak + 1))
             wl_judge.log_verdict(judge_log, "unavailable", "", err)
             C.emit(
@@ -5883,11 +4778,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
-        # ADMISSION VERDICT. Processed first and separately, because unlike every
-        # other verdict here it CANNOT block: its whole consequence is one
-        # tracked item. The Stop battery already refuses to end a turn while an
-        # item tagged with this session is open, so detection borrows proven
-        # enforcement instead of adding another blocking path.
+        # ADMISSION VERDICT. Processed first and separately, because unlike every other verdict here it CANNOT block: its whole consequence is one tracked item. The Stop battery already refuses to end a turn while an item tagged with this session is open, so detection borrows proven enforcement instead of adding another blocking path.
         if admit_hits:
             wl_admit.process_admission(
                 verdict.get("admission"),
@@ -5902,9 +4793,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             admit_hits = []  # handled; the standalone path below must not re-ask
 
-        # v7: the regression verdict is processed BEFORE the stop/continue
-        # verdict, so a settle persists (and a regression block fires) even
-        # when the judge would also say continue for other reasons.
+        # v7: the regression verdict is processed BEFORE the stop/continue verdict, so a settle persists (and a regression block fires) even when the judge would also say continue for other reasons.
         if reg_signals:
             kind, payload, detail = wl_reggate.apply_regression_verdict(
                 verdict.get("regression_gate"),
@@ -5933,13 +4822,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "verdict": payload,
                     "existing_gate": str(rg.get("existing_gate", ""))[:100],
                     "blind_spot": str(rg.get("blind_spot", ""))[:300],
-                    # THE ROUTING IS EVIDENCE, so it is kept. Found by dogfooding on
-                    # 2026-08-24: sixteen settled fixsets, not one carrying a surface,
-                    # because the judge produced it, apply_regression_verdict routed the
-                    # proof with it, and the settle path dropped it. That makes the one
-                    # question worth asking of this machinery -- "is the routing any
-                    # good?" -- unanswerable from the record. It had already misrouted a
-                    # www DOM change to packages/e2e-tests, and nothing recorded that.
+                    # THE ROUTING IS EVIDENCE, so it is kept. Found by dogfooding on 2026-08-24: sixteen settled fixsets, not one carrying a surface, because the judge produced it, apply_regression_verdict routed the proof with it, and the settle path dropped it. That makes the one question worth asking of this machinery -- "is the routing any good?" -- unanswerable from the
+                    # record. It had already misrouted a www DOM change to packages/e2e-tests, and nothing recorded that.
                     "surface": str(rg.get("surface", ""))[:20],
                     "artifact": str(rg.get("artifact", ""))[:200],
                     "at": C.stamp_now(),
@@ -5952,15 +4836,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                 reg_settled = (payload, detail)
                 # SPEND THE BUDGET, and only here. `proven` is the one settle
                 # that cost a real artifact and a real CI round; the cheap
-                # settles (covered/one-off/not-applicable/deferred) cost neither,
-                # and charging them would let a session farm the budget with five
-                # honest one-offs to buy a pass on the sixth, real gate.
-                # Suppressed on failure: the ledger must never raise into gating.
+                # settles (covered/one-off/not-applicable/deferred) cost neither, and charging them would let a session farm the budget with five honest one-offs to buy a pass on the sixth, real gate. Suppressed on failure: the ledger must never raise into gating.
                 if payload == "proven":
                     with contextlib.suppress(Exception):
                         wl_reggate.charge(C.git_branch(root), reg_sig, "proven")
-                # STICKY: the fixset is persisted, so every later stop absorbs
-                # this verdict silently and the text never returns.
+                # STICKY: the fixset is persisted, so every later stop absorbs this verdict silently and the text never returns.
                 outq_add(
                     worklist,
                     session_id,
@@ -5972,12 +4852,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     sticky=True,
                 )
             if kind == "block":
-                # ---- THE EFFORT CAP (operator ruling 2026-09-05T01:55Z) ------
-                # The judge was still ASKED and still ANSWERED: the finding above
-                # is fully computed and every claim already verified against
-                # artifacts. Only its SCHEDULE changes here. A cap that skipped
-                # the question would produce a debt with no content, which is
-                # indistinguishable from the machinery breaking.
+                # ---- THE EFFORT CAP (operator ruling 2026-09-05T01:55Z) ------ The judge was still ASKED and still ANSWERED: the finding above is fully computed and every claim already verified against artifacts. Only its SCHEDULE changes here. A cap that skipped the question would produce a debt with no content, which is indistinguishable from the machinery breaking.
                 #
                 # Failure is suppressed and falls through to the normal block:
                 # if the ledger cannot be read, the cap does not fire, so a
@@ -6039,10 +4914,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                             "reason": payload + guide_tail,
                         }
                     )
-        # v12: the audit verdicts are processed BEFORE stop/continue, same
-        # precedence argument as the regression gate: a banked "valid" must
-        # persist, and a do_now must fire, whatever the judge said about the
-        # stop itself.
+        # v12: the audit verdicts are processed BEFORE stop/continue, same precedence argument as the regression gate: a banked "valid" must persist, and a do_now must fire, whatever the judge said about the stop itself.
         if audit_batch:
             akind, avalids, aorders = wl_judge.apply_defer_audit(
                 verdict.get("defer_audit"), audit_batch
@@ -6073,17 +4945,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                     len(avalids),
                     "\n".join("  #%s: %s" % (rid, reason[:160]) for rid, _st, reason in avalids),
                 )
-                # STICKY: the verdicts were banked into defer_audit above, and
-                # a banked item is never interrogated again at that stamp, so
-                # this note cannot be regenerated.
+                # STICKY: the verdicts were banked into defer_audit above, and a banked item is never interrogated again at that stamp, so this note cannot be regenerated.
                 outq_add(worklist, session_id, state_doc, "audit", audit_note, 1, sticky=True)
             if aorders:
-                # The REOPEN is the enforcement: a rejected deferral becomes
-                # an ordinary open [ ] item, so the existing open-items
-                # machinery (and the tick evidence gate) owns it from here.
-                # The exits are the open item's exits: do it and tick with
-                # evidence, or re-defer with a justification that carries
-                # the fact the judge missed -- which is itself re-audited.
+                # The REOPEN is the enforcement: a rejected deferral becomes an ordinary open [ ] item, so the existing open-items machinery (and the tick evidence gate) owns it from here. The exits are the open item's exits: do it and tick with evidence, or re-defer with a justification that carries the fact the judge missed -- which is itself re-audited.
                 for rid, order in aorders:
                     S.set_state(
                         worklist,
@@ -6126,18 +4991,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
-        # IS THIS THE NTH COPY. The third judged rule, and the only one that does NOT ride
-        # the judge's call: the trim that was supposed to pay for a fourth object in that
-        # prompt freed 62 characters, not the ~2,300 the plan estimated, and a fix stop
-        # already carries ~17,700 characters of rubric across three calibrated sections.
-        # So it makes its own `claude -p`, and earns it by being rare -- a MECHANICAL
-        # counter gates the call, and only a shape that was not in the seed and has just
-        # reached its third copy opens it.
+        # IS THIS THE NTH COPY. The third judged rule, and the only one that does NOT ride the judge's call: the trim that was supposed to pay for a fourth object in that prompt freed 62 characters, not the ~2,300 the plan estimated, and a fix stop already carries ~17,700 characters of rubric across three calibrated sections. So it makes its own `claude -p`, and earns it by being
+        # rare -- a MECHANICAL counter gates the call, and only a shape that was not in the seed and has just reached its third copy opens it.
         #
         # ON THE ALLOW PATH ONLY, deliberately. A judge that already said continue has
         # placed an order; a second order in the same block is how a block stops being
-        # read (the same argument wl_judge makes for skipping brave_default after the
-        # sweep fires). The shape is still there next stop.
+        # read (the same argument wl_judge makes for skipping brave_default after the sweep fires). The shape is still there next stop.
         if judged_ok:
             try:
                 sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.run(str(root), state_doc)
@@ -6174,24 +5033,13 @@ def run_stop(event, event_ok, worklist, hook_file):
             S.save_state(worklist, session_id, state_doc)
 
     counter.unlink(missing_ok=True)
-    # An allowed stop banks the baseline too. A fast-path stop still must
-    # not extend its own horizon: that bound is what stops the silent path
-    # becoming a way to live on polls alone, and it survives this change
-    # because poll_fast_path exits before reaching here.
+    # An allowed stop banks the baseline too. A fast-path stop still must not extend its own horizon: that bound is what stops the silent path becoming a way to live on polls alone, and it survives this change because poll_fast_path exits before reaching here.
     bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
-    # The guide LEADS the allow report: it is the thing the session copies
-    # into its Remaining section, so it comes before everything else. Absent
-    # entirely when it had no rows (v18), which is what lets a clean stop with
-    # nothing queued emit zero bytes.
+    # The guide LEADS the allow report: it is the thing the session copies into its Remaining section, so it comes before everything else. Absent entirely when it had no rows (v18), which is what lets a clean stop with nothing queued emit zero bytes.
     parts = [] if guide_empty else [guide]
     if judged_ok:
-        # NEVER QUEUED, deliberately: this line exists so a paid model call can
-        # never be invisible, and the operator requires a context-fresh session
-        # to get the full statement unconditionally. Queuing it would make both
-        # properties probabilistic. What is rationed is the VERBOSITY -- the
-        # reason is reading material on the stop where the context was just
-        # rebuilt or the reason actually changed, and a bare stamp otherwise.
-        # The pop sits inside this branch so a blocked stop cannot consume the
+        # NEVER QUEUED, deliberately: this line exists so a paid model call can never be invisible, and the operator requires a context-fresh session to get the full statement unconditionally. Queuing it would make both properties probabilistic. What is rationed is the VERBOSITY -- the reason is reading material on the stop where the context was just rebuilt or the reason actually
+        # changed, and a bare stamp otherwise. The pop sits inside this branch so a blocked stop cannot consume the
         # marker and a WORKLIST_JUDGE=off session holds it until its first
         # judged stop.
         fresh = state_doc.pop("ctx_fresh", None)
@@ -6199,21 +5047,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         rsig = hashlib.sha1(rsn.encode("utf-8", "replace")).hexdigest()[:12]
         stamp = "approved (cached)" if judge_cached else "approved"
         if fresh or (not judge_cached and rsig != state_doc.get("judge_reason_sig")):
-            # Set ONLY when the full reason is shown, so the next genuinely
-            # different reason still fires. bank_stop_verdict already truncates
-            # at 200, so 400 is a ceiling that bites only a fresh uncached one.
+            # Set ONLY when the full reason is shown, so the next genuinely different reason still fires. bank_stop_verdict already truncates at 200, so 400 is a ceiling that bites only a fresh uncached one.
             parts.append(M.N_JUDGE_STAMP_FULL % (wl_judge.JUDGE_MODEL, stamp, rsn[:400]))
             state_doc["judge_reason_sig"] = rsig
         else:
             parts.append(M.N_JUDGE_STAMP % (wl_judge.JUDGE_MODEL, stamp))
-    # Every section with an earlier producer was queued at that producer's
-    # call site, so it survives a stop that blocks. The four below have no
-    # earlier producer: the allow path is the only place they exist, and they
-    # are enqueued here in the order the report used to carry them.
+    # Every section with an earlier producer was queued at that producer's call site, so it survives a stop that blocks. The four below have no earlier producer: the allow path is the only place they exist, and they are enqueued here in the order the report used to carry them.
     #
-    # Advisory, and deliberately on the FULL-stop path only: a silent poll exits long before
-    # here, so the tip lands on the ~hourly stop the session is already reading rather than
-    # interrupting the quiet it is telling us to buy more of.
+    # Advisory, and deliberately on the FULL-stop path only: a silent poll exits long before here, so the tip lands on the ~hourly stop the session is already reading rather than interrupting the quiet it is telling us to buy more of.
     # Quiet = age of the NEWEST request of any kind. An inbox that has never received
     # anything is the quietest case there is, so it escalates rather than being exempt.
     try:
@@ -6256,10 +5097,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
             2,
         )
-    # The in-flight and deferred sections that used to sit here were pure
-    # duplication (operator, 2026-07-31: "Why I see such a big output?"):
-    # guided_slice already lists every owned [>] and [?] with its LATEST and
-    # NEXT verb, and the guide LEADS this very report. One source, said once.
+    # The in-flight and deferred sections that used to sit here were pure duplication (operator, 2026-07-31: "Why I see such a big output?"): guided_slice already lists every owned [>] and [?] with its LATEST and NEXT verb, and the guide LEADS this very report. One source, said once.
     if req_open_mine:
         rows = []
         for r in req_open_mine:
@@ -6272,13 +5110,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "never briefed" if seen is None else "last seen %dm ago" % seen,
                 )
             rows.append("  #%s (%s; asked %s) %s" % (r["id"], who, r["at"], r["body"][:120]))
-        # THE RELAY COMMAND FOR AN OPERATOR REQUEST HAS TO LIVE HERE. Every
-        # other recipient is a session, and V_REQUESTS_WAITING prints the
-        # command in THEIR report. "operator" is a human who has no report, so
-        # the only surface they read is this one, in the asker's stop. It used
+        # THE RELAY COMMAND FOR AN OPERATOR REQUEST HAS TO LIVE HERE. Every other recipient is a session, and V_REQUESTS_WAITING prints the command in THEIR report. "operator" is a human who has no report, so the only surface they read is this one, in the asker's stop. It used
         # to be carried by the email digest; that channel is gone, and without
-        # this line `--ask operator` would post a question nobody is ever told
-        # how to answer.
+        # this line `--ask operator` would post a question nobody is ever told how to answer.
         relay = ""
         if any(r["to"] == "operator" for r in req_open_mine):
             relay = (
@@ -6295,17 +5129,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             + relay,
             2,
         )
-    # THE HANDOFF BLOCK, on every allow path and not only when I am idle. A
-    # stopped session's work is invisible precisely when I am busy, which is
-    # when a compaction is most likely.
+    # THE HANDOFF BLOCK, on every allow path and not only when I am idle. A stopped session's work is invisible precisely when I am busy, which is when a compaction is most likely.
     _handoff = handoff_note()
     if _handoff:
         outq_add(worklist, session_id, state_doc, "handoff", _handoff, 1, refresh_min=60)
     if others:
-        # Reported, never blocked on. Blocking one session on another's
-        # items deadlocks it: it cannot do them without racing live work in
-        # the same tree, and it must not tick or delete someone else's
-        # tracking. Surfacing beats blocking.
+        # Reported, never blocked on. Blocking one session on another's items deadlocks it: it cannot do them without racing live work in the same tree, and it must not tick or delete someone else's tracking. Surfacing beats blocking.
         outq_add(
             worklist,
             session_id,
@@ -6314,11 +5143,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             "Worklist: nothing open for this session.\n" + other_sessions_note(),
             2,
         )
-    # The specialist-agent hint, LAST of the producers and lowest priority of
-    # them, on the ALLOW PATH ONLY and deliberately: a blocked session already
-    # has something more urgent being said to it every stop. The trade is that
-    # a session which never reaches a clean stop is never hinted, which is
-    # acceptable for exactly the same reason.
+    # The specialist-agent hint, LAST of the producers and lowest priority of them, on the ALLOW PATH ONLY and deliberately: a blocked session already has something more urgent being said to it every stop. The trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason.
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
         agent_hint_queue(
             worklist,
@@ -6326,25 +5151,15 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc,
             (last_msg or "") + "\n" + "\n".join(remaining_lines),
         )
-    # ONE section per stop by default, highest priority first and FIFO inside
-    # a priority class. The "+N more" tail is MANDATORY for the reason spelled
-    # out at the guide's own truncation: a silent cap reads as "that is
-    # everything", and a session that can see three are waiting can raise
-    # WORKLIST_REPORT_PER_STOP for one turn.
+    # ONE section per stop by default, highest priority first and FIFO inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and a session that can see three are waiting can raise WORKLIST_REPORT_PER_STOP for one turn.
     texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
     parts.extend(texts)
     if remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
     # outq_drain persisted the queue already; this save carries the judge-line
-    # marker pop and any late state mutation, and one redundant atomic write is
-    # cheaper than reasoning about which came last. It happens BEFORE the exit
-    # below, because a silent allow must still bank everything a loud one does.
+    # marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
     if not parts:
-        # v18: nothing actionable, nothing queued, no judge line to show. This
-        # used to be impossible (the guide was unconditional) and is now the
-        # common shape of a clean stop, so it exits the way the poll fast path
-        # does: zero bytes, exit 0. Everything above still ran and still
-        # persisted -- the silence is the report, not a skipped battery.
+        # v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop, so it exits the way the poll fast path does: zero bytes, exit 0. Everything above still ran and still persisted -- the silence is the report, not a skipped battery.
         raise SystemExit(0)
     C.emit({"systemMessage": "\n\n".join(parts)})

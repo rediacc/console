@@ -71,9 +71,7 @@ BASE_ENV = {
 
 ENDPOINT = BASE_ENV["CLOUDFLARE_R2_ENDPOINT"]
 
-# The default `dist/` a case gets. Two binaries so ORDER is observable, a
-# `manifest.json` so the channel-pointer branch runs, and both npm tarballs so
-# the `rediacc-cli-latest.tgz` skip is exercised.
+# The default `dist/` a case gets. Two binaries so ORDER is observable, a `manifest.json` so the channel-pointer branch runs, and both npm tarballs so the `rediacc-cli-latest.tgz` skip is exercised.
 DEFAULT_TREE = {
     "dist/cli/rdc-linux-x64": "linux binary\n",
     "dist/cli/rdc-darwin-arm64": "darwin binary\n",
@@ -82,10 +80,7 @@ DEFAULT_TREE = {
     "dist/npm/rediacc-cli-latest.tgz": "latest tarball\n",
 }
 
-# `s3api head-object` is the sentinel probe and `s3api list-objects-v2` the
-# binary count, both driven by the environment so a case can pose any release
-# state. `s3 cp <src> -` is `r2_get`, the only call whose STDOUT the script
-# consumes. Everything else logs and succeeds.
+# `s3api head-object` is the sentinel probe and `s3api list-objects-v2` the binary count, both driven by the environment so a case can pose any release state. `s3 cp <src> -` is `r2_get`, the only call whose STDOUT the script consumes. Everything else logs and succeeds.
 FAKE_AWS = """#!/usr/bin/python3
 import os
 import sys
@@ -135,8 +130,7 @@ if rc:
     sys.exit(rc)
 """
 
-# Every real binary either side reaches for, and nothing else, so a tool leaking
-# in from the machine would show up as a behaviour change. `bash` is on the list
+# Every real binary either side reaches for, and nothing else, so a tool leaking in from the machine would show up as a behaviour change. `bash` is on the list
 # because the PORT spawns it twice (the guard and the globs); `jq` because the
 # twin pipes the tracker through it and `test_without_jq...` removes it.
 PATH_MINIMUM = (
@@ -199,8 +193,7 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(body, encoding="utf-8")
-    # `dist/cli` and `dist/npm` must EXIST for the empty-directory cases to be
-    # about the loops rather than about the two `-d` tests above them.
+    # `dist/cli` and `dist/npm` must EXIST for the empty-directory cases to be about the loops rather than about the two `-d` tests above them.
     (root / "dist" / "cli").mkdir(parents=True, exist_ok=True)
     (root / "dist" / "npm").mkdir(parents=True, exist_ok=True)
     return root
@@ -291,9 +284,7 @@ def _cp(src: str, dest: str, cache: str) -> str:
 IMMUTABLE = "public, max-age=31536000, immutable"
 
 
-# ---------------------------------------------------------------------------
-# The happy path, pinned against literal bytes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, pinned against literal bytes ---------------------------------------------------------------------------
 
 
 def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
@@ -413,9 +404,7 @@ def test_dry_run_skips_the_credential_check(tmp_path: pathlib.Path) -> None:
     _assert_agree(old, new, "dry-run-no-creds", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The write-once guard, which is the twin's own bash function on both sides
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The write-once guard, which is the twin's own bash function on both sides ---------------------------------------------------------------------------
 
 
 def test_the_guard_the_port_runs_is_the_twins_own_text() -> None:
@@ -522,9 +511,7 @@ def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.
     assert calls == "", "the run reached aws without a guard"
 
 
-# ---------------------------------------------------------------------------
-# The retention tracker
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The retention tracker ---------------------------------------------------------------------------
 
 
 def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None:
@@ -663,9 +650,7 @@ def test_without_jq_version_tracking_is_skipped_with_a_warning(tmp_path: pathlib
     _assert_agree(old, new, "no-jq", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# bump-none
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- bump-none ---------------------------------------------------------------------------
 
 
 def test_the_bump_none_banner_is_pinned_on_stdout(tmp_path: pathlib.Path) -> None:
@@ -725,9 +710,7 @@ def test_the_env_spellings_that_do_not_skip(tmp_path: pathlib.Path, spelling: st
     _assert_agree(old, new, f"no-skip-env-{spelling}", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Vacuity, credentials, and the shapes of `dist/`
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Vacuity, credentials, and the shapes of `dist/` ---------------------------------------------------------------------------
 
 
 def test_defect_an_empty_cli_dir_publishes_a_channel_pointer(tmp_path: pathlib.Path) -> None:
@@ -788,8 +771,7 @@ def test_the_latest_tarball_is_uploaded_mutable_and_never_versioned(
     the mutable policy, because its filename carries no version and its URL does
     serve different bytes over time."""
     old, new, old_calls, new_calls = run_both(tmp_path)
-    # ONE LINE, not one occurrence: the source path and the destination key both
-    # carry the name, so counting substrings would report two for one upload.
+    # ONE LINE, not one occurrence: the source path and the destination key both carry the name, so counting substrings would report two for one upload.
     uploads = [line for line in old_calls.splitlines() if "rediacc-cli-latest.tgz" in line]
     assert len(uploads) == 1, uploads
     assert (
@@ -883,9 +865,7 @@ def test_an_unguarded_aws_failure_ends_the_run_with_its_status(tmp_path: pathlib
     _assert_agree(old, new, "aws-fails", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing, including the two divergences
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing, including the two divergences ---------------------------------------------------------------------------
 
 
 def test_version_is_required_before_channel(tmp_path: pathlib.Path) -> None:
@@ -967,9 +947,7 @@ def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
     assert new.stderr == "$2: unbound variable\n"
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms: every constant restated from the twin, re-derived
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms: every constant restated from the twin, re-derived ---------------------------------------------------------------------------
 
 
 def test_the_constants_are_the_twins_constants() -> None:
@@ -1029,9 +1007,7 @@ def test_the_skip_release_markers_still_bracket_the_guard() -> None:
     assert begin < source.index("skip_release_requested()") < end
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_pure_helpers() -> None:
@@ -1156,9 +1132,7 @@ def test_bash_glob_is_bashs_answer_including_the_literal_miss(tmp_path: pathlib.
     assert port.bash_glob(str(empty), "rdc-*") == [str(empty / "rdc-*")]
 
 
-# ---------------------------------------------------------------------------
-# Anti-vacuity: the differential must be able to fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Anti-vacuity: the differential must be able to fail ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
@@ -1189,8 +1163,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
     good_root = fixture(tmp_path / "good")
     _good, good_calls = _run(good_root, "new")
-    # The three fixtures live under three roots, and the source path of every
-    # upload names its own. That one field is masked and nothing else is.
+    # The three fixtures live under three roots, and the source path of every upload names its own. That one field is masked and nothing else is.
     assert good_calls.replace(str(good_root), "<root>") == old_calls.replace(
         str(old_root), "<root>"
     ), "the restored port no longer agrees with the twin"

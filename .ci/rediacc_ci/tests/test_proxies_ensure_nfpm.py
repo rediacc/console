@@ -52,8 +52,7 @@ FIXTURE_FILES = (
     ".ci/rediacc_ci/proxies/ensure_nfpm.py",
 )
 
-# A stub SUBJECT: prints a directory holding a fake nfpm, with no network.
-# `%s` is what that fake nfpm answers to `--version`.
+# A stub SUBJECT: prints a directory holding a fake nfpm, with no network. `%s` is what that fake nfpm answers to `--version`.
 STUB_SUBJECT = """#!/usr/bin/env bash
 # The real subject's SHAPE, minus the network: the early-exit on a warm cache,
 # the arch refusal (which the proxy drives with a `uname` shim, so the stub has
@@ -142,8 +141,7 @@ def run_both(
     old = subprocess.run(  # type: ignore[call-overload]
         ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
     )
-    # The subject caches into the FIXTURE root, so a second run would take the
-    # warm branch. Both sides must start from the same cold state.
+    # The subject caches into the FIXTURE root, so a second run would take the warm branch. Both sides must start from the same cold state.
     shutil.rmtree(fixture / ".ci" / "cache", ignore_errors=True)
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
@@ -163,9 +161,7 @@ def assert_same(
     assert new.stderr == old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_selftest_is_byte_identical() -> None:
@@ -213,9 +209,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The fixture cases, none of which touch the network
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture cases, none of which touch the network ---------------------------------------------------------------------------
 
 
 def test_a_stubbed_subject_at_the_pin_passes_every_check(tmp_path: pathlib.Path) -> None:
@@ -248,9 +242,7 @@ def test_a_constants_sh_with_no_pin_refuses_before_comparing(tmp_path: pathlib.P
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# THE DEFECT: an errexit the twin never asked for, reproduced rather than fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE DEFECT: an errexit the twin never asked for, reproduced rather than fixed ---------------------------------------------------------------------------
 
 
 def test_the_set_e_toggle_really_enables_errexit() -> None:
@@ -349,17 +341,14 @@ def test_a_planted_soft_version_read_is_caught(tmp_path: pathlib.Path) -> None:
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert old.stdout.count("PASS:") == 4, "the twin still aborts at the fourth check"
-    # The plant survives past `:113` and keeps going, so it reaches checks the
-    # twin never gets to. Named precisely rather than "something differs".
+    # The plant survives past `:113` and keeps going, so it reaches checks the twin never gets to. Named precisely rather than "something differs".
     assert new.stdout.count("PASS:") > 4, "the plant did not fire; this control proves nothing"
     assert "the installed nfpm reports ''" in new.stderr
     assert "the installed nfpm reports ''" not in old.stderr
     assert port.read_bytes() == before, "the real port file moved"
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_clean_path_drops_every_entry_holding_nfpm(tmp_path: pathlib.Path) -> None:

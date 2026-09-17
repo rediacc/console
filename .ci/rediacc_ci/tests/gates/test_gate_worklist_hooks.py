@@ -88,11 +88,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-worklist-hooks.sh"
 
-# The root conftest reads this attribute (rediacc_ci.xdist_groups.GROUP_ATTR) and
-# turns it into the xdist group for every item in the module. A `pytestmark` would
-# NOT do the same thing: the project's grouping is declaration-driven so that
-# `group_for` can answer the same question the parity driver asks, from the module
-# object rather than from a filename.
+# The root conftest reads this attribute (rediacc_ci.xdist_groups.GROUP_ATTR) and turns it into the xdist group for every item in the module. A `pytestmark` would NOT do the same thing: the project's grouping is declaration-driven so that `group_for` can answer the same question the parity driver asks, from the module object rather than from a filename.
 XDIST_GROUP = "stop-hook-harnesses"
 
 ROOT = paths.repo_root()
@@ -103,8 +99,7 @@ MANIFEST = ROOT / "scripts" / "ci-runner" / "manifest.ts"
 # "  passed=<n> failed=<m>".
 HARNESSES = (("report-inbox", ".claude/hooks/stop/test-report-inbox.sh"),)
 
-# name | npm key | repo-relative harness path. A harness this gate deliberately does
-# NOT run because another REGISTERED gate already runs it.
+# name | npm key | repo-relative harness path. A harness this gate deliberately does NOT run because another REGISTERED gate already runs it.
 DELEGATED = (
     ("stop-hook", "check:ci-hook-worklist-suite", ".claude/hooks/stop/test-worklist-v5.sh"),
 )
@@ -181,12 +176,8 @@ def delegation_problem(
 
 
 def test_the_delegation_assertion_fires_when_the_delegate_npm_key_is_removed(gate, tmp_path):
-    # CONTROL, and in the twin it runs on every invocation rather than behind a flag.
-    # An assertion that cannot fail is worth exactly what no assertion is worth, and
-    # the failure being guarded against -- a harness that runs nowhere -- looks
-    # identical to a harness that ran and passed. So the SAME predicate is driven
-    # against a package.json with the delegate key stripped out, and a pass there is
-    # itself a failure.
+    # CONTROL, and in the twin it runs on every invocation rather than behind a flag. An assertion that cannot fail is worth exactly what no assertion is worth, and the failure being guarded against -- a harness that runs nowhere -- looks identical to a harness that ran and passed. So the SAME predicate is driven against a package.json with the delegate key stripped out, and a pass
+    # there is itself a failure.
     name, key, relative = DELEGATED[0]
     original = PACKAGE_JSON.read_text(encoding="utf-8")
     doctored = tmp_path / "package.json"
@@ -255,10 +246,7 @@ def test_the_stop_hook_suite_is_delegated_to_a_registered_gate(gate):
 
 
 def test_every_listed_harness_is_green_and_non_vacuous(gate):
-    # ONE HARNESS PER INVOCATION, PARSED FROM ITS OWN OUTPUT. EVERY harness runs even
-    # after one fails, and the verdict is the OR: stopping at the first failure would
-    # hide a second broken harness behind the first for as long as the first stayed
-    # broken. `harness.log_fail` raises, so the loop collects and reports at the end.
+    # ONE HARNESS PER INVOCATION, PARSED FROM ITS OWN OUTPUT. EVERY harness runs even after one fails, and the verdict is the OR: stopping at the first failure would hide a second broken harness behind the first for as long as the first stayed broken. `harness.log_fail` raises, so the loop collects and reports at the end.
     problems = []
     summaries = []
     for name, relative in HARNESSES:
@@ -275,9 +263,7 @@ def test_every_listed_harness_is_green_and_non_vacuous(gate):
                 "FAIL[%s]: harness exited nonzero (%d)\n%s" % (name, result.rc, result.combined)
             )
             continue
-        # Parse the summary as WELL as the exit code: trusting the exit code alone is
-        # what lets a harness that executed nothing look identical to one that
-        # executed everything and passed.
+        # Parse the summary as WELL as the exit code: trusting the exit code alone is what lets a harness that executed nothing look identical to one that executed everything and passed.
         matches = SUMMARY_RE.findall(result.combined)
         if not matches:
             problems.append(
@@ -301,8 +287,7 @@ def test_every_listed_harness_is_green_and_non_vacuous(gate):
         print(line)
     if problems:
         gate.log_fail("at least one stop-hook harness is red:\n%s" % "\n".join(problems))
-    # ANTI-VACUITY on the LIST itself: an empty HARNESSES tuple would satisfy every
-    # line above without executing anything at all.
+    # ANTI-VACUITY on the LIST itself: an empty HARNESSES tuple would satisfy every line above without executing anything at all.
     if not HARNESSES:
         gate.log_fail("HARNESSES is empty, so this gate ran no harness and its green means nothing")
     gate.log_pass(

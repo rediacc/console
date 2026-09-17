@@ -64,9 +64,7 @@ DETERMINISTIC_SECRETS = {
     "STRIPE_WEBHOOK_SECRET": "whsec_fixture",
 }
 
-# `logs` writes to BOTH streams, deterministically ordered, because the twin
-# redirects them differently in two places: `2>&1` on :150 and not at all on
-# :113/:124. A fake that only wrote stdout could not tell those apart.
+# `logs` writes to BOTH streams, deterministically ordered, because the twin redirects them differently in two places: `2>&1` on :150 and not at all on :113/:124. A fake that only wrote stdout could not tell those apart.
 FAKE_DOCKER = """#!/usr/bin/env python3
 import os, sys
 LOG = %(log)r
@@ -228,9 +226,7 @@ def _run(
         if env.get(key) == "":
             env.pop(key)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    # PREPENDED, not replaced: the subjects need the system's real bash, env and
-    # grep. The fake docker comes first, so this host's real daemon is never
-    # reached -- asserted by `test_the_fake_docker_is_actually_reached`.
+    # PREPENDED, not replaced: the subjects need the system's real bash, env and grep. The fake docker comes first, so this host's real daemon is never reached -- asserted by `test_the_fake_docker_is_actually_reached`.
     env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
     env.pop("GITHUB_ACTIONS", None)
     env.pop("GITHUB_ENV", None)
@@ -469,9 +465,7 @@ def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
     assert stamps == [str(n) for n in range(15, 181, 15)], stamps
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:

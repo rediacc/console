@@ -39,10 +39,7 @@ import re
 import subprocess
 import sys
 
-# The only string this file ever matches. Planted by hand to prove that stdout
-# genuinely reaches the hook (assertion P2), not merely that a key named
-# tool_response exists (assertion P1). The two are different claims and the
-# whole tier depends on the second one.
+# The only string this file ever matches. Planted by hand to prove that stdout genuinely reaches the hook (assertion P2), not merely that a key named tool_response exists (assertion P1). The two are different claims and the whole tier depends on the second one.
 NONCE_RE = re.compile(r"trapguard-probe-[0-9a-zA-Z]+")
 
 PROBE_PATH = pathlib.Path(
@@ -76,10 +73,7 @@ def _response_facts(resp):
 # ---- the misread-outcome rules ----------------------------------------------
 #
 # These read `tool_response` and INJECT context; they cannot deny, because the
-# command already ran. That is the correct semantics: in both traps below the
-# command was fine and only the READING of its output was wrong, which is
-# exactly the failure no other surface can catch. A CI gate is far too late and
-# a PreToolUse hook is too early: at request time neither trap is visible.
+# command already ran. That is the correct semantics: in both traps below the command was fine and only the READING of its output was wrong, which is exactly the failure no other surface can catch. A CI gate is far too late and a PreToolUse hook is too early: at request time neither trap is visible.
 #
 # Each rule is (applies, verdict). `applies` narrows on the command so the
 # response is not scanned for every tool call; `verdict` keys on the RESPONSE,
@@ -125,22 +119,15 @@ def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
     if not re.search(r"gh\s+run\b|actions/runs|actions/jobs", cmd):
         return None
 
-    # TWO SHAPES, and the second one was DEAD CODE until review caught it. The
-    # first version gated everything behind "the word cancelled appears in the
-    # output", then checked the empty-failure-filter case behind that gate. But
+    # TWO SHAPES, and the second one was DEAD CODE until review caught it. The first version gated everything behind "the word cancelled appears in the output", then checked the empty-failure-filter case behind that gate. But
     # a `--jq select(.conclusion=="failure")` query that comes back `[]`
-    # BECAUSE the job was cancelled rather than failed contains no such word by
-    # construction: the filter removed it. So the branch could never be reached
+    # BECAUSE the job was cancelled rather than failed contains no such word by construction: the filter removed it. So the branch could never be reached
     # for the case it existed to catch, and once the gate passed it could not
-    # change the verdict either. A documented detection shape that cannot fire,
-    # inside the change whose whole subject is checks that cannot fire.
+    # change the verdict either. A documented detection shape that cannot fire, inside the change whose whole subject is checks that cannot fire.
     #
-    # They are now independent alternatives, which is what they always were.
-    # A COUNT of zero cancelled jobs is the OPPOSITE of this trap: it is a session
-    # performing exactly the check this rule asks for and finding nothing. Observed
+    # They are now independent alternatives, which is what they always were. A COUNT of zero cancelled jobs is the OPPOSITE of this trap: it is a session performing exactly the check this rule asks for and finding nothing. Observed
     # live within the hour, warning about output that read `cancelled=0`. Strip the
-    # zero-count shapes before deciding, so the rule stays quiet on the good
-    # behaviour it exists to encourage. A real `"conclusion":"cancelled"` survives.
+    # zero-count shapes before deciding, so the rule stays quiet on the good behaviour it exists to encourage. A real `"conclusion":"cancelled"` survives.
     counted_zero = re.sub(r"cancelled\W{0,4}0\b", "", out, flags=re.IGNORECASE)
     saw_cancelled = bool(re.search(r"cancelled", counted_zero, re.IGNORECASE))
     empty_failure_filter = bool(
@@ -206,17 +193,10 @@ def rule_phantom_deletion_diff(cmd, out, root, _resp):
     alive = [p for p in paths if p not in ("a", "b") and (pathlib.Path(root) / p).exists()]
     if not alive:
         return None
-    # EXISTS-ON-DISK IS NOT ENOUGH, and this rule shipped briefly believing it was.
-    # It fired on `git diff --stat package-lock.json` for a tracked file a peer had
-    # simply removed lines from: deletions, no insertions, file obviously present.
-    # Any deletions-only change to a tracked file looks like that, which is common,
-    # and a rule that fires on ordinary shapes teaches sessions to ignore it -- the
-    # precision decay the plan names as this tier's main risk.
+    # EXISTS-ON-DISK IS NOT ENOUGH, and this rule shipped briefly believing it was. It fired on `git diff --stat package-lock.json` for a tracked file a peer had simply removed lines from: deletions, no insertions, file obviously present. Any deletions-only change to a tracked file looks like that, which is common, and a rule that fires on ordinary shapes teaches sessions to ignore
+    # it -- the precision decay the plan names as this tier's main risk.
     #
-    # The real discriminator is TRACKED-NESS. The phantom happens because the file
-    # is untracked relative to HEAD, so git compares against an index that has no
-    # entry and reports the whole file as removed. A tracked file losing lines is
-    # just a diff. `git ls-files --error-unmatch` answers exactly that question.
+    # The real discriminator is TRACKED-NESS. The phantom happens because the file is untracked relative to HEAD, so git compares against an index that has no entry and reports the whole file as removed. A tracked file losing lines is just a diff. `git ls-files --error-unmatch` answers exactly that question.
     untracked = []
     for p in alive:
         try:
@@ -246,10 +226,7 @@ def rule_phantom_deletion_diff(cmd, out, root, _resp):
     )
 
 
-# The tail steps that exist to undo an earlier one. Deliberately a short, named
-# set rather than "anything destructive": the rule must stay quiet on ordinary
-# interrupted commands, and every entry here is a shape whose whole purpose is
-# putting something back.
+# The tail steps that exist to undo an earlier one. Deliberately a short, named set rather than "anything destructive": the rule must stay quiet on ordinary interrupted commands, and every entry here is a shape whose whole purpose is putting something back.
 RESTORE_TAIL = re.compile(
     r"\bcp\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
     r"|\bmv\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
@@ -286,9 +263,7 @@ def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     timed_out = bool(re.search(r"timed out after|Exit code 143|\bSIGTERM\b", out))
     if not (killed or timed_out):
         return None
-    # Only worth a word if a LATER step was supposed to undo an earlier one. The
-    # first statement cannot be a tail, so a bare `git restore ...` that was
-    # itself the interrupted command is not this shape.
+    # Only worth a word if a LATER step was supposed to undo an earlier one. The first statement cannot be a tail, so a bare `git restore ...` that was itself the interrupted command is not this shape.
     first_sep = re.search(r";|&&|\|\||\n", cmd)
     if not first_sep:
         return None
@@ -308,17 +283,10 @@ def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     )
 
 
-# A heredoc BODY is data the command writes, not a command it runs. Documenting
-# a rewrite hazard (this repo's skills and agent notes do exactly that) fed the
-# words `filter-repo --message-callback` straight into the matcher below and
-# produced a confident warning about a rewrite that never happened. The rule's
-# own docstring is the argument for fixing it: a warning computed from the wrong
-# thing teaches sessions to discount the ones that are right.
+# A heredoc BODY is data the command writes, not a command it runs. Documenting a rewrite hazard (this repo's skills and agent notes do exactly that) fed the words `filter-repo --message-callback` straight into the matcher below and produced a confident warning about a rewrite that never happened. The rule's own docstring is the argument for fixing it: a warning computed from the
+# wrong thing teaches sessions to discount the ones that are right.
 #
-# SCOPE, stated rather than overclaimed: this strips heredoc BODIES only. An
-# interpreter payload (`python3 -c '...'`) naming the same words still fires,
-# and that is left alone on purpose, because such a payload CAN genuinely reach
-# a rewrite through os.system and a silent arm there would be the wrong error.
+# SCOPE, stated rather than overclaimed: this strips heredoc BODIES only. An interpreter payload (`python3 -c '...'`) naming the same words still fires, and that is left alone on purpose, because such a payload CAN genuinely reach a rewrite through os.system and a silent arm there would be the wrong error.
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
 
@@ -343,9 +311,7 @@ def strip_heredocs(cmd):
 HISTORY_REWRITE = re.compile(
     r"\bgit\s+(?:-[A-Za-z-]+\s+\S+\s+)*filter-(?:repo|branch)\b|\bbfg(?:\.jar)?\b"
 )
-# Modes that read history without writing it. `--analyze` in particular is the
-# RIGHT first move before a rewrite, and warning about it would punish exactly
-# the caution this rule wants.
+# Modes that read history without writing it. `--analyze` in particular is the RIGHT first move before a rewrite, and warning about it would punish exactly the caution this rule wants.
 REWRITE_READONLY = re.compile(r"--help\b|--version\b|--analyze\b|--dry-run\b")
 # `--path X`, `--path=X`, and the glob forms. Quotes stripped because the value
 # arrives however the session happened to quote it.
@@ -456,10 +422,7 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
 REBASE_DONE = re.compile(
     r"Successfully rebased and updated|Applying:|^Rebasing \(\d+/\d+\)", re.MULTILINE
 )
-# Command position, like every other matcher in this family. The rule already
-# needs REAL rebase output to fire, so a mention alone cannot trigger it, but
-# anchoring costs nothing and this session fixed five mention-as-execution
-# false positives -- the cheapest time to be consistent is now.
+# Command position, like every other matcher in this family. The rule already needs REAL rebase output to fire, so a mention alone cannot trigger it, but anchoring costs nothing and this session fixed five mention-as-execution false positives -- the cheapest time to be consistent is now.
 REBASE_CMD = re.compile(
     r"(?:^|[;&|(]|\$\(|`)\s*git\b(?:\s+-[A-Za-z-]+\s+\S+)*\s+rebase\b", re.MULTILINE
 )
@@ -571,18 +534,13 @@ def main():
     try:
         event = json.loads(raw) if raw.strip() else {}
     except ValueError:
-        # An unparseable payload is itself a finding, so it is recorded rather
-        # than dropped: "the field never arrived" and "the whole event was
-        # malformed" are different answers to P1.
+        # An unparseable payload is itself a finding, so it is recorded rather than dropped: "the field never arrived" and "the whole event was malformed" are different answers to P1.
         event = {"__unparseable__": True}
 
     resp = event.get("tool_response")
     rtype, rlen, rkeys = _response_facts(resp)
 
-    # The nonce is matched against the RAW event text, so it is found wherever
-    # the harness happens to put stdout inside tool_response. Matching a parsed
-    # sub-field would make a negative result ambiguous between "no content" and
-    # "content lives somewhere I did not look".
+    # The nonce is matched against the RAW event text, so it is found wherever the harness happens to put stdout inside tool_response. Matching a parsed sub-field would make a negative result ambiguous between "no content" and "content lives somewhere I did not look".
     row = {
         "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tool_name": str(event.get("tool_name") or ""),

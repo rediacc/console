@@ -136,9 +136,7 @@ def _run(
     if stub_gh:
         path = _stub_path(tmp_path, side)
     else:
-        # A PATH with coreutils but deliberately no `gh`. An EMPTY PATH is not
-        # the same test: it kills the twin at `$(dirname ...)` four lines before
-        # `require_cmd` runs, which measures the harness, not the subject.
+        # A PATH with coreutils but deliberately no `gh`. An EMPTY PATH is not the same test: it kills the twin at `$(dirname ...)` four lines before `require_cmd` runs, which measures the harness, not the subject.
         usable = tmp_path / ("%s-nogh" % side)
         usable.mkdir(parents=True, exist_ok=True)
         for name in ("dirname", "pwd", "uname", "mktemp"):
@@ -215,9 +213,7 @@ def _assets_of(call: str) -> list[str]:
     return parts[parts.index("--repo") + 2 :]
 
 
-# ---------------------------------------------------------------------------
-# The controls on the harness
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls on the harness ---------------------------------------------------------------------------
 
 
 def test_the_fake_gh_shadows_the_real_one(tmp_path: pathlib.Path) -> None:
@@ -240,9 +236,7 @@ def test_both_subjects_exist() -> None:
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 
-# ---------------------------------------------------------------------------
-# The refusal, which is the behaviour worth more than the gh call
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusal, which is the behaviour worth more than the gh call ---------------------------------------------------------------------------
 
 
 def test_no_assets_refuses_and_never_calls_gh(tmp_path: pathlib.Path) -> None:
@@ -271,9 +265,7 @@ def test_a_directory_tree_with_no_files_refuses(tmp_path: pathlib.Path) -> None:
     assert_agree(old, new, "dirs-only")
 
 
-# ---------------------------------------------------------------------------
-# The gh invocation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gh invocation ---------------------------------------------------------------------------
 
 
 def test_the_full_invocation_is_byte_identical(tmp_path: pathlib.Path) -> None:
@@ -432,9 +424,7 @@ def test_the_version_is_v_prefixed_exactly_once(tmp_path: pathlib.Path) -> None:
     assert_agree(old, new, "version-prefix")
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before anything is globbed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before anything is globbed ---------------------------------------------------------------------------
 
 
 def test_missing_gh_refuses_identically(tmp_path: pathlib.Path) -> None:
@@ -516,9 +506,7 @@ def test_an_empty_version_refuses_like_an_unset_one(tmp_path: pathlib.Path) -> N
     assert new[3] == []
 
 
-# ---------------------------------------------------------------------------
-# The pure helper, and anti-vacuity
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helper, and anti-vacuity ---------------------------------------------------------------------------
 
 
 def test_release_assets_helper_agrees_with_the_subprocess(tmp_path: pathlib.Path) -> None:

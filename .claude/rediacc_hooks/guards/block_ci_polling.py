@@ -38,14 +38,11 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-ci-polling.sh"
 ORDER = 11
 
-# Dropping the SUBCOMMAND makes every `gh run <anything>` after a wait a
-# refusal, so re-running a failed job on a delay is blocked as if it were
-# polling. It is the half that names WHICH gh calls re-fetch the job tree.
+# Dropping the SUBCOMMAND makes every `gh run <anything>` after a wait a refusal, so re-running a failed job on a delay is blocked as if it were polling. It is the half that names WHICH gh calls re-fetch the job tree.
 #
 # The separator was the first candidate and it does not work: `[^|;&]*` on
 # either side of it already cannot cross a separator, so making `(&&|;)`
-# optional changes nothing any realistic command can see. The anti-vacuity
-# control said so rather than the defect being taken on trust.
+# optional changes nothing any realistic command can see. The anti-vacuity control said so rather than the defect being taken on trust.
 DEFECT = ("run[{B}]+(view|list)", "run[{B}]+")
 
 PATTERN = hookio.rx(r"sleep[{B}]+[0-9]+[^|;&]*(&&|;)[{B}]*[^|;&]*gh[{B}]+run[{B}]+(view|list)")
@@ -67,15 +64,12 @@ EDGE_CASES = [
     # The 2026-08-25 ruling, pinned here as well as in the suite: prose fires.
     ("prose in a heredoc still fires", "cat <<EOF\nsleep 60 && gh run list\nEOF"),
     ("quoted prose still fires", "echo 'sleep 60; gh run view 1'"),
-    # The shapes that must NOT fire, which is the half a block-only corpus
-    # cannot see.
+    # The shapes that must NOT fire, which is the half a block-only corpus cannot see.
     ("a wait with no gh after it", "sleep 60 && echo done"),
     ("gh run view with no wait before it", "gh run view 123"),
     ("a pipe between them is not the separator this matches", "sleep 60 | gh run list"),
     ("the reverse order belongs to the sibling guard", "gh run view 1 --jq .s && sleep 60"),
-    # A wait then a gh run subcommand that is NOT view or list. Re-running a
-    # failed job on a delay re-fetches nothing, so the twin allows it, and
-    # without this case nothing in the corpus could tell the subcommand list
+    # A wait then a gh run subcommand that is NOT view or list. Re-running a failed job on a delay re-fetches nothing, so the twin allows it, and without this case nothing in the corpus could tell the subcommand list
     # from "any gh run at all".
     ("a wait then a rerun is not polling", "sleep 5 && gh run rerun 123"),
 ]

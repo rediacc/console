@@ -68,9 +68,7 @@ TWIN = "pre-bash/block-unlinked-commit-author.sh"
 ORDER = 5
 
 # The `--author=` arm is the one whose two corrections this file's header
-# records: read from the scan it was invisible, read from the raw command whole
-# it refused its own introducing commit. Dropping it means the override that
-# produced the 2026-09-03 rewrite is not looked at.
+# records: read from the scan it was invisible, read from the raw command whole it refused its own introducing commit. Dropping it means the override that produced the 2026-09-03 rewrite is not looked at.
 DEFECT = ("if override:", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
@@ -90,8 +88,7 @@ IDENT_EMAIL = re.compile(r".*<([^>]+)>.*")
 
 EDGE_CASES = [
     ("a plain commit", 'git commit -m "feat(x): a change"'),
-    # The three override shapes the 2026-09-03 finding names, none of which a
-    # `git config` read would have seen.
+    # The three override shapes the 2026-09-03 finding names, none of which a `git config` read would have seen.
     ("a -c user.email override", 'git -c user.email=nobody@example.invalid commit -m "x"'),
     ("a GIT_AUTHOR_EMAIL override", 'GIT_AUTHOR_EMAIL=nobody@example.invalid git commit -m "x"'),
     ("an --author override", 'git commit --author="Nobody <nobody@example.invalid>" -m "x"'),
@@ -175,9 +172,7 @@ def run(ev):
         return hookio.ALLOW
     cmd, scan = state
 
-    # Is this a commit at all? Command position, so prose about committing is not.
-    # Deliberately NOT `git tag` and NOT `gh pr create`: a tag writes a tagger and a PR
-    # body has no author email, so widening here would only invite false positives.
+    # Is this a commit at all? Command position, so prose about committing is not. Deliberately NOT `git tag` and NOT `gh pr create`: a tag writes a tagger and a PR body has no author email, so widening here would only invite false positives.
     if not hookio.grep_q(COMMIT_AT_COMMAND_POS, scan):
         return hookio.ALLOW
 
@@ -185,9 +180,7 @@ def run(ev):
     if root == "":
         return hookio.ALLOW
 
-    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh.
-    # That guard exits on ANY foreign root because epics are console's business alone.
-    # Three submodules carried this exact defect, so a commit into one of them IS in
+    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in
     # scope here; only a repo outside this tree is somebody else's identity policy.
     target = shellscan.target_root(scan, root)
     if target != "":
@@ -207,8 +200,7 @@ def run(ev):
         ev.warn("    .ci/scripts/quality/check-commit-identity.sh --refresh")
         return hookio.DENY
 
-    # Collect overrides from the region BEFORE the `commit` verb. Structural, because
-    # git requires `-c` there, and it keeps a `-m` message body out of the parse.
+    # Collect overrides from the region BEFORE the `commit` verb. Structural, because git requires `-c` there, and it keeps a `-m` message body out of the parse.
     # `${CMD%%commit*}` is the SHORTEST prefix, so a later `commit` inside a
     # message cannot widen the region.
     pre = cmd.split("commit", 1)[0] if "commit" in cmd else cmd
@@ -231,14 +223,9 @@ def run(ev):
     #
     # But reading the raw command whole was ALSO wrong, and this file's own first commit
     # proved it: the message explaining `--author=` contained the string, so the guard
-    # refused the commit that introduced it. That is precisely the failure recorded in
-    # block-commit-meta.sh's header, where a phrase check blocked its own audit -- and
-    # "accept the false positive, it is loud" was the wrong call. A guard that cannot be
-    # described in a commit message is a guard people route around.
+    # refused the commit that introduced it. That is precisely the failure recorded in block-commit-meta.sh's header, where a phrase check blocked its own audit -- and "accept the false positive, it is loud" was the wrong call. A guard that cannot be described in a commit message is a guard people route around.
     #
-    # So the MESSAGE VALUE is removed first, then `--author` is looked for in what is
-    # left. git takes the message as the argument to -m/--message, so a mention inside
-    # it is prose by construction, while a real `--author` sits outside it.
+    # So the MESSAGE VALUE is removed first, then `--author` is looked for in what is left. git takes the message as the argument to -m/--message, so a mention inside it is prose by construction, while a real `--author` sits outside it.
     deauthored = cmd
     deauthored = hookio.sed_sub(r'(-m|--message)[= ]+"[^"]*"', r"\1 MSG", deauthored)
     deauthored = hookio.sed_sub(r"(-m|--message)[= ]+'[^']*'", r"\1 MSG", deauthored)
@@ -272,8 +259,7 @@ def run(ev):
     try:
         identity = json.loads(pathlib.Path(identity_file).read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        # `jq -e ... >/dev/null 2>&1` on an unreadable or malformed file exits
-        # non-zero, which the bash reads as "not allowed".
+        # `jq -e ... >/dev/null 2>&1` on an unreadable or malformed file exits non-zero, which the bash reads as "not allowed".
         identity = None
 
     for field, email in (("author", author_email), ("committer", committer_email)):
@@ -295,16 +281,11 @@ def run(ev):
         origins = hookio.git_out(
             ["-C", target, "config", "--show-origin", "--get-all", "user.email"]
         )
-        # NO ORIGINS MEANS NO LINE AT ALL, and the `else "    \n"` that used to be
-        # here emitted an indented blank one. The twin is a PIPELINE --
-        # `git ... | sed 's/^/    /'` (block-unlinked-commit-author.sh:152) -- and
-        # sed given no input writes no output, so bash prints nothing whatsoever.
+        # NO ORIGINS MEANS NO LINE AT ALL, and the `else " \n"` that used to be here emitted an indented blank one. The twin is a PIPELINE -- `git ... | sed 's/^/ /'` (block-unlinked-commit-author.sh:152) -- and sed given no input writes no output, so bash prints nothing whatsoever.
         #
         # It took a CI runner to see it. `git config --get-all user.email` is empty
         # only where no identity is configured at any scope; every developer machine
-        # here has a global one, so the two sides agreed locally and diverged by one
-        # blank line in run 34970782616, taking three `block_unlinked_commit_author`
-        # cases of test_guards_differential.py with it.
+        # here has a global one, so the two sides agreed locally and diverged by one blank line in run 34970782616, taking three `block_unlinked_commit_author` cases of test_guards_differential.py with it.
         if origins:
             ev.warn_raw(hookio.sed_sub(r"^", "    ", hookio._printf_line(origins)))
         if cflags:

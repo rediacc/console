@@ -103,15 +103,11 @@ def test_the_corpus_is_not_empty() -> None:
         "family instead of lowering a floor to keep a green over an empty corpus."
     )
     # SUBSET, NOT EQUALITY, and the direction is the whole point. I wrote this as `==`
-    # and it was wrong within hours: another writer left an untracked
-    # `check-env-file-adoption.sh` in the directory and the glob saw 78 against git's 77,
-    # so a test whose subject is "did the corpus COLLAPSE" started failing because the
-    # corpus GREW. An extra untracked file is in-flight work, which is the normal state of
+    # and it was wrong within hours: another writer left an untracked `check-env-file-adoption.sh` in the directory and the glob saw 78 against git's 77, so a test whose subject is "did the corpus COLLAPSE" started failing because the corpus GREW. An extra untracked file is in-flight work, which is the normal state of
     # this tree; a tracked file the glob cannot see is the collapse this guards.
     #
     # The `>=` floor this replaced was worse in the other direction: it sat through
-    # twenty-seven deletions. Subset catches a narrowing of ONE and is indifferent to
-    # growth, which is exactly the asymmetry the failure mode has.
+    # twenty-seven deletions. Subset catches a narrowing of ONE and is indifferent to growth, which is exactly the asymmetry the failure mode has.
     seen = {p.name for p in _gate_files()}
     unseen = sorted(tracked - seen)
     assert tracked <= seen, (

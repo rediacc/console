@@ -28,8 +28,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-hydration-clean.sh"
 
 GATE = paths.from_root("scripts/gates", "check-hydration-clean.ts")
 
-# Blind the one-hop lookup: the indirect control must go red while the direct one
-# stays green.
+# Blind the one-hop lookup: the indirect control must go red while the direct one stays green.
 MUTATION_FROM = "const body = bodies.get(ident);"
 MUTATION_TO = "const body = undefined;"
 

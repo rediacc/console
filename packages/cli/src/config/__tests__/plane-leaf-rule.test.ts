@@ -29,8 +29,7 @@ import {
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-// Commander must be patched before the CLI registers anything, so every import
-// that pulls in the command tree has to be dynamic and has to come after this.
+// Commander must be patched before the CLI registers anything, so every import that pulls in the command tree has to be dynamic and has to come after this.
 const registeredIn = instrumentRegistration(SRC);
 
 const { cli } = await import('../../cli.js');
@@ -51,10 +50,7 @@ const realClaims: LeafPlaneClaim[] = commands.map((cmd) => ({
 
 describe('per-leaf plane rule', () => {
   it('attributes every leaf to a source module', () => {
-    // An unattributable leaf is one the rule cannot judge, and a machine-plane
-    // claim nobody judges is the hole this rule exists to close. Fail loudly
-    // rather than skipping: if Commander ever changes how it records
-    // registration, this is the assertion that says so.
+    // An unattributable leaf is one the rule cannot judge, and a machine-plane claim nobody judges is the hole this rule exists to close. Fail loudly rather than skipping: if Commander ever changes how it records registration, this is the assertion that says so.
     const orphans = realClaims.filter((c) => !c.module).map((c) => c.pathKey);
     expect(orphans).toEqual([]);
   });
@@ -64,9 +60,7 @@ describe('per-leaf plane rule', () => {
   });
 
   it('reds when a config-only leaf claims the machine plane (bug #51, reconstructed)', () => {
-    // repo-admin.ts imports no executor and no SSH: the archive leaves only read
-    // and write the caller's config archive map. Claiming `machine` for one is
-    // precisely the relocation mistake, so the rule must refuse it.
+    // repo-admin.ts imports no executor and no SSH: the archive leaves only read and write the caller's config archive map. Claiming `machine` for one is precisely the relocation mistake, so the rule must refuse it.
     const misPlaned = realClaims.map((claim) =>
       claim.pathKey === 'repo admin archive purge' ? { ...claim, plane: 'machine' } : claim
     );
@@ -90,8 +84,7 @@ describe('per-leaf plane rule', () => {
   });
 
   it('accepts a machine claim from a module that really reaches a machine', () => {
-    // The rule must not simply refuse every machine claim: `repo up` is honestly
-    // machine-plane, and a rule that reds on it would be noise, not a control.
+    // The rule must not simply refuse every machine claim: `repo up` is honestly machine-plane, and a rule that reds on it would be noise, not a control.
     const repoUp = realClaims.find((c) => c.pathKey === 'repo up');
     expect(repoUp?.plane).toBe('machine');
     expect(evaluateLeafPlanes(repoUp ? [repoUp] : [], reachOf)).toEqual([]);

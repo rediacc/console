@@ -136,35 +136,28 @@ def drive(gate, kind: str, *needles: str) -> None:
 
 
 def test_registry_union_is_decided_and_says_the_identity_set_was_verified(gate):
-    # A registry union it CAN decide, and it must SAY the identity set was
-    # verified rather than merely exiting 0 -- a union that parses proves nothing.
+    # A registry union it CAN decide, and it must SAY the identity set was verified rather than merely exiting 0 -- a union that parses proves nothing.
     drive(gate, "registry", "registry union", "identity set verified")
 
 
 def test_a_judgement_collision_is_left_untouched(gate):
-    # A genuine design collision stays untouched, and says so in the words that
-    # stop the next reader reaching for --skip.
+    # A genuine design collision stays untouched, and says so in the words that stop the next reader reaching for --skip.
     drive(gate, "judgement", "judgement", "NOTHING was written")
 
 
 def test_divergent_gitlinks_are_refused_rather_than_guessed(gate):
-    # Divergent submodule pointers: the oracle REFUSES rather than guessing, and
-    # the refusal is one path's verdict, not an exception that abandons the report.
+    # Divergent submodule pointers: the oracle REFUSES rather than guessing, and the refusal is one path's verdict, not an exception that abandons the report.
     drive(gate, "gitlink", "neither contains the other", "NOTHING was written")
 
 
 def test_a_rebased_submodule_gitlink_is_resolvable(gate):
-    # The insight the whole oracle rests on: the submodule was rebased FIRST, so
-    # its HEAD contains both sides and is in NEITHER conflict stage. Without this
+    # The insight the whole oracle rests on: the submodule was rebased FIRST, so its HEAD contains both sides and is in NEITHER conflict stage. Without this
     # case the only gitlink control proves the refusal and never the resolution.
     drive(gate, "gitlink-rebased", "gitlink")
 
 
 def test_a_mixed_halt_is_all_or_nothing(gate):
-    # ALL OR NOTHING. A gitlink AND a judgement file in one halt must write
-    # nothing, even though the gitlink half is perfectly decidable: resolving only
-    # that half leaves an index that reads as nearly done, and the next
-    # --continue then fails for a reason that no longer names the submodule.
+    # ALL OR NOTHING. A gitlink AND a judgement file in one halt must write nothing, even though the gitlink half is perfectly decidable: resolving only that half leaves an index that reads as nearly done, and the next --continue then fails for a reason that no longer names the submodule.
     drive(gate, "mixed", "NOTHING was written")
 
 
@@ -201,8 +194,7 @@ def exec_case(gate, label: str, kind: str, want_done: bool, needle: str) -> None
             )
         if needle not in result.combined:
             problems.append("[never said: %s]" % needle)
-        # NO COMMIT MAY VANISH. `git rebase --skip` is the one thing this verb
-        # must never do, and a dropped commit is exactly how it would show up.
+        # NO COMMIT MAY VANISH. `git rebase --skip` is the one thing this verb must never do, and a dropped commit is exactly how it would show up.
         if after < before:
             problems.append("[commits went %d -> %d]" % (before, after))
         if problems:
@@ -256,9 +248,7 @@ def test_a_dry_run_writes_nothing(gate):
 
 
 def test_every_kind_ran(gate):
-    # ANTI-VACUITY, and the twin's `ran < 8` floor stated as the table it counts.
-    # Every assertion above lives inside a helper, so a harness that silently
-    # produced nothing would print no failures at all.
+    # ANTI-VACUITY, and the twin's `ran < 8` floor stated as the table it counts. Every assertion above lives inside a helper, so a harness that silently produced nothing would print no failures at all.
     own = pathlib.Path(__file__).read_text(encoding="utf-8")
     declared = len([line for line in own.splitlines() if line.startswith("def test_")])
     # This case itself is not one of the eight.

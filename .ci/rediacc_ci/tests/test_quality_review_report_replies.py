@@ -40,8 +40,7 @@ MODULE = "review_report_replies"
 
 ENV_PREFIX = 'PR_NUMBER=42 GH_TOKEN=t GITHUB_REPOSITORY=rediacc/console PATH="$PWD/fxbin:$PATH"'
 
-# DISPATCHES ON $2, the endpoint. `gh_json` calls `gh api <endpoint> --paginate`,
-# so a stub keyed on $3 fails every call and makes both sides agree about nothing.
+# DISPATCHES ON $2, the endpoint. `gh_json` calls `gh api <endpoint> --paginate`, so a stub keyed on $3 fails every call and makes both sides agree about nothing.
 GH_STUB = """#!/bin/bash
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/fxdata"
 if [ "$1" = "api" ] && [ "$2" != "graphql" ]; then
@@ -84,10 +83,7 @@ def build(
     if snapshot is not None:
         (root / "agent" / "pr").mkdir(parents=True)
         (root / "agent" / "pr" / "main.md").write_text(snapshot, encoding="utf-8")
-    # A REAL GIT REPOSITORY ON `main`, because the fan-out asks git for the branch
-    # name and `review_epic_ids` looks for `agent/pr/<branch>.md`. Without it the
-    # branch is empty, no epics are found, and the fan-out case silently takes the
-    # FLAT path -- which happens to exit 1 as well, so the case would have passed
+    # A REAL GIT REPOSITORY ON `main`, because the fan-out asks git for the branch name and `review_epic_ids` looks for `agent/pr/<branch>.md`. Without it the branch is empty, no epics are found, and the fan-out case silently takes the FLAT path -- which happens to exit 1 as well, so the case would have passed
     # while testing the wrong code. Caught by asserting on the output rather than
     # only on the status.
     for args in (
@@ -112,8 +108,7 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
 
 
 CASES = [
-    # THE NEGATIVE HALF, first: an answered report must be silent, or the gate is a
-    # permanent block and gets switched off.
+    # THE NEGATIVE HALF, first: an answered report must be silent, or the gate is a permanent block and gets switched off.
     (
         "a long-form answer from another author clears the gate",
         [REPORT, {"id": 101, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": LONG}],

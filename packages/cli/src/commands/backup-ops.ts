@@ -56,8 +56,7 @@ async function triggerAdhocBackup(
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
   // INVERTED 2026-08-15. This used to require the rclone `storage` kind and
   // refuse hosted-service; the rclone path has been removed, so the chunk store
-  // is the only destination an ad-hoc run can drive. Left as-is, this function
-  // would now refuse every destination there is.
+  // is the only destination an ad-hoc run can drive. Left as-is, this function would now refuse every destination there is.
   for (const dest of enabledDests) {
     if (dest.kind !== 'hosted-service') {
       throw new Error(
@@ -182,8 +181,7 @@ async function runBackupNow(
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */
 async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  // Only a running unit is worth stopping — a failed one has already exited, so
-  // `systemctl stop` on it would be a no-op reported as a cancellation.
+  // Only a running unit is worth stopping — a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
   const state = await readServiceState(sftp, unit);
   if (state !== 'active' && state !== 'activating') return false;
   outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
@@ -375,8 +373,7 @@ export function registerBackupOpsCommands(backup: Command): void {
         });
         if (!options.dryRun) {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
-          // DR nudge: enabling backups without config-storage enrollment leaves
-          // the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
+          // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();
         }

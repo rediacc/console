@@ -47,12 +47,8 @@ GATE = paths.from_root(".ci", "scripts", "ci", "initialize.sh")
 BLOCK_START = 'TAG_FETCH_ERR="$(mktemp)"'
 BLOCK_END = 'log_info "Latest tag: $LATEST_TAG"'
 
-# NAMED `FAKE_APP_CREDENTIAL` AND NOT `TOKEN` ON PURPOSE. ruff's S105 flags any
-# hardcoded string assigned to a name containing "token"/"secret"/"password", and it
-# is right to: that heuristic is how a real credential gets caught. This one is a
-# FIXTURE value the test plants so it can prove the subject REDACTS it, so the
-# honest fix is a name that does not claim to be a credential, not a per-line
-# suppression of the rule that would catch a real one in the file next door.
+# NAMED `FAKE_APP_CREDENTIAL` AND NOT `TOKEN` ON PURPOSE. ruff's S105 flags any hardcoded string assigned to a name containing "token"/"secret"/"password", and it is right to: that heuristic is how a real credential gets caught. This one is a FIXTURE value the test plants so it can prove the subject REDACTS it, so the honest fix is a name that does not claim to be a credential, not
+# a per-line suppression of the rule that would catch a real one in the file next door.
 FAKE_APP_CREDENTIAL = "s3cr3t-app-token"
 CREDENTIALED_URL = "https://x-access-token:%s@github.com/rediacc/console.git" % FAKE_APP_CREDENTIAL
 
@@ -260,8 +256,7 @@ def test_planted_swallowed_fetch_continues(gate, tmp_path):
     seed_source_repo(gate, tmp_path / "src-stale", "v0.0.9")
     work = init_workdir(gate, tmp_path / "work-stale")
     git = _git()
-    # Give the working tree an old tag, then break the fetch: exactly the shape
-    # that shipped a wrong version.
+    # Give the working tree an old tag, then break the fetch: exactly the shape that shipped a wrong version.
     harness.run(
         [
             git,

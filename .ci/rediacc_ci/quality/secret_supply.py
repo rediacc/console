@@ -163,35 +163,21 @@ MANIFEST_REL = ".ci/config/env-manifest.json"
 MAP_REL = ".ci/config/bws-secret-map.json"
 DOTENV_REL = "private/account/.env"
 
-# The shard whose definition is "supplied by the vault or by a GitHub secret".
-# NOT called SECRET_SHARD: ruff's S105 reads any constant whose NAME contains
-# `secret` and whose value is a string literal as a hardcoded password, and the
-# right answer to a false positive is a better name rather than a per-line
-# suppression this repo's lint gate refuses anyway. Same reason the fixture names
-# below say CRED and not SECRET.
+# The shard whose definition is "supplied by the vault or by a GitHub secret". NOT called SECRET_SHARD: ruff's S105 reads any constant whose NAME contains `secret` and whose value is a string literal as a hardcoded password, and the right answer to a false positive is a better name rather than a per-line suppression this repo's lint gate refuses anyway. Same reason the fixture
+# names below say CRED and not SECRET.
 STORE_SHARD = "secret"
 
-# The names allowed to carry `bootstrap-irreducible`, and the only names the
-# `stays` destination may take, come from the SPEC's `bootstrap_names` and not
+# The names allowed to carry `bootstrap-irreducible`, and the only names the `stays` destination may take, come from the SPEC's `bootstrap_names` and not
 # from a constant here. Two reasons, and the second is the one that matters.
 #
-# It is a RULING rather than a measurement -- `.ci/lib/bws-env.sh:44-48` records
-# that no `bws` verb mints or rotates a machine-account token, so the credential
-# that opens the store cannot live in the store -- and a ruling belongs beside
-# the entries it governs, where a reader of the file can see it.
+# It is a RULING rather than a measurement -- `.ci/lib/bws-env.sh:44-48` records that no `bws` verb mints or rotates a machine-account token, so the credential that opens the store cannot live in the store -- and a ruling belongs beside the entries it governs, where a reader of the file can see it.
 #
-# AND A HARD-CODED NAME HERE WOULD BE THE FINISH-LINE TRAP. `must equal
-# ["BWS_ACCESS_TOKEN"]` reds the day the residue half is fully drained and the
-# entry is legitimately gone, which is the state this whole box is working
-# towards. The clause below is a MEMBERSHIP test with no lower bound, so it is
-# true in every state including the terminal one.
+# AND A HARD-CODED NAME HERE WOULD BE THE FINISH-LINE TRAP. `must equal ["BWS_ACCESS_TOKEN"]` reds the day the residue half is fully drained and the entry is legitimately gone, which is the state this whole box is working towards. The clause below is a MEMBERSHIP test with no lower bound, so it is true in every state including the terminal one.
 BOOTSTRAP_KIND = "bootstrap-irreducible"
 
-# Destinations, and the tracked claim each one makes. `None` means the
-# destination asserts nothing about vault membership.
+# Destinations, and the tracked claim each one makes. `None` means the destination asserts nothing about vault membership.
 #
-#   True  -> the name MUST be in the vault map
-#   False -> the name must NOT be in the vault map
+# True -> the name MUST be in the vault map False -> the name must NOT be in the vault map
 IN_VAULT = {
     "ci-shared": True,
     "dev-shared": False,
@@ -201,18 +187,15 @@ IN_VAULT = {
     "stays": False,
 }
 
-# Destinations that are a COMMITTED or on-disk plain file. A name the manifest
-# calls `secret` may never be routed to one.
+# Destinations that are a COMMITTED or on-disk plain file. A name the manifest calls `secret` may never be routed to one.
 PLAINTEXT_DESTS = frozenset({"dev.defaults.env", "dev.local.env"})
 
-# Destinations and kinds that are blocked on an operator action. Printed by name
-# on every run, never folded into a count.
+# Destinations and kinds that are blocked on an operator action. Printed by name on every run, never folded into a count.
 BLOCKED_DESTS = ("dev-shared", "admin-bootstrap")
 
 # `NAME=`, optionally exported, optionally indented. THE ONLY THING TAKEN FROM
 # THE FILE IS THE TEXT LEFT OF THE FIRST `=`. There is no capture group for the
-# right-hand side, so no value can reach a variable, a message or a log by
-# accident rather than by decision.
+# right-hand side, so no value can reach a variable, a message or a log by accident rather than by decision.
 ASSIGN_RE = re.compile(r"^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
 
 
@@ -220,9 +203,7 @@ class RefusalError(Exception):
     """The gate cannot reach a verdict. Exit 1, never a silent pass."""
 
 
-# ---------------------------------------------------------------------------
-# pure helpers, exported so the controls can drive them without a filesystem
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- pure helpers, exported so the controls can drive them without a filesystem ---------------------------------------------------------------------------
 
 
 def dotenv_names(text: str) -> set[str]:
@@ -403,11 +384,9 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
     names = spec["dotenv"]["names"]
     dests = spec["dotenv"]["destinations"]
     bootstrap = set(spec.get("bootstrap_names") or ())
-    # NOTES ARE OPTIONAL AND SPARSE ON PURPOSE. 49 machine-written sentences about
-    # destinations would be filler, and filler is how a required field stops being
+    # NOTES ARE OPTIONAL AND SPARSE ON PURPOSE. 49 machine-written sentences about destinations would be filler, and filler is how a required field stops being
     # read; a note exists only where the destination is counter-intuitive. What is
-    # NOT optional is that a note names a row that exists -- a note for a drained
-    # name is a reason still arguing about something that left.
+    # NOT optional is that a note names a row that exists -- a note for a drained name is a reason still arguing about something that left.
     notes = spec["dotenv"].get("notes") or {}
     findings = []
     findings.extend(
@@ -481,9 +460,7 @@ def evaluate_local(spec, assigned: set[str]) -> list[str]:
     return findings
 
 
-# ---------------------------------------------------------------------------
-# reading the tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- reading the tree ---------------------------------------------------------------------------
 
 
 def _load(root: pathlib.Path, rel: str):
@@ -592,17 +569,13 @@ def run(root=None):
         assigned = dotenv_names(dotenv.read_text(encoding="utf-8", errors="replace"))
         findings += evaluate_local(spec, assigned)
         stats["local"] = len(assigned)
-        # The manifest's corpus is tracked files only, so a name that lives ONLY
-        # in this untracked file is invisible to it. Counted, never asserted: the
-        # blind spot gets a number instead of a silence.
+        # The manifest's corpus is tracked files only, so a name that lives ONLY in this untracked file is invisible to it. Counted, never asserted: the blind spot gets a number instead of a silence.
         every_shard = {n for names in manifest.get("shards", {}).values() for n in names}
         stats["local_invisible"] = len(assigned - every_shard)
     return findings, stats, spec
 
 
-# ---------------------------------------------------------------------------
-# output
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- output ---------------------------------------------------------------------------
 
 
 def blocked_rows(spec) -> list[tuple[str, list[str]]]:
@@ -638,9 +611,7 @@ def report(spec, stats) -> None:
         "  %d destination(s) carry a note, because the destination is not what the name "
         "suggests" % stats["notes"]
     )
-    # `warn`, not `info`. A green tick beside a list of blocked credentials reads
-    # as approval, and the whole reason these are printed in full rather than
-    # counted is so a reader keeps seeing them as debt.
+    # `warn`, not `info`. A green tick beside a list of blocked credentials reads as approval, and the whole reason these are printed in full rather than counted is so a reader keeps seeing them as debt.
     for dest, rows in blocked_rows(spec):
         if rows:
             log.warn(
@@ -692,15 +663,9 @@ def main(argv=None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 #
-# BOTH DIRECTIONS, ON BOTH HALVES. A gate with only positive controls will
-# happily flag the whole tree, and a set-equal spec with only the "missing entry"
-# direction can be trimmed to green. Every mutation below goes through
-# `plant()`, which raises when a substitution would not have changed anything, so
-# no control here can pass against unmutated input.
+# BOTH DIRECTIONS, ON BOTH HALVES. A gate with only positive controls will happily flag the whole tree, and a set-equal spec with only the "missing entry" direction can be trimmed to green. Every mutation below goes through `plant()`, which raises when a substitution would not have changed anything, so no control here can pass against unmutated input.
 
 _MANIFEST = {
     "shards": {
@@ -753,9 +718,7 @@ _SPEC = {
     },
 }
 
-# `FIX_ALIAS` is deliberately in the spec's residue and NOT in the shard, so the
-# clean fixture would red as RESOLVED unless the shard carries it. It does not:
-# that asymmetry IS the RESOLVED control below, and the clean fixture adds it.
+# `FIX_ALIAS` is deliberately in the spec's residue and NOT in the shard, so the clean fixture would red as RESOLVED unless the shard carries it. It does not: that asymmetry IS the RESOLVED control below, and the clean fixture adds it.
 _MANIFEST["shards"]["secret"].append("FIX_ALIAS")
 
 
@@ -825,9 +788,7 @@ def selftest() -> bool:
             dict(blocked_rows(spec))["dev-shared"] == ["FIX_ROUTED_CRED"],
         )
 
-    # ---- THE ARM THAT USUALLY GOES MISSING, direction 1 --------------------
-    # Deleting an entry whose violation is still present must RED. A file that
-    # can be trimmed to escape the gate is not a baseline.
+    # ---- THE ARM THAT USUALLY GOES MISSING, direction 1 -------------------- Deleting an entry whose violation is still present must RED. A file that can be trimmed to escape the gate is not a baseline.
     with tempfile.TemporaryDirectory() as tmp:
         trimmed = copy.deepcopy(_SPEC)
         del trimmed["residue"]["FIX_UNSTATED"]
@@ -862,8 +823,7 @@ def selftest() -> bool:
             any(f.startswith("UNROUTED FIX_HELD") for f in findings),
         )
 
-    # ---- THE ARM THAT USUALLY GOES MISSING, direction 2 --------------------
-    # An entry added for a violation that does not exist must red too.
+    # ---- THE ARM THAT USUALLY GOES MISSING, direction 2 -------------------- An entry added for a violation that does not exist must red too.
     with tempfile.TemporaryDirectory() as tmp:
         banked = copy.deepcopy(_SPEC)
         banked["residue"]["FIX_NEVER"] = {
@@ -1107,10 +1067,7 @@ def selftest() -> bool:
             _refuses(_fixture(tmp, vault_map=swallowed)),
         )
 
-    # THE TERMINAL STATE, BUILT HONESTLY. Everything seeded, the truncation done,
-    # and the bootstrap credential OUT of the secret shard rather than into the
-    # store it opens -- which is the only shape in which the residue can reach
-    # zero, and the reason the clause above is a membership test and not a floor.
+    # THE TERMINAL STATE, BUILT HONESTLY. Everything seeded, the truncation done, and the bootstrap credential OUT of the secret shard rather than into the store it opens -- which is the only shape in which the residue can reach zero, and the reason the clause above is a membership test and not a floor.
     with tempfile.TemporaryDirectory() as tmp:
         terminal = copy.deepcopy(_SPEC)
         terminal["residue"] = {}

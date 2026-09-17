@@ -44,9 +44,7 @@ def make_repo(root: pathlib.Path, *, git_as_file: bool = False) -> pathlib.Path:
     return root
 
 
-# ---------------------------------------------------------------------------
-# 1. repo_root: the static derivation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. repo_root: the static derivation ---------------------------------------------------------------------------
 
 
 def test_repo_root_is_the_tree_this_file_lives_in():
@@ -57,9 +55,7 @@ def test_repo_root_is_the_tree_this_file_lives_in():
 def test_repo_root_is_absolute_and_resolved():
     root = paths.repo_root()
     assert root.is_absolute()
-    # CONTROL for the `os.path.join(dirname, "..", "..", "..")` idiom this module
-    # replaces: that form leaves the `..` segments in the string, so the result
-    # compares unequal to the pathlib form for the very same directory.
+    # CONTROL for the `os.path.join(dirname, "..", "..", "..")` idiom this module replaces: that form leaves the `..` segments in the string, so the result compares unequal to the pathlib form for the very same directory.
     assert ".." not in root.parts
     assert root == root.resolve()
 
@@ -71,9 +67,7 @@ def test_package_dir_and_ci_dir_agree_with_the_root():
     assert paths.CI_DIR.parent == paths.repo_root()
 
 
-# ---------------------------------------------------------------------------
-# 2. repo_root: the one environment override
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. repo_root: the one environment override ---------------------------------------------------------------------------
 
 
 def test_root_env_override_is_honoured(tmp_path, monkeypatch):
@@ -123,9 +117,7 @@ def test_an_empty_override_falls_back_rather_than_raising(monkeypatch):
     assert paths.repo_root() == paths.CI_DIR.parent
 
 
-# ---------------------------------------------------------------------------
-# 3. The derived directories follow the override, because they are functions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. The derived directories follow the override, because they are functions ---------------------------------------------------------------------------
 
 
 def test_derived_directories_follow_the_override(tmp_path, monkeypatch):
@@ -163,14 +155,11 @@ def test_from_root_with_no_parts_is_the_root():
     assert paths.from_root() == paths.repo_root()
 
 
-# ---------------------------------------------------------------------------
-# 4. relative_to_root: the fallback matters as much as the happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. relative_to_root: the fallback matters as much as the happy path ---------------------------------------------------------------------------
 
 
 def test_relative_to_root_shortens_an_in_repo_path():
-    # Compared through pathlib rather than against a "/"-joined literal, so this
-    # asserts the SHAPE on every platform instead of asserting the separator.
+    # Compared through pathlib rather than against a "/"-joined literal, so this asserts the SHAPE on every platform instead of asserting the separator.
     want = str(pathlib.Path(".ci") / "rediacc_ci" / "paths.py")
     assert paths.relative_to_root(paths.PACKAGE_DIR / "paths.py") == want
 
@@ -197,9 +186,7 @@ def test_relative_to_root_accepts_a_plain_string():
     assert paths.relative_to_root(str(paths.PACKAGE_DIR)) == str(pathlib.Path(".ci") / "rediacc_ci")
 
 
-# ---------------------------------------------------------------------------
-# 5. looks_like_repo_root, and the worktree case that breaks the obvious test
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. looks_like_repo_root, and the worktree case that breaks the obvious test ---------------------------------------------------------------------------
 
 
 def test_looks_like_repo_root_accepts_the_real_tree():
@@ -249,9 +236,7 @@ def test_the_anti_vacuity_fixture_shape_is_not_a_repo_root(tmp_path):
     assert not paths.looks_like_repo_root(fixture)
 
 
-# ---------------------------------------------------------------------------
-# 6. find_repo_root: the upward walk, and the nested-repo trap
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 6. find_repo_root: the upward walk, and the nested-repo trap ---------------------------------------------------------------------------
 
 
 def test_find_repo_root_walks_up_to_the_marked_directory(tmp_path):
@@ -280,9 +265,7 @@ def test_find_repo_root_stops_at_the_inner_repo(tmp_path):
     outer = make_repo(tmp_path / "outer")
     inner = make_repo(outer / "private" / "inner")
     assert paths.find_repo_root(inner / "src") == inner.resolve()
-    # CONTROL: the same walk from a sibling directory that is NOT inside the
-    # inner repo lands on the outer one, so the assertion above is about
-    # nesting and not about make_repo returning its own argument.
+    # CONTROL: the same walk from a sibling directory that is NOT inside the inner repo lands on the outer one, so the assertion above is about nesting and not about make_repo returning its own argument.
     (outer / "packages").mkdir()
     assert paths.find_repo_root(outer / "packages") == outer.resolve()
 
@@ -298,9 +281,7 @@ def test_find_repo_root_finds_the_real_tree_from_this_test_file():
     assert paths.find_repo_root(__file__) == paths.repo_root()
 
 
-# ---------------------------------------------------------------------------
-# 7. on_sys_path: the replacement for 33 hand-written hops
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 7. on_sys_path: the replacement for 33 hand-written hops ---------------------------------------------------------------------------
 
 
 def test_on_sys_path_puts_the_directory_first(tmp_path, monkeypatch):
@@ -346,9 +327,7 @@ def test_ensure_importable_actually_makes_the_package_importable(monkeypatch):
     assert (pathlib.Path(paths.ensure_importable()) / "rediacc_ci" / "__init__.py").is_file()
 
 
-# ---------------------------------------------------------------------------
-# 8. walk_tree: the peer-checkout prune, and what must still be collected
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 8. walk_tree: the peer-checkout prune, and what must still be collected ---------------------------------------------------------------------------
 
 
 def collect(root: pathlib.Path, **kwargs) -> set[str]:
@@ -535,10 +514,7 @@ def test_the_real_tree_walk_is_not_trivially_empty():
     root = paths.repo_root()
     dirs = [dirpath for dirpath, _d, _f in paths.walk_tree(root)]
     assert len(dirs) > 100, "walk_tree saw %d directories in the real tree" % len(dirs)
-    # And nothing it reached is inside a peer checkout. Compared on the path
-    # RELATIVE TO ROOT, because this very session's root is itself
-    # `<main>/.claude/worktrees/agent-xxxx`: an absolute-path test would match the
-    # root on every directory and pass for entirely the wrong reason.
+    # And nothing it reached is inside a peer checkout. Compared on the path RELATIVE TO ROOT, because this very session's root is itself `<main>/.claude/worktrees/agent-xxxx`: an absolute-path test would match the root on every directory and pass for entirely the wrong reason.
     inside = [
         d
         for d in dirs
@@ -548,9 +524,7 @@ def test_the_real_tree_walk_is_not_trivially_empty():
     assert inside == []
 
 
-# ---------------------------------------------------------------------------
-# 9. The exported surface
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 9. The exported surface ---------------------------------------------------------------------------
 
 
 def test_everything_in_dunder_all_exists():

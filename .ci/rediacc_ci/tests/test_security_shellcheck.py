@@ -239,9 +239,7 @@ def assert_agree(fx: pathlib.Path, **kwargs: object) -> tuple:
     return old
 
 
-# ---------------------------------------------------------------------------
-# The real run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 
 def real_hashes() -> dict[str, str]:
@@ -308,9 +306,7 @@ def test_the_real_enumeration_matches_the_ports_exactly() -> None:
     assert len(found) > 400
 
 
-# ---------------------------------------------------------------------------
-# Fixture runs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture runs ---------------------------------------------------------------------------
 
 
 def test_a_clean_fixture_passes_and_batches_once(fixture: pathlib.Path) -> None:
@@ -419,10 +415,7 @@ def test_a_path_with_a_space_is_the_one_named_divergence(fixture: pathlib.Path) 
     _git(fixture, "add", "-A")
     _git(fixture, "commit", "-qm", "space")
     _old, _new, old_log, new_log = run_both(fixture)
-    # THE LOG LINE ITSELF CANNOT SHOW THIS, and that is worth stating: the fake
-    # records `"$*"`, which re-joins its argv with spaces, so a path split into
-    # two arguments prints identically to one that was not. The COUNT is what
-    # sees it, which is exactly why the fake records a count as well as a line.
+    # THE LOG LINE ITSELF CANNOT SHOW THIS, and that is worth stating: the fake records `"$*"`, which re-joins its argv with spaces, so a path split into two arguments prints identically to one that was not. The COUNT is what sees it, which is exactly why the fake records a count as well as a line.
     twin_count = [int(x.split()[1]) for x in old_log if x.startswith("FAKEBATCH ")]
     port_count = [int(x.split()[1]) for x in new_log if x.startswith("FAKEBATCH ")]
     assert twin_count, old_log
@@ -521,9 +514,7 @@ def test_an_unacquirable_shellcheck_is_exit_1_with_both_hints(fixture: pathlib.P
     assert "Every lane's toolchain:" in old[1]
 
 
-# ---------------------------------------------------------------------------
-# The bash-4 block
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The bash-4 block ---------------------------------------------------------------------------
 
 
 def _build(fx: pathlib.Path, body: str) -> None:
@@ -603,9 +594,7 @@ def test_echo_e_backslash_c_truncates_the_whole_report(fixture: pathlib.Path) ->
     )
 
 
-# ---------------------------------------------------------------------------
-# Colour
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour ---------------------------------------------------------------------------
 
 
 def test_colour_is_on_off_a_tty_because_this_twin_never_tests_one(
@@ -623,9 +612,7 @@ def test_ci_true_disables_colour_on_both_sides(fixture: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_batches_are_forty_wide_and_lose_nothing() -> None:

@@ -114,34 +114,23 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
-# Both test corpora that drive real gates. `.ci/rediacc_ci/tests` is recursive
-# because the hazard this gate exists for was sitting one level above the only
-# directory the original scan looked at. `.claude/rediacc_hooks/tests` is in
-# scope for the same reason it would be if it were the one with the plant:
-# nothing about the hazard is specific to a package, and a hook test can write
+# Both test corpora that drive real gates. `.ci/rediacc_ci/tests` is recursive because the hazard this gate exists for was sitting one level above the only directory the original scan looked at. `.claude/rediacc_hooks/tests` is in scope for the same reason it would be if it were the one with the plant: nothing about the hazard is specific to a package, and a hook test can write
 # `.claude/hooks/...` as easily as a gate test can write `.ci/policy/...`.
 SCAN_DIRS = (
     ROOT / ".ci" / "rediacc_ci" / "tests",
     ROOT / ".claude" / "rediacc_hooks" / "tests",
 )
 
-# ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a scan that
-# collapsed -- a moved directory, a broken glob, a rename of the tests package --
-# is indistinguishable from a clean tree: both print a tick. The floor makes the
+# ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a scan that collapsed -- a moved directory, a broken glob, a rename of the tests package -- is indistinguishable from a clean tree: both print a tick. The floor makes the
 # difference observable. 458 files present on 2026-09-15; the floor sits well below
-# that rather than at it, because a floor equal to today's count turns every deleted
-# test into a failure and teaches people to lower the floor.
+# that rather than at it, because a floor equal to today's count turns every deleted test into a failure and teaches people to lower the floor.
 MIN_SCANNED = 350
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# file -> BLOCKER reason. Printed every run, never silent, and LIVENESS-CHECKED:
-# an entry that names no current finding fails the gate rather than sitting here
-# looking like a tracked debt. That check exists because the entry this dict used
-# to open with (`test_gate_docs_gen.py`) was decorative for its whole life -- the
-# detector could not see the file it excused.
+# file -> BLOCKER reason. Printed every run, never silent, and LIVENESS-CHECKED: an entry that names no current finding fails the gate rather than sitting here looking like a tracked debt. That check exists because the entry this dict used to open with (`test_gate_docs_gen.py`) was decorative for its whole life -- the detector could not see the file it excused.
 ALLOWLIST = {
     "test_gate_docs_gen.py": (
         "BLOCKER: TARGET (scripts/data/doc-registry.md) needs the same "
@@ -167,15 +156,10 @@ REAL_PATH_RE = re.compile(r"paths\.from_root\(|paths\.repo_root\(\)\s*/")
 ROOT_CALL_RE = re.compile(r"^paths\.repo_root\(\)$|^paths\.from_root\(")
 TMP_HINT_RE = re.compile(r"tmp|temp|sandbox|scratch", re.IGNORECASE)
 
-# `.unlink` is here with the two writes because deleting a tracked file mid-test
-# is the same corruption with a larger hole in it: there is not even a truncated
-# file left to notice. `test_quality_env_manifest.py` deleted the real manifest
-# outright in one case, which no write-only detector would have reported.
+# `.unlink` is here with the two writes because deleting a tracked file mid-test is the same corruption with a larger hole in it: there is not even a truncated file left to notice. `test_quality_env_manifest.py` deleted the real manifest outright in one case, which no write-only detector would have reported.
 MUTATE_ATTRS = ("write_text", "write_bytes", "unlink")
 
-# Evidence that the target EXISTED before the test touched it, i.e. that the
-# test owes it a restore. `X.read_text()` / `X.read_bytes()` / `X.open()` /
-# `X.stat()` as attribute calls, plus X as the SOURCE argument of a copy.
+# Evidence that the target EXISTED before the test touched it, i.e. that the test owes it a restore. `X.read_text()` / `X.read_bytes()` / `X.open()` / `X.stat()` as attribute calls, plus X as the SOURCE argument of a copy.
 READ_ATTRS = ("read_text", "read_bytes", "open", "stat")
 COPY_FUNCS = ("copy", "copy2", "copyfile", "move")
 
@@ -271,11 +255,7 @@ def real_path_constants(tree: ast.Module) -> tuple[set[str], set[str], dict[str,
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
-        # NOT wrapped in try/except. A defensive `continue` here would SILENTLY
-        # skip an assignment this gate might otherwise have caught mutating a real
-        # tracked file -- which is the exact vacuity hazard the gate exists to
-        # prevent, reproduced inside the gate. If `ast.unparse` ever fails, the
-        # right outcome is a loud crash, not a quiet pass.
+        # NOT wrapped in try/except. A defensive `continue` here would SILENTLY skip an assignment this gate might otherwise have caught mutating a real tracked file -- which is the exact vacuity hazard the gate exists to prevent, reproduced inside the gate. If `ast.unparse` ever fails, the right outcome is a loud crash, not a quiet pass.
         src = ast.unparse(node.value)
         if TMP_HINT_RE.search(src):
             continue
@@ -489,9 +469,7 @@ def controls() -> None:
         if got["test_gate_planted_hazard.py"][3] != "clobber":
             _fail("a read-then-write module constant was not classed as a clobber")
 
-        # 2. Blind spot 2+3: a FUNCTION-LOCAL path derived INDIRECTLY through a
-        #    local root. This is `test_quality_env_manifest.py`'s exact shape and
-        #    the reason this gate was rewritten.
+        # 2. Blind spot 2+3: a FUNCTION-LOCAL path derived INDIRECTLY through a local root. This is `test_quality_env_manifest.py`'s exact shape and the reason this gate was rewritten.
         local = _fixture(
             d,
             "test_local_indirect_hazard.py",
@@ -509,9 +487,7 @@ def controls() -> None:
         if got["test_local_indirect_hazard.py"][3] != "clobber":
             _fail("the function-local indirect hazard was not classed as a clobber")
 
-        # 3. Blind spot 4: a MODULE constant derived indirectly through a module
-        #    root. This is `test_gate_docs_gen.py`, which the previous detector
-        #    allowlisted without ever being able to see it.
+        # 3. Blind spot 4: a MODULE constant derived indirectly through a module root. This is `test_gate_docs_gen.py`, which the previous detector allowlisted without ever being able to see it.
         indirect = _fixture(
             d,
             "test_module_indirect_hazard.py",
@@ -526,8 +502,7 @@ def controls() -> None:
         if "test_module_indirect_hazard.py" not in got:
             _fail("a module constant derived from `ROOT / ...` was not caught")
 
-        # 4. Deletion is a mutation. A write-only detector reported nothing for
-        #    the case that unlinked the real manifest.
+        # 4. Deletion is a mutation. A write-only detector reported nothing for the case that unlinked the real manifest.
         deleter = _fixture(
             d,
             "test_unlink_hazard.py",
@@ -556,11 +531,7 @@ def controls() -> None:
         if scan([safe]):
             _fail("a tmp_path-only write was misreported as a real plant")
 
-        # 6. NEGATIVE: a fresh probe planted inside the tree and removed. Never
-        #    read, so nothing pre-existing is destroyed -- reported as a stray,
-        #    never as a failure. Several gate tests need this: their corpus is
-        #    `git ls-files`, so a probe under tmp_path would be invisible and the
-        #    control would silently stop firing.
+        # 6. NEGATIVE: a fresh probe planted inside the tree and removed. Never read, so nothing pre-existing is destroyed -- reported as a stray, never as a failure. Several gate tests need this: their corpus is `git ls-files`, so a probe under tmp_path would be invisible and the control would silently stop firing.
         stray = _fixture(
             d,
             "test_fresh_probe.py",
@@ -581,8 +552,7 @@ def controls() -> None:
         if got["test_fresh_probe.py"][3] != "stray":
             _fail("a fresh in-tree probe was misclassified as a clobber")
 
-        # 7. The stray branch is not a free pass: the same never-read shape on a
-        #    path that IS tracked reclassifies as a clobber.
+        # 7. The stray branch is not a free pass: the same never-read shape on a path that IS tracked reclassifies as a clobber.
         named = _fixture(
             d,
             "test_tracked_probe.py",
@@ -599,10 +569,7 @@ def controls() -> None:
         if got["test_tracked_probe.py"][3] != "tracked":
             _fail("a never-read probe on a git-TRACKED path must reclassify as a clobber")
 
-        # 8. A FIFTH shape: `shutil.copy2(mutated, X)` plants by COPYING a doctored
-        #    file ONTO the real path, not by calling a write method on it. `X` is
-        #    an argument, not a receiver, so the attribute-call scan above cannot
-        #    see it -- `reads_existing()` already knew to check `COPY_FUNCS` for a
+        # 8. A FIFTH shape: `shutil.copy2(mutated, X)` plants by COPYING a doctored file ONTO the real path, not by calling a write method on it. `X` is an argument, not a receiver, so the attribute-call scan above cannot see it -- `reads_existing()` already knew to check `COPY_FUNCS` for a
         #    SOURCE argument; this is the same functions checked as a DESTINATION.
         copied = _fixture(
             d,
@@ -623,9 +590,7 @@ def controls() -> None:
         if got["test_copy_destination_hazard.py"][3] != "clobber":
             _fail("a copy-as-destination hazard was not classed as a clobber")
 
-        # 9. NEGATIVE: copying INTO a fixture root, the pattern used throughout
-        #    the real test corpus (`shutil.copy2(TWIN, root / rel)`), must stay
-        #    silent -- the destination is not a tracked real-path name.
+        # 9. NEGATIVE: copying INTO a fixture root, the pattern used throughout the real test corpus (`shutil.copy2(TWIN, root / rel)`), must stay silent -- the destination is not a tracked real-path name.
         copy_safe = _fixture(
             d,
             "test_copy_into_fixture.py",

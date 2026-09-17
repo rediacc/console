@@ -59,8 +59,7 @@ def test_the_real_tree_is_fully_registered(gate):
     gate.assert_contains(result.combined, "all registered and all read", "set equality both ways")
     gate.assert_contains(result.combined, "read site(s)", "prints the site count")
     gate.assert_contains(result.combined, "kinds ", "and the per-kind breakdown")
-    # The exclusions are printed on SUCCESS. An exclusion only visible when
-    # something is already broken is an exclusion nobody drains.
+    # The exclusions are printed on SUCCESS. An exclusion only visible when something is already broken is an exclusion nobody drains.
     gate.assert_contains(result.combined, "excluded by declaration: agent/", "agent/ is named")
     gate.assert_contains(result.combined, "excluded by declaration: docs/", "docs/ is named")
     gate.log_pass("the registry and the tree are one set, and the shape is printed")
@@ -81,12 +80,8 @@ def test_the_registry_size_matches_the_shape_line(gate):
 def test_dropping_a_registered_name_reds(gate):
     gate.log_test("PLANT: remove a name from a REAL registry copy while the code still reads it")
     # WORKLIST_REGISTRY_OVERRIDE_FILE (registered, kind=path) points run() at a
-    # tmp copy instead of the tracked file. The comparison is still against the
-    # REAL corpus scan (scan_corpus reads the real tree unchanged) -- only the
-    # registry side is a copy, so a hard kill here corrupts a tmp file, never
-    # `.ci/policy/worklist-env-registry.json`. That file used to be written and
-    # restored in a `finally`, and a kill landing in that window deleted
-    # WORKLIST_FOCUS from it for real, twice in one session.
+    # tmp copy instead of the tracked file. The comparison is still against the REAL corpus scan (scan_corpus reads the real tree unchanged) -- only the registry side is a copy, so a hard kill here corrupts a tmp file, never `.ci/policy/worklist-env-registry.json`. That file used to be written and restored in a `finally`, and a kill landing in that window deleted WORKLIST_FOCUS
+    # from it for real, twice in one session.
     original = REGISTRY.read_bytes()
     with tempfile.TemporaryDirectory() as td:
         mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
@@ -120,12 +115,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
     gate.log_test("PLANT: a misspelled expansion, scanned in place of a real tracked file")
     # WORKLIST_SOURCE_OVERRIDE_FILE (registered, kind=path) substitutes CONTENT
     # for one real corpus entry without ever writing to the tracked file: the
-    # real `git ls-files` list, the real file count and the real everything-else
-    # are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of
-    # disk. A hard kill mid-test now leaves a tmp file orphaned, never the
-    # tracked one -- the same class of hazard the WORKLIST_FOCUS registry
-    # corruption was (that half fixed by the registry-path seam above), one
-    # file over.
+    # real `git ls-files` list, the real file count and the real everything-else are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of disk. A hard kill mid-test now leaves a tmp file orphaned, never the tracked one -- the same class of hazard the WORKLIST_FOCUS registry corruption was (that half fixed by the registry-path seam above), one file over.
     original = SOURCE_PLANT.read_bytes()
     with tempfile.TemporaryDirectory() as td:
         mutated = pathlib.Path(td) / "21-cadence-mutated.sh"
@@ -145,9 +135,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
 
 def test_prose_under_agent_is_not_a_read(gate):
     gate.log_test("ANTI-SILENCER: a name that exists only in agent/ prose must stay invisible")
-    # WORKLIST_EMAIL is the real case: one mention, in a comment, describing a
-    # name that no longer exists. If the exclusion or the scanner ever admitted
-    # prose, it would appear as an unregistered read.
+    # WORKLIST_EMAIL is the real case: one mention, in a comment, describing a name that no longer exists. If the exclusion or the scanner ever admitted prose, it would appear as an unregistered read.
     result = _run()
     gate.assert_exit_code(0, result.rc, "clean run")
     gate.assert_not_contains(result.combined, "WORKLIST_EMAIL", "the prose-only name is absent")

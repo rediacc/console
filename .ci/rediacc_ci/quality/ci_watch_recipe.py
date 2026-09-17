@@ -116,11 +116,7 @@ REGISTRY_CHECKER_REL = ".ci/scripts/quality/lib/check_sanctioned_registry.py"
 # port notes for why they are not re-implemented as a walk.
 SCAN_PATHSPECS = (".claude/**/*.md", ".claude/**/*.sh", "docs/agent-reference/*.md")
 
-# Lines that are DATA or ASSERTIONS, not advice. Both were real false positives:
-# a worklist test carries a background task's command as a JSON value, and the
-# hook suite asserts `check 2 ...` on the banned shape precisely BECAUSE it is
-# banned. Flagging either would push someone to weaken the test to satisfy the
-# gate, which is backwards.
+# Lines that are DATA or ASSERTIONS, not advice. Both were real false positives: a worklist test carries a background task's command as a JSON value, and the hook suite asserts `check 2 ...` on the banned shape precisely BECAUSE it is banned. Flagging either would push someone to weaken the test to satisfy the gate, which is backwards.
 ADVICE_EXCLUDE = re.compile(r'"(command|cmd)"[ \t]*:|^[ \t]*check [0-9]+ ')
 
 # The shape a surface uses when it tells an agent to watch CI.
@@ -132,15 +128,12 @@ INSTRUCTS_WATCHING = re.compile(
 # with no shell separator in between (so a later pipeline stage is not swept in).
 BANNED_INVOCATION = re.compile(r"gh run watch[^|;&]*--(exit-status|interval)")
 
-# A hand-rolled loop's fingerprint: it reads `.status`, compares against
-# `"completed"`, and never mentions `run_attempt` -- which is the field a
-# correct reader needs to survive a re-run landing on the same run id.
+# A hand-rolled loop's fingerprint: it reads `.status`, compares against `"completed"`, and never mentions `run_attempt` -- which is the field a correct reader needs to survive a re-run landing on the same run id.
 STATUS_FIELD = re.compile(r"\.status")
 COMPLETED = re.compile(r'"completed"')
 RUN_ATTEMPT = re.compile(r"run_attempt")
 
-# Check A's third test: a `until`/`while` loop driving `gh` inside the canonical
-# block. `[^\n]*` in the twin's ERE is per-line, which is what this is.
+# Check A's third test: a `until`/`while` loop driving `gh` inside the canonical block. `[^\n]*` in the twin's ERE is per-line, which is what this is.
 CANONICAL_LOOP = re.compile(r"(until|while).*gh ")
 
 
@@ -237,9 +230,7 @@ def scan_files(root: pathlib.Path) -> list[str]:
     return [line for line in lines if line not in ("", EVIDENCE_FILE)]
 
 
-# ---------------------------------------------------------------------------
-# The fixtures every control is built from, written LITERALLY.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixtures every control is built from, written LITERALLY. ---------------------------------------------------------------------------
 
 FIXTURE_LOOP_SKILL = """# fixture
 ```bash
@@ -431,9 +422,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             fail("E. %s --help exited non-zero" % TRACE_REL)
 
-    # ---- F. the skill teaches --run for a DISPATCHED run ------------------
-    # `--wait --ref main` cannot see a workflow_dispatch run's check runs at all
-    # -- a branch's statusCheckRollup structurally excludes them (incidents.md,
+    # ---- F. the skill teaches --run for a DISPATCHED run ------------------ `--wait --ref main` cannot see a workflow_dispatch run's check runs at all -- a branch's statusCheckRollup structurally excludes them (incidents.md,
     # 2026-08-26). That is not fixable in ci-trace.py itself; the only defense is
     # that the taught recipe says to use --run for that case, and stays saying so.
     if not skill.is_file():
@@ -460,9 +449,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def selftest() -> int:

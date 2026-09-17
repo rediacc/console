@@ -27,8 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// ANCHORED ON THIS FILE, not on cwd: the same gate would otherwise read a
-// different translations directory depending on where it was started.
+// ANCHORED ON THIS FILE, not on cwd: the same gate would otherwise read a different translations directory depending on where it was started.
 const DIR = path.resolve(import.meta.dirname, '..', '..', 'packages/www/src/i18n/translations');
 
 type Leaf = [string, string];

@@ -45,8 +45,7 @@ from rediacc_ci.tests.gates import harness
 BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-no-retry-cancel.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-# The WATCHDOG_* env block lives with the monitor step, which moved from ci.yml to
-# the chained watchdog-monitor.yml (ubuntu-slim generations).
+# The WATCHDOG_* env block lives with the monitor step, which moved from ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).
 CI_WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
 PATTERN_LINE = re.compile(r"^ *WATCHDOG_NO_RETRY_PATTERNS: *'(.*)'$", re.MULTILINE)
@@ -73,8 +72,7 @@ def no_retry_patterns(gate) -> str:
             % paths.relative_to_root(CI_WORKFLOW)
         )
     # `sed -n ...p` prints EVERY match and the twin takes the whole stream; there
-    # is one line today, and taking the last preserves the twin's behaviour if a
-    # second ever appears.
+    # is one line today, and taking the last preserves the twin's behaviour if a second ever appears.
     return matches[-1]
 
 

@@ -239,8 +239,7 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
         closure, "watchdog-monitor.yml", "a workflow ci.yml never calls is NOT in the closure"
     )
 
-    # Both branches classify FULL (fail-closed either way), with distinct reasons
-    # proving the runtime closure is what decided.
+    # Both branches classify FULL (fail-closed either way), with distinct reasons proving the runtime closure is what decided.
     plan = classify([".github/workflows/cd-stage.yml"])
     gate.assert_eq(plan["mode"], "full", "an in-closure workflow change forces full")
     gate.assert_contains(
@@ -254,8 +253,7 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
         dumps(plan["full_reasons"]), "workflow-non-closure:", "but attributed as non-closure"
     )
 
-    # Recursion proof on a fixture tree: entry -> zz-a -> zz-b, zz-c orphaned. A glob
-    # or name-pattern implementation cannot produce this answer.
+    # Recursion proof on a fixture tree: entry -> zz-a -> zz-b, zz-c orphaned. A glob or name-pattern implementation cannot produce this answer.
     workflows = tmp_path / "fixture" / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "ci.yml").write_text(
@@ -389,8 +387,7 @@ def test_agent_notes_tree_is_a_zero_job_module(gate):
         "with every scoped job out of scope (agent is zero-job)",
     )
 
-    # CONTROL A: no JOB_SURFACES entry names it. A surface that picked it up would make
-    # this tree expensive again while every assertion above still passed.
+    # CONTROL A: no JOB_SURFACES entry names it. A surface that picked it up would make this tree expensive again while every assertion above still passed.
     surfaced = node_eval(
         """
 const m = require(process.argv[1]);
@@ -483,8 +480,7 @@ process.stdout.write(v.usable + ":" + v.reason);
             payload,
         )
 
-    # CONTROL first: the helper CAN say yes, so every refusal below is a decision
-    # rather than a stuck constant.
+    # CONTROL first: the helper CAN say yes, so every refusal below is a decision rather than a stuck constant.
     gate.assert_eq(
         verdict('{"conclusion":"success","plan":{"mode":"full","reconciled":true}}'),
         "true:full-green-attested",
@@ -511,9 +507,7 @@ process.stdout.write(v.usable + ":" + v.reason);
         "a red run is never a baseline",
     )
 
-    # GREENLIGHT-ONLY REDUCTION, the defect that made this engine inert. Both plans
-    # below carry the identical `mode: "reduced"`, so only the per-key reading
-    # separates them, which is the whole point of the pair.
+    # GREENLIGHT-ONLY REDUCTION, the defect that made this engine inert. Both plans below carry the identical `mode: "reduced"`, so only the per-key reading separates them, which is the whole point of the pair.
     greenlit = (
         '{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{'
         '"unit":{"run":true,"reason":"full"},'
@@ -549,8 +543,7 @@ process.stdout.write(v.usable + ":" + v.reason);
         "an empty jobs vector proves nothing",
     )
 
-    # MALFORMED ENTRIES MUST READ AS "NOT COVERED", and the asymmetry is why this
-    # block exists. Reading garbage as coverage reduces a round on evidence nobody
+    # MALFORMED ENTRIES MUST READ AS "NOT COVERED", and the asymmetry is why this block exists. Reading garbage as coverage reduces a round on evidence nobody
     # checked; reading it as a gap costs one full round. An earlier form asked
     # `run !== false`, and every case below answered COVERS under it.
     no_run_key = (
@@ -580,8 +573,7 @@ process.stdout.write(v.usable + ":" + v.reason);
         "false:reduced-baseline",
         "and so is 0: only a real boolean true is an executed key",
     )
-    # An ARRAY is not the jobs map. Object.values would happily walk it, so the
-    # refusal has to be explicit rather than incidental.
+    # An ARRAY is not the jobs map. Object.values would happily walk it, so the refusal has to be explicit rather than incidental.
     array_jobs = (
         '{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":['
         '{"run":true,"reason":"full"}]}}'
@@ -638,8 +630,7 @@ process.stdout.write(r.plan.mode + ":" + (r.plan.full_reasons[0] || r.plan.modul
             opts_override,
         )
 
-    # CONTROL, and it is the whole point of the mode. Without this passing, every
-    # "full" below would be indistinguishable from a dead mechanism.
+    # CONTROL, and it is the whole point of the mode. Without this passing, every "full" below would be indistinguishable from a dead mechanism.
     gate.assert_eq(
         resolve("{}"),
         "reduced:docs",
@@ -687,8 +678,7 @@ process.stdout.write(r.plan.mode + ":" + (r.plan.full_reasons[0] || r.plan.modul
         "an unknown merge parent is never read as an unchanged base",
     )
 
-    # Case 5 fold: main moved, and main's OWN delta must be unioned in or a change
-    # that landed on main would be invisible to this round.
+    # Case 5 fold: main moved, and main's OWN delta must be unioned in or a change that landed on main would be invisible to this round.
     folded = resolve(
         '{firstParent:()=>"n".repeat(40),'
         'diffPaths:(f)=>f==="b".repeat(40)?["docs/x.md"]:["packages/cli/src/leaked.ts"]}'
@@ -730,8 +720,7 @@ try {
         str(MAP),
     )
     gate.assert_contains(out, "no-such-module", "the validator fires on an unknown module")
-    # CONTROL: it accepts the real table. Module load already ran it, but prove it
-    # explicitly so a future load-order change cannot hollow this out.
+    # CONTROL: it accepts the real table. Module load already ran it, but prove it explicitly so a future load-order change cannot hollow this out.
     out = node_eval(
         """
 const m = require(process.argv[1]);
@@ -746,15 +735,10 @@ process.stdout.write("ok");
 
 # --- the classification regression table (2026-08-05) -----------------------
 #
-# WHAT IT GUARDS, and why nothing above already does. Every case above tests the
-# engine's DECISION MACHINERY. None of them pins the ANSWER for a representative
-# delta, which is the half the operator actually experienced: "run 30983418337 ran the
-# whole matrix for a commit that is documentation". Add a surface to JOB_SURFACES,
-# mistype a glob, or drop a module mapping, and every case above stays green while
-# docs-only silently goes back to running eighteen jobs.
+# WHAT IT GUARDS, and why nothing above already does. Every case above tests the engine's DECISION MACHINERY. None of them pins the ANSWER for a representative delta, which is the half the operator actually experienced: "run 30983418337 ran the whole matrix for a commit that is documentation". Add a surface to JOB_SURFACES, mistype a glob, or drop a module mapping, and every case
+# above stays green while docs-only silently goes back to running eighteen jobs.
 #
-# SETS, NEVER COUNTS, wherever the expectation is a partial run. A count of 14 passes
-# just as happily when the map swaps two keys for two others.
+# SETS, NEVER COUNTS, wherever the expectation is a partial run. A count of 14 passes just as happily when the map swaps two keys for two others.
 
 VERDICT_JS = """
 let raw = "";
@@ -841,13 +825,11 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     # -- the rows that must skip the heavy matrix entirely -------------------
     expect_classify(gate, "docs only", "reduced|18|", "docs/ci-overhaul/06-progress.md")
     expect_classify(gate, "agent tooling only", "reduced|18|", ".claude/commands/pr-babysit.md")
-    # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL
-    # check that ran the ceph fork test, because scripts/** was a single blanket rule.
+    # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL check that ran the ceph fork test, because scripts/** was a single blanket rule.
     expect_classify(gate, "gate source only", "reduced|18|", "scripts/gates/check-embed-credits.ts")
     expect_classify(gate, "gate lib only", "reduced|18|", "scripts/lib/blocker-validator.ts")
     expect_classify(gate, "ci-runner only", "reduced|18|", "scripts/ci-runner/manifest.ts")
-    # The tracked agent/ notes root. STATE.md is rewritten many times per session, so
-    # this row decides whether a session costs nothing or seventy minutes a write.
+    # The tracked agent/ notes root. STATE.md is rewritten many times per session, so this row decides whether a session costs nothing or seventy minutes a write.
     expect_classify(gate, "agent session state only", "reduced|18|", "agent/97604f47/STATE.md")
     expect_classify(
         gate,
@@ -871,8 +853,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "scripts/gates/check-cli-docs.ts",
         "packages/cli/src/commands/repo.ts",
     )
-    # THE REPORTED CASE, kept recognisable: the exact four paths of push
-    # 1d172438f..208c8a2d9, whose run 30983418337 ran all eighteen keys.
+    # THE REPORTED CASE, kept recognisable: the exact four paths of push 1d172438f..208c8a2d9, whose run 30983418337 ran all eighteen keys.
     expect_classify(
         gate,
         "the reported push (run 30983418337)",
@@ -894,9 +875,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         gate, "account source", "reduced|18|%s" % account_keys, "private/account/src/index.ts"
     )
 
-    # THE ROW THAT CATCHES AN OVER-EAGER SKIP, the direction that costs correctness
-    # rather than money. An engine that let the docs classification win would pass
-    # every zero-key row above and be catastrophically wrong here.
+    # THE ROW THAT CATCHES AN OVER-EAGER SKIP, the direction that costs correctness rather than money. An engine that let the docs classification win would pass every zero-key row above and be catastrophically wrong here.
     expect_classify(
         gate,
         "MIXED docs + one cli file",
@@ -905,10 +884,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "packages/cli/src/commands/repo.ts",
     )
 
-    # -- the rows that must force full --------------------------------------
-    # Asserted STRUCTURALLY rather than as a literal eighteen-name list: naming all
-    # eighteen in three more rows would make a legitimate key addition an
-    # eighteen-line diff in a file that is not about the key list.
+    # -- the rows that must force full -------------------------------------- Asserted STRUCTURALLY rather than as a literal eighteen-name list: naming all eighteen in three more rows would make a legitimate key addition an eighteen-line diff in a file that is not about the key list.
     for path, reason in (
         (".github/workflows/ci.yml", "workflow-closure:.github/workflows/ci.yml"),
         (".ci-trigger", "root-manifest:.ci-trigger"),
@@ -931,10 +907,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
             dumps(plan["full_reasons"]), reason, "naming %s as the reason" % reason
         )
 
-    # -- the block's own anti-vacuity control -------------------------------
-    # It cannot borrow this file's registered one: that fires seven tests earlier and
-    # never reaches here. So prove the sentinel is live, or every zero-key row above
-    # could be passing on an engine that ran at all.
+    # -- the block's own anti-vacuity control ------------------------------- It cannot borrow this file's registered one: that fires seven tests earlier and never reaches here. So prove the sentinel is live, or every zero-key row above could be passing on an engine that ran at all.
     gate.assert_eq(
         classify_verdict(
             tmp_path / "definitely-not-an-engine.cjs", "docs/ci-overhaul/06-progress.md"
@@ -942,8 +915,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "ENGINE-PRODUCED-NOTHING",
         "a classification that could not run must never read as 'no keys to run'",
     )
-    # CONTROL for the control: the real engine still answers, so the sentinel above is
-    # a dead engine rather than a helper stuck at its error string.
+    # CONTROL for the control: the real engine still answers, so the sentinel above is a dead engine rather than a helper stuck at its error string.
     gate.assert_eq(
         classify_verdict(ENGINE, "docs/ci-overhaul/06-progress.md"),
         "reduced|18|",

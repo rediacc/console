@@ -100,15 +100,10 @@ import sys
 
 from rediacc_ci import log
 
-# U+2014, written as an escape so no em dash is typed into a file under
-# `.ci/rediacc_ci`, which `check:ci-em-dash-surfaces` scans. The CHARACTER still
-# has to reach stderr, because the twin prints it and this port's whole claim is
-# byte-identical output.
+# U+2014, written as an escape so no em dash is typed into a file under `.ci/rediacc_ci`, which `check:ci-em-dash-surfaces` scans. The CHARACTER still has to reach stderr, because the twin prints it and this port's whole claim is byte-identical output.
 _EM_DASH = "\u2014"
 
-# The three `uname -s` prefixes the twin's `case` treats as Windows. Named
-# rather than inlined so the set is readable next to the reason it is not
-# `core.platform.exe_suffix()` (see the module docstring).
+# The three `uname -s` prefixes the twin's `case` treats as Windows. Named rather than inlined so the set is readable next to the reason it is not `core.platform.exe_suffix()` (see the module docstring).
 _WINDOWS_UNAME_PREFIXES = ("MINGW", "MSYS", "CYGWIN")
 
 
@@ -194,9 +189,7 @@ def main(argv: list[str]) -> int:
     renet_src = root / "private" / "renet"
     renet_bin = renet_src / "bin" / ("renet%s" % exe_suffix())
 
-    # Step 1: the submodule has to be there. This is checked BEFORE the identity
-    # is computed in the twin too, so a checkout without the submodule gets the
-    # actionable message rather than whatever the identity pipeline says.
+    # Step 1: the submodule has to be there. This is checked BEFORE the identity is computed in the twin too, so a checkout without the submodule gets the actionable message rather than whatever the identity pipeline says.
     if not renet_src.is_dir():
         log.error("private/renet/ not found %s submodule not checked out" % _EM_DASH)
         log.error("Run: git submodule update --init private/renet")
@@ -205,9 +198,7 @@ def main(argv: list[str]) -> int:
     stamp = renet_src / "bin" / ".renet-build-identity"
     want = build_identity(args)
 
-    # `"$(cat "$RENET_STAMP" 2>/dev/null)"`: a missing or unreadable stamp reads
-    # as the empty string, which never equals an identity (it always carries a
-    # `|` and 16 hex characters), so the build runs.
+    # `"$(cat "$RENET_STAMP" 2>/dev/null)"`: a missing or unreadable stamp reads as the empty string, which never equals an identity (it always carries a `|` and 16 hex characters), so the build runs.
     try:
         have = stamp.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -225,18 +216,11 @@ def main(argv: list[str]) -> int:
                 "Renet binary exists but was built differently %s rebuilding for: %s"
                 % (_EM_DASH, want)
             )
-            # THE TWIN DELETES BEFORE IT CHECKS FOR go, and this port keeps that
-            # order. It is a real defect (a host without go loses a working
-            # binary and gets exit 1), reported rather than repaired: reordering
-            # here would make the port's filesystem effect differ from the
-            # twin's on the exact input that exposes the bug, and the
-            # differential would then be certifying the wrong script.
+            # THE TWIN DELETES BEFORE IT CHECKS FOR go, and this port keeps that order. It is a real defect (a host without go loses a working binary and gets exit 1), reported rather than repaired: reordering here would make the port's filesystem effect differ from the twin's on the exact input that exposes the bug, and the differential would then be certifying the wrong script.
             #
             # `rm -f` is silent on a file it cannot remove only when the file is
             # absent; a permission error does print and fail. That sub-case is
-            # not reachable from any caller in this tree (bin/ is created by
-            # build.sh as the invoking user), so the twin's `rm -f` is matched
-            # on its common path and no message is invented for the other.
+            # not reachable from any caller in this tree (bin/ is created by build.sh as the invoking user), so the twin's `rm -f` is matched on its common path and no message is invented for the other.
             with contextlib.suppress(OSError):
                 renet_bin.unlink()
 
@@ -263,17 +247,14 @@ def main(argv: list[str]) -> int:
             # bash's "command not found" status.
             return 127
         if completed.returncode != 0:
-            # `set -e` on the subshell: the twin exits with build.sh's own
-            # status and prints nothing of its own. Silence is deliberate.
+            # `set -e` on the subshell: the twin exits with build.sh's own status and prints nothing of its own. Silence is deliberate.
             return completed.returncode
 
         # Step 5: the binary has to exist before anything is stamped.
         if not renet_bin.is_file():
             log.error("Renet build failed: binary not found at %s" % renet_bin)
             return 1
-        # Stamp AFTER the binary is verified present, never before: a stamp
-        # written ahead of a failed build would make the next run skip and hand
-        # back nothing, or a half-written binary that looks current.
+        # Stamp AFTER the binary is verified present, never before: a stamp written ahead of a failed build would make the next run skip and hand back nothing, or a half-written binary that looks current.
         stamp.write_text(want, encoding="utf-8")
         log.info("Renet built successfully: %s" % renet_bin)
 

@@ -36,17 +36,11 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-agent-browser-repo-output.sh"
 ORDER = 34
 
-# Silencing the catch-all is the one change this guard's header forbids by
-# name: the unrecognised-flag arm IS case 1, and without it `--full-page` goes
-# back to being eaten as the output path.
+# Silencing the catch-all is the one change this guard's header forbids by name: the unrecognised-flag arm IS case 1, and without it `--full-page` goes back to being eaten as the output path.
 DEFECT = ('if hookio.case_glob(tok, "--*"):', "if False:")
 
-# Only the subcommands that write a file to disk.
-# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
-# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
-# means a doc line, a worklist note or an `echo` explaining the rule is refused
-# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
-# below still blocks the real command, at line start and after a separator.
+# Only the subcommands that write a file to disk. ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the
+# real command, at line start and after a separator.
 WRITES_A_FILE = hookio.rx(
     r"(^|[;&|(])[{S}]*(sudo[{S}]+)?agent-browser\b[^;|&]*\b(screenshot|pdf|download)\b"
 )
@@ -158,8 +152,7 @@ def run(ev):
     if not hookio.grep_q_line(WRITES_A_FILE, scan):
         return hookio.ALLOW
 
-    # EVERY agent-browser segment that actually writes a file, not just the first one.
-    # `head -1` was wrong twice over: in `agent-browser open URL && agent-browser screenshot
+    # EVERY agent-browser segment that actually writes a file, not just the first one. `head -1` was wrong twice over: in `agent-browser open URL && agent-browser screenshot
     # /abs/x.png` it judged the `open` half, which has no path, and blocked a correct command;
     # and with two output subcommands on one line it never looked at the second at all.
     spans = hookio.grep_o(SEGMENT_SPAN, scan)

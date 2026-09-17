@@ -145,8 +145,7 @@ LIVE_SHARDS = (
 TOMBSTONE_SHARD = "tombstone"
 ALL_SHARDS = (*LIVE_SHARDS, TOMBSTONE_SHARD)
 
-# A legal POSIX-ish environment name. Applied to every reader's output so a
-# yaml key like `runs-on` or a JS property access on a non-name cannot enter.
+# A legal POSIX-ish environment name. Applied to every reader's output so a yaml key like `runs-on` or a JS property access on a non-name cannot enter.
 NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -154,11 +153,7 @@ class RefusalError(Exception):
     """The instrument cannot see the tree, so it has no verdict to give."""
 
 
-# --------------------------------------------------------------------------
-# The five readers. Each is a pure (text) -> set[str] function plus a pure
-# (relpath) -> bool selector, so the controls can drive them directly and a new
-# reader added to SOURCES automatically acquires both-direction controls.
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- The five readers. Each is a pure (text) -> set[str] function plus a pure (relpath) -> bool selector, so the controls can drive them directly and a new reader added to SOURCES automatically acquires both-direction controls. --------------------------------------------------------------------------
 
 ENV_FILE_RE = re.compile(r"(^|/)(\.env(\..+)?|[^/]+\.env(\..+)?)$")
 ASSIGN_RE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=")
@@ -379,9 +374,7 @@ SOURCES = (
 )
 
 
-# --------------------------------------------------------------------------
-# The tree
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- The tree --------------------------------------------------------------------------
 
 
 def tracked_files(root: pathlib.Path) -> list[str]:
@@ -430,9 +423,7 @@ def derive_sources(root, files=None, suppress=None):
             try:
                 found = reader.extract(text)
             except (SyntaxError, ValueError) as exc:
-                # Not a skip. A file the reader cannot read is a hole in the
-                # corpus, and a hole that reports nothing is how a set silently
-                # shrinks. See names_from_py.
+                # Not a skip. A file the reader cannot read is a hole in the corpus, and a hole that reports nothing is how a set silently shrinks. See names_from_py.
                 unreadable.append("%s: reader `%s` could not read it: %s" % (rel, reader.id, exc))
                 continue
             blocked = suppress.get(rel, set()) & found
@@ -449,9 +440,7 @@ def derive_sources(root, files=None, suppress=None):
     return names, per_names, per_files, dynamic_js, seen_suppressed, unreadable
 
 
-# --------------------------------------------------------------------------
-# The manifest
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- The manifest --------------------------------------------------------------------------
 
 
 def load_manifest(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
@@ -651,9 +640,7 @@ def suppress_map(manifest: dict) -> dict[str, set[str]]:
     return {rel: set(names) for rel, names in raw.items()}
 
 
-# --------------------------------------------------------------------------
-# Controls
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- Controls --------------------------------------------------------------------------
 
 
 def selftest() -> bool:
@@ -720,8 +707,7 @@ def selftest() -> bool:
         ),
     )
 
-    # The collision authority, both directions -- and the SUBSTRING direction is
-    # the one that was actually broken. See collision_findings' docstring.
+    # The collision authority, both directions -- and the SUBSTRING direction is the one that was actually broken. See collision_findings' docstring.
     tmp = pathlib.Path(tempfile.mkdtemp())
     try:
         (tmp / "near.ts").write_text("const x = 'REDIACC_DEAD_SUFFIX';\n", encoding="utf-8")
@@ -791,17 +777,11 @@ def _raises_syntax(text: str) -> bool:
     return False
 
 
-# --------------------------------------------------------------------------
-# The run
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- The run --------------------------------------------------------------------------
 
 
 def run(root=None):
-    # The override applies ONLY to the real invocation (no explicit root, i.e.
-    # `run()` from main()). `selftest()`'s controls always pass an explicit
-    # fixture root, and must never be redirected onto a plant test's tmp manifest
-    # that happens to be sitting in the same process's environment -- that would
-    # make every other control's fixture manifest silently wrong.
+    # The override applies ONLY to the real invocation (no explicit root, i.e. `run()` from main()). `selftest()`'s controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp manifest that happens to be sitting in the same process's environment -- that would make every other control's fixture manifest silently wrong.
     use_override = root is None and MANIFEST_OVERRIDE
     base = root or paths.repo_root()
     manifest = load_manifest(base, pathlib.Path(MANIFEST_OVERRIDE) if use_override else None)

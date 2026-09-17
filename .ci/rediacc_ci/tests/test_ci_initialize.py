@@ -58,8 +58,7 @@ MODULE = "rediacc_ci.ci.initialize"
 
 _PROG = re.compile(r"^\S+: line ", re.MULTILINE)
 
-# Everything the twin, common.sh and the fakes reach for BY NAME. `git` and
-# `docker` are deliberately absent: those are the fakes' names.
+# Everything the twin, common.sh and the fakes reach for BY NAME. `git` and `docker` are deliberately absent: those are the fakes' names.
 MIN_TOOLS = (
     "python3",
     "bash",
@@ -152,9 +151,7 @@ esac
 """,
     # The ONLY sibling whose environment the twin alters, so the value it
     # actually receives is logged: `GITHUB_OUTPUT=''` must arrive as the EMPTY
-    # STRING, and `[UNSET]` here would mean the port dropped the assignment. The
-    # same fact printed to stderr would prove nothing, because the twin's
-    # `2>&1 | grep` swallows it -- which is what the stderr line below checks.
+    # STRING, and `[UNSET]` here would mean the port dropped the assignment. The same fact printed to stderr would prove nothing, because the twin's `2>&1 | grep` swallows it -- which is what the stderr line below checks.
     ".ci/scripts/ci/dispatch-release.sh": """#!/bin/bash
 printf 'dispatch-release.sh GITHUB_OUTPUT=[%s] %s\\n' "${GITHUB_OUTPUT-UNSET}" "$*" >>"$FAKE_LOG"
 echo "GITHUB_OUTPUT=[${GITHUB_OUTPUT-UNSET}]" >&2
@@ -319,9 +316,7 @@ def assert_identical(old, new, files) -> None:
 PAT_ENV = {"GITHUB_PAT": "s3cr3t-app-token", "GITHUB_REPOSITORY": "rediacc/console"}
 
 
-# ---------------------------------------------------------------------------
-# Step 1 and step 2: the arms that never reach a sibling
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Step 1 and step 2: the arms that never reach a sibling ---------------------------------------------------------------------------
 
 
 def test_a_missing_token_is_four_lines_and_exit_one(tmp_path: pathlib.Path) -> None:
@@ -420,9 +415,7 @@ def test_is_bot_commit_is_pure_and_covers_its_three_arms() -> None:
     assert port.is_bot_commit("push", "")[1].startswith("Non-push event")
 
 
-# ---------------------------------------------------------------------------
-# write_output, and DEFECT C
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- write_output, and DEFECT C ---------------------------------------------------------------------------
 
 
 def test_the_output_file_gets_every_key_stdout_gets(tmp_path: pathlib.Path) -> None:
@@ -482,9 +475,7 @@ def test_an_argument_that_is_not_a_shell_identifier_is_printfs_own_refusal(
     assert files["new_calls"] == ""
 
 
-# ---------------------------------------------------------------------------
-# The full run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The full run ---------------------------------------------------------------------------
 
 PUSH_MAIN = {
     **PAT_ENV,
@@ -610,9 +601,7 @@ def test_defect_d_a_missing_docker_reports_the_images_as_absent(
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Step 3 and step 4
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Step 3 and step 4 ---------------------------------------------------------------------------
 
 
 def test_check_only_never_reaches_the_submodule_step(tmp_path: pathlib.Path) -> None:
@@ -712,9 +701,7 @@ def test_the_output_path_is_forwarded_to_the_detector_as_one_word(
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Step 5 and step 6
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Step 5 and step 6 ---------------------------------------------------------------------------
 
 
 def test_a_failing_tag_generator_takes_its_exit_status_with_it(
@@ -764,9 +751,7 @@ def test_the_deciders_stderr_is_swallowed_by_the_two_to_one_redirect(
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# The tag fetch: the block `test-releaseversion-tag-fetch.sh` also guards
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The tag fetch: the block `test-releaseversion-tag-fetch.sh` also guards ---------------------------------------------------------------------------
 
 
 def test_defect_a_an_unset_repository_slug_dies_at_line_219(
@@ -893,9 +878,7 @@ def test_redact_replaces_every_occurrence_and_leaves_the_rest() -> None:
     assert port.redact(b"\xff\xfe binary", "tok") == b"\xff\xfe binary"
 
 
-# ---------------------------------------------------------------------------
-# Colour, and the pins
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, and the pins ---------------------------------------------------------------------------
 
 
 def test_colour_is_emitted_on_a_terminal_by_both_sides(tmp_path: pathlib.Path) -> None:

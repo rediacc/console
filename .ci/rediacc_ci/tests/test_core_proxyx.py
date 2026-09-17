@@ -84,9 +84,5 @@ def test_expect_exit_accepts_a_comma_list() -> None:
 
 
 def test_run_selftest_passes_both_directions() -> None:
-    # The permanent differential twin lives in test_proxies_cli_manifest.py /
-    # test_proxies_docker_prepull.py, which check this function's OUTPUT is
-    # byte-identical to `proxy_lib_selftest`'s. This asserts its return code
-    # directly, over a real PATH removal for the 77 case (see run_selftest's
-    # own docstring for why that case forks a real subprocess).
+    # The permanent differential twin lives in test_proxies_cli_manifest.py / test_proxies_docker_prepull.py, which check this function's OUTPUT is byte-identical to `proxy_lib_selftest`'s. This asserts its return code directly, over a real PATH removal for the 77 case (see run_selftest's own docstring for why that case forks a real subprocess).
     assert proxyx.run_selftest() == 0

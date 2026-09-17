@@ -55,10 +55,7 @@ already print, so migrating one changes no observable output.
 import re
 import sys
 
-# The floor's failure message, kept verbatim from the copies it replaces. The
-# wording is the load-bearing part: "the file is not being executed as written"
-# names the failure mode (controls that never ran) rather than the symptom (a
-# small number), which is what stops the next reader from just lowering it.
+# The floor's failure message, kept verbatim from the copies it replaces. The wording is the load-bearing part: "the file is not being executed as written" names the failure mode (controls that never ran) rather than the symptom (a small number), which is what stops the next reader from just lowering it.
 _FLOOR_MESSAGE = "FAIL  only %d control(s) ran; the file is not being executed as written"
 
 
@@ -275,10 +272,7 @@ class Controls:
 
     # -- the assertions ------------------------------------------------------
     #
-    # Each returns the boolean, so a caller can branch on a control's outcome
-    # without re-evaluating the condition. The copies return None, and one of
-    # them works around it by recomputing the comparison in an `if` on the next
-    # line -- two expressions that must agree, which is one too many.
+    # Each returns the boolean, so a caller can branch on a control's outcome without re-evaluating the condition. The copies return None, and one of them works around it by recomputing the comparison in an `if` on the next line -- two expressions that must agree, which is one too many.
 
     def check(self, label: str, got: object, want: object) -> bool:
         """Equality. The workhorse; `control` and `check` in the copies."""

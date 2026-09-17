@@ -86,14 +86,11 @@ from rediacc_ci.controls import Controls
 RULES_FILE = ".ci/config/prose-style-rules.json"
 BASELINE_FILE = ".ci/config/prose-style-baseline.json"
 
-# Every scope a rule may name, plus the wildcard. Checked at load time rather
-# than at match time: a typo in `scopes` would otherwise make a rule silently
-# apply nowhere, which is the vacuity this gate is built against.
+# Every scope a rule may name, plus the wildcard. Checked at load time rather than at match time: a typo in `scopes` would otherwise make a rule silently apply nowhere, which is the vacuity this gate is built against.
 SCOPE_ALL = "all"
 
 # Which scope a path is linted under. `.md` is prose end to end; a source file
-# contributes only its COMMENTS, so it is linted under `comment`, which is the
-# scope R11's imperative arm deliberately excludes.
+# contributes only its COMMENTS, so it is linted under `comment`, which is the scope R11's imperative arm deliberately excludes.
 SCOPE_BY_SUFFIX = {
     ".md": "markdown",
     ".py": "comment",
@@ -103,11 +100,7 @@ SCOPE_BY_SUFFIX = {
     ".cjs": "comment",
     ".mjs": "comment",
     ".go": "comment",
-    # REUSES "comment" RATHER THAN A NEW SCOPE NAMED "config". A JSON
-    # `_comment`/`why`/`reason` block is the same register, by the same
-    # authors, as a source-file comment -- and a "config" scope would
-    # silently disable R18, since R18's own `scopes` list is
-    # `["markdown", "comment", "pr"]` and does not name one.
+    # REUSES "comment" RATHER THAN A NEW SCOPE NAMED "config". A JSON `_comment`/`why`/`reason` block is the same register, by the same authors, as a source-file comment -- and a "config" scope would silently disable R18, since R18's own `scopes` list is `["markdown", "comment", "pr"]` and does not name one.
     ".json": "comment",
 }
 
@@ -117,9 +110,7 @@ SCOPE_BY_SUFFIX = {
 DEFAULT_MARKERS = ("<!-- style-ok -->", "# style-ok", "// style-ok")
 
 
-# ---------------------------------------------------------------------------
-# The rules
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The rules ---------------------------------------------------------------------------
 
 
 class Rule:
@@ -230,120 +221,67 @@ def load_rules_file(root):
     return load_rules(path.read_text(encoding="utf-8"))
 
 
-# ---------------------------------------------------------------------------
-# Extraction: what counts as prose
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Extraction: what counts as prose ---------------------------------------------------------------------------
 
-# An inline code span. Backtick runs of any length, matched shortest-first, so
-# ``a `b` c`` yields one span and not the whole line.
+# An inline code span. Backtick runs of any length, matched shortest-first, so ``a `b` c`` yields one span and not the whole line.
 INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)*?\1", re.DOTALL)
-# A markdown link or image: keep the TEXT, drop the destination. `[Read it](docs/
-# you-and-me.md)` must not be read as the word in its filename.
+# A markdown link or image: keep the TEXT, drop the destination. `[Read it](docs/ you-and-me.md)` must not be read as the word in its filename.
 MD_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 MD_AUTOLINK = re.compile(r"<[a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]*>")
 BARE_URL = re.compile(r"\b[a-zA-Z][a-zA-Z0-9+.-]*://\S+")
 HTML_TAG = re.compile(r"</?[a-zA-Z][^>]*>")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
-# A `bad:` exemplar. This document, the rules file and every style doc written
-# against them CARRY their violations on purpose, and a gate that flagged them
-# could not describe itself. The marker has to be at the START of the content.
+# A `bad:` exemplar. This document, the rules file and every style doc written against them CARRY their violations on purpose, and a gate that flagged them could not describe itself. The marker has to be at the START of the content.
 BAD_EXAMPLE = re.compile(
     r"^\s*(?:[-*+>]\s*)?(?:\*\*)?(?:bad|wrong|avoid|before|✗|❌)(?:\*\*)?\s*[:\uff1a]"
 )
 # A markdown table's alignment row, which is punctuation rather than prose.
 TABLE_RULE = re.compile(r"^\s*\|?[\s:|-]+\|[\s:|-]*$")
-# A markdown table HEADER or DATA row -- any line using `|` as its cell
-# delimiter, not just the alignment row TABLE_RULE matches above. Missing
-# until 2026-09-17: reflow_markdown had no stop for an ordinary table row, so
-# a table with more than one row after its header (no blank line separates
-# consecutive rows, which is how every table in this tree is written) had its
-# entire body flattened into one prose paragraph and rewrapped, destroying
-# the table. Found live: `check_prose_style.py reflow --write` merged a
-# 5-row table in a freshly written plan into two garbled lines the moment it
-# ran tree-wide. `TABLE_RULE` alone caught the separator between the header
-# and the first data row, so a two-row table (header + one data row) never
-# showed the bug -- it takes 3+ rows in a row for the gap to be visible.
+# A markdown table HEADER or DATA row -- any line using `|` as its cell delimiter, not just the alignment row TABLE_RULE matches above. Missing until 2026-09-17: reflow_markdown had no stop for an ordinary table row, so a table with more than one row after its header (no blank line separates consecutive rows, which is how every table in this tree is written) had its entire body
+# flattened into one prose paragraph and rewrapped, destroying the table. Found live: `check_prose_style.py reflow --write` merged a 5-row table in a freshly written plan into two garbled lines the moment it ran tree-wide. `TABLE_RULE` alone caught the separator between the header and the first data row, so a two-row table (header + one data row) never showed the bug -- it takes 3+
+# rows in a row for the gap to be visible.
 TABLE_ROW = re.compile(r"^\s{0,3}\|")
-# A line carrying an HTML comment: a gen-docs region marker
-# (`<!-- >>> gen-docs: ... -->` / `<!-- <<< gen-docs -->`, see REGION_OPEN/
+# A line carrying an HTML comment: a gen-docs region marker (`<!-- >>> gen-docs: ... -->` / `<!-- <<< gen-docs -->`, see REGION_OPEN/
 # REGION_CLOSE below) or a `<!-- style-ok -->` exemption (DEFAULT_MARKERS).
-# Found live 2026-09-17, same session as TABLE_ROW: joining a marker line into
-# an adjacent paragraph either shifted a gen-docs region boundary by a line
-# (reported by check:ci-doc-region-parity as "closing marker with no open
+# Found live 2026-09-17, same session as TABLE_ROW: joining a marker line into an adjacent paragraph either shifted a gen-docs region boundary by a line (reported by check:ci-doc-region-parity as "closing marker with no open
 # region") or widened/narrowed which physical line a style-ok exemption
-# covers, surfacing hundreds of findings that were never real regressions.
-# Every HTML comment in this tree is a directive, never prose ornamentation
-# a reader would want re-flowed with its neighbours, so the rule is broad on
+# covers, surfacing hundreds of findings that were never real regressions. Every HTML comment in this tree is a directive, never prose ornamentation a reader would want re-flowed with its neighbours, so the rule is broad on
 # purpose: contains `<!--` anywhere on the line, not just gen-docs/style-ok
-# by name -- the next marker convention this repo invents gets the same
-# protection for free instead of needing its own REFLOW_STOP entry.
-# `.*` FIRST, DELIBERATELY: every other REFLOW_STOP pattern is anchored at
-# column 0 and used with `.match()`, which only tests the START of the
+# by name -- the next marker convention this repo invents gets the same protection for free instead of needing its own REFLOW_STOP entry. `.*` FIRST, DELIBERATELY: every other REFLOW_STOP pattern is anchored at column 0 and used with `.match()`, which only tests the START of the
 # string. A `style-ok` marker is a TRAILING comment on an otherwise-ordinary
-# prose line, so a bare `r"<!--"` would only catch a comment that opens the
-# line and silently miss the far more common trailing shape -- caught by the
-# synthetic test below before this pattern was ever wired in.
+# prose line, so a bare `r"<!--"` would only catch a comment that opens the line and silently miss the far more common trailing shape -- caught by the synthetic test below before this pattern was ever wired in.
 HTML_COMMENT_LINE = re.compile(r".*<!--")
-# A short Title-Case "Key: value" line at column zero -- `Status:`, `Owner:`,
-# `Updated:`, `Related:`, `Full-Text-Blob:`, and every other header field this
-# repo's plan/handoff-document convention uses (`wl_checks.py`'s own header
-# parsers, PLAN_STATUS_RE/PLAN_OWNER_RE, read exactly this shape). Found live
-# 2026-09-17, third instance of the same class this session: joining
-# "Status: done" into the very next line "Owner: e580532b" (no blank line
-# separates them, which is how this repo writes every one of these headers)
-# merged two independently-parsed fields into one line neither the plan-owner
-# reader nor the handoff-checklist grammar can read anymore -- 89 files hit
-# before this was caught. Matched GENERALLY (any Title-Case key, not an
-# enumerated name list) on purpose: enumerating specific keys is exactly how
-# the first two REFLOW_STOP gaps (tables, HTML comments) were found -- one
+# A short Title-Case "Key: value" line at column zero -- `Status:`, `Owner:`, `Updated:`, `Related:`, `Full-Text-Blob:`, and every other header field this repo's plan/handoff-document convention uses (`wl_checks.py`'s own header parsers, PLAN_STATUS_RE/PLAN_OWNER_RE, read exactly this shape). Found live 2026-09-17, third instance of the same class this session: joining "Status:
+# done" into the very next line "Owner: e580532b" (no blank line separates them, which is how this repo writes every one of these headers) merged two independently-parsed fields into one line neither the plan-owner reader nor the handoff-checklist grammar can read anymore -- 89 files hit before this was caught. Matched GENERALLY (any Title-Case key, not an enumerated name list) on
+# purpose: enumerating specific keys is exactly how the first two REFLOW_STOP gaps (tables, HTML comments) were found -- one
 # case at a time, after real damage was already committed. Matching too much
 # here (a "Note: ..." aside staying on its own line) is the safe direction;
 # matching too little is what broke 89 files.
 DOC_HEADER_FIELD = re.compile(r"^\s{0,3}\*{0,2}[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*\*{0,2}:\s\S")
-# A real HTML BLOCK element this repo's markdown actually uses --
-# `<details><summary>...</summary>`/`</details>` for collapsible sections,
-# tables, images, line breaks -- found by SEARCHING THE CLASS after the
-# operator's stop-hook judge asked whether more REFLOW_STOP gaps existed
-# rather than waiting for a fourth one to corrupt a fourth file. Confirmed
-# live: joining `</details>` into a wrapped prose paragraph moves the closing
-# tag off its own line, which is exactly the shape that breaks GitHub's
-# collapsible-section rendering. `HTML_TAG` (used elsewhere in this module
+# A real HTML BLOCK element this repo's markdown actually uses -- `<details><summary>...</summary>`/`</details>` for collapsible sections, tables, images, line breaks -- found by SEARCHING THE CLASS after the operator's stop-hook judge asked whether more REFLOW_STOP gaps existed rather than waiting for a fourth one to corrupt a fourth file. Confirmed live: joining `</details>` into
+# a wrapped prose paragraph moves the closing tag off its own line, which is exactly the shape that breaks GitHub's collapsible-section rendering. `HTML_TAG` (used elsewhere in this module
 # for scrubbing tags out of LINT text) is deliberately NOT reused here: its
-# broad `</?[a-zA-Z][^>]*>` also matches placeholder notation this repo's own
-# prose uses constantly (`<machine>`, `<FILL: why>`), which would silently
-# stop far more joins than the actual bug ever touched. This is a narrow,
-# measured allowlist of the block elements really present in this tree
-# (`grep`, 2026-09-17: 172 real hits across 69 files, versus 2860 for the
-# broad pattern) -- widen it if a future element joins the corpus, the same
-# way `HTML_COMMENT_LINE` was written broad because comments have no such
-# placeholder-collision problem.
+# broad `</?[a-zA-Z][^>]*>` also matches placeholder notation this repo's own prose uses constantly (`<machine>`, `<FILL: why>`), which would silently stop far more joins than the actual bug ever touched. This is a narrow, measured allowlist of the block elements really present in this tree (`grep`, 2026-09-17: 172 real hits across 69 files, versus 2860 for the broad pattern) --
+# widen it if a future element joins the corpus, the same way `HTML_COMMENT_LINE` was written broad because comments have no such placeholder-collision problem.
 HTML_BLOCK_TAG = re.compile(
     r".*</?(?:details|summary|div|table|tr|td|th|br|img|sub|sup|kbd|picture|source)\b",
     re.IGNORECASE,
 )
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
-# A `gen-docs` generated region. Everything between the two markers is MACHINE
-# OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many
-# words: "the committed bytes of every gen-docs region must equal what the
-# generator produces".
+# A `gen-docs` generated region. Everything between the two markers is MACHINE OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many words: "the committed bytes of every gen-docs region must equal what the generator produces".
 #
-# LINTING TEXT NOBODY MAY EDIT IS A TRAP, and it was sprung immediately. The
-# `prose-style` region renders one row per rule, so its own table contains the
+# LINTING TEXT NOBODY MAY EDIT IS A TRAP, and it was sprung immediately. The `prose-style` region renders one row per rule, so its own table contains the
 # cells `No "you"` and `Hidden "you"`; the pre-edit guard refused the document
-# carrying it, and the only ways out would have been to rename the rules or to
-# suppress the gate. Found 2026-09-16 by the guard blocking this gate's own
-# reference document at the moment it was written.
+# carrying it, and the only ways out would have been to rename the rules or to suppress the gate. Found 2026-09-16 by the guard blocking this gate's own reference document at the moment it was written.
 REGION_OPEN = re.compile(r"^\s*<!--\s*>>>\s*gen-docs:")
 REGION_CLOSE = re.compile(r"^\s*<!--\s*<<<\s*gen-docs\s*-->")
 ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
-# Setext underlines and thematic breaks: punctuation, and long ones would
-# otherwise read as a very long prose line.
+# Setext underlines and thematic breaks: punctuation, and long ones would otherwise read as a very long prose line.
 RULE_LINE = re.compile(r"^\s{0,3}(?:[-*_=]\s*){3,}$")
 # A markdown link REFERENCE definition: `[id]: https://...`
 LINK_DEF = re.compile(r"^\s{0,3}\[[^\]]+\]:\s")
-# A word made of letters, at least two, with no digits or underscores. What is
-# left after stripping is scanned as text, but only these are eligible to be a
+# A word made of letters, at least two, with no digits or underscores. What is left after stripping is scanned as text, but only these are eligible to be a
 # pronoun; the filter keeps `you_id` and `PROSE_STYLE` out without needing a
 # separate identifier pass.
 INDENT_CODE = re.compile(r"^(?: {4,}|\t)")
@@ -475,14 +413,8 @@ def python_comment_lines(text, markers=DEFAULT_MARKERS):
     stream = list(tokenize.generate_tokens(reader))
     for index, token in enumerate(stream):
         if token.type == tokenize.COMMENT:
-            # `#     code` IS AN INDENTED BLOCK, exactly as `    code` is in
-            # markdown, and it is how a Python comment shows a snippet. Measured
-            # 2026-09-16 at `prose_style.py:388`: the fix for the docstring case
-            # below handled STRING bodies only, and the very next run flagged the
-            # capital `I` in the COMMENT restating that same literal block. The
-            # gate found a false positive in the comment explaining its previous
-            # false positive, twice, which is what finally made the indent rule
-            # apply to both token kinds instead of one.
+            # `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block. The gate found a false positive in the comment
+            # explaining its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
             after_hash = token.string.lstrip("#")
             if _indent(after_hash) >= 4:
                 continue
@@ -492,21 +424,15 @@ def python_comment_lines(text, markers=DEFAULT_MARKERS):
         else:
             continue
         start = token.start[0]
-        # THE DOCSTRING'S OWN INDENT, which is what makes an indented block
-        # inside it detectable at all. A markdown document's code block is four
+        # THE DOCSTRING'S OWN INDENT, which is what makes an indented block inside it detectable at all. A markdown document's code block is four
         # spaces from column zero; a docstring's is four spaces from wherever the
         # docstring starts, and a function's docstring already starts at four.
         #
-        # MEASURED, NOT ANTICIPATED. `prose_style.py:404` -- this file -- carries a
-        # reStructuredText literal block holding the very test label that exposed
-        # the docstring bug above::
+        # MEASURED, NOT ANTICIPATED. `prose_style.py:404` -- this file -- carries a reStructuredText literal block holding the very test label that exposed the docstring bug above::
         #
-        #     "an edit whose new_string says I",
+        # "an edit whose new_string says I",
         #
-        # and R2 flagged its capital `I`. The gate found a false positive in the
-        # comment explaining its own last false positive, which is as good an
-        # argument as there is for treating an indented block as code everywhere
-        # rather than only in markdown.
+        # and R2 flagged its capital `I`. The gate found a false positive in the comment explaining its own last false positive, which is as good an argument as there is for treating an indented block as code everywhere rather than only in markdown.
         base = token.start[1] if token.type == tokenize.STRING else 0
         for offset, piece in enumerate(body.splitlines()):
             lineno = start + offset
@@ -606,9 +532,7 @@ def _nth_line(text, lineno):
     return rows[lineno - 1] if 1 <= lineno <= len(rows) else ""
 
 
-# `//` and `/* */`, found by a scanner rather than a regex, for the same reason
-# the Python side tokenizes: `"https://x"` contains `//` and is not a comment,
-# and a regex that excluded it by looking for a preceding `:` would then miss
+# `//` and `/* */`, found by a scanner rather than a regex, for the same reason the Python side tokenizes: `"https://x"` contains `//` and is not a comment, and a regex that excluded it by looking for a preceding `:` would then miss
 # `const a = b // c`.
 def cstyle_comment_lines(text, markers=DEFAULT_MARKERS):
     """Comments of a `//` + `/* */` language, string and template literals skipped."""
@@ -663,11 +587,9 @@ def _emit(lines, text, lineno, piece, markers):
         lines.append(Line(lineno, raw, scrubbed))
 
 
-# JSON string values whose key marks them as an IDENTIFIER or a QUOTED
-# EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex
+# JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex
 # text; `text` is a rule's own bad/good exemplar (the JSON analogue of
-# `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a
-# DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE
+# `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE
 # match cannot see it); `id`/`glob`/`schema`/`$schema`/`format`/`version` are
 # short machine-facing tokens, never a sentence about the work.
 JSON_SKIP_KEYS = frozenset(
@@ -747,9 +669,7 @@ def extract(path, text, markers=DEFAULT_MARKERS):
     return cstyle_comment_lines(text, markers), None
 
 
-# ---------------------------------------------------------------------------
-# Matching
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Matching ---------------------------------------------------------------------------
 
 
 class Finding:
@@ -843,9 +763,7 @@ def lint_message(text, rules, globals_, scope):
     return findings
 
 
-# ---------------------------------------------------------------------------
-# Discovery
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Discovery ---------------------------------------------------------------------------
 
 
 def tracked_files(root):
@@ -957,11 +875,7 @@ def exemptions(globals_):
     out = []
     for entry in globals_.get("exempt_paths") or ():
         raw = entry.get("reason", "")
-        # A REASON MAY BE AN ARRAY OF LINES, the same shape `exempt_why` and
-        # `exclude_why` already use elsewhere in this file. .json carries no
-        # R18 line-length check of its own -- it is absent from `include` --
-        # so a reason long enough to need wrapping has nowhere else to be
-        # wrapped. Joined with a space, it reads as the one sentence it is.
+        # A REASON MAY BE AN ARRAY OF LINES, the same shape `exempt_why` and `exclude_why` already use elsewhere in this file. .json carries no R18 line-length check of its own -- it is absent from `include` -- so a reason long enough to need wrapping has nowhere else to be wrapped. Joined with a space, it reads as the one sentence it is.
         reason = " ".join(raw) if isinstance(raw, list) else raw
         if not reason.startswith("BLOCKER:"):
             msg = "exempt_paths entry %r carries no BLOCKER: reason" % entry.get("glob")
@@ -991,12 +905,9 @@ def exempt_for(rel, exempts):
     return None
 
 
-# ---------------------------------------------------------------------------
-# Reflow
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Reflow ---------------------------------------------------------------------------
 
-# A line that starts a structure reflow must not join into a paragraph. Reflow
-# touches exactly one thing: a run of consecutive plain prose lines.
+# A line that starts a structure reflow must not join into a paragraph. Reflow touches exactly one thing: a run of consecutive plain prose lines.
 REFLOW_STOP = (
     FENCE,
     ATX_HEADING,
@@ -1087,9 +998,7 @@ def reflow_markdown(text, width):
     return "\n".join(out) + trailing
 
 
-# ---------------------------------------------------------------------------
-# Baseline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Baseline ---------------------------------------------------------------------------
 
 
 def load_baseline(root):
@@ -1130,13 +1039,8 @@ def write_baseline(root, findings, previous):
     entries = {f.fid: f for f in findings}
     added = sorted(set(entries) - set(previous or {}))
     grouped = {}
-    # DEDUPED BY fid, THE SAME WAY `entries`/`count` ARE. `fid` hashes
-    # (path, rule, text) and not the line number, so the identical template
-    # string flagged on two physical lines of one file collapses to one
-    # entry in `findings` -- and `by_rule` must collapse it the same way, or
-    # its sum drifts from `count` by exactly the number of such repeats.
-    # Measured live: 8 repeated (path, rule, text) triples inflated the sum
-    # by 11 before this fix.
+    # DEDUPED BY fid, THE SAME WAY `entries`/`count` ARE. `fid` hashes (path, rule, text) and not the line number, so the identical template string flagged on two physical lines of one file collapses to one entry in `findings` -- and `by_rule` must collapse it the same way, or its sum drifts from `count` by exactly the number of such repeats. Measured live: 8 repeated (path, rule,
+    # text) triples inflated the sum by 11 before this fix.
     by_rule = {}
     for finding in entries.values():
         grouped.setdefault(finding.path, {}).setdefault(finding.rule, set()).add(finding.fid)
@@ -1171,9 +1075,7 @@ def write_baseline(root, findings, previous):
     return added
 
 
-# ---------------------------------------------------------------------------
-# The gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gate ---------------------------------------------------------------------------
 
 
 def _shape(globals_, rules, files, prose_lines):
@@ -1239,9 +1141,7 @@ def run_check(
         reason = exempt_for(rel, exempts)
         if reason is not None:
             # EXEMPT, AND COUNTED. The file is still read and still linted; only
-            # the VERDICT is suppressed, so the number below is real rather than
-            # an absence. A quiet exemption is how a gate stops meaning what its
-            # name says.
+            # the VERDICT is suppressed, so the number below is real rather than an absence. A quiet exemption is how a gate stops meaning what its name says.
             if got:
                 exempted.setdefault(reason, []).append((rel, len(got)))
             continue
@@ -1303,9 +1203,7 @@ def run_check(
     errors = [f for f in new if f.severity == "error"]
     warnings = [f for f in new if f.severity == "warning"]
 
-    # PRINTED EVERY RUN, GREEN OR RED. The landmark gate this copies prints its
-    # one vendored exemption's two offending pages on every run for the same
-    # reason: debt that is suppressed silently is debt nobody ever drains.
+    # PRINTED EVERY RUN, GREEN OR RED. The landmark gate this copies prints its one vendored exemption's two offending pages on every run for the same reason: debt that is suppressed silently is debt nobody ever drains.
     for reason, rows in sorted(exempted.items()):
         total = sum(count for _, count in rows)
         log.warn(
@@ -1316,8 +1214,7 @@ def run_check(
             print("  - %s (%d)" % (rel, count), file=sys.stderr)
 
     if notes:
-        # UNKNOWN IS A FAILURE. A file that could not be read or lexed went
-        # UNCHECKED, and folding that into "fine" is how a gate reports a green
+        # UNKNOWN IS A FAILURE. A file that could not be read or lexed went UNCHECKED, and folding that into "fine" is how a gate reports a green
         # for a tree it never looked at.
         log.error("%d file(s) went UNCHECKED, which is not the same as clean:" % len(notes))
         for note in notes[:20]:
@@ -1409,43 +1306,27 @@ def _rule_help(rules, ids):
                 break
 
 
-# Directive-shaped comment bodies that must NEVER be joined with a neighbour,
-# checked against the RAW line rather than a stripped body, to sidestep any
-# assumption about whether a space follows the marker -- Go's own directive
+# Directive-shaped comment bodies that must NEVER be joined with a neighbour, checked against the RAW line rather than a stripped body, to sidestep any assumption about whether a space follows the marker -- Go's own directive
 # comments, `//go:build linux`, have none. An ALLOWLIST of known tool-directive
-# shapes, deliberately, not a broad heuristic: after two structural bugs in
-# `reflow_markdown` this same session (a multi-row table, an HTML-comment
-# marker), under-reflowing here -- leaving a directive-adjacent line un-joined
+# shapes, deliberately, not a broad heuristic: after two structural bugs in `reflow_markdown` this same session (a multi-row table, an HTML-comment marker), under-reflowing here -- leaving a directive-adjacent line un-joined
 # -- is the safe failure mode; over-reflowing -- silently absorbing a
 # `noqa`/`eslint-disable`/`go:build` line into a joined paragraph, turning the
-# tool it talks to off -- is not. The names are BACKTICKED, deliberately: bare,
-# the first one reads to ruff as a malformed suppression directive on this very
-# line (ruff warns "Invalid ... directive" on every lint run, quoting the marker
-# back -- which is why this sentence cannot quote it either), and one well-meant
-# edit adding a code after it would have suppressed a real finding here while
-# looking like prose.
+# tool it talks to off -- is not. The names are BACKTICKED, deliberately: bare, the first one reads to ruff as a malformed suppression directive on this very line (ruff warns "Invalid ... directive" on every lint run, quoting the marker back -- which is why this sentence cannot quote it either), and one well-meant edit adding a code after it would have suppressed a real finding
+# here while looking like prose.
 COMMENT_DIRECTIVE = re.compile(
     r"(?:^\s*#!|-\*-\s*coding|\bnoqa\b|\btype:\s|\bpragma\b|\bpylint:|\bmypy:|\bstyle-ok\b"
     r"|eslint|@ts-(?:ignore|expect-error|nocheck)|prettier-ignore|//go:(?:build|generate)"
     r"|\bnolint\b|SPDX-License-Identifier)",
     re.IGNORECASE,
 )
-# A body that reads as CODE rather than PROSE: an assignment, a brace, a
-# statement/block keyword, or a trailing semicolon. This exists because the
-# obvious "does the body start with a space" test alone would happily join
-# COMMENTED-OUT CODE into one garbled line -- `# def foo():` followed by
-# `#     return 1` reads as "a space after the marker" exactly like real
-# prose does, and joining them corrupts the reference the comment exists to
-# keep. Matching commented-out code is the safe direction to err in: a
-# missed reflow costs one narrow paragraph, a wrongly-joined one costs a
-# broken reference nobody notices until they try to use it.
+# A body that reads as CODE rather than PROSE: an assignment, a brace, a statement/block keyword, or a trailing semicolon. This exists because the obvious "does the body start with a space" test alone would happily join COMMENTED-OUT CODE into one garbled line -- `# def foo():` followed by `# return 1` reads as "a space after the marker" exactly like real prose does, and joining
+# them corrupts the reference the comment exists to keep. Matching commented-out code is the safe direction to err in: a missed reflow costs one narrow paragraph, a wrongly-joined one costs a broken reference nobody notices until they try to use it.
 CODE_SHAPED_COMMENT = re.compile(
     r"[={};]|^\s*(?:def|class|import|from|return|if|elif|else|for|while|try|except|"
     r"finally|with|const|let|var|function|type|interface|enum|switch|case|package|"
     r"func|struct|@\w)\b"
 )
-# Whole-line comment markers, by suffix. Only a line that IS a comment for its
-# ENTIRE length (after its own leading whitespace) is ever eligible -- a
+# Whole-line comment markers, by suffix. Only a line that IS a comment for its ENTIRE length (after its own leading whitespace) is ever eligible -- a
 # trailing comment on a code line (`x = 1  # note`) is left alone and ends
 # the current paragraph, exactly like a real code line would.
 COMMENT_LINE_BY_SUFFIX = {
@@ -1459,18 +1340,10 @@ COMMENT_LINE_BY_SUFFIX = {
 }
 
 
-# A LEXER DECIDES WHAT A COMMENT IS, never `^\s*#`. Measured 2026-09-17: the
-# regex version of this map rewrote 52 of 1051 `.py` files in this repository
-# into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...`
-# line reads to a per-line regex exactly like the real comment paragraph
-# underneath it, and the two were joined into one line -- moving the closing
-# quotes and silently rewriting the string's own content. The equivalent
-# line-prefix survey of the `.ts`/`.js`/`.go` corpus reported zero damage, but
-# it shared the blind spot of the thing it was checking, so it was evidence of
-# nothing. `python_comment_lines` and `cstyle_comment_lines` already resolve
+# A LEXER DECIDES WHAT A COMMENT IS, never `^\s*#`. Measured 2026-09-17: the regex version of this map rewrote 52 of 1051 `.py` files in this repository into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real comment paragraph underneath it, and the two were joined into one line -- moving the closing quotes
+# and silently rewriting the string's own content. The equivalent line-prefix survey of the `.ts`/`.js`/`.go` corpus reported zero damage, but it shared the blind spot of the thing it was checking, so it was evidence of nothing. `python_comment_lines` and `cstyle_comment_lines` already resolve
 # strings correctly for the LINT path; these two are the same resolution kept
-# addressable by physical line, which is what reconstruction needs and what
-# `_emit` throws away.
+# addressable by physical line, which is what reconstruction needs and what `_emit` throws away.
 def _python_reflow_lines(text):
     """1-based line number -> (indent, body) for each WHOLE-LINE `#` comment.
 
@@ -1598,11 +1471,7 @@ def reflow_comments(text, suffix, width):
             )
         buffer.clear()
 
-    # `split("\n")`, not `splitlines()`. The lexers above number lines the way
-    # `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks
-    # on `\f`, `\v` and U+2028 (named, not written -- a literal one here would
-    # break this very file). A single one of those anywhere in a file would
-    # slide every later line number by one against the map, and rejoining
+    # `split("\n")`, not `splitlines()`. The lexers above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
     # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
     # the round trip exact, so the trailing newline needs no special case.
     for offset, raw in enumerate(text.split("\n")):
@@ -1717,9 +1586,7 @@ def run_sync(globals_, rules):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- main ---------------------------------------------------------------------------
 
 
 USAGE = """usage: check_prose_style.py [check|reflow|sync] [options] [files...]
@@ -1808,9 +1675,7 @@ def main(argv=None):
     )
 
 
-# ---------------------------------------------------------------------------
-# selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- selftest ---------------------------------------------------------------------------
 
 _MINI = json.dumps(
     {
@@ -2160,32 +2025,22 @@ def selftest():
         reflow_markdown("| a | b |\n|---|---|\n", 40),
         "| a | b |\n|---|---|\n",
     )
-    # A 2-row table (header + separator, no data) cannot expose the bug this
-    # pins: TABLE_RULE alone stops the join between header and separator, so
-    # the gap only shows once a THIRD consecutive `|`-row (a real data row)
-    # has nothing after it to stop against. Found live 2026-09-17:
-    # `reflow --write` merged a 5-data-row table into two garbled lines the
-    # first time it ran tree-wide, because ordinary table rows were never in
-    # REFLOW_STOP -- only the `---` alignment row was.
+    # A 2-row table (header + separator, no data) cannot expose the bug this pins: TABLE_RULE alone stops the join between header and separator, so the gap only shows once a THIRD consecutive `|`-row (a real data row) has nothing after it to stop against. Found live 2026-09-17: `reflow --write` merged a 5-data-row table into two garbled lines the first time it ran tree-wide,
+    # because ordinary table rows were never in REFLOW_STOP -- only the `---` alignment row was.
     _table_3row = "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n"
     ctl.check(
         "reflow: a table with 3+ DATA rows is untouched, row for row",
         reflow_markdown(_table_3row, 40),
         _table_3row,
     )
-    # Found the same session, same shape: a gen-docs region marker with no
-    # blank line to a neighbouring paragraph shifted the region boundary,
-    # which check:ci-doc-region-parity reported as "closing marker with no
-    # open region" the first time reflow --write ran tree-wide.
+    # Found the same session, same shape: a gen-docs region marker with no blank line to a neighbouring paragraph shifted the region boundary, which check:ci-doc-region-parity reported as "closing marker with no open region" the first time reflow --write ran tree-wide.
     _gendocs = "lead-in sentence.\n<!-- >>> gen-docs: x -->\nbody\n<!-- <<< gen-docs -->\ntrailing sentence.\n"
     ctl.check(
         "reflow: a gen-docs region marker does not absorb its neighbours",
         reflow_markdown(_gendocs, 40),
         _gendocs,
     )
-    # A TRAILING marker, not a line that OPENS with one -- the shape
-    # `DEFAULT_MARKERS`/`is_marked` actually use. Caught live: the first fix
-    # (anchored at column 0) missed this and still let the marked line merge
+    # A TRAILING marker, not a line that OPENS with one -- the shape `DEFAULT_MARKERS`/`is_marked` actually use. Caught live: the first fix (anchored at column 0) missed this and still let the marked line merge
     # with its neighbours, moving which physical line the exemption covers.
     _styleok = "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n"
     ctl.check(
@@ -2193,20 +2048,14 @@ def selftest():
         reflow_markdown(_styleok, 40),
         _styleok,
     )
-    # Found live 2026-09-17, THIRD instance of the same class this session:
-    # 89 real plan/handoff-document files had "Status: done" merged into the
-    # very next line "Owner: <id>" when this reflow ran tree-wide, because
-    # neither line matched any existing REFLOW_STOP pattern.
+    # Found live 2026-09-17, THIRD instance of the same class this session: 89 real plan/handoff-document files had "Status: done" merged into the very next line "Owner: <id>" when this reflow ran tree-wide, because neither line matched any existing REFLOW_STOP pattern.
     _docheader = "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n"
     ctl.check(
         "reflow: doc-header key:value lines never merge into each other",
         reflow_markdown(_docheader, 40),
         _docheader,
     )
-    # Found by SWEEPING THE CLASS, not by a fourth corrupted file: the
-    # operator's stop-hook judge asked whether more REFLOW_STOP gaps existed
-    # after the third one, and this repo really does use <details>/<summary>
-    # collapsible sections in a few documents.
+    # Found by SWEEPING THE CLASS, not by a fourth corrupted file: the operator's stop-hook judge asked whether more REFLOW_STOP gaps existed after the third one, and this repo really does use <details>/<summary> collapsible sections in a few documents.
     _htmlblock = "lead-in.\n<details><summary>x</summary>\nbody\n</details>\ntrailing.\n"
     ctl.check(
         "reflow: a <details>/<summary> block does not absorb its neighbours",
@@ -2235,14 +2084,8 @@ def selftest():
         ["word"] * 40,
     )
 
-    # ---- reflow of comments: a LEXER decides what a comment is -----------
-    # The regex version of this joined the docstring line below into the real
-    # comment paragraph under it, which moved the closing `"""` and rewrote the
-    # string. Measured over `git ls-files '*.py'` on 2026-09-17: 52 of 1051
-    # files came back with a DIFFERENT `ast.dump`. The docstring has to END on
-    # the `#` line for the bug to show -- a `"""` on a line of its own already
-    # stops the paragraph, which is why the obvious three-line fixture passes
-    # against the broken code and proves nothing.
+    # ---- reflow of comments: a LEXER decides what a comment is ----------- The regex version of this joined the docstring line below into the real comment paragraph under it, which moved the closing `"""` and rewrote the string. Measured over `git ls-files '*.py'` on 2026-09-17: 52 of 1051 files came back with a DIFFERENT `ast.dump`. The docstring has to END on the `#` line for
+    # the bug to show -- a `"""` on a line of its own already stops the paragraph, which is why the obvious three-line fixture passes against the broken code and proves nothing.
     _py_docstring = (
         'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
         "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
@@ -2266,10 +2109,7 @@ def selftest():
         "const t = `\n// looks like a comment`\n"
         "// a real comment that is hard wrapped over two lines\n",
     )
-    # A block comment CONTAINING a `//` line, not a plain one: a plain block is
-    # already left alone by a line regex, so it would pass against the broken
-    # code and pin nothing. Reflowing WITHIN a `/* */` span is out of scope --
-    # the span is a stop, never a paragraph.
+    # A block comment CONTAINING a `//` line, not a plain one: a plain block is already left alone by a line regex, so it would pass against the broken code and pin nothing. Reflowing WITHIN a `/* */` span is out of scope -- the span is a stop, never a paragraph.
     _block = "/*\n// inside a block comment */\n// a real one that is\n// hard wrapped\n"
     ctl.check(
         "reflow: a `//` line inside a `/* */` block is not a comment line",
@@ -2289,8 +2129,7 @@ def selftest():
         'def f():\n    """D\n    # example"""  # note\n'
         "    # a real comment that is hard wrapped over two lines\n    return 1\n",
     )
-    # A rewriter has no honest partial answer for a file the lexer rejects, so
-    # it returns the bytes it was given. The broken code joined these two.
+    # A rewriter has no honest partial answer for a file the lexer rejects, so it returns the bytes it was given. The broken code joined these two.
     ctl.check(
         "reflow: a file `tokenize` cannot read is returned UNCHANGED",
         reflow_comments("def f(:\n# a comment that is\n# hard wrapped\n", ".py", 384),

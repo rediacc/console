@@ -113,10 +113,7 @@ function selftest(): void {
     return p;
   };
 
-  // EVERY DECLARED VARIANT, not a sample. The plant is the exact 189c defect,
-  // but running it for `state` alone leaves the other seven kinds in FOLDED
-  // untested -- and a kind added to that set later would arrive with no control
-  // at all. Looping over the set itself makes the set the test plan.
+  // EVERY DECLARED VARIANT, not a sample. The plant is the exact 189c defect, but running it for `state` alone leaves the other seven kinds in FOLDED untested -- and a kind added to that set later would arrive with no control at all. Looping over the set itself makes the set the test plan.
   for (const kind of FOLDED) {
     const bad = w(
       `bad-${kind}.sh`,
@@ -176,8 +173,7 @@ function main(): void {
     console.error('✗ no case files found; refusing a verdict');
     process.exit(1);
   }
-  // ANTI-VACUITY: the corpus must actually contain event literals, or the
-  // matcher is broken rather than the fixtures being clean.
+  // ANTI-VACUITY: the corpus must actually contain event literals, or the matcher is broken rather than the fixtures being clean.
   const literals = files.reduce(
     (n, f) =>
       n + (fs.readFileSync(f, 'utf-8').match(/["']ev["']\s*:\s*["'][a-z_]+["']/g) ?? []).length,

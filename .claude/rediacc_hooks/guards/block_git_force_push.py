@@ -34,30 +34,15 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-force-push.sh"
 ORDER = 19
 
-# Re-qualifying the plus arm to `+refs/` is precisely the first attempt the
-# header records: `+main:main` and `+HEAD:main` go back to being allowed while
-# the long form is still refused, which is what made the hole look closed.
+# Re-qualifying the plus arm to `+refs/` is precisely the first attempt the header records: `+main:main` and `+HEAD:main` go back to being allowed while the long form is still refused, which is what made the hole look closed.
 DEFECT = (r"]\+[^", r"]\+refs/[^")
 
-# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
-# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
-# means a doc line, a worklist note or an `echo` explaining the rule is refused
-# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
-# below still blocks the real command, at line start and after a separator.
-# NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused
-# FLAGS is untouched. Only the position of `git push` is constrained, so a
-# sentence about force-pushing stops being treated as one.
+# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
+# separator. NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused FLAGS is untouched. Only the position of `git push` is constrained, so a sentence about force-pushing stops being treated as one.
 #
-# ROUTED THROUGH lib/command-scan.sh 2026-08-30 (review finding on PR #579).
-# Every sibling guard touched in this same PR (block-cli-bundle.sh,
-# block-protected-files.sh, block-unverified-push.sh, block-untagged-commit.sh)
-# scans hook_scan_target's output specifically because it unwraps eval/sh -c
+# ROUTED THROUGH lib/command-scan.sh 2026-08-30 (review finding on PR #579). Every sibling guard touched in this same PR (block-cli-bundle.sh, block-protected-files.sh, block-unverified-push.sh, block-untagged-commit.sh) scans hook_scan_target's output specifically because it unwraps eval/sh -c
 # payloads; this guard matched $CMD directly, so `eval "git push --force ..."`
-# or `sh -c 'git push --force ...'` left the push text preceded by a quote
-# character instead of a line start or accepted separator, and the anchor
-# added above never fired -- the exact bypass class command-scan.sh's own
-# header exists to close, on the one guard this file calls "the whole
-# security story".
+# or `sh -c 'git push --force ...'` left the push text preceded by a quote character instead of a line start or accepted separator, and the anchor added above never fired -- the exact bypass class command-scan.sh's own header exists to close, on the one guard this file calls "the whole security story".
 FORCE_PUSH = hookio.rx(
     r"(^|[;&|(])[{S}]*git push[^|;&]*(--force-with-lease|--force([{S}]|=|$)|[{S}]-f([{S}]|$)|--mirror([{S}]|=|$)|[{S}]\+[^{S}])"
 )

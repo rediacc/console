@@ -307,8 +307,7 @@ function main(): void {
       totalChecked++;
       if (getNestedValue(enJson, call.key) === undefined) missing.push(call);
     }
-    // Orphan direction: a key counts as referenced if it appears as ANY string
-    // literal in source (forwarded-to-t() included), not only as a t() first-arg.
+    // Orphan direction: a key counts as referenced if it appears as ANY string literal in source (forwarded-to-t() included), not only as a t() first-arg.
     for (const literal of scanStringLiterals(content)) referenced.add(literal);
   }
 

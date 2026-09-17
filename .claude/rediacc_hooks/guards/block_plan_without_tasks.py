@@ -90,17 +90,14 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-plan-without-tasks.sh"
 ORDER = 10
 
-# The grandfather clause, and the measured 59-of-62 note above is entirely
-# about it: without it every amendment to a legacy prose plan is refused, which
-# is the over-block that gets a guard deleted within a week.
+# The grandfather clause, and the measured 59-of-62 note above is entirely about it: without it every amendment to a legacy prose plan is refused, which is the over-block that gets a guard deleted within a week.
 DEFECT = ("if not hookio.grep_q(TASK_LINE, on_disk):", "if False:")
 
 PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md", "*/.claude/plans/*.md")
 
 TASK_LINE = hookio.rx(r"^[{S}]*[-*+] \[[ xX]\] ")
 
-# The embedded program, unchanged. "<checkbox-count> <parsed-task-count>", or
-# empty when anything at all went wrong -- see FAILS OPEN above.
+# The embedded program, unchanged. "<checkbox-count> <parsed-task-count>", or empty when anything at all went wrong -- see FAILS OPEN above.
 PROBE = """
 import os, sys
 sys.path.insert(0, os.environ["STOPDIR"])
@@ -159,17 +156,10 @@ The parser is .claude/hooks/stop/wl_planfid.py plan_tasks(). What it actually ac
 Then track one worklist item per checkbox: worklist.py --add <you> <task text>
 """
 
-# ---------------------------------------------------------------------------
-# The fixture world
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
-# Two plan files must EXIST on disk for the `[ -f "$FILE" ]` branch and the
-# grandfather clause to be reachable, and the payload names its path literally,
-# so the path has to be known when this module is imported. Same arrangement as
-# block_roundlog_write.py: a deterministic directory under the system temp dir,
-# built through an ENVS token this guard never reads. Using the repo's own
-# agent/PLAN-*.md files instead would make the differential's answer depend on
-# whichever plans happen to be checked out today.
+# Two plan files must EXIST on disk for the `[ -f "$FILE" ]` branch and the grandfather clause to be reachable, and the payload names its path literally, so the path has to be known when this module is imported. Same arrangement as block_roundlog_write.py: a deterministic directory under the system temp dir, built through an ENVS token this guard never reads. Using the repo's own
+# agent/PLAN-*.md files instead would make the differential's answer depend on whichever plans happen to be checked out today.
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-plans")
 LEGACY_PLAN = "%s/agent/PLAN-legacy-prose.md" % WORLD
 TASKED_PLAN = "%s/agent/PLAN-with-tasks.md" % WORLD
@@ -184,13 +174,10 @@ _PROSE_BODY = (
     "floor that wl_planfid uses to decide whether a plan is worth judging at all.\n"
 )
 
-# No checkbox anywhere, and no heading whose first three words name work, so
-# `plan_tasks` finds nothing: the WHY_EMPTY arm.
+# No checkbox anywhere, and no heading whose first three words name work, so `plan_tasks` finds nothing: the WHY_EMPTY arm.
 PROSE_PLAN = "# A plan with no list at all\n\n" + _PROSE_BODY + _PROSE_BODY
 
-# No checkbox either, but the heading DOES name work, so the plain bullets under
-# it parse as tasks: the WHY_INFLATED arm, which is the shape that produced the
-# incident in the header.
+# No checkbox either, but the heading DOES name work, so the plain bullets under it parse as tasks: the WHY_INFLATED arm, which is the shape that produced the incident in the header.
 INFLATED_PLAN = (
     "# A plan whose bullets are not tasks\n\n"
     + _PROSE_BODY
@@ -250,8 +237,7 @@ EDGE_CASES = [
         "an Edit to a plan that already conforms",
         {"tool_name": "Edit", "tool_input": {"file_path": TASKED_PLAN, "new_string": "one line"}},
     ),
-    # A Write over an existing legacy plan is a wholesale rewrite, so the
-    # grandfather clause deliberately does NOT apply to it.
+    # A Write over an existing legacy plan is a wholesale rewrite, so the grandfather clause deliberately does NOT apply to it.
     (
         "a Write over the legacy plan is a rewrite",
         {"tool_name": "Write", "tool_input": {"file_path": LEGACY_PLAN, "content": PROSE_PLAN}},
@@ -321,8 +307,7 @@ def run(ev):
         # `SUBJECT="$(cat "$FILE" 2>/dev/null)\n$FRAGMENTS"`: the substitution
         # strips the file's trailing newlines before the literal one is added.
         subject = "%s\n%s" % (hookio._command_substitution(on_disk), fragments)
-        # The grandfather clause. An amendment to a plan that never had a task list
-        # is not the moment to demand one -- see the measured note above.
+        # The grandfather clause. An amendment to a plan that never had a task list is not the moment to demand one -- see the measured note above.
         if not hookio.grep_q(TASK_LINE, on_disk):
             ev.warn(GRANDFATHER % file_path)
             return hookio.ALLOW
@@ -338,8 +323,7 @@ def run(ev):
         return hookio.ALLOW
 
     # `${COUNTS%% *}` and `${COUNTS##* }`: before the first space, after the
-    # last. Not `split()`, which would disagree the moment the probe printed
-    # anything but two fields.
+    # last. Not `split()`, which would disagree the moment the probe printed anything but two fields.
     boxes = counts.split(" ", 1)[0]
     parsed = counts.rsplit(" ", 1)[-1]
     # `[ "${BOXES:-1}" -eq 0 ] 2>/dev/null || exit 0` -- a non-numeric value

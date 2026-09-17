@@ -94,9 +94,7 @@ def backend_name():
     """
     choice = os.environ.get(BACKEND_ENV, "auto").strip().lower() or "auto"
     if choice == "auto":
-        # The probe is a FILE READ, not `sys.platform`. A container, a WSL
-        # image or a future platform is judged by whether /proc answers, which
-        # is the thing the backend actually needs.
+        # The probe is a FILE READ, not `sys.platform`. A container, a WSL image or a future platform is judged by whether /proc answers, which is the thing the backend actually needs.
         return "proc" if pathlib.Path("/proc/self/cmdline").exists() else "ps"
     if choice in ("proc", "ps"):
         return choice
@@ -126,9 +124,7 @@ class _ProcBackend:
                 .rstrip("\n")
             )
         except OSError:
-            # The process exited between the listing and the read. That is the
-            # normal case, not an error: a dead process is not running your
-            # script.
+            # The process exited between the listing and the read. That is the normal case, not an error: a dead process is not running your script.
             return None
 
     def argv(self, pid):
@@ -138,8 +134,7 @@ class _ProcBackend:
             return None
         if raw == b"":
             return []
-        # The kernel terminates the last argument with a NUL too, so a plain
-        # split yields a trailing empty field that is not an argument.
+        # The kernel terminates the last argument with a NUL too, so a plain split yields a trailing empty field that is not an argument.
         parts = raw.split(b"\0")
         if parts and parts[-1] == b"":
             parts.pop()
@@ -162,8 +157,7 @@ class _PsBackend:
     def _read(self):
         if self._table is not None:
             return self._table
-        # `-A` every process, `ww` unlimited width (macOS truncates to the
-        # terminal width otherwise, which would silently cut the argv slots the
+        # `-A` every process, `ww` unlimited width (macOS truncates to the terminal width otherwise, which would silently cut the argv slots the
         # guards inspect), `-o pid=,comm=` and `-o pid=,args=` with the trailing
         # `=` suppressing the header.
         comms = self._run(["ps", "-Awwo", "pid=,comm="])
@@ -173,15 +167,12 @@ class _PsBackend:
             pid, _, name = line.strip().partition(" ")
             if pid.isdigit():
                 # macOS prints a full path here; Linux prints a truncated bare
-                # name. Basename makes both mean the same thing, which is what
-                # the guards' shell-name test compares against.
+                # name. Basename makes both mean the same thing, which is what the guards' shell-name test compares against.
                 table[int(pid)] = [name.strip().rsplit("/", 1)[-1], []]
         for line in args.splitlines():
             pid, _, rest = line.strip().partition(" ")
             if pid.isdigit() and int(pid) in table:
-                # Split on runs of space, which is the only thing `ps` gives
-                # back: an argument that CONTAINED a space is already
-                # indistinguishable from two, in ps and in `tr '\0' ' '` alike.
+                # Split on runs of space, which is the only thing `ps` gives back: an argument that CONTAINED a space is already indistinguishable from two, in ps and in `tr '\0' ' '` alike.
                 table[int(pid)][1] = rest.strip().split(" ") if rest.strip() else []
         self._table = table
         return table
@@ -295,8 +286,7 @@ def pgrep_full(pattern):
     for pid in backend.pids():
         line = backend.argv(pid)
         if not line:
-            # An empty cmdline is a kernel thread, and `pgrep -f` does not
-            # match those: `pgrep -f '^$'` returns nothing on this machine.
+            # An empty cmdline is a kernel thread, and `pgrep -f` does not match those: `pgrep -f '^$'` returns nothing on this machine.
             continue
         if compiled.search(" ".join(line)):
             found.append(pid)

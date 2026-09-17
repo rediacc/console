@@ -38,9 +38,7 @@ WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 MONITOR_STEP = "      - name: Monitor jobs and cancel on failure"
 ANCHOR = "Monitor jobs and cancel on failure"
 
-# `python3 - "$ROOT_DIR" <<'PYEOF'` .. `PYEOF`, the awk range the twin uses. Two
-# heredocs in the gate match that opener, which is why the body is selected BY
-# CONTENT below rather than by being the first one found.
+# `python3 - "$ROOT_DIR" <<'PYEOF'` .. `PYEOF`, the awk range the twin uses. Two heredocs in the gate match that opener, which is why the body is selected BY CONTENT below rather than by being the first one found.
 HEREDOC_RE = re.compile(
     r"^python3 - \"\$ROOT_DIR\" <<'PYEOF'\n(.*?)^PYEOF$", re.MULTILINE | re.DOTALL
 )
@@ -75,9 +73,7 @@ def run_check(gate, tmp_path, workflow_text: str) -> harness.RunResult:
         "install python3; CHECK 6's body is a python3 program lifted out of the gate, "
         "and without an interpreter this case is UNRUN rather than fine",
     )
-    # LIFTING THE BODY BYPASSES THE GATE'S OWN pyyaml BOOTSTRAP, which is the
-    # first thing check-workflow-gates.sh does ("pyyaml is absent from ubuntu-slim
-    # by default", line 112). Nothing re-establishes it here, so probe and say so.
+    # LIFTING THE BODY BYPASSES THE GATE'S OWN pyyaml BOOTSTRAP, which is the first thing check-workflow-gates.sh does ("pyyaml is absent from ubuntu-slim by default", line 112). Nothing re-establishes it here, so probe and say so.
     harness.require_python_module(
         python3,
         "yaml",
@@ -171,8 +167,7 @@ def test_a_can_fail_step_is_refused(gate, tmp_path):
 
 
 def test_continue_on_error_alone_is_not_enough(gate, tmp_path):
-    # It can still HANG, and a hung step ahead of the monitor is a monitor that
-    # never starts.
+    # It can still HANG, and a hung step ahead of the monitor is a monitor that never starts.
     expect(
         gate,
         tmp_path,
@@ -194,8 +189,7 @@ def test_timeout_alone_is_not_enough(gate, tmp_path):
 
 
 def test_an_expression_continue_on_error_is_refused(gate, tmp_path):
-    # An EXPRESSION is not a literal and must not be trusted: its value is not
-    # knowable from the YAML, so reading it as true is a guess.
+    # An EXPRESSION is not a literal and must not be trusted: its value is not knowable from the YAML, so reading it as true is a guess.
     expect(
         gate,
         tmp_path,
@@ -221,8 +215,7 @@ def test_both_literals_together_are_admitted(gate, tmp_path):
 
 
 def test_a_renamed_monitor_step_is_refused(gate, tmp_path):
-    # Anti-vacuity: a renamed monitor leaves CHECK 6 with nothing to order
-    # against, and "nothing to check" must never read as "checked and fine".
+    # Anti-vacuity: a renamed monitor leaves CHECK 6 with nothing to order against, and "nothing to check" must never read as "checked and fine".
     expect(
         gate,
         tmp_path,

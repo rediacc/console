@@ -47,9 +47,7 @@
 
 const TERMINATORS = new Set(['run', 'get', 'all']);
 
-// Drizzle query-builder methods. If we find any of these in the receiver
-// chain of a terminator call, we treat that terminator as a Drizzle call.
-// This avoids false positives on Map.get(), URLSearchParams.get(), etc.
+// Drizzle query-builder methods. If we find any of these in the receiver chain of a terminator call, we treat that terminator as a Drizzle call. This avoids false positives on Map.get(), URLSearchParams.get(), etc.
 const DRIZZLE_BUILDER_METHODS = new Set([
   'select',
   'insert',
@@ -141,32 +139,23 @@ function isSafelyConsumed(node, ancestors) {
   if (isPromiseHandlerAccess(parent, node)) return true;
 
   // return chain.run() — assume the enclosing function is async (and will
-  // be linted by the no-floating-promises chain at the caller). If the
-  // enclosing function is NOT async, the Promise still floats — but that's
-  // a separate bug class that no-floating-promises catches generically.
+  // be linted by the no-floating-promises chain at the caller). If the enclosing function is NOT async, the Promise still floats — but that's a separate bug class that no-floating-promises catches generically.
   //
   // NOTE: ArrowFunctionExpression is intentionally NOT in this allow-list.
   // A concise arrow body like `() => chain.run()` returns the Promise, but
-  // many callers (Array.forEach, Set.forEach, EventEmitter.on, etc.) ignore
-  // the callback's return value. Treating every arrow expression as safely
-  // consumed creates false negatives for exactly the unawaited Drizzle
-  // terminators this rule exists to catch. If the arrow body is the
-  // argument of an awaited Promise.all/.race/.allSettled (Array.map case),
-  // the ArrayExpression branch below already handles it.
+  // many callers (Array.forEach, Set.forEach, EventEmitter.on, etc.) ignore the callback's return value. Treating every arrow expression as safely consumed creates false negatives for exactly the unawaited Drizzle terminators this rule exists to catch. If the arrow body is the argument of an awaited Promise.all/.race/.allSettled (Array.map case), the ArrayExpression branch below
+  // already handles it.
   if (parent.type === 'ReturnStatement') {
     return true;
   }
 
-  // Argument to Promise.all / Promise.race / Promise.allSettled / Promise.any
-  // We walk up to find the nearest CallExpression and check the callee.
+  // Argument to Promise.all / Promise.race / Promise.allSettled / Promise.any We walk up to find the nearest CallExpression and check the callee.
   if (parent.type === 'ArrayExpression') {
     // Look for the enclosing call: ArrayExpression -> CallExpression(args)
     return isPromiseCombinatorCall(ancestors[ancestors.length - 2]);
   }
 
-  // Used in a binary/logical expression like `chain.run() || somethingElse`
-  // — likely intentional. Defer to no-floating-promises if available.
-  // (Don't flag here — too speculative.)
+  // Used in a binary/logical expression like `chain.run() || somethingElse` — likely intentional. Defer to no-floating-promises if available. (Don't flag here — too speculative.)
 
   // Direct argument: `void chain.run()` (intentional fire-and-forget)
   return parent.type === 'UnaryExpression' && parent.operator === 'void';
@@ -198,8 +187,7 @@ export const noUnawaitedDrizzleTerminator = {
         const method = node.callee.property.name;
         if (!TERMINATORS.has(method)) return;
 
-        // The receiver must itself be a CallExpression (a chained query builder).
-        // Bare `foo.get()` where foo is just an identifier is not flagged.
+        // The receiver must itself be a CallExpression (a chained query builder). Bare `foo.get()` where foo is just an identifier is not flagged.
         if (node.callee.object?.type !== 'CallExpression') return;
 
         // Must look like a Drizzle chain — at least one builder method present.

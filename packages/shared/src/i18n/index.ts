@@ -10,8 +10,7 @@
  *   const translations = await loadSharedTranslationsAsync('en');
  */
 
-// Import all translations statically for sync loading
-// These are bundled at build time
+// Import all translations statically for sync loading These are bundled at build time
 import ar from './locales/ar/common.json' with { type: 'json' };
 import de from './locales/de/common.json' with { type: 'json' };
 import en from './locales/en/common.json' with { type: 'json' };
@@ -70,8 +69,7 @@ export function getSharedTranslations(lang: SupportedLanguage = 'en'): SharedCom
 export function loadSharedTranslationsAsync(
   lang: SupportedLanguage = 'en'
 ): Promise<SharedCommonTranslations> {
-  // For now, return the static translations.
-  // In the future, this could be modified to use dynamic imports
+  // For now, return the static translations. In the future, this could be modified to use dynamic imports
   // for better code splitting in web bundles.
   return Promise.resolve(translationsMap[lang]);
 }

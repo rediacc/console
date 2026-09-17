@@ -28,9 +28,7 @@ function replacePool() {
   old.end().catch(() => {});
 }
 
-// Safety net: after CRIU restore, stale TCP sockets can emit errors on
-// internal BoundPool instances that bypass the pool-level error handler.
-// Without this, the process crashes with "unhandled 'error' event".
+// Safety net: after CRIU restore, stale TCP sockets can emit errors on internal BoundPool instances that bypass the pool-level error handler. Without this, the process crashes with "unhandled 'error' event".
 process.on('uncaughtException', (err) => {
   if (err.code === 'ECONNRESET' || err.message.includes('Connection terminated unexpectedly')) {
     console.error(`Caught stale-connection error (recovering): ${err.message}`);

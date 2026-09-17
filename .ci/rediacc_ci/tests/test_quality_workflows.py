@@ -207,12 +207,8 @@ def test_the_uses_anchor_blind_spot_is_pinned() -> None:
     assert not mod.USES_RE.search("      - uses: actions/checkout@v4")
 
 
-# --- the .py widening, 2026-09-08 -------------------------------------------
-# `check_gh_slurp_jq` walked `.ci/scripts` taking only `.sh`, so once W7 ported the
-# quality gates to Python the scan stopped reading 72 files that mention `gh` -- and it
-# reported nothing about it, because a matcher that stops matching finds no offenders and
-# exits 0. The glob now takes both, and `slurp_jq_offenders` had to learn Python's
-# continuation, which is a running BRACKET DEPTH rather than a trailing backslash.
+# --- the .py widening, 2026-09-08 ------------------------------------------- `check_gh_slurp_jq` walked `.ci/scripts` taking only `.sh`, so once W7 ported the quality gates to Python the scan stopped reading 72 files that mention `gh` -- and it reported nothing about it, because a matcher that stops matching finds no offenders and exits 0. The glob now takes both, and
+# `slurp_jq_offenders` had to learn Python's continuation, which is a running BRACKET DEPTH rather than a trailing backslash.
 
 _PY_OFFENDER = (
     "import subprocess\n"

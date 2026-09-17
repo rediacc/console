@@ -33,16 +33,12 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-dead-case-arms.sh"
 
-# The twin reads the real tree (`.ci/media` is scanned on every invocation, and
-# the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`),
-# so this module must be serialised against the battery. See the module docstring.
+# The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), so this module must be serialised against the battery. See the module docstring.
 REAL_TREE_TWIN = True
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check-dead-case-arms.sh")
 
-# The twin's `run_gate` default. Repeated rather than imported because it IS the
-# twin's declaration, and a port that quietly widened it would be testing a
-# different corpus than its original.
+# The twin's `run_gate` default. Repeated rather than imported because it IS the twin's declaration, and a port that quietly widened it would be testing a different corpus than its original.
 DEFAULT_CODE_DIRS = ".ci/scripts scripts"
 
 

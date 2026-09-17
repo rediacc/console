@@ -110,20 +110,13 @@ BASELINE = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_BASELINE")
     or ROOT / ".ci" / "config" / "language-policy-baseline.json"
 )
-# THROUGH THE SEAM (W4 P4a), with the environment override still in FRONT of it.
-# The hardcoded join this replaces is the one that let `.language-policy-allowlist`
-# land in `.ci/policy/` on 2026-09-07 while both POLICY_FILES lists stayed at
-# fifteen names, with nothing red for a day: a reader that does not go through the
-# seam cannot be counted by the inventory that checks the seam.
+# THROUGH THE SEAM (W4 P4a), with the environment override still in FRONT of it. The hardcoded join this replaces is the one that let `.language-policy-allowlist` land in `.ci/policy/` on 2026-09-07 while both POLICY_FILES lists stayed at fifteen names, with nothing red for a day: a reader that does not go through the seam cannot be counted by the inventory that checks the seam.
 ALLOWLIST = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_ALLOWLIST") or policy_path(".language-policy-allowlist", ROOT)
 )
 # ANCHORED ON THIS FILE, NOT ON `ROOT`, and the difference is the whole point of the
 # seam. `ROOT` is the tree being JUDGED and a test points it at a fixture; the
-# validator is part of the INSTRUMENT and travels with the gate. Written the other way
-# it read the fixture's non-existent copy and answered every fixture run with exit 77,
-# which is a cannot-run that is really a bug in the gate. Caught 2026-09-07 by the
-# gate test's very first case.
+# validator is part of the INSTRUMENT and travels with the gate. Written the other way it read the fixture's non-existent copy and answered every fixture run with exit 77, which is a cannot-run that is really a bug in the gate. Caught 2026-09-07 by the gate test's very first case.
 VALIDATOR = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_VALIDATOR")
     or pathlib.Path(__file__).resolve().parents[3]
@@ -133,41 +126,28 @@ VALIDATOR = pathlib.Path(
     / "blocker-validator.sh"
 )
 
-# The trees ruling 7 assigns to Python. Not configurable: a gate whose scope can be
-# narrowed by an environment variable has a scope nobody can state.
+# The trees ruling 7 assigns to Python. Not configurable: a gate whose scope can be narrowed by an environment variable has a scope nobody can state.
 COVERED_ROOTS = (".ci", ".claude")
 
 KEY = "bashFiles"
 
-# The BASELINE label used in prose. Held once so the refusal text and the drain
-# instruction cannot drift apart.
+# The BASELINE label used in prose. Held once so the refusal text and the drain instruction cannot drift apart.
 BASELINE_LABEL = ".ci/config/language-policy-baseline.json"
 
-# A `shim:` entry claims ONE line. Ruling 7's words are "one-line shims", so the
-# constant is the ruling and not a tuning knob.
+# A `shim:` entry claims ONE line. Ruling 7's words are "one-line shims", so the constant is the ruling and not a tuning knob.
 SHIM_MAX_LINES = 1
 
-# THE THIRD KIND, ADDED 2026-09-09 FOR W7P6's NAMED PRECONDITION.
-# `tree:` exempts a directory and `shim:` exempts a one-line file, so a file that is
-# permanently bash, multi-line, and ALONE in its directory had nowhere to go: the two
-# candidates for `.ci/bootstrap.sh` were `tree:.ci/` (which exempts the entire port
-# backlog) and moving the file into a directory invented to hold it (which churns 34
-# referencing files to satisfy a grammar). `file:` is the narrow one: ONE exact path,
-# no line cap, and strictly narrower than the `tree:` entry it replaces.
+# THE THIRD KIND, ADDED 2026-09-09 FOR W7P6's NAMED PRECONDITION. `tree:` exempts a directory and `shim:` exempts a one-line file, so a file that is permanently bash, multi-line, and ALONE in its directory had nowhere to go: the two candidates for `.ci/bootstrap.sh` were `tree:.ci/` (which exempts the entire port backlog) and moving the file into a directory invented to hold it
+# (which churns 34 referencing files to satisfy a grammar). `file:` is the narrow one: ONE exact path, no line cap, and strictly narrower than the `tree:` entry it replaces.
 #
-# IT IS DELIBERATELY THE WEAKEST ORACLE, so the gate refuses it wherever a stronger
-# one applies: a `file:` entry naming a ONE-LINE body is rejected by name and told to
-# be a `shim:`, because `shim:` dies when the file grows and `file:` cannot. Without
-# that rule `file:` is a superset of `shim:` and every future author picks the one
-# that never complains, which retires a live check by accident.
+# IT IS DELIBERATELY THE WEAKEST ORACLE, so the gate refuses it wherever a stronger one applies: a `file:` entry naming a ONE-LINE body is rejected by name and told to be a `shim:`, because `shim:` dies when the file grows and `file:` cannot. Without that rule `file:` is a superset of `shim:` and every future author picks the one that never complains, which retires a live check by
+# accident.
 KINDS = ("tree", "shim", "file")
 
 SHEBANG_SHELLS = (b"bash", b"/sh", b" sh", b"zsh")
 
 
-# ---------------------------------------------------------------------------
-# The corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus ---------------------------------------------------------------------------
 
 
 class CannotRun(Exception):  # noqa: N818
@@ -270,9 +250,7 @@ def effective_lines(root: pathlib.Path, rel: str) -> int:
     return count
 
 
-# ---------------------------------------------------------------------------
-# The allowlist
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The allowlist ---------------------------------------------------------------------------
 
 
 def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
@@ -368,8 +346,7 @@ def blocker_quality_problem(entry: str, reason: str) -> str | None:
             "  (.ci/scripts/lib/blocker-validator.sh) cannot be consulted and no exemption\n"
             "  reason can be judged. Install bash, or run this gate where bash exists."
         ) from exc
-    # Exit 2 is the library refusing to LOAD (its bash 4.3 precondition), which is a
-    # cannot-run rather than a verdict about the reason. Exit 1 is a real rejection.
+    # Exit 2 is the library refusing to LOAD (its bash 4.3 precondition), which is a cannot-run rather than a verdict about the reason. Exit 1 is a real rejection.
     if proc.returncode not in {0, 1}:
         raise CannotRun(
             "the BLOCKER validator exited %d rather than judging the reason for %s.\n"
@@ -432,9 +409,7 @@ def dead_entries(
             continue
         lines = effective_lines(root, value)
         if kind == "file":
-            # THE DOWNGRADE REFUSAL. See KINDS. A `file:` entry over a one-line body
-            # buys nothing a `shim:` entry does not, and throws away the only oracle
-            # that notices a shim turning into a program.
+            # THE DOWNGRADE REFUSAL. See KINDS. A `file:` entry over a one-line body buys nothing a `shim:` entry does not, and throws away the only oracle that notices a shim turning into a program.
             if lines <= SHIM_MAX_LINES:
                 problems.append(
                     "file:%s has %d effective line(s), so it is a one-line shim and must "
@@ -453,21 +428,13 @@ def dead_entries(
     return problems
 
 
-# ---------------------------------------------------------------------------
-# The shrink-only guard
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The shrink-only guard ---------------------------------------------------------------------------
 #
-# This is a faithful port of the DECISION half of scripts/lib/shrink-only-baseline.ts
-# (`baselineAdditions` and `writeBaselineVerdict`), kept in Python because ruling 7
-# puts this gate in `.ci`. There is no Python binding for that module today and
-# building one under `.ci/rediacc_ci/` would collide with the port that is in flight
+# This is a faithful port of the DECISION half of scripts/lib/shrink-only-baseline.ts (`baselineAdditions` and `writeBaselineVerdict`), kept in Python because ruling 7 puts this gate in `.ci`. There is no Python binding for that module today and building one under `.ci/rediacc_ci/` would collide with the port that is in flight
 # there this hour; see the report accompanying this gate, which names the resulting
-# coverage gap in gate-test:shrink-only-composition out loud rather than leaving it
-# to be discovered.
+# coverage gap in gate-test:shrink-only-composition out loud rather than leaving it to be discovered.
 #
-# ORDER IS LOAD-BEARING in `write_verdict`, exactly as it is in the twin: the missing
-# baseline is decided FIRST, because every later rule reads the old set and with no
-# file there is no old set. Deleting the baseline is otherwise the cheapest way to
+# ORDER IS LOAD-BEARING in `write_verdict`, exactly as it is in the twin: the missing baseline is decided FIRST, because every later rule reads the old set and with no file there is no old set. Deleting the baseline is otherwise the cheapest way to
 # switch the whole rule off.
 
 
@@ -578,9 +545,7 @@ def write_baseline(current: list[str], *, first_seed: bool) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 
 def selftest() -> int:
@@ -593,19 +558,11 @@ def selftest() -> int:
     (see .ci/rediacc_ci/controls.py's header).
     """
     controls = Controls("language policy", floor=32)
-    # THE TREE UNDER TEST, not the one this file happens to live in. Anchoring on
-    # __file__ here made the controls assert against the real repository even when the
-    # caller had pointed the gate at a fixture, which is a coupling in the one place
-    # that must not have one: it left a mutated COPY of this gate unable to reach its
-    # own controls at all.
+    # THE TREE UNDER TEST, not the one this file happens to live in. Anchoring on __file__ here made the controls assert against the real repository even when the caller had pointed the gate at a fixture, which is a coupling in the one place that must not have one: it left a mutated COPY of this gate unable to reach its own controls at all.
     here = ROOT
 
-    # THE FIXTURES ARE BUILT, NOT BORROWED FROM THE TREE. An earlier draft asserted
-    # against three real files (a .sh, a Rediaccfile with a shebang, the one-line
-    # shim). Every one of those is a coupling that reds THIS gate when somebody edits
-    # an unrelated file, and a control that fires on innocent edits is the fastest
-    # route to a control being deleted. The one real-tree control kept below is the
-    # anti-vacuity one, which has to be real or it asserts nothing.
+    # THE FIXTURES ARE BUILT, NOT BORROWED FROM THE TREE. An earlier draft asserted against three real files (a .sh, a Rediaccfile with a shebang, the one-line shim). Every one of those is a coupling that reds THIS gate when somebody edits an unrelated file, and a control that fires on innocent edits is the fastest route to a control being deleted. The one real-tree control kept
+    # below is the anti-vacuity one, which has to be real or it asserts nothing.
     with tempfile.TemporaryDirectory() as tmp:
         box = pathlib.Path(tmp)
         (box / "plain.sh").write_text("echo hi\n", encoding="utf-8")
@@ -780,11 +737,8 @@ def selftest() -> int:
 
     # -- the enumeration itself, on a repository built for the purpose ---------
     #
-    # NOT AN ASSERTION ABOUT THE REAL TREE, deliberately. An earlier draft asserted
-    # `len(bash_corpus(ROOT)) > 0` here, which is true of the repository and ALSO true
-    # of the question `run()` already answers with a better message. Under a caller
-    # that pointed the gate at an empty tree it fired first, so the reader got
-    # "control failed, exit 2" instead of the VACUOUS refusal that names the cause.
+    # NOT AN ASSERTION ABOUT THE REAL TREE, deliberately. An earlier draft asserted `len(bash_corpus(ROOT)) > 0` here, which is true of the repository and ALSO true of the question `run()` already answers with a better message. Under a caller that pointed the gate at an empty tree it fired first, so the reader got "control failed, exit 2" instead of the VACUOUS refusal that names
+    # the cause.
     # The corpus floor belongs to the verdict; what belongs here is proof that the
     # ENUMERATION can tell a tree with bash in it from one without.
     with tempfile.TemporaryDirectory() as tmp:
@@ -824,9 +778,7 @@ def _corpus_error(root: pathlib.Path) -> object:
         return exc
 
 
-# ---------------------------------------------------------------------------
-# The verdict
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The verdict ---------------------------------------------------------------------------
 
 
 def run() -> int:
@@ -870,9 +822,7 @@ def run() -> int:
     baseline = read_baseline(BASELINE)
 
     if baseline is None:
-        # STRICT MODE. This is W1 P6, reached by DELETING the baseline file rather
-        # than by editing this gate, which is why the plan box can be executed as
-        # written.
+        # STRICT MODE. This is W1 P6, reached by DELETING the baseline file rather than by editing this gate, which is why the plan box can be executed as written.
         if covered:
             print(
                 "✗ STRICT: %d bash file(s) under %s are neither exempt nor baselined,\n"
@@ -952,19 +902,13 @@ def run() -> int:
 
 
 def main(argv: list[str]) -> int:
-    # THE CANNOT-RUN HANDLER WRAPS THE CONTROLS TOO, not just the verdict. The
-    # controls touch the real tree (they need a corpus that is really there), so on a
-    # machine with no git the FIRST thing that fails is a control, and without this
-    # placement the gate answered a missing binary with a Python traceback. A missing
-    # tool has to read as "cannot run, here is the fix", never as a crash that the
-    # next reader files as flake.
+    # THE CANNOT-RUN HANDLER WRAPS THE CONTROLS TOO, not just the verdict. The controls touch the real tree (they need a corpus that is really there), so on a machine with no git the FIRST thing that fails is a control, and without this placement the gate answered a missing binary with a Python traceback. A missing tool has to read as "cannot run, here is the fix", never as a crash
+    # that the next reader files as flake.
     try:
         if "--selftest" in argv:
             return selftest()
 
-        # CONTROLS FIRST, ALWAYS, not only under --selftest. A gate whose controls run
-        # in a separate invocation is a gate whose controls can be skipped by
-        # registering the invocation without them, which has happened in this repo.
+        # CONTROLS FIRST, ALWAYS, not only under --selftest. A gate whose controls run in a separate invocation is a gate whose controls can be skipped by registering the invocation without them, which has happened in this repo.
         print("language policy: controls first, then the verdict")
         if selftest() != 0:
             print(

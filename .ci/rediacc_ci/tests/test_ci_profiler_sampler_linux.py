@@ -112,9 +112,7 @@ def assert_same(old: tuple[int, str, str], new: tuple[int, str, str]) -> None:
     assert new[2] == old[2], "stderr:\n--- twin\n%s--- port\n%s" % (old[2], new[2])
 
 
-# ---------------------------------------------------------------------------
-# Layer 1: --help is a slice of the file's own source
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 1: --help is a slice of the file's own source ---------------------------------------------------------------------------
 
 
 def _slice_2_40(path: pathlib.Path) -> str:
@@ -151,9 +149,7 @@ def test_help_keeps_the_twins_dangling_backslash() -> None:
     assert old[1].rstrip("\n").endswith("\\")
 
 
-# ---------------------------------------------------------------------------
-# Layer 2: arguments and refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 2: arguments and refusals ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -245,9 +241,7 @@ def test_probe_ignores_a_missing_out(tmp_path: pathlib.Path) -> None:
     assert "--out <file>" not in old[2]
 
 
-# ---------------------------------------------------------------------------
-# Layer 3: the cgroup tiers, through the twin's own test seam
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 3: the cgroup tiers, through the twin's own test seam ---------------------------------------------------------------------------
 
 
 def _cgroup_v2(tmp_path: pathlib.Path, *, mem: str = "2147483648") -> pathlib.Path:
@@ -314,17 +308,12 @@ def _sample_both(
     return old, new, out_old, out_new
 
 
-# Fields of the #META record that carry a live reading rather than a decision.
-# Index 5 is start_ms. Everything else is a resolved constant and IS compared.
+# Fields of the #META record that carry a live reading rather than a decision. Index 5 is start_ms. Everything else is a resolved constant and IS compared.
 META_LIVE = {5}
 # Fields of an S record that are live NO MATTER WHAT: 1 is t_ms, 4/5 are the
 # interface byte counters, 6/7 are `df`.
 SAMPLE_LIVE = {1, 4, 5, 6, 7}
-# AND TWO MORE WHEN THE FIXTURE DOES NOT PIN THEM. On a PROC_HOST-tier fixture
-# there is no `cpu.stat` and no `memory.current`, so columns 2 (cpu_milli) and 3
-# (mem_bytes) come from the real `/proc/stat` and `/proc/meminfo` and move
-# between two consecutive runs. Treating them as fixed made three cases fail on
-# a difference that was the machine, not the port -- which is why this is a
+# AND TWO MORE WHEN THE FIXTURE DOES NOT PIN THEM. On a PROC_HOST-tier fixture there is no `cpu.stat` and no `memory.current`, so columns 2 (cpu_milli) and 3 (mem_bytes) come from the real `/proc/stat` and `/proc/meminfo` and move between two consecutive runs. Treating them as fixed made three cases fail on a difference that was the machine, not the port -- which is why this is a
 # parameter and not a constant.
 PROC_HOST_LIVE = SAMPLE_LIVE | {2, 3}
 
@@ -588,8 +577,7 @@ def test_a_valid_octal_interval_is_now_one_number(tmp_path: pathlib.Path) -> Non
     assert _meta(out_old)[4] == _meta(out_new)[4] == "10"
     assert_meta_same(out_old, out_new)
     assert_rows_same(out_old, out_new)
-    # The arithmetic half, driven directly rather than inferred from the TSV. This
-    # is what `10#` is protecting against, and it has not changed.
+    # The arithmetic half, driven directly rather than inferred from the TSV. This is what `10#` is protecting against, and it has not changed.
     assert port._arith("010") == 8
     assert port._arith("10") == 10
     with pytest.raises(port.BashArithError):
@@ -653,9 +641,7 @@ def test_an_empty_max_seconds_is_the_default_not_a_refusal(tmp_path: pathlib.Pat
         "PROFILER_RUNNER_LABEL": "x",
     }
     old, new = run_both(["--probe"], env=env, timeout=30)
-    # NOT `assert_same`: a probe report carries the three live readings this file
-    # declares uncomparable (bash version, both `df ... used` figures, per-sample
-    # cost). `test_probe_agrees_on_everything_that_is_not_a_live_reading` owns that
+    # NOT `assert_same`: a probe report carries the three live readings this file declares uncomparable (bash version, both `df ... used` figures, per-sample cost). `test_probe_agrees_on_everything_that_is_not_a_live_reading` owns that
     # comparison; the subject here is only that neither side refuses.
     for side, r in (("twin", old), ("port", new)):
         assert r[0] == 0, "%s refused an empty PROFILER_MAX_SECONDS:\n%s" % (side, r[2])
@@ -719,12 +705,9 @@ def test_max_seconds_stops_the_loop_and_says_so(tmp_path: pathlib.Path) -> None:
     assert_same((old[0], old[1], old[2]), (new[0], new[1], new[2]))
 
 
-# ---------------------------------------------------------------------------
-# Layer 4: --probe and the sample loop's live readings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 4: --probe and the sample loop's live readings ---------------------------------------------------------------------------
 
-# The three lines whose value legitimately differs between two consecutive runs
-# of the SAME implementation, plus the one that describes the interpreter.
+# The three lines whose value legitimately differs between two consecutive runs of the SAME implementation, plus the one that describes the interpreter.
 PROBE_VOLATILE = (
     "**Per-sample cost:**",
     "**df workspace used:**",
@@ -751,8 +734,7 @@ def test_probe_agrees_on_everything_that_is_not_a_live_reading(
     assert old[2] == new[2] == ""
     stable_old, stable_new = _probe_stable(old[1]), _probe_stable(new[1])
     assert stable_old == stable_new, "probe:\n--- twin\n%s--- port\n%s" % (old[1], new[1])
-    # Anti-vacuity for the normalization: the four volatile lines must EXIST, or
-    # `_probe_stable` is folding nothing and this test compares two constants.
+    # Anti-vacuity for the normalization: the four volatile lines must EXIST, or `_probe_stable` is folding nothing and this test compares two constants.
     for marker in PROBE_VOLATILE:
         assert marker in old[1], "the twin no longer prints %s" % marker
     assert stable_old.count("\n") > 20, "the probe collapsed to a handful of lines"
@@ -841,9 +823,7 @@ def test_sigterm_latency_matches_the_twin(tmp_path: pathlib.Path) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -944,9 +924,7 @@ def test_read_fields_matches_real_bash_on_the_status(tmp_path: pathlib.Path) -> 
         assert ok is (expected == 0), "body=%r" % body
 
 
-# ---------------------------------------------------------------------------
-# A PLANTED DEFECT, on a throwaway copy, never on the file on disk
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A PLANTED DEFECT, on a throwaway copy, never on the file on disk ---------------------------------------------------------------------------
 
 
 def _planted_copy(tmp_path: pathlib.Path, old: str, new: str) -> pathlib.Path:

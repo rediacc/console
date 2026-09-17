@@ -168,8 +168,7 @@ USAGE_APPLY = "usage: review-reply.sh apply --plan <file>"
 UNKNOWN_SUBCOMMAND = "unknown subcommand '%s' (plan|apply)"
 
 # GraphQL node ids are base64url-ish; this is the character set GitHub uses plus
-# a hard length bound, so nothing shell-shaped or path-shaped can ride through
-# into a mutation variable.
+# a hard length bound, so nothing shell-shaped or path-shaped can ride through into a mutation variable.
 ID_SHAPE = "^[A-Za-z0-9_=-]{1,128}$"
 
 DEFAULT_MAX_BODY = "2000"
@@ -338,10 +337,7 @@ def _plan(args: dict[str, str]) -> int:
         log.error("--max-body must be a number, got '%s'" % max_body)
         return 2
 
-    # id -> repo, so a planned reply carries the repository its thread lives in.
-    # The GraphQL mutations address a thread by its global node id and need no
-    # repo argument, but the plan is also an AUDIT RECORD and a log line, and
-    # "resolved a thread" is not a useful sentence without naming where.
+    # id -> repo, so a planned reply carries the repository its thread lives in. The GraphQL mutations address a thread by its global node id and need no repo argument, but the plan is also an AUDIT RECORD and a log line, and "resolved a thread" is not a useful sentence without naming where.
     code, known = _jq(["-c", KNOWN_PROGRAM, threads])
     if code != 0:
         # `x="$(jq ...)"` under `set -e`: jq's status, jq's message, no stdout.
@@ -384,9 +380,7 @@ def _plan(args: dict[str, str]) -> int:
     if code != 0:
         return code
     if flagged == "true":
-        # LOUD, because this is the model naming a thread nobody showed it:
-        # either the payload filter and the prompt disagree about what the round
-        # could see, or the round invented an id.
+        # LOUD, because this is the model naming a thread nobody showed it: either the payload filter and the prompt disagree about what the round could see, or the round invented an id.
         _, count = _jq(["-r", ".skipped | length"], plan)
         log.warn(
             "review-reply plan: %s disposition(s) name no thread in this round's payload and "
@@ -410,9 +404,7 @@ def _apply(args: dict[str, str], *, sleeper=time.sleep) -> int:
     except common.RefusalError as exc:
         exc.report()
         return exc.code
-    # THE FILE IS REQUIRED BEFORE THE FLAG IS TESTED, which is the twin's order:
-    # a broken invocation gets a file error rather than a stage refusal, so a
-    # typo cannot be mistaken for a closed stage.
+    # THE FILE IS REQUIRED BEFORE THE FLAG IS TESTED, which is the twin's order: a broken invocation gets a file error rather than a stage refusal, so a typo cannot be mistaken for a closed stage.
     if os.environ.get(ALLOW_PUSH_ENV, "") != ALLOW_PUSH_VALUE:
         log.error(
             "stage-flag-disabled: %s is not '%s'; refusing to reply or resolve (fail closed)"
@@ -427,13 +419,9 @@ def _apply(args: dict[str, str], *, sleeper=time.sleep) -> int:
         log.info("review-reply apply: nothing planned; no thread touched")
         return 0
 
-    # `jq length` yields a non-negative integer for every type it accepts and
-    # errors on the rest, so this cannot be a leading-zero octal the way the
-    # gate's counters can. Named because the sibling port needed a whole
-    # `bash_arith` for the same-looking expression.
+    # `jq length` yields a non-negative integer for every type it accepts and errors on the rest, so this cannot be a leading-zero octal the way the gate's counters can. Named because the sibling port needed a whole `bash_arith` for the same-looking expression.
     total = int(count)
-    # Indexed, not piped: a `while read` in a pipeline runs in a subshell, where
-    # a failed mutation cannot fail this script.
+    # Indexed, not piped: a `while read` in a pipeline runs in a subshell, where a failed mutation cannot fail this script.
     for index in range(total):
         code, tid = _jq(["-r", ".replies[%d].thread_id" % index, plan_path])
         if code != 0:
@@ -444,8 +432,7 @@ def _apply(args: dict[str, str], *, sleeper=time.sleep) -> int:
         code, trepo = _jq(["-r", '.replies[%d].repo // "console"' % index, plan_path])
         if code != 0:
             return code
-        # Re-checked at the write, not only at the plan: apply is a separate
-        # invocation and its input is a file on disk.
+        # Re-checked at the write, not only at the plan: apply is a separate invocation and its input is a file on disk.
         if not matches_id_shape(tid):
             log.error(
                 "review-reply apply: thread id '%s' does not match the id shape; refusing" % tid
@@ -483,8 +470,7 @@ def _apply(args: dict[str, str], *, sleeper=time.sleep) -> int:
 
 def main(argv: list[str], *, sleeper=time.sleep) -> int:
     # `cmd="${1:-}"; shift || true`: the subcommand is positional and is NOT a
-    # flag, so it never reaches parse_args. No arguments at all gives the empty
-    # subcommand, which lands in the unknown arm.
+    # flag, so it never reaches parse_args. No arguments at all gives the empty subcommand, which lands in the unknown arm.
     cmd = argv[0] if argv else ""
     try:
         args = common.parse_args(argv[1:])

@@ -122,18 +122,13 @@ def test_an_empty_corpus_is_refused(tmp_path: pathlib.Path, monkeypatch) -> None
 # the one-liner `if ...; then ...; fi` absorption bug (89b2e140)
 # ---------------------------------------------------------------------------
 #
-# AN ABSOLUTE ASSERTION, NOT A DIFFERENTIAL ONE, and that distinction is the
-# whole reason this test exists. `branch_of()` used to end a branch only on
+# AN ABSOLUTE ASSERTION, NOT A DIFFERENTIAL ONE, and that distinction is the whole reason this test exists. `branch_of()` used to end a branch only on
 # `depth <= 0 and k > j`, which never fires on the line a one-liner OPENS and
 # CLOSES depth in the same step (k == j). The loop therefore absorbed the NEXT,
 # unrelated logical line into the branch it reported.
 #
-# `test_scanner_matches_the_twins_awk` above could not have caught this and
-# still cannot: it compares the port against the awk twin, and BOTH TWINS WERE
-# WRONG IDENTICALLY, so parity stayed green through the entire lifetime of the
-# bug. The shadow ledger is blind to it for the same reason. A parity check
-# cannot see a defect that is uniformly wrong -- only an absolute claim about
-# the answer can, which is what this is.
+# `test_scanner_matches_the_twins_awk` above could not have caught this and still cannot: it compares the port against the awk twin, and BOTH TWINS WERE WRONG IDENTICALLY, so parity stayed green through the entire lifetime of the bug. The shadow ledger is blind to it for the same reason. A parity check cannot see a defect that is uniformly wrong -- only an absolute claim about the
+# answer can, which is what this is.
 def test_a_one_liner_if_does_not_absorb_the_following_line() -> None:
     """The branch of a same-line `if ...; then ...; fi` ends ON that line."""
     text = 'if [[ -z "$v" ]]; then :; fi\nlog_error "unrelated to the if above"\n'
@@ -146,12 +141,8 @@ def test_a_one_liner_if_does_not_absorb_the_following_line() -> None:
     assert "log_error" not in branch
 
 
-# WHAT THIS TEST DELIBERATELY DOES NOT CLAIM. I tried to add a second case
-# asserting the bug flipped a real VERDICT, and it failed -- because
+# WHAT THIS TEST DELIBERATELY DOES NOT CLAIM. I tried to add a second case asserting the bug flipped a real VERDICT, and it failed -- because
 # `window_has_escalation` (WINDOW = 12 logical lines) finds the escalation
-# anyway in the simple shape, so the absorption is masked at the verdict level.
-# Making it visible needs a boundary-crossing construction where the absorbed
+# anyway in the simple shape, so the absorption is masked at the verdict level. Making it visible needs a boundary-crossing construction where the absorbed
 # line falls outside that window; 89b2e140's author verified one, and I did not
-# reproduce it rather than ship an assertion I had not confirmed. The
-# branch_of-level claim above is the durable guard: it pins the defect itself
-# instead of one downstream consequence of it.
+# reproduce it rather than ship an assertion I had not confirmed. The branch_of-level claim above is the durable guard: it pins the defect itself instead of one downstream consequence of it.

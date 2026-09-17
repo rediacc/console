@@ -97,8 +97,7 @@ export function audit(files: string[], read: (f: string) => string): [Finding[],
   let examined = 0;
 
   for (const [file, src] of sources) {
-    // Only classes DEFINED here and instantiated here as an exported
-    // singleton. Two earlier bugs made this necessary: `new Set([...])`
+    // Only classes DEFINED here and instantiated here as an exported singleton. Two earlier bugs made this necessary: `new Set([...])`
     // satisfied a bare `= new X(` test, and a string literal containing
     // "export const c = new SFTPClient();" made a lint fixture look like a
     // service. Requiring `class <Name> {` in the same file kills both.
@@ -115,9 +114,7 @@ export function audit(files: string[], read: (f: string) => string): [Finding[],
       const [, modifier, name] = m;
       if (modifier || NOT_A_METHOD.has(name)) continue;
       // A DEFINITION, not a call. `  walk(tree, []);` is two spaces deep and
-      // looks identical to a method head until you require a brace body after
-      // the parameter list -- which is what reported two nested arrow-function
-      // helpers as dead service methods.
+      // looks identical to a method head until you require a brace body after the parameter list -- which is what reported two nested arrow-function helpers as dead service methods.
       const rest = src.slice(m.index);
       if (!/^\w+\s*\([^;]*?\)\s*(?::[^;{]+?)?\{/s.test(rest.replace(/^ {2}/, ''))) continue;
       examined++;

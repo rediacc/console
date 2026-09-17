@@ -43,10 +43,7 @@ const EN_FILE = path.join(TRANSLATIONS_DIR, 'en.json');
 const LEDGER_FILE = path.join(TRANSLATIONS_DIR, '.naturalized-hashes.json');
 const DOC = 'docs/i18n/CONVENTIONS.md';
 
-// A maintained locale must reach this fraction of the best-covered language's naturalized
-// key count, otherwise it counts as "missing or near-empty". Generous on purpose: every
-// language naturalizes ~the same translatable key set, so the real signal is a whole
-// language being absent or barely started, not minor per-language count differences.
+// A maintained locale must reach this fraction of the best-covered language's naturalized key count, otherwise it counts as "missing or near-empty". Generous on purpose: every language naturalizes ~the same translatable key set, so the real signal is a whole language being absent or barely started, not minor per-language count differences.
 const COVERAGE_FLOOR = 0.5;
 
 const report = process.argv.includes('--report');
@@ -106,16 +103,11 @@ function main(): number {
     if (stale.length) staleByLang[lang] = stale;
     staleTotal += stale.length;
     orphanTotal += orphan;
-    // LIVE entries only. Counting orphans here made the coverage floor -- a fraction of
-    // the best-covered language -- drift upward every time an English key was deleted,
-    // without anyone's real coverage moving. At 9702 orphans the floor stood at 1006
-    // against a real best of 1187, so a newly added locale had to reach 85% of the
-    // leader to clear a bar documented as 50%.
+    // LIVE entries only. Counting orphans here made the coverage floor -- a fraction of the best-covered language -- drift upward every time an English key was deleted, without anyone's real coverage moving. At 9702 orphans the floor stood at 1006 against a real best of 1187, so a newly added locale had to reach 85% of the leader to clear a bar documented as 50%.
     langCount[lang] = Object.keys(keys).length - orphan;
   }
 
-  // -- Coverage floor: every maintained locale must reach COVERAGE_FLOOR of the
-  //    best-covered language, so no language is silently left literal/untouched. ----
+  // -- Coverage floor: every maintained locale must reach COVERAGE_FLOOR of the best-covered language, so no language is silently left literal/untouched. ----
   const targeted = maintainedLocales();
   const maxCount = Math.max(0, ...Object.values(langCount));
   const floor = Math.floor(COVERAGE_FLOOR * maxCount);

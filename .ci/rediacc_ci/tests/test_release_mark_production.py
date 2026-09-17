@@ -117,8 +117,7 @@ fail("fake gh: unrouted call: %s\\n" % joined, 90)
 """
 
 # common.sh needs `dirname` and `uname` at source time and `tr` in parse_args;
-# this script does not call parse_args, but `dirname` is used by the twin
-# itself and `uname` by the library, so both must be reachable.
+# this script does not call parse_args, but `dirname` is used by the twin itself and `uname` by the library, so both must be reachable.
 PATH_MINIMUM = ("dirname", "uname", "tr")
 
 

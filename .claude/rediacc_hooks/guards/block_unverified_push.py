@@ -62,9 +62,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-unverified-push.sh"
 ORDER = 39
 
-# The tree comparison is the whole guard. Without it any receipt at all
-# authorises any push, which is the state that let five CI rounds happen on
-# PR #579.
+# The tree comparison is the whole guard. Without it any receipt at all authorises any push, which is the state that let five CI rounds happen on PR #579.
 DEFECT = ("if r_tree != tree:", "if False:")
 
 PUSH_AT_COMMAND_POS = hookio.rx(
@@ -157,11 +155,7 @@ def _repo_with_receipt(path, receipt, carried=None):
     return path
 
 
-# The five receipt worlds this guard distinguishes. Without them the corpus
-# sees whatever receipt this shared worktree happens to hold at the moment the
-# test runs, which is BOTH undiscriminating and a race: another session running
-# `ci:quick` between the bash pass and the Python pass would rewrite the file
-# and the difference would be reported as a port defect.
+# The five receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
 FIXTURES = {
     "push-no-receipt": lambda p: _repo_with_receipt(p, None),
     "push-green": lambda p: _repo_with_receipt(p, {"whole": True, "exitCode": 0}),
@@ -219,8 +213,7 @@ EDGE_CASES = [
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
     ("cd into a submodule", "cd private/account && git push origin 0831-1"),
     ("git -C into a submodule", "git -C private/renet push"),
-    # The tab defect inherited from shellscan.target_root, pinned here so a
-    # later change to that module is a visible divergence rather than a quiet one.
+    # The tab defect inherited from shellscan.target_root, pinned here so a later change to that module is a visible divergence rather than a quiet one.
     ("git -C with a TAB resolves to the empty root", "git -C\t/tmp push"),
     ("a push in another tree", "cd /tmp && git push"),
 ]
@@ -266,8 +259,7 @@ def _read_json(path):
     try:
         return json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        # Every read in the bash is `jq ... 2>/dev/null`, so an unreadable or
-        # malformed file behaves exactly like an absent key: the `//` default.
+        # Every read in the bash is `jq ... 2>/dev/null`, so an unreadable or malformed file behaves exactly like an absent key: the `//` default.
         return None
 
 
@@ -291,10 +283,7 @@ def run(ev):
     if root == "":
         return hookio.ALLOW
 
-    # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it
-    # were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here,
-    # because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can
-    # never match it. The message then reads as "your gates are stale" about a repo the gates
+    # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates
     # were never run against. Same class as block-untagged-commit.sh:52-69; the resolution now
     # lives in lib/command-scan.sh rather than being written a third time.
     if shellscan.target_root(scan, root) != "":
@@ -302,8 +291,7 @@ def run(ev):
 
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console
     # branch and trigger no console CI; cancel-old-ci.sh draws the same line for the
-    # same reason. The pointer-bump commit that DOES advance console is covered by
-    # the ordinary path.
+    # same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.
     if hookio.case_glob(
         cmd,
         "*-C %s/private/*" % root,
@@ -318,10 +306,7 @@ def run(ev):
     if tree is None or tree == "":
         return hookio.ALLOW
 
-    # FAIL OPEN ON A BROKEN ENVIRONMENT, never on a broken verdict. No jq, no git,
-    # no repo: allow, exactly as warn-remote-drift.sh does -- "a drift CHECK must
-    # never become a push outage". A MISSING or STALE receipt is a different thing
-    # and is refused below, because that is the condition this guard exists for.
+    # FAIL OPEN ON A BROKEN ENVIRONMENT, never on a broken verdict. No jq, no git, no repo: allow, exactly as warn-remote-drift.sh does -- "a drift CHECK must never become a push outage". A MISSING or STALE receipt is a different thing and is refused below, because that is the condition this guard exists for.
     if not hookio.have("jq"):
         return hookio.ALLOW
 
@@ -351,27 +336,20 @@ def run(ev):
             "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree),
         )
 
-    # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a
-    # receipt that is otherwise indistinguishable from all 254, so the runner
-    # records whether the lane ran WHOLE and this reads the flag rather than
-    # parsing the selection prose -- a guard that parses English fails open on a
-    # rewording.
+    # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
     if r_whole != "true":
         return _refuse(
             ev, "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
         )
 
     if r_exit != "0":
-        # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is
-        # named and justified in .ci/config/carried-reds.json. All-or-nothing is the
+        # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the
         # shape that gets a guard routed around; naming the exception keeps the
         # refusal informative and leaves the excuse in git where it can be reviewed.
         carried_file = "%s/.ci/config/carried-reds.json" % root
         carried = []
         if pathlib.Path(carried_file).is_file():
-            # Only entries whose reason is SUBSTANTIVE count. The bar is the one
-            # .dead-bash-allowlist uses and gate-test:dead-bash pins with a
-            # low-effort-BLOCKER case: a bare "known issue" excuses nothing.
+            # Only entries whose reason is SUBSTANTIVE count. The bar is the one .dead-bash-allowlist uses and gate-test:dead-bash pins with a low-effort-BLOCKER case: a bare "known issue" excuses nothing.
             doc = _read_json(carried_file)
             entries = doc.get("carried") if isinstance(doc, dict) else None
             for entry in entries if isinstance(entries, list) else []:
@@ -387,14 +365,10 @@ def run(ev):
         failed = [g for g in failed if isinstance(g, str)] if isinstance(failed, list) else []
         # `for g in $(jq -r '(.failed // [])[]')` is UNQUOTED, so the shell word-
         # splits each name. Every gate name here is one word, so the two agree;
-        # a name with a space would split in the bash and not here, and that is
-        # a difference in the ORIGINAL rather than in the port.
+        # a name with a space would split in the bash and not here, and that is a difference in the ORIGINAL rather than in the port.
         unnamed = "".join(" %s" % g for g in failed if g not in carried)
 
-        # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an
-        # allowlist rots into a permanent hole -- the npm side of this repo once
-        # carried 101 dead entries for that reason. If a carried gate is no longer
-        # failing, the entry must go before the next push.
+        # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an allowlist rots into a permanent hole -- the npm side of this repo once carried 101 dead entries for that reason. If a carried gate is no longer failing, the entry must go before the next push.
         stale = "".join(" %s" % g for g in carried if g not in failed)
 
         if unnamed:
@@ -421,11 +395,7 @@ def run(ev):
         ev.warn("  CI runs these for real and will fail on them. Carrying is a record of a")
         ev.warn("  deliberate decision, not a way to make CI green.")
 
-    # A GATE THAT COULD NOT RUN WARNS, IT DOES NOT REFUSE (operator decision,
-    # 2026-08-27). Measured that day: twelve reds on a normal developer tree, ten of
-    # them ambient, several purely "this machine has no ruff / no workers-types". A
-    # missing toolchain is not evidence about the code, and refusing on it would
-    # make the receipt unobtainable -- an unobtainable receipt is a guard people
+    # A GATE THAT COULD NOT RUN WARNS, IT DOES NOT REFUSE (operator decision, 2026-08-27). Measured that day: twelve reds on a normal developer tree, ten of them ambient, several purely "this machine has no ruff / no workers-types". A missing toolchain is not evidence about the code, and refusing on it would make the receipt unobtainable -- an unobtainable receipt is a guard people
     # route around, which costs more than the rounds it saves.
     #
     # Never silent, though. "A linter that cannot run is a gate that cannot fail"
@@ -441,10 +411,7 @@ def run(ev):
 
     # THE HONEST RESIDUAL, stated rather than hidden: the gates ran against the
     # WORKING TREE, not against `HEAD^{tree}`. If the dirty set has moved since,
-    # something the gates read has changed. That is a warning and not a refusal --
-    # this tree carries dozens of dirty paths from other sessions at any moment, so
-    # refusing on it would make the receipt unobtainable, and an unobtainable
-    # receipt is a guard nobody keeps.
+    # something the gates read has changed. That is a warning and not a refusal -- this tree carries dozens of dirty paths from other sessions at any moment, so refusing on it would make the receipt unobtainable, and an unobtainable receipt is a guard nobody keeps.
     now_dirty = _dirty_digest(root)
     r_dirty = r_dirty if isinstance(r_dirty, str) else ""
     if now_dirty and r_dirty and now_dirty != r_dirty:

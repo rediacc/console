@@ -52,21 +52,13 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-empty-commit.sh"
 ORDER = 21
 
-# Removing the verified escape restores exactly the 2026-08-26 defect: the
-# block goes back to being unconditional, so the one case where its own advice
-# is unreachable is refused again.
+# Removing the verified escape restores exactly the 2026-08-26 defect: the block goes back to being unconditional, so the one case where its own advice is unreachable is refused again.
 DEFECT = ('if claim != "":', "if False:")
 
-# ANCHORED TO COMMAND POSITION 2026-08-28. Routing through command-scan.sh in
-# the comment above fixed the QUOTED case (`echo '<the banned command>'`) and
-# left the unquoted one: hook_scan_target strips quoted spans, so an ordinary
-# unquoted sentence advising against the command survived it intact and this
-# guard BLOCKED it -- a worklist note or a doc line refused as if it were the
+# ANCHORED TO COMMAND POSITION 2026-08-28. Routing through command-scan.sh in the comment above fixed the QUOTED case (`echo '<the banned command>'`) and left the unquoted one: hook_scan_target strips quoted spans, so an ordinary unquoted sentence advising against the command survived it intact and this guard BLOCKED it -- a worklist note or a doc line refused as if it were the
 # command itself. Measured before the fix: exit 2 on such a sentence.
 #
-# SAME DEFECT CLASS as block-bash-write-to-running-script.sh and
-# block-roundlog-truncate.sh, both fixed earlier the same day: a guard that
-# matches a MENTION rather than a TARGET.
+# SAME DEFECT CLASS as block-bash-write-to-running-script.sh and block-roundlog-truncate.sh, both fixed earlier the same day: a guard that matches a MENTION rather than a TARGET.
 ALLOW_EMPTY = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit[^|;&]*--allow-empty")
 
 ADVICE = (
@@ -81,11 +73,7 @@ ADVICE = (
     "pattern is recognized as transient, then rerun."
 )
 
-# A FIXED sha, from a `git` stub, and that is not cosmetic. The verified arm
-# prints HEAD into its message, so a real HEAD would put this differential at
-# the mercy of any other session committing between the bash pass and the
-# Python pass -- two runs of the same case disagreeing for a reason that is not
-# a port defect. The stub makes the world the same for both sides.
+# A FIXED sha, from a `git` stub, and that is not cosmetic. The verified arm prints HEAD into its message, so a real HEAD would put this differential at the mercy of any other session committing between the bash pass and the Python pass -- two runs of the same case disagreeing for a reason that is not a port defect. The stub makes the world the same for both sides.
 _GIT_STUB = "#!/bin/sh\necho 1111111111111111111111111111111111111111\n"
 
 ENVS = [
@@ -143,8 +131,7 @@ def run(ev):
                 reason = "could not read HEAD, so the claimed sha cannot be checked against it"
             elif head_sha.removeprefix(claim) == head_sha:
                 # `${head_sha#"$CLAIM"}` removes the shortest matching PREFIX,
-                # once, and leaves the string untouched when it is absent --
-                # which is exactly what this comparison is testing for.
+                # once, and leaves the string untouched when it is absent -- which is exactly what this comparison is testing for.
                 reason = "CI_RETRIGGER_NO_RUN_FOR='%s' is not a prefix of HEAD (%s)" % (
                     claim,
                     head_sha,

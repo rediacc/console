@@ -79,9 +79,7 @@ export class ConfigServiceBase {
       return this._resourceState;
     }
 
-    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted
-    // resolves the master password (env / prompt) only when the config is
-    // encrypted and materializes every encrypted leaf into plaintext.
+    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted resolves the master password (env / prompt) only when the config is encrypted and materializes every encrypted leaf into plaintext.
     const decrypted = await configFileStorage.loadDecrypted(configName);
     const { LocalResourceState } = await import('./resource-state.js');
     this._resourceState = LocalResourceState.load(decrypted, configName);
@@ -230,8 +228,7 @@ export class ConfigServiceBase {
       config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
     }
 
-    // Awaited on purpose: a fire-and-forget refresh that loses the write is
-    // silent staleness on the next offline read.
+    // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read.
     await writeRemoteCache(configName, config, version);
 
     this._remoteConfig = config;

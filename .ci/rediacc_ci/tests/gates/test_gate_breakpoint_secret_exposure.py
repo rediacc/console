@@ -49,8 +49,7 @@ BP = paths.from_root(".ci", "breakpoint")
 WORKFLOW = BP / "workflow" / "breakpoint.yml"
 LIVE_WORKFLOW = paths.from_root(".github", "workflows", "breakpoint.yml")
 
-# The expressions that resolve to an access credential. Each one is a value a human
-# can use to reach the running box.
+# The expressions that resolve to an access credential. Each one is a value a human can use to reach the running box.
 CREDENTIAL_EXPRESSIONS = (
     "steps.tunnel.outputs.url",
     "steps.shell.outputs.ssh-connection",
@@ -208,9 +207,7 @@ def test_workflow_commands_never_hit_stdout(gate):
         )
     gate.log_pass("workflow commands stay off stdout under GITHUB_ACTIONS=true")
 
-    # ...and they must still be EMITTED, or masking silently stops protecting the
-    # per-tunnel connector token (which is not a repo secret, so the runner does not
-    # mask it for us). Off-stdout must not become not-at-all.
+    # ...and they must still be EMITTED, or masking silently stops protecting the per-tunnel connector token (which is not a repo secret, so the runner does not mask it for us). Off-stdout must not become not-at-all.
     if "::add-mask::sup3rs3cret" not in result.err:
         gate.log_fail("bp_gha_mask emitted no ::add-mask:: at all -- masking is silently dead")
     if "::warning::careful" not in result.err:

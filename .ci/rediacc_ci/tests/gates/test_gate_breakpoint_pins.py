@@ -121,9 +121,7 @@ def test_every_sha_constant_is_a_real_sha256(gate):
             gate.log_fail(
                 "%s is not 64 lowercase hex chars: %r (%d chars)" % (name, value, len(value))
             )
-    # A pinned artifact per (tool, arch): cloudflared x64/arm64 + tmate x64/arm64. Fewer
-    # means an arch is silently unpinned, and the installer for it would fail on an empty
-    # EXPECTED_SHA rather than on a mismatch.
+    # A pinned artifact per (tool, arch): cloudflared x64/arm64 + tmate x64/arm64. Fewer means an arch is silently unpinned, and the installer for it would fail on an empty EXPECTED_SHA rather than on a mismatch.
     gate.assert_eq(len(declarations), 4, "expected one sha256 per (tool, arch) pair")
     gate.log_pass(
         "all %d BREAKPOINT_*_SHA256_* constants are 64 lowercase hex chars" % len(declarations)
@@ -156,8 +154,7 @@ def test_constants_are_readonly(gate):
 def test_verify_before_use(gate):
     sha_check = re.compile(r"sha256sum -c")
 
-    # cloudflared: the checksum must be verified BEFORE the file is made executable.
-    # Afterwards would mean an unverified binary is already runnable in the state dir.
+    # cloudflared: the checksum must be verified BEFORE the file is made executable. Afterwards would mean an unverified binary is already runnable in the state dir.
     verify = last_line_matching(INSTALL_CF, sha_check)
     use = first_line_matching(INSTALL_CF, CHMOD_X)
     if verify is None:
@@ -171,9 +168,7 @@ def test_verify_before_use(gate):
         )
     gate.log_pass("install-cloudflared.sh verifies (L%d) before chmod +x (L%d)" % (verify, use))
 
-    # tmate: before EXTRACT, which is the stronger requirement -- tar on an
-    # attacker-controlled archive is code execution's near neighbour, and it happens
-    # before any chmod would.
+    # tmate: before EXTRACT, which is the stronger requirement -- tar on an attacker-controlled archive is code execution's near neighbour, and it happens before any chmod would.
     verify = last_line_matching(INSTALL_TMATE, sha_check)
     use = first_line_matching(INSTALL_TMATE, TAR)
     if verify is None:
@@ -192,14 +187,11 @@ def test_no_pipe_to_interpreter_or_sudo(gate):
     for path in (INSTALL_CF, INSTALL_TMATE):
         name = path.name
         code = code_of(path)
-        # `curl | bash` is the shape the deleted installer had in spirit: bytes go from
-        # the network into an interpreter with nothing in between where a checksum could
-        # be.
+        # `curl | bash` is the shape the deleted installer had in spirit: bytes go from the network into an interpreter with nothing in between where a checksum could be.
         hits = [line for line in code.splitlines() if PIPE_TO_INTERPRETER.search(line)]
         if hits:
             gate.log_fail("%s pipes into an interpreter or sudo: %s" % (name, "; ".join(hits)))
-        # No sudo at all: the raw binary needs only chmod +x, and dropping sudo is what
-        # makes this work in a container and on a laptop.
+        # No sudo at all: the raw binary needs only chmod +x, and dropping sudo is what makes this work in a container and on a laptop.
         gate.assert_not_contains(code, "sudo ", "%s must not need sudo" % name)
         gate.assert_not_contains(
             code, "dpkg", "%s must not install a .deb (dpkg runs maintainer scripts as root)" % name
@@ -219,8 +211,7 @@ def test_no_unpinned_download_urls(gate):
         )
         gate.assert_not_contains(code, "/latest/", "%s must not resolve any /latest/ path" % name)
 
-    # CONTROL: the URLs that ARE there must interpolate the pinned version, or the
-    # assertions above are satisfied by a file with no download in it.
+    # CONTROL: the URLs that ARE there must interpolate the pinned version, or the assertions above are satisfied by a file with no download in it.
     gate.assert_contains(
         INSTALL_CF.read_text(encoding="utf-8"),
         "releases/download/${BREAKPOINT_CLOUDFLARED_VERSION}",

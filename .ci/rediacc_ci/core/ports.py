@@ -107,9 +107,7 @@ import sys
 
 from rediacc_ci import proc
 
-# The bash defaults, kept as named constants so a call site that omits an
-# argument and this module cannot drift apart. They are the values the devbox
-# port block and every `run.sh` caller have been using.
+# The bash defaults, kept as named constants so a call site that omits an argument and this module cannot drift apart. They are the values the devbox port block and every `run.sh` caller have been using.
 DEFAULT_RANGE_START = 3000
 DEFAULT_RANGE_END = 3999
 DEFAULT_SLOTS = 100
@@ -117,9 +115,7 @@ DEFAULT_BLOCK_RANGE_START = 17000
 DEFAULT_BLOCK_RANGE_END = 17999
 DEFAULT_BLOCK_SIZE = 10
 
-# How many hex digits of the digest feed the modulo. Named because it is the
-# number that must never change: it decides which port an existing bookmark
-# resolves to.
+# How many hex digits of the digest feed the modulo. Named because it is the number that must never change: it decides which port an existing bookmark resolves to.
 DIGEST_HEX_DIGITS = 8
 
 
@@ -255,8 +251,7 @@ def find_port_block(
 
 # ---------------------------------------------------------------------------
 # argv dispatch -- the surface .ci/lib/{devbox,account,service}.sh call, and
-# what the deleted .ci/lib/find-port.sh shim used to call on their behalf
-# ---------------------------------------------------------------------------
+# what the deleted .ci/lib/find-port.sh shim used to call on their behalf ---------------------------------------------------------------------------
 
 
 def _emit(value: int | None) -> int:

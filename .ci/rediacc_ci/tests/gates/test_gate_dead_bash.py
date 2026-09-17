@@ -77,9 +77,7 @@ def delegation_verdict(
     line = "\n".join(lines)
     if DELEGATE_LEAF not in line:
         return '"%s" no longer runs %s; it runs:%s' % (DELEGATE_KEY, DELEGATE_LEAF, line)
-    # A fixture-rooted invocation is not the real-tree scan. `DEAD_BASH_ROOT` is
-    # exactly how this file points the gate at a temp tree, so a delegate that
-    # sets it would be scanning a fixture while looking like full coverage.
+    # A fixture-rooted invocation is not the real-tree scan. `DEAD_BASH_ROOT` is exactly how this file points the gate at a temp tree, so a delegate that sets it would be scanning a fixture while looking like full coverage.
     if "DEAD_BASH_ROOT" in line:
         return '"%s" sets DEAD_BASH_ROOT, so it scans a fixture and not the real tree:%s' % (
             DELEGATE_KEY,
@@ -137,8 +135,7 @@ def make_fixture(root: pathlib.Path) -> None:
         "bash .ci/scripts/lib/helpers.sh\n",
         encoding="utf-8",
     )
-    # run.sh needs an inbound reference of its own, or it is legitimately an
-    # orphan and every case below inherits that finding. In the real repo the
+    # run.sh needs an inbound reference of its own, or it is legitimately an orphan and every case below inherits that finding. In the real repo the
     # docs name it; here a README plays that role.
     (root / "README.md").write_text("Run the entrypoint with `./run.sh`.\n", encoding="utf-8")
 
@@ -185,9 +182,7 @@ def test_delegation_assertion_fires(gate):
             "\n".join(line for line in pkg_text.splitlines() if '"%s":' % DELEGATE_KEY not in line),
             encoding="utf-8",
         )
-        # EVERY PLANT IS PROVEN TO HAVE LANDED. A substitution that quietly
-        # matched nothing leaves the control running against unmutated source,
-        # which is a green that proves nothing.
+        # EVERY PLANT IS PROVEN TO HAVE LANDED. A substitution that quietly matched nothing leaves the control running against unmutated source, which is a green that proves nothing.
         gate.assert_eq(
             missing.read_text(encoding="utf-8") == pkg_text, False, "the key-removal plant landed"
         )

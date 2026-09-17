@@ -90,18 +90,10 @@ function categorizePackages(
 
     if (!current || current === 'undefined' || !latest || current === latest) continue;
 
-    // SCOPED ENTRIES, `<dir>:<package>`, and the reason they had to exist.
-    // private/account is under an operator freeze, so seven of its dependencies
-    // cannot be upgraded here. Blocking them by bare name was the obvious move and
-    // is WRONG: this list is keyed on the package name alone, and FOUR of those
-    // seven -- @biomejs/biome, typescript, vitest, hono -- are also console's own
-    // dependencies. A bare entry would have silently stopped this gate ever
-    // reporting them for the console tree again, which is weakening a live check
-    // to record a constraint in a different repository.
+    // SCOPED ENTRIES, `<dir>:<package>`, and the reason they had to exist. private/account is under an operator freeze, so seven of its dependencies cannot be upgraded here. Blocking them by bare name was the obvious move and is WRONG: this list is keyed on the package name alone, and FOUR of those seven -- @biomejs/biome, typescript, vitest, hono -- are also console's own
+    // dependencies. A bare entry would have silently stopped this gate ever reporting them for the console tree again, which is weakening a live check to record a constraint in a different repository.
     //
-    // A scoped key is consulted only when categorising that directory, and the
-    // root pass (which passes no scope) can never see one. `:` is safe as the
-    // separator because an npm package name cannot contain it.
+    // A scoped key is consulted only when categorising that directory, and the root pass (which passes no scope) can never see one. `:` is safe as the separator because an npm package name cannot contain it.
     const blockEntry =
       (scope ? blocklist.get(`${scope}:${name}`) : undefined) ?? blocklist.get(name);
     if (blockEntry) {
@@ -236,11 +228,9 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
   let stdout = '';
   let stderr = '';
 
-  // Control seam: forces a failure branch with no network and no waiting, so
-  // --selftest can prove this gate is still able to fail. '1' reproduces a probe
+  // Control seam: forces a failure branch with no network and no waiting, so --selftest can prove this gate is still able to fail. '1' reproduces a probe
   // that produced nothing; 'error-json' reproduces the REAL shape npm emits when
-  // it cannot reach the registry (see the error-key check below), which is the
-  // one that actually shipped as a fail-open.
+  // it cannot reach the registry (see the error-key check below), which is the one that actually shipped as a fail-open.
   const forceMode = process.env.CHECK_DEPS_FORCE_PROBE_FAILURE ?? '';
   const forced = forceMode === '1';
   const forcedErrorJson = forceMode === 'error-json';
@@ -289,13 +279,9 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
     throw new DepsProbeError(`\`${command}\` returned ${typeof parsed}, expected a JSON object.`);
   }
 
-  // The one that actually bit us. `npm outdated --json` does NOT fail loudly when
-  // it cannot reach the registry: it prints a well-formed object whose only key
-  // is `error`, e.g.
+  // The one that actually bit us. `npm outdated --json` does NOT fail loudly when it cannot reach the registry: it prints a well-formed object whose only key is `error`, e.g.
   //   {"error":{"code":"ECONNREFUSED","summary":"request to .../typescript failed",...}}
-  // That parses fine, contains no outdated packages, and therefore reads as
-  // "everything is current" -- the strongest possible claim, made from zero
-  // information. Verified against npm 10 with a dead registry, 2026-08-15.
+  // That parses fine, contains no outdated packages, and therefore reads as "everything is current" -- the strongest possible claim, made from zero information. Verified against npm 10 with a dead registry, 2026-08-15.
   const errorPayload = (parsed as { error?: { code?: string; summary?: string } }).error;
   if (errorPayload) {
     throw new DepsProbeError(
@@ -340,10 +326,7 @@ function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
   const results: PrivateOutdatedResult[] = [];
 
   for (const dir of getPrivatePackageDirs()) {
-    // --package-lock-only so the check works in CI where node_modules is not
-    // installed for private submodule packages. A failure here THROWS rather
-    // than logging and continuing: this loop used to treat an unreachable
-    // registry in one directory as "that directory has nothing outdated".
+    // --package-lock-only so the check works in CI where node_modules is not installed for private submodule packages. A failure here THROWS rather than logging and continuing: this loop used to treat an unreachable registry in one directory as "that directory has nothing outdated".
     const packages = runNpmOutdated(dir, '--package-lock-only');
     if (Object.keys(packages).length > 0) {
       results.push({ dir, name: path.relative(CONSOLE_ROOT, dir), packages });
@@ -377,11 +360,7 @@ async function fetchChangelogUrl(packageName: string): Promise<string | null> {
           const json = JSON.parse(data) as { repository?: { url?: string } };
           const repoUrl = json.repository?.url ?? '';
 
-          // Transform git URL to GitHub releases URL
-          // Examples:
-          //   git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
-          //   git://github.com/owner/repo.git -> https://github.com/owner/repo/releases
-          //   https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
+          // Transform git URL to GitHub releases URL Examples: git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases git://github.com/owner/repo.git -> https://github.com/owner/repo/releases https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
           let changelogUrl: string | null = null;
 
           if (repoUrl.includes('github.com')) {
@@ -431,8 +410,7 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
   return results;
 }
 
-// getMinReleaseAgeMs / startOfNextUtcDay / isWithinFreshnessWindow now live in
-// scripts/lib/release-age.ts, shared with the embed-asset freshness gate.
+// getMinReleaseAgeMs / startOfNextUtcDay / isWithinFreshnessWindow now live in scripts/lib/release-age.ts, shared with the embed-asset freshness gate.
 
 // Cache for version publish timestamps to avoid duplicate registry fetches.
 const publishTimeCache = new Map<string, number | null>();
@@ -730,10 +708,7 @@ async function checkDependencies(): Promise<void> {
     const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(
       packages,
       blocklist,
-      // `name`, NOT `dir`: `dir` is absolute and would make the scoped key depend
-      // on where the repository happens to be checked out -- working on my machine
-      // and matching nothing in CI. `name` is `path.relative(CONSOLE_ROOT, dir)`,
-      // i.e. exactly the `private/account` that a reader would write in the file.
+      // `name`, NOT `dir`: `dir` is absolute and would make the scoped key depend on where the repository happens to be checked out -- working on my machine and matching nothing in CI. `name` is `path.relative(CONSOLE_ROOT, dir)`, i.e. exactly the `private/account` that a reader would write in the file.
       name
     );
     if (dirMustUpgrade.length > 0)
@@ -741,10 +716,7 @@ async function checkDependencies(): Promise<void> {
     if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
   }
 
-  // Defer packages whose `latest` is still inside the freshness window (aged <
-  // 24h, rounded up to the next UTC day): too fresh to be a real "must upgrade".
-  // This auto-resolves as a daily batch once the version ages out — no manual
-  // blocklist churn for every freshly-published patch.
+  // Defer packages whose `latest` is still inside the freshness window (aged < 24h, rounded up to the next UTC day): too fresh to be a real "must upgrade". This auto-resolves as a daily batch once the version ages out — no manual blocklist churn for every freshly-published patch.
   const minReleaseAgeMs = getMinReleaseAgeMs();
   const nowMs = Date.now();
 
@@ -831,9 +803,7 @@ async function checkDependencies(): Promise<void> {
     console.log();
   }
 
-  // Too-new packages are informational, never a failure: they are still within
-  // the freshness window (deferred until the next UTC day after aging 24h) and
-  // surface as a batch once eligible.
+  // Too-new packages are informational, never a failure: they are still within the freshness window (deferred until the next UTC day after aging 24h) and surface as a batch once eligible.
   if (totalTooNew > 0) {
     console.log(
       `${YELLOW}Too new — within freshness window, deferred until next UTC day (${totalTooNew}):${NC}`
@@ -882,14 +852,9 @@ async function checkDependencies(): Promise<void> {
  * non-zero exit, offline and in milliseconds. Run by `--selftest`.
  */
 function selftest(): void {
-  // Two shapes, because they failed open for two different reasons and only the
-  // second one ever shipped. Each must make the gate exit non-zero WITH its own
-  // message, so a gate that merely dies for an unrelated reason cannot pass here.
+  // Two shapes, because they failed open for two different reasons and only the second one ever shipped. Each must make the gate exit non-zero WITH its own message, so a gate that merely dies for an unrelated reason cannot pass here.
   //
-  // process.execArgv carries tsx's own loader flags (--require preflight.cjs,
-  // --import loader.mjs). Without them the child is a bare node that cannot
-  // resolve this file's .js-suffixed TS imports, and the control would "fire"
-  // on a module-resolution error instead of on the thing it is testing.
+  // process.execArgv carries tsx's own loader flags (--require preflight.cjs, --import loader.mjs). Without them the child is a bare node that cannot resolve this file's .js-suffixed TS imports, and the control would "fire" on a module-resolution error instead of on the thing it is testing.
   const cases = [
     { mode: '1', expect: 'did not run', label: 'a probe that produced no output' },
     {
@@ -929,13 +894,8 @@ function selftest(): void {
     }
   }
 
-  // SCOPED BLOCKLIST ENTRIES, both directions. The whole reason `<dir>:<pkg>`
-  // exists is that a BARE entry for a package private/account shares with console
-  // would stop this gate reporting it for CONSOLE too. If that ever silently
-  // starts happening, the freeze note in .deps-upgrade-blocklist has quietly
-  // become a hole in console's own freshness checking, and nothing else would say
-  // so. Driven on a synthetic blocklist rather than the real file, so the controls
-  // keep meaning the same thing when that file is edited.
+  // SCOPED BLOCKLIST ENTRIES, both directions. The whole reason `<dir>:<pkg>` exists is that a BARE entry for a package private/account shares with console would stop this gate reporting it for CONSOLE too. If that ever silently starts happening, the freeze note in .deps-upgrade-blocklist has quietly become a hole in console's own freshness checking, and nothing else would say so.
+  // Driven on a synthetic blocklist rather than the real file, so the controls keep meaning the same thing when that file is edited.
   const probe = new Map<string, BlocklistEntry>([
     ['private/account:typescript', { reason: 'BLOCKER: scoped fixture' }],
     ['glob', { reason: 'BLOCKER: bare fixture' }],

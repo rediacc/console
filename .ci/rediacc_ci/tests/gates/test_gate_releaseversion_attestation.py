@@ -104,8 +104,7 @@ def test_all_attested_passes(gate, fixture):
 
 
 def test_one_unattested_fails(gate, fixture):
-    # THE DEFECT THIS SCRIPT EXISTS TO CATCH, planted: one artifact whose bytes are
-    # not the bytes CI attested. Before the fix this printed a warning and exited 0.
+    # THE DEFECT THIS SCRIPT EXISTS TO CATCH, planted: one artifact whose bytes are not the bytes CI attested. Before the fix this printed a warning and exited 0.
     gate.log_test("one unattested artifact -> fail")
     fixture.artifacts("dist/cli/rdc-linux-x64", "dist/packages/rdc.deb")
     rc = fixture.run_gate(fixture.fake_gh("rdc.deb"))
@@ -129,10 +128,7 @@ def test_no_artifacts_fails(gate, fixture):
 
 
 def test_planted_warning_only_script_passes(gate, fixture):
-    # THE CONTROL. Neuter the failure accounting -- the pre-fix shape, where a
-    # failed verification only produced a warning -- and watch the same unattested
-    # artifact pass. If this planted defect FAILED, test_one_unattested_fails would
-    # not be evidence that the exit path is what makes the check red.
+    # THE CONTROL. Neuter the failure accounting -- the pre-fix shape, where a failed verification only produced a warning -- and watch the same unattested artifact pass. If this planted defect FAILED, test_one_unattested_fails would not be evidence that the exit path is what makes the check red.
     gate.log_test("control: with failures downgraded to warnings, the bad artifact passes")
     fixture.artifacts("dist/cli/rdc-linux-x64", "dist/packages/rdc.deb")
     body = fixture.script.read_text(encoding="utf-8")

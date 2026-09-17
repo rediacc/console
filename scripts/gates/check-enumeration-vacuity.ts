@@ -178,15 +178,10 @@ export const hasVacuityGuard = (src: string): boolean =>
   /\bMIN_[A-Z][A-Z0-9_]*\b/.test(src) ||
   /VACUOUS|vacuous/.test(src) ||
   /\bfloor\b/.test(src) ||
-  // `refuseIfEmpty` from scripts/lib/controls.ts. Added 2026-09-06 with the six
-  // conversions it exists for. This is a NARROWING of trust rather than a widening:
-  // the helper's only behaviour is to refuse an empty corpus, so a call to it cannot
-  // be a guard that does nothing, which is more than the three patterns above can
-  // promise. `MIN_X` satisfies the first line whether or not anything compares it,
-  // and this file's own output says so under "Blind spot".
+  // `refuseIfEmpty` from scripts/lib/controls.ts. Added 2026-09-06 with the six conversions it exists for. This is a NARROWING of trust rather than a widening: the helper's only behaviour is to refuse an empty corpus, so a call to it cannot be a guard that does nothing, which is more than the three patterns above can promise. `MIN_X` satisfies the first line whether or not
+  // anything compares it, and this file's own output says so under "Blind spot".
   /\brefuseIfEmpty\s*\(/.test(src) ||
-  // An explicit empty-corpus refusal written in the repo's older words. Anchored on
-  // "Refusing to run" plus "to scan" so a stray "refusing" in prose cannot satisfy it.
+  // An explicit empty-corpus refusal written in the repo's older words. Anchored on "Refusing to run" plus "to scan" so a stray "refusing" in prose cannot satisfy it.
   /Refusing to run:[^\n]*to scan/.test(src) ||
   /refusing to pass|proved nothing|lost its subject|lost the corpus/.test(src);
 
@@ -258,17 +253,10 @@ function selftest(): number {
     'CONTROL: another git subcommand in argv form is not an enumeration',
     !enumerates("execFileSync('git', ['rev-parse', 'HEAD'])")
   );
-  // THE CLAIM THAT WAS FALSE, now checked on the line that carries it rather than on
-  // the whole file. Feeding this file's entire source to `enumerates` does NOT work, and
-  // the reason is worth keeping: `stripComments` removes `/* ... */` blocks, and this
-  // file's source contains the literal regex `/\/\*[\s\S]*?\*\//g` inside that very
+  // THE CLAIM THAT WAS FALSE, now checked on the line that carries it rather than on the whole file. Feeding this file's entire source to `enumerates` does NOT work, and the reason is worth keeping: `stripComments` removes `/* ... */` blocks, and this file's source contains the literal regex `/\/\*[\s\S]*?\*\//g` inside that very
   // function, so a self-scan opens a block comment at that regex and swallows the code
-  // after it. That is the "a quoted body is data, not code" class this gate already
-  // knows, arriving from the other direction: here a piece of CODE reads as the opening
-  // of a comment. It is harmless against the real corpus, where `/*` inside a string
-  // literal is rare and only ever HIDES an enumeration from a gate that would then
-  // report it as guardless rather than as absent, but it is a real edge and it belongs
-  // written down instead of discovered again.
+  // after it. That is the "a quoted body is data, not code" class this gate already knows, arriving from the other direction: here a piece of CODE reads as the opening of a comment. It is harmless against the real corpus, where `/*` inside a string literal is rare and only ever HIDES an enumeration from a gate that would then report it as guardless rather than as absent, but it is
+  // a real edge and it belongs written down instead of discovered again.
   check(
     'THE CLAIM THAT WAS FALSE: this gate enumerates in the form it could not see',
     enumerates(
@@ -351,24 +339,16 @@ function main(argv: string[]): void {
   }
 
   const files = tracked();
-  // THIS GATE ENUMERATES TOO, so it obeys its own rule -- BY HAND, not by its own
-  // detector, and the difference was measured on 2026-09-06 rather than assumed. Feed
-  // this file's own source to `enumerates()` and the answer is FALSE. The predicate
-  // wants `git\s+ls-files`, and every TypeScript enumerator in this repo writes the
-  // argv-array form instead: `execFileSync('git', ['-C', ROOT, 'ls-files', ...])`, where
+  // THIS GATE ENUMERATES TOO, so it obeys its own rule -- BY HAND, not by its own detector, and the difference was measured on 2026-09-06 rather than assumed. Feed this file's own source to `enumerates()` and the answer is FALSE. The predicate wants `git\s+ls-files`, and every TypeScript enumerator in this repo writes the argv-array form instead: `execFileSync('git', ['-C', ROOT,
+  // 'ls-files', ...])`, where
   // a comma stands between the two words. The floor below is real and wired; the claim
   // that the gate is inside its own scope was not.
   //
-  // MEASURED BLIND SPOT: 19 tracked scripts enumerate in a form this predicate cannot
-  // see, and 6 of them carry no vacuity guard, so widening the regex adds 6 findings to
-  // a baseline that may only SHRINK. That makes the widening a CLUSTER (one regex plus
-  // six corpus-derived floors) rather than a one-line fix, and it is tracked as such.
+  // MEASURED BLIND SPOT: 19 tracked scripts enumerate in a form this predicate cannot see, and 6 of them carry no vacuity guard, so widening the regex adds 6 findings to a baseline that may only SHRINK. That makes the widening a CLUSTER (one regex plus six corpus-derived floors) rather than a one-line fix, and it is tracked as such.
   // Reproduce the count with the probe recorded in that item; do not re-derive it by
   // eye, because the narrow and wide sets differ by more than the unguarded six.
   //
-  // Measured 2026-09-04: 67 enumerating scripts out of a wider check/gate-test
-  // population. A floor well under that catches a broken `git ls-files` without pinning
-  // the number to today's tree.
+  // Measured 2026-09-04: 67 enumerating scripts out of a wider check/gate-test population. A floor well under that catches a broken `git ls-files` without pinning the number to today's tree.
   const MIN_SUBJECTS = Number(process.env.ENUM_VACUITY_MIN ?? 40);
   if (files.length < MIN_SUBJECTS) {
     console.error(
@@ -382,9 +362,7 @@ function main(argv: string[]): void {
   const current = findings(read, files).sort();
 
   if (argv.includes('--write-baseline')) {
-    // The shared plumbing, not a fourth hand-rolled copy: check:ci-shape-duplication
-    // refused this file the first time precisely because the read/verdict/refuse/write
-    // sequence had reached three copies across the consumers.
+    // The shared plumbing, not a fourth hand-rolled copy: check:ci-shape-duplication refused this file the first time precisely because the read/verdict/refuse/write sequence had reached three copies across the consumers.
     const ok = commitBaseline({
       path: BASELINE,
       label: path.relative(ROOT, BASELINE),
@@ -409,9 +387,7 @@ function main(argv: string[]): void {
   if (added.length > 0) {
     console.error(`✗ ${added.length} enumerating check(s) with no vacuity guard:`);
     for (const f of added) console.error(`    ${f}`);
-    // Printed line by line rather than as one concatenated block: the concat form is
-    // an idiom two other gates already use, and a third copy is what
-    // check:ci-shape-duplication refuses. Reading better is a bonus, not the reason.
+    // Printed line by line rather than as one concatenated block: the concat form is an idiom two other gates already use, and a third copy is what check:ci-shape-duplication refuses. Reading better is a bonus, not the reason.
     for (const line of [
       '',
       '  A check that scans a corpus and finds nothing prints a tick, and that tick is',

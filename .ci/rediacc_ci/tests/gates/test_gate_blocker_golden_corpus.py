@@ -56,7 +56,7 @@ MIN_CASES = 14
 MIN_REAL = 5
 RECORDED_BP_DIVERGENCE = 5
 
-# THE CORPUS.  <case-id>|<reason>|<ts>|<sh>|<bp>
+# THE CORPUS. <case-id>|<reason>|<ts>|<sh>|<bp>
 CORPUS_TEXT = """\
 real-deps-eslint|v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support|accept|accept|accept
 real-deps-astro|6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line; move it with that migration, not standalone.|accept|accept|accept
@@ -273,9 +273,7 @@ def test_three_way_reproduction(gate, tmp_path):
             "the golden corpus no longer reproduces. If the change was deliberate, "
             "re-record with: bash %s --emit\n%s" % (BASH_TWIN, "\n".join(problems))
         )
-    # Nothing may land in the UNCLASSIFIED bucket: that is a rejection whose
-    # message stopped naming its own reason, which is how a validator turns into
-    # something an author cannot act on.
+    # Nothing may land in the UNCLASSIFIED bucket: that is a rejection whose message stopped naming its own reason, which is how a validator turns into something an author cannot act on.
     if any("UNCLASSIFIED" in column for column in columns):
         gate.log_fail(
             "an implementation rejected a case without a recognisable reason in its message"
@@ -284,9 +282,7 @@ def test_three_way_reproduction(gate, tmp_path):
 
 
 def test_recorded_divergence_is_still_exactly_five(gate):
-    # The corpus is also the RECORD of how far the vendored subset drifts. If the
-    # breakpoint copy silently gained or lost a phrase, the divergence count
-    # moves and this fires, which is the only place that drift is visible.
+    # The corpus is also the RECORD of how far the vendored subset drifts. If the breakpoint copy silently gained or lost a phrase, the divergence count moves and this fires, which is the only place that drift is visible.
     diverge = len([row for row in CORPUS if row[2] != row[4]])
     gate.assert_eq(
         diverge,
@@ -335,9 +331,7 @@ def scratch_canonical(gate, scratch: pathlib.Path) -> pathlib.Path:
             "unperturbed canonical"
         )
     (core / "allowlist.py").write_text(text.replace('\n    "tbd",\n', "\n", 1), encoding="utf-8")
-    # AND IT MUST STILL IMPORT. A python file broken by the edit makes every
-    # client fail loudly, which is also a mismatch and would let this control
-    # pass for the wrong reason.
+    # AND IT MUST STILL IMPORT. A python file broken by the edit makes every client fail loudly, which is also a mismatch and would let this control pass for the wrong reason.
     probe = harness.run(
         ["python3", "-m", "rediacc_ci.core.allowlist", "contract"],
         env={"PYTHONPATH": str(core.parent.parent)},
@@ -427,9 +421,7 @@ def test_perturbing_breakpoint_copy_is_caught(gate, tmp_path):
 
 
 def test_breakpoint_original_is_untouched(gate):
-    # Belt and braces on the rule above: the file the three controls copy from
-    # must be identical to what git has, so a future edit to this test that
-    # accidentally writes in place is caught here rather than in another repo.
+    # Belt and braces on the rule above: the file the three controls copy from must be identical to what git has, so a future edit to this test that accidentally writes in place is caught here rather than in another repo.
     git = harness.require_tool("git", "install git")
     result = harness.run(
         [git, "-C", str(paths.repo_root()), "status", "--porcelain", "--", BP_RELPATH]

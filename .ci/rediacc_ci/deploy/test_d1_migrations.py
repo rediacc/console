@@ -112,21 +112,16 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its two guard messages and in the two
-# bash-diagnostic stand-ins.
+# The twin's own name, carried in its two guard messages and in the two bash-diagnostic stand-ins.
 SELF = "test-d1-migrations.sh"
 
-# `jq -r '.regions[].edgeD1.name' regions.json` and `.regions[].d1.name`
-# (twin :55, :59). EDGE FIRST: edge is the release soak environment, so a
-# regression should surface there before it can reach stable on the next
-# promotion. The order is observable in the call log and is the twin's design.
+# `jq -r '.regions[].edgeD1.name' regions.json` and `.regions[].d1.name` (twin :55, :59). EDGE FIRST: edge is the release soak environment, so a regression should surface there before it can reach stable on the next promotion. The order is observable in the call log and is the twin's design.
 REGIONS_FILE = "regions.json"
 EDGE_JQ = ".regions[].edgeD1.name"
 STABLE_JQ = ".regions[].d1.name"
 
 # `REGION_ID="${SOURCE_DB#account-db-}"; REGION_ID="${REGION_ID#edge-account-db-}"`
-# (twin :90-91), in that order. Both are `#` expansions, so each strips only
-# when its prefix is actually there.
+# (twin :90-91), in that order. Both are `#` expansions, so each strips only when its prefix is actually there.
 STABLE_PREFIX = "account-db-"
 EDGE_PREFIX = "edge-account-db-"
 
@@ -147,9 +142,7 @@ TMPCONFIG_RELATIVE = ("workers", "www", "wrangler-migration-test.toml")
 WORKER_SUBDIR = ("workers", "www")
 TMPCONFIG_BASENAME = "wrangler-migration-test.toml"
 
-# `"$SCRIPT_DIR/clone-d1.sh"` (twin :114), where SCRIPT_DIR is
-# `.ci/scripts/deploy`. Relative to the repository root so the cutover to a
-# Python clone-d1 is a one-line change in the box that owns it.
+# `"$SCRIPT_DIR/clone-d1.sh"` (twin :114), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to a Python clone-d1 is a one-line change in the box that owns it.
 CLONE_SCRIPT_RELATIVE = (".ci", "scripts", "deploy", "clone-d1.sh")
 
 # The `sed` address at twin :106 and the `jq` program at twin :107, verbatim.
@@ -167,8 +160,7 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID is required"),
 )
 
-# The generated per-region config (twin :117-127), byte for byte after
-# expansion. `%s` twice: the database name, then its UUID.
+# The generated per-region config (twin :117-127), byte for byte after expansion. `%s` twice: the database name, then its UUID.
 MIGRATION_TEST_TOML = """name = "migration-test"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
@@ -180,18 +172,14 @@ database_id = "%s"
 migrations_dir = "../../private/account/drizzle"
 """
 
-# The `::warning::` the cleanup emits for a delete it could not do. Quoted whole
-# because its WORDING is the repair the twin's comment describes: it must not
-# say "needs manual removal", because the pre-reap step on the next run sweeps
-# anything older than 60 minutes.
+# The `::warning::` the cleanup emits for a delete it could not do. Quoted whole because its WORDING is the repair the twin's comment describes: it must not say "needs manual removal", because the pre-reap step on the next run sweeps anything older than 60 minutes.
 CLEANUP_WARNING = (
     "  ::warning::FAILED to delete test database %s. It is orphaned in the Cloudflare "
     "account; the pre-reap step on the next migration-test run deletes anything older "
     "than 60 minutes, so no manual action is needed unless it survives that."
 )
 
-# The four facts in the module docstring, as constants so a test can assert each
-# by name instead of restating the sentence.
+# The four facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 AN_EMPTY_REGION_LIST_IS_A_GREEN_RUN = True
 THE_WORKSPACE_TAKES_OVER_AFTER_THE_FIRST_REGION = True
 THE_UUID_GUARD_IS_ONLY_FOR_VALID_JSON_WITHOUT_A_UUID = True
@@ -464,8 +452,7 @@ def _one_region(
     tag = channel_tag(source_db)
     region = region_id(source_db)
     db_name = test_db_name(source_db, run_id, run_attempt)
-    # APPENDED BEFORE THE CREATE, so a create that half-succeeded is still
-    # attempted by the trap.
+    # APPENDED BEFORE THE CREATE, so a create that half-succeeded is still attempted by the trap.
     cleanup_dbs.append(db_name)
 
     print("::group::Test migrations against %s (%s/%s)" % (source_db, tag, region))
@@ -485,8 +472,7 @@ def _one_region(
 
     # `cat >"$TMPCONFIG"` (twin :117), RELATIVE to the current directory. A
     # redirection that cannot be opened is bash's own message and `set -e`; this
-    # prints its own sentence with the same stream and the same status, the same
-    # ruling as `_chdir`.
+    # prints its own sentence with the same stream and the same status, the same ruling as `_chdir`.
     tmpconfig = os.path.join(*TMPCONFIG_RELATIVE)
     try:
         with open(tmpconfig, "w", encoding="utf-8") as handle:
@@ -498,8 +484,7 @@ def _one_region(
     _chdir(os.path.join(*WORKER_SUBDIR))
     status = _run(migrations_argv(db_name))
     if status:
-        # FACT 4: the generated config is LEFT BEHIND, and the cwd is left
-        # inside `workers/www`. Neither matters to the trap, which uses names.
+        # FACT 4: the generated config is LEFT BEHIND, and the cwd is left inside `workers/www`. Neither matters to the trap, which uses names.
         raise BashExitError(status)
     # `rm -f wrangler-migration-test.toml` (twin :131).
     with contextlib.suppress(FileNotFoundError):  # `-f`
@@ -555,9 +540,7 @@ def main(argv: list[str]) -> int:
             "All %d regional migration tests passed (%d edge + %d stable)"
             % (len(all_dbs), len(edge_dbs), len(stable_dbs))
         )
-    # `trap cleanup EXIT`, installed at twin :86 and therefore reached by every
-    # exit from here on, including the `set -e` ones. It does not change the
-    # status.
+    # `trap cleanup EXIT`, installed at twin :86 and therefore reached by every exit from here on, including the `set -e` ones. It does not change the status.
     cleanup(cleanup_dbs)
     return code
 

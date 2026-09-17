@@ -119,9 +119,7 @@ ACCOUNT_REL = "private/account"
 # The artifact phase 7 insists on. See the port notes: existence only.
 OUTPUT_REL = "workers/account/dist/account/index.html"
 
-# Every external command, as an argv vector. Named rather than inlined so the
-# ORDER and the ARGUMENTS are both readable in one place -- the order is the
-# gate's control flow and the arguments are what it actually asserts.
+# Every external command, as an argv vector. Named rather than inlined so the ORDER and the ARGUMENTS are both readable in one place -- the order is the gate's control flow and the arguments are what it actually asserts.
 NPM_CI = ["npm", "ci", "--ignore-scripts"]
 TSC = ["npx", "tsc", "--noEmit"]
 TSC_E2E = ["npx", "tsc", "--noEmit", "-p", "e2e/tsconfig.json"]
@@ -151,8 +149,7 @@ def run(argv: list[str], cwd: pathlib.Path) -> int:
     try:
         return subprocess.run(argv, cwd=str(cwd), check=False).returncode
     except OSError as failure:
-        # THE TWO FAILURES ARRIVE AS THE SAME EXCEPTION TYPE, and they must not
-        # get the same exit code. Measured:
+        # THE TWO FAILURES ARRIVE AS THE SAME EXCEPTION TYPE, and they must not get the same exit code. Measured:
         #
         #   args=["definitely_not_a_binary_xyz"], cwd="/tmp"
         #       -> FileNotFoundError errno=2 filename='definitely_not_a_binary_xyz'
@@ -161,9 +158,7 @@ def run(argv: list[str], cwd: pathlib.Path) -> int:
         #   args=["true"], cwd="/etc/hostname"
         #       -> NotADirectoryError errno=20 filename='/etc/hostname'
         #
-        # `filename` is the only thing that separates the first two, so it is
-        # what decides. Bash gives 127 for `command not found` and 1 for a failed
-        # `cd`, and matching both is what keeps the exit codes equal.
+        # `filename` is the only thing that separates the first two, so it is what decides. Bash gives 127 for `command not found` and 1 for a failed `cd`, and matching both is what keeps the exit codes equal.
         if failure.filename == str(cwd):
             return 1
         return 127
@@ -213,9 +208,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     log.info("Backend typecheck passed")
 
-    # Phase 3b: TypeScript typecheck (e2e). See the module docstring for the
-    # 2026-08-15 TS2352 that rode a branch unseen because Playwright transpiles
-    # without typechecking.
+    # Phase 3b: TypeScript typecheck (e2e). See the module docstring for the 2026-08-15 TS2352 that rode a branch unseen because Playwright transpiles without typechecking.
     log.step("Typechecking account e2e suite...")
     if run(TSC_E2E, account_dir) != 0:
         log.error("e2e typecheck failed!")
@@ -253,17 +246,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# The selftest's stub toolchain
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The selftest's stub toolchain ---------------------------------------------------------------------------
 #
 # THE STUBS ARE REAL EXECUTABLES ON A REAL PATH, not a monkeypatched `run`. A
 # seam invented for the test would prove the seam works; putting `npx` and `npm`
-# on PATH exercises the same `subprocess.run` the gate uses in anger, including
-# the argv vectors, the working directories and the exit codes. That is also
-# exactly how the committed ledger
-# `.ci/shadow/w7p2-account-portal.observations.jsonl` drives both sides, so the
-# selftest and the differential agree about what "running the gate" means.
+# on PATH exercises the same `subprocess.run` the gate uses in anger, including the argv vectors, the working directories and the exit codes. That is also exactly how the committed ledger `.ci/shadow/w7p2-account-portal.observations.jsonl` drives both sides, so the selftest and the differential agree about what "running the gate" means.
 
 _NPX_STUB = """#!/usr/bin/env bash
 # Stub npx. Exit codes come from the environment so one script serves every case.
@@ -357,13 +344,10 @@ def selftest() -> int:
                     else:
                         os.environ[key] = value
 
-        # THE CONTROL. Every tool green and the artifact present, so every plant
-        # below is measured against a fixture that was passing.
+        # THE CONTROL. Every tool green and the artifact present, so every plant below is measured against a fixture that was passing.
         ctl.check("CONTROL: a healthy tree passes every phase", run_gate(), 0)
 
-        # PLANT: each of the three typechecks, one at a time. Three plants and
-        # not one, because a loop that stopped invoking the second and third
-        # would look identical to a clean tree.
+        # PLANT: each of the three typechecks, one at a time. Three plants and not one, because a loop that stopped invoking the second and third would look identical to a clean tree.
         ctl.check("PLANT: a frontend typecheck failure is caught", run_gate(STUB_FE_RC="1"), 1)
         ctl.check("PLANT: a backend typecheck failure is caught", run_gate(STUB_BE_RC="2"), 1)
         ctl.check("PLANT: an e2e typecheck failure is caught", run_gate(STUB_E2E_RC="1"), 1)
@@ -380,12 +364,10 @@ def selftest() -> int:
             1,
         )
 
-        # ITS MIRROR: the artifact present makes phase 7 pass, so the plant
-        # above fired on the artifact and not on something else.
+        # ITS MIRROR: the artifact present makes phase 7 pass, so the plant above fired on the artifact and not on something else.
         ctl.check("MIRROR: the artifact present makes phase 7 pass", run_gate(output=True), 0)
 
-        # PLANT: phase 4 is a WARNING. It must NOT change the exit code, which is
-        # the whole distinction between it and the six phases around it.
+        # PLANT: phase 4 is a WARNING. It must NOT change the exit code, which is the whole distinction between it and the six phases around it.
         ctl.check(
             "MIRROR: a lint failure warns and does NOT fail the gate", run_gate(STUB_LINT_RC="1"), 0
         )
@@ -395,8 +377,7 @@ def selftest() -> int:
             0,
         )
 
-        # PLANT: phase 1. An absent node_modules takes the install branch, and a
-        # FAILING install kills the gate with no message of its own.
+        # PLANT: phase 1. An absent node_modules takes the install branch, and a FAILING install kills the gate with no message of its own.
         ctl.check(
             "MIRROR: an absent node_modules installs and carries on",
             run_gate(node_modules=False),
@@ -413,10 +394,7 @@ def selftest() -> int:
             0,
         )
 
-        # ORDERING. Phase 2 failing must stop phase 3 from running at all, which
-        # is the property a caller assembling seven independent results would
-        # lose. Proven by planting a failure in BOTH and checking the second
-        # never spoke.
+        # ORDERING. Phase 2 failing must stop phase 3 from running at all, which is the property a caller assembling seven independent results would lose. Proven by planting a failure in BOTH and checking the second never spoke.
         marker = base / "reached-phase-5"
         onb_stub = bindir / "npm"
         onb_stub.write_text(
@@ -436,9 +414,7 @@ def selftest() -> int:
         ctl.check("ORDER: the marker proves it", marker.exists(), True)
         write_stubs(bindir)
 
-        # THE COMMAND VECTORS THEMSELVES. A port that ran `tsc` without
-        # `--noEmit` would EMIT files into the tree and still exit 0, and every
-        # control above would stay green. Asserted directly.
+        # THE COMMAND VECTORS THEMSELVES. A port that ran `tsc` without `--noEmit` would EMIT files into the tree and still exit 0, and every control above would stay green. Asserted directly.
         ctl.check("ARGV: the typecheck really passes --noEmit", TSC, ["npx", "tsc", "--noEmit"])
         ctl.check(
             "ARGV: the e2e typecheck points at its own tsconfig",
@@ -451,8 +427,7 @@ def selftest() -> int:
             ["npm", "ci", "--ignore-scripts"],
         )
 
-        # A MISSING BINARY IS 127, NOT A TRACEBACK. Driven against an empty PATH
-        # so the failure is real rather than simulated.
+        # A MISSING BINARY IS 127, NOT A TRACEBACK. Driven against an empty PATH so the failure is real rather than simulated.
         saved_path = os.environ.get("PATH", "")
         os.environ["PATH"] = str(base / "definitely-not-here")
         try:

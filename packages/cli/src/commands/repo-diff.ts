@@ -276,8 +276,7 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
     functionName: 'repository_diff',
     machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
-    // #74: both sides of the diff are GUIDs inside this family, so the family's
-    // recorded placement is the datastore renet must read them from.
+    // #74: both sides of the diff are GUIDs inside this family, so the family's recorded placement is the datastore renet must read them from.
     datastore: await recordedDatastoreMount(repoKey),
     params: { repository: repoKey, ...params },
     debug: options.debug,

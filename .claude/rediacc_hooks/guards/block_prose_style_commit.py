@@ -61,16 +61,9 @@ CHAIN = "pre-bash"
 TWIN = None
 ORDER = 40
 
-# THE HEREDOC ARM, which is the one this repository's commits actually travel
-# through: `git commit -F - <<'EOF' ... EOF` puts the whole body somewhere argv
-# parsing cannot see it, so losing this loop means every multi-paragraph message
-# goes UNEXAMINED while the guard still reports as installed.
+# THE HEREDOC ARM, which is the one this repository's commits actually travel through: `git commit -F - <<'EOF' ... EOF` puts the whole body somewhere argv parsing cannot see it, so losing this loop means every multi-paragraph message goes UNEXAMINED while the guard still reports as installed.
 #
-# THE FIRST DECLARATION HERE WAS `if not _is_target(command):` -> `if False:`, and
-# `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: examining
-# every command instead of the commit-shaped ones changed no answer, because none
-# of the non-target cases carries a `-m` or a `--body` for the parser to find. The
-# control was right and the declaration moved.
+# THE FIRST DECLARATION HERE WAS `if not _is_target(command):` -> `if False:`, and `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: examining every command instead of the commit-shaped ones changed no answer, because none of the non-target cases carries a `-m` or a `--body` for the parser to find. The control was right and the declaration moved.
 DEFECT = ("for _, body in HEREDOC.findall(command):", "for _, body in []:")
 
 UNEXAMINED = (
@@ -295,11 +288,7 @@ def run(ev):
         )
         return hookio.ALLOW
 
-    # THE PAYLOAD'S OWN `cwd`, not the interpreter's. `-F <relative-path>` has to
-    # resolve against where the COMMAND would run. Its sibling guard measured what
-    # `os.getcwd()` costs here: run from a foreign directory, every relative path
-    # resolved elsewhere and six refusals silently became passes. Falling back to
-    # the repository root rather than to the process is the same fix.
+    # THE PAYLOAD'S OWN `cwd`, not the interpreter's. `-F <relative-path>` has to resolve against where the COMMAND would run. Its sibling guard measured what `os.getcwd()` costs here: run from a foreign directory, every relative path resolved elsewhere and six refusals silently became passes. Falling back to the repository root rather than to the process is the same fix.
     bodies = messages(command, cwd=ev.default(("cwd",), str(root)))
     if not bodies:
         return hookio.ALLOW

@@ -54,16 +54,13 @@ import sys
 
 # A job must be allowed to take at least this multiple of its observed worst
 # case before the timeout fires. 1.5 is not arbitrary: Validate Promotion's
-# 28m35s worst case under a 30m ceiling was a ratio of 1.05, and it blew up
-# twice. At 1.5 that ceiling would have had to be 43m, which would have carried
-# both timeouts.
+# 28m35s worst case under a 30m ceiling was a ratio of 1.05, and it blew up twice. At 1.5 that ceiling would have had to be 43m, which would have carried both timeouts.
 MIN_HEADROOM = 1.5
 
 # A baseline nobody refreshes stops describing reality. Loud, not silent.
 MAX_BASELINE_AGE_DAYS = 45
 
-# Vacuity floor. An empty baseline makes every comparison vacuous and the gate
-# would exit 0 reading exactly like full coverage.
+# Vacuity floor. An empty baseline makes every comparison vacuous and the gate would exit 0 reading exactly like full coverage.
 MIN_BASELINE_JOBS = 2
 
 WORKFLOW = ".github/workflows/ci.yml"
@@ -229,12 +226,7 @@ def refresh(root, baseline_path, limit):
                 )
             except ValueError:
                 continue
-            # A job called through a REUSABLE workflow is reported by the API
-            # as "<caller job name> / <called job name>", while the workflow
-            # files know it by the bare name. Record every alias, or the
-            # baseline key silently never matches and the refresh leaves a
-            # stale number behind while reporting success -- which is exactly
-            # what happened the first time this ran.
+            # A job called through a REUSABLE workflow is reported by the API as "<caller job name> / <called job name>", while the workflow files know it by the bare name. Record every alias, or the baseline key silently never matches and the refresh leaves a stale number behind while reporting success -- which is exactly what happened the first time this ran.
             for alias in {name, name.split(" / ")[-1], name.split(" / ")[0]}:
                 if secs > seen.get(alias, 0):
                     seen[alias] = secs

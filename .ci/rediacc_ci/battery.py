@@ -116,10 +116,7 @@ EXIT_CANNOT_RUN = 77
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 # run-all.sh spells this `^(\033\[0;32m)?PASS:` -- it admits the ONE colour
-# log_pass emits and the bare form `ok` emits. Stripping every escape first is the
-# same predicate on content and is not fooled by a helper that changes colour, which
-# is worth having: the shell version's previous spelling used a literal "x1b" and
-# matched NOTHING, so every colour-emitting test contributed zero visible evidence
+# log_pass emits and the bare form `ok` emits. Stripping every escape first is the same predicate on content and is not fooled by a helper that changes colour, which is worth having: the shell version's previous spelling used a literal "x1b" and matched NOTHING, so every colour-emitting test contributed zero visible evidence
 # while the counter stayed right.
 PASS_RE = re.compile(r"^PASS:", re.MULTILINE)
 
@@ -133,9 +130,7 @@ def _colours():
 RED, GREEN, YELLOW, NC = _colours()
 
 
-# ---------------------------------------------------------------------------
-# Isolation, read from the lock
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Isolation, read from the lock ---------------------------------------------------------------------------
 
 
 def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
@@ -165,8 +160,7 @@ def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
             continue
         if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
             continue
-        # A `run` is a command line in the general case, so take the word that
-        # actually names the script rather than assuming it is the whole string.
+        # A `run` is a command line in the general case, so take the word that actually names the script rather than assuming it is the whole string.
         for word in run.split():
             if word.startswith("/".join(GATES_SUBDIR) + "/"):
                 found.add(os.path.basename(word))
@@ -249,9 +243,7 @@ def undeclared_notice(lock_path: pathlib.Path, root: pathlib.Path) -> list[str]:
     ]
 
 
-# ---------------------------------------------------------------------------
-# Running one test
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Running one test ---------------------------------------------------------------------------
 
 
 class Outcome:
@@ -279,19 +271,12 @@ class Outcome:
 
 def run_one(gates_dir: pathlib.Path, name: str, timeout: int = 1800) -> Outcome:
     outcome = Outcome(name)
-    # THROUGH THE SHARED RUNNER. Every one of these is a bash gate test that
-    # spawns children of its own -- `npm run`, `npx tsx`, a planted fixture's
+    # THROUGH THE SHARED RUNNER. Every one of these is a bash gate test that spawns children of its own -- `npm run`, `npx tsx`, a planted fixture's
     # own subshell. `subprocess.run(capture_output=True, timeout=...)` kills the
-    # test script and then blocks in communicate() on pipes a grandchild still
-    # holds, so the battery's per-test timeout could not actually bound a test.
-    # `proc.run` gives each test its own session and signals the whole group.
+    # test script and then blocks in communicate() on pipes a grandchild still holds, so the battery's per-test timeout could not actually bound a test. `proc.run` gives each test its own session and signals the whole group.
     #
-    # THE LAUNCH CHECK MOVED AHEAD OF THE RUN, because it can no longer be read
-    # off the result. `proc.run` reports a failed spawn as rc 127 with the
-    # OSError on stderr, and a gate test whose own body hits `command not found`
-    # exits 127 too -- indistinguishable after the fact. Asking the filesystem
-    # first keeps "could not be launched" (no verdict) apart from "ran and
-    # exited 127" (a verdict, and a failing one).
+    # THE LAUNCH CHECK MOVED AHEAD OF THE RUN, because it can no longer be read off the result. `proc.run` reports a failed spawn as rc 127 with the OSError on stderr, and a gate test whose own body hits `command not found` exits 127 too -- indistinguishable after the fact. Asking the filesystem first keeps "could not be launched" (no verdict) apart from "ran and exited 127" (a
+    # verdict, and a failing one).
     if not os.access(gates_dir / name, os.X_OK):
         # NOT recorded. A test that could not be launched has no verdict, and
         # reporting rc=1 here would say "your gate test failed", which is false.
@@ -305,9 +290,7 @@ def run_one(gates_dir: pathlib.Path, name: str, timeout: int = 1800) -> Outcome:
     return outcome
 
 
-# ---------------------------------------------------------------------------
-# The tracked-tree guard
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The tracked-tree guard ---------------------------------------------------------------------------
 
 
 def tree_state(root: pathlib.Path) -> str:
@@ -332,9 +315,7 @@ def tree_state(root: pathlib.Path) -> str:
     return "\n".join(sorted(ln for ln in proc.stdout.splitlines() if not ln.startswith("??")))
 
 
-# ---------------------------------------------------------------------------
-# The battery
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The battery ---------------------------------------------------------------------------
 
 
 class Report:
@@ -429,8 +410,7 @@ def run_battery(
         report.notices.extend(undeclared_notice(lock_path, root))
 
     requested = jobs if jobs and jobs > 0 else _default_jobs()
-    # SERIAL WHEN THE CONTRACT IS UNKNOWN. Not a warning-and-carry-on: the whole
-    # cost of getting this wrong is a flake that reproduces nowhere.
+    # SERIAL WHEN THE CONTRACT IS UNKNOWN. Not a warning-and-carry-on: the whole cost of getting this wrong is a flake that reproduces nowhere.
     report.jobs = 1 if not schedule.declared else requested
 
     writers = [n for n in names if schedule.bucket(n) == "W"]
@@ -447,8 +427,7 @@ def run_battery(
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, report.jobs)) as pool:
         # The W chain starts at t=0 as ONE unit and T fills the remaining slots
         # while it runs; S is released only once the chain has finished, because a
-        # scanner reading a file mid-rewrite is a hard error that passes on the
-        # very next serial re-run.
+        # scanner reading a file mid-rewrite is a hard error that passes on the very next serial re-run.
         writer_future = pool.submit(chain, writers) if writers else None
         temp_futures = {pool.submit(run_one, gates_dir, n): n for n in temps}
         for future in concurrent.futures.as_completed(temp_futures):
@@ -495,9 +474,7 @@ def run_battery(
 
 
 def _default_jobs() -> int:
-    # 4 on ubuntu-latest. Capped at 8 locally so a bare run on a 20-core box does
-    # not fork-bomb node: several of these tests shell out to npx/tsx, and 20
-    # concurrent node startups cost more in contention than they buy.
+    # 4 on ubuntu-latest. Capped at 8 locally so a bare run on a 20-core box does not fork-bomb node: several of these tests shell out to npx/tsx, and 20 concurrent node startups cost more in contention than they buy.
     return min(8, os.cpu_count() or 4)
 
 
@@ -520,9 +497,7 @@ def print_report(report: Report) -> None:
             print("  - %s" % name)
 
 
-# ---------------------------------------------------------------------------
-# THE SELFTEST. A runner that cannot fail is worse than no runner.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE SELFTEST. A runner that cannot fail is worse than no runner. ---------------------------------------------------------------------------
 
 
 def _fixture(directory: pathlib.Path, name: str, body: str) -> None:
@@ -639,8 +614,7 @@ def selftest(*, verbose: bool = False) -> bool:
             any("manifest.ts" in line for line in undeclared_notice(empty_lock, base)),
         )
         # THE SEAM ITSELF, BOTH WAYS. The controls above pass `env={}` so an
-        # operator shell that happens to export RUN_ALL_WRITERS cannot change what
-        # they measure -- which is exactly what happened on 2026-09-07. These two
+        # operator shell that happens to export RUN_ALL_WRITERS cannot change what they measure -- which is exactly what happened on 2026-09-07. These two
         # prove the seam is still LIVE, so passing `env={}` is a deliberate
         # isolation rather than a variable nothing reads any more.
         controls.check(
@@ -705,8 +679,7 @@ def selftest(*, verbose: bool = False) -> bool:
             any("matched NO test" in f for f in result.failed),
         )
 
-        # A DECLARED lock lets the runner go parallel, which is the other direction
-        # of the serial degradation above.
+        # A DECLARED lock lets the runner go parallel, which is the other direction of the serial degradation above.
         lock.write_text(
             json.dumps(
                 [{"id": "g", "run": ".ci/scripts/test/gates/test-green.sh", "reads": ["tree:x"]}]
@@ -801,16 +774,11 @@ def main(argv: list[str]) -> int:
         )
         return EXIT_OK
 
-    # The controls run BEFORE the battery is judged, and a control failure refuses
-    # to judge it at all: a verdict from an instrument that cannot fail is worse
-    # than no verdict.
+    # The controls run BEFORE the battery is judged, and a control failure refuses to judge it at all: a verdict from an instrument that cannot fail is worse than no verdict.
     #
-    # THE LABEL IS NOT DECORATION. `Controls.report()` prints a bare "N control(s)
-    # passed", and this call happens before anything else, so the FIRST line of
-    # every CI transcript was a count of nothing named. run-all.sh spelled its
+    # THE LABEL IS NOT DECORATION. `Controls.report()` prints a bare "N control(s) passed", and this call happens before anything else, so the FIRST line of every CI transcript was a count of nothing named. run-all.sh spelled its
     # equivalent "tree-guard selftest: N control(s) passed" on one line; the text
-    # lives in rediacc_ci.controls and is shared, so the label goes above it here
-    # rather than into every other caller's output.
+    # lives in rediacc_ci.controls and is shared, so the label goes above it here rather than into every other caller's output.
     print("runner controls, before the battery is judged:")
     if not selftest():
         print(

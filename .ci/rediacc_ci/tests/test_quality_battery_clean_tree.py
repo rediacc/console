@@ -30,8 +30,7 @@ import pytest
 from rediacc_ci.quality import battery_clean_tree as bct
 from rediacc_ci.tests import differential as diff
 
-# The twin's extractor, byte for byte. Substituting a variable would be a
-# rewrite, and a rewrite is the one thing this comparison cannot tolerate.
+# The twin's extractor, byte for byte. Substituting a variable would be a rewrite, and a rewrite is the one thing this comparison cannot tolerate.
 _AWK = r"""awk '
     !inside && /^def tree_state\(/ {
         buf[++n] = $0
@@ -49,13 +48,11 @@ _AWK = r"""awk '
     }
 ' battery.py 2>/dev/null"""
 
-# Every shape battery.py has held or could hold, plus the near-misses that decide
-# whether this gate refuses. The comment on each line is the property it is there
+# Every shape battery.py has held or could hold, plus the near-misses that decide whether this gate refuses. The comment on each line is the property it is there
 # for; a case with no property is a case that will be deleted the first time
 # someone tidies this file.
 GUARD_SHAPES = [
-    # The LIVE form: a multi-line def whose body ends where a flush-left comment
-    # begins, which is exactly what follows tree_state in battery.py.
+    # The LIVE form: a multi-line def whose body ends where a flush-left comment begins, which is exactly what follows tree_state in battery.py.
     (
         "def tree_state(root: pathlib.Path) -> str:\n"
         '    """doc"""\n'
@@ -98,8 +95,7 @@ def test_extract_guard_matches_awk(tmp_path: pathlib.Path, text: str) -> None:
     code, out, err = diff.bash_streams(_AWK, cwd=str(tmp_path))
     assert code == 0, err
     # `GUARD="$(awk ...)"` -- the command substitution strips trailing newlines,
-    # and the port's caller does the same with `.rstrip("\n")`. Compared in that
-    # form because that is the value the refusal test actually sees.
+    # and the port's caller does the same with `.rstrip("\n")`. Compared in that form because that is the value the refusal test actually sees.
     assert bct.extract_guard(text).rstrip("\n") == out.rstrip("\n")
 
 
@@ -158,13 +154,9 @@ def test_the_argv_spelling_is_why_the_substring_test_had_to_go() -> None:
     assert not bct.GIT_STATUS_RE.search('["git", "diff", "--name-only"]')
 
 
-# ---------------------------------------------------------------------------
-# The drive harness
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The drive harness ---------------------------------------------------------------------------
 
-# The twin's `drive`, with the guard source and repo passed exactly as it passes
-# them: the two heredocs are QUOTED, so the driver's head and tail are literal,
-# and the repo arrives as an argv rather than as an interpolated literal.
+# The twin's `drive`, with the guard source and repo passed exactly as it passes them: the two heredocs are QUOTED, so the driver's head and tail are literal, and the repo arrives as an argv rather than as an interpolated literal.
 _DRIVE = """
 cat > drive.py <<'HEAD'
 import pathlib
@@ -256,11 +248,7 @@ def test_make_repo_builds_what_the_assertions_assume(tmp_path: pathlib.Path) -> 
     assert code == 0, err
     assert out.rstrip("\n") == "?? untracked.txt"
 
-    # `rstrip("\n")`, NOT `.strip()`. Porcelain status lines begin with a
-    # two-character status field, and for a modified-but-unstaged file the first
-    # of those two characters is a SPACE: the line is exactly " M tracked.txt".
-    # `.strip()` eats that leading space off the first line only, which turned
-    # this assertion into a sorting puzzle the first time it was written.
+    # `rstrip("\n")`, NOT `.strip()`. Porcelain status lines begin with a two-character status field, and for a modified-but-unstaged file the first of those two characters is a SPACE: the line is exactly " M tracked.txt". `.strip()` eats that leading space off the first line only, which turned this assertion into a sorting puzzle the first time it was written.
     code, out, err = diff.bash_streams("git status --porcelain -uall", cwd=str(dirty))
     assert code == 0, err
     assert sorted(out.rstrip("\n").split("\n")) == [" M tracked.txt", "?? untracked.txt"]

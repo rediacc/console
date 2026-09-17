@@ -27,8 +27,7 @@ ROOT = guardcorpus.repo_root()
 
 # A floor, not a count. The port lands over several phases, so an exact number
 # would be wrong the day after it was written; a floor still catches the case
-# this exists for, which is the glob in `guards.stems()` collapsing to nothing
-# and every assertion below passing over an empty set.
+# this exists for, which is the glob in `guards.stems()` collapsing to nothing and every assertion below passing over an empty set.
 MIN_PORTS = 5
 
 
@@ -45,9 +44,7 @@ def test_every_module_declares_the_contract(stem):
     module = guards.load(stem)
     assert module.CHAIN in guards.CHAINS, "%s declares chain %r" % (stem, module.CHAIN)
     # TWIN = None IS ADMITTED, for a guard that was never bash. See
-    # `guards.twin_of` for why the sentinel exists and what replaces the oracle.
-    # A STRING TWIN is still held to the chain-qualification rule: the looseness
-    # is about whether an oracle exists, never about how one is spelled.
+    # `guards.twin_of` for why the sentinel exists and what replaces the oracle. A STRING TWIN is still held to the chain-qualification rule: the looseness is about whether an oracle exists, never about how one is spelled.
     assert module.TWIN is None or isinstance(module.TWIN, str)
     if module.TWIN is not None:
         assert module.TWIN.startswith(module.CHAIN + "/"), (
@@ -70,8 +67,7 @@ def test_no_two_modules_share_a_twin():
     seen = {}
     for stem in guards.stems():
         twin = guards.load(stem).TWIN
-        # None is not a claim on anything, so several guards may carry it. The
-        # assertion is about two ports of ONE bash file, and there is no file.
+        # None is not a claim on anything, so several guards may carry it. The assertion is about two ports of ONE bash file, and there is no file.
         if twin is None:
             continue
         assert twin not in seen, "%s and %s both claim %s as their twin" % (
@@ -182,8 +178,7 @@ def test_declared_order_is_the_chain_settings_json_runs():
             )
     assert not wrong, "\n".join(wrong)
 
-    # And the shape, so a chain whose numbers are individually right but jointly
-    # broken (a gap, a repeat, a base of zero) is a failure rather than a shrug.
+    # And the shape, so a chain whose numbers are individually right but jointly broken (a gap, a repeat, a base of zero) is a failure rather than a shrug.
     for chain in sorted({guards.load(s).CHAIN for s in guards.stems()}):
         declared = [m.ORDER for m in guards.by_chain(chain)]
         assert declared == list(range(declared[0], declared[0] + len(declared))), (
@@ -221,14 +216,11 @@ def test_by_chain_covers_every_module():
     assert covered == {guards.load(s).__name__ for s in guards.stems()}
 
 
-# ---------------------------------------------------------------------------
-# The entry point
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The entry point ---------------------------------------------------------------------------
 
 # A payload nothing refuses, and one that at least one pre-bash guard does. The
 # second is `git push --force`, which block-git-force-push.sh exists for; the
-# assertion below does not name that guard, only that SOMETHING in the chain
-# says no, so it stays true as the port set grows.
+# assertion below does not name that guard, only that SOMETHING in the chain says no, so it stays true as the port set grows.
 BENIGN = '{"tool_input":{"command":"echo hello"}}'
 REFUSED = '{"tool_input":{"command":"git push --force origin main"}}'
 

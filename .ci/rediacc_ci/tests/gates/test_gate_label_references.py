@@ -56,8 +56,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-label-references.sh"
 
-# test_real_tree_is_clean_and_excludes_this_file and the added inertness control
-# both drive the subject over the real .github and .ci trees. See the docstring.
+# test_real_tree_is_clean_and_excludes_this_file and the added inertness control both drive the subject over the real .github and .ci trees. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-label-references.sh"
@@ -93,8 +92,7 @@ def label(suffix: str) -> str:
     return "%s-%s" % (STEM, suffix)
 
 
-# One reference of every consumption shape, as TEMPLATES. Grouped by the fixture
-# file each lands in, in the twin's order, so the two can be read side by side.
+# One reference of every consumption shape, as TEMPLATES. Grouped by the fixture file each lands in, in the twin's order, so the two can be read side by side.
 WORKFLOW_TEMPLATES = (
     "    if: contains(github.event.pull_request.labels.*.name, '%s')",
     "    run: gh api -f 'labels[]=%s'",

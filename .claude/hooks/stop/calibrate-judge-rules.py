@@ -36,8 +36,7 @@ import wl_judge
 import wl_shapedup as SD
 import worklist_messages as M
 
-# -- the class-sweep corpus --------------------------------------------------
-# (label, expected, fix-set commit subjects, the session's final message)
+# -- the class-sweep corpus -------------------------------------------------- (label, expected, fix-set commit subjects, the session's final message)
 SWEEP_CASES = [
     (
         "guard matched a mention, not a target",
@@ -118,8 +117,7 @@ SWEEP_CASES = [
     ),
 ]
 
-# -- the brave-default corpus ------------------------------------------------
-# (label, expected, the remaining line as the judge sees it)
+# -- the brave-default corpus ------------------------------------------------ (label, expected, the remaining line as the judge sees it)
 BRAVE_CASES = [
     (
         "MEASURED: keep carrying it",
@@ -177,15 +175,10 @@ def sweep_extra(fixset):
     }
 
 
-# The third rule's fixtures. Unlike the two above, this rule's TRIGGER is mechanical, so a
-# fixture supplies the instances a counter would have measured and asks only the judged
-# half: should these become one thing, and if not, what is the DIVERGENCE?
+# The third rule's fixtures. Unlike the two above, this rule's TRIGGER is mechanical, so a fixture supplies the instances a counter would have measured and asks only the judged half: should these become one thing, and if not, what is the DIVERGENCE?
 #
-# THE NEGATIVE CASES ARE THE POINT. Every one of them is a real measurement from this repo:
-# `run_gate()` genuinely is duplicated 23 times across three incompatible return contracts,
-# and the findings-report block genuinely is ten distinct shapes across ten gates. A rubric
-# that answers "yes, consolidate" to those is worse than no rubric, because it would push a
-# session to delete exactly the lines that make a green mean something.
+# THE NEGATIVE CASES ARE THE POINT. Every one of them is a real measurement from this repo: `run_gate()` genuinely is duplicated 23 times across three incompatible return contracts, and the findings-report block genuinely is ten distinct shapes across ten gates. A rubric that answers "yes, consolidate" to those is worse than no rubric, because it would push a session to delete
+# exactly the lines that make a green mean something.
 SHAPE_CASES = [
     (
         "the assertion closure, 12 files, 8 byte-identical",
@@ -199,23 +192,11 @@ SHAPE_CASES = [
     (
         "28 hand-rolled mktemp+trap against an existing with_temp_dir",
         "fire",
-        # COORDINATES CORRECTED 2026-09-02, and this is the THIRD fixture in this file
-        # built from a survey table without opening the files. Two of the three pointed at
-        # code that is not the shape they name: :44 in embed-asset-freshness is a heredoc
-        # writing a JSON fixture (the real mktemp+trap is :29 and :32), and :21 in
-        # ci-workflow-invariants is the `source test-helpers.sh` preamble (real pair at
-        # :28-:29). Only the autopilot one was right.
+        # COORDINATES CORRECTED 2026-09-02, and this is the THIRD fixture in this file built from a survey table without opening the files. Two of the three pointed at code that is not the shape they name: :44 in embed-asset-freshness is a heredoc writing a JSON fixture (the real mktemp+trap is :29 and :32), and :21 in ci-workflow-invariants is the `source test-helpers.sh` preamble
+        # (real pair at :28-:29). Only the autopilot one was right.
         #
-        # THE COST WAS MEASURABLE AND IT LOOKED LIKE SOMETHING ELSE. `wl_shapedup.prompt_
-        # section` sends ONLY file:line, never the code, so the model had to open exactly
-        # those lines -- and what it found was a heredoc, an import preamble and a trap,
-        # which are genuinely NOT one shape. It answered `silent`, correctly, on the input
-        # it was given. Across live runs the fixture then flip-flopped (MISS, OK, MISS),
-        # and that noise was nearly diagnosed as rubric drift and "fixed" by rewriting
-        # SHAPE_PROMPT -- which would have tuned the rubric to agree with wrong
-        # coordinates. Worse, an import preamble is what the sibling gate's own control
-        # calls "adoption, not duplication", so one coordinate was pointing at a span that
-        # is legitimately shared.
+        # THE COST WAS MEASURABLE AND IT LOOKED LIKE SOMETHING ELSE. `wl_shapedup.prompt_ section` sends ONLY file:line, never the code, so the model had to open exactly those lines -- and what it found was a heredoc, an import preamble and a trap, which are genuinely NOT one shape. It answered `silent`, correctly, on the input it was given. Across live runs the fixture then
+        # flip-flopped (MISS, OK, MISS), and that noise was nearly diagnosed as rubric drift and "fixed" by rewriting SHAPE_PROMPT -- which would have tuned the rubric to agree with wrong coordinates. Worse, an import preamble is what the sibling gate's own control calls "adoption, not duplication", so one coordinate was pointing at a span that is legitimately shared.
         #
         # The rule above still stands -- when a fixture flips, the fix is the PROMPT --
         # but it assumes the fixture describes real code. VERIFY THE COORDINATES FIRST;
@@ -226,20 +207,13 @@ SHAPE_CASES = [
             ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:29",
         ],
     ),
-    # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited
-    # check-em-dash-surfaces.ts:629 / check-dead-css.ts:181 / check-landmarks.ts:48 as one
-    # "selftest verdict tail" cluster. Checked line by line, they are not one shape: :629
-    # is a `main()` argv preamble, a different cluster entirely. The model answered
-    # `already`, naming the real harness, with the divergence "em-dash-surfaces uses a
+    # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited check-em-dash-surfaces.ts:629 / check-dead-css.ts:181 / check-landmarks.ts:48 as one "selftest verdict tail" cluster. Checked line by line, they are not one shape: :629 is a `main()` argv preamble, a different cluster entirely. The model answered `already`, naming the real harness, with the divergence
+    # "em-dash-surfaces uses a
     # failures array, not a counter; belongs to a different cluster" -- correct, and the
     # fixture was wrong.
     #
-    # That was the SECOND fixture here transcribed from a survey table without checking the
-    # lines. Rather than transcribe a third, it is gone: two verified fire cases and three
-    # verified controls are a calibration set, and a fixture built on unverified
-    # coordinates is worse than no fixture, because it teaches the rubric to agree with a
-    # mistake. Build any replacement from the counter's own output -- which is how the
-    # line-numbering bug in 5607b136d was found.
+    # That was the SECOND fixture here transcribed from a survey table without checking the lines. Rather than transcribe a third, it is gone: two verified fire cases and three verified controls are a calibration set, and a fixture built on unverified coordinates is worse than no fixture, because it teaches the rubric to agree with a mistake. Build any replacement from the
+    # counter's own output -- which is how the line-numbering bug in 5607b136d was found.
     (
         "CONTROL: run_gate has three incompatible return contracts",
         "silent",
@@ -250,13 +224,10 @@ SHAPE_CASES = [
         ],
     ),
     (
-        # THE FIRST VERSION OF THIS FIXTURE WAS WRONG, and the model caught it. It cited
-        # check-dead-css.ts:187 / check-ssr-locale.ts:62 / check-svg-theme-reach.ts:60 as
+        # THE FIRST VERSION OF THIS FIXTURE WAS WRONG, and the model caught it. It cited check-dead-css.ts:187 / check-ssr-locale.ts:62 / check-svg-theme-reach.ts:60 as
         # "the findings report"; those three lines are in fact a byte-identical `check`
         # closure, so `consolidatable: yes` was the CORRECT answer and want=silent was the
-        # error. A negative fixture pointing at real duplication does not test the rubric,
-        # it tests whether the rubric will agree with a mistake. These lines are the actual
-        # bespoke report prose.
+        # error. A negative fixture pointing at real duplication does not test the rubric, it tests whether the rubric will agree with a mistake. These lines are the actual bespoke report prose.
         "CONTROL: the findings report is ten distinct shapes, not one",
         "silent",
         [
@@ -291,11 +262,7 @@ def run_shape_case(expected, instances):
 
 
 def run_case(expected, extra, message, remaining):
-    # Each fixture is a FRESH stop. Without this, the demand a firing fixture
-    # banks would carry into the next one -- the class-sweep follow-up section
-    # would be appended to a brave-default fixture, and the cap would silence
-    # the fourth timid default. Cross-contamination between fixtures would make
-    # this harness measure itself rather than the rubric.
+    # Each fixture is a FRESH stop. Without this, the demand a firing fixture banks would carry into the next one -- the class-sweep follow-up section would be appended to a brave-default fixture, and the cap would silence the fourth timid default. Cross-contamination between fixtures would make this harness measure itself rather than the rubric.
     CS.clear_outstanding()
     BD.BRAVE_DEMAND.clear()
     verdict, err = wl_judge.run_judge(
@@ -318,13 +285,10 @@ def main():
         print(__doc__)
         print("Refusing to run: this calls the real model and costs money. Pass --live.")
         return 0
-    # A scratch TMPDIR so a calibration run never touches the demand markers of
-    # the live session running it.
+    # A scratch TMPDIR so a calibration run never touches the demand markers of the live session running it.
     tmp = tempfile.TemporaryDirectory()
     os.environ["TMPDIR"] = tmp.name
-    # `--only <substring>` re-runs just the fixtures that missed. A rubric
-    # change is judged by the fixture it was made for, and paying for all
-    # fourteen to see two is how a calibration loop stops being run.
+    # `--only <substring>` re-runs just the fixtures that missed. A rubric change is judged by the fixture it was made for, and paying for all fourteen to see two is how a calibration loop stops being run.
     only = ""
     if "--only" in sys.argv:
         only = sys.argv[sys.argv.index("--only") + 1]

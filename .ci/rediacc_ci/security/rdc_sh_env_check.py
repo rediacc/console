@@ -91,9 +91,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The three names `rdc.sh` is allowed to export, in the twin's own spelling and
-# order (`test-rdc-sh-env.sh:73`) -- which is `sort -u` order, not the order the
-# comment on :68 lists them in.
+# The three names `rdc.sh` is allowed to export, in the twin's own spelling and order (`test-rdc-sh-env.sh:73`) -- which is `sort -u` order, not the order the comment on :68 lists them in.
 ALLOWLIST = "NODE_COMPILE_CACHE PATH REDIACC_CONFIG"
 
 # The removed token/mode surface. Fixed strings (`grep -qF`), not patterns.
@@ -113,18 +111,16 @@ SECRET_NAMES = (
     "ACCOUNT_SERVER_API_KEY",
 )
 
-# POSIX `[[:space:]]` inside a single line. `\n` is excluded on purpose: these
-# patterns are applied line by line, exactly as `grep -E` applies them.
+# POSIX `[[:space:]]` inside a single line. `\n` is excluded on purpose: these patterns are applied line by line, exactly as `grep -E` applies them.
 _SP = r"[ \t\v\f\r]"
 
-# `^[[:space:]]*set[[:space:]]+-a([[:space:]]|$)`  (test-rdc-sh-env.sh:53)
+# `^[[:space:]]*set[[:space:]]+-a([[:space:]]|$)` (test-rdc-sh-env.sh:53)
 SET_A_RE = re.compile(r"^%s*set%s+-a(%s|$)" % (_SP, _SP, _SP))
 
-# `(^[[:space:]]*(source|\.)[[:space:]]).*(account_env|private/account/\.env)`
-# (test-rdc-sh-env.sh:60)
+# `(^[[:space:]]*(source|\.)[[:space:]]).*(account_env|private/account/\.env)` (test-rdc-sh-env.sh:60)
 SOURCE_ENV_RE = re.compile(r"(^%s*(source|\.)%s).*(account_env|private/account/\.env)" % (_SP, _SP))
 
-# `^[[:space:]]*export[[:space:]]+[A-Za-z_][A-Za-z0-9_]*`  (test-rdc-sh-env.sh:70)
+# `^[[:space:]]*export[[:space:]]+[A-Za-z_][A-Za-z0-9_]*` (test-rdc-sh-env.sh:70)
 EXPORT_RE = re.compile(r"^%s*export%s+([A-Za-z_][A-Za-z0-9_]*)" % (_SP, _SP))
 
 FIXTURE_ENV = """REDIACC_ACCOUNT_SERVER=http://127.0.0.1:9
@@ -183,9 +179,7 @@ class Tally:
         print("  %s\u2713%s %s" % (GREEN, NC, message), flush=True)
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers. Exported so the differential can drive them without a fixture.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers. Exported so the differential can drive them without a fixture. ---------------------------------------------------------------------------
 
 
 def has_set_a(text: str) -> bool:
@@ -214,9 +208,7 @@ def grep_lines(text: str, pattern: re.Pattern[str]) -> list[str]:
     return [line for line in text.split("\n") if pattern.search(line)]
 
 
-# ---------------------------------------------------------------------------
-# Layer 1
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 1 ---------------------------------------------------------------------------
 
 
 def layer_one(tally: Tally, rdc_sh_text: str) -> None:
@@ -250,9 +242,7 @@ def layer_one(tally: Tally, rdc_sh_text: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Layer 2
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 2 ---------------------------------------------------------------------------
 
 
 def _real_node() -> str:
@@ -280,8 +270,7 @@ def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pa
     ):
         target.mkdir(parents=True, exist_ok=True)
 
-    # `cp "$RDC_SH" "$FIX_ROOT/rdc.sh"` -- ROOT_DIR derives from the copy's own
-    # location, so the copy exercises the same code against fixture siblings.
+    # `cp "$RDC_SH" "$FIX_ROOT/rdc.sh"` -- ROOT_DIR derives from the copy's own location, so the copy exercises the same code against fixture siblings.
     shutil.copy2(rdc_sh, fix_root / "rdc.sh")
 
     (fix_root / ".ci" / "config" / "constants.sh").write_text(FIXTURE_CONSTANTS, encoding="utf-8")
@@ -292,8 +281,7 @@ def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pa
     (fix_root / "packages" / "cli" / "dist" / "cli-bundle.cjs").write_text(
         "// fixture bundle\n", encoding="utf-8"
     )
-    # Pre-seed the skill reference so rdc.sh's regen check is skipped (ref newer
-    # than the bundle -> no `npx tsx` invocation).
+    # Pre-seed the skill reference so rdc.sh's regen check is skipped (ref newer than the bundle -> no `npx tsx` invocation).
     (fix_root / ".claude" / "skills" / "rdc" / "reference.md").write_text(
         "# reference\n", encoding="utf-8"
     )
@@ -384,8 +372,7 @@ def layer_two(tally: Tally, fix: pathlib.Path, rdc_sh: pathlib.Path) -> None:
         for name in SECRET_NAMES:
             if grep_lines(text, re.compile("^%s=" % re.escape(name))):
                 tally.fail("SECRET LEAK: %s present in CLI environment" % name)
-        # `grep -q ... && pass ...`: no PASS line when the grep fails, and no
-        # early exit either. See the module docstring.
+        # `grep -q ... && pass ...`: no PASS line when the grep fails, and no early exit either. See the module docstring.
         if grep_lines(text, config_line):
             tally.ok("CLI environment carries REDIACC_CONFIG=dev only")
 

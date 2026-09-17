@@ -138,9 +138,7 @@ export function selectChanged<T extends PathScopedSpec>(
   const unscoped = specs.filter((s) => s.paths === undefined);
   const scoped = specs.filter((s) => s.paths !== undefined);
   const matched = scoped.filter((s) => changeSet.files.some((f) => matches(f, s.paths ?? [])));
-  // Order is preserved from `specs` rather than concatenating the two buckets: the
-  // pool uses array index as a scheduling tiebreaker, so reordering here would change
-  // the run without changing the set.
+  // Order is preserved from `specs` rather than concatenating the two buckets: the pool uses array index as a scheduling tiebreaker, so reordering here would change the run without changing the set.
   const keep = new Set<T>([...unscoped, ...matched]);
   const chosen = specs.filter((s) => keep.has(s));
   const note =

@@ -95,10 +95,7 @@ import tempfile
 import time
 
 # The twin's `local timeout=180` / `local interval=3` (:100-102) and the bare
-# `sleep 2` on :145. Named rather than inlined so a test can assert the real twin
-# still carries the same three numbers. The differential does NOT shrink them --
-# it nulls the three `sleep` calls instead, so both sides keep the real
-# arithmetic and still perform all 60 probes.
+# `sleep 2` on :145. Named rather than inlined so a test can assert the real twin still carries the same three numbers. The differential does NOT shrink them -- it nulls the three `sleep` calls instead, so both sides keep the real arithmetic and still perform all 60 probes.
 TIMEOUT_SECONDS = 180
 INTERVAL_SECONDS = 3
 SETTLE_SECONDS = 2
@@ -280,8 +277,7 @@ def main(argv: list[str]) -> int:
         (ci_docker_dir / ".env").write_text(env_file_body(dict(os.environ)), encoding="utf-8")
     except OSError as exc:
         # The twin dies here too, rc=1, with bash's own `line 78:` diagnostic,
-        # which this port does not forge. See `ci_start_elite.py` for the same
-        # named divergence and the reason a hard-coded line number is refused.
+        # which this port does not forge. See `ci_start_elite.py` for the same named divergence and the reason a hard-coded line number is refused.
         print("%s/.env: %s" % (ci_docker_dir, exc.strerror), file=sys.stderr, flush=True)
         return 1
 
@@ -321,14 +317,12 @@ def main(argv: list[str]) -> int:
         stderr=subprocess.DEVNULL,
         text=True,
     )
-    # `$(docker inspect ... || echo "missing")` -- command substitution strips
-    # trailing newlines, and the fallback replaces the whole value.
+    # `$(docker inspect ... || echo "missing")` -- command substitution strips trailing newlines, and the fallback replaces the whole value.
     container_status = status.stdout.rstrip("\n") if status.returncode == 0 else "missing"
     if container_status != "running":
         print("Account server container is not running (status: %s)" % container_status, flush=True)
         print("Container logs:", flush=True)
-        # `2>&1` on :150, unlike the two `docker logs` calls inside the wait
-        # loop, which leave stderr on stderr.
+        # `2>&1` on :150, unlike the two `docker logs` calls inside the wait loop, which leave stderr on stderr.
         _docker(["logs", CONTAINER, "--tail", "50"], stderr=subprocess.STDOUT)
         return 1
 
@@ -342,8 +336,7 @@ def main(argv: list[str]) -> int:
             stdout=subprocess.PIPE,
         )
     except FileNotFoundError:
-        # bash still runs the right-hand side of the pipe when the left-hand
-        # command does not exist.
+        # bash still runs the right-hand side of the pipe when the left-hand command does not exist.
         ps = None
     subprocess.run(
         ["grep", "-E", "(NAME|account)"],

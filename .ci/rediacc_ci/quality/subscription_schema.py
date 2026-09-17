@@ -104,25 +104,19 @@ from rediacc_ci.controls import Controls
 SCHEMA_REL = "packages/shared/src/subscription/schema.generated.json"
 RENET_REL = "private/renet"
 
-# The generator, named identically in the three places the twin names it: the
-# invocation, the MISSING hint and the STALE hint. One constant, because a
-# reader copies whichever of the three they happen to be looking at.
+# The generator, named identically in the three places the twin names it: the invocation, the MISSING hint and the STALE hint. One constant, because a reader copies whichever of the three they happen to be looking at.
 GENERATOR = "packages/shared/scripts/generate-subscription-schema.ts"
 
-# The five Go tests that assert the two languages agree. A single `-run`
-# alternation, exactly as the twin passes it.
+# The five Go tests that assert the two languages agree. A single `-run` alternation, exactly as the twin passes it.
 GO_TEST_RUN = (
     "TestGoTypesMatchTypeScriptSchema|TestGoConstantsMatchTypeScriptSchema|"
     "TestSchemaVersion|TestPlanResourcesConsistency|TestPlanFeaturesConsistency"
 )
 
-# The label `require_submodule` prints. Quoted whole because it appears in the
-# warning a developer reads on a fresh clone.
+# The label `require_submodule` prints. Quoted whole because it appears in the warning a developer reads on a fresh clone.
 RENET_LABEL = "Renet submodule (Go schema validation)"
 
-# The status a POSIX shell reports for a command it could not find. Named
-# because Python raises where bash returns, and every subprocess in this module
-# has to translate one into the other.
+# The status a POSIX shell reports for a command it could not find. Named because Python raises where bash returns, and every subprocess in this module has to translate one into the other.
 NOT_FOUND = 127
 
 
@@ -164,11 +158,9 @@ def generate(root: pathlib.Path, out: pathlib.Path) -> int:
             check=False,
         )
     except OSError:
-        # COMMAND NOT FOUND IS 127, NOT AN EXCEPTION, and getting this wrong is
-        # the single easiest way for a shell port to diverge. bash prints
+        # COMMAND NOT FOUND IS 127, NOT AN EXCEPTION, and getting this wrong is the single easiest way for a shell port to diverge. bash prints
         # `npx: command not found` and exits 127; Python raises FileNotFoundError
-        # and, if nothing catches it, produces a traceback and exit 1. The twin
-        # cannot be traced back to, so neither is this.
+        # and, if nothing catches it, produces a traceback and exit 1. The twin cannot be traced back to, so neither is this.
         return NOT_FOUND
     return proc.returncode
 
@@ -193,8 +185,7 @@ def format_through_stdin(root: pathlib.Path, fresh: pathlib.Path, formatted: pat
                 check=False,
             ).returncode
     except OSError:
-        # `if ! npx biome ...` in bash catches a missing binary as 127 and takes
-        # the fallback branch. See `generate` for the same point at more length.
+        # `if ! npx biome ...` in bash catches a missing binary as 127 and takes the fallback branch. See `generate` for the same point at more length.
         status = NOT_FOUND
     if status != 0:
         formatted.write_bytes(fresh.read_bytes())
@@ -217,8 +208,7 @@ def files_differ(a: pathlib.Path, b: pathlib.Path) -> bool:
             check=False,
         )
     except OSError:
-        # An ABSENT `diff` is 127 in a shell, which the twin's `if !` reads as
-        # "they differ". Erring toward STALE rather than toward clean is the
+        # An ABSENT `diff` is 127 in a shell, which the twin's `if !` reads as "they differ". Erring toward STALE rather than toward clean is the
         # right direction and it is the twin's; a port that raised here would
         # turn a missing tool into a traceback.
         return True
@@ -233,18 +223,13 @@ def print_diff(a: pathlib.Path, b: pathlib.Path) -> None:
     unguarded call would abort the gate before it printed its advice.
     """
     # BUILT AS TWO PROCESSES, NOT AS A SHELL STRING. `shell=True` would be the
-    # literal transliteration and it is refused by this repo's own ruff rule
-    # (S602), correctly: a path interpolated into a shell string is an injection
-    # the day a path contains a quote. Two Popens joined by a pipe are what the
-    # shell would have built anyway, and they preserve the two behaviours that
-    # matter: `head` closing the pipe early sends `diff` a SIGPIPE, and neither
-    # exit status is allowed to propagate (the `|| true`).
+    # literal transliteration and it is refused by this repo's own ruff rule (S602), correctly: a path interpolated into a shell string is an injection the day a path contains a quote. Two Popens joined by a pipe are what the shell would have built anyway, and they preserve the two behaviours that matter: `head` closing the pipe early sends `diff` a SIGPIPE, and neither exit status
+    # is allowed to propagate (the `|| true`).
     try:
         diff_proc = subprocess.Popen(["diff", "-u", str(a), str(b)], stdout=subprocess.PIPE)
         head_proc = subprocess.Popen(["head", "-40"], stdin=diff_proc.stdout)
     except OSError:
-        # `|| true` swallows a missing binary in the twin, and this is advisory
-        # output printed under a verdict that has already been reached.
+        # `|| true` swallows a missing binary in the twin, and this is advisory output printed under a verdict that has already been reached.
         return
     if diff_proc.stdout is not None:
         # Closed in THIS process so `diff` sees the pipe close when `head` exits;
@@ -273,9 +258,7 @@ def main(argv: list[str] | None = None) -> int:
 
         status = generate(root, fresh)
         if status != 0:
-            # The twin has no branch here at all: `set -e` aborts with this
-            # status and no message. Returning it reproduces both the code and
-            # the silence, and the generator's own stderr has already been seen.
+            # The twin has no branch here at all: `set -e` aborts with this status and no message. Returning it reproduces both the code and the silence, and the generator's own stderr has already been seen.
             return status
 
         format_through_stdin(root, fresh, formatted)
@@ -413,9 +396,7 @@ def selftest() -> int:
             require_submodule(broken, "L", env={}),
         )
 
-        # -- the formatter fallback ----------------------------------------
-        # A biome that cannot run must leave a usable comparison behind rather
-        # than an empty file, which would make every schema read as STALE.
+        # -- the formatter fallback ---------------------------------------- A biome that cannot run must leave a usable comparison behind rather than an empty file, which would make every schema read as STALE.
         fresh = root / "fresh.json"
         formatted = root / "formatted.json"
         fresh.write_text('{"generated":true}\n', encoding="utf-8")

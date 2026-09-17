@@ -91,18 +91,13 @@ DEVBOX_REL = ".ci/lib/devbox.sh"
 # command position. `"$d" ` / `"${d}" ` at the start of a command.
 BUG_RE = re.compile(r'(^|[;&|(]|then |else |do )[ \t]*"\$\{?d\}?"[ \t]')
 
-# Every expansion of that variable in command-ish position, quoted or not. This
-# is the anti-vacuity denominator: B1 is a scan, and a scan over nothing passes.
+# Every expansion of that variable in command-ish position, quoted or not. This is the anti-vacuity denominator: B1 is a scan, and a scan over nothing passes.
 SITE_RE = re.compile(r"\$\{?d\}?[ \t]")
 
-# The numeric-identity shape B2 forbids: `-u "$(id -u)..."`, with or without the
-# quote, which is correct only where the host's numbering means something inside
-# the container.
+# The numeric-identity shape B2 forbids: `-u "$(id -u)..."`, with or without the quote, which is correct only where the host's numbering means something inside the container.
 NUMERIC_RE = re.compile(r"-u[ \t]+\"?\$\(id -u\)")
 
-# The floor under B1's enumeration. Ten, matching the twin: devbox.sh has carried
-# sixteen call sites since the incident, so a count below this means the
-# enumeration broke rather than the code being clean.
+# The floor under B1's enumeration. Ten, matching the twin: devbox.sh has carried sixteen call sites since the incident, so a count below this means the enumeration broke rather than the code being clean.
 MIN_SITES = 10
 
 
@@ -140,13 +135,9 @@ def grep_c(pattern: re.Pattern, text: str) -> int:
     return len([line for line in text.split("\n") if pattern.search(line)])
 
 
-# ---------------------------------------------------------------------------
-# The controls, built by CONCATENATION.
+# --------------------------------------------------------------------------- The controls, built by CONCATENATION.
 #
-# Never by substituting into a copy of the real file: a substitution silently
-# yields an identical copy when the targeted line is later reworded, and the
-# control then passes against unmutated source.
-# ---------------------------------------------------------------------------
+# Never by substituting into a copy of the real file: a substitution silently yields an identical copy when the targeted line is later reworded, and the control then passes against unmutated source. ---------------------------------------------------------------------------
 
 CONTROL_BAD = '#!/bin/bash\nd="$(devbox_docker)"\n"$d" exec -u vscode "$cid" bash -lc "$*"\n'
 
@@ -199,8 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         for line in hits:
             print("         %s" % line)
 
-    # Anti-vacuity: B1 is a scan, and a scan over nothing passes. Prove the
-    # enumeration actually found the call sites it is supposed to be judging.
+    # Anti-vacuity: B1 is a scan, and a scan over nothing passes. Prove the enumeration actually found the call sites it is supposed to be judging.
     sites = grep_c(SITE_RE, code)
     if sites >= MIN_SITES:
         ok("B1 anti-vacuity: %d docker invocation(s) actually scanned" % sites)
@@ -247,9 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def selftest() -> int:
@@ -322,12 +310,8 @@ def selftest() -> int:
     )
     ctl.check("an INLINE comment survives", code_of("kept # tail\n"), "kept # tail\n")
 
-    # -- the numbering, and the defect it carries ---------------------------
-    # THE TWIN DEFECT, demonstrated rather than described. The offending line is
-    # line 3 of the FILE and is reported as line 1, because `code_of` DROPS the
-    # comment lines before `grep -n` ever numbers anything. A reader following
-    # the number lands above the finding. Carried, because repairing it would
-    # change the gate's output and therefore its differential.
+    # -- the numbering, and the defect it carries --------------------------- THE TWIN DEFECT, demonstrated rather than described. The offending line is line 3 of the FILE and is reported as line 1, because `code_of` DROPS the comment lines before `grep -n` ever numbers anything. A reader following the number lands above the finding. Carried, because repairing it would change the
+    # gate's output and therefore its differential.
     original = '# a\n# b\n"$d" exec x\n'
     ctl.check(
         "TWIN DEFECT: the number is the position in the COMMENT-STRIPPED stream",

@@ -57,9 +57,7 @@ REGION_ID = "env-manifest"
 OPEN_MARKER = "<!-- >>> gen-docs: %s -->" % REGION_ID
 CLOSE_MARKER = "<!-- <<< gen-docs -->"
 
-# The provider's own id line, which is how "the emitter has landed" is decided. A
-# grep for the word `env-manifest` would also match the manifest's own path in a
-# comment, and a comment is not a declaration.
+# The provider's own id line, which is how "the emitter has landed" is decided. A grep for the word `env-manifest` would also match the manifest's own path in a comment, and a comment is not a declaration.
 PROVIDER_ID_RE = re.compile(r"""^\s*id:\s*['"]%s['"],?\s*$""" % re.escape(REGION_ID), re.MULTILINE)
 
 FOOTER_RE = re.compile(
@@ -70,8 +68,7 @@ FOOTER_RE = re.compile(
 def read(rel: str) -> str:
     path = ROOT / rel
     if not path.is_file():
-        # A missing input is never a pass. Naming the path and the root matters
-        # because this module is routinely pointed at a fixture tree.
+        # A missing input is never a pass. Naming the path and the root matters because this module is routinely pointed at a fixture tree.
         msg = "%s does not exist under %s, so nothing below could be checked" % (rel, ROOT)
         raise AssertionError(msg)
     return path.read_text(encoding="utf-8")
@@ -180,12 +177,8 @@ def expected_rows(manifest: dict) -> list[tuple[str, str, str]]:
         rows.append(
             (name, cell("`%s`" % name), cell(shard), cell("; ".join(also) if also else "-"))
         )
-    # SORTED ON THE RAW NAME, NEVER ON THE RENDERED CELL, and the difference is not
-    # theoretical: the first draft sorted the backticked form and disagreed with the
-    # region at `AWS_SES_ACCESS_KEY_ID` against `AWS_SES_ACCESS_KEY_ID_ASIA`. A
-    # closing backtick is 0x60 and an underscore is 0x5F, so wrapping the value
-    # reverses the order of a name and any name that extends it. The emitter sorts on
-    # its row KEY, so this must too.
+    # SORTED ON THE RAW NAME, NEVER ON THE RENDERED CELL, and the difference is not theoretical: the first draft sorted the backticked form and disagreed with the region at `AWS_SES_ACCESS_KEY_ID` against `AWS_SES_ACCESS_KEY_ID_ASIA`. A closing backtick is 0x60 and an underscore is 0x5F, so wrapping the value reverses the order of a name and any name that extends it. The emitter
+    # sorts on its row KEY, so this must too.
     return [r[1:] for r in sorted(rows, key=lambda r: r[0])]
 
 
@@ -203,9 +196,7 @@ def region_body(doc: str) -> list[str] | None:
     raise AssertionError(msg)
 
 
-# A cell boundary is an UNESCAPED pipe. The emitter escapes a `|` inside a value as
-# `\|` precisely so it cannot end a cell, and splitting on the bare character would
-# shift every column after the first value that ever contains one.
+# A cell boundary is an UNESCAPED pipe. The emitter escapes a `|` inside a value as `\|` precisely so it cannot end a cell, and splitting on the bare character would shift every column after the first value that ever contains one.
 CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")
 
 
@@ -315,17 +306,13 @@ def test_the_region_says_exactly_what_the_manifest_says():
     """Set, order, cells and footer, against a reading that never touches the emitter."""
     body = region_body(read(REGISTRY_REL))
     if body is None:
-        # Not a silent pass: the clause above owns the "should it be here" question,
-        # and it fails when the emitter is declared. Here there is nothing to compare.
+        # Not a silent pass: the clause above owns the "should it be here" question, and it fails when the emitter is declared. Here there is nothing to compare.
         print(
             "no %s region in %s yet; the wiring clause owns that case" % (REGION_ID, REGISTRY_REL)
         )
         return
     # NAMES ONLY, AND CHECKED FIRST. `KEY=value` is what an environment file looks
-    # like, and no line of this region may look like one: the table is a map of the
-    # seams, not a copy of the values. It runs ahead of the row comparison so that a
-    # leaked value is reported AS a leaked value, rather than as whichever set or
-    # order clause the same edit happens to trip on the way past.
+    # like, and no line of this region may look like one: the table is a map of the seams, not a copy of the values. It runs ahead of the row comparison so that a leaked value is reported AS a leaked value, rather than as whichever set or order clause the same edit happens to trip on the way past.
     assignments = [line for line in body if re.search(r"`[A-Z][A-Z0-9_]*=", line)]
     assert not assignments, "the region carries something shaped like a VALUE: %s" % assignments[:3]
 

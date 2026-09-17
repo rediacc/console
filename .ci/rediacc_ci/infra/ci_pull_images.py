@@ -128,34 +128,22 @@ SERVER_REPO = "ghcr.io/rediacc/server"
 # The registry `docker login` / `docker logout` name. A bare host, no path.
 REGISTRY_HOST = "ghcr.io"
 
-# `docker images --format "table ..."` then `grep -E`. Kept as two constants so
-# the test can assert the argv rather than re-typing the format string.
+# `docker images --format "table ..."` then `grep -E`. Kept as two constants so the test can assert the argv rather than re-typing the format string.
 #
-# THE `\t` IS TWO CHARACTERS, NOT A TAB, and this is the one thing in this file
-# a Python author gets wrong by reflex. bash does NOT interpret `\t` inside
+# THE `\t` IS TWO CHARACTERS, NOT A TAB, and this is the one thing in this file a Python author gets wrong by reflex. bash does NOT interpret `\t` inside
 # double quotes, so `--format "...{{.Tag}}\t{{.Size}}"` hands docker a literal
-# BACKSLASH followed by `t`, and docker's own template engine is what turns it
-# into a tab. A real tab here reaches docker as a tab, renders the same, and
-# makes the argv differ -- which the differential caught on its first run
-# (`test_the_happy_path_is_five_docker_calls_in_this_order`).
+# BACKSLASH followed by `t`, and docker's own template engine is what turns it into a tab. A real tab here reaches docker as a tab, renders the same, and makes the argv differ -- which the differential caught on its first run (`test_the_happy_path_is_five_docker_calls_in_this_order`).
 IMAGES_FORMAT = "table {{.Repository}}:{{.Tag}}\\t{{.Size}}"
 IMAGES_GREP = "(rediacc|REPOSITORY)"
 
 # `jq 'del(.auths["ghcr.io"])'`, verbatim.
 JQ_DEL_GHCR = 'del(.auths["ghcr.io"])'
 
-# S105 fires on the NAME, not the value: it sees `TOKEN` and calls the string a
-# hardcoded password. It is the twin's error TEXT (line 30), which has to stay
-# byte-identical, and there is nothing secret in it. Same suppression, same
-# reason, as `release_key_canonical.py:149` and `test_build_canonicalise_gpg_key.py:49`.
+# S105 fires on the NAME, not the value: it sees `TOKEN` and calls the string a hardcoded password. It is the twin's error TEXT (line 30), which has to stay byte-identical, and there is nothing secret in it. Same suppression, same reason, as `release_key_canonical.py:149` and `test_build_canonicalise_gpg_key.py:49`.
 MISSING_TOKEN = "GITHUB_TOKEN environment variable is required"  # noqa: S105
 MISSING_ACTOR = "GITHUB_ACTOR environment variable is required"
 
-# bash's own message when a pipeline's command does not resolve, and its status.
-# The twin has no `require_cmd docker` (difference 1 above), so this is the shape
-# a docker-less runner actually sees. The BYTES differ -- bash prefixes
-# `<script>: line 49: ` -- and the differential asserts that difference by name
-# rather than papering over it.
+# bash's own message when a pipeline's command does not resolve, and its status. The twin has no `require_cmd docker` (difference 1 above), so this is the shape a docker-less runner actually sees. The BYTES differ -- bash prefixes `<script>: line 49: ` -- and the differential asserts that difference by name rather than papering over it.
 NO_DOCKER_STATUS = 127
 NOT_FOUND_TAIL = "command not found"
 
@@ -281,9 +269,7 @@ def scrub_docker_config(home: str) -> None:
                 ["jq", JQ_DEL_GHCR, str(cfg)], stdout=out, stderr=null, check=False
             ).returncode
     except OSError:
-        # `command -v jq` said yes and the exec still failed. Treat it as the
-        # failing-jq branch, which deletes the temporary and leaves the config
-        # untouched -- the direction that cannot corrupt the user's file.
+        # `command -v jq` said yes and the exec still failed. Treat it as the failing-jq branch, which deletes the temporary and leaves the config untouched -- the direction that cannot corrupt the user's file.
         code = 1
     if code == 0:
         try:
@@ -329,16 +315,11 @@ def list_pulled_images() -> None:
 
 
 def main(argv: list[str]) -> int:
-    # THE TWIN IGNORES ITS ARGUMENTS ENTIRELY -- no parse_args, no positional
-    # handling -- so `argv` is accepted and unused rather than validated. A port
-    # that refused an unexpected argument would refuse invocations the twin
-    # accepts.
+    # THE TWIN IGNORES ITS ARGUMENTS ENTIRELY -- no parse_args, no positional handling -- so `argv` is accepted and unused rather than validated. A port that refused an unexpected argument would refuse invocations the twin accepts.
     del argv
     env = os.environ
 
-    # STDOUT, not the logger: these are bare `echo`s in the twin (lines 23-26),
-    # so they land on the data stream and not on stderr. Reproduced exactly,
-    # including the leading blank line.
+    # STDOUT, not the logger: these are bare `echo`s in the twin (lines 23-26), so they land on the data stream and not on stderr. Reproduced exactly, including the leading blank line.
     print(flush=True)
     print(RULE, flush=True)
     print(BANNER, flush=True)
@@ -357,15 +338,13 @@ def main(argv: list[str]) -> int:
         env["GITHUB_TOKEN"], env["GITHUB_ACTOR"], registry, renet_tag, web_tag
     )
     if code != 0:
-        # `set -e` on the subshell. THE CLEANUP BELOW IS SKIPPED, and that is
-        # the hazard in the module docstring, not an omission in this port.
+        # `set -e` on the subshell. THE CLEANUP BELOW IS SKIPPED, and that is the hazard in the module docstring, not an omission in this port.
         return code
 
     print(flush=True)
     log.step("Removing Docker credentials...")
     with open(os.devnull, "wb") as null:
-        # `2>/dev/null || true`: a logout that fails is not allowed to end the
-        # run, and its complaint is not shown.
+        # `2>/dev/null || true`: a logout that fails is not allowed to end the run, and its complaint is not shown.
         _run(["docker", "logout", REGISTRY_HOST], stderr=null)
 
     scrub_docker_config(env.get("HOME", ""))

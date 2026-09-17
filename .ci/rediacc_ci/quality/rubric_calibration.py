@@ -87,9 +87,7 @@ from rediacc_ci.controls import Controls
 # The manifest, and the default the twin uses when given no argument.
 DEFAULT_MANIFEST = ".ci/config/rubric-calibration.json"
 
-# The rubric constants and the file each lives in, relative to the repo root.
-# See the module docstring for why SHAPE_PROMPT arrived late and why five other
-# prompts are deliberately absent.
+# The rubric constants and the file each lives in, relative to the repo root. See the module docstring for why SHAPE_PROMPT arrived late and why five other prompts are deliberately absent.
 SOURCES = {
     "SWEEP_PROMPT": ".claude/hooks/stop/wl_classsweep.py",
     "BRAVE_PROMPT": ".claude/hooks/stop/wl_bravedefault.py",
@@ -97,13 +95,10 @@ SOURCES = {
     "SHAPE_PROMPT": ".claude/hooks/stop/wl_shapedup.py",
 }
 
-# FLOOR. Three constants existed when the floor was written. Finding fewer means a
-# rename moved one out of reach and this green would assert nothing about it. See
-# the module docstring: the value is stale by one and is carried unchanged anyway.
+# FLOOR. Three constants existed when the floor was written. Finding fewer means a rename moved one out of reach and this green would assert nothing about it. See the module docstring: the value is stale by one and is carried unchanged anyway.
 MIN_RUBRICS = 3
 
-# 16 hex characters of sha256. Not the full digest, matching the twin, so a
-# recorded hash stays readable in a JSON file a human edits.
+# 16 hex characters of sha256. Not the full digest, matching the twin, so a recorded hash stays readable in a JSON file a human edits.
 HASH_CHARS = 16
 
 
@@ -121,8 +116,7 @@ def hashes(root: pathlib.Path) -> dict[str, str]:
         if not path.exists():
             continue
         # `^NAME = \"\"\"(.*?)\"\"\"` with DOTALL and MULTILINE, non-greedy so the
-        # first closing triple-quote ends the constant. Anchored at the start of a
-        # line so a mention of the name inside another string cannot match.
+        # first closing triple-quote ends the constant. Anchored at the start of a line so a mention of the name inside another string cannot match.
         match = re.search(
             r'^%s = """(.*?)"""' % name, path.read_text(encoding="utf-8"), re.DOTALL | re.MULTILINE
         )
@@ -198,9 +192,7 @@ def main(argv: list[str] | None = None) -> int:
 
     recorded = json.loads(manifest.read_text(encoding="utf-8"))["rubrics"]
 
-    # THE OTHER DIRECTION FIRST, because it is the one that was missing. A
-    # manifest entry naming a rubric that is gone is never visited by the
-    # sha comparison below, and reads as coverage.
+    # THE OTHER DIRECTION FIRST, because it is the one that was missing. A manifest entry naming a rubric that is gone is never visited by the sha comparison below, and reads as coverage.
     orphans = sorted(set(recorded) - set(live))
     if orphans:
         for key in orphans:
@@ -260,16 +252,13 @@ def selftest() -> int:
         truthful = {"rubrics": {k: {"sha": v} for k, v in live.items()}}
         ctl.check("CONTROL: a truthful manifest passes", main([manifest(truthful)]), 0)
 
-        # THE PLANT. One recorded sha no longer describes the text on disk, which
-        # is precisely "a rubric whose calibration describes an older text".
+        # THE PLANT. One recorded sha no longer describes the text on disk, which is precisely "a rubric whose calibration describes an older text".
         first = min(live)
         stale = {"rubrics": {k: {"sha": v} for k, v in live.items()}}
         stale["rubrics"][first] = {"sha": "0" * HASH_CHARS}
         ctl.check("PLANT: one stale sha is caught", main([manifest(stale)]), 1)
 
-        # Every sha stale, so a gate that only ever looks at the first key fails
-        # the same way and this control alone would not distinguish them -- which
-        # is why the single-key plant above exists as well.
+        # Every sha stale, so a gate that only ever looks at the first key fails the same way and this control alone would not distinguish them -- which is why the single-key plant above exists as well.
         allstale = {"rubrics": {k: {"sha": "1" * HASH_CHARS} for k in live}}
         ctl.check("PLANT: every stale sha is caught", main([manifest(allstale)]), 1)
 
@@ -278,24 +267,19 @@ def selftest() -> int:
         missing = {"rubrics": {k: {"sha": v} for k, v in live.items() if k != first}}
         ctl.check("PLANT: an uncalibrated rubric is caught", main([manifest(missing)]), 1)
 
-        # THE DIRECTION THAT WAS MISSING, replanted with the same name the
-        # 2026-09-04 probe used, so the record and the control agree.
+        # THE DIRECTION THAT WAS MISSING, replanted with the same name the 2026-09-04 probe used, so the record and the control agree.
         orphan = {"rubrics": {k: {"sha": v} for k, v in live.items()}}
         orphan["rubrics"]["NO_SUCH_RUBRIC_XYZ"] = {"sha": "2" * HASH_CHARS}
         ctl.check("PLANT: an orphaned manifest entry is caught", main([manifest(orphan)]), 1)
 
-        # ORDER MATTERS: an orphan AND a stale sha must report the orphan, because
-        # a stale-sha report would send the reader to re-calibrate a rubric that
-        # no longer exists.
+        # ORDER MATTERS: an orphan AND a stale sha must report the orphan, because a stale-sha report would send the reader to re-calibrate a rubric that no longer exists.
         both = {"rubrics": {k: {"sha": v} for k, v in live.items()}}
         both["rubrics"][first] = {"sha": "3" * HASH_CHARS}
         both["rubrics"]["NO_SUCH_RUBRIC_XYZ"] = {"sha": "4" * HASH_CHARS}
         ctl.check("ORDER: orphan is reported before stale sha", main([manifest(both)]), 1)
 
         ctl.check("PLANT: a missing manifest is refused", main([str(base / "absent.json")]), 1)
-        # THE MIRROR of every plant above: the truthful manifest, again, AFTER
-        # seven refusals. A gate that got stuck in a failed state would fail here
-        # and nowhere else.
+        # THE MIRROR of every plant above: the truthful manifest, again, AFTER seven refusals. A gate that got stuck in a failed state would fail here and nowhere else.
         ctl.check("MIRROR: the truthful manifest still passes", main([manifest(truthful)]), 0)
 
     return 0 if ctl.report() else 1

@@ -35,9 +35,7 @@ from rediacc_ci import paths, proc
 from rediacc_ci.core import dockerx
 from rediacc_ci.tests import differential as diff
 
-# ---------------------------------------------------------------------------
-# THE FROZEN MEASUREMENTS, docker 29.7.2, 2026-09-06
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE FROZEN MEASUREMENTS, docker 29.7.2, 2026-09-06 ---------------------------------------------------------------------------
 
 # DOCKER_HOST=unix:///nonexistent/docker.sock docker version   -> exit 1
 # DOCKER_HOST=unix:///nonexistent/docker.sock docker info      -> exit 1
@@ -49,11 +47,7 @@ MEASURED_UNREACHABLE_STDERR = (
     "/nonexistent/docker.sock: connect: no such file or directory\n"
 )
 
-# The stdout of that same failing `docker info`, abridged. THE REAL ONE IS 52
-# LINES: a complete Client section listing eight cli-plugins with versions and
-# paths, then a blank line, then a bare "Server:" with nothing under it. The
-# shape is what matters and the shape is preserved: plenty of confident output,
-# and the one section that would have said whether an engine exists is empty.
+# The stdout of that same failing `docker info`, abridged. THE REAL ONE IS 52 LINES: a complete Client section listing eight cli-plugins with versions and paths, then a blank line, then a bare "Server:" with nothing under it. The shape is what matters and the shape is preserved: plenty of confident output, and the one section that would have said whether an engine exists is empty.
 MEASURED_INFO_STDOUT_WHEN_UNREACHABLE = (
     "Client:\n"
     " Version:    29.7.2\n"
@@ -73,13 +67,10 @@ MEASURED_UNKNOWN_VERB_STDERR = (
     "docker: unknown command: docker frobnicate\n\nRun 'docker --help' for more information\n"
 )
 
-# docker --version  -> exit 0 EVEN WITH NO DAEMON (measured with the same bogus
-# DOCKER_HOST). This is why client_version() uses it.
+# docker --version -> exit 0 EVEN WITH NO DAEMON (measured with the same bogus DOCKER_HOST). This is why client_version() uses it.
 MEASURED_VERSION_LINE = "Docker version 29.7.2, build a7dcaa6\n"
 
-# The classic socket-permission message, which is the DENIED case. It contains
-# "connect to the Docker daemon socket", so an unreachable-first classifier reads
-# it as a dead engine and tells the operator to start one that is already up.
+# The classic socket-permission message, which is the DENIED case. It contains "connect to the Docker daemon socket", so an unreachable-first classifier reads it as a dead engine and tells the operator to start one that is already up.
 MEASURED_DENIED_STDERR = (
     "permission denied while trying to connect to the Docker daemon socket at "
     'unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/_ping": '
@@ -91,9 +82,7 @@ VERSION_OK_STDOUT = (
 )
 
 
-# ---------------------------------------------------------------------------
-# The fake binary
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fake binary ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -181,9 +170,7 @@ def ready(make, *, ps_body: str = "") -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY ---------------------------------------------------------------------------
 
 
 def test_the_fake_docker_is_the_one_that_runs(fake_bin):
@@ -209,9 +196,7 @@ def test_the_per_verb_fake_really_distinguishes_verbs(fake_bin):
     assert dockerx.docker(["version"]).ok is False
 
 
-# ---------------------------------------------------------------------------
-# The three-way distinction
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three-way distinction ---------------------------------------------------------------------------
 
 
 def _assert_the_four_states(fake_bin):
@@ -315,14 +300,9 @@ def test_an_unclassifiable_failure_is_unknown_and_not_invented(fake_bin):
     assert "could not classify" in reason
 
 
-# ---------------------------------------------------------------------------
-# MEASUREMENT 2: docker info lies confidently on stdout
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- MEASUREMENT 2: docker info lies confidently on stdout ---------------------------------------------------------------------------
 
-# What a probe written as "did it print anything" looks like in shell. Not a
-# strawman: `.ci/scripts/quality/check-setup-idempotency.sh` and several sibling
-# scripts key on docker output, and the only thing keeping them honest is that
-# they happen to test the status too.
+# What a probe written as "did it print anything" looks like in shell. Not a strawman: `.ci/scripts/quality/check-setup-idempotency.sh` and several sibling scripts key on docker output, and the only thing keeping them honest is that they happen to test the status too.
 NAIVE_OUTPUT_PROBE = "docker info 2>/dev/null | grep -q . && echo HEALTHY || echo DEAD"
 
 
@@ -356,9 +336,7 @@ def test_the_confident_stdout_is_still_reachable_for_diagnosis(fake_bin):
     assert result.stderr == MEASURED_UNREACHABLE_STDERR
 
 
-# ---------------------------------------------------------------------------
-# MEASUREMENT 3: the spelling that forces you to skip the check
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- MEASUREMENT 3: the spelling that forces you to skip the check ---------------------------------------------------------------------------
 
 
 def test_client_version_works_without_an_engine_and_still_checks_status(fake_bin):
@@ -406,9 +384,7 @@ def test_server_version_raises_instead_of_saying_unknown(fake_bin):
     assert dockerx.server_version() == "29.7.2"
 
 
-# ---------------------------------------------------------------------------
-# Output that must not be trusted unchecked
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Output that must not be trusted unchecked ---------------------------------------------------------------------------
 
 
 def test_stdout_raises_on_a_failed_call():
@@ -484,9 +460,7 @@ def test_a_non_object_line_is_refused(fake_bin):
         dockerx.containers()
 
 
-# ---------------------------------------------------------------------------
-# The environment, and DOCKER_HOST scoping
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The environment, and DOCKER_HOST scoping ---------------------------------------------------------------------------
 
 
 def test_the_host_argument_does_not_leak_into_this_process(fake_bin, tmp_path, monkeypatch):
@@ -542,9 +516,7 @@ def test_retries_follow_the_documented_backoff(fake_bin):
     assert result.failure == dockerx.FAILURE_UNREACHABLE
 
 
-# ---------------------------------------------------------------------------
-# The 77 contract
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The 77 contract ---------------------------------------------------------------------------
 
 
 def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
@@ -566,9 +538,7 @@ def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
         matches = {int(m) for m in re.findall(pattern, text, re.MULTILINE)}
         assert matches, "no cannot-run literal found in %s; the pattern has rotted" % rel
         found[rel] = matches
-    # The two shell files also `exit 0`/`exit 1` elsewhere, so the assertion is
-    # membership rather than equality for those, and equality for the two that
-    # name the constant.
+    # The two shell files also `exit 0`/`exit 1` elsewhere, so the assertion is membership rather than equality for those, and equality for the two that name the constant.
     assert found["scripts/ci-runner/pool.ts"] == {dockerx.CANNOT_RUN_RC}
     assert found[".ci/rediacc_ci/check_pytest.py"] == {dockerx.CANNOT_RUN_RC}
     assert dockerx.CANNOT_RUN_RC in found[".ci/scripts/security/shfmt.sh"]
@@ -577,11 +547,7 @@ def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
 
 def _module_run(bindir: pathlib.Path, args: list[str]) -> subprocess.CompletedProcess:
     env = dict(os.environ)
-    # PATH IS ONLY THE FAKE DIRECTORY. Appending the real PATH here would make the
-    # ABSENT case find the developer's real docker through the tail of the list,
-    # and the case would pass by testing something else entirely. Nothing the
-    # child needs comes from PATH: the interpreter is an absolute path and
-    # `paths.repo_root()` is derived from the package's own location.
+    # PATH IS ONLY THE FAKE DIRECTORY. Appending the real PATH here would make the ABSENT case find the developer's real docker through the tail of the list, and the case would pass by testing something else entirely. Nothing the child needs comes from PATH: the interpreter is an absolute path and `paths.repo_root()` is derived from the package's own location.
     env["PATH"] = str(bindir)
     env["PYTHONPATH"] = str(paths.repo_root() / ".ci")
     return subprocess.run(
@@ -707,9 +673,7 @@ def test_an_unknown_verb_is_usage_and_not_cannot_run(fake_bin):
     assert "unknown verb" in done.stderr
 
 
-# ---------------------------------------------------------------------------
-# Hygiene
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Hygiene ---------------------------------------------------------------------------
 
 
 def test_all_names_in_dunder_all_exist():
@@ -737,14 +701,10 @@ def test_no_em_dashes_in_the_module_or_this_file():
 
 # A citation whose target this repository deliberately RETIRED, with the reason.
 #
-# `.ci/lib/setup.sh` is cited here as PROVENANCE, not as a live pointer: this module is
-# the port of it, and each citation records which bash lines a function came from. E1
-# deleted the original once the port landed, so these citations are history and are kept
-# on purpose. Repointing them at the port would make the module cite itself and destroy
+# `.ci/lib/setup.sh` is cited here as PROVENANCE, not as a live pointer: this module is the port of it, and each citation records which bash lines a function came from. E1 deleted the original once the port landed, so these citations are history and are kept on purpose. Repointing them at the port would make the module cite itself and destroy
 # the only record of what came from where; deleting them would lose it outright.
 #
-# The reason is mandatory and the entry must still be CITED, so this cannot quietly
-# become a place where a genuinely vanished file hides.
+# The reason is mandatory and the entry must still be CITED, so this cannot quietly become a place where a genuinely vanished file hides.
 RETIRED_SOURCES = {
     ".ci/lib/setup.sh": (
         "ported into .ci/rediacc_ci/setup/ by E1 and deleted in the same campaign; "

@@ -148,17 +148,14 @@ import tempfile
 from rediacc_ci import log, paths
 
 # `readonly NAME="value"`, as `.ci/config/constants.sh` writes it. Anchored and
-# quote-aware for the same reason `core.toolchain.CONSTANTS_ASSIGN_RE` is: a
-# commented-out line or a `readonly` inside a heredoc must not contribute a hash.
+# quote-aware for the same reason `core.toolchain.CONSTANTS_ASSIGN_RE` is: a commented-out line or a `readonly` inside a heredoc must not contribute a hash.
 CONSTANTS_ASSIGN = r'^readonly\s+([A-Z][A-Z0-9_]*)="([^"]*)"\s*$'
 
 # `KEY=value` in `.devcontainer/toolchain.env`. ACTIONLINT_VERSION lives there
-# (constants.sh:234 re-exports it with `:?`), because the image build reads the
-# same number.
+# (constants.sh:234 re-exports it with `:?`), because the image build reads the same number.
 PINS_RELPATH = (".devcontainer", "toolchain.env")
 
-# uname -m to the arch spelling actionlint uses in its asset names, paired with
-# the constants.sh key holding that asset's sha256.
+# uname -m to the arch spelling actionlint uses in its asset names, paired with the constants.sh key holding that asset's sha256.
 ARCH_TABLE = {
     "x86_64": ("amd64", "ACTIONLINT_SHA256_LINUX_AMD64"),
     "amd64": ("amd64", "ACTIONLINT_SHA256_LINUX_AMD64"),
@@ -171,9 +168,7 @@ ARCH_TABLE = {
 CURL_ARGS = ("-fsSL", "--max-time", "180", "--retry", "3", "--retry-delay", "5")
 
 
-# ---------------------------------------------------------------------------
-# Pins
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pins ---------------------------------------------------------------------------
 
 
 def _assignments(text: str, pattern: str) -> dict[str, str]:
@@ -242,9 +237,7 @@ def cache_dir(version: str) -> pathlib.Path:
     return pathlib.Path(base) / ("actionlint-%s" % version)
 
 
-# ---------------------------------------------------------------------------
-# Acquisition
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Acquisition ---------------------------------------------------------------------------
 
 
 def path_version(binary: str) -> tuple[str, int]:
@@ -318,14 +311,9 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
         "actionlint_%s_linux_%s.tar.gz" % (version, version, arch)
     )
     cache.mkdir(parents=True, exist_ok=True)
-    # PRIVATE STAGING DIR, mirroring `mktemp -d "$CACHE_DIR/al.XXXXXXXX"` in the
-    # twin. The cache lives under a temp root a CI runner shares across every
-    # concurrent invocation, so the fixed `cache / "actionlint.tar.gz"` both
+    # PRIVATE STAGING DIR, mirroring `mktemp -d "$CACHE_DIR/al.XXXXXXXX"` in the twin. The cache lives under a temp root a CI runner shares across every concurrent invocation, so the fixed `cache / "actionlint.tar.gz"` both
     # sides used was one inode they all downloaded into at once; the winner's
-    # unlink then deleted it out from under the losers mid-verify. The twin
-    # carries the measurement (8 racers on a cold cache, 7 exited 2, all with a
-    # false "checksum MISMATCH"). Extraction is staged too, so a half-written
-    # binary can never sit at the final path.
+    # unlink then deleted it out from under the losers mid-verify. The twin carries the measurement (8 racers on a cold cache, 7 exited 2, all with a false "checksum MISMATCH"). Extraction is staged too, so a half-written binary can never sit at the final path.
     stage = pathlib.Path(tempfile.mkdtemp(prefix="al.", dir=str(cache)))
     tmp = stage / "actionlint.tar.gz"
 
@@ -355,17 +343,14 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
         member = archive.getmember("actionlint")
         archive.extract(member, str(stage), filter="data")
     staged = stage / "actionlint"
-    # chmod the STAGED binary and move it in already executable, so there is no
-    # window in which the final path exists but cannot be run.
+    # chmod the STAGED binary and move it in already executable, so there is no window in which the final path exists but cannot be run.
     staged.chmod(0o755)
     staged.replace(binary)
     shutil.rmtree(stage, ignore_errors=True)
     return str(binary)
 
 
-# ---------------------------------------------------------------------------
-# The corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus ---------------------------------------------------------------------------
 
 
 def collect_targets(root: pathlib.Path | None = None) -> list[str]:
@@ -380,9 +365,7 @@ def collect_targets(root: pathlib.Path | None = None) -> list[str]:
         out.extend(
             str(p) for p in sorted((base / ".github" / "workflows").glob(pattern)) if p.is_file()
         )
-    # Workflow TEMPLATES outside .github/, invisible to every other workflow
-    # gate. `.ci/*/workflow/*.yml` is a two-level glob: bash expands the `*`
-    # directory component sorted too.
+    # Workflow TEMPLATES outside .github/, invisible to every other workflow gate. `.ci/*/workflow/*.yml` is a two-level glob: bash expands the `*` directory component sorted too.
     templates: list[str] = []
     ci_dir = base / ".ci"
     if ci_dir.is_dir():
@@ -426,9 +409,7 @@ def collect_targets_status(root: pathlib.Path | None = None) -> int:
     return 0 if pathlib.Path(last).is_file() else 1
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- main ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -456,9 +437,7 @@ def main(argv: list[str]) -> int:
 
     log.step("Running actionlint over %d workflow file(s)" % count)
 
-    # Streams INHERITED. The twin runs actionlint with its stdout and stderr
-    # attached to the gate's own, so a finding lands on the caller's stdout
-    # unbuffered and interleaved with nothing.
+    # Streams INHERITED. The twin runs actionlint with its stdout and stderr attached to the gate's own, so a finding lands on the caller's stdout unbuffered and interleaved with nothing.
     sys.stdout.flush()
     sys.stderr.flush()
     proc = subprocess.run([binary, "-no-color", *targets], check=False)

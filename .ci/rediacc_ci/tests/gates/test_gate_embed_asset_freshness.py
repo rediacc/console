@@ -43,10 +43,7 @@ PROBE = (
     "process.stdout.write(JSON.stringify(EMBED_ASSET_SOURCES.map((s) => s.base)));"
 )
 
-# The gate keys its upstream map on the `base` of each source it knows about.
-# Importing the list costs one tsx start-up, so it is paid once per pytest process
-# rather than once per case. A ONE-SLOT DICT rather than a rebound module global:
-# the value is memoised, not reassigned, so no `global` statement is needed.
+# The gate keys its upstream map on the `base` of each source it knows about. Importing the list costs one tsx start-up, so it is paid once per pytest process rather than once per case. A ONE-SLOT DICT rather than a rebound module global: the value is memoised, not reassigned, so no `global` statement is needed.
 _BASES: dict[str, list[str]] = {}
 
 SUBMODULE_FIX = (
@@ -110,18 +107,12 @@ def run_gate(tmp_path, mapping: dict, blocklist: str | None = None) -> harness.R
     fixture = tmp_path / "upstream.json"
     fixture.write_text(json.dumps(mapping), encoding="utf-8")
     env = {"EMBED_FRESHNESS_FIXTURE": str(fixture)}
-    # `None` MEANS AN EMPTY BLOCKLIST, NOT THE REPOSITORY'S. Leaving
-    # EMBED_BLOCKLIST_FILE unset let the gate read the live
-    # `.ci/policy/.embed-assets-upgrade-blocklist`, and every upstream-map case
-    # here plants its staleness on k3s -- so the day k3s was first held
-    # (2026-09-16, branch 0914-1) `test_fires_when_stale` stopped being able to
-    # fire, and `test_twin_parity` reported the twin passing while this port
-    # failed on the same tree.
+    # `None` MEANS AN EMPTY BLOCKLIST, NOT THE REPOSITORY'S. Leaving EMBED_BLOCKLIST_FILE unset let the gate read the live `.ci/policy/.embed-assets-upgrade-blocklist`, and every upstream-map case here plants its staleness on k3s -- so the day k3s was first held (2026-09-16, branch 0914-1) `test_fires_when_stale` stopped being able to fire, and `test_twin_parity` reported the twin
+    # passing while this port failed on the same tree.
     #
     # These cases are about the GATE, not about today's policy. The bash twin
     # `test-embed-asset-freshness.sh` carries the same fix and the same reason;
-    # they were changed together, because a control isolated on one side of a
-    # differential and coupled on the other is exactly how a verdict diverges.
+    # they were changed together, because a control isolated on one side of a differential and coupled on the other is exactly how a verdict diverges.
     path = tmp_path / "blocklist"
     path.write_text(
         blocklist

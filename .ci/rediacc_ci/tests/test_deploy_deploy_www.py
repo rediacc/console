@@ -56,14 +56,11 @@ BASE_ENV = {
     "CLOUDFLARE_ACCOUNT_ID": "acct-fixture",
 }
 
-# A MODEL of `wrangler d1`, not wrangler. Serves and mutates a JSON state file
-# mapping database name to uuid, so "does this database exist" is a real
-# question with a real answer that a delete and a create both change.
+# A MODEL of `wrangler d1`, not wrangler. Serves and mutates a JSON state file mapping database name to uuid, so "does this database exist" is a real question with a real answer that a delete and a create both change.
 #
 # `d1 info` PRINTS A BANNER BEFORE THE JSON, which is the whole reason the twin
 # runs `sed -n '/^[[:space:]]*[{[]/,$p'` at all. A fake that printed bare JSON
-# would leave that stage unexercised and a port that dropped it would still
-# pass.
+# would leave that stage unexercised and a port that dropped it would still pass.
 FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx` and `npm`. See the test module docstring."""
 import json
@@ -166,10 +163,7 @@ sys.stderr.write("fake wrangler: unmodelled subcommand %r\n" % (rest,))
 sys.exit(127)
 '''
 
-# Everything bash and the port both resolve through PATH. `cat` is here because
-# the twin's heredoc is `cat >wrangler.preview.toml`, `jq` and `sed` because
-# `get_d1_uuid` is those two programs, and `uname` because `common.sh` calls
-# `detect_os`/`detect_arch` at source time.
+# Everything bash and the port both resolve through PATH. `cat` is here because the twin's heredoc is `cat >wrangler.preview.toml`, `jq` and `sed` because `get_d1_uuid` is those two programs, and `uname` because `common.sh` calls `detect_os`/`detect_arch` at source time.
 PATH_MINIMUM = ("cat", "jq", "sed", "tr", "rm", "uname", "dirname", "basename", "env")
 
 
@@ -303,9 +297,7 @@ def _calls(log: str) -> list[str]:
     return [line[len("call: ") :] for line in log.splitlines() if line.startswith("call: ")]
 
 
-# ---------------------------------------------------------------------------
-# The two lanes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two lanes ---------------------------------------------------------------------------
 
 
 def test_production_deploys_with_no_config_flag_and_never_touches_d1(tmp_path) -> None:
@@ -326,8 +318,7 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
 
     proc, calls, config = old
     assert proc.returncode == 0, proc.stderr
-    # THE SHAPE: one info that finds nothing, a create, a second info, the
-    # migrations, the deploy. NO delete, because the database did not exist.
+    # THE SHAPE: one info that finds nothing, a create, a second info, the migrations, the deploy. NO delete, because the database did not exist.
     assert _calls(calls) == [
         "npx wrangler d1 info account-db-pr-379 --json",
         "npx wrangler d1 create account-db-pr-379 --location eeur",
@@ -366,8 +357,7 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
     assert "\u2014 infinite loop." in config, "the twin's em dash is not in the emitted TOML"
     assert "`trailingSlash: 'never'`" in config
     assert "\\`" not in config, "the heredoc's backslash-backtick leaked into the output"
-    # AND THE PORT'S OWN SOURCE CARRIES NO LITERAL EM DASH, which is the reason
-    # the escape is there at all.
+    # AND THE PORT'S OWN SOURCE CARRIES NO LITERAL EM DASH, which is the reason the escape is there at all.
     assert "\u2014" not in PORT_FILE.read_text(encoding="utf-8")
 
 
@@ -414,9 +404,7 @@ def test_the_generated_config_is_removed_on_success_and_kept_on_failure(tmp_path
     assert left.is_file(), "the generated config was cleaned up on a failed deploy"
 
 
-# ---------------------------------------------------------------------------
-# The three named facts
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three named facts ---------------------------------------------------------------------------
 
 
 def test_fact_a_valueless_name_deploys_a_worker_called_true(tmp_path) -> None:
@@ -466,9 +454,7 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
     assert port.db_name_for("pr-account-db") == "account-db-pr-account-db"
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_a_missing_wrangler_toml_refuses_before_anything_else(tmp_path) -> None:
@@ -607,9 +593,7 @@ def test_the_two_root_resolutions_agree(tmp_path) -> None:
     assert calls == ""
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
@@ -624,8 +608,7 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     root = fixture(tmp_path)
     old_proc, old_calls, _ = _run(root, "old", "--name", "pr-3")
 
-    # The port runs out of process, so the plant is applied to a COPY of the
-    # source that the new side is pointed at.
+    # The port runs out of process, so the plant is applied to a COPY of the source that the new side is pointed at.
     planted_file = root / "planted_deploy_www.py"
     source = PORT_FILE.read_text(encoding="utf-8")
     mutant = source.replace(
@@ -669,9 +652,7 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     assert "npx wrangler d1 create account-db-pr-3\n" in new_calls
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_argv_builders_match_the_twins_words() -> None:

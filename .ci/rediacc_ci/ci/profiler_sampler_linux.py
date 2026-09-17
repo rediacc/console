@@ -1,42 +1,24 @@
 #!/usr/bin/env python3
 # Sample this Linux runner's CPU / RAM / disk / network into a TSV log.
 #
-# WHY: standard runners are free and unlimited on this public repo, so the cost
-# of a mis-sized job is not money or wall clock, it is core-minutes burned for
-# nothing. A job that uses ~1 core on a 4-vCPU ubuntu-latest VM burns roughly 4x
-# the cores it needs. Deciding which jobs fit ubuntu-slim (1 vCPU / 5 GB /
-# 14 GB disk, hard 15-minute cap) needs measurements, not guesses.
+# WHY: standard runners are free and unlimited on this public repo, so the cost of a mis-sized job is not money or wall clock, it is core-minutes burned for nothing. A job that uses ~1 core on a 4-vCPU ubuntu-latest VM burns roughly 4x the cores it needs. Deciding which jobs fit ubuntu-slim (1 vCPU / 5 GB / 14 GB disk, hard 15-minute cap) needs measurements, not guesses.
 #
-# CGROUP-FIRST, deliberately. ubuntu-slim runs in an UNPRIVILEGED CONTAINER, not
-# a VM. Inside a container `nproc` and /proc/meminfo report the HOST, so an
-# advisor fed from /proc would read 4 cores / 16 GB on a 1-core / 5 GB runner and
-# be confidently wrong in the one direction that matters. Every sample therefore
-# carries the tier it was resolved at (CGROUP_V2 | CGROUP_V1 | PROC_HOST), and
-# the report refuses to advise from PROC_HOST numbers.
+# CGROUP-FIRST, deliberately. ubuntu-slim runs in an UNPRIVILEGED CONTAINER, not a VM. Inside a container `nproc` and /proc/meminfo report the HOST, so an advisor fed from /proc would read 4 cores / 16 GB on a 1-core / 5 GB runner and be confidently wrong in the one direction that matters. Every sample therefore carries the tier it was resolved at (CGROUP_V2 | CGROUP_V1 |
+# PROC_HOST), and the report refuses to advise from PROC_HOST numbers.
 #
 # NO FORKS IN THE SAMPLE LOOP. Every reading is a `read < file` builtin plus
 # $(( )) arithmetic; timestamps come from $EPOCHREALTIME, and the inter-sample
-# wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free
-# loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a
-# profiler that perturbs a 1-core runner is measuring itself. Disk is the one
-# exception: `df` is an external command, so it is sampled on a decimated
-# cadence (about once a minute) rather than every tick.
+# wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a profiler that perturbs a 1-core runner is measuring itself. Disk is the one exception: `df` is an external command, so it is sampled on a decimated cadence (about once a minute) rather than every tick.
 #
-# Usage:
-#   .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>]
-#   .ci/scripts/ci/profiler/sampler-linux.sh --probe
+# Usage: .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>] .ci/scripts/ci/profiler/sampler-linux.sh --probe
 #
-# Optional env (flags win):
-#   PROFILER_INTERVAL      seconds between samples (default 10)
-#   PROFILER_OUT           TSV output path
-#   PROFILER_RUNNER_LABEL  runner label, e.g. ubuntu-slim (default $RUNNER_LABEL)
+# Optional env (flags win): PROFILER_INTERVAL seconds between samples (default 10) PROFILER_OUT TSV output path PROFILER_RUNNER_LABEL runner label, e.g. ubuntu-slim (default $RUNNER_LABEL)
 #   PROFILER_MAX_SECONDS   self-terminate after this long (default 21600 = 6h,
 #                          GitHub's own job ceiling; stops an orphan running forever)
-#   PROFILER_DISK_EVERY_S  seconds between `df` calls (default 60)
+# PROFILER_DISK_EVERY_S seconds between `df` calls (default 60)
 #   PROFILER_CGROUP_ROOT   cgroup mount to read (default /sys/fs/cgroup; test seam)
 #
-# Run locally:
-#   .ci/scripts/ci/profiler/sampler-linux.sh --probe
+# Run locally: .ci/scripts/ci/profiler/sampler-linux.sh --probe
 #   PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler-linux.sh \
 """Port of `.ci/scripts/ci/profiler/sampler-linux.sh` (627 lines).
 
@@ -236,15 +218,12 @@ import typing
 
 SELF = pathlib.Path(__file__).resolve()
 
-# ubuntu-slim is 1 vCPU / 5 GB. Anything materially above that on a slim runner
-# means the cgroup read failed open and we are looking at the host.
+# ubuntu-slim is 1 vCPU / 5 GB. Anything materially above that on a slim runner means the cgroup read failed open and we are looking at the host.
 SLIM_MEM_CEILING = 6 * 1024 * 1024 * 1024
 SLIM_CPU_CEILING_MILLI = 1500
 
 
-# ---------------------------------------------------------------------------
-# The bash builtins this script is built out of
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The bash builtins this script is built out of ---------------------------------------------------------------------------
 
 
 def is_num(value: str | None) -> bool:
@@ -292,8 +271,7 @@ def _arith(token: str) -> int:
         raise BashArithError(token)
     try:
         if text.lower().startswith("0x"):
-            # The WHOLE string, prefix included: `int("0x1f", 16)` is 31.
-            # `int(text, 0)` would also accept `0b`/`0o`, which bash does not.
+            # The WHOLE string, prefix included: `int("0x1f", 16)` is 31. `int(text, 0)` would also accept `0b`/`0o`, which bash does not.
             value = int(text, 16)
         elif "#" in text:
             base, _sep, digits = text.partition("#")
@@ -361,9 +339,7 @@ def usage() -> None:
         print(re.sub(r"^# ?", "", line))
 
 
-# ---------------------------------------------------------------------------
-# The sampler
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The sampler ---------------------------------------------------------------------------
 
 
 class Sampler:
@@ -377,8 +353,7 @@ class Sampler:
         self.out = env.get("PROFILER_OUT") or ""
         self.runner_label = env.get("PROFILER_RUNNER_LABEL") or env.get("RUNNER_LABEL") or "unknown"
         self.max_seconds_raw = env.get("PROFILER_MAX_SECONDS") or "21600"
-        # Both of these are re-derived in `parse_args`, which is the only place
-        # that has seen argv and is therefore the only place that can validate.
+        # Both of these are re-derived in `parse_args`, which is the only place that has seen argv and is therefore the only place that can validate.
         self.interval = 0
         self.max_seconds = 0
         self.cg = env.get("PROFILER_CGROUP_ROOT") or "/sys/fs/cgroup"
@@ -456,10 +431,7 @@ class Sampler:
             )
             return 2
         # `INTERVAL=$((10#$INTERVAL))`, the fix of 2026-09-10. `08` and `09` pass
-        # `is_num` and are INVALID OCTAL to every `$(( ))` below, and `010` was
-        # three different numbers in one run (8 to the arithmetic, 10 to `read -t`,
-        # `010` in the #META record). The twin now REASSIGNS `$INTERVAL`, so the raw
-        # string stops existing there and `interval_raw` has to follow it: #META
+        # `is_num` and are INVALID OCTAL to every `$(( ))` below, and `010` was three different numbers in one run (8 to the arithmetic, 10 to `read -t`, `010` in the #META record). The twin now REASSIGNS `$INTERVAL`, so the raw string stops existing there and `interval_raw` has to follow it: #META
         # records the normalised value on both sides now, and the `>= 1` message
         # below reports `0` for an input of `00`, which is what it is.
         self.interval = int(raw, 10)
@@ -472,11 +444,8 @@ class Sampler:
             )
             return 2
 
-        # PROFILER_MAX_SECONDS IS THE SELF-TERMINATION GUARD and until 2026-09-10 it
-        # had no validation at all. Its only use is `[ <elapsed> -ge "$MAX_SECONDS" ]`,
-        # and `test` answers a non-numeric right-hand side with `[: abc: integer
-        # expected` and status 2, which `if` reads as FALSE -- so the orphan guard was
-        # switched OFF by the same typo that looks like it would tighten it. Rejected
+        # PROFILER_MAX_SECONDS IS THE SELF-TERMINATION GUARD and until 2026-09-10 it had no validation at all. Its only use is `[ <elapsed> -ge "$MAX_SECONDS" ]`, and `test` answers a non-numeric right-hand side with `[: abc: integer expected` and status 2, which `if` reads as FALSE -- so the orphan guard was switched OFF by the same typo that looks like it would tighten it.
+        # Rejected
         # loudly rather than coerced, and validated before the `--probe` branch;
         # `sampler-linux.sh` carries the full argument for both choices.
         raw = self.max_seconds_raw
@@ -491,8 +460,7 @@ class Sampler:
         self.max_seconds = int(raw, 10)
         self.max_seconds_raw = str(self.max_seconds)
 
-        # `:122-125` refuses bash < 5.0 for want of $EPOCHREALTIME. Unreachable
-        # here: Python always has a clock. Named in the docstring.
+        # `:122-125` refuses bash < 5.0 for want of $EPOCHREALTIME. Unreachable here: Python always has a clock. Named in the docstring.
         return None
 
     # -- ceiling resolution (`:145-197`) -------------------------------------
@@ -513,8 +481,7 @@ class Sampler:
                     self.cpu_ceil_milli = _idiv(int(q) * 1000, int(p))
                     self.cpu_src = "CGROUP_V2"
                     return
-                # "max <period>": the cgroup exists but imposes no quota, so the
-                # real ceiling is the host's core count. That is a HOST reading.
+                # "max <period>": the cgroup exists but imposes no quota, so the real ceiling is the host's core count. That is a HOST reading.
         elif os.access(v1_quota, os.R_OK):
             try:
                 ok, (q,) = _read_fields(v1_quota, 1)
@@ -807,9 +774,7 @@ class Sampler:
                 if ":" not in line:
                     continue
                 name, _sep, rest = line.partition(":")
-                # The kernel prints "%6s:%8llu", so once rx_bytes exceeds 8
-                # digits the colon is glued to the number and a naive field split
-                # reads "eth0:1234" as the interface name.
+                # The kernel prints "%6s:%8llu", so once rx_bytes exceeds 8 digits the colon is glued to the number and a naive field split reads "eth0:1234" as the interface name.
                 name = name.replace(" ", "")
                 if name in ("", "lo", "Inter", "face"):
                     continue
@@ -1034,9 +999,7 @@ class Sampler:
                         % (
                             self.cpu_ceil_milli,
                             self.mem_ceil_bytes,
-                            # THE RAW STRING, not the parsed int. The twin never
-                            # converts `$INTERVAL`, so `--interval 01` records
-                            # `01`. Caught by the differential, not by reading.
+                            # THE RAW STRING, not the parsed int. The twin never converts `$INTERVAL`, so `--interval 01` records `01`. Caught by the differential, not by reading.
                             self.interval_raw,
                             self.runner_label,
                             self.cpu_src,
@@ -1075,14 +1038,10 @@ class Sampler:
             with contextlib.suppress(OSError, ValueError):  # non-main thread
                 previous[sig] = signal.signal(sig, stop)
 
-        # NO WAKEUP FD, DELIBERATELY. bash defers a trap until `read -t` has run
-        # out its timeout, so the twin keeps waiting after a SIGTERM and dies at
-        # the end of the interval. PEP 475 makes plain `select` do the same
-        # thing: the handler runs, then the call is retried with the remaining
+        # NO WAKEUP FD, DELIBERATELY. bash defers a trap until `read -t` has run out its timeout, so the twin keeps waiting after a SIGTERM and dies at the end of the interval. PEP 475 makes plain `select` do the same thing: the handler runs, then the call is retried with the remaining
         # timeout. Measured, both sides; see the module docstring.
 
-        # Fork-free wait: a fifo held open read-write never delivers and never
-        # EOFs, so a timed read on it is a pure sleep.
+        # Fork-free wait: a fifo held open read-write never delivers and never EOFs, so a timed read on it is a pure sleep.
         sleep_mode = "fifo"
         fifo_fd = -1
         try:
@@ -1131,24 +1090,16 @@ class Sampler:
                 )
                 out_fh.flush()
 
-                # Disk about once a minute, and always on the first tick so the
-                # table is never blank for short jobs.
+                # Disk about once a minute, and always on the first tick so the table is never blank for short jobs.
                 disk_every_s_raw = self.env.get("PROFILER_DISK_EVERY_S") or "60"
                 if is_num(disk_every_s_raw) and int(disk_every_s_raw, 10) >= 1:
                     # `DISK_EVERY_S=$((10#$DISK_EVERY_S))`. THE SAME OCTAL TRAP AS
-                    # --interval, one line down, found on 2026-09-10 by sweeping for
-                    # the sibling rather than fixing the instance: `is_num 08` is true
-                    # and `[ 08 -ge 1 ]` is true because `test` parses base 10, so `08`
-                    # reached `$(( ))` intact and killed the sampler the same way.
-                    # This knob keeps its silent fallback -- a wrong `df` cadence costs
-                    # a sampling rate, not a runner -- and only gains the base.
+                    # --interval, one line down, found on 2026-09-10 by sweeping for the sibling rather than fixing the instance: `is_num 08` is true and `[ 08 -ge 1 ]` is true because `test` parses base 10, so `08` reached `$(( ))` intact and killed the sampler the same way. This knob keeps its silent fallback -- a wrong `df` cadence costs a sampling rate, not a runner -- and only
+                    # gains the base.
                     disk_every_s = int(disk_every_s_raw, 10)
                 else:
                     disk_every_s = 60
-                # `$(( ))`, NOT `int()`, still models the twin, but `$INTERVAL` is
-                # normalised in `parse_args` now and `$DISK_EVERY_S` just above, so
-                # neither can hand `$(( ))` an expression it refuses. The octal death
-                # (`08: value too great for base`, then `DISK_EVERY: unbound variable`
+                # `$(( ))`, NOT `int()`, still models the twin, but `$INTERVAL` is normalised in `parse_args` now and `$DISK_EVERY_S` just above, so neither can hand `$(( ))` an expression it refuses. The octal death (`08: value too great for base`, then `DISK_EVERY: unbound variable`
                 # from `set -u`, one #META line written and zero samples) is fixed on
                 # both sides; `_arith` stays as the model of the operator.
                 interval_arith = _arith(self.interval_raw)
@@ -1161,13 +1112,8 @@ class Sampler:
                 prev_us = start_us
                 tick = 0
 
-                # `[ ... -ge "$MAX_SECONDS" ]`, and the right-hand side can no longer
-                # be refused: `parse_args` rejects a non-numeric PROFILER_MAX_SECONDS at
-                # startup as of 2026-09-10. Before that, `test` printed `[: abc: integer
-                # expected` and evaluated FALSE every tick, so the orphan guard was OFF
-                # -- measured, 3 ticks in 4 seconds with three diagnostics and no stop.
-                # The `_test_int` helper that modelled the refusal went with the bug: a
-                # model of a branch that cannot be taken is dead code beside a live one.
+                # `[ ... -ge "$MAX_SECONDS" ]`, and the right-hand side can no longer be refused: `parse_args` rejects a non-numeric PROFILER_MAX_SECONDS at startup as of 2026-09-10. Before that, `test` printed `[: abc: integer expected` and evaluated FALSE every tick, so the orphan guard was OFF -- measured, 3 ticks in 4 seconds with three diagnostics and no stop. The `_test_int`
+                # helper that modelled the refusal went with the bug: a model of a branch that cannot be taken is dead code beside a live one.
                 max_seconds = self.max_seconds
 
                 while self.running:

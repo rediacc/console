@@ -95,14 +95,12 @@ DEFAULT_MAX_ATTEMPTS = "2"
 # The consumer's spelling, from the twin's header. One name, spelled once.
 SKIP_VAR = "WATCHDOG_SKIP_RERUN"
 
-# Twin line numbers that bash prints inside its own diagnostics. Pinned rather
-# than guessed, and re-derived from the twin by the differential.
+# Twin line numbers that bash prints inside its own diagnostics. Pinned rather than guessed, and re-derived from the twin by the differential.
 RUN_ID_LINE = 29
 GH_REPO_LINE = 30
 ARITH_LINE = 40
 
-# `[A-Za-z_][A-Za-z0-9_]*`: what bash treats as a variable NAME in an arithmetic
-# context. Not `str.isidentifier()`, which accepts Unicode letters bash rejects.
+# `[A-Za-z_][A-Za-z0-9_]*`: what bash treats as a variable NAME in an arithmetic context. Not `str.isidentifier()`, which accepts Unicode letters bash rejects.
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _DECIMAL = re.compile(r"^[+-]?[0-9]+$")
 
@@ -213,8 +211,7 @@ def main(argv: list[str]) -> int:
 
     github_env = os.environ.get("GITHUB_ENV", "")
     if not github_env:
-        # DEFECT A. The `&&` list is false and it is the last command, so the
-        # twin's exit status is 1 here. Not a bug this port gets to fix.
+        # DEFECT A. The `&&` list is false and it is the last command, so the twin's exit status is 1 here. Not a bug this port gets to fix.
         return 1
     with open(github_env, "a", encoding="utf-8") as fh:
         fh.write("%s=%s\n" % (SKIP_VAR, skip))

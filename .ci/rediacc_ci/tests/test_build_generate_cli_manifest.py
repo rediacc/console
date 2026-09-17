@@ -58,15 +58,13 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `dirname` for `SCRIPT_DIR` and `get_repo_root`, `uname` because sourcing
-# common.sh runs `detect_os`/`detect_arch`. Anything not listed is ABSENT.
+# `dirname` for `SCRIPT_DIR` and `get_repo_root`, `uname` because sourcing common.sh runs `detect_os`/`detect_arch`. Anything not listed is ABSENT.
 PLAIN = ("dirname", "uname")
 
 # Recorded wrappers around the real binaries. These ARE the ported logic.
 RECORDED = ("jq", "awk", "mkdir")
 
-# `:82`'s answer, frozen. Chosen to be a real instant so nothing downstream can
-# object to it, and fixed so the two manifests are byte-identical.
+# `:82`'s answer, frozen. Chosen to be a real instant so nothing downstream can object to it, and fixed so the two manifests are byte-identical.
 FROZEN_DATE = "2026-09-14T00:00:00Z"
 
 RECORDER = """#!/bin/bash
@@ -76,9 +74,7 @@ printf '\\n' >>"$FAKE_CALL_LOG"
 exec {real} "$@"
 """
 
-# A `dirname` that answers CORRECTLY and then exits 1. It is the only way to
-# reach the `set -e` question at `:136` -- see
-# `test_a_failing_dirname_does_not_stop_either_side`.
+# A `dirname` that answers CORRECTLY and then exits 1. It is the only way to reach the `set -e` question at `:136` -- see `test_a_failing_dirname_does_not_stop_either_side`.
 FAILING_DIRNAME = """#!/bin/bash
 {real} "$@"
 exit 1
@@ -100,9 +96,7 @@ OTHER_SHA = "b" * 64
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
 
 
-# ---------------------------------------------------------------------------
-# Fixture
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture ---------------------------------------------------------------------------
 
 
 def fixture(
@@ -209,9 +203,7 @@ def scratch_bin(
     return str(stub)
 
 
-# ---------------------------------------------------------------------------
-# Driving
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Driving ---------------------------------------------------------------------------
 
 
 def _state(root: pathlib.Path) -> dict[str, str]:
@@ -315,9 +307,7 @@ def manifest_of(root: pathlib.Path, rel: str = "out/manifest.json") -> dict:
     return json.loads((root / rel).read_text(encoding="utf-8"))
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_holds_only_the_six_named_tools(tmp_path) -> None:
@@ -349,9 +339,7 @@ def test_the_frozen_date_really_answers_and_is_recorded(tmp_path) -> None:
     assert log.read_text(encoding="utf-8") == "CALL date\t-u\t%s\n" % port.DATE_FORMAT
 
 
-# ---------------------------------------------------------------------------
-# The success path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The success path ---------------------------------------------------------------------------
 
 
 def test_one_valid_checksum_produces_one_binary_and_nine_lines(tmp_path) -> None:
@@ -477,9 +465,7 @@ def test_defect_3_an_explicit_relative_input_follows_the_caller_not_the_root(
     assert not (root / "m.json").exists(), "the output landed in the repo, not the cwd"
 
 
-# ---------------------------------------------------------------------------
-# The channel and the environment
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The channel and the environment ---------------------------------------------------------------------------
 
 
 def test_stable_edge_and_an_empty_channel_all_get_the_versioned_url(tmp_path) -> None:
@@ -577,9 +563,7 @@ def test_the_repo_flag_only_moves_the_release_notes_url(tmp_path) -> None:
     _agree(old_t, new_t, "repo-flag")
 
 
-# ---------------------------------------------------------------------------
-# The argument parser
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The argument parser ---------------------------------------------------------------------------
 
 
 def test_help_goes_to_stdout_and_exits_zero(tmp_path) -> None:
@@ -642,9 +626,7 @@ def test_defect_4_every_dangling_flag_is_bashs_own_unbound_variable(tmp_path) ->
         _agree(old_t, new_t, "dangling " + flag)
 
 
-# ---------------------------------------------------------------------------
-# The defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects ---------------------------------------------------------------------------
 
 
 def test_defect_1_an_input_with_no_checksums_is_an_empty_manifest_and_exit_zero(
@@ -722,9 +704,7 @@ def test_defect_5_the_file_header_never_mentions_the_channel_flag() -> None:
     assert "--channel" not in header, "the header now documents --channel; defect 5 is fixed"
 
 
-# ---------------------------------------------------------------------------
-# Missing tools
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Missing tools ---------------------------------------------------------------------------
 
 
 def test_a_missing_jq_is_a_named_refusal_after_three_log_lines(tmp_path) -> None:
@@ -855,9 +835,7 @@ def test_the_twin_cannot_start_without_dirname_and_the_port_can(tmp_path) -> Non
     _restore(root)
     new, _c2, _s2 = _run(root, "new", args=args, drop=("dirname",))
     assert old.returncode == 1, old.stderr
-    # Version-independent, and the real point of the case: the missing `dirname`
-    # is reported from inside the command substitution, and no manifest work
-    # happens on either bash.
+    # Version-independent, and the real point of the case: the missing `dirname` is reported from inside the command substitution, and no manifest work happens on either bash.
     assert "line 16: dirname: command not found" in old.stderr, old.stderr
     cd_null = bash_dialect.cd_null_directory()
     if cd_null:
@@ -882,9 +860,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
     assert proc.stdout.strip() == str(ROOT)
 
 
-# ---------------------------------------------------------------------------
-# The control: this differential can actually fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:

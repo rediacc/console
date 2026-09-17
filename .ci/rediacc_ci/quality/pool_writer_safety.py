@@ -221,32 +221,21 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The twin's seams, kept by name so one harness drives either implementation.
-# `POOL_SAFETY_RUNNER` BECAME `POOL_SAFETY_LOCK` IN THE 2026-09-09 RETARGET, and
-# the rename is deliberate rather than cosmetic: the seam now points at the
-# declaration file, and a seam still called RUNNER would invite a caller to hand
-# this gate a runner it no longer reads, which is the quietest way to make a
+# The twin's seams, kept by name so one harness drives either implementation. `POOL_SAFETY_RUNNER` BECAME `POOL_SAFETY_LOCK` IN THE 2026-09-09 RETARGET, and the rename is deliberate rather than cosmetic: the seam now points at the declaration file, and a seam still called RUNNER would invite a caller to hand this gate a runner it no longer reads, which is the quietest way to make a
 # fixture-driven control test nothing.
 GATES_DIR_ENV = "POOL_SAFETY_GATES_DIR"
 LOCK_ENV = "POOL_SAFETY_LOCK"
 GATES_DIR_REL = (".ci", "scripts", "test", "gates")
 LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
 
-# A lock entry is a gate test when its `run` names a script under this prefix.
-# `run` is a command line in the general case, so the WORD that starts with the
-# prefix is taken rather than the whole string.
+# A lock entry is a gate test when its `run` names a script under this prefix. `run` is a command line in the general case, so the WORD that starts with the prefix is taken rather than the whole string.
 GATES_RUN_PREFIX = ".ci/scripts/test/gates/"
 
-# The claim strength that means "serialised writer". `reads` is NOT accepted: a
-# scanner is released to run beside other scanners, so a writer hiding in that
-# set is exactly the flake this gate exists for.
+# The claim strength that means "serialised writer". `reads` is NOT accepted: a scanner is released to run beside other scanners, so a writer hiding in that set is exactly the flake this gate exists for.
 WRITER_CLAIM = "mutex"
 TREE_RESOURCE_PREFIX = "tree:"
 
-# ---------------------------------------------------------------------------
-# The awk scanner's patterns, one Python name per awk construct so a reader can
-# put the two files side by side.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The awk scanner's patterns, one Python name per awk construct so a reader can put the two files side by side. ---------------------------------------------------------------------------
 
 # `split(line, a, /[ \t]+/)`.
 _FIELD_SEP_RE = re.compile(r"[ \t]+")
@@ -284,9 +273,7 @@ _HERESTRING_RE = re.compile(r"<<<")
 
 # THE TWO ARRAY PATTERNS ARE GONE WITH THE 2026-09-09 RETARGET. They read
 # `WRITER_TESTS(_FALLBACK)?=(` out of run-all.sh, and battery.py has no such
-# array: it classifies from the lock and carries no hand list at all, on purpose
-# (three copies of one definition is the defect the whole port removes). The
-# registered set is now read from the lock by `registered_writers` below.
+# array: it classifies from the lock and carries no hand list at all, on purpose (three copies of one definition is the defect the whole port removes). The registered set is now read from the lock by `registered_writers` below.
 
 
 def _fields(line: str) -> list[str]:
@@ -509,9 +496,7 @@ def registered_writers(lock_text: str) -> list[str]:
     return sorted(names)
 
 
-# The two planted control fixtures, byte for byte from the twin's heredocs. The
-# temp-safe one uses the exact mktemp-into-a-root-shaped-name pair that broke the
-# first draft of the scanner, and its INNER heredoc is a redirect that is text.
+# The two planted control fixtures, byte for byte from the twin's heredocs. The temp-safe one uses the exact mktemp-into-a-root-shaped-name pair that broke the first draft of the scanner, and its INNER heredoc is a redirect that is text.
 PLANTED_WRITER = """#!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
@@ -633,7 +618,7 @@ def main(argv: list[str] | None = None) -> int:
             "battery.py schedules it in the pool alongside tests that read the same paths:"
             % (gate_file.name, lock_rel)
         )
-        # THE TWIN'S `printf '  %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only
+        # THE TWIN'S `printf ' %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only
         # the FIRST line is indented. Carried; see the port notes.
         print("  %s" % hits, file=sys.stderr)
         violations += 1
@@ -718,12 +703,8 @@ def selftest() -> int:
         scan_text(seed + 'REPO_ROOT="$(mktemp -d)"\nprintf x >"$REPO_ROOT/f"\n', "t.sh"),
         [],
     )
-    # THE ORDER ITSELF, WHICH NEEDS A TARGET NAMING BOTH KINDS OF VARIABLE. Every
-    # control above happens to reference exactly one, and `if has_safe` before
-    # `if has_taint` versus the reverse gives the SAME answer for those, so none
-    # of them pins the rule. Measured 2026-09-06 by planting the swap: all 32
-    # controls and all five recorded shadow rows stayed green. A control that
-    # cannot fail is not a control, so this pair is the one that pins it.
+    # THE ORDER ITSELF, WHICH NEEDS A TARGET NAMING BOTH KINDS OF VARIABLE. Every control above happens to reference exactly one, and `if has_safe` before `if has_taint` versus the reverse gives the SAME answer for those, so none of them pins the rule. Measured 2026-09-06 by planting the swap: all 32 controls and all five recorded shadow rows stayed green. A control that cannot
+    # fail is not a control, so this pair is the one that pins it.
     both = tempseed + seed + 'cp "$SRC" "$TMP/${REPO_ROOT}.log"\n'
     ctl.check("ORDER: SAFE beats TAINT when one target names both", scan_text(both, "t.sh"), [])
     ctl.check(
@@ -773,8 +754,7 @@ def selftest() -> int:
         len(scan_text(seed + 'sed -i "s/a/b/" "$REPO_ROOT/f"\n', "t.sh")),
         1,
     )
-    # The test-installmethods-args.sh:141 shape: a real-tree dir in the
-    # REPLACEMENT TEXT while the edited file is a temp copy.
+    # The test-installmethods-args.sh:141 shape: a real-tree dir in the REPLACEMENT TEXT while the edited file is a temp copy.
     ctl.check(
         "MIRROR: a repo path in sed's REPLACEMENT is not the file being edited",
         scan_text(tempseed + seed + 'sed -i "s|X|$REPO_ROOT|" "$TMP/f"\n', "t.sh"),
@@ -807,8 +787,7 @@ def selftest() -> int:
         len(scan_text(seed + 'grep x <<<"$Y"\nprintf x >"$REPO_ROOT/f"\n', "t.sh")),
         1,
     )
-    # PASS 1 EXISTS FOR THIS: a function body can textually precede the
-    # assignment of the global it uses.
+    # PASS 1 EXISTS FOR THIS: a function body can textually precede the assignment of the global it uses.
     ctl.check(
         "TWO PASSES: a write above the assignment that taints it is still caught",
         len(scan_text('run() { printf x >"$REPO_ROOT/f"; }\n' + seed, "t.sh")),
@@ -817,10 +796,7 @@ def selftest() -> int:
 
     # -- the registered-writer parser, and its refusals -----------------------
     #
-    # RETARGETED 2026-09-09: these cases were bash arrays until battery.py
-    # replaced run-all.sh. The subject is now the lock, so the fixtures are JSON,
-    # and the two directions that matter are unchanged: a real declaration is
-    # read, and every near-miss parses EMPTY so the caller refuses.
+    # RETARGETED 2026-09-09: these cases were bash arrays until battery.py replaced run-all.sh. The subject is now the lock, so the fixtures are JSON, and the two directions that matter are unchanged: a real declaration is read, and every near-miss parses EMPTY so the caller refuses.
     lock_text = json.dumps(
         [
             {
@@ -886,10 +862,7 @@ def selftest() -> int:
     ctl.check(
         "VACUITY: a JSON OBJECT rather than a list parses empty", registered_writers("{}"), []
     )
-    # THE REAL LOCK IS NOT EMPTY, and this is the case that would have caught the
-    # retarget landing against a lock whose shape had moved: every fixture above
-    # is synthetic, and a parser that agreed with all of them while reading the
-    # live file as empty would look perfect here.
+    # THE REAL LOCK IS NOT EMPTY, and this is the case that would have caught the retarget landing against a lock whose shape had moved: every fixture above is synthetic, and a parser that agreed with all of them while reading the live file as empty would look perfect here.
     ctl.check(
         "REAL: the live lock declares at least the four historical writers",
         set(

@@ -108,8 +108,7 @@ function checkEnJson(): void {
           `(parsed ${jobsPerMonth}) does not match PLAN_LIMITS.${code}.maxRepoLicenseIssuancesPerMonth = ${canonicalIssuances}`
       );
     }
-    // Widened for the membership test only: PAID_PLAN_CODES is the three paid
-    // tiers, `code` is a PlanCode and may be COMMUNITY. At runtime .includes
+    // Widened for the membership test only: PAID_PLAN_CODES is the three paid tiers, `code` is a PlanCode and may be COMMUNITY. At runtime .includes
     // simply returns false for it, which is the intended answer; the cast just
     // stops the narrow tuple type from rejecting the question.
     if (
@@ -132,19 +131,10 @@ function checkEnJson(): void {
 
   // Checks 2 and 3 are GONE, and so are the two copies they policed.
   //
-  // They read `comparison.categories.infrastructure.rows` and the
-  // "N server setups per month" bullet in `plans.*.features`. Both were
-  // hand-maintained duplicates of the numbers already in
-  // `technicalSummary.values` above: the comparison table reprinted what the
-  // pricing card prints, and `plans.*.features` rendered nowhere at all --
-  // 40 English strings across 13 catalogs that no component read. The
-  // www-simplification pass deleted both, so the drift these checks existed to
-  // catch is now structurally impossible rather than merely detected.
+  // They read `comparison.categories.infrastructure.rows` and the "N server setups per month" bullet in `plans.*.features`. Both were hand-maintained duplicates of the numbers already in `technicalSummary.values` above: the comparison table reprinted what the pricing card prints, and `plans.*.features` rendered nowhere at all -- 40 English strings across 13 catalogs that no
+  // component read. The www-simplification pass deleted both, so the drift these checks existed to catch is now structurally impossible rather than merely detected.
   //
-  // Check 1 above is unchanged and still covers every plan in PLAN_ORDER,
-  // including COMMUNITY, against PLAN_LIMITS and PLAN_MAX_MACHINES. The docs
-  // tables below are still checked too. If a fourth copy of these numbers ever
-  // appears, add a check for it here rather than re-adding these.
+  // Check 1 above is unchanged and still covers every plan in PLAN_ORDER, including COMMUNITY, against PLAN_LIMITS and PLAN_MAX_MACHINES. The docs tables below are still checked too. If a fourth copy of these numbers ever appears, add a check for it here rather than re-adding these.
 }
 
 interface MarkdownTableSpec {

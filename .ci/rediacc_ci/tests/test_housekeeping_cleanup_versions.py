@@ -61,16 +61,13 @@ PORT = pathlib.Path(cv.__file__).resolve()
 BASH = shutil.which("bash") or "/bin/bash"
 JQ = shutil.which("jq")
 
-# Throwaway values. They authenticate nowhere, and the fakes never leave the
-# machine, but they are pinned so that a leaked real `gh` would be using a token
-# that cannot possibly work.
+# Throwaway values. They authenticate nowhere, and the fakes never leave the machine, but they are pinned so that a leaked real `gh` would be using a token that cannot possibly work.
 GH_TOKEN = "fixture-gh-token"  # noqa: S105 -- a fixture value, not a credential
 CF_TOKEN = "fixture-cf-token"  # noqa: S105 -- a fixture value, not a credential
 CF_ACCOUNT = "fixture-account"
 R2_ENDPOINT = "https://fixture.r2.example/"
 
-# The 14 phases, in `run_all_phases` order. Used by the coverage control at the
-# bottom of this file, which fails if a phase gains no case.
+# The 14 phases, in `run_all_phases` order. Used by the coverage control at the bottom of this file, which fails if a phase gains no case.
 PHASES = (
     "cleanup_releases",
     "cleanup_tags",
@@ -88,23 +85,14 @@ PHASES = (
     "cleanup_actions_cache",
 )
 
-# `_EXERCISED` is a module global that the differential helper fills in and the
-# floor test at the bottom of this file reads. That is a cross-test dependency,
-# and the repo-root conftest distributes UNGROUPED tests across xdist workers
-# individually, so the floor test would read only the phases that happened to
-# land in ITS worker. Measured on this file: green at `-n 1` and `-n 2`, RED at
-# `-n 4`, `-n 8` (the gate's `PYTEST_JOBS_CAP`) and `-n 12` -- so the gate's own
-# invocation always failed it, and the pass at low worker counts was luck, not
-# health. Naming a group pins all 121 tests to one worker, which is what makes
-# the accumulator mean anything. Costs ~127s serial on that worker.
+# `_EXERCISED` is a module global that the differential helper fills in and the floor test at the bottom of this file reads. That is a cross-test dependency, and the repo-root conftest distributes UNGROUPED tests across xdist workers individually, so the floor test would read only the phases that happened to land in ITS worker. Measured on this file: green at `-n 1` and `-n 2`, RED
+# at `-n 4`, `-n 8` (the gate's `PYTEST_JOBS_CAP`) and `-n 12` -- so the gate's own invocation always failed it, and the pass at low worker counts was luck, not health. Naming a group pins all 121 tests to one worker, which is what makes the accumulator mean anything. Costs ~127s serial on that worker.
 XDIST_GROUP = "housekeeping-cleanup-versions"
 
 _EXERCISED: set[str] = set()
 
 
-# ---------------------------------------------------------------------------
-# The recording fakes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The recording fakes ---------------------------------------------------------------------------
 
 _FAKE_HEAD = '''#!/usr/bin/env python3
 """A recording fake. Logs argv, answers from $FAKE_FIXTURE, never leaves the box."""
@@ -228,8 +216,7 @@ def _stub_bin(base: pathlib.Path, *, drop: tuple[str, ...] = ()) -> str:
 
 
 # The python driver, which is `source cleanup-versions.sh <args>; <phase>` with
-# the words swapped. It exists so that ONE phase can be driven in isolation on
-# the port exactly as the twin's own comment says a test drives one on the twin.
+# the words swapped. It exists so that ONE phase can be driven in isolation on the port exactly as the twin's own comment says a test drives one on the twin.
 DRIVER = """
 import sys
 from rediacc_ci.core import common
@@ -389,10 +376,7 @@ def calls_of(calls: list[str], tool: str) -> list[list[str]]:
     return [line.split("\t")[1:] for line in calls if line.split("\t")[0] == tool]
 
 
-# ---------------------------------------------------------------------------
-# CONTROLS. A fake that is not reached proves nothing, and a differential that
-# cannot fail proves less.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CONTROLS. A fake that is not reached proves nothing, and a differential that cannot fail proves less. ---------------------------------------------------------------------------
 
 
 def test_both_subjects_exist_where_this_file_says_they_do() -> None:
@@ -465,9 +449,7 @@ def test_the_differential_can_fail() -> None:
     assert b"[DRY-RUN] Would delete release: v9.9.9" in loud[2]
 
 
-# ---------------------------------------------------------------------------
-# THE PURE HALVES, driven against the real binaries they stand for.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE PURE HALVES, driven against the real binaries they stand for. ---------------------------------------------------------------------------
 
 
 def _bash_arith(word: str, other: str = "0") -> tuple[int, str]:
@@ -523,9 +505,7 @@ def _jq(filter_text: str, payload: str, *flags: str) -> str:
     return proc.stdout.decode("utf-8")
 
 
-# The corpus every filter is checked over. Deliberately includes the empty
-# array, a null key, a missing key and a tie, because those are the four shapes
-# a hand-written reimplementation gets wrong.
+# The corpus every filter is checked over. Deliberately includes the empty array, a null key, a missing key and a tie, because those are the four shapes a hand-written reimplementation gets wrong.
 _CORPUS = [
     [],
     [{"a": "2026-01-01", "id": "x"}],
@@ -669,9 +649,7 @@ def test_records_and_stream_lines_differ_on_the_empty_input() -> None:
     assert cv._stream_lines("a\nb") == ["a", "b"]
 
 
-# ---------------------------------------------------------------------------
-# PHASE 1: GITHUB RELEASES
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 1: GITHUB RELEASES ---------------------------------------------------------------------------
 
 
 def _releases(*rows: tuple[str, str]) -> dict:
@@ -830,15 +808,12 @@ def test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides() -
     assert 'value too great for base (error token is "08")' in new[2].decode()
     assert "cleanup-versions.sh: line " in old[2].decode()
     assert "cleanup_versions.py: [[: " in new[2].decode()
-    # And the DECISION was the same: index 0 was NOT inside the keep window, so
-    # the release went to the retention check and was kept by the 14-day default.
+    # And the DECISION was the same: index 0 was NOT inside the keep window, so the release went to the retention check and was kept by the 14-day default.
     assert b"Releases: would delete 0 of 1" in old[2]
     assert b"Releases: would delete 0 of 1" in new[2]
 
 
-# ---------------------------------------------------------------------------
-# PHASE 2: GIT TAGS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 2: GIT TAGS ---------------------------------------------------------------------------
 
 
 def _tags_fixture(annotated: bool = True, *, dates: dict | None = None) -> dict:
@@ -928,10 +903,7 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
                 rule(
                     "git/ref/tags/v1.0.0", json_body={"object": {"type": "tag", "sha": "annot-sha"}}
                 ),
-                # The tag-object call FAILS, which is the only way to reach the
-                # fallback: a tag object that merely LACKS `.tagger.date` makes
-                # gh print the four characters `null`, which is not empty. See
-                # the case below.
+                # The tag-object call FAILS, which is the only way to reach the fallback: a tag object that merely LACKS `.tagger.date` makes gh print the four characters `null`, which is not empty. See the case below.
                 rule("git/tags/annot-sha", ".tagger.date", rc=1),
                 rule(
                     "git/tags/annot-sha",
@@ -1012,9 +984,7 @@ def test_phase_2_retry_is_silenced_by_the_call_sites_redirection() -> None:
     assert len([c for c in result[3] if "-X\tDELETE" in c]) == 3
 
 
-# ---------------------------------------------------------------------------
-# PHASE 3: GHCR PACKAGE VERSIONS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 3: GHCR PACKAGE VERSIONS ---------------------------------------------------------------------------
 
 
 def _package_version(vid: int, created: str, tags: list | None = None) -> dict:
@@ -1068,9 +1038,7 @@ def test_phase_3_stops_a_package_after_five_consecutive_delete_failures() -> Non
     )
     err = result[2].decode()
     # `api_output="$(gh api ... 2>&1)"` MERGES the streams, so whatever gh wrote
-    # to stderr is part of the warning. The recording fake writes its `call:`
-    # line there, and both sides carry it identically -- which is itself the
-    # evidence that the merge is being reproduced.
+    # to stderr is part of the warning. The recording fake writes its `call:` line there, and both sides carry it identically -- which is itself the evidence that the merge is being reproduced.
     assert "Could not delete version 0 (tags: ): call: gh api -X DELETE" in err
     assert "HTTP 422: still tagged" in err
     assert "Skipping remaining versions for renet after 5 consecutive failures" in err
@@ -1120,9 +1088,7 @@ def test_phase_3_treats_a_non_array_page_as_inaccessible_rather_than_dying() -> 
     assert result[0] == 0
 
 
-# ---------------------------------------------------------------------------
-# PHASE 4: GITHUB DEPLOYMENTS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 4: GITHUB DEPLOYMENTS ---------------------------------------------------------------------------
 
 
 def _deployments(*rows: tuple[int, str, str]) -> list:
@@ -1265,9 +1231,7 @@ def test_phase_4_budget_exhaustion_breaks_out_of_both_loops() -> None:
     assert result[2].decode().count("hit MAX_DELETES_PER_RUN") == 1
 
 
-# ---------------------------------------------------------------------------
-# PHASE 5: CLOUDFLARE PAGES PREVIEW DEPLOYMENTS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 5: CLOUDFLARE PAGES PREVIEW DEPLOYMENTS ---------------------------------------------------------------------------
 
 
 def _cf_pages(*rows: tuple[str, str, str], success: bool = True) -> dict:
@@ -1403,8 +1367,7 @@ def test_phase_5_pagination_asks_for_page_2_only_when_page_1_was_full() -> None:
         fixture={
             "curl": [
                 # `&page=2`, not `page=2`: `per_page=25` CONTAINS `page=2`, and the
-                # first version of this fixture matched page 1 with the page-2
-                # rule for exactly that reason.
+                # first version of this fixture matched page 1 with the page-2 rule for exactly that reason.
                 rule("&page=2", json_body=_cf_pages(("d99", ago(80.5), "b99"))),
                 rule("&page=1", json_body=full),
             ]
@@ -1418,9 +1381,7 @@ def test_phase_5_pagination_asks_for_page_2_only_when_page_1_was_full() -> None:
     assert b"would delete 0 of 26 preview deployments (26 latest-per-branch, skipped)" in result[2]
 
 
-# ---------------------------------------------------------------------------
-# PHASE 5b: ORPHANED PER-PR PREVIEW WORKERS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 5b: ORPHANED PER-PR PREVIEW WORKERS ---------------------------------------------------------------------------
 
 
 def test_phase_5b_fails_closed_when_the_open_pr_list_is_unreadable() -> None:
@@ -1505,9 +1466,7 @@ def test_phase_5b_dry_run_says_would_be_deleted() -> None:
     assert calls_of(result[3], "curl")[-1][2] == "GET", "no DELETE in a dry run"
 
 
-# ---------------------------------------------------------------------------
-# PHASE 6: GITHUB ENVIRONMENTS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 6: GITHUB ENVIRONMENTS ---------------------------------------------------------------------------
 
 
 def test_phase_6_is_a_403_by_design_and_stops_after_the_first_one() -> None:
@@ -1553,9 +1512,7 @@ def test_phase_6_says_nothing_to_do_when_there_are_no_pr_environments() -> None:
     assert b"Environments (rediacc/console):" not in result[2]
 
 
-# ---------------------------------------------------------------------------
-# PHASE 7: CLOUDFLARE D1 PREVIEW DATABASES
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 7: CLOUDFLARE D1 PREVIEW DATABASES ---------------------------------------------------------------------------
 
 
 def test_phase_7_deletes_a_closed_prs_database_and_keeps_an_open_ones() -> None:
@@ -1613,9 +1570,7 @@ def test_phase_7_says_none_found_when_no_database_matches_the_pattern() -> None:
     assert b"No pr-* D1 databases found" in result[2]
 
 
-# ---------------------------------------------------------------------------
-# PHASE 7b: ORPHAN PER-PR TURNSTILE WIDGETS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 7b: ORPHAN PER-PR TURNSTILE WIDGETS ---------------------------------------------------------------------------
 
 
 def _widgets(*rows: tuple[str, str]) -> dict:
@@ -1708,14 +1663,9 @@ def test_the_two_sides_agree_on_ages_that_are_not_near_a_boundary() -> None:
         assert b"Holding Turnstile widget" in result[2], offset
 
 
-# ---------------------------------------------------------------------------
-# PHASE 8: R2 ORPHANS
+# --------------------------------------------------------------------------- PHASE 8: R2 ORPHANS
 #
-# Six sub-phases in one function, and they run 8a, 8b, 8c, 8d, 8f, 8e -- the
-# labels really are out of order in the twin. The fixtures below default every
-# listing to EMPTY and each case turns on the one prefix it cares about, because
-# a fixture that answered everything would make each case depend on the other
-# five.
+# Six sub-phases in one function, and they run 8a, 8b, 8c, 8d, 8f, 8e -- the labels really are out of order in the twin. The fixtures below default every listing to EMPTY and each case turns on the one prefix it cares about, because a fixture that answered everything would make each case depend on the other five.
 # ---------------------------------------------------------------------------
 
 R2_ENV = {
@@ -1733,13 +1683,11 @@ def r2_fixture(*extra_aws: dict, gh: list | None = None) -> dict:
     return {
         "aws": [
             *extra_aws,
-            # `--query 'Contents[0].LastModified' --output text` prints the four
-            # characters `None` for a prefix with no objects, and the twin tests
+            # `--query 'Contents[0].LastModified' --output text` prints the four characters `None` for a prefix with no objects, and the twin tests
             # for that string explicitly.
             rule("list-objects-v2", "Contents[0].LastModified", raw="None\n"),
             rule("list-objects-v2", "ends_with(Key", raw="\n"),
-            # `--query 'Uploads[]...'` renders `null`, not `[]`, when the bucket
-            # has no multipart uploads in flight. See HAZARD in `_soft_length_text`.
+            # `--query 'Uploads[]...'` renders `null`, not `[]`, when the bucket has no multipart uploads in flight. See HAZARD in `_soft_length_text`.
             rule("list-multipart-uploads", raw="null\n"),
             rule("s3", "rm"),
             rule("s3", "ls", raw=""),
@@ -1817,8 +1765,7 @@ def test_phase_8b_reaps_a_closed_prs_prefix_and_an_over_age_open_one() -> None:
     )
     err = result[2].decode()
     assert "Deleted s3://rediacc-releases/apt/pr-3/ (PR #3 CLOSED)" in err
-    # pr-7 is OPEN but 30 days stale, so the age arm reaps it anyway and the
-    # PR state is never even looked up.
+    # pr-7 is OPEN but 30 days stale, so the age arm reaps it anyway and the PR state is never even looked up.
     assert "Deleted s3://rediacc-releases/apt/pr-7/ (stale 30d)" in err
     assert "8b: deleted 2 PR channel prefix(es)" in err
     assert [c for c in calls_of(result[3], "gh") if c[:2] == ["pr", "view"]] == [
@@ -2069,9 +2016,7 @@ def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
         assert call[1] != "abort-multipart-upload", call
 
 
-# ---------------------------------------------------------------------------
-# PHASE 9: STALE BRANCHES
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 9: STALE BRANCHES ---------------------------------------------------------------------------
 
 
 def _branches_fixture(*names: str, **rules_by_key: dict) -> dict:
@@ -2168,9 +2113,7 @@ def test_phase_9_reports_no_error_output_when_gh_says_nothing() -> None:
         delete=rule("-X", "DELETE", "git/refs/heads/stale", rc=1),
     )
     result = sides("cleanup_stale_branches", fixture=fixture)
-    # The recording fake writes its own `call:` line to stderr, which the twin
-    # captures with `2>&1 >/dev/null` -- so the reason is that line, identically
-    # on both sides. The `:-` default is exercised by the port's own unit shape.
+    # The recording fake writes its own `call:` line to stderr, which the twin captures with `2>&1 >/dev/null` -- so the reason is that line, identically on both sides. The `:-` default is exercised by the port's own unit shape.
     assert b"Phase 9: could not delete rediacc/console@stale (90 days old): call: gh" in result[2]
 
 
@@ -2237,9 +2180,7 @@ def test_a_zero_padded_branch_age_unwinds_the_whole_run_on_both_sides() -> None:
     assert "cleanup_versions.py: " in new[2].decode()
 
 
-# ---------------------------------------------------------------------------
-# PHASE 10: WORKFLOW RUNS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 10: WORKFLOW RUNS ---------------------------------------------------------------------------
 
 
 def _runs(count: int, *, start: int = 0, age: float = 1.5) -> list:
@@ -2288,8 +2229,7 @@ def test_phase_10_keeps_the_hundred_newest_and_reaps_the_old_tail() -> None:
                     },
                 ),
                 # `&page=1`, because `per_page=100` contains `page=100`; and a
-                # second rule for every later page, or the same body would be
-                # served ten times over and the totals would be ten times wrong.
+                # second rule for every later page, or the same body would be served ten times over and the totals would be ten times wrong.
                 rule("workflows/11/runs", "&page=1", json_body={"workflow_runs": page}),
                 rule("workflows/11/runs", json_body={"workflow_runs": []}),
             ]
@@ -2322,12 +2262,9 @@ def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None
                                 "path": ".github/workflows/watchdog-monitor.yml",
                                 "state": "active",
                             },
-                            # A DECOY whose NAME contains "Watchdog" and whose
-                            # PATH is a different file. Without it a port that
-                            # matched on the name would behave identically here
+                            # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here
                             # and this case would prove nothing; a planted
-                            # name-match defect stayed green until this row was
-                            # added.
+                            # name-match defect stayed green until this row was added.
                             {
                                 "id": 22,
                                 "name": "Watchdog dispatcher",
@@ -2346,8 +2283,7 @@ def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None
     err = result[2].decode()
     # 10 days old: inside the shared 30-day window, outside the watchdog's 7.
     assert "Watchdog: run 123 (gen 4): would delete 1 of 101 (kept top 100 + within 30d)" in err
-    # The decoy keeps its run: 10 days is inside the 30-day default, and its
-    # PATH is not the watchdog's however much its name looks like one.
+    # The decoy keeps its run: 10 days is inside the 30-day default, and its PATH is not the watchdog's however much its name looks like one.
     assert "Watchdog dispatcher: would delete" not in err
     assert "Workflow runs: would delete 1 of 202 (across 2 workflows)" in err
 
@@ -2450,9 +2386,7 @@ def test_phase_10_stops_a_workflow_after_five_consecutive_delete_failures() -> N
     assert len([c for c in calls_of(result[3], "gh") if "actions/runs/" in " ".join(c)]) == 15
 
 
-# ---------------------------------------------------------------------------
-# PHASE 11: WORKFLOW ARTIFACTS
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 11: WORKFLOW ARTIFACTS ---------------------------------------------------------------------------
 
 
 def test_phase_11_deletes_the_expired_and_the_over_age_and_keeps_the_rest() -> None:
@@ -2532,9 +2466,7 @@ def test_phase_11_reads_an_api_failure_as_an_empty_page_and_stops() -> None:
     assert len(calls_of(result[3], "gh")) == 1, "an empty page ends the loop"
 
 
-# ---------------------------------------------------------------------------
-# PHASE 12: ACTIONS CACHE
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PHASE 12: ACTIONS CACHE ---------------------------------------------------------------------------
 
 GB = 1024 * 1024 * 1024
 
@@ -2587,9 +2519,7 @@ def test_phase_12_evicts_the_least_recently_used_until_it_is_under_the_ceiling()
     assert "[DRY-RUN] Would delete cache: id=1 size=3072MB" in err
     assert "key=cache-key-1..." in err, "the key is truncated to 40 chars plus dots"
     assert "id=2" not in err, "7 GB - 3 GB = 4 GB, already under the 5 GB ceiling"
-    # "freeING" in a dry run, "freeD" in a real one. The port collapsed the two
-    # branches into one verb-substituted line and this assertion is what caught
-    # it, so it stays spelled out.
+    # "freeING" in a dry run, "freeD" in a real one. The port collapsed the two branches into one verb-substituted line and this assertion is what caught it, so it stays spelled out.
     assert (
         "Actions cache: would delete 1 of 3, freeing ~3072 MB (surviving: ~4096 MB / ceiling 5 GB)"
         in err
@@ -2645,9 +2575,7 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
     assert "cleanup_versions.py: " in new[2].decode()
 
 
-# ---------------------------------------------------------------------------
-# THE WHOLE RUN
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE WHOLE RUN ---------------------------------------------------------------------------
 
 
 def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
@@ -2659,8 +2587,7 @@ def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
         "run_all_phases",
         argv=("--dry-run",),
         fixture={
-            # A cache listing that SUCCEEDS, because a failing one truncates the
-            # run through HAZARD 9 and this case is about the summary.
+            # A cache listing that SUCCEEDS, because a failing one truncates the run through HAZARD 9 and this case is about the summary.
             "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1)],
             "curl": [rule("", rc=1)],
             "aws": [rule("", rc=1)],
@@ -2740,9 +2667,7 @@ def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
     assert result[3] == []
 
 
-# ---------------------------------------------------------------------------
-# COVERAGE CONTROL
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- COVERAGE CONTROL ---------------------------------------------------------------------------
 
 
 def test_every_phase_was_driven_by_at_least_one_case() -> None:

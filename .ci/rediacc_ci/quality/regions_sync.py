@@ -90,18 +90,14 @@ from rediacc_ci.controls import Controls
 
 # The two paths, and the environment seams that redirect them. The seams exist
 # for this gate's own controls: a gate whose subject cannot be moved can only be
-# proven against the real tree, where it is green, and a control that cannot
-# plant a defect proves nothing. Names are carried over unchanged from the twin
-# so a harness driving either implementation sets the same two variables.
+# proven against the real tree, where it is green, and a control that cannot plant a defect proves nothing. Names are carried over unchanged from the twin so a harness driving either implementation sets the same two variables.
 ROOT_FILE_ENV = "REGIONS_ROOT_FILE"
 BAKED_FILE_ENV = "REGIONS_BAKED_FILE"
 DEFAULT_ROOT_FILE = "regions.json"
 DEFAULT_BAKED_FILE = "packages/shared/src/regions/data.json"
 
 # The floor. One region is the smallest list that is not vacuous; the twin's
-# comment for it -- "an empty list would make this comparison vacuous" -- is the
-# load-bearing half, because two empty files compare EQUAL and a gate with no
-# floor would report success over two broken ones.
+# comment for it -- "an empty list would make this comparison vacuous" -- is the load-bearing half, because two empty files compare EQUAL and a gate with no floor would report success over two broken ones.
 MIN_REGIONS = 1
 
 # The cap on the divergence hunk, carried from `head -20` in the twin.
@@ -144,10 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     root_file = root / os.environ.get(ROOT_FILE_ENV, DEFAULT_ROOT_FILE)
     baked_file = root / os.environ.get(BAKED_FILE_ENV, DEFAULT_BAKED_FILE)
 
-    # Reported relative to the repo, as the twin does by `cd`-ing to the root
-    # first and then naming the paths as given. An absolute path in a finding is
-    # noise that differs per machine and would make two runs of the same gate on
-    # two checkouts produce different finding text for the same defect.
+    # Reported relative to the repo, as the twin does by `cd`-ing to the root first and then naming the paths as given. An absolute path in a finding is noise that differs per machine and would make two runs of the same gate on two checkouts produce different finding text for the same defect.
     names = {
         root_file: os.environ.get(ROOT_FILE_ENV, DEFAULT_ROOT_FILE),
         baked_file: os.environ.get(BAKED_FILE_ENV, DEFAULT_BAKED_FILE),
@@ -161,11 +154,7 @@ def main(argv: list[str] | None = None) -> int:
                 "tree -- if the region list moved, retarget this gate deliberately." % shown
             )
             return 1
-        # ANTI-VACUITY. An empty or truncated file would compare "equal" to
-        # another empty one and this gate would report success over two broken
-        # files. `-s` in the twin is a size test, not a parse test, and it fires
-        # BEFORE the parse so that the message names emptiness rather than
-        # arriving as a JSONDecodeError about column one.
+        # ANTI-VACUITY. An empty or truncated file would compare "equal" to another empty one and this gate would report success over two broken files. `-s` in the twin is a size test, not a parse test, and it fires BEFORE the parse so that the message names emptiness rather than arriving as a JSONDecodeError about column one.
         if candidate.stat().st_size == 0:
             log.error("regions-sync: %s is EMPTY, which is never a valid region list." % shown)
             return 1
@@ -235,8 +224,7 @@ def selftest() -> int:
     is to not build controls that way.
     """
     # floor=10 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot
-    # fail. See rediacc_ci.controls for the five drifted copies that taught it.
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.
     ctl = Controls("regions-sync", floor=10, verbose=True)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -268,8 +256,7 @@ def selftest() -> int:
 
         same = json.dumps(three)
         ctl.check("CONTROL: two identical lists agree", run(same, same), 0)
-        # The same content, reformatted and re-ordered. This must STILL pass, or
-        # the gate is comparing bytes and the twin's stated design is lost.
+        # The same content, reformatted and re-ordered. This must STILL pass, or the gate is comparing bytes and the twin's stated design is lost.
         reordered = json.dumps({"regions": three["regions"]}, indent=4)
         ctl.check("CONTROL: formatting is not drift", run(same, reordered), 0)
 
@@ -277,8 +264,7 @@ def selftest() -> int:
         drifted = json.dumps({"regions": three["regions"][:2]})
         ctl.check("PLANT: a dropped region is DIVERGED", run(same, drifted), 1)
 
-        # The mirror: a region ADDED to the baked copy is the same defect from the
-        # other end, and a gate that only compares lengths one way would miss it.
+        # The mirror: a region ADDED to the baked copy is the same defect from the other end, and a gate that only compares lengths one way would miss it.
         extra = json.dumps({"regions": [*three["regions"], {"id": "sa"}]})
         ctl.check("PLANT MIRROR: an added region is DIVERGED", run(same, extra), 1)
 
@@ -287,18 +273,14 @@ def selftest() -> int:
         ctl.check("PLANT: an empty root file is refused", run("", same), 1)
         ctl.check("PLANT: an empty baked file is refused", run(same, ""), 1)
         ctl.check("PLANT: invalid JSON is refused", run("{not json", same), 1)
-        # THE VACUITY PLANT, and the one that matters most here. Two EMPTY region
-        # lists compare equal. Without the floor this is the shape that reports
-        # success over two broken files, which is the failure the whole gate is
-        # written against.
+        # THE VACUITY PLANT, and the one that matters most here. Two EMPTY region lists compare equal. Without the floor this is the shape that reports success over two broken files, which is the failure the whole gate is written against.
         empty_list = json.dumps({"regions": []})
         ctl.check(
             "VACUITY: two empty-but-equal lists are refused by the floor",
             run(empty_list, empty_list),
             1,
         )
-        # And its mirror, so the floor is not passing because it fires on
-        # everything: exactly MIN_REGIONS is enough.
+        # And its mirror, so the floor is not passing because it fires on everything: exactly MIN_REGIONS is enough.
         one = json.dumps({"regions": [{"id": "eu"}]})
         ctl.check("FLOOR MIRROR: exactly %d region(s) is enough" % MIN_REGIONS, run(one, one), 0)
 

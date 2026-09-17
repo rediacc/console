@@ -44,8 +44,7 @@ describe('findOrphanRepos', () => {
 
   it('does not flag a DATASTORE-placed repository', () => {
     // placement is a union: { machine } | { datastore }. Checking only for a
-    // machine would classify every datastore-placed repo as an orphan, and
-    // removing one destroys the only copy of its LUKS credential and SSH key.
+    // machine would classify every datastore-placed repo as an orphan, and removing one destroys the only copy of its LUKS credential and SSH key.
     const cfg = configWith({
       archived: {
         grand: 'latest',
@@ -114,8 +113,7 @@ function withState(cfg: RdcConfig, repos: NonNullable<RdcConfig['state']>['repos
 
 describe('pruneOrphanStateRepos', () => {
   it('drops a state record whose repository entry is gone', () => {
-    // The exact leftover observed after removing my-app2: the resource entry
-    // was deleted but its state record kept a networkId alive.
+    // The exact leftover observed after removing my-app2: the resource entry was deleted but its state record kept a networkId alive.
     const cfg = withState(configWith({}), { 'my-app2': { latest: { networkId: 16192 } } });
 
     expect(pruneOrphanStateRepos(cfg)).toEqual(['my-app2']);

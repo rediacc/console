@@ -31,8 +31,7 @@ FUNCTIONS_TS = """export const RENET_FUNCTIONS = [
 export const RENET_BRIDGE_FUNCTIONS = ['live_verb', 'litonly_verb', 'dead_verb'] as const;
 """
 
-# Plain-object config (no @playwright/test import needed): the gate reads
-# .default.projects/testDir/testMatch, which is all defineConfig would give.
+# Plain-object config (no @playwright/test import needed): the gate reads .default.projects/testDir/testMatch, which is all defineConfig would give.
 CONFIG_TS = """export default {
   testDir: './tests',
   projects: [{ name: 'test-01', testMatch: '01-*.test.ts' }],
@@ -56,8 +55,7 @@ LIVE_TEST_TS = """test('covers live_verb via the method map', async () => {
 });
 """
 
-# DARK file: not matched by '01-*'. dead_verb lives ONLY here plus in the method
-# declaration, so a correct gate must flag it.
+# DARK file: not matched by '01-*'. dead_verb lives ONLY here plus in the method declaration, so a correct gate must flag it.
 DARK_TEST_TS = """test('this suite is never selected by any live config', async () => {
   await runner.deadVerb();
   const dead = 'dead_verb';
@@ -126,8 +124,7 @@ def test_fires_on_dark_only_verb(gate, tmp_path):
 
 def test_negative_control_live_verbs_pass(gate, tmp_path):
     result = run_gate(gate, build_fixture(gate, tmp_path))
-    # live_verb (method map) and litonly_verb (raw literal) are genuinely covered
-    # by the live suite -- a gate that flagged them would be crying wolf.
+    # live_verb (method map) and litonly_verb (raw literal) are genuinely covered by the live suite -- a gate that flagged them would be crying wolf.
     gate.assert_not_contains(
         result.combined, "live_verb", "method-map-covered verb must NOT be flagged"
     )
@@ -145,8 +142,7 @@ def test_comment_mention_is_not_coverage(gate, tmp_path):
     paid. Stripping comments also exposed machine_uninstall, whose only trace was
     a header comment listing a whole domain."""
     root = build_fixture(gate, tmp_path)
-    # dead_verb is genuinely uncovered. Name it in a COMMENT inside the LIVE
-    # suite and nothing else: a gate that reads comments will call it covered.
+    # dead_verb is genuinely uncovered. Name it in a COMMENT inside the LIVE suite and nothing else: a gate that reads comments will call it covered.
     (root / "e2e" / "tests" / "01-live.test.ts").write_text(
         "// dead_verb is described here and never called\n"
         "/* dead_verb again, in a block comment */\n" + LIVE_TEST_TS,

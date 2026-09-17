@@ -37,8 +37,7 @@ import {
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-// The dispatched command runs the real CLI, which would otherwise read the
-// developer's own config from disk. This is the config the EXECUTOR holds.
+// The dispatched command runs the real CLI, which would otherwise read the developer's own config from disk. This is the config the EXECUTOR holds.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
@@ -53,9 +52,7 @@ vi.mock('../../config/config-resources.js', () => ({
     getLocalMachine: vi.fn((name: string) =>
       Promise.resolve({ ip: '10.0.0.1', user: 'root', name })
     ),
-    // `shop` is placed on `hostinger` so a derived-machine repo verb (`repo cat`,
-    // the positional-ref acceptance vehicle after `_refprobe` retired) resolves
-    // its execution machine from placement (spec/03 §2.3), not from a dead `-m`.
+    // `shop` is placed on `hostinger` so a derived-machine repo verb (`repo cat`, the positional-ref acceptance vehicle after `_refprobe` retired) resolves its execution machine from placement (spec/03 §2.3), not from a dead `-m`.
     getCurrent: vi.fn(() =>
       Promise.resolve({
         state: {},
@@ -73,8 +70,7 @@ vi.mock('../../config/config-resources.js', () => ({
   },
 }));
 
-// The CLI reads its proxy bearer token from the account login. This is the only
-// thing the client half needs that a test cannot supply through argv.
+// The CLI reads its proxy bearer token from the account login. This is the only thing the client half needs that a test cannot supply through argv.
 const { proxyToken } = vi.hoisted(() => ({ proxyToken: { value: 'rdt_owner' } }));
 vi.mock('../../account/subscription-auth.js', async (original) => ({
   ...(await original<Record<string, unknown>>()),
@@ -254,8 +250,7 @@ describe('proxy loopback', () => {
     const { executor, calls } = fakeExecutor([
       { type: 'step_start', name: 'snapshot' },
       { type: 'step_done', name: 'snapshot', duration_ms: 31 },
-      // Renet's own output arrives as events in events mode, which is how it
-      // reaches a terminal on a laptop too.
+      // Renet's own output arrives as events in events mode, which is how it reaches a terminal on a laptop too.
       { type: 'output', msg: 'STATUS: running\n' },
     ]);
     boot({ executor });
@@ -264,25 +259,21 @@ describe('proxy loopback', () => {
 
     expect(exitCode).toBe(0);
 
-    // The CLI never touched a machine, never read a repo out of local config,
-    // and never resolved a function. The EXECUTOR did all of that by running the
-    // command, which is why the fake executor saw repository_status at all.
+    // The CLI never touched a machine, never read a repo out of local config, and never resolved a function. The EXECUTOR did all of that by running the command, which is why the fake executor saw repository_status at all.
     expect(calls).toHaveLength(1);
     expect(calls[0].functionName).toBe('repository_status');
     expect(calls[0].machineName).toBe('hostinger');
     expect(calls[0].params).toMatchObject({ repository: 'demo' });
     expect(calls[0].extraMachines).toBeUndefined();
 
-    // The operator sees the same timeline they would have seen locally, because
-    // these are renet's own events rendered through the same helpers.
+    // The operator sees the same timeline they would have seen locally, because these are renet's own events rendered through the same helpers.
     expect(stdout).toContain('Snapshot');
     // ...and renet's output, rendered live as it streamed.
     expect(stdout).toContain('STATUS: running');
   });
 
   it('prints the captured output when a run streamed none of it live', async () => {
-    // A run that emits no output events must still show what renet said, rather
-    // than ending in silence. It is printed once, never twice.
+    // A run that emits no output events must still show what renet said, rather than ending in silence. It is printed once, never twice.
     const { executor } = fakeExecutor([], { stdout: 'the whole answer' });
     boot({ executor });
 
@@ -302,8 +293,7 @@ describe('proxy loopback', () => {
 
     const { exitCode, stdout, stderr } = await runCli(['repo', 'status', 'demo']);
 
-    // The exit code an operator scripts against is the one the command chose,
-    // carried back across the wire rather than invented by the client.
+    // The exit code an operator scripts against is the one the command chose, carried back across the wire rather than invented by the client.
     expect(exitCode).toBe(7);
     expect(`${stdout}${stderr}`).toContain('the machine said no');
   });
@@ -343,8 +333,7 @@ describe('proxy loopback', () => {
     const { executor, calls } = fakeExecutor([]);
     boot({ executor });
 
-    // `term connect` needs the operator's terminal. The contract says so, and the
-    // CLI refuses before a request is ever made.
+    // `term connect` needs the operator's terminal. The contract says so, and the CLI refuses before a request is ever made.
     await expect(runCli(['term', 'connect', 'hostinger'])).rejects.toThrow(/terminal|--proxy/i);
     expect(calls).toHaveLength(0);
   });
@@ -469,8 +458,7 @@ describe('proxy loopback', () => {
     );
     const blob = await cekHandoffEncrypt(await exportAesKey(cek), executorPublic);
 
-    // A DIFFERENT real user, with a perfectly valid token, tries to complete the
-    // owner's grant. The executor refuses, and the session gets no key.
+    // A DIFFERENT real user, with a perfectly valid token, tries to complete the owner's grant. The executor refuses, and the session gets no key.
     const grant = await fetch(`${baseUrl}/v1/session/${sessionId}/cek`, {
       method: 'POST',
       headers: { authorization: `Bearer ${MEMBER_TOKEN}`, 'content-type': 'application/json' },
@@ -559,8 +547,7 @@ describe('proxy loopback', () => {
     expect(status).toBe(200);
     expect(results).toHaveLength(1);
 
-    // Nothing in this test said "repository_status". The command's own action
-    // body did, which is the whole point: the console never needs to know it.
+    // Nothing in this test said "repository_status". The command's own action body did, which is the whole point: the console never needs to know it.
     expect(calls).toHaveLength(1);
     expect(calls[0].functionName).toBe('repository_status');
     expect(calls[0].machineName).toBe('hostinger');
@@ -661,8 +648,7 @@ describe('proxy loopback', () => {
   });
 
   it('keeps two concurrent commands from contaminating each other', async () => {
-    // Both requests run the same command at the same time, each with its own
-    // params and its own scripted events. A module-global output buffer or a
+    // Both requests run the same command at the same time, each with its own params and its own scripted events. A module-global output buffer or a
     // shared event subscriber would cross the wires here; AsyncLocalStorage is
     // what keeps them apart, and this is the test that proves it.
     const calls: ExecuteOptions[] = [];
@@ -670,8 +656,7 @@ describe('proxy loopback', () => {
       async execute(options: ExecuteOptions): Promise<ExecuteResult> {
         calls.push(options);
         const repo = String(options.params?.repository);
-        // Yield, so the two dispatches genuinely interleave rather than running
-        // one after the other.
+        // Yield, so the two dispatches genuinely interleave rather than running one after the other.
         await new Promise((resolve) => setTimeout(resolve, 20));
         options.onEvent?.({ type: 'log', msg: `event-for-${repo}` });
         await new Promise((resolve) => setTimeout(resolve, 20));
@@ -692,8 +677,7 @@ describe('proxy loopback', () => {
       calls.map((c) => String(c.params?.repository)).sort((a, b) => a.localeCompare(b))
     ).toEqual(['alpha', 'beta']);
 
-    // And each response carries only its OWN events. This is the assertion a
-    // global buffer fails: alpha would see beta's events too.
+    // And each response carries only its OWN events. This is the assertion a global buffer fails: alpha would see beta's events too.
     const alphaEvents = alpha.events.map((e) => e.msg ?? e.name);
     const betaEvents = beta.events.map((e) => e.msg ?? e.name);
     expect(alphaEvents).toEqual(['event-for-alpha', 'alpha']);
@@ -707,11 +691,8 @@ describe('proxy loopback', () => {
 
   // ─── The ref concept: a positional round-trips over the proxy ──────────────
   //
-  // `repo cat <ref>` is the acceptance vehicle after `_refprobe` retired (spec/03
-  // §10): the first REAL positional-carrying leaf that calls getExecutor().execute,
-  // so the fake observes the round-trip. Its machine is DERIVED from placement
-  // (§2.3), which is exactly what a positional ref buys us: the client never sends
-  // a machine, the executor resolves `shop` -> `hostinger` from its own config.
+  // `repo cat <ref>` is the acceptance vehicle after `_refprobe` retired (spec/03 §10): the first REAL positional-carrying leaf that calls getExecutor().execute, so the fake observes the round-trip. Its machine is DERIVED from placement (§2.3), which is exactly what a positional ref buys us: the client never sends a machine, the executor resolves `shop` -> `hostinger` from its own
+  // config.
 
   it('carries a positional ref through the real CLI over --proxy', async () => {
     // repo cat decodes an `RDC_CAT_B64:` marker from the executor's stdout; give
@@ -723,9 +704,7 @@ describe('proxy loopback', () => {
     expect(exitCode).toBe(0);
 
     // The CLI serialised <ref> into the positionals bag; the executor ran the real
-    // command, whose action body derived the machine and dispatched repository_cat
-    // through getExecutor(). None of that happened on the client — the fake saw the
-    // call because the command ran server-side, machine derived from placement.
+    // command, whose action body derived the machine and dispatched repository_cat through getExecutor(). None of that happened on the client — the fake saw the call because the command ran server-side, machine derived from placement.
     expect(calls).toHaveLength(1);
     expect(calls[0].functionName).toBe('repository_cat');
     expect(calls[0].machineName).toBe('hostinger');
@@ -767,10 +746,7 @@ describe('proxy loopback', () => {
         ),
     });
 
-    // repo cat names its repo POSITIONALLY ('shop'), which is not in the repos
-    // allowlist. Before targetFrom read the positionals bag, this resolved
-    // undefined and the repo-scoped rule silently stopped matching — the command
-    // ran unscoped. Now it is denied, and the executor is never called.
+    // repo cat names its repo POSITIONALLY ('shop'), which is not in the repos allowlist. Before targetFrom read the positionals bag, this resolved undefined and the repo-scoped rule silently stopped matching — the command ran unscoped. Now it is denied, and the executor is never called.
     const { status } = await postCommand({
       pathKey: 'repo cat',
       params: { 'remote-file': '/etc/hostname' },
@@ -783,8 +759,7 @@ describe('proxy loopback', () => {
   // ─── Detach: the kind:'job' line and the re-attach route ───────────────────
 
   it('emits a kind:job line before the events when the executor detaches', async () => {
-    // A fake that detaches: it announces the job, then streams ordinal-tagged
-    // events exactly as LocalExecutorService replays a detached job's spool.
+    // A fake that detaches: it announces the job, then streams ordinal-tagged events exactly as LocalExecutorService replays a detached job's spool.
     const executor = {
       execute(options: ExecuteOptions): Promise<ExecuteResult> {
         options.onJobStarted?.('j18c1c04dd251ce26-0ccf9fe5');
@@ -800,8 +775,7 @@ describe('proxy loopback', () => {
       positionals: { ref: 'demo' },
     });
 
-    // The job announcement leads, before the first event, so a client can
-    // re-attach even if the connection drops before any event arrives.
+    // The job announcement leads, before the first event, so a client can re-attach even if the connection drops before any event arrives.
     expect(jobs).toEqual([{ jobId: 'j18c1c04dd251ce26-0ccf9fe5', sinceLine: 0 }]);
     const kinds = lines.map((l) => l.kind);
     expect(kinds[0]).toBe('job');
@@ -819,8 +793,7 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
 
-    // A bad id would be interpolated into a remote shell command, so assertJobId
-    // runs before anything reaches a machine: this is a 400, not a stream.
+    // A bad id would be interpolated into a remote shell command, so assertJobId runs before anything reaches a machine: this is a 400, not a stream.
     const res = await fetch(`${baseUrl}/v1/jobs/not-a-real-id/events?machine=hostinger`, {
       headers: { authorization: `Bearer ${OWNER_TOKEN}` },
     });
@@ -846,8 +819,7 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([]);
     boot({
       executor,
-      // An allowlist that does not include `job *`, so re-attaching (which the
-      // route authorizes as `job logs`) is denied.
+      // An allowlist that does not include `job *`, so re-attaching (which the route authorizes as `job logs`) is denied.
       loadConfig: () =>
         Promise.resolve(baseConfig({ version: 1, defaults: { commands: { allow: ['repo *'] } } })),
     });

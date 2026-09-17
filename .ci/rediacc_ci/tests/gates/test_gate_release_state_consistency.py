@@ -47,8 +47,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-release-state-consistency.sh"
 
 LIB = paths.from_root(".ci", "scripts", "lib", "release-state-validator.sh")
 
-# The twin's load-time value: a path that does not exist, so the ratchet is
-# inert unless a case names its own file.
+# The twin's load-time value: a path that does not exist, so the ratchet is inert unless a case names its own file.
 NO_FLOOR_FILE = "/nonexistent/release-contract-floor.txt"
 
 POINTER_TAGS = "v1.2.9\nv1.3.0\nv1.3.1"
@@ -107,8 +106,7 @@ def test_empty_state_passes(gate):
 
 
 def test_orphan_prefix_not_flagged(gate):
-    # The library flags sentinel/tag drift, not the presence of orphan bytes
-    # without a sentinel. Orphans are handled upstream by the pre-upload scrub.
+    # The library flags sentinel/tag drift, not the presence of orphan bytes without a sentinel. Orphans are handled upstream by the pre-upload scrub.
     gate.log_test("orphan prefix (no sentinel, no tag) -> OK (not this gate's concern)")
     result = run_assert(gate, versions("v1.0.0"), versions("v1.0.0"))
     gate.assert_exit_code(0, result.rc, "orphan is not sentinel-vs-tag drift")
@@ -196,8 +194,7 @@ def test_floor_does_not_mask_post_contract_drift(gate):
 
 def test_no_sentinels_short_circuits(gate):
     gate.log_test("no cli sentinels (and no override) -> bijection short-circuits to OK")
-    # Fresh dev bucket / pre-rollout state: contract not in effect for any tag
-    # we have. Asserting drift on every tag would be useless noise.
+    # Fresh dev bucket / pre-rollout state: contract not in effect for any tag we have. Asserting drift on every tag would be useless noise.
     result = run_assert(gate, "", versions("v0.9.5", "v1.0.0", "v1.0.4"))
     gate.assert_exit_code(0, result.rc, "no-sentinels state is a no-op")
     gate.assert_contains(result.combined, "contract not in effect", "diagnostic message present")
@@ -225,8 +222,7 @@ def test_explicit_override_still_works(gate):
 
 def test_ratchet_lifts_floor_above_observed(gate, tmp_path: pathlib.Path):
     gate.log_test("ratchet file value lifts floor above observed CLI sentinels")
-    # If an operator scrubs a recent cli sentinel, the observed oldest shifts up
-    # silently. The ratchet's role is to remember where the floor used to be.
+    # If an operator scrubs a recent cli sentinel, the observed oldest shifts up silently. The ratchet's role is to remember where the floor used to be.
     ratchet = tmp_path / "floor.txt"
 
     # Case 1: ratchet below observed -> observed wins.
@@ -243,8 +239,7 @@ def test_ratchet_lifts_floor_above_observed(gate, tmp_path: pathlib.Path):
     gate.assert_contains(result.combined, "floor: v1.0.8", "floor message names v1.0.8")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.6", "v1.0.6 below floor; suppressed")
 
-    # Case 2: ratchet above observed -> ratchet wins, drift still suppressed
-    # below floor.
+    # Case 2: ratchet above observed -> ratchet wins, drift still suppressed below floor.
     ratchet.write_text("v1.0.10\n", encoding="utf-8")
     result = rsv(
         gate,
@@ -267,9 +262,7 @@ def test_ratchet_lifts_floor_above_observed(gate, tmp_path: pathlib.Path):
 
 def test_ratchet_protects_against_all_sentinels_scrubbed(gate, tmp_path: pathlib.Path):
     gate.log_test("ratchet pins floor even when every cli sentinel is missing")
-    # Without the ratchet an empty cli sentinel list short-circuits to OK
-    # ("no contract in effect yet"), which is right for a fresh dev bucket and
-    # WRONG for a production bucket where releases have happened.
+    # Without the ratchet an empty cli sentinel list short-circuits to OK ("no contract in effect yet"), which is right for a fresh dev bucket and WRONG for a production bucket where releases have happened.
     ratchet = tmp_path / "floor.txt"
     ratchet.write_text("v1.0.8\n", encoding="utf-8")
     result = rsv(
@@ -296,10 +289,7 @@ def test_ratchet_protects_against_all_sentinels_scrubbed(gate, tmp_path: pathlib
 # =============================================================================
 # rsv_assert_channel_pointer_tagged -- the relation the bijection does NOT cover
 # =============================================================================
-# The bijection reconciles sentinels against tags, and a bump-none merge
-# correctly skips BOTH. The channel pointer was advanced anyway, so it could name
-# a version with no tag and a 404 notes URL. Measured live: cli/edge advertised
-# 1.3.1 across three bump-none merges (#573, #574, #576) with no v1.3.1 tag.
+# The bijection reconciles sentinels against tags, and a bump-none merge correctly skips BOTH. The channel pointer was advanced anyway, so it could name a version with no tag and a 404 notes URL. Measured live: cli/edge advertised 1.3.1 across three bump-none merges (#573, #574, #576) with no v1.3.1 tag.
 
 
 def run_pointer(gate, channel: str, latest: str, manifest: str, tags: str, in_flight: str = ""):
@@ -343,8 +333,7 @@ def test_unreadable_pointer_is_not_a_pass(gate):
 
 
 def test_in_flight_version_is_excluded(gate):
-    # The pointer for release X is written BEFORE X's tag is pushed. Without
-    # this exclusion the relation would redden every release that uses it.
+    # The pointer for release X is written BEFORE X's tag is pushed. Without this exclusion the relation would redden every release that uses it.
     result = run_pointer(gate, "edge", "v9.9.9", "v9.9.9", POINTER_TAGS, "v9.9.9")
     gate.assert_exit_code(0, result.rc, "the in-flight version must be excluded")
     gate.assert_contains(result.combined, "in-flight", "says why it was excluded")
@@ -352,9 +341,7 @@ def test_in_flight_version_is_excluded(gate):
 
 
 def test_control_the_tag_lookup_can_fail(gate):
-    # CONTROL, by construction: a version present in the tag list must pass and
-    # one absent must fail, using the SAME inputs. If both answered the same the
-    # assertions above would be decoration.
+    # CONTROL, by construction: a version present in the tag list must pass and one absent must fail, using the SAME inputs. If both answered the same the assertions above would be decoration.
     tagged = run_pointer(gate, "edge", "v1.3.0", "v1.3.0", POINTER_TAGS).rc
     untagged = run_pointer(gate, "edge", "v0.0.1", "v0.0.1", POINTER_TAGS).rc
     if not (tagged == 0 and untagged == 1):

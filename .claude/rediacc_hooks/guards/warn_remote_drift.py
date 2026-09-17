@@ -48,9 +48,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-remote-drift.sh"
 ORDER = 20
 
-# Remote strictly behind local is a NORMAL push of new commits. Without this
-# arm every push of anything ever is refused as drift, which makes the guard an
-# outage rather than a check -- the exact failure its own header forbids.
+# Remote strictly behind local is a NORMAL push of new commits. Without this arm every push of anything ever is refused as drift, which makes the guard an outage rather than a check -- the exact failure its own header forbids.
 DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")
 
 PUSH = hookio.rx(r"(^|[|;&{S}])git push([{S}]|$)")
@@ -99,14 +97,12 @@ def _behind_tree(path):
     (path / "seed.txt").write_text("seed\n", encoding="utf-8")
     _fixture_git(path, "add", "seed.txt")
     _fixture_git(path, "commit", "-q", "-m", "seed")
-    # `main` is pushed too, so the bare repo's HEAD resolves and the clone
-    # below is not the "cloned an empty repository" shape.
+    # `main` is pushed too, so the bare repo's HEAD resolves and the clone below is not the "cloned an empty repository" shape.
     _fixture_git(path, "push", "-q", "origin", "main")
     _fixture_git(path, "checkout", "-q", "-b", "0831-1")
     _fixture_git(path, "push", "-q", "origin", "0831-1")
 
-    # A peer session pushing onto the same branch: exactly the shape the
-    # operator's 2026-07-31 report describes, minus GitHub's rebase.
+    # A peer session pushing onto the same branch: exactly the shape the operator's 2026-07-31 report describes, minus GitHub's rebase.
     peer = path.parent / (path.name + ".peer")
     _fixture_git(path.parent, "clone", "-q", str(bare), str(peer))
     _fixture_git(peer, "checkout", "-q", "0831-1")
@@ -126,11 +122,7 @@ def _behind_tree(path):
 
 FIXTURES = {"drift-behind": _behind_tree}
 
-# THREE WORLDS, AND NO LIVE ONE. Every variant points CLAUDE_PROJECT_DIR at a
-# fixture with a local bare origin, so the `git fetch` this guard performs
-# never leaves the temporary directory. Running the default env here would
-# fetch from github.com once per push-shaped payload, twice (bash then Python),
-# which is both slow and a source of disagreement that is not a port defect.
+# THREE WORLDS, AND NO LIVE ONE. Every variant points CLAUDE_PROJECT_DIR at a fixture with a local bare origin, so the `git fetch` this guard performs never leaves the temporary directory. Running the default env here would fetch from github.com once per push-shaped payload, twice (bash then Python), which is both slow and a source of disagreement that is not a port defect.
 ENVS = [
     ("behind", {"CLAUDE_PROJECT_DIR": "{FIXTURE:drift-behind}"}, {}),
     ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
@@ -195,18 +187,10 @@ def run(ev):
 
     root = ev.project_dir
     this_root = hookio.git_out(["rev-parse", "--show-toplevel"], cwd=root)
-    # AN EMPTY ROOT IS A FAILED rev-parse, NOT A ROOT AT "". `git_out` without
-    # `want_rc` returns "" both when git succeeds with empty output and when it
-    # fails, so the two are indistinguishable here -- and the consumer cannot
-    # tell either: `shellscan.py:582` joins `this_root + "/" + hint`, so a
-    # relative `-C nested` resolves to the absolute `/nested` instead of
-    # `<repo>/nested`. It then rev-parses a path outside this tree, and whatever
-    # that answers decides whether this guard stays silent. Reproduced
-    # 2026-09-08 by calling git_out with a cwd that is not a repository.
+    # AN EMPTY ROOT IS A FAILED rev-parse, NOT A ROOT AT "". `git_out` without `want_rc` returns "" both when git succeeds with empty output and when it fails, so the two are indistinguishable here -- and the consumer cannot tell either: `shellscan.py:582` joins `this_root + "/" + hint`, so a relative `-C nested` resolves to the absolute `/nested` instead of `<repo>/nested`. It
+    # then rev-parses a path outside this tree, and whatever that answers decides whether this guard stays silent. Reproduced 2026-09-08 by calling git_out with a cwd that is not a repository.
     #
-    # ALLOW rather than block: this hook is an ADVISORY drift warning, and a
-    # guard that cannot establish where it is has no standing to judge a command.
-    # Refusing here would fire on every invocation outside a checkout.
+    # ALLOW rather than block: this hook is an ADVISORY drift warning, and a guard that cannot establish where it is has no standing to judge a command. Refusing here would fire on every invocation outside a checkout.
     if this_root == "":
         return hookio.ALLOW
     if shellscan.target_root(cmd, this_root) != "":
@@ -235,10 +219,7 @@ def run(ev):
     if _is_ancestor(remote, local, root):
         return hookio.ALLOW
 
-    # `$(git rev-list --count ... 2>/dev/null || echo "?")`: the fallback is the
-    # literal question mark, and it lands in the message. `want_rc` is what
-    # separates "git failed" from "git printed nothing", which the default
-    # spelling of git_out collapses.
+    # `$(git rev-list --count ... 2>/dev/null || echo "?")`: the fallback is the literal question mark, and it lands in the message. `want_rc` is what separates "git failed" from "git printed nothing", which the default spelling of git_out collapses.
     ahead = hookio.git_out(
         ["rev-list", "--count", "%s..%s" % (local, remote)], cwd=root, want_rc=True
     )

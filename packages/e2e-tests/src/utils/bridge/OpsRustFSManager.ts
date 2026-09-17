@@ -47,8 +47,7 @@ export class OpsRustFSManager {
       return { success: false, message: `Failed to start RustFS: ${result.stderr}` };
     }
 
-    // Verify RustFS is accessible by checking the S3 endpoint
-    // Note: RustFS returns 403 for unauthenticated requests, which means server is running
+    // Verify RustFS is accessible by checking the S3 endpoint Note: RustFS returns 403 for unauthenticated requests, which means server is running
     console.warn('[OpsRustFSManager] Verifying RustFS S3 endpoint...');
     const verifyResult = await this.vmExecutor.executeOnVM(
       this.bridgeIp,

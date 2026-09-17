@@ -67,9 +67,7 @@ fi
 exit "${FAKE_GH_RUN_RC:-0}"
 """
 
-# Everything the twin, common.sh and python3 reach for through PATH, so a
-# gh-free PATH can be built without also removing bash. `gh` is the ONE name
-# deliberately absent.
+# Everything the twin, common.sh and python3 reach for through PATH, so a gh-free PATH can be built without also removing bash. `gh` is the ONE name deliberately absent.
 TOOLS_WITHOUT_GH = (
     "bash",
     "cat",
@@ -155,9 +153,7 @@ def strip_bash_arith(stderr: str) -> str:
     return "\n".join(kept)
 
 
-# ---------------------------------------------------------------------------
-# The dispatch path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The dispatch path ---------------------------------------------------------------------------
 
 
 def test_an_explicit_head_ref_needs_no_lookup_at_all(bindir: pathlib.Path) -> None:
@@ -356,9 +352,7 @@ def test_the_404_pattern_is_matched_per_line_as_grep_matches_it(
     assert "✗ Failed to dispatch" in old[2]
 
 
-# ---------------------------------------------------------------------------
-# The generation cap
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The generation cap ---------------------------------------------------------------------------
 
 
 def test_the_cap_ends_the_chain_at_23(bindir: pathlib.Path) -> None:
@@ -434,9 +428,7 @@ def test_the_octal_helper_answers_both_directions() -> None:
     assert port.octal_gt("019", 22) is None
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_gh_missing_is_refused_before_anything_else(
@@ -622,9 +614,7 @@ def test_defect_f_a_failed_head_ref_lookup_ends_the_run_with_no_message(
     assert "⚠" not in old[2]
 
 
-# ---------------------------------------------------------------------------
-# Colour, and the pinned constants
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, and the pinned constants ---------------------------------------------------------------------------
 
 
 def test_colour_on_a_terminal_is_byte_identical(bindir: pathlib.Path) -> None:

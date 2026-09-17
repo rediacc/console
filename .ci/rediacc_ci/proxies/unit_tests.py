@@ -72,8 +72,7 @@ from rediacc_ci.core import proxyx
 # `grep -oE 'Tests +[0-9]+ (passed|failed)'` (:124).
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
 SUMMARY_RE = re.compile(r"^[ \t]*Tests[ \t].*\(([0-9]+)\)", re.MULTILINE)
-# `grep -oE 'Test Files +[0-9]+ '` then `grep -oE '[0-9]+'` (:126). The trailing
-# space is part of the pattern, so a count at end-of-line does not match.
+# `grep -oE 'Test Files +[0-9]+ '` then `grep -oE '[0-9]+'` (:126). The trailing space is part of the pattern, so a count at end-of-line does not match.
 FILES_RE = re.compile(r"Test Files +([0-9]+) ")
 
 
@@ -153,11 +152,7 @@ def run(workspace: str, script_key: str) -> int:
 
     ws_dir = resolve_workspace(root, workspace)
 
-    # THIS IS THE VACUITY REFUSAL for the workspace glob above, and it is worded
-    # to say so. check:ci-enumeration-vacuity could not SEE this guard until the
-    # word VACUOUS was in it: its detector keys on VACUOUS, a MIN_ name or the
-    # word floor, and a correct refusal in different words reads to it as no
-    # refusal at all. (:76-87)
+    # THIS IS THE VACUITY REFUSAL for the workspace glob above, and it is worded to say so. check:ci-enumeration-vacuity could not SEE this guard until the word VACUOUS was in it: its detector keys on VACUOUS, a MIN_ name or the word floor, and a correct refusal in different words reads to it as no refusal at all. (:76-87)
     if not ws_dir or not (root / ws_dir / "package.json").is_file():
         p.bad(
             f"VACUOUS: workspace '{workspace}' resolves to no package.json in any "

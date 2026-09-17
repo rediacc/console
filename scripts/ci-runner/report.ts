@@ -57,17 +57,13 @@ export function createReporter(opts: ReporterOptions) {
     header(gateCount: number, meta: RunMeta): void {
       const mode = meta.failFast ? 'fail-fast' : 'keep-going';
       opts.out(`ci-runner: ${gates(gateCount)}, ${meta.jobs} workers, ${mode}\n`);
-      // A partial run reporting green is the vacuity failure this whole
-      // design exists to prevent, so the selection is stated loudly at
-      // both ends of the output and carried in the JSON as partial:true.
+      // A partial run reporting green is the vacuity failure this whole design exists to prevent, so the selection is stated loudly at both ends of the output and carried in the JSON as partial:true.
       if (meta.selection !== undefined) {
         opts.out(`ci-runner: PARTIAL RUN, selection: ${meta.selection}\n`);
       }
     },
 
-    // Only under --verbose. At --jobs 1 a five-minute gate otherwise looks
-    // exactly like a hang, and ci:serial is the mode you reach for when
-    // something is already suspicious.
+    // Only under --verbose. At --jobs 1 a five-minute gate otherwise looks exactly like a hang, and ci:serial is the mode you reach for when something is already suspicious.
     start(id: string): void {
       opts.out(`  ..    ${pad(id)}\n`);
     },
@@ -81,11 +77,7 @@ export function createReporter(opts: ReporterOptions) {
         opts.out(`  SKIP  ${pad(result.id)}         ${result.reason ?? ''}\n`);
         return;
       }
-      // BLOCKED IS NOT FAIL, AND THE PER-GATE LINE MUST SAY SO. The footer
-      // counted the two separately from the start while this line still
-      // printed FAIL for both, so a run read "8 failed" above nine FAIL lines.
-      // A status that is only honest in the summary is not honest: the reader
-      // scanning for what to fix is reading THESE lines.
+      // BLOCKED IS NOT FAIL, AND THE PER-GATE LINE MUST SAY SO. The footer counted the two separately from the start while this line still printed FAIL for both, so a run read "8 failed" above nine FAIL lines. A status that is only honest in the summary is not honest: the reader scanning for what to fix is reading THESE lines.
       if (result.status === 'blocked') {
         opts.out(`BLOCK ${pad(result.id)} ${secs(result.ms).padStart(7)}   could not run here\n`);
         opts.out('  --- why ---\n');
@@ -112,13 +104,8 @@ export function createReporter(opts: ReporterOptions) {
       const ok = results.filter((r) => r.status === 'ok');
       const serialMs = results.reduce((sum, r) => sum + r.ms, 0);
       const speedup = meta.wallMs > 0 ? serialMs / meta.wallMs : 0;
-      // BLOCKED DOES NOT REDDEN THE RUN. A gate that could not run has said
-      // nothing about the code, and treating "this machine lacks ruff" as a
-      // finding is what turns a pre-push lane into a wall nobody keeps. It is
-      // never silent though -- it is counted below, listed by name with the
-      // gate's own message, and recorded in the receipt for the guard to warn
-      // on. Under CI the toolchain is present, so a gate exiting CANNOT_RUN
-      // there is a broken lane and shows up as a plain non-zero to the workflow.
+      // BLOCKED DOES NOT REDDEN THE RUN. A gate that could not run has said nothing about the code, and treating "this machine lacks ruff" as a finding is what turns a pre-push lane into a wall nobody keeps. It is never silent though -- it is counted below, listed by name with the gate's own message, and recorded in the receipt for the guard to warn on. Under CI the toolchain is
+      // present, so a gate exiting CANNOT_RUN there is a broken lane and shows up as a plain non-zero to the workflow.
       const exitCode = failed.length > 0 || skipped.length > 0 ? 1 : 0;
 
       opts.out(`${RULE}\n`);
@@ -150,9 +137,7 @@ export function createReporter(opts: ReporterOptions) {
         for (const r of skipped) opts.out(`  ${pad(r.id)}  ${r.reason ?? ''}\n`);
       }
       if (blocked.length > 0) {
-        // Named, with the gate's own words. The whole point of the status is
-        // that the reader can tell a missing tool from a real finding, and
-        // that distinction is only visible if the reason is printed.
+        // Named, with the gate's own words. The whole point of the status is that the reader can tell a missing tool from a real finding, and that distinction is only visible if the reason is printed.
         opts.out('BLOCKED (could not run here; NOT a verdict on the code):\n');
         for (const r of blocked) {
           const why = (r.stderr || r.stdout).trim().split('\n').filter(Boolean).slice(-3);

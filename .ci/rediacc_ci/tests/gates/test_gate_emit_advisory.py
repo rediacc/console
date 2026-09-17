@@ -56,9 +56,7 @@ EMIT = LIB_DIR / "emit-advisory.sh"
 COMMON = LIB_DIR / "common.sh"
 BLOCKER_VALIDATOR = LIB_DIR / "blocker-validator.sh"
 
-# The seven associative arrays emit_advisory reads. Declared EMPTY in the cases
-# that are not about metadata, because bash under `set -u` would abort on an
-# undeclared one and the abort would look like a rendering failure.
+# The seven associative arrays emit_advisory reads. Declared EMPTY in the cases that are not about metadata, because bash under `set -u` would abort on an undeclared one and the abort would look like a rendering failure.
 EMPTY_TABLES = (
     "declare -A ADV_SEVERITY=() ADV_TITLE=() ADV_GHSA=() ADV_URL=()\n"
     "declare -A ADV_VULN_RANGE=() ADV_PATCHED_VERSION=() ADV_DESC_PREVIEW=()\n"
@@ -140,8 +138,7 @@ emit_advisory error 'id1' 'pkgname' 'fix: upgrade' 'action: take the fix'
 
 def test_emit_returns_zero_even_with_empty_hints(gate):
     gate.log_test("the set -e gotcha: emit_advisory must return 0")
-    # A caller running `set -euo pipefail` must not exit on the trailing
-    # conditional inside emit_advisory.
+    # A caller running `set -euo pipefail` must not exit on the trailing conditional inside emit_advisory.
     result = bash_script(
         gate,
         "set -euo pipefail\nsource '%s'\n%semit_advisory warn 'testid' 'testpkg' ''\n"
@@ -172,9 +169,7 @@ def test_production_order_keeps_common_logger(gate):
 
 def test_no_escape_bytes_on_stdout_off_tty(gate):
     gate.log_test("off a tty, stdout must carry no colour escapes at all")
-    # log_success is the interesting one: common.sh does not define it, so it
-    # legitimately comes from this library even in production order. It must
-    # still honour the RED/GREEN/... that common.sh already emptied.
+    # log_success is the interesting one: common.sh does not define it, so it legitimately comes from this library even in production order. It must still honour the RED/GREEN/... that common.sh already emptied.
     result = bash_script(
         gate,
         "source '%s'\nsource '%s'\nlog_info x\nlog_warn y\nlog_success z\nlog_error a b\n"

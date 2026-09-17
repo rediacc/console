@@ -118,11 +118,7 @@ function expectedCommandFor(step: ManifestStep, issues: Issue[]): string | undef
     return undefined;
   }
 
-  // Presence was never enough. This command is generated verbatim into the
-  // portal's first-run flow, so a brand-new user copies and runs it. Asserting
-  // only that the field EXISTS let a command the CLI rejects reach that flow.
-  // Validated against the live command tree, the same instrument every other
-  // CLI gate uses.
+  // Presence was never enough. This command is generated verbatim into the portal's first-run flow, so a brand-new user copies and runs it. Asserting only that the field EXISTS let a command the CLI rejects reach that flow. Validated against the live command tree, the same instrument every other CLI gate uses.
   const parsed = parseRdcCommand(cmd);
   if (!parsed.ok && parsed.reason !== 'not-rdc') {
     issues.push({
@@ -241,20 +237,13 @@ function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
     });
   }
 
-  // EVERY LANGUAGE, not just English. The check above is older and was the only
-  // one, which is exactly how `chapters.cast-step-7` sat as a literal
-  // `TODO: translate chapter (...)` in all twelve non-English locales of
-  // tutorial-backup-restore without a single gate objecting: English was
-  // authored, so English was all anyone looked at, and the builder's
-  // English-fallback quietly filled the rest.
+  // EVERY LANGUAGE, not just English. The check above is older and was the only one, which is exactly how `chapters.cast-step-7` sat as a literal `TODO: translate chapter (...)` in all twelve non-English locales of tutorial-backup-restore without a single gate objecting: English was authored, so English was all anyone looked at, and the builder's English-fallback quietly filled
+  // the rest.
   //
-  // The fallback is now gone (build-account-onboarding.ts::resolveProse
-  // REFUSES), so this loop and that refusal say the same thing. Both are worth
-  // having: the builder fails at generation time, this fails in the gate lane
+  // The fallback is now gone (build-account-onboarding.ts::resolveProse REFUSES), so this loop and that refusal say the same thing. Both are worth having: the builder fails at generation time, this fails in the gate lane
   // with every offending language listed at once instead of one per run.
   //
-  // SITE_LOCALES rather than a list written here, deliberately: a hand-rolled
-  // locale set is what produced a 379-key blind spot in this repo before.
+  // SITE_LOCALES rather than a list written here, deliberately: a hand-rolled locale set is what produced a 379-key blind spot in this repo before.
   for (const lang of SITE_LOCALES) {
     if (lang === 'en') continue;
     const localised = readTranscript(step.tutorial, lang);
@@ -373,16 +362,9 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
     } else {
       // ★ Compare the command TEXT, not just its non-emptiness.
       //
-      // This gate used to check that `command` was a non-empty string and nothing more — so
-      // the CORRECT file and a file teaching a DELETED command both passed. That is how a
-      // regeneration silently reverted a real fix in the FIRST-RUN FLOW, the very first
-      // command a new user ever types, and no gate said a word. It validated the SHAPE and
-      // not the THING.
+      // This gate used to check that `command` was a non-empty string and nothing more — so the CORRECT file and a file teaching a DELETED command both passed. That is how a regeneration silently reverted a real fix in the FIRST-RUN FLOW, the very first command a new user ever types, and no gate said a word. It validated the SHAPE and not the THING.
       //
-      // The command is derived from the storyboard scene's `card.commandFull`, so a mismatch
-      // means the generated file was hand-edited (it is generated — do not) or the storyboard
-      // moved underneath it. Either way it is stale, and staleness in this file is a lie told
-      // to someone on their first minute with the product.
+      // The command is derived from the storyboard scene's `card.commandFull`, so a mismatch means the generated file was hand-edited (it is generated — do not) or the storyboard moved underneath it. Either way it is stale, and staleness in this file is a lie told to someone on their first minute with the product.
       const expected = expectedCommandFor(mStep, issues);
       if (expected !== undefined && gStep.command.trim() !== expected.trim()) {
         issues.push({

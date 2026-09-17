@@ -78,26 +78,17 @@ MANIFEST_REL = ".ci/breakpoint/MANIFEST.sha256"
 MANIFEST_ROW = "lib/breakpoint-blocker.sh"
 CORPUS_REL = ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
 
-# The tree under judgement, resolved at CALL time. Without this seam every
-# refusal in `run()` is unreachable from a PROCESS -- the module's own controls
-# could reach them by argument, and the gate test could only ever watch the gate
-# succeed. A gate nobody has seen fail through its real entry point is the exact
-# shape this estate keeps getting caught by.
+# The tree under judgement, resolved at CALL time. Without this seam every refusal in `run()` is unreachable from a PROCESS -- the module's own controls could reach them by argument, and the gate test could only ever watch the gate succeed. A gate nobody has seen fail through its real entry point is the exact shape this estate keeps getting caught by.
 ROOT_ENV = "VENDORED_BLOCKER_ROOT"
 
 PHRASE_ARRAY = "BREAKPOINT_LOW_EFFORT_BLOCKERS"
 MIN_LENGTH_NAME = "BREAKPOINT_BLOCKER_MIN_LENGTH"
 
-# The extractor-truncation floor `check_subset` in test-breakpoint-portability.sh
-# carries, for the reason it records: on 2026-07-31 a short read under the
-# parallel runner returned a canonical list missing one phrase and the subset
-# check blamed the vendored copy. A parse below this is an extractor failure and
-# says so, rather than being reported as a list that changed.
+# The extractor-truncation floor `check_subset` in test-breakpoint-portability.sh carries, for the reason it records: on 2026-07-31 a short read under the parallel runner returned a canonical list missing one phrase and the subset check blamed the vendored copy. A parse below this is an extractor failure and says so, rather than being reported as a list that changed.
 MIN_PARSED_PHRASES = 30
 
 # `[[ "$x" == *"$p"* ]]`, the only way bash does the substring match the canonical
-# validator's second list needs. Written as its own constant so the refusal can
-# quote what it looked for.
+# validator's second list needs. Written as its own constant so the refusal can quote what it looked for.
 SUBSTRING_MATCH_RE = re.compile(r'==\s*\*"\$')
 
 
@@ -105,9 +96,7 @@ class RefusalError(Exception):
     """The gate cannot see its subject, so a green here would mean nothing."""
 
 
-# ---------------------------------------------------------------------------
-# reading the vendored copy, without writing to it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- reading the vendored copy, without writing to it ---------------------------------------------------------------------------
 
 
 def sha256_of(path: pathlib.Path) -> str:
@@ -175,9 +164,7 @@ def array_names(source: str) -> list[str]:
     return re.findall(r"^readonly\s+(\w+)=\(", source, re.MULTILINE)
 
 
-# ---------------------------------------------------------------------------
-# the corpus, read as data
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the corpus, read as data ---------------------------------------------------------------------------
 
 
 class Case:
@@ -205,11 +192,7 @@ def parse_corpus(source: str) -> list[Case]:
     refusal rather than skipped, because a silently dropped row is a case this
     gate would then claim to have derived.
     """
-    # ANCHORED ON THE VARIABLE NAME AND TOLERANT OF WHAT FOLLOWS THE REDIRECT.
-    # The first draft matched `<<'EOF'\n` and found nothing, because the real line
-    # is `read -r -d '' CORPUS <<'EOF' || true` -- the `|| true` sits between the
-    # redirect and the newline. That parsed to zero rows, which the refusal caught
-    # and a laxer gate would have reported as a clean run over an empty corpus.
+    # ANCHORED ON THE VARIABLE NAME AND TOLERANT OF WHAT FOLLOWS THE REDIRECT. The first draft matched `<<'EOF'\n` and found nothing, because the real line is `read -r -d '' CORPUS <<'EOF' || true` -- the `|| true` sits between the redirect and the newline. That parsed to zero rows, which the refusal caught and a laxer gate would have reported as a clean run over an empty corpus.
     match = re.search(r"CORPUS\s*<<'EOF'[^\n]*\n(.*?)\nEOF\n", source, re.DOTALL)
     if match is None:
         return []
@@ -227,9 +210,7 @@ def parse_corpus(source: str) -> list[Case]:
     return rows
 
 
-# ---------------------------------------------------------------------------
-# the two models
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the two models ---------------------------------------------------------------------------
 
 
 def canonical_verdict(reason: str) -> str:
@@ -262,9 +243,7 @@ def vendored_verdict(reason: str, phrases: frozenset[str], min_length: int) -> s
     return "accept"
 
 
-# ---------------------------------------------------------------------------
-# the scan
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the scan ---------------------------------------------------------------------------
 
 
 class Shape:
@@ -438,8 +417,7 @@ def run(root: pathlib.Path | None = None) -> tuple[list[str], Shape]:
                 % (case.case_id, case.sh, case.bp)
             )
 
-    # A derivation that explains one class and not the other is half a derivation,
-    # and the half that is missing is invisible in a count.
+    # A derivation that explains one class and not the other is half a derivation, and the half that is missing is invisible in a count.
     if not shape.by_phrase:
         findings.append(
             "ZERO divergences attributed to a dropped phrase. Either the corpus stopped "
@@ -520,14 +498,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
+# --------------------------------------------------------------------------- controls
 #
 # EVERY FIXTURE IS A COPY. The real `.ci/breakpoint/` is never a write target
 # here, which is invariant 8 and also the thing claim 5 asserts at run time; a
-# control that perturbed the original to prove the gate notices perturbation
-# would be the one write nobody could defend.
-# ---------------------------------------------------------------------------
+# control that perturbed the original to prove the gate notices perturbation would be the one write nobody could defend. ---------------------------------------------------------------------------
 
 
 def _fixture(tmp, *, vendored: str, corpus: str, manifest: str | None = None) -> pathlib.Path:
@@ -561,8 +536,7 @@ def selftest() -> bool:
 
     check = Checker()
 
-    # The REAL files are the fixture. An invented vendored copy and an invented
-    # corpus would prove the parsers agree with each other and nothing about the
+    # The REAL files are the fixture. An invented vendored copy and an invented corpus would prove the parsers agree with each other and nothing about the
     # artifacts in this tree; the two defects a synthetic fixture cannot see are
     # a comment shape the extractor mis-reads and a heredoc that moved.
     real_vendored = _real(VENDORED_REL)
@@ -605,9 +579,7 @@ def selftest() -> bool:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # A SECOND LIST APPEARS. The likeliest real drift: somebody upstreams the
-        # canonical substring rule into the vendored copy and the corpus's five
-        # stops meaning what it means.
+        # A SECOND LIST APPEARS. The likeliest real drift: somebody upstreams the canonical substring rule into the vendored copy and the corpus's five stops meaning what it means.
         mutant = plant(
             real_vendored,
             "readonly BREAKPOINT_BLOCKER_MIN_LENGTH=30",
@@ -648,8 +620,7 @@ def selftest() -> bool:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # THE COMPOSITION TRAP, in its exact shape: the divergence COUNT is
-        # unchanged and the membership is not. Adding `no fix` back to the
+        # THE COMPOSITION TRAP, in its exact shape: the divergence COUNT is unchanged and the membership is not. Adding `no fix` back to the
         # vendored list turns banned-no-fix into agreement; the corpus still
         # records a divergence there, so the model stops describing the file.
         mutant = plant(real_vendored, '    "none" "n/a"', '    "no fix" "none" "n/a"')
@@ -722,9 +693,7 @@ def selftest() -> bool:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # INNOCENCE, asserted rather than assumed: the fixture's own bytes are
-        # unchanged after a full run, which is the same claim `run()` makes about
-        # the real file at the end of every invocation.
+        # INNOCENCE, asserted rather than assumed: the fixture's own bytes are unchanged after a full run, which is the same claim `run()` makes about the real file at the end of every invocation.
         root = _fixture(tmp, vendored=real_vendored, corpus=real_corpus)
         digest_before = sha256_of(root / VENDORED_REL)
         _run_at(root)

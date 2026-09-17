@@ -87,13 +87,10 @@ import time
 
 WL = ".claude/hooks/stop/worklist.py"
 
-# `grep -o 'worker:[A-Za-z0-9._-]*'`. Explicit ASCII ranges, matching the twin's
-# bracket expression under the C collation CI and the shadow-gate harness set.
+# `grep -o 'worker:[A-Za-z0-9._-]*'`. Explicit ASCII ranges, matching the twin's bracket expression under the C collation CI and the shadow-gate harness set.
 WORKER_RE = re.compile(r"worker:[A-Za-z0-9._-]*")
 
-# `grep -c '^  - \['` and `grep -c '^  - \[?\]'`. In a BRE `\[` and `\]` are
-# literal brackets and `?` is an ordinary character, so the second pattern is
-# the literal text `  - [?]` anchored at the start of a line.
+# `grep -c '^ - \['` and `grep -c '^ - \[?\]'`. In a BRE `\[` and `\]` are literal brackets and `?` is an ordinary character, so the second pattern is the literal text ` - [?]` anchored at the start of a line.
 OPEN_ITEM_PREFIX = "  - ["
 DEFERRAL_PREFIX = "  - [?]"
 
@@ -159,8 +156,7 @@ def resolve_tasks_dir(me: str, cwd: str) -> str:
         return ""
     # `for d in "$root"/"$ME"*` iterates in the shell's glob order, which is the
     # collation order of the current locale; `break` on the FIRST match makes
-    # that order load-bearing. `sorted()` is byte order, which is what bash's
-    # glob gives under the C collation this runs in.
+    # that order load-bearing. `sorted()` is byte order, which is what bash's glob gives under the C collation this runs in.
     for d in sorted(root.glob("%s*" % me)):
         if (d / "tasks").is_dir():
             return str(d / "tasks")
@@ -196,9 +192,7 @@ def main(argv: list[str]) -> int:
 
     raw = os.environ.get("CLAUDE_CODE_SESSION_ID")
     if raw is None:
-        # THE UNSET CASE. See the module docstring: the twin dies here under
-        # `set -u` before its own guard can run, and the guard below is
-        # unreachable for it. bash's own `line 21:` prefix is not forged.
+        # THE UNSET CASE. See the module docstring: the twin dies here under `set -u` before its own guard can run, and the guard below is unreachable for it. bash's own `line 21:` prefix is not forged.
         print(
             "standing-orders-brief: CLAUDE_CODE_SESSION_ID: unbound variable",
             file=sys.stderr,
@@ -216,9 +210,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     rc, branch_out = _run(["git", "branch", "--show-current"])
-    # `$(git ... 2>/dev/null || echo '?')`: the fallback fires on a NON-ZERO
-    # status, not on empty output. A detached HEAD prints nothing and exits 0,
-    # so the branch renders empty rather than as `?`.
+    # `$(git ... 2>/dev/null || echo '?')`: the fallback fires on a NON-ZERO status, not on empty output. A detached HEAD prints nothing and exits 0, so the branch renders empty rather than as `?`.
     branch = branch_out.rstrip("\n") if rc == 0 else "?"
     stamp = datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%dT%H:%MZ")
     print("I am %s on branch %s at %s" % (me, branch, stamp), flush=True)

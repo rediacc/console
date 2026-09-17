@@ -113,31 +113,22 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The escapes, assigned unconditionally exactly as the twin assigns them. See
-# the port notes: this is deliberate fidelity, not an oversight.
+# The escapes, assigned unconditionally exactly as the twin assigns them. See the port notes: this is deliberate fidelity, not an oversight.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The threshold, overridable by the same environment variable the twin reads.
-# Read at CALL time rather than at import, so a test can point one run at a
-# small limit without the module having been imported under the other value.
+# The threshold, overridable by the same environment variable the twin reads. Read at CALL time rather than at import, so a test can point one run at a small limit without the module having been imported under the other value.
 MAX_LINES_ENV = "SHELL_MAX_LINES"
 DEFAULT_MAX_LINES = 5000
 
-# The anti-vacuity floor. A scan over nothing passes, so a scan over nothing is
-# a FAILURE. 50 is far below the ~450 shell files this tree carries and far
-# above anything a collapsed glob would return.
+# The anti-vacuity floor. A scan over nothing passes, so a scan over nothing is a FAILURE. 50 is far below the ~450 shell files this tree carries and far above anything a collapsed glob would return.
 MIN_FILES = 50
 
-# The sentinel `over_limit` returns for a file it could not read. A distinct
-# value rather than a number, because "I could not look" and "it is 0 lines
-# long" are different claims and collapsing them is the defect this gate polices.
+# The sentinel `over_limit` returns for a file it could not read. A distinct value rather than a number, because "I could not look" and "it is 0 lines long" are different claims and collapsing them is the defect this gate polices.
 UNREADABLE = "UNREADABLE"
 
-# The escape hatch, as a real directive line rather than prose mentioning it.
-# This gate's own header names the flag several times, which is exactly why the
-# pattern demands `#`, then optional space, then the literal word `shellcheck`.
+# The escape hatch, as a real directive line rather than prose mentioning it. This gate's own header names the flag several times, which is exactly why the pattern demands `#`, then optional space, then the literal word `shellcheck`.
 DIRECTIVE_RE = r"^[[:space:]]*#[[:space:]]*shellcheck[[:space:]]+.*extended-analysis=false"
 
 
@@ -184,10 +175,7 @@ def over_limit(path: pathlib.Path, limit: int) -> str:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        # A FILE THE GATE CANNOT READ MUST NOT READ AS COMPLIANT. A permission
-        # error, a broken symlink, a path that vanished between enumeration and
-        # here -- all of them arrive as OSError and all of them mean the same
-        # thing: this file was not checked.
+        # A FILE THE GATE CANNOT READ MUST NOT READ AS COMPLIANT. A permission error, a broken symlink, a path that vanished between enumeration and here -- all of them arrive as OSError and all of them mean the same thing: this file was not checked.
         return UNREADABLE
     count = text.count("\n")
     if count <= limit:
@@ -287,10 +275,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         bad("S2. SCANNED ONLY %d FILE(S) -- the enumeration broke, not the tree" % scanned)
 
-    # --- controls, by CONSTRUCTION ------------------------------------------
-    # Generated with a range, never by copying and mutating a real file: a
-    # substitution can silently no-op, and the control then passes against
-    # unmutated input.
+    # --- controls, by CONSTRUCTION ------------------------------------------ Generated with a range, never by copying and mutating a real file: a substitution can silently no-op, and the control then passes against unmutated input.
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = pathlib.Path(tmp)
 
@@ -399,16 +384,12 @@ def selftest() -> int:
         over.write_text(gen_lines(21), encoding="utf-8")
         ctl.check("BOUNDARY: one line over the limit is not", over_limit(over, 20), "21")
 
-        # NO TRAILING NEWLINE. `wc -l` counts terminators, so 21 lines without a
-        # final newline is 20 to this gate. A port using splitlines() would
-        # disagree with its twin here and nowhere else.
+        # NO TRAILING NEWLINE. `wc -l` counts terminators, so 21 lines without a final newline is 20 to this gate. A port using splitlines() would disagree with its twin here and nowhere else.
         noeol = tmpdir / "n.sh"
         noeol.write_text(gen_lines(20) + "echo 21", encoding="utf-8")
         ctl.check("BOUNDARY: a missing final newline is not a line", over_limit(noeol, 20), "")
 
-        # THE UNREADABLE CASE, which is the vacuity this gate polices inside
-        # itself. Skipped rather than faked when the process can read anything
-        # regardless of mode, which is what running as uid 0 means.
+        # THE UNREADABLE CASE, which is the vacuity this gate polices inside itself. Skipped rather than faked when the process can read anything regardless of mode, which is what running as uid 0 means.
         locked = tmpdir / "locked.sh"
         locked.write_text(gen_lines(30), encoding="utf-8")
         locked.chmod(0o000)
@@ -484,8 +465,7 @@ def selftest() -> int:
             1,
         )
     with tempfile.TemporaryDirectory() as tmp:
-        # THE ANTI-VACUITY CASE, and it is the one that matters most: a tree the
-        # enumeration cannot see reads exactly like a clean tree unless S2 fires.
+        # THE ANTI-VACUITY CASE, and it is the one that matters most: a tree the enumeration cannot see reads exactly like a clean tree unless S2 fires.
         ctl.check(
             "VACUITY: a tree below the file floor is a FAILURE, not a pass",
             run(build(tmp, fillers=3, oversized=0, limit=20), 20),

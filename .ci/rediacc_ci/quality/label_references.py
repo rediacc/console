@@ -134,30 +134,17 @@ DEFAULT_SCAN_DIRS = ".github .ci"
 # means the sweep itself broke (wrong root, bad glob), not a clean tree."
 DEFAULT_MIN_DISTINCT = 8
 
-# Excluded by BASENAME, because both files carry planted sample lines that are
-# instrument fixtures rather than label references.
+# Excluded by BASENAME, because both files carry planted sample lines that are instrument fixtures rather than label references.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")
 
 # The token every planted sample must yield, ASSEMBLED rather than written.
 #
-# THIS FILE WOULD OTHERWISE POISON THE GATE IT IMPLEMENTS, and it did: the first
-# draft carried the ten sample lines as literals, so the real sweep over `.ci`
-# found `selftest-label` in this very file and reported it as an undeclared label
-# reference. The twin dodges that by excluding its OWN basename, and its comment
-# says why: "This script and its test carry PLANTED sample lines ... instrument
-# fixtures, not label references." A second basename exclusion would work too, and
-# would be worse: it would make the port scan a corpus the twin does not, so the
-# two would disagree on the real tree for a reason that has nothing to do with
-# labels. Assembling the shapes at runtime removes the reason instead of hiding
-# it, which is the same treatment `dead_case_arms.py` and `pipefail_grep_q.py`
-# already give to a gate that must not match its own text.
+# THIS FILE WOULD OTHERWISE POISON THE GATE IT IMPLEMENTS, and it did: the first draft carried the ten sample lines as literals, so the real sweep over `.ci` found `selftest-label` in this very file and reported it as an undeclared label reference. The twin dodges that by excluding its OWN basename, and its comment says why: "This script and its test carry PLANTED sample lines ...
+# instrument fixtures, not label references." A second basename exclusion would work too, and would be worse: it would make the port scan a corpus the twin does not, so the two would disagree on the real tree for a reason that has nothing to do with labels. Assembling the shapes at runtime removes the reason instead of hiding it, which is the same treatment `dead_case_arms.py` and
+# `pipefail_grep_q.py` already give to a gate that must not match its own text.
 SELFTEST_LABEL = "selftest" + "-label"
 
-# One entry per consumption shape that exists in the tree, in the twin's order.
-# `extract` is (line-matcher, capture) and `sample` is the planted line that must
-# yield SELFTEST_LABEL. Keeping the sample beside the pattern is the whole design:
-# a pattern that silently stops matching turns the gate red instead of quietly
-# under-reporting.
+# One entry per consumption shape that exists in the tree, in the twin's order. `extract` is (line-matcher, capture) and `sample` is the planted line that must yield SELFTEST_LABEL. Keeping the sample beside the pattern is the whole design: a pattern that silently stops matching turns the gate red instead of quietly under-reporting.
 PATTERNS: dict[str, dict[str, object]] = {
     "workflow-contains": {
         "find": re.compile(r"labels\.\*\.name, '[A-Za-z0-9._:-]+'"),
@@ -187,8 +174,7 @@ PATTERNS: dict[str, dict[str, object]] = {
         "sample": "const ISSUE_LABEL = '%s';" % SELFTEST_LABEL,
     },
     "js-labels-array": {
-        # Quoted strings on a line declaring a *_LABELS array literal. The only
-        # pattern that matches a whole LINE and then extracts from it.
+        # Quoted strings on a line declaring a *_LABELS array literal. The only pattern that matches a whole LINE and then extracts from it.
         "line": re.compile(r"_LABELS = \["),
         "find": re.compile(r"'[A-Za-z0-9._:-]+'"),
         "unquote": True,
@@ -197,8 +183,7 @@ PATTERNS: dict[str, dict[str, object]] = {
     "jq-arg-label": {
         # autopilot-gate.sh passes the label under test as a jq argument named
         # `l`. The twin's comment spells that shape out inline; this one does not,
-        # because the twin is excluded by basename and this file is not, and the
-        # spelled-out form matched itself and reported `...` as a label.
+        # because the twin is excluded by basename and this file is not, and the spelled-out form matched itself and reported `...` as a label.
         "find": re.compile(r'--arg l "[A-Za-z0-9._:-]+"'),
         "capture": re.compile(r'.*"([^"]+)".*'),
         "sample": 'jq -e --arg l "%s" query' % SELFTEST_LABEL,
@@ -223,8 +208,7 @@ PATTERNS: dict[str, dict[str, object]] = {
     },
 }
 
-# `grep -E '^- name:'` then two `sed`s. The trailing-space strip is separate in
-# the twin and is kept separate here.
+# `grep -E '^- name:'` then two `sed`s. The trailing-space strip is separate in the twin and is kept separate here.
 DECLARED_RE = re.compile(r"^- name:[ \t]*")
 TRAILING_SPACE = re.compile(r"[ \t]+$")
 
@@ -343,9 +327,7 @@ def sites_for(label: str, scan_dirs: list[str], base: pathlib.Path) -> str:
         # NO EXCLUSIONS HERE, and that asymmetry is the twin's. The extraction
         # greps carry `--exclude=check-label-references.sh --exclude=test-label-
         # references.sh`; this one does not, so a label whose only mention is
-        # inside an excluded instrument file is still LISTED as a site while not
-        # counting as a reference. Reproduced, because the first draft applied the
-        # exclusions here too and dropped a site the twin prints.
+        # inside an excluded instrument file is still LISTED as a site while not counting as a reference. Reproduced, because the first draft applied the exclusions here too and dropped a site the twin prints.
         for path, text in walk_text(absolute, apply_excludes=False):
             if needle.search(text):
                 try:
@@ -383,10 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("labels file not found: %s" % labels_file)
         return 1
 
-    # ---- the self-test, before the sweep ---------------------------------
-    # "A pattern that cannot fire is a pattern that silently stopped protecting
-    # its consumption shape." The sample files are named sample.txt, which is why
-    # the basename exclusions above cannot mask this.
+    # ---- the self-test, before the sweep --------------------------------- "A pattern that cannot fire is a pattern that silently stopped protecting its consumption shape." The sample files are named sample.txt, which is why the basename exclusions above cannot mask this.
     with tempfile.TemporaryDirectory() as selftest_dir:
         sample = pathlib.Path(selftest_dir) / "sample.txt"
         for name, spec in PATTERNS.items():
@@ -407,9 +386,7 @@ def main(argv: list[str] | None = None) -> int:
         swept.update(extract(name, targets))
     found = sorted(swept)
 
-    # "'ubuntu-slim' etc. cannot appear: patterns anchor on label-consuming
-    # shapes, not on generic strings. Still, drop anything that is obviously a
-    # template placeholder rather than a literal."
+    # "'ubuntu-slim' etc. cannot appear: patterns anchor on label-consuming shapes, not on generic strings. Still, drop anything that is obviously a template placeholder rather than a literal."
     found = [
         label for label in found if not BLANK_RE.match(label) and not TEMPLATE_RE.search(label)
     ]
@@ -488,8 +465,7 @@ def selftest() -> int:
 
         # BINARY FILES ARE INVISIBLE TO ugrep, so they must be invisible here.
         binary = pathlib.Path(tmp) / "b.bin"
-        # ASSEMBLED, like every other sample in this file: written as a literal
-        # it is a search-filter reference, and the real sweep reads this file.
+        # ASSEMBLED, like every other sample in this file: written as a literal it is a search-filter reference, and the real sweep reads this file.
         binary.write_bytes(("label:%s\x00\n" % SELFTEST_LABEL).encode())
         ctl.check(
             "a file with a NUL byte contributes nothing", extract("search-filter", [binary]), []
@@ -501,8 +477,7 @@ def selftest() -> int:
         declared_labels("- name: alpha  \n  color: red\n- name: beta\n"),
         ["alpha", "beta"],
     )
-    # THE 96355d3b5 CASE. An empty file yields an EMPTY LIST, never a fatal exit,
-    # so the floor below it can actually fire.
+    # THE 96355d3b5 CASE. An empty file yields an EMPTY LIST, never a fatal exit, so the floor below it can actually fire.
     ctl.check("an empty labels file yields no declarations", declared_labels(""), [])
     ctl.check("an indented name: is not a declaration", declared_labels("  - name: x\n"), [])
 

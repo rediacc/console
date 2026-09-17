@@ -40,37 +40,23 @@ def child(tmp_path):
         pytest.skip("%s is not present on this host" % BASH)
     token = "shellscan-probe-%s" % uuid.uuid4().hex[:12]
     script = tmp_path / ("%s.sh" % token)
-    # LONG ENOUGH THAT A LOADED SCHEDULER CANNOT OUTRUN IT. This was 9 seconds,
-    # which is not a margin on a CI runner executing 15,968 tests across 22 xdist
-    # workers: the child simply EXITED mid-test, both cmdline readers returned
+    # LONG ENOUGH THAT A LOADED SCHEDULER CANNOT OUTRUN IT. This was 9 seconds, which is not a margin on a CI runner executing 15,968 tests across 22 xdist workers: the child simply EXITED mid-test, both cmdline readers returned
     # "", and the trailing-space invariant below failed as `assert '' == ' '` --
-    # a message describing a string comparison rather than the dead process that
-    # caused it. Observed in job 104713219233.
+    # a message describing a string comparison rather than the dead process that caused it. Observed in job 104713219233.
     #
-    # Teardown kills this unconditionally in a `finally`, so a generous lifetime
-    # cannot leak: the child dies when the test does, not when its timer expires.
+    # Teardown kills this unconditionally in a `finally`, so a generous lifetime cannot leak: the child dies when the test does, not when its timer expires.
     lifetime_s = 600
     script.write_text("#!/usr/bin/env bash\nsleep %d\n" % lifetime_s, encoding="utf-8")
-    # AN ABSOLUTE PATH, not `bash`. On this machine `bash` on PATH is a
-    # coverage shim (`bashcov-sup`) that execs the real one, so the fixture
-    # produced a process whose `comm` was `bashcov-sup` and, for a moment, TWO
-    # processes matching the token -- which made the pgrep comparison below
-    # race. The guards care about a real interpreter, so the fixture starts one.
+    # AN ABSOLUTE PATH, not `bash`. On this machine `bash` on PATH is a coverage shim (`bashcov-sup`) that execs the real one, so the fixture produced a process whose `comm` was `bashcov-sup` and, for a moment, TWO processes matching the token -- which made the pgrep comparison below race. The guards care about a real interpreter, so the fixture starts one.
     #
-    # A SCRUBBED ENVIRONMENT, and that is not tidiness either. This repo sets
-    # `BASH_ENV` and `BASHCOV_*` to a shell profiler, and an inherited
-    # `BASHCOV_SHAPE` makes the spawned bash re-exec itself under a supervisor:
-    # the process at this pid then reads
+    # A SCRUBBED ENVIRONMENT, and that is not tidiness either. This repo sets `BASH_ENV` and `BASHCOV_*` to a shell profiler, and an inherited `BASHCOV_SHAPE` makes the spawned bash re-exec itself under a supervisor: the process at this pid then reads
     # `.../bashcov-sup -- /bin/bash -B -- <script>` with `comm` = `bashcov-sup`,
-    # and the real interpreter is its CHILD. The fixture wants a plain
-    # interpreter, so it asks for one.
+    # and the real interpreter is its CHILD. The fixture wants a plain interpreter, so it asks for one.
     popen = subprocess.Popen(
         [BASH, str(script)],
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
     )
-    # The process must be in the table before anything asks about it. Polling
-    # beats a fixed pause: a fixed one is either flaky on a loaded machine or
-    # slow on an idle one, and this suite runs on both.
+    # The process must be in the table before anything asks about it. Polling beats a fixed pause: a fixed one is either flaky on a loaded machine or slow on an idle one, and this suite runs on both.
     deadline = time.time() + 10
     while time.time() < deadline:
         if os.path.exists("/proc/%d/cmdline" % popen.pid):
@@ -130,10 +116,7 @@ def test_matches_real_pgrep(forced, child, backend):
     forced(backend)
     real = subprocess.run(["pgrep", "-f", "--", child["token"]], capture_output=True, check=False)
     expected = sorted(int(p) for p in real.stdout.split())
-    # The token is a fresh uuid, so exactly one process on the machine can
-    # match it. Pinning that first turns any later disagreement into a real
-    # difference rather than a race between two listings taken microseconds
-    # apart on a machine where processes come and go.
+    # The token is a fresh uuid, so exactly one process on the machine can match it. Pinning that first turns any later disagreement into a real difference rather than a race between two listings taken microseconds apart on a machine where processes come and go.
     assert expected == [child["pid"]]
     assert proc.pgrep_full(child["token"]) == expected
 
@@ -148,13 +131,9 @@ def test_cmdline_forms_agree_with_the_shell_pipeline(forced, child, backend):
     """
     forced(backend)
     pid = child["pid"]
-    # SAY WHICH THING BROKE, AND TEST THE RIGHT THING. A pid that is fully gone
-    # reads as None (pinned below in test_a_dead_process_is_absent_and_not_an_error),
+    # SAY WHICH THING BROKE, AND TEST THE RIGHT THING. A pid that is fully gone reads as None (pinned below in test_a_dead_process_is_absent_and_not_an_error),
     # but job 104713219233 produced `assert '' == ' '` -- an EMPTY string, not
-    # None. That is a ZOMBIE: the child had exited, `/proc/<pid>/cmdline` still
-    # existed, and reading it returned nothing. So `os.path.exists` is the wrong
-    # precondition here, because it passes for exactly the state that broke it.
-    # The honest precondition is that the read produced something.
+    # None. That is a ZOMBIE: the child had exited, `/proc/<pid>/cmdline` still existed, and reading it returned nothing. So `os.path.exists` is the wrong precondition here, because it passes for exactly the state that broke it. The honest precondition is that the read produced something.
     live = proc.cmdline(pid)
     assert live, (
         "the fixture's child is not running -- an empty cmdline means it exited "
@@ -201,8 +180,6 @@ def test_both_backends_see_this_very_process(monkeypatch):
         monkeypatch.setenv(proc.BACKEND_ENV, backend)
         seen[backend] = proc.pids()
         assert os.getpid() in seen[backend], "%s backend lost its own process" % backend
-    # Not an equality: processes start and exit between the two listings, and a
-    # test that demanded identical sets would be flaky on a busy machine for a
-    # reason that has nothing to do with the code.
+    # Not an equality: processes start and exit between the two listings, and a test that demanded identical sets would be flaky on a busy machine for a reason that has nothing to do with the code.
     overlap = set(seen["proc"]) & set(seen["ps"])
     assert len(overlap) > 10

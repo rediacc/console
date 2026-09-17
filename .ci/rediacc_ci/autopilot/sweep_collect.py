@@ -119,8 +119,7 @@ GH_BACKOFF_SECONDS = 3
 
 # The comment transform, verbatim. `--slurp` wrapped the pages, `.[][]`
 # flattens them back; see the twin's comment on why `--paginate --jq` cannot be
-# used here (the runner's gh refuses `--slurp` with `--jq`, proven live on the
-# first canary dispatch 2026-08-09).
+# used here (the runner's gh refuses `--slurp` with `--jq`, proven live on the first canary dispatch 2026-08-09).
 COMMENT_FILTER = "[.[][] | {id, author: .user.login, body}]"
 
 # The PR number extractor for the loop.
@@ -183,9 +182,7 @@ def gh_probe(
                 check=False,
             )
         except OSError:
-            # `gh` missing entirely: bash's command-not-found is 127 with its
-            # own message on stderr, which `2>"$err"` captures and the final
-            # failure replays.
+            # `gh` missing entirely: bash's command-not-found is 127 with its own message on stderr, which `2>"$err"` captures and the final failure replays.
             rc, out, err = 127, b"", b"gh: command not found\n"
         else:
             rc = proc.returncode
@@ -202,12 +199,10 @@ def gh_probe(
         attempt += 1
     log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
     if err:
-        # `[[ -s "$err" ]] && sed 's/^/    /' "$err" >&2`: every line, including
-        # a trailing empty one, gets the four spaces.
+        # `[[ -s "$err" ]] && sed 's/^/ /' "$err" >&2`: every line, including a trailing empty one, gets the four spaces.
         text = err.decode("utf-8", "replace")
         parts = text.split("\n")
-        # GNU sed PRESERVES a missing final newline, so the replay of a stderr
-        # that did not end in one does not invent one either.
+        # GNU sed PRESERVES a missing final newline, so the replay of a stderr that did not end in one does not invent one either.
         incomplete = parts[-1] != ""
         if not incomplete:
             parts.pop()
@@ -347,9 +342,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
         return 1
     _write(label_armed, body)
 
-    # DEFECT 1 lives here: this jq's exit status is discarded by the process
-    # substitution, so a `prs.json` that cannot be indexed scans zero PRs and
-    # the sweep still succeeds. stderr is INHERITED, matching `<(...)`.
+    # DEFECT 1 lives here: this jq's exit status is discarded by the process substitution, so a `prs.json` that cannot be indexed scans zero PRs and the sweep still succeeds. stderr is INHERITED, matching `<(...)`.
     numbers = (
         subprocess.run(
             ["jq", "-r", NUMBER_FILTER, prs_json],

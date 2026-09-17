@@ -149,29 +149,22 @@ from rediacc_ci.core import common
 # `retry_with_backoff 3 10` at both call sites (install-deps.sh:57 and :86).
 # Three attempts, ten seconds before the second and twenty before the third; the
 # doubling is `delay=$((delay * 2))` in common.sh:229. Named constants rather
-# than inline numbers because the two call sites must not drift apart, which is
-# exactly what happened to the account trees before they were listed in one
-# place.
+# than inline numbers because the two call sites must not drift apart, which is exactly what happened to the account trees before they were listed in one place.
 RETRY_ATTEMPTS = 3
 RETRY_DELAY = 10.0
 RETRY_FACTOR = 2.0
 
-# The three account trees, in the twin's order (install-deps.sh:83). ORDER IS
-# OBSERVABLE: each install prints, and a failure stops the loop, so the tree that
-# fails first is the tree named in the error.
+# The three account trees, in the twin's order (install-deps.sh:83). ORDER IS OBSERVABLE: each install prints, and a failure stops the loop, so the tree that fails first is the tree named in the error.
 ACCOUNT_DIRS = (
     "private/account",
     "private/account/web",
     "private/account/e2e",
 )
 
-# The file whose presence gates the whole account half (install-deps.sh:82), and
-# the same name re-tested per directory inside the loop.
+# The file whose presence gates the whole account half (install-deps.sh:82), and the same name re-tested per directory inside the loop.
 PACKAGE_JSON = "package.json"
 
-# The directory the root half insists on afterwards (install-deps.sh:69). A
-# genuine anti-vacuity check, and the only one in the script: `npm ci` can exit 0
-# having done nothing if the caller's cwd is wrong.
+# The directory the root half insists on afterwards (install-deps.sh:69). A genuine anti-vacuity check, and the only one in the script: `npm ci` can exit 0 having done nothing if the caller's cwd is wrong.
 NODE_MODULES = "node_modules"
 
 
@@ -342,8 +335,7 @@ def run_account(directory: str) -> bool:
 def main(argv: list[str]) -> int:
     opts = parse_args(argv)
 
-    # `cd "$(get_repo_root)"` (install-deps.sh:31). Everything after this is
-    # relative, in both implementations.
+    # `cd "$(get_repo_root)"` (install-deps.sh:31). Everything after this is relative, in both implementations.
     os.chdir(common.repo_root())
 
     if opts.want_root:

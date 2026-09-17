@@ -97,10 +97,7 @@ if verb and argv[:1] == [verb]:
 sys.exit(0)
 """
 
-# What the twin needs on PATH before it can even source common.sh: `dirname` for
-# its own SCRIPT_DIR, and `uname` because common.sh calls detect_os and
-# detect_arch at SOURCE time (common.sh:64, :100). Only the no-docker case
-# curates, so only that case needs the list.
+# What the twin needs on PATH before it can even source common.sh: `dirname` for its own SCRIPT_DIR, and `uname` because common.sh calls detect_os and detect_arch at SOURCE time (common.sh:64, :100). Only the no-docker case curates, so only that case needs the list.
 CURATED = ("dirname", "uname")
 
 
@@ -201,9 +198,7 @@ def _sides(name: str, *, seed=None, **extra: str):
     return (*old, blobs[0])
 
 
-# ---------------------------------------------------------------------------
-# The controls, first: a fake that is not reached proves nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls, first: a fake that is not reached proves nothing. ---------------------------------------------------------------------------
 
 
 def test_the_fake_docker_is_the_docker() -> None:
@@ -211,8 +206,7 @@ def test_the_fake_docker_is_the_docker() -> None:
         base = pathlib.Path(td)
         path = _stub_bin(base)
         assert shutil.which("docker", path=path) == str(base / "bin" / "docker")
-        # The two the port EXECUTES rather than reimplements must be the real
-        # ones, and must still resolve behind the stub directory.
+        # The two the port EXECUTES rather than reimplements must be the real ones, and must still resolve behind the stub directory.
         for real in ("jq", "grep"):
             found = shutil.which(real, path=path)
             assert found is not None, real
@@ -259,17 +253,14 @@ def test_resolve_tags_agrees_with_bash_on_every_shape() -> None:
         {"TAG": "ci-7", "WEB_TAG": "w-1"},
         {"RENET_TAG": "r-1"},
         {"DOCKER_REGISTRY": "ghcr.io/example"},
-        # THE COLON FORM: an exported EMPTY value falls back to the default
-        # rather than producing `renet:`.
+        # THE COLON FORM: an exported EMPTY value falls back to the default rather than producing `renet:`.
         {"TAG": ""},
         {"DOCKER_REGISTRY": ""},
     ):
         assert cpi.resolve_tags(env) == _bash_resolve(env), env
 
 
-# ---------------------------------------------------------------------------
-# The differential.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential. ---------------------------------------------------------------------------
 
 
 def test_a_missing_token_is_refused_after_the_banner_and_before_docker() -> None:
@@ -277,8 +268,7 @@ def test_a_missing_token_is_refused_after_the_banner_and_before_docker() -> None
     assert exit_code == 1
     assert calls == [], "docker was reached with no token"
     assert stderr == "✗ GITHUB_TOKEN environment variable is required\n".encode()
-    # The banner is a bare `echo`, so it is on STDOUT and it prints even on the
-    # refusal path. A port that logged it would move it to stderr.
+    # The banner is a bare `echo`, so it is on STDOUT and it prints even on the refusal path. A port that logged it would move it to stderr.
     assert stdout.decode().splitlines() == ["", "=" * 70, cpi.BANNER, "=" * 70]
 
 
@@ -305,10 +295,7 @@ def test_the_happy_path_is_five_docker_calls_in_this_order() -> None:
         "docker\tpull\t--quiet\tghcr.io/rediacc/server:latest",
         "docker\tpull\t--quiet\tghcr.io/rediacc/renet:latest",
         "docker\tlogout\tghcr.io",
-        # `\\t` -- TWO CHARACTERS. bash does not interpret `\t` inside double
-        # quotes, so docker receives a backslash and a `t` and expands it
-        # itself. A real tab here is the reflex mistake, and it is what the
-        # port shipped until this case fired.
+        # `\\t` -- TWO CHARACTERS. bash does not interpret `\t` inside double quotes, so docker receives a backslash and a `t` and expands it itself. A real tab here is the reflex mistake, and it is what the port shipped until this case fired.
         "docker\timages\t--format\ttable {{.Repository}}:{{.Tag}}\\t{{.Size}}",
     ], calls
     text = stderr.decode()

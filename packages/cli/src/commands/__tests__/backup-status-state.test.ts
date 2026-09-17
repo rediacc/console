@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { describeServiceState } from '../backup-ops.js';
 
 describe('describeServiceState', () => {
-  // The regression: `failed` used to collapse into `idle`, so a backup that had
-  // been broken for six days reported the same thing as one sitting healthily
-  // between runs.
+  // The regression: `failed` used to collapse into `idle`, so a backup that had been broken for six days reported the same thing as one sitting healthily between runs.
   it('never presents a failed unit as idle', () => {
     expect(describeServiceState('failed')).not.toBe('idle');
   });
@@ -21,8 +19,7 @@ describe('describeServiceState', () => {
     expect(describeServiceState(state)).toBe('idle');
   });
 
-  // An unrecognised systemd state is shown verbatim rather than bucketed, so a
-  // state this code has not met yet cannot be silently normalised into "fine".
+  // An unrecognised systemd state is shown verbatim rather than bucketed, so a state this code has not met yet cannot be silently normalised into "fine".
   it.each(['deactivating', 'reloading', 'maintenance'])('passes %s through', (state) => {
     expect(describeServiceState(state)).toBe(state);
   });

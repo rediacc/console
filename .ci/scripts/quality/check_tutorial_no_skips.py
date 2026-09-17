@@ -40,8 +40,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# Self-exclusion markers. Named individually rather than by a loose "skip"
-# substring, which matched ordinary prose in a tutorial's own comments.
+# Self-exclusion markers. Named individually rather than by a loose "skip" substring, which matched ordinary prose in a tutorial's own comments.
 BANNED = re.compile(
     r"^#\s*(TUTORIAL_DRAFT|TUTORIAL_SKIP|TUTORIAL_DISABLED|DRAFT)\s*:", re.MULTILINE
 )

@@ -40,8 +40,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_docker_to_stable_hotfix.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# THE STDOUT LINE IS DELIBERATELY CONSTANT. See the module docstring: it is what
-# makes the call log the only witness to WHICH reference was promoted.
+# THE STDOUT LINE IS DELIBERATELY CONSTANT. See the module docstring: it is what makes the call log the only witness to WHICH reference was promoted.
 FAKE_DOCKER = """#!/usr/bin/python3
 import os
 import sys
@@ -62,9 +61,7 @@ if rc or (fail_on and str(call_index) == fail_on):
 sys.stdout.write("Created: <redacted>\\n")
 """
 
-# common.sh needs `dirname` at source time (SCRIPT_DIR) and `uname`/`tr` in its
-# detection helpers. Nothing else is on the scratch PATH, so a tool leaking in
-# would be visible as a behaviour change rather than as a silent convenience.
+# common.sh needs `dirname` at source time (SCRIPT_DIR) and `uname`/`tr` in its detection helpers. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
 PATH_MINIMUM = ("dirname", "uname", "tr")
 
 
@@ -166,9 +163,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     assert new_calls == old_calls, f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
 
 
-# ---------------------------------------------------------------------------
-# The three code paths, driven end to end
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three code paths, driven end to end ---------------------------------------------------------------------------
 
 
 def test_happy_path_promotes_three_images_identically(tmp_path) -> None:
@@ -187,8 +182,7 @@ def test_happy_path_promotes_three_images_identically(tmp_path) -> None:
     ], old.stdout
     assert old.stderr == ""
 
-    # THE SHAPE, not just the verdict: three calls, in this order, each copying
-    # edge onto stable and never the reverse.
+    # THE SHAPE, not just the verdict: three calls, in this order, each copying edge onto stable and never the reverse.
     head = "docker\tbuildx\timagetools\tcreate\t-t\t"
     assert old_calls.splitlines() == [
         head + "ghcr.io/rediacc/renet:stable\tghcr.io/rediacc/renet:edge",
@@ -241,9 +235,7 @@ def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
     assert len(old_calls.splitlines()) == 3
 
 
-# ---------------------------------------------------------------------------
-# The stream-ordering control, which is what `_flush` exists for
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The stream-ordering control, which is what `_flush` exists for ---------------------------------------------------------------------------
 
 
 def test_the_ports_own_lines_interleave_with_dockers_in_the_twins_order(tmp_path) -> None:
@@ -267,9 +259,7 @@ def test_the_ports_own_lines_interleave_with_dockers_in_the_twins_order(tmp_path
     }
     (root / "pipe-calls.log").write_text("", encoding="utf-8")
     # NO SHELL AND NO `| cat`. `capture_output=True` already hands the child a
-    # PIPE for stdout, which is the whole condition under test: block buffering
-    # is chosen by the descriptor's type, not by there being a downstream
-    # process. Spelling it with a pipeline would add a shell for nothing.
+    # PIPE for stdout, which is the whole condition under test: block buffering is chosen by the descriptor's type, not by there being a downstream process. Spelling it with a pipeline would add a shell for nothing.
     piped = subprocess.run(
         [sys.executable, str(root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name)],
         capture_output=True,
@@ -287,9 +277,7 @@ def test_the_ports_own_lines_interleave_with_dockers_in_the_twins_order(tmp_path
     ], piped.stdout
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: three streams agree and the call log does not
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: three streams agree and the call log does not ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -320,9 +308,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert "ghcr.io/rediacc/renet:edge\tghcr.io/rediacc/renet:stable" in new_calls
 
 
-# ---------------------------------------------------------------------------
-# The named vacuity fact
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The named vacuity fact ---------------------------------------------------------------------------
 
 
 def test_defect_no_post_promotion_verification(tmp_path) -> None:
@@ -343,9 +329,7 @@ def test_defect_no_post_promotion_verification(tmp_path) -> None:
     assert old_calls == "", "the silent fake recorded a call; the case is not what it says"
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_image_sequence_is_the_twins_and_the_server_image_is_last() -> None:
@@ -365,8 +349,7 @@ def test_promote_argv_puts_the_target_behind_t_and_the_source_last() -> None:
         "ghcr.io/rediacc/renet:stable",
         "ghcr.io/rediacc/renet:edge",
     ]
-    # The NEGATIVE half: the source must not be the stable tag, which is the
-    # exact shape the planted defect above produces.
+    # The NEGATIVE half: the source must not be the stable tag, which is the exact shape the planted defect above produces.
     assert argv[-1].endswith(":edge")
 
 

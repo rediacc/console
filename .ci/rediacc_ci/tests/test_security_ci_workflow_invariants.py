@@ -93,19 +93,12 @@ jobs:
 """
 
 
-# The same document as `BASELINE`, as the dict PyYAML would produce. Kept as a
-# literal because pytest's interpreter here has no PyYAML (the two children run
-# under the system python3, which does), and
-# `test_the_literal_document_matches_the_baseline_yaml` proves the two agree
-# rather than leaving a second source of truth to rot.
+# The same document as `BASELINE`, as the dict PyYAML would produce. Kept as a literal because pytest's interpreter here has no PyYAML (the two children run under the system python3, which does), and `test_the_literal_document_matches_the_baseline_yaml` proves the two agree rather than leaving a second source of truth to rot.
 CONFORMANT: dict = {
     "name": "ci",
-    # NO `on:` KEY HERE, and that is not an oversight. PyYAML implements YAML
-    # 1.1, where the bare word `on` is a BOOLEAN, so `yaml.safe_load("on: push")`
+    # NO `on:` KEY HERE, and that is not an oversight. PyYAML implements YAML 1.1, where the bare word `on` is a BOOLEAN, so `yaml.safe_load("on: push")`
     # returns `{True: "push"}` rather than `{"on": "push"}`. Neither
-    # implementation reads the key, so the omission changes no verdict, and
-    # `test_the_literal_document_matches_the_baseline_yaml` compares the `jobs`
-    # subtree for exactly this reason.
+    # implementation reads the key, so the omission changes no verdict, and `test_the_literal_document_matches_the_baseline_yaml` compares the `jobs` subtree for exactly this reason.
     "jobs": {
         "initialize": {
             "runs-on": "ubuntu-latest",
@@ -228,9 +221,7 @@ def assert_red(old: tuple, token: str) -> None:
     assert token in old[2], "expected %r in the twin's stderr, got:\n%s" % (token, old[2])
 
 
-# ---------------------------------------------------------------------------
-# The real repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real repository ---------------------------------------------------------------------------
 
 
 def test_the_real_repository_agrees() -> None:
@@ -284,9 +275,7 @@ def test_an_unset_workflow_file_falls_back_to_the_real_default() -> None:
     assert "ci workflow invariants hold" in results[0][2]
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixtures ---------------------------------------------------------------------------
 
 
 def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
@@ -450,11 +439,7 @@ def test_a_scalar_document_crashes_the_analysis_on_both_sides(tmp_path: pathlib.
     assert "AttributeError" in new[2], "the port did not crash the way the twin does"
     assert new[0] == old[0]
     assert new[1] == old[1]
-    # GREEDY to the LAST `AttributeError:` line, not the first: the port's own
-    # source line is echoed into its traceback, and a non-greedy match stopped
-    # at any mention of the name inside it. That is a trap in the TEST rather
-    # than in either implementation, and it fired once while this file was
-    # being written.
+    # GREEDY to the LAST `AttributeError:` line, not the first: the port's own source line is echoed into its traceback, and a non-greedy match stopped at any mention of the name inside it. That is a trap in the TEST rather than in either implementation, and it fired once while this file was being written.
     pattern = re.compile(r"(?s)Traceback \(most recent call last\).*\nAttributeError[^\n]*\n")
     assert pattern.sub("<TRACEBACK>\n", new[2]) == pattern.sub("<TRACEBACK>\n", old[2])
     assert "<TRACEBACK>" in pattern.sub("<TRACEBACK>\n", old[2]), "the elision matched nothing"
@@ -502,9 +487,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> 
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The exported helpers, driven directly (the selftest half)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exported helpers, driven directly (the selftest half) ---------------------------------------------------------------------------
 
 
 def test_the_literal_document_matches_the_baseline_yaml(tmp_path: pathlib.Path) -> None:

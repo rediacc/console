@@ -133,15 +133,13 @@ GEN_ENTRY = "scripts/gen-docs.ts"
 IMPORT_RE = re.compile(r"""(?:from|import)\s*\(?\s*['"](\.[^'"\n]+)['"]""")
 
 # A quoted literal that COULD be a repository-relative path. Deliberately permissive; the
-# filter that matters is applied afterwards and is "does git track this file or directory",
-# which no regex can answer.
+# filter that matters is applied afterwards and is "does git track this file or directory", which no regex can answer.
 PATHISH_RE = re.compile(r"""['"`]([A-Za-z0-9_.][A-Za-z0-9_./-]*)['"`]""")
 
 # Path characters, for pulling a filename back out of a node stack trace or an error line.
 PATHCHARS_RE = "([A-Za-z0-9_./-]+)"
 
-# The named controls case I requires by name. A COUNT would survive somebody
-# deleting one control and adding another.
+# The named controls case I requires by name. A COUNT would survive somebody deleting one control and adding another.
 SELFTEST_CONTROLS = (
     "REORDERED rows are reported as a MOVE",
     "the counts a naive check would compare are EQUAL across that move",
@@ -270,9 +268,7 @@ def derive_pathspecs(gate) -> tuple[list[pathlib.Path], list[str]]:
     for path in closure:
         for match in PATHISH_RE.finditer(read_text(path)):
             literal = match.group(1)
-            # `.` is `lsFiles(root, '.')`, the whole tree. It is a real directory and it
-            # is not a pathspec this fixture can honour: the tracked tree is 2.0 GB, most
-            # of it submodule binaries no provider reads.
+            # `.` is `lsFiles(root, '.')`, the whole tree. It is a real directory and it is not a pathspec this fixture can honour: the tracked tree is 2.0 GB, most of it submodule binaries no provider reads.
             if literal in (".", ".."):
                 continue
             if literal in files or literal in dirs:
@@ -348,17 +344,11 @@ def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
     if listing.rc != 0:
         gate.log_fail("git ls-files failed, so the fixture has no contents: %s" % listing.err)
     names = sorted({name for name in listing.out.split("\0") if name})
-    # DROP THIS REPOSITORY'S OWN GENERATED DOCUMENTS, here and not at pathspec level: a
-    # spec can be a DIRECTORY, and `git ls-files -- scripts/data` expands it to include
-    # `scripts/data/doc-registry.md`. Filtering the spec list therefore misses exactly the
+    # DROP THIS REPOSITORY'S OWN GENERATED DOCUMENTS, here and not at pathspec level: a spec can be a DIRECTORY, and `git ls-files -- scripts/data` expands it to include `scripts/data/doc-registry.md`. Filtering the spec list therefore misses exactly the
     # case that matters, which is how the first attempt at this failed.
     #
-    # THE FIXTURE MUST CARRY EXACTLY ONE DOCUMENT, the REGISTRY.md it writes itself with
-    # one region per provider. Every case works by perturbing that document -- case F
-    # strips the first region and requires the gate to report the provider "used by NO
-    # region". A second document holding a region for the same provider keeps it used, the
-    # gate stays green, and the control stops firing in silence. Measured 2026-09-09: a new
-    # provider naming the literal `scripts/data` pulled in the real registry and case F
+    # THE FIXTURE MUST CARRY EXACTLY ONE DOCUMENT, the REGISTRY.md it writes itself with one region per provider. Every case works by perturbing that document -- case F strips the first region and requires the gate to report the provider "used by NO region". A second document holding a region for the same provider keeps it used, the gate stays green, and the control stops firing in
+    # silence. Measured 2026-09-09: a new provider naming the literal `scripts/data` pulled in the real registry and case F
     # went quiet within the hour. The module docstring warned about this coupling; this
     # makes the warning enforceable.
     carriers = [n for n in names if n.endswith(".md") and OPEN_MARKER in read_text(ROOT / n)]
@@ -382,10 +372,7 @@ def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
                 "this copier would follow it, so the two fixtures would differ. Refusing "
                 "rather than guessing." % name
             )
-        # A submodule is ONE `git ls-files` entry whose mode is 160000 and whose path is
-        # a directory on disk. There are four (`private/*`), and no provider reads inside
-        # them, so they are skipped rather than recursed into: recursing would pull ~2 GB
-        # of vendored binaries into every one of this file's seven fixtures.
+        # A submodule is ONE `git ls-files` entry whose mode is 160000 and whose path is a directory on disk. There are four (`private/*`), and no provider reads inside them, so they are skipped rather than recursed into: recursing would pull ~2 GB of vendored binaries into every one of this file's seven fixtures.
         if not source.is_file():
             continue
         target = fixture / name
@@ -441,21 +428,16 @@ def build_fixture(gate, tmp_path: pathlib.Path):
     )
 
     binary = git(gate)
-    # The index first: every provider enumerates with `git ls-files`, so a fixture
-    # that is not yet a repository makes them THROW rather than report, which reads as
-    # a broken gate instead of a broken fixture.
+    # The index first: every provider enumerates with `git ls-files`, so a fixture that is not yet a repository makes them THROW rather than report, which reads as a broken gate instead of a broken fixture.
     #
     # `--initial-branch=main`: a bare-or-not fixture whose HEAD points at a branch the
-    # runner's init.defaultBranch does not create is the trap test-fetch-depth-safety.sh
-    # exists for.
+    # runner's init.defaultBranch does not create is the trap test-fetch-depth-safety.sh exists for.
     harness.run([binary, "-C", str(fixture), "init", "-q", "--initial-branch=main", "."])
     staged = harness.run([binary, "-C", str(fixture), "add", "-A", "--", "."], timeout=600)
     if staged.rc != 0:
         gate.log_fail("A. could not stage the fixture: %s" % staged.err)
 
-    # EVERY PROVIDER ENUMERATES THE INDEX, not the disk, so a file that was copied and
-    # then not staged is invisible to all of them while sitting right there in the tree.
-    # The derivation copies the repository's own `.gitignore` files along with everything
+    # EVERY PROVIDER ENUMERATES THE INDEX, not the disk, so a file that was copied and then not staged is invisible to all of them while sitting right there in the tree. The derivation copies the repository's own `.gitignore` files along with everything
     # else, and a tracked-but-ignored file (git allows one, via `add -f`) would be
     # dropped here in silence. Compare the two counts rather than assuming they agree.
     indexed = harness.run([binary, "-C", str(fixture), "ls-files", "-z"], timeout=600)
@@ -636,9 +618,7 @@ def test_e_the_same_rows_in_a_different_order_are_reported_as_a_move(gate, tmp_p
 
 
 def test_f_a_document_that_loses_its_markers(gate, tmp_path):
-    # THE GAP THIS GATE EXISTS TO CLOSE. Only the two marker lines go. Every generated
-    # row stays exactly where it was, so a reader sees no difference at all: the table
-    # is simply hand-typed from now on.
+    # THE GAP THIS GATE EXISTS TO CLOSE. Only the two marker lines go. Every generated row stays exactly where it was, so a reader sees no difference at all: the table is simply hand-typed from now on.
     fixture, document, _providers, _pristine, _shape = build_fixture(gate, tmp_path)
     lines = document.read_text(encoding="utf-8").split("\n")
     opens = [i for i, line in enumerate(lines) if line.startswith(OPEN_MARKER)]

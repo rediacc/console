@@ -131,8 +131,7 @@ from rediacc_ci.controls import Controls
 # The default repository, matching `${GITHUB_REPOSITORY:-rediacc/console}`.
 DEFAULT_REPO = "rediacc/console"
 
-# The commands both implementations require on PATH. See the port notes for why
-# `jq` is here when nothing below calls it.
+# The commands both implementations require on PATH. See the port notes for why `jq` is here when nothing below calls it.
 REQUIRED_COMMANDS = ("gh", "jq")
 
 # The test seam, spelled the twin's way so one override drives both.
@@ -142,21 +141,16 @@ IDENTITY_ENV = "COMMIT_IDENTITY_FILE"
 # body being mistaken for data; see the note in `refresh_identity`.
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
-# The projection the twin passes to `gh api --jq`. Named once so the string that
-# decides which fields exist is not buried in an argument list, and so a test can
-# assert it still matches the twin's.
+# The projection the twin passes to `gh api --jq`. Named once so the string that decides which fields exist is not buried in an argument list, and so a test can assert it still matches the twin's.
 PROJECTION = (
     ".commits[] | {sha: .sha, author: .author.login, committer: .committer.login, "
     "email: .commit.author.email, name: .commit.author.name}"
 )
 
-# The PR metadata read: the compare range's two ends, plus the PR's own commit
-# count. Three values in one line because the twin reads them with `read -r`,
-# and one call rather than three keeps the two implementations comparable.
+# The PR metadata read: the compare range's two ends, plus the PR's own commit count. Three values in one line because the twin reads them with `read -r`, and one call rather than three keeps the two implementations comparable.
 PR_META_JQ = '"\\(.base.sha) \\(.head.sha) \\(.commits)"'
 
-# The retry schedule from `common.sh`'s `_gh_probe`: three attempts, 3 then 6
-# seconds apart.
+# The retry schedule from `common.sh`'s `_gh_probe`: three attempts, 3 then 6 seconds apart.
 GH_ATTEMPTS = 3
 
 # The `$comment` written into the generated cache. Carried byte for byte; it is
@@ -278,8 +272,7 @@ def parse_meta(meta: str) -> tuple[str, str, int] | None:
     fields = meta.split()
     if len(fields) < 3:
         return None
-    # `read -r base head total` puts the ENTIRE remainder in the last variable,
-    # so a fourth field makes the count non-numeric rather than being dropped.
+    # `read -r base head total` puts the ENTIRE remainder in the last variable, so a fourth field makes the count non-numeric rather than being dropped.
     base, head, total = fields[0], fields[1], " ".join(fields[2:])
     if base == "" or head == "" or not re.match(r"^[0-9]+$", total):
         return None
@@ -403,8 +396,7 @@ def judge_pr(repo: str, pr: str, label: str) -> int:
             print("    %d commit(s) from %s" % (number, email), file=sys.stderr)
         return 1
 
-    # NOT VACUOUS: say what was cleared, so a collapse to zero is visible in the
-    # log rather than inferred from an absent complaint.
+    # NOT VACUOUS: say what was cleared, so a collapse to zero is visible in the log rather than inferred from an absent complaint.
     logins = sorted({str(row.get("author")) for row in rows})
     print(
         "  ✓ %s#%s: %d commit(s), all attributed (%s)"
@@ -413,9 +405,7 @@ def judge_pr(repo: str, pr: str, label: str) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --refresh: derive the LOCAL guard's cache from GitHub. Never hand-authored.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --refresh: derive the LOCAL guard's cache from GitHub. Never hand-authored. ---------------------------------------------------------------------------
 
 
 def refresh_identity(identity_file: pathlib.Path) -> int:
@@ -433,10 +423,7 @@ def refresh_identity(identity_file: pathlib.Path) -> int:
     login = str(parsed.get("login"))
     identity_id = parsed.get("id")
 
-    # user/emails is authoritative but needs the `user` scope. When it is absent
-    # -- which is the normal case here and the ONLY case in CI -- ask GitHub
-    # which addresses it has already attributed to this login, which needs no
-    # extra scope. See `valid_emails` for why the shape filter is not optional.
+    # user/emails is authoritative but needs the `user` scope. When it is absent -- which is the normal case here and the ONLY case in CI -- ask GitHub which addresses it has already attributed to this login, which needs no extra scope. See `valid_emails` for why the shape filter is not optional.
     _code, raw = gh_plain(["api", "user/emails", "--jq", ".[].email"])
     emails = valid_emails(raw)
     if not emails:
@@ -459,9 +446,7 @@ def refresh_identity(identity_file: pathlib.Path) -> int:
         )
         emails = sorted(set(valid_emails(raw)))[:50]
 
-    # ANTI-VACUITY: a cache with no emails would make the local guard refuse
-    # every commit, which reads as the guard being broken rather than the cache
-    # being empty.
+    # ANTI-VACUITY: a cache with no emails would make the local guard refuse every commit, which reads as the guard being broken rather than the cache being empty.
     if not emails:
         print(
             "✗ derived NO valid email addresses for '%s'; refusing to write the cache." % login,
@@ -558,9 +543,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def _row(sha: str, author, committer, email: str, name: str) -> str:
@@ -642,11 +625,7 @@ def selftest() -> int:
     # -- the two floors -----------------------------------------------------
     ctl.check("an empty payload counts zero lines", count_lines(""), 0)
     ctl.check("blank lines are not counted", count_lines("a\n\nb\n"), 2)
-    # -- the completeness check, which replaced the 250 page cap -------------
-    # Both directions, because the whole point of the replacement is that it
-    # ACCEPTS a large complete read and REFUSES a short one at any size. A
-    # one-directional control here would have re-admitted the defect: the old
-    # cap also "passed its test" while refusing every PR over 250 commits.
+    # -- the completeness check, which replaced the 250 page cap ------------- Both directions, because the whole point of the replacement is that it ACCEPTS a large complete read and REFUSES a short one at any size. A one-directional control here would have re-admitted the defect: the old cap also "passed its test" while refusing every PR over 250 commits.
     ctl.check(
         "PLANT: a short read is refused -- 250 of 254 is not the PR",
         count_lines("x\n" * 250) != 254,

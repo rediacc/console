@@ -125,10 +125,7 @@ def write_exempt(d: pathlib.Path, reads: bool) -> None:
     )
 
 
-# `DECLARED_UNUSED_OK` is drained to empty on the real tree (W8 P1b's "declared
-# endgame"), so the differential injects this synthetic pair through the
-# subject's own test-only seam to give the liveness sweep and arm (a3) a
-# positive case at all. `write_exempt` builds the fixture file this pair names.
+# `DECLARED_UNUSED_OK` is drained to empty on the real tree (W8 P1b's "declared endgame"), so the differential injects this synthetic pair through the subject's own test-only seam to give the liveness sweep and arm (a3) a positive case at all. `write_exempt` builds the fixture file this pair names.
 EXTRA_EXEMPTION = "claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
 
 
@@ -574,13 +571,8 @@ def test_ec_real_registry_is_wired(gate):
 
 # --- arm a3: the exemption list must be justified by the registry ------------
 #
-# Arm a2 may be silenced for exactly one reason: a caller in ANOTHER repository
-# still passes the secret, so deleting the declaration breaks their next run rather
-# than this PR. That justification used to live in a COMMENT above
-# `DECLARED_UNUSED_OK`, and a comment cannot go stale loudly: retire the external
-# caller and the exemption survives it, looking like coverage. Arm a3 makes the two
-# sides one set equality, and these cases drive both directions plus the two ways it
-# has to stay quiet.
+# Arm a2 may be silenced for exactly one reason: a caller in ANOTHER repository still passes the secret, so deleting the declaration breaks their next run rather than this PR. That justification used to live in a COMMENT above `DECLARED_UNUSED_OK`, and a comment cannot go stale loudly: retire the external caller and the exemption survives it, looking like coverage. Arm a3 makes the
+# two sides one set equality, and these cases drive both directions plus the two ways it has to stay quiet.
 
 
 def a3_fixture(d: pathlib.Path) -> pathlib.Path:
@@ -741,10 +733,7 @@ def test_a3_stands_down_without_a_registry(gate, tmp_path):
     An arm that cannot see the registry must stay SILENT rather than condemn a
     fixture tree for lacking one.
     """
-    # The a3 arm itself is what must stay silent, not the unrelated per-file
-    # "declares but never reads" check that a3_fixture's callee trips on its
-    # own merit and that runs regardless of real_tree -- the same synthetic
-    # exemption run_ec_live uses keeps that check quiet here too.
+    # The a3 arm itself is what must stay silent, not the unrelated per-file "declares but never reads" check that a3_fixture's callee trips on its own merit and that runs regardless of real_tree -- the same synthetic exemption run_ec_live uses keeps that check quiet here too.
     root = a3_fixture(tmp_path)
     result = run_check(
         root / ".github" / "workflows",

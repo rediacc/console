@@ -133,9 +133,7 @@ def _pairs() -> list[tuple[str, str]]:
     return [(a, b) for a, b in itertools.product(corpus, corpus)]
 
 
-# ---------------------------------------------------------------------------
-# the path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the path ---------------------------------------------------------------------------
 
 
 def test_pins_file_is_the_file_the_bash_reads() -> None:
@@ -150,9 +148,7 @@ def test_pins_file_exists_and_is_readable() -> None:
     assert toolchain.pins_file().is_file()
 
 
-# ---------------------------------------------------------------------------
-# the table
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the table ---------------------------------------------------------------------------
 
 
 def test_load_pins_matches_toolchain_pairs_exactly() -> None:
@@ -206,9 +202,7 @@ def test_node_floor_is_stricter_than_the_bare_major() -> None:
     assert toolchain.compare(floor, composed) > 0
 
 
-# ---------------------------------------------------------------------------
-# the refusals, each with its control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the refusals, each with its control ---------------------------------------------------------------------------
 
 
 def _write_env(tmp_path, text: str):
@@ -293,13 +287,9 @@ def test_unknown_tool_matches_the_bash_refusal() -> None:
     assert out.strip() == ""
 
 
-# ---------------------------------------------------------------------------
-# normalisation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- normalisation ---------------------------------------------------------------------------
 
-# The strip pipeline at toolchain.sh:88-93, frozen so the differential keeps
-# working if that function is later reshaped. `head -1` and the per-tool awk are
-# not part of it: this is only the normalising tail.
+# The strip pipeline at toolchain.sh:88-93, frozen so the differential keeps working if that function is later reshaped. `head -1` and the per-tool awk are not part of it: this is only the normalising tail.
 FROZEN_NORMALIZE = r"""
 normalize() {
     local out="$1"
@@ -321,9 +311,7 @@ NORMALIZE_CASES = (
     "22",
     "v22",
     # BOTH prefixes come off, in order: `${out#v}` then `${out#go}` are two
-    # consecutive statements, not an either/or. This input is in the corpus
-    # because the first draft of `normalize_version` broke out of its loop after
-    # the first match, and this differential is what caught it.
+    # consecutive statements, not an either/or. This input is in the corpus because the first draft of `normalize_version` broke out of its loop after the first match, and this differential is what caught it.
     "vgo1.2",
     "1.2.3-rc1",
     "1.2.3 linux/arm64",
@@ -337,9 +325,7 @@ def test_normalize_matches_the_frozen_bash(text: str) -> None:
     assert out == toolchain.normalize_version(text)
 
 
-# `gov1.2` is here rather than above BECAUSE the two prefixes are ordered: `go`
-# comes off and leaves `v1.2`, which starts with no digit. The bash refuses it
-# and so must this, and the pair of corpora is where that ordering is pinned.
+# `gov1.2` is here rather than above BECAUSE the two prefixes are ordered: `go` comes off and leaves `v1.2`, which starts with no digit. The bash refuses it and so must this, and the pair of corpora is where that ordering is pinned.
 @pytest.mark.parametrize("text", ["", "none", "shellcheck", "v", "go", "-1.2", "gov1.2"])
 def test_unparseable_version_raises_and_the_bash_agrees(text: str) -> None:
     """BOTH DIRECTIONS on the case the bash's own comment calls out.
@@ -354,9 +340,7 @@ def test_unparseable_version_raises_and_the_bash_agrees(text: str) -> None:
         toolchain.normalize_version(text)
 
 
-# ---------------------------------------------------------------------------
-# the comparison, and the planted defect it must survive
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the comparison, and the planted defect it must survive ---------------------------------------------------------------------------
 
 
 def _sort_v_says_ordered(a: str, b: str) -> bool:
@@ -400,8 +384,7 @@ def test_the_corpus_would_catch_a_string_compare() -> None:
         "the corpus %r cannot distinguish a version compare from a string "
         "compare, so the differential above proves nothing" % (corpus,)
     )
-    # And every case it catches is one the real implementation gets right, which
-    # the sort -V differential above has already established for the same pairs.
+    # And every case it catches is one the real implementation gets right, which the sort -V differential above has already established for the same pairs.
     for a, b in caught:
         assert len(toolchain.parse_version(a)) == len(toolchain.parse_version(b))
 
@@ -434,9 +417,7 @@ def test_same_major_is_the_node_branch() -> None:
     assert not toolchain.same_major("24.0.0", "22")
 
 
-# ---------------------------------------------------------------------------
-# the argv surface
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the argv surface ---------------------------------------------------------------------------
 
 
 def _module(*args: str, root: str | None = None, pypath: str | None = None):
@@ -494,9 +475,7 @@ def test_cli_pairs_is_safe_for_github_env() -> None:
     assert all(toolchain.PAIR_RE.match(line) for line in lines)
 
 
-# ---------------------------------------------------------------------------
-# the guard, proved by disabling it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the guard, proved by disabling it ---------------------------------------------------------------------------
 
 
 def test_the_empty_pin_guard_is_what_produces_the_refusal(tmp_path) -> None:
@@ -552,32 +531,17 @@ def test_constants_sh_still_refuses_an_unset_floor() -> None:
 # ===========================================================================
 # THE PROBING AND ACQUISITION HALF (W7P5-b, 2026-09-10)
 #
-# Everything above covers the W6P2 port: the pins file, the table, the
-# refusals, the comparison. Everything below covers what W7P5-b added:
-# `probe_version`, `check`, `lane`, `cache_dir`, `report`, `checksums`,
-# `os_name`, `sha256_of`, the two URL builders and `acquire`.
+# Everything above covers the W6P2 port: the pins file, the table, the refusals, the comparison. Everything below covers what W7P5-b added: `probe_version`, `check`, `lane`, `cache_dir`, `report`, `checksums`, `os_name`, `sha256_of`, the two URL builders and `acquire`.
 #
 # WHAT EACH GROUP GUARDS.
 #
-#   the probes      All EIGHT tools, each against real stub binaries that print
-#                   the real banners, run on BOTH sides. Including the shapes
-#                   that must yield NOTHING, because a normaliser that silently
+# the probes All EIGHT tools, each against real stub binaries that print the real banners, run on BOTH sides. Including the shapes that must yield NOTHING, because a normaliser that silently
 #                   returns "" makes a comparison of ""=="" pass.
-#   check           Nine tools x two PATHs, message text and exit code compared
-#                   byte-for-byte, because `.ci/legacy/run-legacy.sh:406` pipes
-#                   those messages straight to the operator.
-#   the environment `lane` and `cache_dir` over every branch of their `:-`
-#                   chains, which are the two places an empty string and an
-#                   unset variable must behave identically.
-#   the defects     Two findings PINNED rather than fixed, because
-#                   `.ci/scripts/lib/` is outside this workstream's write grant.
-#   the planted     A mutated COPY of the module must make the probe
-#                   differential FAIL, on a case the honest module passes.
+# check Nine tools x two PATHs, message text and exit code compared byte-for-byte, because `.ci/legacy/run-legacy.sh:406` pipes those messages straight to the operator. the environment `lane` and `cache_dir` over every branch of their `:-` chains, which are the two places an empty string and an unset variable must behave identically. the defects Two findings PINNED rather than
+# fixed, because `.ci/scripts/lib/` is outside this workstream's write grant. the planted A mutated COPY of the module must make the probe differential FAIL, on a case the honest module passes.
 # ===========================================================================
 
-# Real `--version` output for every tool the twin has an arm for, plus the
-# shapes that must produce NOTHING. The banners are the ones in the twin's own
-# table at toolchain.sh:59-66, not invented ones.
+# Real `--version` output for every tool the twin has an arm for, plus the shapes that must produce NOTHING. The banners are the ones in the twin's own table at toolchain.sh:59-66, not invented ones.
 PROBE_FIXTURES = {
     "shfmt": (
         'printf "v3.13.1\\n"',
@@ -614,11 +578,7 @@ PROBE_FIXTURES = {
     "pytest": ('printf "pytest 9.1.1\\nrootdir: /x\\n"', 'printf "pytest\\n"'),
 }
 
-# /usr/bin:/bin holds the coreutils the twin needs (dirname, grep, awk) and NONE
-# of the eight pinned tools, verified 2026-09-10. Anything smaller breaks the
-# TWIN rather than the port, which is a control failure dressed as a finding:
-# the first draft of this differential set PATH to the stub directory alone and
-# the twin failed with `dirname: command not found` on every case.
+# /usr/bin:/bin holds the coreutils the twin needs (dirname, grep, awk) and NONE of the eight pinned tools, verified 2026-09-10. Anything smaller breaks the TWIN rather than the port, which is a control failure dressed as a finding: the first draft of this differential set PATH to the stub directory alone and the twin failed with `dirname: command not found` on every case.
 SYSTEM_PATH = "/usr/bin:/bin"
 
 
@@ -660,8 +620,7 @@ def test_the_probe_corpus_reaches_both_outcomes() -> None:
     """
     answers = {"yes": 0, "no": 0}
     for _tool, body in PROBE_CASES:
-        # Decided from the fixture text rather than by running it, so this case
-        # is independent of the differential it is guarding.
+        # Decided from the fixture text rather than by running it, so this case is independent of the differential it is guarding.
         silent = "no version" in body or "nope" in body or "exit 3" in body
         answers["no" if silent else "yes"] += 1
     assert answers["yes"] >= 20, answers
@@ -827,9 +786,7 @@ def test_report_without_verify_is_information_and_never_a_verdict(
     assert out == "".join(line + "\n" for line in lines)
 
 
-# ---------------------------------------------------------------------------
-# Checksums, the OS, and the URLs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Checksums, the OS, and the URLs ---------------------------------------------------------------------------
 
 
 def test_constants_file_is_the_one_the_twin_computes() -> None:
@@ -1041,13 +998,8 @@ def test_download_shfmt_refuses_a_checksum_mismatch(
     assert re.fullmatch(r"  actual   [0-9a-f]{64}", messages[2]), messages[2]
     assert messages[2].split()[-1] == hashlib.sha256(b"not the real binary").hexdigest()
     assert not binary.exists()
-    # ASSERT ON THE DIRECTORY, NOT ON ONE NAME. This used to read
-    # `not binary.with_name("shfmt.tmp").exists()`, which was exact while the
-    # temp path was the fixed `$bin.tmp`. The concurrency fix gives every
-    # process a `mktemp` name, and that assertion would then have passed for the
-    # only bad reason there is -- it names a file that can no longer exist under
-    # any behaviour, so it could not fail. An empty cache is the claim that was
-    # always meant, and it is strictly stronger.
+    # ASSERT ON THE DIRECTORY, NOT ON ONE NAME. This used to read `not binary.with_name("shfmt.tmp").exists()`, which was exact while the temp path was the fixed `$bin.tmp`. The concurrency fix gives every process a `mktemp` name, and that assertion would then have passed for the only bad reason there is -- it names a file that can no longer exist under any behaviour, so it could
+    # not fail. An empty cache is the claim that was always meant, and it is strictly stronger.
     assert sorted(p.name for p in cache.iterdir()) == [], "the rejected download was left behind"
 
 
@@ -1082,30 +1034,19 @@ def test_download_shfmt_installs_a_matching_download(
     assert binary.read_bytes() == payload
 
 
-# ---------------------------------------------------------------------------
-# concurrent acquisition
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- concurrent acquisition ---------------------------------------------------------------------------
 #
-# THE PYTEST SUITE ITSELF IS THE CONCURRENT CALLER. It runs under xdist with
-# several workers, and more than one of its modules shells out to a gate that
-# acquires shfmt, so a cold cache is hit by many processes at once. Both
-# download helpers wrote to ONE fixed temp path, which made that data
-# corruption rather than redundant work: `curl -o` truncates, so the racers
-# interleaved writes into a single inode, and the winner's `mv` renamed it out
+# THE PYTEST SUITE ITSELF IS THE CONCURRENT CALLER. It runs under xdist with several workers, and more than one of its modules shells out to a gate that acquires shfmt, so a cold cache is hit by many processes at once. Both download helpers wrote to ONE fixed temp path, which made that data corruption rather than redundant work: `curl -o` truncates, so the racers interleaved writes
+# into a single inode, and the winner's `mv` renamed it out
 # from under the losers mid-verify. The losers then reported
-# "checksum MISMATCH -- refusing to install" with an EMPTY `actual` -- a race
-# accusing the download of being tampered with -- and the losers' curls kept
-# writing into the now-installed inode, so the binary at the final path could be
-# torn while already executable. CI job 104650234908 is that: `shfmt.sh: line
-# 63: .../shfmt: cannot execute`, from a gate whose tool had just been
+# "checksum MISMATCH -- refusing to install" with an EMPTY `actual` -- a race accusing the download of being tampered with -- and the losers' curls kept writing into the now-installed inode, so the binary at the final path could be torn while already executable. CI job 104650234908 is that: `shfmt.sh: line 63: .../shfmt: cannot execute`, from a gate whose tool had just been
 # "installed".
 #
 # Measured before the fix, 8 racers into a cold cache: 7 failed. After: 8/8.
 
 _RACERS = 8
 
-# A curl that writes its payload in CHUNKS. The window between "started writing"
-# and "finished writing" has to be wide enough to race DELIBERATELY, or this
+# A curl that writes its payload in CHUNKS. The window between "started writing" and "finished writing" has to be wide enough to race DELIBERATELY, or this
 # case would only fail on an unlucky day and would prove nothing on a good one.
 _CHUNK = b"payload-"
 _CHUNKS = 12
@@ -1129,9 +1070,7 @@ for ((i = 0; i < %d; i++)); do
 done
 """ % (_CHUNKS, _CHUNK.decode())
 
-# The OLD shape, kept verbatim as a planted regression. Racing it must FAIL, or
-# the harness above is not actually producing a window and the real case below
-# would pass for no reason.
+# The OLD shape, kept verbatim as a planted regression. Racing it must FAIL, or the harness above is not actually producing a window and the real case below would pass for no reason.
 _OLD_SHAPE = """
 old_shape() {
     local cache="$1" bin="$2"
@@ -1242,9 +1181,7 @@ def test_acquire_refuses_an_empty_pin() -> None:
     assert messages == ["toolchain: pin for 'shfmt' is empty -- the pins file did not load"]
 
 
-# ---------------------------------------------------------------------------
-# The twin's defects, pinned so they cannot rot
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's defects, pinned so they cannot rot ---------------------------------------------------------------------------
 
 
 def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
@@ -1260,8 +1197,7 @@ def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
     )
     assert out.count("MISMATCH") == 6, out
     assert rc == 0, "toolchain.sh --verify now fails on a mismatch; delete this pin"
-    # And the FUNCTION, which is correct, so the finding is localised to the
-    # dispatch rather than smeared over the whole file.
+    # And the FUNCTION, which is correct, so the finding is localised to the dispatch rather than smeared over the whole file.
     frc, _fout, _ferr = diff.bash_streams(
         "%s; toolchain_report --verify" % SOURCE_SHIM, env=shell_env
     )
@@ -1332,11 +1268,9 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
     """
     sandbox = tmp_path / "bin"
     sandbox.mkdir()
-    # `mktemp` joined this list when the download helpers stopped sharing one
-    # fixed temp path between concurrent acquirers. It is coreutils, the same
+    # `mktemp` joined this list when the download helpers stopped sharing one fixed temp path between concurrent acquirers. It is coreutils, the same
     # tier as `cut` and `tr` already here; without it the helper fails CLOSED
-    # ("mktemp: command not found", rc 1, nothing installed), which is the right
-    # behaviour but not the one this control is driving at.
+    # ("mktemp: command not found", rc 1, nothing installed), which is the right behaviour but not the one this control is driving at.
     needed = (
         "mkdir",
         "chmod",
@@ -1399,9 +1333,7 @@ def test_defect_3_the_darwin_comments_are_stale() -> None:
         assert "readonly %s=" % key in constants, key
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to FAIL
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to FAIL ---------------------------------------------------------------------------
 
 ACQ_MUTATIONS = (
     (
@@ -1450,8 +1382,7 @@ def test_a_planted_defect_makes_the_probe_differential_fail(
     assert text.count(find) == 1, "the mutation anchor %r moved" % name
     target.write_text(text.replace(find, replace), encoding="utf-8")
 
-    # One stub per tool, plus a node at the WRONG major so the third mutation
-    # has a case to be wrong about.
+    # One stub per tool, plus a node at the WRONG major so the third mutation has a case to be wrong about.
     for tool, bodies in PROBE_FIXTURES.items():
         _stub_dir(tmp_path, tool, bodies[0])
     _stub_dir(tmp_path, "node", 'printf "v20.1.1\\n"')
@@ -1514,9 +1445,7 @@ def test_a_planted_defect_makes_the_probe_differential_fail(
     assert real.read_text(encoding="utf-8").count(find) == 1
 
 
-# ---------------------------------------------------------------------------
-# The CLI verbs the acquisition half added
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The CLI verbs the acquisition half added ---------------------------------------------------------------------------
 
 
 def _module_cli(args: list[str], **env: str) -> subprocess.CompletedProcess:

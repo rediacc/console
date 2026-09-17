@@ -78,9 +78,7 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-agent-state-shape.sh"
 ORDER = 6
 
-# The docs exclusion, which the 2026-08-14 note above is entirely about: with
-# it gone, `docs/agent/<anything>/STATE.md` is refused because `agent` is an
-# ordinary word in this tree, and the guard blocks writes nobody was making
+# The docs exclusion, which the 2026-08-14 note above is entirely about: with it gone, `docs/agent/<anything>/STATE.md` is refused because `agent` is an ordinary word in this tree, and the guard blocks writes nobody was making
 # while looking exactly as green as a correct one.
 DEFECT = ("if hookio.case_glob(file_path, *DOCS_TREES):", "if False:")
 
@@ -117,8 +115,7 @@ EDGE_CASES = [
         {"tool_input": {"file_path": "agent/0831-1/d1589e0b/STATE.md"}},
     ),
     ("the legacy dotted tree", {"tool_input": {"file_path": ".agent/0831-1/STATE.md"}}),
-    # The named residual: a submodule's own agent/ tree is guarded too, and so
-    # is an unrelated tree that happens to have one.
+    # The named residual: a submodule's own agent/ tree is guarded too, and so is an unrelated tree that happens to have one.
     (
         "a submodule's agent tree",
         {"tool_input": {"file_path": "private/renet/agent/d1589e0b/STATE.md"}},

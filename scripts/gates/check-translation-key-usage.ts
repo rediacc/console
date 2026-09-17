@@ -148,12 +148,8 @@ export function stripComments(content: string): string {
       i++;
       continue;
     }
-    // HTML comments, because .astro files are markup and this gate scans them.
-    // The JS-comment branches below never see `<!-- ... -->`, so an explanatory
-    // comment written in Astro markup still reddened the gate after the JS fix
-    // landed. Same blanking rule, so line numbers survive. Checked outside a
-    // string for the same reason as `//`: `<!--` can legitimately appear inside
-    // a string literal.
+    // HTML comments, because .astro files are markup and this gate scans them. The JS-comment branches below never see `<!-- ... -->`, so an explanatory comment written in Astro markup still reddened the gate after the JS fix landed. Same blanking rule, so line numbers survive. Checked outside a string for the same reason as `//`: `<!--` can legitimately appear inside a string
+    // literal.
     if (c === '<' && content.startsWith('<!--', i)) {
       const end = content.indexOf('-->', i + 4);
       const stop = end < 0 ? content.length : end + 3;

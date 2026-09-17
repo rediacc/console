@@ -354,8 +354,7 @@ describe('auditService.flush', () => {
     await auditService.flush();
 
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
-    // The retry must carry the SAME key as the failed attempt, otherwise the
-    // server's dedup cannot recognise it as a replay and would double-store.
+    // The retry must carry the SAME key as the failed attempt, otherwise the server's dedup cannot recognise it as a replay and would double-store.
     const [first, second] = mockAccountServerFetch.mock.calls.map(
       (call) => call[1].body.events[0].idempotencyKey
     );
@@ -381,8 +380,7 @@ describe('auditService.flush', () => {
     await auditService.flush();
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
 
-    // Queue is drained even after a losing send: this runs at process exit and
-    // must not resurrect the batch on a later flush.
+    // Queue is drained even after a losing send: this runs at process exit and must not resurrect the batch on a later flush.
     await auditService.flush();
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
   });

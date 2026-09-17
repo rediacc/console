@@ -115,9 +115,7 @@ describe('MutationGate — human (symmetric with agent)', () => {
         newValue: 'new-cf-token',
       },
     ];
-    // Even with override scope set, humans don't get the agent-only branch
-    // (overrideScope is only consulted when isAgentEnvironment() is true).
-    // Without knowledge or rotation, refusal is expected.
+    // Even with override scope set, humans don't get the agent-only branch (overrideScope is only consulted when isAgentEnvironment() is true). Without knowledge or rotation, refusal is expected.
     expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
       PreconditionMismatchError
     );

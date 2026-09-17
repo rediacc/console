@@ -81,17 +81,14 @@ async function resolveTenant(request: Request, env: Env): Promise<string | null>
 
   if (!response.ok) return null;
 
-  // json<T>() rather than an `as` assertion: @cloudflare/workers-types declares
-  // `json<T>(): Promise<T>`, so the type parameter is the supported way to name
-  // the shape. The assertion form inferred T from its own target and was
+  // json<T>() rather than an `as` assertion: @cloudflare/workers-types declares `json<T>(): Promise<T>`, so the type parameter is the supported way to name the shape. The assertion form inferred T from its own target and was
   // therefore a no-op that @typescript-eslint/no-unnecessary-type-assertion
   // flagged the moment workers/ entered the lint scope (2026-09-06).
   const body = await response.json<Introspection>();
   if (!body.active || !body.orgId) return null;
   if (!body.scopes?.includes('proxy:exec')) return null;
 
-  // One warm executor per team. An org with no teams collapses to one instance,
-  // which is the right default for a small tenant.
+  // One warm executor per team. An org with no teams collapses to one instance, which is the right default for a small tenant.
   return `${body.orgId}:${body.teamId ?? 'default'}`;
 }
 

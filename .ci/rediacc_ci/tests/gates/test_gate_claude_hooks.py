@@ -62,8 +62,7 @@ HARNESS = paths.from_root(".claude", "hooks", "test-hooks.sh")
 WRAPPER = paths.from_root(".ci", "scripts", "test", "gates", "test-claude-hooks.sh")
 MANIFEST = paths.from_root("scripts", "ci-runner", "manifest.ts")
 
-# The registered gate that ACTUALLY executes the harness. This module deliberately
-# does not, so this id is the whole reason the omission is safe.
+# The registered gate that ACTUALLY executes the harness. This module deliberately does not, so this id is the whole reason the omission is safe.
 DELEGATE_ID = "gate-test:claude-hooks"
 HARNESS_REL = ".claude/hooks/test-hooks.sh"
 WRAPPER_REL = ".ci/scripts/test/gates/test-claude-hooks.sh"

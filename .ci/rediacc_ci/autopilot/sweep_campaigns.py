@@ -74,8 +74,7 @@ SELF = "sweep-campaigns.py"
 
 USAGE = "usage: sweep-campaigns.sh --prs <file> --comments-dir <dir> --bot <login>"
 
-# The twin's `jq -r '...' "$PRS"` program, byte for byte. Kept as one string so
-# a reader can diff it against the twin without reassembling it.
+# The twin's `jq -r '...' "$PRS"` program, byte for byte. Kept as one string so a reader can diff it against the twin without reassembling it.
 PRS_PROGRAM = """(if type == "array" then . else [] end)
     | map(if type == "object" then .number else . end)
     | map(select(type == "number"))
@@ -241,15 +240,13 @@ def _sweep(prs: str, comments_dir: str, bot: str, work: str) -> int:
         select = run_state_comment(["select", "--comments", dump, "--bot", bot])
         if select.returncode != 0:
             # `sel="$(state-comment.sh select ...)"` under `set -e`: the whole
-            # sweep stops, with the child's status. A PR whose dump cannot be
-            # read is not a PR without a campaign.
+            # sweep stops, with the child's status. A PR whose dump cannot be read is not a PR without a campaign.
             return select.returncode
         sel = select.stdout.rstrip("\n")
         if raw_field(sel, "found") != "true":
             continue
 
-        # `jq -r '.body // ""' <<<"$sel" >"$work/body.txt"`: the body plus a
-        # newline, in a file, because `state-comment.sh fields` takes a path.
+        # `jq -r '.body // ""' <<<"$sel" >"$work/body.txt"`: the body plus a newline, in a file, because `state-comment.sh fields` takes a path.
         body = raw_field(sel, "body")
         body_file = os.path.join(work, "body.txt")
         with open(body_file, "w", encoding="utf-8") as handle:
@@ -257,8 +254,7 @@ def _sweep(prs: str, comments_dir: str, bot: str, work: str) -> int:
 
         fields = run_state_comment(["fields", "--body", body_file])
         if fields.returncode != 0:
-            # pipefail: `state-comment.sh fields | jq` carries the LEFT side's
-            # status when jq succeeds on its truncated input.
+            # pipefail: `state-comment.sh fields | jq` carries the LEFT side's status when jq succeeds on its truncated input.
             return fields.returncode
         if raw_field(fields.stdout, "campaign") == "open":
             print(number, flush=True)

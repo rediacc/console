@@ -72,11 +72,7 @@ PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_pkg_repo.py")
 EPOCH = "1700000000"
 EPOCH_DATE = "Tue, 14 Nov 2023 22:13:20 +0000"
 
-# Everything both subjects need once PATH is rebuilt from scratch. NAMED, not
-# derived: a PATH built by copying "everything except X" is a PATH nobody can
-# state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness. `find` and `grep` are listed
-# explicitly because an interactive shell in this environment shadows both with
+# Everything both subjects need once PATH is rebuilt from scratch. NAMED, not derived: a PATH built by copying "everything except X" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness. `find` and `grep` are listed explicitly because an interactive shell in this environment shadows both with
 # FUNCTIONS, so `command -v` from a login shell is not what a subprocess sees.
 NEEDED = (
     "bash",
@@ -107,13 +103,10 @@ NEEDED = (
     "tr",
 )
 
-# The tools that must NEVER resolve to the real binary inside a fixture run.
-# Asserted, not assumed: this is the control on the control.
+# The tools that must NEVER resolve to the real binary inside a fixture run. Asserted, not assumed: this is the control on the control.
 FAKED = ("gpg", "dpkg-scanpackages", "createrepo_c", "docker")
 
-# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the
-# shape the port reproduces with its own path. Masked ONLY in the tests that are
-# about that divergence.
+# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the shape the port reproduces with its own path. Masked ONLY in the tests that are about that divergence.
 LINE_PREFIX = re.compile(r"^[^\n]*: line \d+: ", re.MULTILINE)
 
 # A `mktemp -d` / `tempfile.mkdtemp(prefix="tmp.")` path. Observable in exactly
@@ -168,8 +161,7 @@ echo "<repomd/>" >"$1/repodata/repomd.xml"
 
 # The two docker images, faked to write what the real ones write. The apk arm
 # emits a real gzipped tar so the twin's `tar xzf ... -O APKINDEX` succeeds; that
-# is what makes the docker-ABSENT case (DEFECT 1) a contrast rather than the
-# only behaviour the harness can produce.
+# is what makes the docker-ABSENT case (DEFECT 1) a contrast rather than the only behaviour the harness can produce.
 FAKE_DOCKER = """#!/usr/bin/env bash
 echo "call: docker $*" >>"$CALLLOG"
 outdir=""; repodir=""; arch_image=""
@@ -265,8 +257,7 @@ def _fixture(
     pkgs = root / "pkgs"
     pkgs.mkdir()
     for index, name in enumerate(PKG_SETS[packages]):
-        # Distinct bytes per file, so a copy landing on the wrong name is a
-        # CONTENT divergence and not merely a missing path.
+        # Distinct bytes per file, so a copy landing on the wrong name is a CONTENT divergence and not merely a missing path.
         (pkgs / name).write_text("payload-%d-%s\n" % (index, name), encoding="utf-8")
     return root
 
@@ -342,10 +333,7 @@ def _artifacts(out: pathlib.Path, *, mask_date: bool) -> dict[str, object]:
             result[rel + "/"] = "<dir>"
             continue
         if path.name.endswith(".gz"):
-            # Compared DECOMPRESSED: the gzip header embeds the source file's
-            # mtime, so two runs seconds apart differ for a reason that is not
-            # the port. `APKINDEX.tar.gz` and `rediacc.db.tar.gz` come from the
-            # fake docker and are stable, but go through the same door.
+            # Compared DECOMPRESSED: the gzip header embeds the source file's mtime, so two runs seconds apart differ for a reason that is not the port. `APKINDEX.tar.gz` and `rediacc.db.tar.gz` come from the fake docker and are stable, but go through the same door.
             try:
                 result[rel] = gzip.decompress(path.read_bytes())
             except OSError:
@@ -383,8 +371,7 @@ def _run(
         "LANG": "C",
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci`; the COPY under the fixture is what runs,
-        # so the package itself comes from the real checkout. This is the only
-        # thing the fixture borrows from outside itself.
+        # so the package itself comes from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
         "CALLLOG": str(call_log),
     }
@@ -424,12 +411,7 @@ def _run(
         "stderr": scrub(proc.stderr),
         "calls": calls,
         "artifacts": _artifacts(out_dir, mask_date=epoch is None),
-        # UNSCRUBBED, and deliberately NOT in FIELDS. `scrub` replaces each
-        # subject's own path with `<prog>`, which is the right normalisation for
-        # a comparison -- the two files cannot have the same path -- but it also
-        # hides divergence 1 entirely. The two named divergence tests below
-        # assert these RAW strings differ, so the mask is proved to be hiding a
-        # path and nothing else.
+        # UNSCRUBBED, and deliberately NOT in FIELDS. `scrub` replaces each subject's own path with `<prog>`, which is the right normalisation for a comparison -- the two files cannot have the same path -- but it also hides divergence 1 entirely. The two named divergence tests below assert these RAW strings differ, so the mask is proved to be hiding a path and nothing else.
         "stderr_raw": proc.stderr,
         "stdout_raw": proc.stdout,
     }
@@ -893,8 +875,7 @@ def test_bash_arith_is_bashs_grammar_and_not_int(tmp_path):
         got = build_pkg_repo.bash_lt("0", token)
         assert got == expected, "bash_lt('0', %r) = %r, bash says %r" % (token, got, expected)
 
-    # And the direction that matters for the floor: an ERROR is False, which is
-    # not the same claim as "08 is zero".
+    # And the direction that matters for the floor: an ERROR is False, which is not the same claim as "08 is zero".
     assert build_pkg_repo.bash_arith("08") is None
     assert build_pkg_repo.bash_arith("007") == 7
     assert build_pkg_repo.bash_arith("abc") == 0

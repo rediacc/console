@@ -47,25 +47,13 @@ from rediacc_ci import paths
 from rediacc_ci.core import ports
 from rediacc_ci.tests import differential as diff
 
-# THE ONE GENUINELY SHARED RESOURCE NO REGISTRY CAN DECLARE, so this module names
-# it itself. `_free_range_base` calls `find_consecutive_free_ports(n, 20000,
-# 30000)`, which returns the FIRST free run in the range -- deterministic by
-# design, because a devbox URL a human bookmarked has to keep resolving to the
-# same port. Two xdist workers asking at the same instant therefore both get
-# 20000, both bind it, and one of them fails a race that has nothing to do with
-# the code under test.
+# THE ONE GENUINELY SHARED RESOURCE NO REGISTRY CAN DECLARE, so this module names it itself. `_free_range_base` calls `find_consecutive_free_ports(n, 20000, 30000)`, which returns the FIRST free run in the range -- deterministic by design, because a devbox URL a human bookmarked has to keep resolving to the same port. Two xdist workers asking at the same instant therefore both get
+# 20000, both bind it, and one of them fails a race that has nothing to do with the code under test.
 #
-# The lock join in rediacc_ci.xdist_groups cannot see this: the contested
-# resource is the HOST'S PORT SPACE, not the tree, and gates.lock.json only
-# speaks `tree:`. The repo-root conftest reads this attribute and turns it into
-# `@pytest.mark.xdist_group("ports")`, which sends every test here to one worker.
-# INERT without `--dist loadgroup`, so it changes nothing about a serial run.
+# The lock join in rediacc_ci.xdist_groups cannot see this: the contested resource is the HOST'S PORT SPACE, not the tree, and gates.lock.json only speaks `tree:`. The repo-root conftest reads this attribute and turns it into `@pytest.mark.xdist_group("ports")`, which sends every test here to one worker. INERT without `--dist loadgroup`, so it changes nothing about a serial run.
 XDIST_GROUP = "ports"
 
-# The pre-port body of `.ci/lib/find-port.sh`, frozen. Copied from the file as
-# it stood immediately before W7 phase 1, including `_sha256sum_portable` --
-# whose macOS branch is the single clearest thing the port deleted, since
-# hashlib has no such branch to write.
+# The pre-port body of `.ci/lib/find-port.sh`, frozen. Copied from the file as it stood immediately before W7 phase 1, including `_sha256sum_portable` -- whose macOS branch is the single clearest thing the port deleted, since hashlib has no such branch to write.
 FROZEN_DERIVE_SLOT = textwrap.dedent("""
     derive_slot() {
         local key="$1"
@@ -99,29 +87,14 @@ FROZEN_IS_PORT_IN_USE = textwrap.dedent("""
     }
 """)
 
-# `.ci/lib/find-port.sh` USED TO BE HERE, and it is DELETED (W7P5-b): a shim is
-# a delay, not an exit. The four cases below used to source it. None of them was
-# dropped -- each asserted a property that still exists, so each was rehoused
-# where the property now lives:
+# `.ci/lib/find-port.sh` USED TO BE HERE, and it is DELETED (W7P5-b): a shim is a delay, not an exit. The four cases below used to source it. None of them was dropped -- each asserted a property that still exists, so each was rehoused where the property now lives:
 #
-#   * "the value survives a FRESH interpreter"      -> the module, run as a child
-#   * "an unreachable package REFUSES"              -> the module, run as a child
-#   * the control for that refusal                  -> likewise
-#   * "the bash really delegates, it is not a
-#      second implementation"                       -> `.ci/lib/devbox.sh`, the
-#                                                      caller that inherited the
-#                                                      shim's job
+# * "the value survives a FRESH interpreter" -> the module, run as a child * "an unreachable package REFUSES" -> the module, run as a child * the control for that refusal -> likewise * "the bash really delegates, it is not a second implementation" -> `.ci/lib/devbox.sh`, the caller that inherited the shim's job
 #
-# The last one is the load-bearing one and it is why this constant is a CALLER
-# now rather than a shim. Deleting a shim is only safe if its callers reach the
-# module for real, and a caller that quietly grew its own copy of the digest is
-# exactly the regression this file must still be able to see.
+# The last one is the load-bearing one and it is why this constant is a CALLER now rather than a shim. Deleting a shim is only safe if its callers reach the module for real, and a caller that quietly grew its own copy of the digest is exactly the regression this file must still be able to see.
 DEVBOX_LIB = ".ci/lib/devbox.sh"
 
-# Running the module as a CHILD, never importing it, is the whole point of the
-# three cases that use this: an in-process call would read THIS interpreter's
-# sys.path and could not observe either the fresh-interpreter property or a
-# broken package copy.
+# Running the module as a CHILD, never importing it, is the whole point of the three cases that use this: an in-process call would read THIS interpreter's sys.path and could not observe either the fresh-interpreter property or a broken package copy.
 PORTS_MODULE = ["python3", "-m", "rediacc_ci.core.ports"]
 
 
@@ -134,10 +107,7 @@ def _ports_cmd(*args: str) -> str:
     return " ".join(PORTS_MODULE + [_q(a) for a in args])
 
 
-# A corpus rather than two hand-picked strings. Paths with spaces, a trailing
-# slash, unicode and an empty component are all real worktree names somebody
-# will eventually create, and each is a place a bash pipeline and a Python
-# encode could diverge.
+# A corpus rather than two hand-picked strings. Paths with spaces, a trailing slash, unicode and an empty component are all real worktree names somebody will eventually create, and each is a place a bash pipeline and a Python encode could diverge.
 KEYS = [
     "/home/dev/console",
     "/home/dev/console/.worktrees/0824-1",
@@ -389,9 +359,7 @@ def test_control_devbox_is_stable_against_the_real_package() -> None:
     rc, name = seen.pop()
     assert rc == 0, "devbox.sh failed against the real package: %r" % name
 
-    # The key devbox.sh itself uses, asked of devbox.sh rather than assumed:
-    # `paths.repo_root()` and `devbox_worktree` differ inside a git worktree,
-    # and hardcoding either would make this control fail for the wrong reason.
+    # The key devbox.sh itself uses, asked of devbox.sh rather than assumed: `paths.repo_root()` and `devbox_worktree` differ inside a git worktree, and hardcoding either would make this control fail for the wrong reason.
     lib = str(paths.from_root(DEVBOX_LIB))
     wt_rc, worktree, wt_err = diff.bash_streams(
         f"source {_q(lib)}; devbox_worktree", env=diff.env_for()

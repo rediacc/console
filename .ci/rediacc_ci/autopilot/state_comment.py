@@ -165,8 +165,7 @@ FIELDS_PROGRAM = """{campaign: $campaign, model: $model, rounds_max: $rounds_max
 # `${value//[[:space:]]/}` in the C locale.
 BASH_SPACE_RE = re.compile(r"[ \t\n\v\f\r]")
 
-# The five validators. `\Z` and not `$`, because Python's `$` also matches
-# before a trailing newline and bash's ERE `$` does not.
+# The five validators. `\Z` and not `$`, because Python's `$` also matches before a trailing newline and bash's ERE `$` does not.
 MODEL_RE = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 SMALL_INT_RE = re.compile(r"\A[0-9]{1,4}\Z")
 SIG_RE = re.compile(r"\A[0-9a-f]{8}\Z")
@@ -330,9 +329,7 @@ def state_field(path: str, name: str) -> tuple[bool, str]:
         return True, normalize_field(name, "")
     ok, records = _awk_read(path)
     if not ok:
-        # The twin's subshell died here, so `normalize_field` never ran and the
-        # substitution was empty -- which the CALLER then normalizes to the
-        # sentinel anyway.
+        # The twin's subshell died here, so `normalize_field` never ran and the substitution was empty -- which the CALLER then normalizes to the sentinel anyway.
         return False, normalize_field(name, "")
     return True, normalize_field(name, state_field_raw(records, name))
 
@@ -365,9 +362,7 @@ def carry_over(records: list[bytes]) -> tuple[list[bytes], list[bytes], list[byt
         if line.startswith(DECISIONS_PREFIX):
             section = "dec"
             continue
-        # The twin has these as two awk rules, `/^####/` then `/^###/`, and
-        # they are kept as two prefixes rather than collapsed to `###`
-        # (which would match both) so the parser still reads as the awk.
+        # The twin has these as two awk rules, `/^####/` then `/^###/`, and they are kept as two prefixes rather than collapsed to `###` (which would match both) so the parser still reads as the awk.
         if line.startswith((b"####", b"###")):
             section = ""
             continue
@@ -493,8 +488,7 @@ def _render(args: dict[str, str]) -> int:
         return 2
 
     # An explicit argument WINS; otherwise the value carried in the previous body
-    # survives. That is what makes a round with nothing to say about the campaign
-    # (a label-armed round, say) preserve it instead of silently closing it.
+    # survives. That is what makes a round with nothing to say about the campaign (a label-armed round, say) preserve it instead of silently closing it.
     fields = {}
     for name, key in (
         ("campaign", "ARG_CAMPAIGN"),
@@ -515,8 +509,7 @@ def _render(args: dict[str, str]) -> int:
     if body and _size_or_zero(body) > 0:
         ok, records = _awk_read(body)
         if not ok:
-            # A top-level awk this time, so `set -e` DOES end the run. Contrast
-            # the five reads above, which sit inside `$( )`.
+            # A top-level awk this time, so `set -e` DOES end the run. Contrast the five reads above, which sit inside `$( )`.
             return 2
         ledger, ruled, decisions = carry_over(records)
 
@@ -595,8 +588,7 @@ def _fields(args: dict[str, str]) -> int:
     if not body:
         log.error(USAGE_FIELDS)
         return 2
-    # An ABSENT body is not an error: no state comment yet is the normal first
-    # round, and it must read as "no campaign" rather than as a wiring failure.
+    # An ABSENT body is not an error: no state comment yet is the normal first round, and it must read as "no campaign" rather than as a wiring failure.
     values = {}
     for name in ("campaign", "model", "rounds_max", "last_sig", "sig_count"):
         _, values[name] = state_field(body, name)
@@ -625,8 +617,7 @@ def _fields(args: dict[str, str]) -> int:
 
 def main(argv: list[str]) -> int:
     # `cmd="${1:-}"; shift || true`: the subcommand is positional and never
-    # reaches parse_args. With no arguments at all it is the empty string, which
-    # lands in the unknown arm.
+    # reaches parse_args. With no arguments at all it is the empty string, which lands in the unknown arm.
     cmd = argv[0] if argv else ""
     try:
         args = common.parse_args(argv[1:])

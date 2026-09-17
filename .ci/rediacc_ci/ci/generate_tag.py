@@ -112,8 +112,7 @@ import sys
 
 from rediacc_ci import log, paths
 
-# Defect names, so a test asserts them by name rather than by restating a
-# sentence.
+# Defect names, so a test asserts them by name rather than by restating a sentence.
 GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL = True
 UNREACHABLE_BARE_COMMIT_TAG = True
 
@@ -127,8 +126,7 @@ PER_FILE_HEX = 8
 COMBINED_HEX = 12
 
 # `BUILD_CONFIG_FILES` (twin :120-127), with `{sub}` where the twin writes
-# `$SUBMODULE_PATH`. The membership rule and the deliberate omission of
-# `.ci/scripts/infra/build-renet.sh` are argued at twin :96-118.
+# `$SUBMODULE_PATH`. The membership rule and the deliberate omission of `.ci/scripts/infra/build-renet.sh` are argued at twin :96-118.
 BUILD_CONFIG_FILES = (
     "{sub}/Dockerfile",
     "{sub}/Dockerfile.native",
@@ -138,10 +136,7 @@ BUILD_CONFIG_FILES = (
     ".ci/scripts/build/build-renet.sh",
 )
 
-# `CLOSURE_PATHS` per closure (twin :203-245). Hashed as git object ids AT HEAD,
-# not as file bytes: an entry may be a directory (the tree oid covers files
-# added later) or a gitlink (private/account resolves to its recorded commit),
-# and HEAD-based hashing is immune to the in-job version bump that dirties
+# `CLOSURE_PATHS` per closure (twin :203-245). Hashed as git object ids AT HEAD, not as file bytes: an entry may be a directory (the tree oid covers files added later) or a gitlink (private/account resolves to its recorded commit), and HEAD-based hashing is immune to the in-job version bump that dirties
 # package.json after initialize.sh has run.
 CLOSURE_PATHS = {
     "web": (
@@ -179,9 +174,7 @@ CLOSURE_PATHS = {
     ),
 }
 
-# The four advice lines under a missing build-config input (twin :138-140) and
-# under a missing closure input (twin :253-256). Kept as templates so the
-# differential can assert each one appears in the twin verbatim.
+# The four advice lines under a missing build-config input (twin :138-140) and under a missing closure input (twin :253-256). Kept as templates so the differential can assert each one appears in the twin verbatim.
 BUILD_CONFIG_ADVICE = (
     "This file is hashed into the renet image tag. A missing entry silently",
     "narrows what the tag covers, so a changed build can reuse a stale image.",
@@ -193,10 +186,7 @@ CLOSURE_ADVICE = (
     "stale image. Fix the path, or delete the entry if it is gone.",
 )
 
-# `$SCRIPT_DIR/../version/resolve-version.sh` (twin :329), resolved from the
-# TWIN's directory. Expressed relative to the repo root, which is the same
-# place, and which `paths.repo_root()` finds from this module rather than from
-# cwd.
+# `$SCRIPT_DIR/../version/resolve-version.sh` (twin :329), resolved from the TWIN's directory. Expressed relative to the repo root, which is the same place, and which `paths.repo_root()` finds from this module rather than from cwd.
 RESOLVE_VERSION = ".ci/scripts/version/resolve-version.sh"
 
 
@@ -326,8 +316,7 @@ def submodule_tag(submodule_path: str) -> str:
 
     status, submodule_commit = git_out(["-C", submodule_path, "rev-parse", "--short", "HEAD"])
     if status != 0:
-        # A plain assignment in the twin, so `set -e` ends the run with git's
-        # own stderr and git's own status.
+        # A plain assignment in the twin, so `set -e` ends the run with git's own stderr and git's own status.
         raise RefusalError(status)
 
     build_config_hash = ""
@@ -401,9 +390,7 @@ def closure_tag(closure_name: str, extra_key: str) -> str:
             raise RefusalError(1)
         closure_hash += path_oid
 
-    # `--extra` folds in an opaque upstream key. Used for RENET_TAG: renet
-    # binaries reach BOTH images as artifacts, never as source, so no path can
-    # cover them.
+    # `--extra` folds in an opaque upstream key. Used for RENET_TAG: renet binaries reach BOTH images as artifacts, never as source, so no path can cover them.
     closure_hash += extra_key
     closure_hash += "week:%s" % iso_week_bucket()
 
@@ -438,8 +425,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     try:
-        # The twin's precedence, and it is silent: a second mode flag is
-        # ignored without a word.
+        # The twin's precedence, and it is silent: a second mode flag is ignored without a word.
         if args.submodule_path:
             ci_tag = submodule_tag(args.submodule_path)
             log.info("Generated submodule tag (%s): %s" % (args.submodule_path, ci_tag))

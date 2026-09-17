@@ -39,8 +39,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-autopilot-workflow-invariants.sh"
 
-# Reads and mutates copies of the real .github/workflows/autopilot.yml, and the
-# first case drives the subject at the real file in place.
+# Reads and mutates copies of the real .github/workflows/autopilot.yml, and the first case drives the subject at the real file in place.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/security/check-autopilot-workflow-invariants.sh"
@@ -117,9 +116,7 @@ def write(directory, name: str, text: str):
     return path
 
 
-# ---------------------------------------------------------------------------
-# The twin's mutation toolkit, with perl's semantics reproduced on purpose.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's mutation toolkit, with perl's semantics reproduced on purpose. ---------------------------------------------------------------------------
 
 
 def _keeplines(text: str) -> list[str]:
@@ -477,8 +474,7 @@ def test_submodule_checkout_before_model_fails(gate):
         )
         gate.assert_contains(result.err, "(model)", "attributed to the model job")
 
-        # CONTROL 1: an explicit `submodules: false` is the harmless spelling and
-        # must not fire, or the rule would ban writing the safe thing down.
+        # CONTROL 1: an explicit `submodules: false` is the harmless spelling and must not fire, or the rule would ban writing the safe thing down.
         harmless = append_after(
             source, r"          filter: blob:none", "          submodules: false\n"
         )
@@ -490,9 +486,7 @@ def test_submodule_checkout_before_model_fails(gate):
             "an explicit submodules: false is fine (stderr: %s)" % result.err,
         )
 
-        # CONTROL 2: the rule is about POSITION, not about the word. The finish job
-        # runs no model, so a submodule checkout there is not a pre-model credential
-        # and must pass.
+        # CONTROL 2: the rule is about POSITION, not about the word. The finish job runs no model, so a submodule checkout there is not a pre-model credential and must pass.
         elsewhere = append_after(
             source, r"          ref: main", "          submodules: recursive\n", nth=3
         )

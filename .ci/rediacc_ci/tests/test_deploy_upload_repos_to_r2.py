@@ -64,8 +64,7 @@ BASE_ENV = {
     "CLOUDFLARE_API_TOKEN": "tok-fixture",
 }
 
-# The default `dist/` a case gets: two package formats (so the loop is proved to
-# skip the two that are absent) and both install scripts. `apt` holds a file in a
+# The default `dist/` a case gets: two package formats (so the loop is proved to skip the two that are absent) and both install scripts. `apt` holds a file in a
 # SUBDIRECTORY as well as one at the top, because `${f#dist/repos/$dir/}` is a
 # prefix strip rather than a basename and the two differ only on that file.
 DEFAULT_TREE = {
@@ -109,11 +108,9 @@ if rc:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# Every real binary either side reaches for. `find`, `sed` and `mktemp` are
-# called by BOTH implementations (the port shells out to the same three, for the
+# Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the
 # reasons in its docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`,
-# `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is
-# on the scratch PATH, so a tool leaking in would show up as a behaviour change.
+# `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "find", "wc", "mktemp", "sed", "rm")
 
 TMP_RE = re.compile(r"/\S*/tmp\.[A-Za-z0-9]{10}")
@@ -166,8 +163,7 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(body, encoding="utf-8")
-    # An empty `dist/` still has to EXIST for the empty-tree case to be about the
-    # loops rather than about a missing directory.
+    # An empty `dist/` still has to EXIST for the empty-tree case to be about the loops rather than about a missing directory.
     (root / "dist").mkdir(parents=True, exist_ok=True)
     return root
 
@@ -347,14 +343,8 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
     body = json.loads(old_calls.rpartition("--data\t")[2].rstrip("\n"))
     assert body["files"] == expected
 
-    # THE CONTROL FOR THIS CONTROL. The assertion above only bites while the
-    # expected order and sorted order genuinely differ, and INTRA-directory order
-    # is the filesystem's whim -- two trees holding the same two files answered
-    # differently on this machine. What is NOT whim is the FORMAT order: the twin
-    # walks `apt rpm apk archlinux`, so `apt/...` precedes `apk/...` in the real
-    # list while `sorted()` would put `apk` first. That is what makes a sorting
-    # port detectable here on every filesystem, and it is asserted rather than
-    # assumed.
+    # THE CONTROL FOR THIS CONTROL. The assertion above only bites while the expected order and sorted order genuinely differ, and INTRA-directory order is the filesystem's whim -- two trees holding the same two files answered differently on this machine. What is NOT whim is the FORMAT order: the twin walks `apt rpm apk archlinux`, so `apt/...` precedes `apk/...` in the real list
+    # while `sorted()` would put `apk` first. That is what makes a sorting port detectable here on every filesystem, and it is asserted rather than assumed.
     assert expected != sorted(expected), (
         "this fixture no longer distinguishes find order from sorted order, so a "
         "port that sorted the purge list would pass; restore a tree with files in "
@@ -455,8 +445,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
     and the ORDER of the guards is identical: the first missing one wins."""
     for index, (name, message) in enumerate(port.REQUIRED_ENV):
         case = tmp_path / f"guard-{name}"
-        # Drop this one and everything after it, so the FIRST missing variable is
-        # the one under test and the guard order is what selects the message.
+        # Drop this one and everything after it, so the FIRST missing variable is the one under test and the guard order is what selects the message.
         dropped = tuple(n for n, _m in port.REQUIRED_ENV[index:])
         old, new, old_calls, new_calls = run_both(case, drop_env=dropped)
         assert old.returncode == new.returncode == 1, name

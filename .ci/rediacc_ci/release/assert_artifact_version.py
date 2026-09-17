@@ -84,9 +84,7 @@ from rediacc_ci.core import common
 
 SELF = "assert-artifact-version.py"
 
-# `.ci/scripts/release/assert-artifact-version.sh:48`, verbatim. A constant
-# rather than a parameter because the twin has no override hook either, and
-# inventing one here would be a behaviour the bash side cannot match.
+# `.ci/scripts/release/assert-artifact-version.sh:48`, verbatim. A constant rather than a parameter because the twin has no override hook either, and inventing one here would be a behaviour the bash side cannot match.
 CHECK_DIR = "/tmp/cd-artifact-check"
 ARTIFACT_NAME = "cli-manifest"
 
@@ -124,8 +122,7 @@ def main(argv: list[str]) -> int:
     check_dir = pathlib.Path(CHECK_DIR)
     check_dir.mkdir(parents=True, exist_ok=True)
 
-    # `2>/dev/null` on gh ONLY. gh's stdout is left alone, exactly as the twin
-    # leaves it, so a chatty download still reaches the CD log.
+    # `2>/dev/null` on gh ONLY. gh's stdout is left alone, exactly as the twin leaves it, so a chatty download still reaches the CD log.
     download = subprocess.run(
         [
             "gh",
@@ -167,9 +164,7 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # THE SAME jq, NOT A REIMPLEMENTATION. See the module docstring, point 2:
-    # jq's exit code IS the twin's exit code on malformed input, and its stderr
-    # is the only message those paths ever print.
+    # THE SAME jq, NOT A REIMPLEMENTATION. See the module docstring, point 2: jq's exit code IS the twin's exit code on malformed input, and its stderr is the only message those paths ever print.
     extract = subprocess.run(
         ["jq", "-r", ".version // empty", str(manifest)],
         capture_output=True,

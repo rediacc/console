@@ -205,31 +205,17 @@ CORPUS_PATHSPECS = (".github/workflows/*.yml", ".devcontainer/*", ".ci/*.sh", "r
 
 # The pathspecs A6 scans, tracked AND untracked.
 #
-# `*.py` IS HERE, AND SO IS THIS GATE'S OWN PORT IN THE EXEMPT LIST BELOW. Both
-# halves were spelled `.sh` only, which is worse than either alone: the scan could
-# not see a ported gate that restates a pin, AND the exemption naming
-# `check-toolchain-pins.sh` would stop covering this gate the moment W7 P5 deletes
-# that twin -- leaving the port neither scanned nor excused, then scanned and NOT
-# excused as soon as the glob widened. Measured 2026-09-08: the registered gate is
-# already `.ci/scripts/quality/check_toolchain_pins.py` (package.json:134), so the
-# exemption was naming a file the registry no longer invokes.
-# THE `.py` HALF IS MEASURED AND DELIBERATELY NOT ADDED YET. Driven 2026-09-08 with
-# `.ci/scripts/quality/*.py` and `.ci/scripts/security/*.py` in this tuple, A6 reported
-# SEVENTEEN ported gates as trusting PATH instead of acquiring at the pin --
-# check_branch.py, check_python_lint.py, check_release_state.py and fourteen more. That
-# is not obviously seventeen defects: A6 was written against bash call sites, and a
-# Python gate reaching a tool through `rediacc_ci.proc.run(["git", ...])` presents the
-# same way whether the tool is pinned or is an unpinned system binary. Landing a red on
+# `*.py` IS HERE, AND SO IS THIS GATE'S OWN PORT IN THE EXEMPT LIST BELOW. Both halves were spelled `.sh` only, which is worse than either alone: the scan could not see a ported gate that restates a pin, AND the exemption naming `check-toolchain-pins.sh` would stop covering this gate the moment W7 P5 deletes that twin -- leaving the port neither scanned nor excused, then scanned
+# and NOT excused as soon as the glob widened. Measured 2026-09-08: the registered gate is already `.ci/scripts/quality/check_toolchain_pins.py` (package.json:134), so the exemption was naming a file the registry no longer invokes. THE `.py` HALF IS MEASURED AND DELIBERATELY NOT ADDED YET. Driven 2026-09-08 with `.ci/scripts/quality/*.py` and `.ci/scripts/security/*.py` in this
+# tuple, A6 reported SEVENTEEN ported gates as trusting PATH instead of acquiring at the pin -- check_branch.py, check_python_lint.py, check_release_state.py and fourteen more. That is not obviously seventeen defects: A6 was written against bash call sites, and a Python gate reaching a tool through `rediacc_ci.proc.run(["git", ...])` presents the same way whether the tool is pinned
+# or is an unpinned system binary. Landing a red on
 # a shared tree to find out is the wrong order; triaging those seventeen is a wave, and
-# the widening lands with it. The EXEMPT lists below are widened NOW regardless, because
-# they can only ever silence and never fire.
+# the widening lands with it. The EXEMPT lists below are widened NOW regardless, because they can only ever silence and never fire.
 GATE_PATHSPECS = (".ci/scripts/quality/*.sh", ".ci/scripts/security/*.sh")
 
-# Files that may legitimately restate a pin: the pins file itself, and anything
-# whose job is to talk ABOUT pins (this gate, its test, the resolver). Both
+# Files that may legitimately restate a pin: the pins file itself, and anything whose job is to talk ABOUT pins (this gate, its test, the resolver). Both
 # spellings of this gate are listed while the twin is still on disk; invariant 5
-# keeps it there until W7 P5, and dropping the `.sh` name early would re-scan a
-# file that is still the differential's other half.
+# keeps it there until W7 P5, and dropping the `.sh` name early would re-scan a file that is still the differential's other half.
 EXEMPT_EXACT = (
     ".devcontainer/toolchain.env",
     ".ci/scripts/quality/check-toolchain-pins.sh",
@@ -241,13 +227,11 @@ EXEMPT_GLOBS = (
     ".ci/rediacc_ci/tests/gates/test_gate_toolchain*.py",
 )
 
-# A3's floor. A pins file that shrank below this is a collapsed corpus, not a
-# clean tree.
+# A3's floor. A pins file that shrank below this is a collapsed corpus, not a clean tree.
 MIN_KEYS = 5
 
 PIN_LINE_RE = re.compile(r"^[A-Z][A-Z0-9_]*=")
-# A pin value containing a quote, a space or a `$`. The Dockerfile and
-# $GITHUB_ENV readers cannot parse that.
+# A pin value containing a quote, a space or a `$`. The Dockerfile and $GITHUB_ENV readers cannot parse that.
 UNPARSEABLE_PIN_RE = re.compile(r"^[A-Z][A-Z0-9_]*=.*[ \"'$]")
 
 # A9's subjects, in the twin's order.
@@ -380,8 +364,7 @@ def check_a1(report: Report, root: pathlib.Path, pins: pathlib.Path) -> int:
     corpus = scan_corpus(root)
     dupes: list[str] = []
     for key, value in pin_entries(pins):
-        # NODE_VERSION/GO_VERSION are also expressed as bare majors by
-        # third-party actions and by go.mod, which are not ours to unify.
+        # NODE_VERSION/GO_VERSION are also expressed as bare majors by third-party actions and by go.mod, which are not ours to unify.
         if key in ("NODE_VERSION", "GO_VERSION"):
             continue
         for rel in corpus:
@@ -424,8 +407,7 @@ def check_a2(report: Report, root: pathlib.Path) -> None:
         for line in read_lines(target):
             if not UNPINNED_RE.search(line):
                 continue
-            # `case "$line" in \#*)` skips only a line whose FIRST character is
-            # `#`, so an indented comment still counts. That is the twin's.
+            # `case "$line" in \#*)` skips only a line whose FIRST character is `#`, so an indented comment still counts. That is the twin's.
             if line.startswith("#"):
                 continue
             unpinned.append("%s: %s" % (rel, line.lstrip(" \t")))
@@ -640,8 +622,7 @@ def run_a9_control(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> Non
     with mutant.open("a", encoding="utf-8") as handle:
         handle.write("\ntoolchain_load() { return 0; }\n")
     if any("toolchain_load() { return 0; }" in line for line in read_lines(mutant)):
-        # This IS the control: empty is the tested-for outcome (the mutant skips
-        # the load), and the next branch treats non-empty as the failure.
+        # This IS the control: empty is the tested-for outcome (the mutant skips the load), and the next branch treats non-empty as the failure.
         ctl = pin_from_bare_source(mutant, "shellcheck")
         if ctl == "":
             report.ok("A9 control: a library that skips the load is detectable")
@@ -813,8 +794,7 @@ def main(argv: list[str] | None = None) -> int:
         scanned = check_a1(report, root, pins)
         check_a2(report, root)
         check_a8(report, root)
-        # INLINE, between A8 and A6, because that is where the twin prints them
-        # (check-toolchain-pins.sh:181-197) and the differential compares bytes.
+        # INLINE, between A8 and A6, because that is where the twin prints them (check-toolchain-pins.sh:181-197) and the differential compares bytes.
         run_a8_controls(report, tmpdir)
         check_a6(report, root)
         check_a9(report, root)

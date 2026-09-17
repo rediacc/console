@@ -51,8 +51,7 @@ ALLOWLIST_RE = re.compile(
     re.MULTILINE,
 )
 
-# `verdict`, as the twin spells it: the exported decision, driven with every
-# input explicit so no case depends on a default the module might change.
+# `verdict`, as the twin spells it: the exported decision, driven with every input explicit so no case depends on a default the module might change.
 VERDICT_JS = """
 const w = require(process.argv[1]);
 const v = w.evaluateRetryEligibility({
@@ -68,11 +67,7 @@ const v = w.evaluateRetryEligibility({
 process.stdout.write(v.retry ? "retry" : "no-retry");
 """
 
-# `override_fired`. Same call, but reports whether the ALLOWLIST OVERRIDE
-# specifically fired, rather than merely whether a retry happened. Without this a
-# test cannot tell "retried because the allowlist beat the verdict" from
-# "retried because the verdict was sub-threshold anyway", and those are
-# different policies.
+# `override_fired`. Same call, but reports whether the ALLOWLIST OVERRIDE specifically fired, rather than merely whether a retry happened. Without this a test cannot tell "retried because the allowlist beat the verdict" from "retried because the verdict was sub-threshold anyway", and those are different policies.
 OVERRIDE_JS = """
 const w = require(process.argv[1]);
 const v = w.evaluateRetryEligibility({
@@ -184,8 +179,7 @@ class Policy:
 
 
 def test_allowlist_is_real(gate):
-    # Anti-vacuity: if the list stopped covering the VM legs, the "flaky jobs
-    # still retry" cases below would pass for the wrong reason.
+    # Anti-vacuity: if the list stopped covering the VM legs, the "flaky jobs still retry" cases below would pass for the wrong reason.
     policy = Policy(gate)
     gate.assert_contains(
         policy.allowlist, "E2E", "watchdog-monitor.yml still allowlists the E2E legs"
@@ -205,8 +199,7 @@ def test_allowlist_is_real(gate):
 
 
 def test_classifier_down_fails_fast_for_deterministic_jobs(gate):
-    # THE REGRESSION. Every one of these returned "retry" before the fix, which
-    # is what bought the 07-27 nightly a pointless second attempt.
+    # THE REGRESSION. Every one of these returned "retry" before the fix, which is what bought the 07-27 nightly a pointless second attempt.
     policy = Policy(gate)
     gate.assert_eq(
         policy.down("Stage Artifacts / Stage Artifacts"),
@@ -250,12 +243,8 @@ def test_classifier_down_still_retries_known_flaky_jobs(gate):
         "retry",
         "Fork Isolation still retries (observed: a live Docker Hub AUTH TIMEOUT)",
     )
-    # MOVED HERE FROM THE DETERMINISTIC SET, and the move is the finding rather
-    # than a concession to a failing test. `Migration Test` drives SIX live D1
-    # clones against Cloudflare's API, so its failure mode is the same family as
-    # the VM and image-pull legs beside it here. Observed, not theorised: a
-    # Cloudflare error 7500 on the sixth of six clones failed the job, and
-    # because it was on NEITHER watchdog list it took 23 green jobs down with it.
+    # MOVED HERE FROM THE DETERMINISTIC SET, and the move is the finding rather than a concession to a failing test. `Migration Test` drives SIX live D1 clones against Cloudflare's API, so its failure mode is the same family as the VM and image-pull legs beside it here. Observed, not theorised: a Cloudflare error 7500 on the sixth of six clones failed the job, and because it was on
+    # NEITHER watchdog list it took 23 green jobs down with it.
     gate.assert_eq(
         policy.down("Migration Test"),
         "retry",
@@ -268,9 +257,7 @@ def test_classifier_down_still_retries_known_flaky_jobs(gate):
 
 
 def test_a_cancellation_is_retried_not_used_to_kill_the_run(gate):
-    # THE REGRESSION THIS FILE'S FIRST VERSION SHIPPED, caught by PR #541's own
-    # CI within one round. The allowlist must govern FAILURES only. A non-stuck
-    # CANCELLATION is not a verdict about the code: the job never reached one.
+    # THE REGRESSION THIS FILE'S FIRST VERSION SHIPPED, caught by PR #541's own CI within one round. The allowlist must govern FAILURES only. A non-stuck CANCELLATION is not a verdict about the code: the job never reached one.
     policy = Policy(gate)
     gate.assert_eq(
         policy.cancelled_down("Quality / Built-www Gates"),
@@ -291,12 +278,8 @@ def test_a_cancellation_is_retried_not_used_to_kill_the_run(gate):
 
 
 def test_allowlist_overrides_a_confident_code_change_verdict(gate):
-    # POLICY REVERSED BY OPERATOR DECISION 2026-07-30. Run 30540751569 job
-    # 90867219911: `Tests + Infra / E2E Ceph` failed on an ssh exit-status-6
-    # during Docker install (infrastructure), and the classifier answered
-    # code-change at 0.9 reasoning that "a setup error and E2E tests failed
-    # suggests a problem with the code under test". That tautology cleared the
-    # threshold, suppressed the retry and cost a full red round.
+    # POLICY REVERSED BY OPERATOR DECISION 2026-07-30. Run 30540751569 job 90867219911: `Tests + Infra / E2E Ceph` failed on an ssh exit-status-6 during Docker install (infrastructure), and the classifier answered code-change at 0.9 reasoning that "a setup error and E2E tests failed suggests a problem with the code under test". That tautology cleared the threshold, suppressed the
+    # retry and cost a full red round.
     policy = Policy(gate)
     gate.assert_eq(
         policy.verdict("Tests + Infra / E2E Ceph", "code-change", "0.9", "1"),
@@ -312,8 +295,7 @@ def test_allowlist_overrides_a_confident_code_change_verdict(gate):
 
 
 def test_a_non_allowlisted_job_still_fails_fast(gate):
-    # THE CONTROL, and the one that keeps the reversal from becoming "always
-    # retry". A deterministic gate failure must still cost one attempt.
+    # THE CONTROL, and the one that keeps the reversal from becoming "always retry". A deterministic gate failure must still cost one attempt.
     policy = Policy(gate)
     gate.assert_eq(
         policy.verdict("Quality / Security", "code-change", "0.9", "1"),
@@ -329,9 +311,7 @@ def test_a_non_allowlisted_job_still_fails_fast(gate):
 
 
 def test_the_binary_exec_guard_still_beats_the_allowlist(gate):
-    # The guard SYNTHESISES code-change at confidence 1 precisely to block a
-    # retry of a job that downloads and executes a released binary. The
-    # distinction travels explicitly as guardForced, because a real classifier
+    # The guard SYNTHESISES code-change at confidence 1 precisely to block a retry of a job that downloads and executes a released binary. The distinction travels explicitly as guardForced, because a real classifier
     # can also answer 1.0 and a `confidence == 1` proxy would silently hand the
     # guard's authority to any confident model.
     policy = Policy(gate)
@@ -360,9 +340,7 @@ def test_low_confidence_code_change_still_retries(gate):
 
 
 def test_available_classifier_governs_non_allowlisted_jobs(gate):
-    # THE DISTINCTION THAT MATTERS. When the classifier IS working and says
-    # transient, a non-allowlisted job must still retry: the allowlist is a
-    # fallback for an absent judgment, not a second veto over a real one.
+    # THE DISTINCTION THAT MATTERS. When the classifier IS working and says transient, a non-allowlisted job must still retry: the allowlist is a fallback for an absent judgment, not a second veto over a real one.
     policy = Policy(gate)
     gate.assert_eq(
         policy.verdict("Stage Artifacts / Stage Artifacts", "transient", "0.9", "1"),
@@ -373,8 +351,7 @@ def test_available_classifier_governs_non_allowlisted_jobs(gate):
 
 
 def test_confidence_zero_is_not_the_signal(gate):
-    # A real verdict may legitimately carry confidence 0. Availability is the
-    # load-bearing field, not the number.
+    # A real verdict may legitimately carry confidence 0. Availability is the load-bearing field, not the number.
     policy = Policy(gate)
     gate.assert_eq(
         policy.verdict("Stage Artifacts / Stage Artifacts", "transient", "0", "1"),
@@ -390,9 +367,7 @@ def test_confidence_zero_is_not_the_signal(gate):
 
 
 def test_empty_allowlist_fails_closed(gate):
-    # isFailure is explicit here: an empty allowlist only constrains FAILURES, so
-    # omitting it would exercise the cancellation path and prove nothing about
-    # the allowlist.
+    # isFailure is explicit here: an empty allowlist only constrains FAILURES, so omitting it would exercise the cancellation path and prove nothing about the allowlist.
     policy = Policy(gate)
     gate.assert_eq(
         policy._node(EMPTY_ALLOWLIST_JS),
@@ -403,9 +378,7 @@ def test_empty_allowlist_fails_closed(gate):
 
 
 def test_unknown_isFailure_degrades_to_the_safe_direction(gate):  # noqa: N802 -- the twin's case name; parity compares by name
-    # If a future caller forgets the flag, the ambiguity must resolve toward
-    # "retry" (the pre-change behaviour), never toward "kill the run". Killing a
-    # pipeline on a missing boolean cost run 30304346151 its 39 green jobs.
+    # If a future caller forgets the flag, the ambiguity must resolve toward "retry" (the pre-change behaviour), never toward "kill the run". Killing a pipeline on a missing boolean cost run 30304346151 its 39 green jobs.
     policy = Policy(gate)
     gate.assert_eq(
         policy._node(MISSING_IS_FAILURE_JS),
@@ -416,8 +389,7 @@ def test_unknown_isFailure_degrades_to_the_safe_direction(gate):  # noqa: N802 -
 
 
 def test_allowlist_is_required_config(gate):
-    # Defaulting the allowlist would let a config drift silently restore
-    # retry-everything, which is the behaviour #537 is about.
+    # Defaulting the allowlist would let a config drift silently restore retry-everything, which is the behaviour #537 is about.
     if not WATCHDOG.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WATCHDOG))
     gate.assert_contains(

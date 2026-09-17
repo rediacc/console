@@ -63,17 +63,12 @@ from rediacc_ci.core import proxyx
 SUBJECT_REL = ".ci/scripts/test/test-rdc-update.sh"
 FALLBACK_REL = "packages/cli/dist/cli-bundle.cjs"
 
-# Scenarios that need no SEA packaging (:43). Kept as a list rather than a
-# count so a name added to the subject and forgotten here is visible in the diff.
+# Scenarios that need no SEA packaging (:43). Kept as a list rather than a count so a name added to the subject and forgotten here is visible in the diff.
 SEA_FREE = ["check-only", "sha256-mismatch", "rollback-empty", "channel-switch", "reinstall"]
-# BLOCKER: these two invoke the SEA-only update and rollback paths, which a node
-# bundle cannot reach at all. Exempt by name, reported every run, and skipped
-# only while RDC_BINARY is unset. (:45-47)
+# BLOCKER: these two invoke the SEA-only update and rollback paths, which a node bundle cannot reach at all. Exempt by name, reported every run, and skipped only while RDC_BINARY is unset. (:45-47)
 SEA_ONLY = ["happy", "rollback"]
 
-# `grep -oE '^        [a-z0-9-]+\) scenario_'` (:73). EXACTLY eight spaces: a
-# re-indented dispatch matches nothing and takes the loud refusal below, which
-# is the right direction.
+# `grep -oE '^ [a-z0-9-]+\) scenario_'` (:73). EXACTLY eight spaces: a re-indented dispatch matches nothing and takes the loud refusal below, which is the right direction.
 DISPATCH_RE = re.compile(r"^        ([a-z0-9-]+)\) scenario_", re.MULTILINE)
 
 
@@ -123,8 +118,7 @@ def run() -> int:
     )
     p.preflight()
 
-    # :70-86. The subject's own scenario set, read from its dispatch rather
-    # than retyped.
+    # :70-86. The subject's own scenario set, read from its dispatch rather than retyped.
     declared = parse_declared(pathlib.Path(subject).read_text(encoding="utf-8"))
     known = sorted(SEA_FREE + SEA_ONLY)
     if not declared:
@@ -164,8 +158,7 @@ def run() -> int:
             f"proxy rdc-update: FULL RUN against RDC_BINARY={rdc_binary} ({len(to_run)} scenarios)"
         )
 
-    # :104-115. Streams kept separate, and the whole of each is dumped on a
-    # failure (`cat`, not `tail -N`).
+    # :104-115. Streams kept separate, and the whole of each is dumped on a failure (`cat`, not `tail -N`).
     sys.stdout.flush()
     sub = subprocess.run([subject, *to_run], capture_output=True, text=True, check=False)
     rc = sub.returncode

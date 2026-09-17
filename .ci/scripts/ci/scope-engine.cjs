@@ -1,36 +1,19 @@
 #!/usr/bin/env node
-// The CI scope engine: the one baseline-and-net-delta mechanism that will
-// replace detect-pointer-bump.sh (whose ancestor walk NEVER fired on a
-// pull_request: HEAD there is the synthetic 2-parent refs/pull/N/merge commit,
-// so the walk aborted on its first step, defect D9).
+// The CI scope engine: the one baseline-and-net-delta mechanism that will replace detect-pointer-bump.sh (whose ancestor walk NEVER fired on a pull_request: HEAD there is the synthetic 2-parent refs/pull/N/merge commit, so the walk aborted on its first step, defect D9).
 //
 // LIVE SINCE 2026-07-31 (D-1). Until then nothing in CI consumed these
 // outputs and every mode landed inert; that is no longer true, and the header
-// used to say so in three places. `--resolve-baseline` is now the source of
-// the plan that gates jobs: scope-shadow.sh writes plan.json from it, ci.yml
+// used to say so in three places. `--resolve-baseline` is now the source of the plan that gates jobs: scope-shadow.sh writes plan.json from it, ci.yml
 // reads `run_<key>=false` outputs derived from that plan, and the reconcile
 // step audits the same object against the run's actual per-job outcomes.
 //
-// Both modes are still PURE of decision-making in one specific sense that
-// matters: every failure resolves to a FULL plan with a stated reason, so the
-// only direction this engine can be wrong in is running more CI than needed.
-// --classify performs no network call, no git command and no GitHub API access
-// (its only I/O is reading the file list and, for edge case 24, the local
+// Both modes are still PURE of decision-making in one specific sense that matters: every failure resolves to a FULL plan with a stated reason, so the only direction this engine can be wrong in is running more CI than needed. --classify performs no network call, no git command and no GitHub API access (its only I/O is reading the file list and, for edge case 24, the local
 // .github/workflows/*.yml text), which keeps it testable offline.
 //
-// Usage:
-//   scope-engine.cjs --classify [--files <path>]
-//     Reads newline-delimited changed paths from <path> or stdin and prints
-//     the plan JSON. Accepted line shapes:
-//       - a plain repo-relative path (spaces and unicode are fine)
-//       - a git C-quoted path ("docs/f\303\274r.md"), as `git diff` emits
-//         under the default core.quotepath
-//       - a `git diff-tree -r --raw` line (":100644 100644 <sha> <sha> M\tpath",
+// Usage: scope-engine.cjs --classify [--files <path>] Reads newline-delimited changed paths from <path> or stdin and prints the plan JSON. Accepted line shapes: - a plain repo-relative path (spaces and unicode are fine) - a git C-quoted path ("docs/f\303\274r.md"), as `git diff` emits under the default core.quotepath - a `git diff-tree -r --raw` line (":100644 100644 <sha> <sha>
+// M\tpath",
 //         renames carry both paths and BOTH classify, edge case 20; a deleted
-//         file is a path like any other, edge case 19)
-//     Any line the parser cannot understand stays a single opaque path, which
-//     no rule matches, which is full CI: unsupported input degrades to more
-//     CI, never to a wrong reduced run.
+// file is a path like any other, edge case 19) Any line the parser cannot understand stays a single opaque path, which no rule matches, which is full CI: unsupported input degrades to more CI, never to a wrong reduced run.
 //
 // The classification table and the fail-closed semantics live in
 // scope-map.cjs; the edge-case numbers cited in both files refer to the Wave B
@@ -43,12 +26,9 @@ const path = require('path');
 
 const scopeMap = require('./scope-map.cjs');
 
-// ---------------------------------------------------------------------------
-// File-list parsing (edge cases 19, 20, 21)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- File-list parsing (edge cases 19, 20, 21) ---------------------------------------------------------------------------
 
-// Decode a git C-quoted path ("...") into a real string: git escapes bytes
-// outside ASCII as \NNN octal (UTF-8 bytes) and the usual \t \n \" \\ forms.
+// Decode a git C-quoted path ("...") into a real string: git escapes bytes outside ASCII as \NNN octal (UTF-8 bytes) and the usual \t \n \" \\ forms.
 // Returns null on anything malformed; the caller then keeps the raw line,
 // which classifies as unclassified = full (fail-closed, never a silent drop).
 function unquoteCPath(quoted) {
@@ -119,16 +99,10 @@ function parseFileList(text) {
     .filter((p) => p.length > 0);
 }
 
-// ---------------------------------------------------------------------------
-// Workflow closure (edge case 24)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Workflow closure (edge case 24) ---------------------------------------------------------------------------
 
-// Compute the set of workflow paths reachable from ci.yml by literally
-// iterating `uses: ./.github/workflows/<x>.yml` references, transitively.
-// NEVER a name pattern: ci.yml calls cd-stage.yml, so a `cd-*` exclusion
-// would drop a workflow that IS in the CI closure. Local fs reads only.
-// An unreadable entry yields an empty closure, which classifies every
-// workflow change as non-closure: still full, only the reason degrades.
+// Compute the set of workflow paths reachable from ci.yml by literally iterating `uses: ./.github/workflows/<x>.yml` references, transitively. NEVER a name pattern: ci.yml calls cd-stage.yml, so a `cd-*` exclusion would drop a workflow that IS in the CI closure. Local fs reads only. An unreadable entry yields an empty closure, which classifies every workflow change as non-closure:
+// still full, only the reason degrades.
 function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
   const closure = new Set();
   const queue = [`.github/workflows/${entry}`];
@@ -154,62 +128,31 @@ function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
 // ancestors, downloading the attested plan artifact, reading the merge
 // commit's first parent) needs gh and git and lives below, behind
 // --resolve-baseline; these stay separable so the decisions can be tested with
-// no network at all.
-// ---------------------------------------------------------------------------
+// no network at all. ---------------------------------------------------------------------------
 
-// A usable baseline is a GREEN run whose attested skip-plan exists, says
-// mode 'full', and whose reconciler confirmed the outcome. Anything less and
-// evidence would chain across reduced runs (case 1), or rest on a run that
-// cannot prove what it ran (case 2: pre-engine or expired artifact reads as
-// absent, case 3), or on a plan whose jobs were skipped by a watchdog rerun
-// rather than by scope (case 4: intent is not outcome).
-// A greenlit skip is written by scope-shadow.sh's apply_greenlight as
+// A usable baseline is a GREEN run whose attested skip-plan exists, says mode 'full', and whose reconciler confirmed the outcome. Anything less and evidence would chain across reduced runs (case 1), or rest on a run that cannot prove what it ran (case 2: pre-engine or expired artifact reads as absent, case 3), or on a plan whose jobs were skipped by a watchdog rerun rather than by
+// scope (case 4: intent is not outcome). A greenlit skip is written by scope-shadow.sh's apply_greenlight as
 // `greenlight:<run-id>`; nothing else in the pipeline produces a reason of
 // that shape (buildPlan writes 'full', 'modules:<...>' and 'out-of-scope').
 const GREENLIGHT_REASON_RE = /^greenlight:\d+$/;
 
-// planCoverageIsFull(plan) -> did that run cover every key, by execution or by
-// evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what
-// kept this engine from ever reducing a round.
+// planCoverageIsFull(plan) -> did that run cover every key, by execution or by evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what kept this engine from ever reducing a round.
 //
-// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight
-// skips a single key, and it is right to: the plan no longer describes a round
-// that executed everything. But `renet` and `account_e2e` closures change
-// rarely, so on this repo the flip fires on nearly every run, and a run that
-// executed sixteen of eighteen keys and held greenlight EVIDENCE for the other
-// two was refused as a baseline exactly like a run that skipped its way to
-// green. Measured over the 14 console PR runs from 30944973190 to 30983418337:
-// every single walk died at the merge parent, and no job was ever skipped with
-// reason 'out-of-scope'.
+// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight skips a single key, and it is right to: the plan no longer describes a round that executed everything. But `renet` and `account_e2e` closures change rarely, so on this repo the flip fires on nearly every run, and a run that executed sixteen of eighteen keys and held greenlight EVIDENCE for the other two
+// was refused as a baseline exactly like a run that skipped its way to green. Measured over the 14 console PR runs from 30944973190 to 30983418337: every single walk died at the merge parent, and no job was ever skipped with reason 'out-of-scope'.
 //
-// So the question is asked per key instead of per label. A key covers if it
-// was planned to RUN (the reconciler, which every caller of this predicate
-// runs afterwards, then proves it actually ran) or if it was skipped on a
-// greenlight, whose evidence is a DIFFERENT run in which that job's exact
-// input closure executed green (greenlight.cjs's rule 1: "asks whether the job
-// RAN, not what the plan intended"). A key skipped as 'out-of-scope' does not
-// cover, which is case 1 intact: scope evidence still cannot chain.
+// So the question is asked per key instead of per label. A key covers if it was planned to RUN (the reconciler, which every caller of this predicate runs afterwards, then proves it actually ran) or if it was skipped on a greenlight, whose evidence is a DIFFERENT run in which that job's exact input closure executed green (greenlight.cjs's rule 1: "asks whether the job RAN, not what
+// the plan intended"). A key skipped as 'out-of-scope' does not cover, which is case 1 intact: scope evidence still cannot chain.
 //
-// This makes `reason` load-bearing where the reconciler deliberately ignores
-// it. That adds no trust: the reason string arrives in the same artifact as
-// `mode`, `run` and `base_sha`, all already load-bearing, so a plan able to
-// lie here could lie by claiming mode 'full' today. What stays derived rather
-// than declared is the part that matters -- `reconciled` is still recomputed by
-// the reader, per attestPlan's doctrine.
+// This makes `reason` load-bearing where the reconciler deliberately ignores it. That adds no trust: the reason string arrives in the same artifact as `mode`, `run` and `base_sha`, all already load-bearing, so a plan able to lie here could lie by claiming mode 'full' today. What stays derived rather than declared is the part that matters -- `reconciled` is still recomputed by the
+// reader, per attestPlan's doctrine.
 //
-// EVERY MALFORMED SHAPE READS AS "NOT COVERED", because the two verdicts are
-// not symmetric: reading garbage as coverage reduces a round on evidence that
-// was never checked, while reading it as a gap costs one full round. Only the
-// second is recoverable, so the predicate is written to reach `true` from
-// exactly the two shapes the producers emit, and from nothing else.
+// EVERY MALFORMED SHAPE READS AS "NOT COVERED", because the two verdicts are not symmetric: reading garbage as coverage reduces a round on evidence that was never checked, while reading it as a gap costs one full round. Only the second is recoverable, so the predicate is written to reach `true` from exactly the two shapes the producers emit, and from nothing else.
 function planCoverageIsFull(plan) {
   if (!plan || typeof plan !== 'object') return false;
   if (plan.mode === 'full') return true;
   if (plan.mode !== 'reduced') return false;
-  // An ARRAY is refused outright rather than tolerated. buildPlan writes a map
-  // keyed by job id and every reader indexes it by key, so Object.values on an
-  // array would quietly succeed on a shape no producer emits and no consumer
-  // could use.
+  // An ARRAY is refused outright rather than tolerated. buildPlan writes a map keyed by job id and every reader indexes it by key, so Object.values on an array would quietly succeed on a shape no producer emits and no consumer could use.
   if (!plan.jobs || typeof plan.jobs !== 'object' || Array.isArray(plan.jobs)) return false;
   const jobs = Object.values(plan.jobs);
   // An empty jobs vector proves nothing about anything.
@@ -217,8 +160,7 @@ function planCoverageIsFull(plan) {
   // STRICT BOOLEANS ON BOTH SIDES, never `run !== false`. scope-map.cjs's
   // buildPlan writes real booleans and skip-plan-reconcile.cjs already reads
   // them strictly (`planned.run === true`), so `run` absent, `"false"` or `0`
-  // are malformed entries rather than dialects. `run` ABSENT is the one that
-  // decides the form: paired with reason 'out-of-scope' it is precisely the
+  // are malformed entries rather than dialects. `run` ABSENT is the one that decides the form: paired with reason 'out-of-scope' it is precisely the
   // skip case 1 forbids, and `!== false` would have called it coverage.
   return jobs.every(
     (j) =>
@@ -238,45 +180,28 @@ function evaluateBaselineCandidate(candidate) {
     return { usable: false, reason: 'reduced-baseline' };
   }
   if (candidate.plan.reconciled !== true) {
-    // The leading token stays exactly 'unreconciled-outcome' whether or not a
-    // reason is available: the trail is read by eye and by string match, and
-    // an unconditional suffix would change the verdict's identity rather than
-    // annotate it. attestPlan's refusal reason is appended when there is one.
+    // The leading token stays exactly 'unreconciled-outcome' whether or not a reason is available: the trail is read by eye and by string match, and an unconditional suffix would change the verdict's identity rather than annotate it. attestPlan's refusal reason is appended when there is one.
     const why = candidate.plan.attest_reason;
     return { usable: false, reason: why ? `unreconciled-outcome:${why}` : 'unreconciled-outcome' };
   }
   return { usable: true, reason: 'full-green-attested' };
 }
 
-// ---------------------------------------------------------------------------
-// Attestation, VERIFY-AT-READ. Pure, and exported for unit tests.
+// --------------------------------------------------------------------------- Attestation, VERIFY-AT-READ. Pure, and exported for unit tests.
 //
-// NOBODY WRITES `reconciled`, the READER derives it. The alternative design,
-// where the run that produced the plan marks its own artifact once its
-// reconciler passes, mints a trust token that then travels forward in time:
-// every later reader has to believe a claim it cannot check, and the check
-// would have to live in `ci-complete` (the pipeline's single required check,
-// on ubuntu-slim with timeout-minutes: 5) where a slow artifact write costs
-// every PR. Here the consumer already holds the plan, can fetch that run's
-// per-job outcomes, and can run the EXISTING pure reconcile() itself. Nothing
-// is carried forward, and the verdict lands on the FAIL-OPEN side: a wrong
-// refusal costs one full CI round, not a red required check.
+// NOBODY WRITES `reconciled`, the READER derives it. The alternative design, where the run that produced the plan marks its own artifact once its reconciler passes, mints a trust token that then travels forward in time: every later reader has to believe a claim it cannot check, and the check would have to live in `ci-complete` (the pipeline's single required check, on ubuntu-slim
+// with timeout-minutes: 5) where a slow artifact write costs every PR. Here the consumer already holds the plan, can fetch that run's per-job outcomes, and can run the EXISTING pure reconcile() itself. Nothing is carried forward, and the verdict lands on the FAIL-OPEN side: a wrong refusal costs one full CI round, not a red required check.
 //
-// SELF-DECLARATION IS DELETED, NOT BLACKLISTED. The downloaded bytes come from
-// a different run and `reconciled` is now load-bearing, so whatever the
+// SELF-DECLARATION IS DELETED, NOT BLACKLISTED. The downloaded bytes come from a different run and `reconciled` is now load-bearing, so whatever the
 // artifact says about itself is dropped before anything reads it; only the
 // recomputation below may put it back. A blacklist would have to enumerate the
 // ways a writer could vouch for itself; deleting the field enumerates nothing.
 //
 // `jobs` may be an ARRAY or a zero-argument function returning one. The
 // function form is what makes the cheap-first ordering real rather than
-// stylistic: a candidate that is reduced, or carries another run's id, is
-// refused without ever paying for a Jobs API round trip, and there is one such
-// round trip per candidate walked.
+// stylistic: a candidate that is reduced, or carries another run's id, is refused without ever paying for a Jobs API round trip, and there is one such round trip per candidate walked.
 //
-// It never throws. Every refusal is a plan WITHOUT `reconciled`, carrying
-// `attest_reason`, which evaluateBaselineCandidate then reads as unusable.
-// ---------------------------------------------------------------------------
+// It never throws. Every refusal is a plan WITHOUT `reconciled`, carrying `attest_reason`, which evaluateBaselineCandidate then reads as unusable. ---------------------------------------------------------------------------
 function attestPlan({ plan, jobs, runId, sha, reconcile }) {
   if (!plan || typeof plan !== 'object') return plan;
   delete plan.reconciled;
@@ -289,23 +214,13 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
   const msg = (e) => (e && e.message ? e.message : String(e));
 
   try {
-    // Cheapest first, and the order is a cost decision, not a style one.
-    // A plan that did not cover every key can never be a baseline whatever the
-    // reconciler says (case 1: evidence does not chain across SCOPE-reduced
-    // rounds), so asking the Jobs API about it would be a round trip spent on a
-    // foregone conclusion. Coverage, not the mode label: see planCoverageIsFull.
+    // Cheapest first, and the order is a cost decision, not a style one. A plan that did not cover every key can never be a baseline whatever the reconciler says (case 1: evidence does not chain across SCOPE-reduced rounds), so asking the Jobs API about it would be a round trip spent on a foregone conclusion. Coverage, not the mode label: see planCoverageIsFull.
     if (!planCoverageIsFull(plan)) return refuse('not-full-plan');
-    // Case 30 again, but at READ time: a plan that does not name the run we
-    // downloaded it from is stale or substituted evidence.
-    // The `!plan.run_id` half is load-bearing: without it a plan carrying NO
-    // run_id, read for a runId that is itself missing, would compare
-    // String(undefined) to String(undefined) and pass a check it should fail.
+    // Case 30 again, but at READ time: a plan that does not name the run we downloaded it from is stale or substituted evidence. The `!plan.run_id` half is load-bearing: without it a plan carrying NO run_id, read for a runId that is itself missing, would compare String(undefined) to String(undefined) and pass a check it should fail.
     if (!plan.run_id || String(plan.run_id) !== String(runId)) return refuse('run-id-mismatch');
-    // The plan describes one commit's delta. If it names a different head than
-    // the candidate we are considering, it is not that candidate's proof.
+    // The plan describes one commit's delta. If it names a different head than the candidate we are considering, it is not that candidate's proof.
     if (plan.head_sha && plan.head_sha !== sha) return refuse('head-sha-mismatch');
-    // The reconciler is lazily required by the caller and may be unavailable
-    // (its name table throws at load on drift). No verifier, no attestation.
+    // The reconciler is lazily required by the caller and may be unavailable (its name table throws at load on drift). No verifier, no attestation.
     if (typeof reconcile !== 'function') return refuse('reconciler-unavailable');
 
     let payload;
@@ -318,9 +233,7 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
     const list = Array.isArray(observed)
       ? observed.filter((j) => j && typeof j.name === 'string')
       : null;
-    // An EMPTY job list is unusable evidence, not a clean bill of health: it
-    // is what an unreadable payload and a run that never materialised both
-    // look like, and reconcile() would happily report ok on it.
+    // An EMPTY job list is unusable evidence, not a clean bill of health: it is what an unreadable payload and a run that never materialised both look like, and reconcile() would happily report ok on it.
     if (!list || list.length === 0) return refuse('jobs-unreadable');
 
     const r = reconcile(plan, list, { runId });
@@ -330,112 +243,60 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
     }
     return refuse(`reconcile:${(r && r.failures && r.failures[0]) || 'refused-without-a-reason'}`);
   } catch (e) {
-    // An unexpected throw must degrade to "not attested", never to a crash and
-    // never to an attestation: the engine runs inside `initialize`, which
-    // every other job depends on.
+    // An unexpected throw must degrade to "not attested", never to a crash and never to an attestation: the engine runs inside `initialize`, which every other job depends on.
     return refuse(`attest-threw:${msg(e)}`);
   }
 }
 
-// Case 5: CI validates the MERGE commit, so the proof requires the base to be
-// unchanged since the baseline: plan.base_sha must equal M^1 (what the merge
-// actually used, more precise than the event payload's ref-tip base.sha).
-// Any mismatch, or either value missing, means main moved: full CI.
+// Case 5: CI validates the MERGE commit, so the proof requires the base to be unchanged since the baseline: plan.base_sha must equal M^1 (what the merge actually used, more precise than the event payload's ref-tip base.sha). Any mismatch, or either value missing, means main moved: full CI.
 function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
   return Boolean(planBaseSha) && Boolean(mergeParentSha) && planBaseSha === mergeParentSha;
 }
 
-// ---------------------------------------------------------------------------
-// Baseline harvesting: the --resolve-baseline mode (edge cases 1 to 5, 22, 23)
+// --------------------------------------------------------------------------- Baseline harvesting: the --resolve-baseline mode (edge cases 1 to 5, 22, 23)
 //
-// This is the half the headline case needs: "CI went green on a full round,
-// then a one-line change was pushed, so the next round should not be full
-// again". A MERGE BASE cannot express that. The merge base does not move when
-// a second commit lands on the PR branch, so every push re-diffs the entire
-// branch and the tenth push costs exactly what the first did. The baseline
-// that CAN express it is the newest ANCESTOR OF HEAD whose own run was green,
-// ran a FULL suite, and proved it with a reconciled skip-plan.
+// This is the half the headline case needs: "CI went green on a full round, then a one-line change was pushed, so the next round should not be full again". A MERGE BASE cannot express that. The merge base does not move when a second commit lands on the PR branch, so every push re-diffs the entire branch and the tenth push costs exactly what the first did. The baseline that CAN
+// express it is the newest ANCESTOR OF HEAD whose own run was green, ran a FULL suite, and proved it with a reconciled skip-plan.
 //
-// Everything here fails OPEN. A shallow clone, an unwalkable history, a
-// missing or unreadable plan artifact, a base that moved under us, a
-// truncated file list: all converge on one outcome, which is to run
-// everything and say which of them happened. The only direction this
-// mechanism can be wrong in is running MORE CI than needed.
+// Everything here fails OPEN. A shallow clone, an unwalkable history, a missing or unreadable plan artifact, a base that moved under us, a truncated file list: all converge on one outcome, which is to run everything and say which of them happened. The only direction this mechanism can be wrong in is running MORE CI than needed.
 //
-// THIS MODE IS NO LONGER INERT. It landed that way deliberately, so it could
-// be observed on real traffic before it was trusted, and the comment here used
-// to say that no job `if:` referenced a scope value. D-1 flipped it on
-// 2026-07-31: scope-shadow.sh writes plan.json from THIS mode's output, emits
+// THIS MODE IS NO LONGER INERT. It landed that way deliberately, so it could be observed on real traffic before it was trusted, and the comment here used to say that no job `if:` referenced a scope value. D-1 flipped it on 2026-07-31: scope-shadow.sh writes plan.json from THIS mode's output, emits
 // one `run_<key>=false` line per out-of-scope key, and ci.yml's job conditions
 // read them. The soak is over; the fail-open encoding below is now the only
 // thing standing between a bad answer here and a job that should have run.
 //
-// Candidates USED to resolve to 'no-skip-plan' unconditionally, because
-// nothing wrote the artifact. The shadow step in `initialize` now uploads
-// `ci-skip-plan` on every PR run, so the artifact exists and the question has
-// moved from "is there a plan" to "does that plan describe what that run
-// actually did". That is attestPlan's job, at READ time, per candidate.
+// Candidates USED to resolve to 'no-skip-plan' unconditionally, because nothing wrote the artifact. The shadow step in `initialize` now uploads `ci-skip-plan` on every PR run, so the artifact exists and the question has moved from "is there a plan" to "does that plan describe what that run actually did". That is attestPlan's job, at READ time, per candidate.
 //
-// WIRING PRECONDITION, satisfied but still load-bearing. `initialize` used to
-// check out with `fetch-tags: true` and NO `fetch-depth`, which is a depth-1
+// WIRING PRECONDITION, satisfied but still load-bearing. `initialize` used to check out with `fetch-tags: true` and NO `fetch-depth`, which is a depth-1
 // shallow clone; wired against that, this mode would answer
-// 'baseline:shallow-clone' on every single run and go full forever while
-// looking perfectly healthy from the outside, which is D9's exact failure
-// shape. That job now carries `fetch-depth: 0` plus `filter: blob:none`
-// (blob:none keeps it cheap: commits and trees only, no historical file
-// contents). Anyone tempted to trim that checkout back should know they would
-// be retiring this engine silently rather than turning it off.
-// ---------------------------------------------------------------------------
+// 'baseline:shallow-clone' on every single run and go full forever while looking perfectly healthy from the outside, which is D9's exact failure shape. That job now carries `fetch-depth: 0` plus `filter: blob:none` (blob:none keeps it cheap: commits and trees only, no historical file contents). Anyone tempted to trim that checkout back should know they would be retiring this
+// engine silently rather than turning it off. ---------------------------------------------------------------------------
 
-// GitHub truncates a compare file list at 300 entries. Past that the list is
-// a lie by omission, and an omission classifies as REDUCED (the missing paths
-// simply do not vote), so the cap is a fail-open trigger and not a display
-// limit.
+// GitHub truncates a compare file list at 300 entries. Past that the list is a lie by omission, and an omission classifies as REDUCED (the missing paths simply do not vote), so the cap is a fail-open trigger and not a display limit.
 const DIFF_FILE_CAP = 300;
 
-// THE WALK IS FENCED AT THE MERGE BOUNDARY, NOT AT A COUNT. Any fixed count
-// eventually loses to a long enough red streak, and lost twice in one night:
-// at limit 5 the only green sat SEVEN back (run 30478917957, green 2469e5d72
-// one row past the cap), and after the raise to 20 a twelve-run red streak
+// THE WALK IS FENCED AT THE MERGE BOUNDARY, NOT AT A COUNT. Any fixed count eventually loses to a long enough red streak, and lost twice in one night: at limit 5 the only green sat SEVEN back (run 30478917957, green 2469e5d72 one row past the cap), and after the raise to 20 a twelve-run red streak
 // pushed the green to 23 back (681443ad3, `git rev-list --count` = 23) and it
-// was gone again. Both times "no baseline" was manufactured by the bound while
-// a perfectly good baseline existed, and that verdict is indistinguishable
+// was gone again. Both times "no baseline" was manufactured by the bound while a perfectly good baseline existed, and that verdict is indistinguishable
 // from a considered one. So the walk's domain is now the commits this PR OWNS
-// (`rev-list --first-parent head ^mergeParent`): it grows only when the
-// operator grows the branch, and candidates past the boundary were dead weight
-// anyway, since only PR runs upload a ci-skip-plan and a main commit's
-// push-run green downloads to no-plan every time.
+// (`rev-list --first-parent head ^mergeParent`): it grows only when the operator grows the branch, and candidates past the boundary were dead weight anyway, since only PR runs upload a ci-skip-plan and a main commit's push-run green downloads to no-plan every time.
 //
-// What keeps the fenced walk affordable is that candidates are now CHEAP: one
-// paginated run listing per resolve (RUNS_LIST_MAX_PAGES pages of 100) is
-// joined locally against the walked shas, so a red candidate costs ZERO API
-// calls and the streak length drops out of the cost function entirely. The
-// expensive class, green candidates whose plans must be downloaded and
-// attested, is bounded separately by GREEN_ATTEST_BUDGET: attestation
-// failures are systematic (artifact retention, plan-format drift, reconciler
-// drift), so after three green candidates in a row fail to attest a fourth
+// What keeps the fenced walk affordable is that candidates are now CHEAP: one paginated run listing per resolve (RUNS_LIST_MAX_PAGES pages of 100) is joined locally against the walked shas, so a red candidate costs ZERO API calls and the streak length drops out of the cost function entirely. The expensive class, green candidates whose plans must be downloaded and attested, is
+// bounded separately by GREEN_ATTEST_BUDGET: attestation failures are systematic (artifact retention, plan-format drift, reconciler drift), so after three green candidates in a row fail to attest a fourth
 // try is not going to differ, and artifact retention already bounds how far
 // back an attestable green can exist at all.
 //
-// DEFAULT_CANDIDATE_LIMIT is therefore a SAFETY VALVE, not the bound: it only
-// exists so a wrong or unrelated fence cannot turn rev-list into all of
-// history, and `--limit` remains the explicit override for it.
+// DEFAULT_CANDIDATE_LIMIT is therefore a SAFETY VALVE, not the bound: it only exists so a wrong or unrelated fence cannot turn rev-list into all of history, and `--limit` remains the explicit override for it.
 const DEFAULT_CANDIDATE_LIMIT = 200;
 
 // Distinct green candidates whose runs may be attestation-attempted per walk.
 const GREEN_ATTEST_BUDGET = 3;
 
-// Pages of the branch run listing (100 runs each). A green older than 300
-// runs is almost certainly past artifact retention too, so paging further
-// buys candidates that cannot attest.
+// Pages of the branch run listing (100 runs each). A green older than 300 runs is almost certainly past artifact retention too, so paging further buys candidates that cannot attest.
 const RUNS_LIST_MAX_PAGES = 3;
 
-// Walk candidates newest-first, returning the first usable baseline and the
-// complete rejection trail. The trail is the load-bearing part: when a round
-// runs full, the operator has to be able to see why every NEARER candidate
-// was refused, because a permanently-full pipeline and a correctly-full one
-// look identical from the outside. D9 stayed false for twelve runs precisely
-// because nothing printed its reason.
+// Walk candidates newest-first, returning the first usable baseline and the complete rejection trail. The trail is the load-bearing part: when a round runs full, the operator has to be able to see why every NEARER candidate was refused, because a permanently-full pipeline and a correctly-full one look identical from the outside. D9 stayed false for twelve runs precisely because
+// nothing printed its reason.
 function selectBaseline(candidates) {
   const trail = [];
   for (const candidate of candidates || []) {
@@ -450,10 +311,7 @@ function selectBaseline(candidates) {
   return { baseline: null, trail };
 }
 
-// Case 5. The baseline proved head-at-that-time against one specific main
-// tip. If main has moved since, that proof no longer covers what CI will
-// actually merge, so either main's own delta folds into the net diff or the
-// round goes full. Missing information is never read as 'unchanged'.
+// Case 5. The baseline proved head-at-that-time against one specific main tip. If main has moved since, that proof no longer covers what CI will actually merge, so either main's own delta folds into the net diff or the round goes full. Missing information is never read as 'unchanged'.
 function decideBaseMove({ planBaseSha, mergeParentSha, mainDeltaAvailable }) {
   if (!planBaseSha || !mergeParentSha) {
     return { action: 'full', reason: 'base-sha-unknown' };
@@ -466,9 +324,7 @@ function decideBaseMove({ planBaseSha, mergeParentSha, mainDeltaAvailable }) {
     : { action: 'full', reason: 'base-moved' };
 }
 
-// A full plan carrying one machine-readable reason. Built THROUGH buildPlan
-// rather than hand-rolled, so the job table can never drift from the one the
-// reduced path emits.
+// A full plan carrying one machine-readable reason. Built THROUGH buildPlan rather than hand-rolled, so the job table can never drift from the one the reduced path emits.
 function forcedFullPlan(reason) {
   return scopeMap.buildPlan({
     modules: new Set(),
@@ -478,19 +334,12 @@ function forcedFullPlan(reason) {
   });
 }
 
-// io is injected so every decision above is testable with no git, no gh and
-// no network. Each io call is wrapped: a throw becomes an ANSWER ('full'),
-// never an exception, because a scope engine that crashes inside `initialize`
-// would take the whole run down in exchange for an optimisation.
+// io is injected so every decision above is testable with no git, no gh and no network. Each io call is wrapped: a throw becomes an ANSWER ('full'), never an exception, because a scope engine that crashes inside `initialize` would take the whole run down in exchange for an optimisation.
 function resolveBaseline(opts, io) {
   const { head, mergeSha, limit = DEFAULT_CANDIDATE_LIMIT, workflowClosure } = opts || {};
   const notes = [];
-  // io-side degradations (the one-shot run listing falling back to per-commit
-  // lookups) surface through this sink into `notes`, which main() emits as
-  // baseline_notes and scope-shadow.sh writes into the shadow artifact: the
-  // place someone actually looks. Without it, "the cheap path silently
-  // stopped being cheap" shows up only in API-call patterns nobody watches.
-  // An io without a sink (injected test doubles) simply stays silent.
+  // io-side degradations (the one-shot run listing falling back to per-commit lookups) surface through this sink into `notes`, which main() emits as baseline_notes and scope-shadow.sh writes into the shadow artifact: the place someone actually looks. Without it, "the cheap path silently stopped being cheap" shows up only in API-call patterns nobody watches. An io without a sink
+  // (injected test doubles) simply stays silent.
   if (typeof io.setNoteSink === 'function') io.setNoteSink((m) => notes.push(m));
   const fail = (reason, baseline = null, trail = []) => ({
     baseline,
@@ -504,19 +353,14 @@ function resolveBaseline(opts, io) {
 
   // A shallow superproject cannot be walked. A PARTIAL walk is the dangerous
   // case, not the empty one: it would find no green ancestor and report
-  // 'none-usable', which reads as a considered verdict rather than as a
-  // truncated history.
+  // 'none-usable', which reads as a considered verdict rather than as a truncated history.
   try {
     if (io.isShallow()) return fail('baseline:shallow-clone');
   } catch (e) {
     return fail(`baseline:shallow-probe-failed:${msg(e)}`);
   }
 
-  // Two walk shapes, capability-detected. The MODERN one (createRepoIo) is
-  // candidate C: fenced at the merge boundary, one-shot run listing, lazy
-  // per-candidate attestation under GREEN_ATTEST_BUDGET. The LEGACY one keeps
-  // the eager listCandidates(head, limit) contract byte-for-byte, because
-  // injected-io consumers (test-scope-engine.sh's fail-open matrix) hold that
+  // Two walk shapes, capability-detected. The MODERN one (createRepoIo) is candidate C: fenced at the merge boundary, one-shot run listing, lazy per-candidate attestation under GREEN_ATTEST_BUDGET. The LEGACY one keeps the eager listCandidates(head, limit) contract byte-for-byte, because injected-io consumers (test-scope-engine.sh's fail-open matrix) hold that
   // interface and its reason strings.
   const modern = typeof io.walkShas === 'function' && typeof io.candidateFor === 'function';
   let baseline = null;
@@ -524,11 +368,7 @@ function resolveBaseline(opts, io) {
   let mergeParentSha = null;
 
   if (modern) {
-    // THE FENCE IS OBTAINED BEFORE THE WALK, and an unreadable merge parent
-    // DEGRADES TO A VALVE-ONLY WALK WITH A NOTE, never to full: a bad
-    // mergeSha must not turn every round full while the walk itself is fine.
-    // (The baseline it finds will still fail decideBaseMove as
-    // base-sha-unknown, which is the correct, correctly-attributed verdict.)
+    // THE FENCE IS OBTAINED BEFORE THE WALK, and an unreadable merge parent DEGRADES TO A VALVE-ONLY WALK WITH A NOTE, never to full: a bad mergeSha must not turn every round full while the walk itself is fine. (The baseline it finds will still fail decideBaseMove as base-sha-unknown, which is the correct, correctly-attributed verdict.)
     if (mergeSha) {
       try {
         mergeParentSha = io.firstParent(mergeSha);
@@ -564,8 +404,7 @@ function resolveBaseline(opts, io) {
       }
     }
     if (!baseline) {
-      // The exhausted reason states WHICH bound ended the walk, because a
-      // permanently full pipeline is only diagnosable from that distinction.
+      // The exhausted reason states WHICH bound ended the walk, because a permanently full pipeline is only diagnosable from that distinction.
       if (walk.truncated) return fail('baseline:walk-valve', null, trail);
       if (mergeParentSha) return fail('baseline:merge-base-reached', null, trail);
       return fail('baseline:none-usable', null, trail);
@@ -609,8 +448,7 @@ function resolveBaseline(opts, io) {
     return fail(`baseline:diff-failed:${msg(e)}`, baseline, trail);
   }
 
-  // Checked BEFORE classify, because classify would happily reduce on a list
-  // it does not know is incomplete.
+  // Checked BEFORE classify, because classify would happily reduce on a list it does not know is incomplete.
   if (paths.length > DIFF_FILE_CAP) {
     return fail(`baseline:diff-truncated:${paths.length}`, baseline, trail);
   }
@@ -619,9 +457,7 @@ function resolveBaseline(opts, io) {
   return { baseline, trail, notes, plan };
 }
 
-// ---------------------------------------------------------------------------
-// The real io: git for history, gh for runs and the attested plan artifact.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The real io: git for history, gh for runs and the attested plan artifact. ---------------------------------------------------------------------------
 
 function defaultRun(cmd, args) {
   const { execFileSync } = require('child_process');
@@ -630,9 +466,7 @@ function defaultRun(cmd, args) {
 
 // `gh api --paginate` on an OBJECT-shaped endpoint (the Jobs API returns
 // { total_count, jobs: [...] }) concatenates ONE JSON OBJECT PER PAGE. A plain
-// JSON.parse succeeds on the single-page case and throws the moment a run has
-// more than per_page jobs, which is the shape a growing pipeline drifts into
-// silently. Parse the stream properly and merge the pages instead.
+// JSON.parse succeeds on the single-page case and throws the moment a run has more than per_page jobs, which is the shape a growing pipeline drifts into silently. Parse the stream properly and merge the pages instead.
 function parseJsonStream(text) {
   const values = [];
   let depth = 0;
@@ -676,10 +510,7 @@ function createRepoIo({
   const git = (...args) => run('git', ['-C', repoRoot, ...args]);
   const gh = (...args) => run('gh', args);
 
-  // The per-job outcomes for one run. THROWS on anything unusable, and the
-  // throw is the interface: attestPlan turns it into 'jobs-unreadable', which
-  // refuses the baseline. Returning an empty list instead would read as "that
-  // run skipped nothing", which is the one answer this must never fabricate.
+  // The per-job outcomes for one run. THROWS on anything unusable, and the throw is the interface: attestPlan turns it into 'jobs-unreadable', which refuses the baseline. Returning an empty list instead would read as "that run skipped nothing", which is the one answer this must never fabricate.
   const readJobsForRun = (runId) => {
     const text = gh('api', `repos/${repo}/actions/runs/${runId}/jobs?per_page=100`, '--paginate');
     const pages = parseJsonStream(text);
@@ -695,8 +526,7 @@ function createRepoIo({
       try {
         gh('run', 'download', String(runId), '--repo', repo, '-n', artifactName, '-D', dir);
       } catch {
-        // Absent or expired reads exactly like never-attested (case 3), which
-        // is the correct conflation: neither can prove what that run executed.
+        // Absent or expired reads exactly like never-attested (case 3), which is the correct conflation: neither can prove what that run executed.
         return null;
       }
       for (const f of ['plan.json', 'skip-plan.json']) {
@@ -708,8 +538,7 @@ function createRepoIo({
       }
       return null;
     } finally {
-      // The walk downloads up to `limit` plans per invocation and this used to
-      // leak every one of them into the runner's tmpdir.
+      // The walk downloads up to `limit` plans per invocation and this used to leak every one of them into the runner's tmpdir.
       try {
         fs.rmSync(dir, { recursive: true, force: true });
       } catch {
@@ -718,16 +547,13 @@ function createRepoIo({
     }
   };
 
-  // Download the plan, then PROVE it against what that run actually did.
-  // Returns an attested plan, an un-attested plan carrying attest_reason, or
-  // null when there is no plan at all.
+  // Download the plan, then PROVE it against what that run actually did. Returns an attested plan, an un-attested plan carrying attest_reason, or null when there is no plan at all.
   const readAttestedPlanForRun = (runId, sha) => {
     const plan = downloadPlan(runId);
     if (!plan) return null;
     // LAZY, and inside a try. skip-plan-reconcile.cjs runs validateNameTable at
     // module load and THROWS on table drift; required at the top of this file,
-    // that throw would take down the whole engine (including --classify, which
-    // has nothing to do with attestation) instead of degrading to full CI.
+    // that throw would take down the whole engine (including --classify, which has nothing to do with attestation) instead of degrading to full CI.
     let reconcile = null;
     try {
       ({ reconcile } = require('./skip-plan-reconcile.cjs'));
@@ -758,9 +584,7 @@ function createRepoIo({
       )
     );
 
-  // One paginated listing of the branch's runs, joined locally. This is what
-  // makes the fenced walk affordable: run-listing cost scales with PAGES
-  // (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any
+  // One paginated listing of the branch's runs, joined locally. This is what makes the fenced walk affordable: run-listing cost scales with PAGES (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any
   // length adds nothing. `null` until loaded; `false` when the listing failed
   // or no branch is known, which degrades to the per-commit fallback above.
   // Filled by resolveBaseline via setNoteSink; a no-op until then, so calling
@@ -817,12 +641,8 @@ function createRepoIo({
     }
     const done = (runs || []).filter((r) => r && r.status === 'completed');
     if (done.length === 0) return { sha, conclusion: null, plan: null, attestsTried: 0 };
-    // ONE sha can carry SEVERAL green runs of the same workflow: the
-    // pull_request run and the push run for the same commit are distinct
-    // runs, and only the pull_request one uploads a ci-skip-plan. Picking
-    // a single green run and asking it for a plan therefore lost the
-    // baseline whenever the wrong one happened to sort first, and reported
-    // 'no-skip-plan' for a commit that had a perfectly good plan.
+    // ONE sha can carry SEVERAL green runs of the same workflow: the pull_request run and the push run for the same commit are distinct runs, and only the pull_request one uploads a ci-skip-plan. Picking a single green run and asking it for a plan therefore lost the baseline whenever the wrong one happened to sort first, and reported 'no-skip-plan' for a commit that had a
+    // perfectly good plan.
     const greens = done.filter((r) => r.conclusion === 'success');
     let attestsTried = 0;
     for (const g of greens) {
@@ -833,8 +653,7 @@ function createRepoIo({
     if (greens.length > 0) {
       return { sha, conclusion: 'success', runId: greens[0].databaseId, plan: null, attestsTried };
     }
-    // No green run at all: report the red one and download nothing. A run
-    // that failed cannot be a baseline whatever its plan says, so paying
+    // No green run at all: report the red one and download nothing. A run that failed cannot be a baseline whatever its plan says, so paying
     // for the artifact would buy an answer nobody reads.
     return {
       sha,
@@ -854,16 +673,13 @@ function createRepoIo({
 
     firstParent: (sha) => git('rev-parse', `${sha}^1`).trim(),
 
-    // `git diff-tree -r --raw` rather than --name-only: renames carry both
-    // sides and parseLine unions them (case 20), which --name-only cannot say.
+    // `git diff-tree -r --raw` rather than --name-only: renames carry both sides and parseLine unions them (case 20), which --name-only cannot say.
     diffPaths: (from, to) =>
       parseFileList(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to)),
 
     // The fenced sha walk (candidate C). `^fence` scopes the domain to the
     // commits this PR owns; the valve only guards against a wrong fence.
-    // `truncated` is conservative: a branch exactly valve-long reads as
-    // truncated, which costs a pinned walk-valve reason instead of a wrong
-    // merge-base-reached one.
+    // `truncated` is conservative: a branch exactly valve-long reads as truncated, which costs a pinned walk-valve reason instead of a wrong merge-base-reached one.
     walkShas: (head, { fence, valve }) => {
       const args = ['rev-list', '--first-parent', `--max-count=${Number(valve) + 1}`, head];
       if (fence) args.push(`^${fence}`);
@@ -877,9 +693,7 @@ function createRepoIo({
 
     candidateFor,
 
-    // Legacy eager walk, unchanged: per-commit lookups with inline
-    // attestation. resolveBaseline no longer calls it when walkShas is
-    // available, but the contract stays for injected-io consumers.
+    // Legacy eager walk, unchanged: per-commit lookups with inline attestation. resolveBaseline no longer calls it when walkShas is available, but the contract stays for injected-io consumers.
     listCandidates: (head, limit) => {
       const shas = git('rev-list', '--first-parent', `--max-count=${Number(limit) + 1}`, head)
         .split('\n')
@@ -895,9 +709,7 @@ function createRepoIo({
   };
 }
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- CLI ---------------------------------------------------------------------------
 
 function usage() {
   return [
@@ -944,18 +756,14 @@ function main(argv) {
 
   if (mode === 'resolve-baseline') {
     const repoRoot = path.resolve(__dirname, '../../..');
-    // A missing --repo is a CALLER bug, not a CI condition, so it is a usage
-    // error rather than a fail-open-to-full: silently running full CI forever
-    // because a flag was misspelled is exactly the D9 failure shape.
+    // A missing --repo is a CALLER bug, not a CI condition, so it is a usage error rather than a fail-open-to-full: silently running full CI forever because a flag was misspelled is exactly the D9 failure shape.
     if (!opts.repo) {
       process.stderr.write(`scope-engine: --resolve-baseline needs --repo\n${usage()}\n`);
       return 2;
     }
-    // The branch powers the one-shot run listing (candidate C's cost model).
-    // GITHUB_HEAD_REF is the PR head branch on pull_request-family events, so
+    // The branch powers the one-shot run listing (candidate C's cost model). GITHUB_HEAD_REF is the PR head branch on pull_request-family events, so
     // existing callers (scope-shadow.sh) get the cheap path with no flag; when
-    // neither is present the io degrades to per-commit lookups, which is a
-    // cost regression only, never a correctness one.
+    // neither is present the io degrades to per-commit lookups, which is a cost regression only, never a correctness one.
     const io = createRepoIo({
       repoRoot,
       repo: opts.repo,

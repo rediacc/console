@@ -89,9 +89,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every guard message it emits (:53). A literal
-# rather than argv[0], because the bytes must survive the port and argv[0] here
-# is a `.py` path.
+# The twin's own name, printed in every guard message it emits (:53). A literal rather than argv[0], because the bytes must survive the port and argv[0] here is a `.py` path.
 SELF = "set-preview-worker-secrets.sh"
 
 # `WORKER="pr-${PR_NUMBER}"` (:40).
@@ -101,14 +99,9 @@ WORKER_PREFIX = "pr-"
 MISSING_PR_NUMBER = "PR_NUMBER: PR_NUMBER is required"
 
 # The fifteen `--arg <var> "${<ENV>:-}"` pairs (:72-86) in the twin's ORDER,
-# which is also the key order of the object it builds (:87-103). ORDER IS
-# OBSERVABLE: it is the byte order of the document on wrangler's stdin, so the
-# tuple is the port's copy of the twin's list and the differential re-derives
-# the same list from the twin's source and compares.
+# which is also the key order of the object it builds (:87-103). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, so the tuple is the port's copy of the twin's list and the differential re-derives the same list from the twin's source and compares.
 #
-# (environment variable this script READS, jq variable it binds it to). ONE NAME
-# EVERYWHERE: the variable read is the key written, which is what the Worker's
-# zod schema declares (private/account/src/types/env.ts).
+# (environment variable this script READS, jq variable it binds it to). ONE NAME EVERYWHERE: the variable read is the key written, which is what the Worker's zod schema declares (private/account/src/types/env.ts).
 KEYS: tuple[tuple[str, str], ...] = (
     ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub"),
@@ -127,14 +120,9 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("CLOUDFLARE_TURNSTILE_SECRET_KEY", "turnstile"),
 )
 
-# The eleven `_require_nonempty` calls (:59-69), in order. The FIRST empty one
-# ends the run, so the order is observable in the message a caller reads.
+# The eleven `_require_nonempty` calls (:59-69), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE ELEVEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): the
-# SES pair, the SES region and Turnstile are optional() in the Worker schema and
-# turn their feature off SILENTLY when empty, and the six ACCOUNT_* ones are
-# non-optional and would make every request on the preview 500 with an
-# EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
+# WHY THESE ELEVEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the six ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
 # the SANDBOX key, and a preview without billing is a legitimate state.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
@@ -150,15 +138,13 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 )
 
-# The two explanation lines under a guard failure (:54-55), byte for byte,
-# including their two-space indent.
+# The two explanation lines under a guard failure (:54-55), byte for byte, including their two-space indent.
 GUARD_EXPLANATION: tuple[str, ...] = (
     "  The Worker's schema either accepts an empty value and silently disables the",
     "  feature, or rejects it on every request; this refuses to deploy instead.",
 )
 
-# Observation 1 in the module docstring: the guard's label says WORKER_NAME while
-# this script's variable is WORKER. Named so the differential can pin it.
+# Observation 1 in the module docstring: the guard's label says WORKER_NAME while this script's variable is WORKER. Named so the differential can pin it.
 GUARD_LABEL_SAYS_WORKER_NAME = True
 
 # Observation 2: the closing line's count is a literal in the twin, not a tally.
@@ -248,8 +234,7 @@ def _wrangler(argv: list[str], payload: str) -> int:
 def main(argv: list[str]) -> int:
     del argv  # the twin parses nothing; extra arguments are ignored by both
 
-    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both
-    # binaries names jq.
+    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq.
     for tool in ("jq", "npx"):
         try:
             common.require_cmd(tool)

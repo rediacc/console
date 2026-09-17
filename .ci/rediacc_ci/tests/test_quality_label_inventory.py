@@ -141,8 +141,7 @@ CASES = [
         1,
     ),
     (
-        # THE 96355d3b5 CASE. An empty declaration file must reach the floor, not
-        # kill the script at the assignment with zero bytes on both streams.
+        # THE 96355d3b5 CASE. An empty declaration file must reach the floor, not kill the script at the assignment with zero bytes on both streams.
         "an EMPTY declaration file reaches the floor rather than dying silently",
         {"fx/labels.yml": "", "fx/live.txt": "alpha\nbravo\n"},
         SEAM_ENV,
@@ -165,8 +164,7 @@ CASES = [
         1,
     ),
     (
-        # THE BOUNDARY, the other side. 100 is allowed, so the cap check must be
-        # silent here or it is an off-by-one that reds a legal file.
+        # THE BOUNDARY, the other side. 100 is allowed, so the cap check must be silent here or it is an off-by-one that reds a legal file.
         "a 100-character description is allowed",
         {
             "fx/labels.yml": declarations(*FIVE)
@@ -177,9 +175,7 @@ CASES = [
         0,
     ),
     (
-        # VERIFY-AT-READ. The list is one short, the re-read finds the label, and
-        # the finding is dropped with a warning rather than accusing a live label
-        # of deletion. This is the cry-wolf case from the live CI run.
+        # VERIFY-AT-READ. The list is one short, the re-read finds the label, and the finding is dropped with a warning rather than accusing a live label of deletion. This is the cry-wolf case from the live CI run.
         "a stale list entry rescued by the re-read is a warning, not a finding",
         {
             "fx/labels.yml": declarations(*FIVE, "golf"),
@@ -231,11 +227,7 @@ CASES = [
         1,
     ),
     (
-        # FIXED 2026-09-10. Neither LIVE_FILE nor LIVE_JSON_FILE is set, so
-        # LIVE_SOURCE falls to "GitHub API" for BOTH the names-only read (which
-        # succeeds) and the drift-comparison full-object read (which fails).
-        # Before the fix, a failed drift read silently skipped the description/
-        # colour comparison and the gate reported "all agree" anyway.
+        # FIXED 2026-09-10. Neither LIVE_FILE nor LIVE_JSON_FILE is set, so LIVE_SOURCE falls to "GitHub API" for BOTH the names-only read (which succeeds) and the drift-comparison full-object read (which fails). Before the fix, a failed drift read silently skipped the description/ colour comparison and the gate reported "all agree" anyway.
         "a failed live-JSON fetch over the real GitHub API path refuses, not skips",
         {
             ".github/labels.yml": declarations(

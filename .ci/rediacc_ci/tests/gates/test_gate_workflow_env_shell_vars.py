@@ -75,13 +75,8 @@ def test_context_form_passes(gate):
 
 def test_longer_name_is_reported_as_itself(gate):
     gate.log_test("a long name must be reported as ITSELF, not as a substring")
-    # REWRITTEN 2026-09-02 when the rule widened from six names to ANY $IDENT.
-    # Under the six-name rule this case asserted exit 0: $HOMEBREW_PREFIX must not
-    # be flagged BY MISTAKE as $HOME. Under the widened rule it is flagged ON
-    # PURPOSE, because GitHub does not expand $HOMEBREW_PREFIX in an env: value
-    # any more than it expands $HOME. The concern that SURVIVES the widening is
-    # the substring one: the report must name the variable that is actually
-    # there.
+    # REWRITTEN 2026-09-02 when the rule widened from six names to ANY $IDENT. Under the six-name rule this case asserted exit 0: $HOMEBREW_PREFIX must not be flagged BY MISTAKE as $HOME. Under the widened rule it is flagged ON PURPOSE, because GitHub does not expand $HOMEBREW_PREFIX in an env: value any more than it expands $HOME. The concern that SURVIVES the widening is the
+    # substring one: the report must name the variable that is actually there.
     with harness.temp_dir() as d:
         workflow_rule.write_step_env(
             d / "bad.yml", "BREW: $HOMEBREW_PREFIX/bin", "OTHER: $RUNNER_TEMPLATE_X"
@@ -102,9 +97,7 @@ def test_longer_name_is_reported_as_itself(gate):
 
 def test_arbitrary_variable_is_flagged(gate):
     gate.log_test("THE CASE THE WIDENING EXISTS FOR: an arbitrary $IDENT")
-    # The six-name rule let this through, and it is the exact idiom a job-start
-    # secret fetch invites: the value looks like it flows and ships an EMPTY
-    # string, because GitHub never expands it.
+    # The six-name rule let this through, and it is the exact idiom a job-start secret fetch invites: the value looks like it flows and ships an EMPTY string, because GitHub never expands it.
     with harness.temp_dir() as d:
         workflow_rule.write_step_env(d / "bad.yml", "SECRET_API_KEY: $ACCOUNT_SERVER_API_KEY")
         result = workflow_rule.run_check(gate, d, ci=True)
@@ -129,9 +122,7 @@ def test_comment_line_in_env_block_is_ignored(gate):
 
 def test_run_body_is_not_flagged(gate):
     gate.log_test("CONTROL: inside run: the shell DOES expand these")
-    # Flagging them there would be wrong and would make the rule unusable. Only
-    # env: VALUES are in scope. Written out rather than through write_step_env
-    # because the whole point is a file with no env: block at all.
+    # Flagging them there would be wrong and would make the rule unusable. Only env: VALUES are in scope. Written out rather than through write_step_env because the whole point is a file with no env: block at all.
     with harness.temp_dir() as d:
         (d / "ok.yml").write_text(
             "name: fixture\n"
@@ -156,9 +147,7 @@ def test_run_body_is_not_flagged(gate):
 
 def test_env_block_ends_at_dedent(gate):
     gate.log_test("the scanner must LEAVE the env: block at the dedent")
-    # A shell var appearing after the env: mapping closes belongs to a later key,
-    # not to env:. If the scanner never exits the block it would flag the whole
-    # rest of the file.
+    # A shell var appearing after the env: mapping closes belongs to a later key, not to env:. If the scanner never exits the block it would flag the whole rest of the file.
     with harness.temp_dir() as d:
         (d / "ok.yml").write_text(
             "name: fixture\n"

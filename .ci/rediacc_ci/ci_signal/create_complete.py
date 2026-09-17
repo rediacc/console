@@ -90,9 +90,7 @@ def main(argv: list[str]) -> int:
 
     log.info("Created completion signal: %s (status: %s)" % (signal_file, status))
 
-    # The generic sibling, written AFTER the log line, exactly as the twin
-    # orders them: a reader tailing stderr sees the named file announced before
-    # the unnamed one lands.
+    # The generic sibling, written AFTER the log line, exactly as the twin orders them: a reader tailing stderr sees the named file announced before the unnamed one lands.
     (out / "complete.txt").write_text(status + "\n", encoding="utf-8")
     return 0
 

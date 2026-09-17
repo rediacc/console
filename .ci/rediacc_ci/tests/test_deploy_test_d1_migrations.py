@@ -59,9 +59,7 @@ BASE_ENV = {
     "GITHUB_RUN_ATTEMPT": "2",
 }
 
-# Two regions rather than the tree's three, so the "edge first, then stable"
-# ordering is four entries long and a port that interleaved them would be
-# visible rather than merely differently sorted.
+# Two regions rather than the tree's three, so the "edge first, then stable" ordering is four entries long and a port that interleaved them would be visible rather than merely differently sorted.
 DEFAULT_REGIONS = {
     "regions": [
         {"id": "eu", "d1": {"name": "account-db-eu"}, "edgeD1": {"name": "edge-account-db-eu"}},
@@ -69,8 +67,7 @@ DEFAULT_REGIONS = {
     ]
 }
 
-# A MODEL of `wrangler d1`, not wrangler. It has to serve `clone-d1.sh` as well
-# as the script under test, so `d1 export` and `d1 execute` are modelled too.
+# A MODEL of `wrangler d1`, not wrangler. It has to serve `clone-d1.sh` as well as the script under test, so `d1 export` and `d1 execute` are modelled too.
 FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx`. See the test module docstring."""
 import json
@@ -305,18 +302,12 @@ def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
     return root, old, new
 
 
-# `clone-d1.sh` RUNS `mktemp -d`, so its scratch directory has a fresh random
-# suffix on every invocation and appears in both the call log (as
+# `clone-d1.sh` RUNS `mktemp -d`, so its scratch directory has a fresh random suffix on every invocation and appears in both the call log (as
 # `--output=/tmp/tmp.XXXXXXXXXX/export.sql`) and in nothing else. That is the
-# ONE thing in this comparison that cannot be equal between two runs of the SAME
-# implementation, so it is masked rather than compared.
+# ONE thing in this comparison that cannot be equal between two runs of the SAME implementation, so it is masked rather than compared.
 #
-# THE MASK IS DELIBERATELY NARROW: it matches `mktemp -d`'s own shape, ten
-# alphanumerics after `/tmp/tmp.`, and stops at the word boundary. So the
-# `/export.sql` and `/import.sql` tails, and every other `/tmp/...` path a
-# different implementation might invent, are still compared verbatim.
-# `test_the_mktemp_mask_hides_only_the_random_suffix` asserts both halves rather
-# than leaving the claim as a comment.
+# THE MASK IS DELIBERATELY NARROW: it matches `mktemp -d`'s own shape, ten alphanumerics after `/tmp/tmp.`, and stops at the word boundary. So the `/export.sql` and `/import.sql` tails, and every other `/tmp/...` path a different implementation might invent, are still compared verbatim. `test_the_mktemp_mask_hides_only_the_random_suffix` asserts both halves rather than leaving the
+# claim as a comment.
 MKTEMP_DIR = re.compile(r"/tmp/tmp\.[A-Za-z0-9]{10}\b")
 
 
@@ -357,9 +348,7 @@ def _wrangler_verbs(log: str) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# The happy path and the ORDER, which is this script's whole design
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path and the ORDER, which is this script's whole design ---------------------------------------------------------------------------
 
 
 def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
@@ -369,10 +358,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
     proc, calls = old
     assert proc.returncode == 0, proc.stderr
 
-    # PRINT THE SHAPE: four regions, each contributing create, info, the clone's
-    # export plus two executes, and one migrations apply. Then four deletes from
-    # the trap. A collapse in any of those numbers is what a "both printed the
-    # same groups" comparison would miss.
+    # PRINT THE SHAPE: four regions, each contributing create, info, the clone's export plus two executes, and one migrations apply. Then four deletes from the trap. A collapse in any of those numbers is what a "both printed the same groups" comparison would miss.
     assert _wrangler_verbs(calls) == (
         ["d1 create", "d1 info", "d1 export", "d1 execute", "d1 execute", "d1 migrations"] * 4
         + ["d1 delete"] * 4
@@ -462,9 +448,7 @@ def test_a_delete_that_fails_is_reported_as_failed_not_as_deleted(tmp_path) -> N
     assert "needs manual removal" not in proc.stdout
 
 
-# ---------------------------------------------------------------------------
-# The four named facts
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four named facts ---------------------------------------------------------------------------
 
 
 def test_fact_an_unreadable_regions_json_is_a_green_run_that_tested_nothing(
@@ -516,13 +500,10 @@ def test_fact_the_workspace_takes_over_after_the_first_region(tmp_path) -> None:
     _agree(old, new, "workspace-split")
 
     proc, calls = old
-    # THE RUN STILL SUCCEEDS, which is what makes this quiet: four regions, four
-    # applies, and nothing says the later three used a different tree.
+    # THE RUN STILL SUCCEEDS, which is what makes this quiet: four regions, four applies, and nothing says the later three used a different tree.
     assert proc.returncode == 0, proc.stderr
     assert len([c for c in _calls(calls) if "migrations apply" in c]) == 4
-    # And the workspace tree really was used: its worker directory is where the
-    # last three configs were written and removed, so it exists and is empty of
-    # the generated file on both sides.
+    # And the workspace tree really was used: its worker directory is where the last three configs were written and removed, so it exists and is empty of the generated file on both sides.
     assert not (elsewhere / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
     assert not (root / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
 
@@ -560,17 +541,14 @@ def test_fact_the_generated_config_survives_a_failed_apply(tmp_path) -> None:
     """`rm -f` IS AFTER THE APPLY, so a failed apply leaves the file behind."""
     assert port.THE_GENERATED_CONFIG_SURVIVES_A_FAILED_APPLY is True
 
-    # Call 6 is the first region's `migrations apply`: create, info, export,
-    # execute, execute, apply.
+    # Call 6 is the first region's `migrations apply`: create, info, export, execute, execute, apply.
     root, old, new = run_both(tmp_path, FAKE_NPX_FAIL_ON_CALL="6")
     _agree(old, new, "apply-fails")
     assert old[0].returncode == 1
     assert (root / "workers" / "www" / port.TMPCONFIG_BASENAME).is_file()
 
 
-# ---------------------------------------------------------------------------
-# Refusals, and the trap that is not installed yet
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, and the trap that is not installed yet ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("missing", ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"])
@@ -615,9 +593,7 @@ def test_a_missing_tool_refuses_with_the_same_bytes(tmp_path, tool) -> None:
     assert old[0].stderr == "✗ Required command '%s' is not available\n" % tool, repr(old[0].stderr)
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
@@ -668,9 +644,7 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     new_calls = call_log.read_text(encoding="utf-8")
 
     assert new_proc.returncode == old_proc.returncode, "the plant changed the exit code"
-    # THE SUMMARY LINE IS UNCHANGED, which is the part that makes this quiet: the
-    # run still reports four regions, two edge and two stable. Only the ORDER
-    # moved, and only the call log and the group headers carry it.
+    # THE SUMMARY LINE IS UNCHANGED, which is the part that makes this quiet: the run still reports four regions, two edge and two stable. Only the ORDER moved, and only the call log and the group headers carry it.
     assert "All 4 regional migration tests passed (2 edge + 2 stable)" in new_proc.stderr
     assert _mask(new_calls) != _mask(old_calls), (
         "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
@@ -682,9 +656,7 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     assert first_created == "migration-test-stable-eu-777-2"
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_region_id_strips_the_right_prefix_in_the_right_order() -> None:
@@ -692,8 +664,7 @@ def test_region_id_strips_the_right_prefix_in_the_right_order() -> None:
     assert port.region_id("account-db-eu") == "eu"
     assert port.region_id("edge-account-db-eu") == "eu"
     assert port.region_id("account-db-") == ""
-    # A NAME MATCHING NEITHER PREFIX IS PASSED THROUGH WHOLE, which is what a
-    # regions.json naming its databases anything else would produce.
+    # A NAME MATCHING NEITHER PREFIX IS PASSED THROUGH WHOLE, which is what a regions.json naming its databases anything else would produce.
     assert port.region_id("weird-db") == "weird-db"
 
 

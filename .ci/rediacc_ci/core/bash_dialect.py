@@ -58,8 +58,7 @@ from __future__ import annotations
 import functools
 import subprocess
 
-# Every diagnostic from ONE bash, so a single probe answers all of them and a
-# host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape,
+# Every diagnostic from ONE bash, so a single probe answers all of them and a host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape,
 # `[` the integer one, and `cd ""` the null-directory one; none writes to stdout,
 # and `cd ""` does not move the shell (it is refused on 5.3 and a no-op on 5.2).
 _PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]; cd ""; read -r _bd < /'
@@ -69,14 +68,9 @@ _ARITH_52 = "syntax error"
 _INTEGER_53 = "integer expected"
 _INTEGER_52 = "integer expression expected"
 # 5.3 REFUSES `cd ""` OUT LOUD; 5.2 says nothing at all, so the 5.2 answer is the
-# empty string rather than a different wording. A caller that appends this to an
-# expected stderr therefore appends nothing on 5.2, which is correct.
+# empty string rather than a different wording. A caller that appends this to an expected stderr therefore appends nothing on 5.2, which is correct.
 _CD_NULL_53 = "cd: null directory"
-# The `read` builtin names the failing FD, and 5.3 MOVED it:
-#   5.3.9   read: 0: read error: Is a directory
-#   5.2.37  read: read error: 0: Is a directory
-# A word ORDER change, not a rewording, so it cannot be expressed as a
-# swappable noun the way the pairs above can.
+# The `read` builtin names the failing FD, and 5.3 MOVED it: 5.3.9 read: 0: read error: Is a directory 5.2.37 read: read error: 0: Is a directory A word ORDER change, not a rewording, so it cannot be expressed as a swappable noun the way the pairs above can.
 _READ_FD_AFTER_REASON = "read error: 0:"  # the 5.2 shape, as the probe emits it
 
 
@@ -93,14 +87,9 @@ def _probe(env: dict[str, str] | None) -> tuple[str, str, str, bool]:
     except (OSError, subprocess.SubprocessError):
         return _ARITH_53, _INTEGER_53, _CD_NULL_53, True
     err = proc.stderr
-    # SUBSTRING ORDER MATTERS, and only in this direction: `syntax error` is a
-    # substring of `arithmetic syntax error`, so asking for the SHORT spelling
-    # first would call every 5.3 host a 5.2 host. Ask for the long one, and
-    # treat "neither appeared" as 5.3, which is what every call site hardcoded
-    # before this module existed.
+    # SUBSTRING ORDER MATTERS, and only in this direction: `syntax error` is a substring of `arithmetic syntax error`, so asking for the SHORT spelling first would call every 5.3 host a 5.2 host. Ask for the long one, and treat "neither appeared" as 5.3, which is what every call site hardcoded before this module existed.
     arith = _ARITH_53 if _ARITH_53 in err else (_ARITH_52 if _ARITH_52 in err else _ARITH_53)
-    # The integer pair has the trap the other way round -- here the 5.2 spelling
-    # is the longer one -- so the long spelling is again what gets asked first.
+    # The integer pair has the trap the other way round -- here the 5.2 spelling is the longer one -- so the long spelling is again what gets asked first.
     integer = _INTEGER_52 if _INTEGER_52 in err else _INTEGER_53
     cd_null = _CD_NULL_53 if _CD_NULL_53 in err else ""
     read_fd_first = _READ_FD_AFTER_REASON not in err
@@ -114,8 +103,7 @@ def _ambient() -> tuple[str, str, str, bool]:
 
 
 def _dialect(env: dict[str, str] | None) -> tuple[str, str, str, bool]:
-    # A caller that named an env is asking about THAT bash, so it neither reads
-    # nor writes the ambient cache.
+    # A caller that named an env is asking about THAT bash, so it neither reads nor writes the ambient cache.
     return _probe(env) if env is not None else _ambient()
 
 

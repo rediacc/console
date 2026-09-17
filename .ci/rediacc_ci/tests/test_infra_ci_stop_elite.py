@@ -34,9 +34,7 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-stop-elite.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop_elite.py"
 
-# A recording `docker`, written as Python per ruling 7 (new instruments are
-# Python, not bash) and generated per case so its configuration lives in its own
-# text rather than in an environment two processes deep.
+# A recording `docker`, written as Python per ruling 7 (new instruments are Python, not bash) and generated per case so its configuration lives in its own text rather than in an environment two processes deep.
 FAKE_DOCKER = """#!/usr/bin/env python3
 import sys
 LOG = %(log)r
@@ -117,8 +115,7 @@ def _run(
         ps_names=ps_names,
         verb_rc=verb_rc,
     )
-    # REPLACED, not prepended: a prepend on a host with a real docker would still
-    # pass and occasionally talk to the machine's daemon.
+    # REPLACED, not prepended: a prepend on a host with a real docker would still pass and occasionally talk to the machine's daemon.
     env["PATH"] = "%s:%s" % (binder, env.get("PATH", ""))
     if subject.suffix == ".sh":
         subject_dir = root / ".ci" / "scripts" / "infra"

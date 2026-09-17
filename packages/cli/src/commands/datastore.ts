@@ -115,10 +115,7 @@ async function ferryDatastoreRecord(
   debug?: boolean
 ): Promise<void> {
   const record = await captureDatastoreRecord(from, ref, debug);
-  // A local-backend datastore's bytes never leave their machine, so relocating
-  // one is not something that can be half-done — it is something that must not
-  // start. renet refuses it too (adopt.go:44-46), but only after this command
-  // would already have detached.
+  // A local-backend datastore's bytes never leave their machine, so relocating one is not something that can be half-done — it is something that must not start. renet refuses it too (adopt.go:44-46), but only after this command would already have detached.
   if (record.backend !== 'ceph') {
     const backend = record.backend ?? DEFAULTS.DATASTORE.BACKEND;
     throw new ValidationError(
@@ -133,8 +130,7 @@ async function ferryDatastoreRecord(
     {
       name: ref,
       record_b64: Buffer.from(JSON.stringify(record)).toString('base64'),
-      // renet refuses a fork record under --plain and a plain record without it,
-      // so the shape is read off the record, not guessed from the ref.
+      // renet refuses a fork record under --plain and a plain record without it, so the shape is read off the record, not guessed from the ref.
       ...(record.fork ? {} : { plain: true }),
     },
     { debug }
@@ -178,8 +174,7 @@ function registerCreate(datastore: Command): void {
           }
           await assertMachineExists(options.machine);
           if (options.cluster) {
-            // A cluster backref that names no cluster would silently make the
-            // datastore kubernetes-world with no cluster to belong to.
+            // A cluster backref that names no cluster would silently make the datastore kubernetes-world with no cluster to belong to.
             await configService.listClusters().then((clusters) => {
               if (!clusters.some((c) => c.name === options.cluster)) {
                 throw new ValidationError(
@@ -332,9 +327,7 @@ function registerAttach(datastore: Command): void {
           await assertMachineExists(options.to);
           const isFork = parseDatastoreRef(ref).tag !== undefined || record.parent !== undefined;
 
-          // The teaching error (spec 03 §2): a fork's writes have to go somewhere,
-          // and the two answers have opposite durability. Guessing for the operator
-          // is how you silently throw away an experiment they meant to keep.
+          // The teaching error (spec 03 §2): a fork's writes have to go somewhere, and the two answers have opposite durability. Guessing for the operator is how you silently throw away an experiment they meant to keep.
           if (isFork && !options.writes) {
             throw new ValidationError(t('errors.datastore.forkNeedsWrites', { ref }));
           }
@@ -355,18 +348,14 @@ function registerAttach(datastore: Command): void {
             throw new ValidationError(t('errors.datastore.writesImmutable', { ref }));
           }
           if (current) {
-            // Single-mounter relocation (02 §3): the old holder gives it up first,
-            // and a failed detach aborts the move with the old attach intact.
+            // Single-mounter relocation (02 §3): the old holder gives it up first, and a failed detach aborts the move with the old attach intact.
             outputService.info(
               t('commands.datastore.attach.relocating', { ref, from: current, to: options.to })
             );
             await ferryDatastoreRecord(current, options.to, ref, options.debug);
             await dispatch('datastore_detach', current, { name: ref }, { debug: options.debug });
           } else if (entry?.lastHolder && entry.lastHolder !== options.to) {
-            // DETACHED relocation. Nothing holds the datastore, so there is no
-            // detach to do — but the registry row still exists only on the machine
-            // that last had it, so the attach below would fail "not registered"
-            // exactly as the attached case used to. `lastHolder` is recorded at
+            // DETACHED relocation. Nothing holds the datastore, so there is no detach to do — but the registry row still exists only on the machine that last had it, so the attach below would fail "not registered" exactly as the attached case used to. `lastHolder` is recorded at
             // detach time for this arm alone; without it the CLI has no idea which
             // registry to ferry from, and guessing is how you fence a live holder.
             await ferryDatastoreRecord(entry.lastHolder, options.to, ref, options.debug);
@@ -387,9 +376,7 @@ function registerAttach(datastore: Command): void {
           await setDatastoreState(ref, {
             attachedTo: options.to,
             ...(options.writes && { writes: options.writes }),
-            // Carried, not dropped: the schema's contract is that lastHolder is
-            // never cleared, only overwritten by the next detach. Attaching does
-            // not make the previous holder's registry row untrue.
+            // Carried, not dropped: the schema's contract is that lastHolder is never cleared, only overwritten by the next detach. Attaching does not make the previous holder's registry row untrue.
             ...(entry?.lastHolder && { lastHolder: entry.lastHolder }),
             mounted: true,
             attachedAt: new Date().toISOString(),
@@ -422,10 +409,7 @@ function registerAttach(datastore: Command): void {
           outputService.success(t('commands.datastore.detach.noop', { ref }));
           return;
         }
-        // A `--writes local` fork's overlay is ephemeral BY CONSTRUCTION: there is
-        // nowhere for it to be written back to. Detaching it destroys it, so say so
-        // and make the operator say --discard (spec §5.3).
-        // The `!host` return above proves `entry` is present.
+        // A `--writes local` fork's overlay is ephemeral BY CONSTRUCTION: there is nowhere for it to be written back to. Detaching it destroys it, so say so and make the operator say --discard (spec §5.3). The `!host` return above proves `entry` is present.
         if (entry.writes === 'local' && !options.discard) {
           throw new ValidationError(t('errors.datastore.localForkNeedsDiscard', { ref }));
         }
@@ -443,15 +427,8 @@ function registerAttach(datastore: Command): void {
           { name: ref, ...(options.discard && { discard: true }) },
           { debug: options.debug }
         );
-        // Remember WHO held it. renet's registry row — the ceph pool/image record
-        // a later relocation has to ferry — survives only on that machine, so a
-        // detached datastore that forgets its last holder cannot be attached
-        // anywhere else: `datastore attach --to <other>` fails "not registered on
-        // this machine" and the CLI has nowhere to fetch the row from. The whole
-        // entry is replaced rather than merged because every OTHER field describes
-        // an attachment that no longer exists. A --discard detach drops this again
-        // a line below: forgetDatastore clears both halves, which is right, since
-        // there is no longer a datastore to relocate.
+        // Remember WHO held it. renet's registry row — the ceph pool/image record a later relocation has to ferry — survives only on that machine, so a detached datastore that forgets its last holder cannot be attached anywhere else: `datastore attach --to <other>` fails "not registered on this machine" and the CLI has nowhere to fetch the row from. The whole entry is replaced
+        // rather than merged because every OTHER field describes an attachment that no longer exists. A --discard detach drops this again a line below: forgetDatastore clears both halves, which is right, since there is no longer a datastore to relocate.
         await setDatastoreState(ref, { lastHolder: host });
         if (options.discard) {
           await forgetDatastore(ref);
@@ -654,8 +631,7 @@ function registerMutators(datastore: Command): void {
         await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_DELETE, undefined, ref);
 
-        // Detach-before-unlink (03 hygiene rule 1): a datastore with repo records
-        // still pointing at it is not garbage, it is someone's data.
+        // Detach-before-unlink (03 hygiene rule 1): a datastore with repo records still pointing at it is not garbage, it is someone's data.
         const repos = await reposInDatastore(ref);
         if (repos.length > 0 && !options.force) {
           throw new ValidationError(
@@ -673,8 +649,7 @@ function registerMutators(datastore: Command): void {
         const deleteState = at(await listDatastoreState(), ref);
         const host = deleteState?.attachedTo;
         if (host) {
-          // A failed detach fails the delete: never unlink a record whose pool is
-          // still mounted somewhere (03 rule 1).
+          // A failed detach fails the delete: never unlink a record whose pool is still mounted somewhere (03 rule 1).
           await dispatch('datastore_detach', host, { name: ref }, { debug: options.debug });
           await setDatastoreState(ref, undefined);
           await dispatch('datastore_delete', host, { name: ref }, { debug: options.debug });

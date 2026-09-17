@@ -58,13 +58,11 @@ DIST = paths.from_root("packages", "www", "dist")
 
 # The one character the mutant takes back: `\s*` to `\s+` in the side-effect
 # import matcher. `\bimport\s*\(` on the line above is a DIFFERENT matcher (the
-# dynamic form) and is deliberately left alone, exactly as the twin's sed is
-# anchored on the `["']` that follows.
+# dynamic form) and is deliberately left alone, exactly as the twin's sed is anchored on the `["']` that follows.
 FIXED = r"""/\bimport\s*["']"""
 REVERTED = r"""/\bimport\s+["']"""
 
-# `import"..."`: a side-effect import with NO space, which is what a minifier
-# emits and what the gate was blind to.
+# `import"..."`: a side-effect import with NO space, which is what a minifier emits and what the gate was blind to.
 NO_SPACE_EDGE = re.compile(rb'import"[^"]+"')
 
 # The two directories the real build writes chunks into.
@@ -126,8 +124,7 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
     (tmp_path / "node_modules").symlink_to(paths.from_root("node_modules"))
     source = GATE.read_text(encoding="utf-8")
     mutated = source.replace(FIXED, REVERTED)
-    # VACUITY GUARD: if the replacement stopped matching, the mutant IS the gate
-    # and a green run below would mean nothing.
+    # VACUITY GUARD: if the replacement stopped matching, the mutant IS the gate and a green run below would mean nothing.
     if mutated == source:
         gate.log_fail(
             "the mutation did not apply (%r is no longer in the gate); this control would "

@@ -68,54 +68,28 @@ export const MANIFEST = 'private/account/rotation-manifest.json';
 /** env var -> the manifest slugs whose versions may legitimately supply it. */
 export const TRACKED: ReadonlyArray<{ key: string; slugs: string[] }> = [
   { key: 'AWS_SES_ACCESS_KEY_ID', slugs: ['ses-eu', 'ses-us', 'ses-asia'] },
-  // R2. Added 2026-09-02 after the live check that this gate could not make:
-  // `.env`'s CLOUDFLARE_R2_ACCESS_KEY_ID is the Cloudflare token `Github-R2`, which the
-  // manifest records as **grace** for cf-r2. Local dev is therefore running on
-  // a credential already scheduled for deactivation, and nothing said so --
-  // this list only ever named the two SES keys.
+  // R2. Added 2026-09-02 after the live check that this gate could not make: `.env`'s CLOUDFLARE_R2_ACCESS_KEY_ID is the Cloudflare token `Github-R2`, which the manifest records as **grace** for cf-r2. Local dev is therefore running on a credential already scheduled for deactivation, and nothing said so -- this list only ever named the two SES keys.
   { key: 'CLOUDFLARE_R2_ACCESS_KEY_ID', slugs: ['cf-r2'] },
-  // Found by SWEEPING the class rather than tripping over it: every value in
-  // `.env` was compared against every version id in the manifest, and this was
-  // the one other match that nothing tracked. It is `active` today, so it adds
-  // no noise now -- it is here to catch the drift, not to report one.
+  // Found by SWEEPING the class rather than tripping over it: every value in `.env` was compared against every version id in the manifest, and this was the one other match that nothing tracked. It is `active` today, so it adds no noise now -- it is here to catch the drift, not to report one.
   { key: 'CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID', slugs: ['cf-r2-media'] },
   //
-  // DELIBERATELY ABSENT, and this list is the whole answer to "why not also
-  // track X" -- do not add these back without reading why:
+  // DELIBERATELY ABSENT, and this list is the whole answer to "why not also track X" -- do not add these back without reading why:
   //
-  //   CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY, CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+  // CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY, CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
   //     NOT ID-MATCHABLE BY CONSTRUCTION. The manifest records a token ID; the
-  //     `.env` value is the token's SECRET. For an R2 keypair the id half IS the
-  //     token id (which is why the two above work) and the secret half is
-  //     sha256(value), which appears in no manifest. Tracking these would report
-  //     permanent false drift -- exactly the category error that had `AWS_IAM_ADMIN_ACCESS_KEY_ID`
-  //     in this list until 2026-09-02.
+  // `.env` value is the token's SECRET. For an R2 keypair the id half IS the token id (which is why the two above work) and the secret half is sha256(value), which appears in no manifest. Tracking these would report permanent false drift -- exactly the category error that had `AWS_IAM_ADMIN_ACCESS_KEY_ID` in this list until 2026-09-02.
   //
   //   CLOUDFLARE_TURNSTILE_SECRET_KEY (the .env key; the GitHub secret is still CLOUDFLARE_TURNSTILE_SECRET_KEY)
-  //     `turnstile` and `turnstile-bench` have ZERO versions recorded in the
+  // `turnstile` and `turnstile-bench` have ZERO versions recorded in the
   //     manifest (verified 2026-09-02; every other slug has 1-4). There is
-  //     nothing to compare against, so this cannot be a membership test today.
-  //     That is a real gap in the RECORD, not in this gate: two live credentials
-  //     sit outside rotation entirely, so nothing tracks their age and
-  //     `deactivate`/`delete` have nothing to act on. Fixing it means seeding
-  //     those versions, which is operator work.
+  // nothing to compare against, so this cannot be a membership test today. That is a real gap in the RECORD, not in this gate: two live credentials sit outside rotation entirely, so nothing tracks their age and `deactivate`/`delete` have nothing to act on. Fixing it means seeding those versions, which is operator work.
   //
-  //   AWS_IAM_ADMIN_ACCESS_KEY_ID / AWS_IAM_ADMIN_SECRET_ACCESS_KEY, CF_GLOBAL_API_KEY, CF_EMAIL
-  //     Operator-held ADMIN credentials that mint the others. No slug records
+  // AWS_IAM_ADMIN_ACCESS_KEY_ID / AWS_IAM_ADMIN_SECRET_ACCESS_KEY, CF_GLOBAL_API_KEY, CF_EMAIL Operator-held ADMIN credentials that mint the others. No slug records
   //     them and none can; see the note above the SES entry.
-  // NOT `AWS_IAM_ADMIN_ACCESS_KEY_ID`. It was tracked against the ses-* slugs until 2026-09-02,
-  // which is a category error: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` are the AWS **IAM
-  // admin** credential the rotation tool uses to CREATE and DELETE the SES
-  // sending keys (`scripts/rotation/lib/credentials.ts:59-61`,
-  // `resolveAwsAdmin`). It is not itself a rotated sending key, no manifest
-  // slug records it, and none can -- there is no admin slug. So the check
-  // could never pass for it, and a gate that is permanently red is worse than
-  // one that cannot fail: it teaches you to skip the output.
+  // NOT `AWS_IAM_ADMIN_ACCESS_KEY_ID`. It was tracked against the ses-* slugs until 2026-09-02, which is a category error: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` are the AWS **IAM admin** credential the rotation tool uses to CREATE and DELETE the SES sending keys (`scripts/rotation/lib/credentials.ts:59-61`, `resolveAwsAdmin`). It is not itself a rotated
+  // sending key, no manifest slug records it, and none can -- there is no admin slug. So the check could never pass for it, and a gate that is permanently red is worse than one that cannot fail: it teaches you to skip the output.
   //
-  // The real gap this leaves is honest and worth stating: the admin credential
-  // is outside the rotation record entirely, so nothing tracks its age. Closing
-  // that means adding an `aws-admin` slug to the manifest, which is the
-  // operator's call, not this gate's.
+  // The real gap this leaves is honest and worth stating: the admin credential is outside the rotation record entirely, so nothing tracks its age. Closing that means adding an `aws-admin` slug to the manifest, which is the operator's call, not this gate's.
 ];
 
 export const parseEnv = (source: string): Record<string, string> => {

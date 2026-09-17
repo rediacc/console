@@ -108,10 +108,7 @@ VSCODE_NAME = "start-vscode.sh"
 
 # A. stderr suppression on a PRIMARY operation.
 #
-# Not a blanket ban on 2>/dev/null: probing for a pid, a command or a config
-# value legitimately discards noise, and a gate that forbids those gets
-# suppressed itself within a week. What must never be silenced is the command
-# whose failure the script then reports on.
+# Not a blanket ban on 2>/dev/null: probing for a pid, a command or a config value legitimately discards noise, and a gate that forbids those gets suppressed itself within a week. What must never be silenced is the command whose failure the script then reports on.
 PRIMARY_OPS = re.compile(
     r"git (clone|fetch|pull|submodule update|submodule add)"
     r"|curl [^|]*(-o |-O |--output)"
@@ -122,8 +119,7 @@ SUPPRESSORS = re.compile(
     r"2>/dev/null|2> */dev/null|2>&-|>[ \t]*/dev/null[ \t]+2>&1|&>[ \t]*/dev/null"
 )
 
-# `grep -vE '^[0-9]+:[[:space:]]*#'` over `grep -n` output: a COMMENT that names
-# a primary operation is documentation, not an operation.
+# `grep -vE '^[0-9]+:[[:space:]]*#'` over `grep -n` output: a COMMENT that names a primary operation is documentation, not an operation.
 NUMBERED_COMMENT = re.compile(r"^[0-9]+:[ \t]*#")
 
 # C. Process-group lifecycle in start-vscode.sh.
@@ -135,8 +131,7 @@ GIT_ERROR = re.compile(
     r"does not (appear to be|exist)|repository .* not found|fatal:", re.IGNORECASE
 )
 
-# The three mutations, each with the marker that proves it landed. Kept as data
-# so the sed expression and the thing it plants cannot drift apart.
+# The three mutations, each with the marker that proves it landed. Kept as data so the sed expression and the thing it plants cannot drift apart.
 A_MUTATION = (
     r"s@^\(  *\){ GIT_TERMINAL_PROMPT=0 git .*$@\1git submodule update --init "
     r'--recursive "$sub" 2>/dev/null ### PLANTED@'
@@ -243,8 +238,7 @@ def assert_a(scripts: list[pathlib.Path], report) -> int:
         offenders = scan_suppression(script.read_text(encoding="utf-8", errors="replace"))
         if offenders:
             report("A: %s discards stderr of a primary operation:" % script.name)
-            # `printf '       %s\n' "$offenders"` with a QUOTED multi-line value
-            # runs ONE format cycle, so only the first line carries the indent.
+            # `printf ' %s\n' "$offenders"` with a QUOTED multi-line value runs ONE format cycle, so only the first line carries the indent.
             report.detail("       %s" % "\n".join(offenders))
             rc = 1
     return rc
@@ -364,10 +358,7 @@ def main(argv: list[str] | None = None) -> int:
         # --- controls ------------------------------------------------------
         control_fails = 0
 
-        # A-control: reintroduce the exact suppression the old script had.
-        # The planted marker is checked for explicitly, so a refactor that moves
-        # the target line makes this control VACUOUS (and fails the gate) rather
-        # than silently mutating nothing and calling it a pass.
+        # A-control: reintroduce the exact suppression the old script had. The planted marker is checked for explicitly, so a refactor that moves the target line makes this control VACUOUS (and fails the gate) rather than silently mutating nothing and calling it a pass.
         a_broken = tmpdir / "a-broken.sh"
         mutate(init, a_broken, (A_MUTATION,))
         if A_MARKER not in a_broken.read_text(encoding="utf-8", errors="replace"):
@@ -405,8 +396,7 @@ def main(argv: list[str] | None = None) -> int:
         ):
             control_fails = 1
 
-        # C-control: a copy of start-vscode.sh with the process-group handling
-        # removed.
+        # C-control: a copy of start-vscode.sh with the process-group handling removed.
         c_broken = tmpdir / "c-broken.sh"
         mutate(vscode, c_broken, C_MUTATIONS)
         c_text = c_broken.read_text(encoding="utf-8", errors="replace")
@@ -458,13 +448,9 @@ def control_must_fail(label: str, run) -> bool:
     return True
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# Lines that MUST be flagged by assertion A, and lines that must NOT. The second
-# list is the one that keeps this gate alive: a probe discarding noise is
-# legitimate, and a gate that forbids those gets suppressed within a week.
+# Lines that MUST be flagged by assertion A, and lines that must NOT. The second list is the one that keeps this gate alive: a probe discarding noise is legitimate, and a gate that forbids those gets suppressed within a week.
 SUPPRESSED = (
     'git submodule update --init --recursive "$sub" 2>/dev/null',
     "git clone https://x/y 2>/dev/null",

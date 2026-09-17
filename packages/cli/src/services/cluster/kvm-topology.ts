@@ -77,9 +77,7 @@ function allocateIds(
   cluster: ClusterConfig,
   persisted: Record<string, number[]>
 ): Record<string, number[]> {
-  // The booted-VM id ledger lives in state.clusters[*].memberIds (v3, R2-F2 /
-  // Carry-in 5), threaded in by the caller. Reusing it means a pool-count
-  // change never renumbers the VMs already running (which `ops down` addresses
+  // The booted-VM id ledger lives in state.clusters[*].memberIds (v3, R2-F2 / Carry-in 5), threaded in by the caller. Reusing it means a pool-count change never renumbers the VMs already running (which `ops down` addresses
   // by id); a fresh cluster passes `{}` and allocation is deterministic.
   const allocation: Record<string, number[]> = {};
 

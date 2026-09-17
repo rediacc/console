@@ -57,10 +57,7 @@ if TYPE_CHECKING:
 TWIN = ".ci/scripts/ci/cancel-older-runs.sh"
 MODULE = "rediacc_ci.ci.cancel_older_runs"
 
-# The program's own name wherever bash prints it. NOT anchored to the start of a
-# line: the `2>&1` on the twin's line 57 captures `gh: command not found` INTO
-# the run body, so the diagnostic reappears in the MIDDLE of a `log_warn` line.
-# Scoped to the two basenames so it can only ever eat the program name.
+# The program's own name wherever bash prints it. NOT anchored to the start of a line: the `2>&1` on the twin's line 57 captures `gh: command not found` INTO the run body, so the diagnostic reappears in the MIDDLE of a `log_warn` line. Scoped to the two basenames so it can only ever eat the program name.
 _PROG = re.compile(r"\S*(?:cancel-older-runs\.sh|cancel_older_runs\.py): line ")
 
 # The current run: id 9, created 2026-01-01. Every fixture below is relative to
@@ -70,8 +67,7 @@ CURRENT_ID = "9"
 CURRENT_CREATED = "2026-01-01T00:00:00Z"
 CURRENT_RUN_JSON = json.dumps({"created_at": CURRENT_CREATED, "head_branch": "main"})
 
-# `.replace`, not `.format`: the canned bodies below are JSON and are full of
-# braces that `str.format` would read as fields.
+# `.replace`, not `.format`: the canned bodies below are JSON and are full of braces that `str.format` would read as fields.
 FAKE_GH_SRC = """#!@PYTHON@
 import os
 import sys
@@ -230,9 +226,7 @@ RUN_CALL = "FAKEGH| api repos/rediacc/console/actions/runs/9\n"
 LOOP_ARGS = ("--timeout", "30", "--poll-interval", "0")
 
 
-# ---------------------------------------------------------------------------
-# The three environment guards
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three environment guards ---------------------------------------------------------------------------
 
 
 def test_no_github_run_id_is_a_warning_and_a_pass(tmp_path: pathlib.Path) -> None:
@@ -280,9 +274,7 @@ def test_the_run_id_guard_runs_before_the_repository_guard(
     assert_identical(old, new, calls)
 
 
-# ---------------------------------------------------------------------------
-# Fetching the current run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fetching the current run ---------------------------------------------------------------------------
 
 
 def test_a_failing_run_lookup_warns_and_exits_zero(tmp_path: pathlib.Path) -> None:
@@ -322,11 +314,7 @@ def test_quirk_1_is_reachable_from_a_gh_warning_beside_a_perfectly_good_body(
     )
     assert old[0] == 5
     assert "jq: parse error" in old[2]
-    # WHICH LINE jq NAMES IS THE ORDERING ASSERTION. The warning was written
-    # first, so under a shared `2>&1` pipe it is line 1 and jq chokes there.
-    # Concatenating two separately captured buffers would put the valid body on
-    # line 1 and the warning on line 2, and jq would say `line 2` instead. The
-    # port failed exactly this way before `gh_capture` switched to
+    # WHICH LINE jq NAMES IS THE ORDERING ASSERTION. The warning was written first, so under a shared `2>&1` pipe it is line 1 and jq chokes there. Concatenating two separately captured buffers would put the valid body on line 1 and the warning on line 2, and jq would say `line 2` instead. The port failed exactly this way before `gh_capture` switched to
     # `stderr=STDOUT`.
     assert "at line 1, column 3" in old[2]
     assert_identical(old, new, calls)
@@ -368,9 +356,7 @@ def test_a_missing_head_branch_alone_is_enough_to_skip(tmp_path: pathlib.Path) -
     assert_identical(old, new, calls)
 
 
-# ---------------------------------------------------------------------------
-# The loop
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The loop ---------------------------------------------------------------------------
 
 
 def test_no_older_runs_is_the_clean_exit(tmp_path: pathlib.Path) -> None:
@@ -409,8 +395,7 @@ def test_the_filter_excludes_this_run_and_anything_newer(tmp_path: pathlib.Path)
     assert "✓ Found 1 older run(s) - force-cancelling...\n" in old[2]
     assert "✓ Force-cancelled run #50\n" in old[2]
     assert "✓ No older CI runs in progress - done\n" in old[2]
-    # Exactly one cancellation round, then the clean door: list, cancel the one
-    # match, list again and find nothing.
+    # Exactly one cancellation round, then the clean door: list, cancel the one match, list again and find nothing.
     assert calls["old"] == (
         RUN_CALL
         + listing_call()
@@ -540,9 +525,7 @@ def test_the_defaults_are_60_10_and_ci_yml() -> None:
     assert 'WORKFLOW="${ARG_WORKFLOW:-%s}"' % port.DEFAULT_WORKFLOW in text
 
 
-# ---------------------------------------------------------------------------
-# QUIRK 2: the arithmetic on an unquoted --timeout
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- QUIRK 2: the arithmetic on an unquoted --timeout ---------------------------------------------------------------------------
 
 
 def test_quirk_2_a_bare_word_timeout_is_a_fatal_unbound_variable(
@@ -657,9 +640,7 @@ def test_the_line_number_in_the_missing_tool_message_is_the_twins_lookup_line() 
     assert lines[port.LISTING_LINE - 1].strip().startswith("RUNS_JSON=$(gh api ")
 
 
-# ---------------------------------------------------------------------------
-# Streams and colour
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Streams and colour ---------------------------------------------------------------------------
 
 
 def test_every_log_line_is_on_stderr_and_stdout_carries_only_leaked_bodies(

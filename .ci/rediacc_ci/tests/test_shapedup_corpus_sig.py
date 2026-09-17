@@ -26,10 +26,7 @@ import re
 
 from rediacc_ci import paths
 
-# `scripts/gates/`, NOT `scripts/`. Written flat this file could not open the counter
-# at all and BOTH tests below died in `_families` with FileNotFoundError -- a drift
-# control that cannot read its own subject, which is a gate that never ran rather
-# than a gate that passed. The docstring above already spelled the right path.
+# `scripts/gates/`, NOT `scripts/`. Written flat this file could not open the counter at all and BOTH tests below died in `_families` with FileNotFoundError -- a drift control that cannot read its own subject, which is a gate that never ran rather than a gate that passed. The docstring above already spelled the right path.
 COUNTER = paths.from_root("scripts", "gates", "check-shape-duplication.ts")
 HOOK = paths.from_root(".claude", "hooks", "stop", "wl_shapedup.py")
 
@@ -38,8 +35,7 @@ def _families() -> set[str]:
     # THE LITERAL GREW A TYPE AND A FLOOR on 2026-09-08 -- `const FAMILIES: readonly
     # Family[] = [{ pathspec: '...', floor: N }, ...]` -- and this pattern, written
     # against the bare `const FAMILIES = [`, stopped matching. It did not go quiet: the
-    # `assert m` below fired by name, which is the whole reason it is an assert and not
-    # an `if m:`. The annotation is optional in the pattern so either spelling matches.
+    # `assert m` below fired by name, which is the whole reason it is an assert and not an `if m:`. The annotation is optional in the pattern so either spelling matches.
     m = re.search(
         r"const FAMILIES(?:\s*:[^=]+)?\s*=\s*\[(.*?)\];",
         COUNTER.read_text(encoding="utf-8"),
@@ -48,9 +44,7 @@ def _families() -> set[str]:
     assert m, "FAMILIES literal not found in %s" % paths.relative_to_root(COUNTER)
     # BOTH QUOTE STYLES, learned the hard way on 2026-09-08: a `prettier --write` run
     # with no repo config (there is none) rewrites this file's literals to double quotes,
-    # and a single-quote-only pattern then returns an EMPTY set -- which would have made
-    # the equality below hold for the worst possible reason had the non-empty test not
-    # caught it first. Reading either spelling costs nothing and removes the trap.
+    # and a single-quote-only pattern then returns an EMPTY set -- which would have made the equality below hold for the worst possible reason had the non-empty test not caught it first. Reading either spelling costs nothing and removes the trap.
     return set(re.findall(r"[\'\"]([^\'\"]+)[\'\"]", m.group(1)))
 
 

@@ -68,8 +68,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real, deterministic, and genuinely used by the twin. Anything not listed is
-# ABSENT from the scratch PATH, including `npx`, `shasum` and `node`.
+# Real, deterministic, and genuinely used by the twin. Anything not listed is ABSENT from the scratch PATH, including `npx`, `shasum` and `node`.
 PATH_MINIMUM = ("dirname", "uname", "jq", "cp", "mkdir", "stat", "sha256sum", "cut", "wc")
 
 # `:171`, frozen. Recorded to the call log on STDERR-adjacent storage only; its
@@ -84,8 +83,7 @@ FAKE_DATE = """#!/bin/bash
 printf '%s\\n' '__STAMP__'
 """
 
-# `:190-192`. Records its argv and, unless told otherwise, writes nothing --
-# which is DEFECT 4's input.
+# `:190-192`. Records its argv and, unless told otherwise, writes nothing -- which is DEFECT 4's input.
 FAKE_NPX = """#!/bin/bash
 {
     printf 'FAKEBIN npx'
@@ -282,9 +280,7 @@ def _agree(old_t, new_t, label: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_npx(tmp_path) -> None:
@@ -307,9 +303,7 @@ def test_the_frozen_date_really_is_what_lands_in_the_metadata(tmp_path) -> None:
     assert meta["generatedAt"] == FROZEN_STAMP
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
 
 
 def test_no_arguments_refuses_with_the_usage(tmp_path) -> None:
@@ -361,9 +355,7 @@ def test_a_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
         _agree(old_t, new_t, flag)
 
 
-# ---------------------------------------------------------------------------
-# The three real platforms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three real platforms ---------------------------------------------------------------------------
 
 
 def test_linux_embeds_both_linux_binaries_and_nothing_else(tmp_path) -> None:
@@ -471,9 +463,7 @@ def test_with_no_hashing_tool_the_run_refuses(tmp_path) -> None:
     _agree(old_t, new_t, "no-hash-tool")
 
 
-# ---------------------------------------------------------------------------
-# THIRD_PARTY_LICENSES
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THIRD_PARTY_LICENSES ---------------------------------------------------------------------------
 
 
 def test_a_failing_generator_writes_the_placeholder_and_does_not_fail_the_build(
@@ -515,9 +505,7 @@ def test_defect_a_generator_that_writes_nothing_is_still_reported_as_generated(
     _agree(old_t, new_t, "licenses-phantom")
 
 
-# ---------------------------------------------------------------------------
-# The defects in the validation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects in the validation ---------------------------------------------------------------------------
 
 
 def test_defect_an_unknown_arch_is_reported_and_then_ignored(tmp_path) -> None:
@@ -581,17 +569,14 @@ def test_defect_the_reported_asset_count_is_one_short(tmp_path) -> None:
         _agree(old_t, new_t, "asset-count-%s" % args[1])
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, and the planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, and the planted defect ---------------------------------------------------------------------------
 
 
 def test_the_helpers_are_exercised_directly_in_both_directions() -> None:
     # Must NOT fire.
     assert port.map_arch("x64") == ("amd64", None)
     assert port.map_arch("arm64") == ("arm64", None)
-    # Must fire, and must still hand back a usable (empty) value: that IS the
-    # defect, and a helper that raised would be a fix, not a port.
+    # Must fire, and must still hand back a usable (empty) value: that IS the defect, and a helper that raised would be a fix, not a port.
     assert port.map_arch("bogus") == ("", "Unknown arch: bogus")
 
     assert port.required_binaries("linux", "x64") == (["linux-amd64", "linux-arm64"], None)

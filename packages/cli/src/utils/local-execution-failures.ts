@@ -50,8 +50,7 @@ export function renderLocalExecutionFailure(
   const message = result.error ?? fallbackMessage;
   const code = result.errorCode ?? LOCAL_EXECUTION_FAILED_CODE;
   const exitCode = typeof result.exitCode === 'number' ? result.exitCode : 1;
-  // Skip the tail when the executor already echoed the full output
-  // (non-capture failure path).
+  // Skip the tail when the executor already echoed the full output (non-capture failure path).
   const outputTail = result.outputEchoed
     ? undefined
     : failureOutputTail(message, result.stderr, result.stdout);

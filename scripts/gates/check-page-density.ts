@@ -331,8 +331,7 @@ function judge(route: string, viewport: string, width: number, p: Probe): Findin
     }
   }
 
-  // 2px, not 0: sub-pixel layout and an odd-width viewport both land half a pixel off,
-  // and a scrollbar gutter is 15. The defect this catches was 7.5px.
+  // 2px, not 0: sub-pixel layout and an odd-width viewport both land half a pixel off, and a scrollbar gutter is 15. The defect this catches was 7.5px.
   for (const o of p.overlayCentring ?? []) {
     if (o.offset > MAX_CENTRE_OFFSET_PX) {
       add(
@@ -403,9 +402,7 @@ async function main(): Promise<void> {
     for (const route of routes) {
       for (const vp of VIEWPORTS) {
         const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-        // `domcontentloaded`, NOT `networkidle`. These pages carry a video player and lazy
-        // images, so the network never goes idle and `networkidle` timed out at 30s on a
-        // page that had finished rendering long before. check-browser-smoke.ts waits the
+        // `domcontentloaded`, NOT `networkidle`. These pages carry a video player and lazy images, so the network never goes idle and `networkidle` timed out at 30s on a page that had finished rendering long before. check-browser-smoke.ts waits the
         // same way for the same reason; the settle below is what actually covers hydration.
         await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' });
         // The calculator island and the video hydrate late; a census without a settle
@@ -419,8 +416,7 @@ async function main(): Promise<void> {
     }
 
     if (selftest) {
-      // CONTROL, one per assertion. A gate that cannot be shown to fail is a gate that
-      // has not been shown to run: each case below is the real defect, reconstructed.
+      // CONTROL, one per assertion. A gate that cannot be shown to fail is a gate that has not been shown to run: each case below is the real defect, reconstructed.
       const controls: { name: string; probe: Probe; width: number; expect: string }[] = [
         {
           name: 'a page with no CTA in the fold is reported',
@@ -516,8 +512,7 @@ async function main(): Promise<void> {
             media: [],
             techDiff: null,
             hiddenOverflow: [],
-            // The real geometry: scrollbar-gutter: stable gives a 1425px containing
-            // block on a 1440px viewport, so its centre is 712.5 against 720.
+            // The real geometry: scrollbar-gutter: stable gives a 1425px containing block on a 1440px viewport, so its centre is 712.5 against 720.
             overlayCentring: [
               { sel: 'overlay-backdrop', centre: 712.5, viewportCentre: 720, offset: 7.5 },
             ],
@@ -545,8 +540,7 @@ async function main(): Promise<void> {
       let allFired = true;
       for (const c of controls) {
         const got = judge('control', 'control', c.width, c.probe);
-        // An empty `expect` is the INVERSE control: this shape must produce nothing.
-        // Without it a tolerance can be tightened to zero and every run becomes a finding.
+        // An empty `expect` is the INVERSE control: this shape must produce nothing. Without it a tolerance can be tightened to zero and every run becomes a finding.
         const fired = c.expect === '' ? got.length === 0 : got.some((f) => f.kind === c.expect);
         allFired &&= fired;
         console.log(

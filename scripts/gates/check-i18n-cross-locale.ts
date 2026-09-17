@@ -156,11 +156,8 @@ class MissingLocaleDirError extends Error {
  */
 function localeFiles(root: string, layout: 'dir' | 'flat'): Map<string, string[]> {
   const out = new Map<string, string[]>();
-  // Dotfiles are sidecars, never locales: packages/www/src/i18n/translations carries
-  // `.translation-hashes.json`, `.naturalized-hashes.json` and a `.lock` beside the 13
-  // catalogs. The exclusion is narrow ON PURPOSE -- a locale code is two letters and can
-  // never begin with a dot, so this cannot hide one, while a blanket "ignore what I do
-  // not recognise" would defeat the UnknownLocaleDirError below.
+  // Dotfiles are sidecars, never locales: packages/www/src/i18n/translations carries `.translation-hashes.json`, `.naturalized-hashes.json` and a `.lock` beside the 13 catalogs. The exclusion is narrow ON PURPOSE -- a locale code is two letters and can never begin with a dot, so this cannot hide one, while a blanket "ignore what I do not recognise" would defeat the
+  // UnknownLocaleDirError below.
   const isSidecar = (entry: string) => entry.startsWith('.');
   if (layout === 'flat') {
     for (const entry of fs.readdirSync(root).sort()) {
@@ -190,10 +187,7 @@ export function findCrossLocaleContamination(
   const byLocale = localeFiles(root, layout);
   const locales = [...byLocale.keys()];
 
-  // Cross-check the tree against the DECLARED locale set, in both directions. Deriving
-  // the universe from readdirSync alone is how a gate ends up quietly scanning whatever
-  // happens to be on disk: a stray directory gets judged with no detection data, and a
-  // declared locale with no directory gets scanned zero times and reports nothing.
+  // Cross-check the tree against the DECLARED locale set, in both directions. Deriving the universe from readdirSync alone is how a gate ends up quietly scanning whatever happens to be on disk: a stray directory gets judged with no detection data, and a declared locale with no directory gets scanned zero times and reports nothing.
   for (const locale of locales) {
     if (!isSiteLocale(locale)) throw new UnknownLocaleDirError(locale, root);
   }
@@ -204,8 +198,7 @@ export function findCrossLocaleContamination(
   const findings: Finding[] = [];
   for (const locale of locales) {
     if (locale === SOURCE_LOCALE) continue;
-    // Coverage itself was asserted at startup against @rediacc/locales, so by here every
-    // site locale has one instrument or the other and there is no skip left to take.
+    // Coverage itself was asserted at startup against @rediacc/locales, so by here every site locale has one instrument or the other and there is no skip left to take.
     const native = NATIVE_SCRIPT[locale];
     for (const abs of byLocale.get(locale) ?? []) {
       const file = path.basename(abs);
@@ -213,40 +206,23 @@ export function findCrossLocaleContamination(
       try {
         flat = flatten(JSON.parse(fs.readFileSync(abs, 'utf-8')));
       } catch (e) {
-        // ONLY a malformed locale file is another gate's problem. Anything else — a
-        // missing helper, a bad regex — is a bug in THIS file, and swallowing it makes
-        // the gate silently report zero findings. That exact mistake happened here.
+        // ONLY a malformed locale file is another gate's problem. Anything else — a missing helper, a bad regex — is a bug in THIS file, and swallowing it makes the gate silently report zero findings. That exact mistake happened here.
         if (e instanceof SyntaxError) continue;
         throw e;
       }
       for (const [key, value] of Object.entries(flat)) {
         if (value.length < MIN_LENGTH) continue;
-        // A bibliographic citation is a VERBATIM quotation of a source document, and
-        // scholarly convention keeps the title in the language it was published in.
-        // "Verizon, \"2024 Data Breach Investigations Report\"" sitting in zh.json is
-        // correct, not contamination, and translating it would make the source
-        // unfindable. 1,047 of this gate's 1,060 findings were exactly this, which is
-        // enough noise to get the whole gate suppressed by the next session that meets
-        // it. The exemption is deliberately structural (the citation branch) rather
-        // than heuristic, and it withdraws ONLY the identical-to-English signal: a
-        // citation carrying a THIRD language's function words still fires, which the
-        // control below pins.
+        // A bibliographic citation is a VERBATIM quotation of a source document, and scholarly convention keeps the title in the language it was published in. "Verizon, \"2024 Data Breach Investigations Report\"" sitting in zh.json is correct, not contamination, and translating it would make the source unfindable. 1,047 of this gate's 1,060 findings were exactly this, which is
+        // enough noise to get the whole gate suppressed by the next session that meets it. The exemption is deliberately structural (the citation branch) rather than heuristic, and it withdraws ONLY the identical-to-English signal: a citation carrying a THIRD language's function words still fires, which the control below pins.
         const text = stripNonLanguage(value);
         const id = identify(text);
-        // Narrowed to the ENGLISH case only: an English-language source quoted in a
-        // reference list is correct. A citation that has picked up GERMAN function
-        // words in the French file is still contamination and still fires, which is
-        // what keeps this from being a blanket hole in the citation branch.
+        // Narrowed to the ENGLISH case only: an English-language source quoted in a reference list is correct. A citation that has picked up GERMAN function words in the French file is still contamination and still fires, which is what keeps this from being a blanket hole in the citation branch.
         if (id && id.lang === 'en' && isCitationKey(key)) continue;
-        // SIGNAL ONE, for every locale: another language's function words are present.
-        // Two of them, so a single shared loanword cannot trip it.
+        // SIGNAL ONE, for every locale: another language's function words are present. Two of them, so a single shared loanword cannot trip it.
         if (!id || id.lang === locale || id.score < 2) continue;
-        // SIGNAL TWO, chosen per script. Both forms answer the same question — "is any
-        // of this locale's own language actually here?" — and requiring the answer to be
-        // no is what keeps a cognate, a loanword or a Latin product name from firing.
+        // SIGNAL TWO, chosen per script. Both forms answer the same question — "is any of this locale's own language actually here?" — and requiring the answer to be no is what keeps a cognate, a loanword or a Latin product name from firing.
         if (native) {
-          // A value written in the locale's own script is a translation into it, whatever
-          // Latin words it also carries. A Chinese string naming "Rediacc" is Chinese.
+          // A value written in the locale's own script is a translation into it, whatever Latin words it also carries. A Chinese string naming "Rediacc" is Chinese.
           if (native.test(text)) continue;
         } else {
           const words = new Set(norm(text).split(/[^a-z]+/));
@@ -348,10 +324,7 @@ function selftest(): void {
     0
   );
 
-  // ---------------------------------------------------------------------------------
-  // Latin-script detection: function words. The original bug was German in the French
-  // file, invisible to every other gate because it is not English.
-  // ---------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------- Latin-script detection: function words. The original bug was German in the French file, invisible to every other gate because it is not English. ---------------------------------------------------------------------------------
   write('fr', { pick: GERMAN });
   check('German text sitting in the French file is reported', pairs(), ['fr<-de']);
   reseed();
@@ -365,8 +338,7 @@ function selftest(): void {
     0
   );
 
-  // Citations: an English source quoted in a reference list is correct and must not
-  // fire, but the exemption must not become a hiding place for a third language.
+  // Citations: an English source quoted in a reference list is correct and must not fire, but the exemption must not become a hiding place for a third language.
   reseed();
   write('fr', { pick: CLEAN.fr, references: { items: [{ text: ENGLISH }] } });
   check(
@@ -398,11 +370,7 @@ function selftest(): void {
   check('English mash in the French file is reported', pairs(), ['fr<-en']);
   reseed();
 
-  // ---------------------------------------------------------------------------------
-  // Script-evidence detection: the six locales the old `!STOPWORDS[locale] continue`
-  // walked past in silence. Every planted defect below was UNDETECTABLE before this
-  // file grew a second instrument.
-  // ---------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------- Script-evidence detection: the six locales the old `!STOPWORDS[locale] continue` walked past in silence. Every planted defect below was UNDETECTABLE before this file grew a second instrument. ---------------------------------------------------------------------------------
   write('ja', { pick: GERMAN });
   check('German planted in the Japanese file is reported', pairs(), ['ja<-de']);
   reseed();
@@ -411,9 +379,7 @@ function selftest(): void {
   check('English planted in the Russian file is reported', pairs(), ['ru<-en']);
   reseed();
 
-  // Control for the script signal. A Chinese value naming Latin products IS Chinese, and
-  // a value that is nothing but product syntax carries no function words to score with.
-  // Without both, the script rule would report every brand string in five locales.
+  // Control for the script signal. A Chinese value naming Latin products IS Chinese, and a value that is nothing but product syntax carries no function words to score with. Without both, the script rule would report every brand string in five locales.
   write('zh', {
     pick: '请在 Rediacc 控制台中选择 Copy-on-Write 快照',
     bare: 'Rediacc Copy-on-Write BTRFS',
@@ -425,13 +391,8 @@ function selftest(): void {
   );
   reseed();
 
-  // ---------------------------------------------------------------------------------
-  // THE FLAT LAYOUT: one FILE per locale, which is what packages/www uses. This root was
-  // absent from LOCALE_ROOTS entirely, so the largest locale tree in the repo -- 13
-  // catalogs of roughly 6,600 leaves -- was never cross-checked. The cases below drive
-  // the SAME detector through the flat reader, and the locale-set cross-check with it,
-  // so "we added the root" and "the root is actually scanned" are not the same claim.
-  // ---------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------- THE FLAT LAYOUT: one FILE per locale, which is what packages/www uses. This root was absent from LOCALE_ROOTS entirely, so the largest locale tree in the repo -- 13 catalogs of roughly 6,600 leaves -- was never cross-checked. The cases below drive the SAME detector through the flat reader, and
+  // the locale-set cross-check with it, so "we added the root" and "the root is actually scanned" are not the same claim. ---------------------------------------------------------------------------------
   const flatRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'i18n-cross-flat-'));
   flatRootForThrow = flatRoot;
   const writeFlat = (l: string, o: unknown) =>
@@ -457,8 +418,7 @@ function selftest(): void {
   check('flat layout: English left in it.json is reported', flatPairs(), ['it<-en']);
   reseedFlat();
 
-  // The locale-set cross-check must apply to files exactly as it applies to directories,
-  // or the flat root would silently accept a stray catalog or a deleted locale.
+  // The locale-set cross-check must apply to files exactly as it applies to directories, or the flat root would silently accept a stray catalog or a deleted locale.
   fs.writeFileSync(path.join(flatRoot, 'nl.json'), JSON.stringify({ pick: 'Kies een optie' }));
   check(
     'flat layout: a catalog that is not a site locale is a hard error',
@@ -476,10 +436,7 @@ function selftest(): void {
   );
   fs.rmSync(flatRoot, { recursive: true, force: true });
 
-  // ---------------------------------------------------------------------------------
-  // THE LOCALE SET ITSELF. The universe is @rediacc/locales, never readdirSync and never
-  // the STOPWORDS keys — hand-maintaining an implicit locale set is what produced the
-  // original hole. All three failures below are hard errors, never skips.
+  // --------------------------------------------------------------------------------- THE LOCALE SET ITSELF. The universe is @rediacc/locales, never readdirSync and never the STOPWORDS keys — hand-maintaining an implicit locale set is what produced the original hole. All three failures below are hard errors, never skips.
   // ---------------------------------------------------------------------------------
   const throwsWith = (fn: () => unknown): unknown => {
     try {
@@ -509,8 +466,7 @@ function selftest(): void {
 
   // The startup assertion, driven with doctored data so a REAL gap and a TEST gap take
   // the identical code path. Removing a list must fail; this is the "we shipped a
-  // fourteenth locale and forgot its detection data" case, and it must be red on day one
-  // rather than the next time someone looks at a locale tree.
+  // fourteenth locale and forgot its detection data" case, and it must be red on day one rather than the next time someone looks at a locale tree.
   const withoutKorean = Object.fromEntries(
     Object.entries(NATIVE_SCRIPT).filter(([l]) => l !== 'ko')
   );
@@ -521,8 +477,7 @@ function selftest(): void {
     true
   );
 
-  // A typo in a detection key is silent otherwise: NATIVE_SCRIPT.jp would never match the
-  // `ja` directory, and `ja` would read as covered while being skipped.
+  // A typo in a detection key is silent otherwise: NATIVE_SCRIPT.jp would never match the `ja` directory, and `ja` would read as covered while being skipped.
   check(
     'detection data naming a non-site locale is a hard error at startup',
     throwsWith(() =>
@@ -550,16 +505,10 @@ function main(): void {
   const argv = process.argv.slice(2);
   if (argv.includes('--selftest')) return selftest();
 
-  // CONTROL FIRST, ALWAYS. This selftest plants German inside a French file and
-  // requires the detector to report it. It used to run only behind --selftest,
-  // and NOTHING invoked that flag: `check:ci-i18n-cross-locale` runs this file
-  // bare, so the one proof that this gate can FIRE was dead code. A gate whose
-  // fire-proof never runs is indistinguishable from a gate that always passes,
+  // CONTROL FIRST, ALWAYS. This selftest plants German inside a French file and requires the detector to report it. It used to run only behind --selftest, and NOTHING invoked that flag: `check:ci-i18n-cross-locale` runs this file bare, so the one proof that this gate can FIRE was dead code. A gate whose fire-proof never runs is indistinguishable from a gate that always passes,
   // which is exactly the defect class this file was written to catch.
   //
-  // Running it inline turns "did the control fire" into "did the gate exit 0",
-  // which CI already checks. Same shape as scripts/gates/check-schema-coverage.ts.
-  // Cost is a few temp files and milliseconds.
+  // Running it inline turns "did the control fire" into "did the gate exit 0", which CI already checks. Same shape as scripts/gates/check-schema-coverage.ts. Cost is a few temp files and milliseconds.
   if (!argv.includes('--skip-control')) selftest();
 
   const rootIdx = argv.indexOf('--root');
@@ -577,12 +526,8 @@ function main(): void {
   try {
     findings = roots.flatMap((r) => findCrossLocaleContamination(r.abs, r.layout));
   } catch (e) {
-    // An unmodelled locale is a defect in THIS gate's coverage, so it gets its own clean
-    // diagnostic rather than a stack trace: the reader has to know which locale, and what
-    // to add, without opening the file.
-    // A locale-set mismatch is a defect in THIS gate's coverage, so it gets a clean
-    // diagnostic rather than a stack trace: the reader has to know which locale and what
-    // to add without opening the file.
+    // An unmodelled locale is a defect in THIS gate's coverage, so it gets its own clean diagnostic rather than a stack trace: the reader has to know which locale, and what to add, without opening the file. A locale-set mismatch is a defect in THIS gate's coverage, so it gets a clean diagnostic rather than a stack trace: the reader has to know which locale and what to add without
+    // opening the file.
     const known =
       e instanceof UnknownLocaleDirError ||
       e instanceof MissingLocaleDirError ||

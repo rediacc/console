@@ -145,8 +145,7 @@ describe('computeCommitments round-trip', () => {
     const commitments = await computeCommitments(fck, salt, [
       { pointer: '/foo', value: 'original' },
     ]);
-    // Inject a commitment whose kind says "null" but HMAC is the string HMAC.
-    // verifyCommitment checks kind first → must fail.
+    // Inject a commitment whose kind says "null" but HMAC is the string HMAC. verifyCommitment checks kind first → must fail.
     const fake = { ...commitments.fields['/foo'], kind: 'null' as const };
     const ok = await verifyCommitment(fck, '/foo', 'original', fake);
     expect(ok).toBe(false);

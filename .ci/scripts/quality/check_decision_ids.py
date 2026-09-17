@@ -92,12 +92,8 @@ from rediacc_ci import controls, paths
 ROOT = pathlib.Path(
     os.environ.get("DECISION_IDS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
 )
-# The hop onto the Stop hook's directory, through the package's own resolver.
-# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
-# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
-# lives, so the move planned for that program is a one-line change there rather
-# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
-# its own DECISION_IDS_ROOT override, which the resolver's default root does not read.
+# The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
+# honours its own DECISION_IDS_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
 try:
@@ -456,11 +452,7 @@ def run(root):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CONTROL FIRST. Every mutant is built with the `plant` harness, never by raw
-# substitution: a substitution that silently matches nothing hands the gate its
-# CLEAN fixture and the control reports a pass for an assertion it never made
-# (check:ci-python-control-plants).
+# --------------------------------------------------------------------------- CONTROL FIRST. Every mutant is built with the `plant` harness, never by raw substitution: a substitution that silently matches nothing hands the gate its CLEAN fixture and the control reports a pass for an assertion it never made (check:ci-python-control-plants).
 
 
 CLEAN = """
@@ -560,9 +552,7 @@ def selftest():
         any("must be `live`" in f for f in judge_rows(root, parse_rows(bad_status))),
     )
 
-    # -- THE REAL REGISTER, read the way run() reads it. A helper that works on
-    # fixtures while the tracked file it is aimed at yields nothing is the
-    # vacuity this repo keeps paying for.
+    # -- THE REAL REGISTER, read the way run() reads it. A helper that works on fixtures while the tracked file it is aimed at yields nothing is the vacuity this repo keeps paying for.
     real = pathlib.Path(ROOT) / REGISTER_REL
     n_real = len(parse_rows(real.read_text(encoding="utf-8"))) if real.is_file() else 0
     c.truthy(

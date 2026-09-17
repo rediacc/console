@@ -111,12 +111,10 @@ from rediacc_ci.controls import Controls
 MIN_COMMITS = 3  # Minimum commits before requiring update
 STALE_THRESHOLD_MINUTES = 30  # How old description can be (in minutes)
 
-# The three variables `require_var` insists on, in the twin's order. The order is
-# observable: the first missing one is the only one reported.
+# The three variables `require_var` insists on, in the twin's order. The order is observable: the first missing one is the only one reported.
 REQUIRED_VARS = ("PR_NUMBER", "GH_TOKEN", "GITHUB_REPOSITORY")
 
-# The query, byte for byte as the heredoc writes it. See the module docstring for
-# why it is a heredoc in bash and why that note is kept here.
+# The query, byte for byte as the heredoc writes it. See the module docstring for why it is a heredoc in bash and why that note is kept here.
 GRAPHQL_QUERY = """query($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
@@ -143,8 +141,7 @@ def _run(argv: list[str], *, quiet_stderr: bool = True) -> tuple[int, str]:
             stdin=subprocess.DEVNULL,
         )
     except OSError:
-        # `gh` absent behaves like `gh` failing, which is what the shell does with
-        # a command-not-found inside a command substitution.
+        # `gh` absent behaves like `gh` failing, which is what the shell does with a command-not-found inside a command substitution.
         return 127, ""
     if not quiet_stderr and proc.stderr:
         sys.stderr.write(proc.stderr)
@@ -198,9 +195,7 @@ def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) 
         "     - Summary of ALL changes (not just initial ones)",
         "     - Any new features added during review",
         "     - Breaking changes or migration notes",
-        # STEP 5 IS THE CORRECTION. See the module docstring: the advice this
-        # replaced told the reader to write the whole body, which deletes both
-        # machine-written marker blocks.
+        # STEP 5 IS THE CORRECTION. See the module docstring: the advice this replaced told the reader to write the whole body, which deletes both machine-written marker blocks.
         "  5. Update the description WITHOUT dropping its generated sections.",
         "     The body carries <!-- worklist-epics --> and <!-- pushed-head -->, and an",
         "     edit writes the whole body, so anything you omit is deleted:",
@@ -250,17 +245,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # `gh api repos/{R}/pulls/{n} --jq '{...}' 2>/dev/null || echo "{}"`.
     #
-    # NOT `gh pr view --json commits`, WHICH SILENTLY CAPS AT 100. Measured
-    # 2026-09-15 on rediacc/console#589, a 254-commit PR: it returned 100
-    # commits, and `sort_by(.committedDate) | last` over that truncated slice
-    # reported a "latest commit" of 2026-09-07 while the real head was dated
-    # 2026-09-15. The staleness arithmetic below then computed an age of MINUS
-    # 11112 minutes and printed "within 30m - OK" on every single run. This gate
-    # had stopped being able to fail, which is worse than failing: it was
-    # reporting.
+    # NOT `gh pr view --json commits`, WHICH SILENTLY CAPS AT 100. Measured 2026-09-15 on rediacc/console#589, a 254-commit PR: it returned 100 commits, and `sort_by(.committedDate) | last` over that truncated slice reported a "latest commit" of 2026-09-07 while the real head was dated 2026-09-15. The staleness arithmetic below then computed an age of MINUS 11112 minutes and
+    # printed "within 30m - OK" on every single run. This gate had stopped being able to fail, which is worse than failing: it was reporting.
     #
-    # The REST PR object carries `.commits` as a true integer count and
-    # `.head.sha` as the actual tip, neither of which is paginated at all.
+    # The REST PR object carries `.commits` as a true integer count and `.head.sha` as the actual tip, neither of which is paginated at all.
     code, pr_data = _run(
         [
             "gh",
@@ -277,10 +265,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Could not fetch PR data")
         return 1
 
-    # `jq '.commits'` -- now an INTEGER from the REST object, not the length of a
-    # capped array. An unparseable body is the divergence named in the port
-    # notes: jq exits 5 and pipefail kills the script, so the status is
-    # reproduced and jq's wording is not.
+    # `jq '.commits'` -- now an INTEGER from the REST object, not the length of a capped array. An unparseable body is the divergence named in the port notes: jq exits 5 and pipefail kills the script, so the status is reproduced and jq's wording is not.
     try:
         parsed = json.loads(pr_data)
         commit_count = int(parsed.get("commits") or 0)
@@ -294,8 +279,7 @@ def main(argv: list[str] | None = None) -> int:
         log.info("Less than %d commits - skipping description check" % MIN_COMMITS)
         return 0
 
-    # The PR's HEAD is its latest commit by construction, so this needs no sort
-    # over a list that might not be whole.
+    # The PR's HEAD is its latest commit by construction, so this needs no sort over a list that might not be whole.
     code, latest_commit_time = _run(
         [
             "gh",
@@ -317,9 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     owner = repository.split("/", 1)[0]
     repo = repository.rsplit("/", 1)[-1]
 
-    # THE UNGUARDED PIPELINE. See the module docstring: a failing `gh` here kills
-    # the twin outright, so the port exits with the same status and says nothing,
-    # rather than reaching the handler three lines down that was written for it.
+    # THE UNGUARDED PIPELINE. See the module docstring: a failing `gh` here kills the twin outright, so the port exits with the same status and says nothing, rather than reaching the handler three lines down that was written for it.
     code, raw = _run(
         [
             "gh",
@@ -345,9 +327,7 @@ def main(argv: list[str] | None = None) -> int:
     if isinstance(payload, dict):
         node = payload.get("data", {}).get("repository", {}).get("pullRequest")
         if isinstance(node, dict):
-            # `.lastEditedAt // .createdAt`: jq's alternative operator takes the
-            # right side when the left is null OR false, which for a timestamp
-            # means "never edited".
+            # `.lastEditedAt // .createdAt`: jq's alternative operator takes the right side when the left is null OR false, which for a timestamp means "never edited".
             description_time = node.get("lastEditedAt") or node.get("createdAt") or "null"
 
     if not description_time or description_time == "null":
@@ -403,8 +383,7 @@ def selftest() -> int:
     ctl.truthy("the block names the PR", "https://github.com/owner/repo/pull/42" in text)
     ctl.truthy("the block reports the commit count", "Your PR has 7 commits" in text)
     ctl.truthy("the block reports the age and the threshold", "90 minutes (threshold: 30m)" in text)
-    # THE CORRECTION OF 2026-09-03, asserted in both directions: the safe advice
-    # must be present AND the data-destroying advice must be absent.
+    # THE CORRECTION OF 2026-09-03, asserted in both directions: the safe advice must be present AND the data-destroying advice must be absent.
     ctl.truthy(
         "the block warns about the generated marker sections",
         "<!-- worklist-epics -->" in text and "<!-- pushed-head -->" in text,
@@ -417,10 +396,7 @@ def selftest() -> int:
     )
     ctl.check("the block does NOT advise `gh pr edit --body`", "pr edit --body" in text, False)
 
-    # -- the arithmetic, at and around the boundary -------------------------
-    # TRUNCATION TOWARD ZERO, not flooring. A negative age is the "edited after
-    # the last commit" case, and Python's `//` would report -1 minute where bash
-    # reports 0.
+    # -- the arithmetic, at and around the boundary ------------------------- TRUNCATION TOWARD ZERO, not flooring. A negative age is the "edited after the last commit" case, and Python's `//` would report -1 minute where bash reports 0.
     ctl.check("a negative age truncates toward zero, as bash does", int(-30 / 60), 0)
     ctl.check("a positive age truncates the same way", int(3599 / 60), 59)
     ctl.check("29 minutes is under the threshold", STALE_THRESHOLD_MINUTES * 60 > 29 * 60, True)

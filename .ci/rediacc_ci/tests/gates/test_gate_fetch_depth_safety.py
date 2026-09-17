@@ -94,8 +94,7 @@ MODULE = ROOT / "packages" / "www" / "scripts" / "lib" / "translation-freshness-
 # below passes for the wrong reason.
 FIXTURE_COMMITS = 60
 
-# Both paths the sweep must not judge. See the module docstring for why the second is
-# named rather than left to the file-level guard.
+# Both paths the sweep must not judge. See the module docstring for why the second is named rather than left to the file-level guard.
 SWEEP_EXCLUSIONS = (
     ".ci/scripts/test/gates/test-fetch-depth-safety.sh",
     ".ci/rediacc_ci/tests/gates/test_gate_fetch_depth_safety.py",
@@ -236,8 +235,7 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
     run("-C", str(clone), "config", "user.email", "t@example.com")
     run("-C", str(clone), "config", "user.name", "t")
 
-    # PRECONDITION, not a case: a fixture shallower than the --depth this gate tests
-    # cannot demonstrate anything, and a broken one must never pass.
+    # PRECONDITION, not a case: a fixture shallower than the --depth this gate tests cannot demonstrate anything, and a broken one must never pass.
     count = commit_count(gate, clone)
     if count < FIXTURE_COMMITS:
         gate.log_fail(
@@ -276,8 +274,7 @@ def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
 
 
 def test_the_pre_fix_command_truncates_a_full_clone(gate, tmp_path):
-    # CONTROL: the fixture must be able to SHOW the defect. Without this every case
-    # below is a check that cannot fail.
+    # CONTROL: the fixture must be able to SHOW the defect. Without this every case below is a check that cannot fail.
     clone = make_fixture(gate, tmp_path / "plant")
     before = commit_count(gate, clone)
     harness.run(
@@ -325,8 +322,7 @@ def test_detect_changed_files_leaves_a_full_clone_full(gate, tmp_path):
 
 
 def test_an_already_shallow_clone_is_still_handled(gate, tmp_path):
-    # CONTROL ON THE FIX: the depth was an optimisation for exactly this case, and
-    # removing it everywhere would be the other kind of wrong.
+    # CONTROL ON THE FIX: the depth was an optimisation for exactly this case, and removing it everywhere would be the other kind of wrong.
     directory = tmp_path / "shallow"
     make_fixture(gate, directory)
     binary = git(gate)
@@ -364,8 +360,7 @@ def tracked(gate, *globs: str) -> list[str]:
 
 
 def test_every_git_fetch_depth_site_can_tell_whether_the_repo_is_shallow(gate):
-    # THE CLASS, not the instance. A weak rule on purpose: it does not try to prove
-    # the guard is correctly placed, only that the author knew the question existed.
+    # THE CLASS, not the instance. A weak rule on purpose: it does not try to prove the guard is correctly placed, only that the author knew the question existed.
     offenders = []
     for relative in tracked(gate, *SWEEP_GLOBS):
         if relative in SWEEP_EXCLUSIONS:
@@ -389,11 +384,8 @@ def test_every_git_fetch_depth_site_can_tell_whether_the_repo_is_shallow(gate):
 def test_every_bare_fixture_repo_pins_its_default_branch(gate):
     # THE SECOND SHAPE OF THE SAME CLASS: a fixture whose HEAD points nowhere.
     #
-    # PER LINE, not per file, and the first draft of the twin's rule got it wrong. A
-    # file-level "does it mention a pin anywhere" test exempted the whole file as soon
-    # as ONE bare init was pinned, so the mutant that stripped the pin from the gate
-    # itself still passed, because a `symbolic-ref HEAD` further down satisfied the
-    # grep. A rule whose own planted violation survives is not a rule.
+    # PER LINE, not per file, and the first draft of the twin's rule got it wrong. A file-level "does it mention a pin anywhere" test exempted the whole file as soon as ONE bare init was pinned, so the mutant that stripped the pin from the gate itself still passed, because a `symbolic-ref HEAD` further down satisfied the grep. A rule whose own planted violation survives is not a
+    # rule.
     offenders = []
     for relative in tracked(gate, "*.sh"):
         if relative in SWEEP_EXCLUSIONS:
@@ -412,8 +404,7 @@ def test_every_bare_fixture_repo_pins_its_default_branch(gate):
 
 
 def test_the_sweep_enumerated_a_real_corpus(gate):
-    # CONTROL ON THAT SWEEP: it must be looking at a real corpus. A scan over an empty
-    # file list passes silently forever.
+    # CONTROL ON THAT SWEEP: it must be looking at a real corpus. A scan over an empty file list passes silently forever.
     scanned = len(tracked(gate, *SWEEP_GLOBS))
     if scanned < 500:
         gate.log_fail(
@@ -431,8 +422,7 @@ def test_a_planted_unguarded_depth_is_detected(gate, tmp_path):
 
 
 def test_a_commented_mention_is_not_counted_as_a_command(gate, tmp_path):
-    # ... and the comment filter must not swallow real code: a commented mention is
-    # skipped, a command is not.
+    # ... and the comment filter must not swallow real code: a commented mention is skipped, a command is not.
     prose = tmp_path / "prose.sh"
     prose.write_text(
         "# git fetch --depth=1 origin main -- prose about someone else\n", encoding="utf-8"
@@ -443,8 +433,7 @@ def test_a_commented_mention_is_not_counted_as_a_command(gate, tmp_path):
 
 
 def test_an_unpinned_bare_init_is_caught_beside_a_symbolic_ref(gate, tmp_path):
-    # The bad fixture deliberately carries a symbolic-ref line: that is what defeated
-    # the file-level draft of this rule, so the control plants it on purpose.
+    # The bad fixture deliberately carries a symbolic-ref line: that is what defeated the file-level draft of this rule, so the control plants it on purpose.
     bad = tmp_path / "bare-bad.sh"
     bad.write_text(
         'git init --bare "$d/origin.git"\ngit symbolic-ref HEAD refs/heads/main\n',
@@ -469,10 +458,7 @@ def test_both_pinned_spellings_are_accepted(gate, tmp_path):
     if bare_hits(good) != 0:
         gate.log_fail("CONTROL: a pinned bare init is flagged, so the rule is unusable")
     gate.log_pass("CONTROL: both pinned spellings are accepted")
-    # Stated blind spot, carried over: the sweep enumerates THIS repository only.
-    # Checked by hand on 2026-09-03 -- account, renet, elite and homebrew-tap carry no
-    # `git fetch --depth` at all -- and a submodule script runs against the submodule's
-    # own git dir anyway, so it cannot truncate the superproject.
+    # Stated blind spot, carried over: the sweep enumerates THIS repository only. Checked by hand on 2026-09-03 -- account, renet, elite and homebrew-tap carry no `git fetch --depth` at all -- and a submodule script runs against the submodule's own git dir anyway, so it cannot truncate the superproject.
     gate.log_info(
         "Blind spot: submodules are not swept (checked by hand 2026-09-03: none carry one)"
     )

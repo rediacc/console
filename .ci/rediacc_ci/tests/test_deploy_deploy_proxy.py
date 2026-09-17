@@ -88,8 +88,7 @@ sys.stdout.write("> build done\\n")
 
 BASE_ENV = {"CLOUDFLARE_API_TOKEN": "tok"}
 
-# The whole stderr of a successful real deploy, in order. Quoted once here
-# because four tests need to say "and not this".
+# The whole stderr of a successful real deploy, in order. Quoted once here because four tests need to say "and not this".
 DEPLOY_STDERR = (
     "→ Building the CLI bundle the container image ships...\n"
     "→ Deploying the proxy worker and container image (region: eu)...\n"
@@ -211,9 +210,7 @@ def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
     assert (root / ".ci" / "scripts" / "lib" / "common.sh").read_bytes() == COMMON_SH.read_bytes()
 
 
-# ---------------------------------------------------------------------------
-# The real deploy
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real deploy ---------------------------------------------------------------------------
 
 
 def test_the_default_run_is_a_real_deploy_and_is_pinned_in_full(tmp_path: pathlib.Path) -> None:
@@ -273,9 +270,7 @@ def test_an_absent_region_defaults_to_eu(tmp_path: pathlib.Path) -> None:
     _assert_agree(old, new, "empty-region", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The dry run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The dry run ---------------------------------------------------------------------------
 
 
 def test_a_bare_dry_run_flag_takes_the_dry_run_path(tmp_path: pathlib.Path) -> None:
@@ -327,9 +322,7 @@ def test_the_dry_run_outdir_is_a_fixed_tmp_path(tmp_path: pathlib.Path) -> None:
     assert "mktemp" not in _twin_source()
 
 
-# ---------------------------------------------------------------------------
-# Refusals and failures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals and failures ---------------------------------------------------------------------------
 
 
 def test_a_missing_token_refuses_before_the_build(tmp_path: pathlib.Path) -> None:
@@ -448,9 +441,7 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path)
     assert old_calls == new_calls == ""
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms: the port copies six things out of the twin
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms: the port copies six things out of the twin ---------------------------------------------------------------------------
 
 
 def test_the_literals_are_still_the_twins(tmp_path: pathlib.Path) -> None:

@@ -34,9 +34,7 @@ describe('stale deny globs at the executor', () => {
       defaults: { commands: { allow: ['repo *'], deny: ['repo takeover'] } },
     });
 
-    // Without this refusal, `repo promote` would be ALLOWED here: it matches
-    // `repo *`, and the deny that was written to stop it no longer matches
-    // anything. The organization's rule would have died in the rename.
+    // Without this refusal, `repo promote` would be ALLOWED here: it matches `repo *`, and the deny that was written to stop it no longer matches anything. The organization's rule would have died in the rename.
     expect(() => authorize({ principal: PRINCIPAL, commandPath: 'repo promote', config })).toThrow(
       /repo takeover/
     );
@@ -59,8 +57,7 @@ describe('stale deny globs at the executor', () => {
       defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
     });
 
-    // The detector must not cry wolf: a policy whose rules all resolve has to
-    // keep working, allow side and deny side both.
+    // The detector must not cry wolf: a policy whose rules all resolve has to keep working, allow side and deny side both.
     expect(authorize({ principal: PRINCIPAL, commandPath: 'repo list', config }).allowed).toBe(
       true
     );
@@ -70,10 +67,7 @@ describe('stale deny globs at the executor', () => {
   });
 
   it('tolerates a stale ALLOW glob, which already fails closed', () => {
-    // `machine query` was renamed to `machine status`. The allow glob is stale,
-    // but a stale allow refuses the command rather than permitting it — it is
-    // self-announcing. Refusing to start over one would turn a safe condition
-    // into a total executor outage, so only the deny side is fatal.
+    // `machine query` was renamed to `machine status`. The allow glob is stale, but a stale allow refuses the command rather than permitting it — it is self-announcing. Refusing to start over one would turn a safe condition into a total executor outage, so only the deny side is fatal.
     const config = configWithPolicy({
       version: 1,
       defaults: { commands: { allow: ['machine query', 'repo list'] } },

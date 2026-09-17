@@ -307,8 +307,7 @@ def validate_report(want_platform: str, report: str) -> tuple[str, int]:
     # `$( )` of a jq run that errored captures the empty string.
     p_val = "" if raw_platform == "ERROR" else _jq_raw(_alt(raw_platform, ""))
     b_val = "" if raw_backend == "ERROR" else _jq_raw(_alt(raw_backend, ""))
-    # The THIRD jq process is one program, `(.checks // []) | length`, so an
-    # index error and a length error both leave the capture empty.
+    # The THIRD jq process is one program, `(.checks // []) | length`, so an index error and a length error both leave the capture empty.
     if raw_checks == "ERROR":
         n_text = ""
     else:
@@ -325,18 +324,13 @@ def validate_report(want_platform: str, report: str) -> tuple[str, int]:
     if not b_val:
         findings.append(".backend is missing or empty")
 
-    # ZERO CHECKS IS A FAILURE, NEVER A PASS. An empty list would satisfy every
-    # per-entry rule below by matching nothing at all. (:71-75)
+    # ZERO CHECKS IS A FAILURE, NEVER A PASS. An empty list would satisfy every per-entry rule below by matching nothing at all. (:71-75)
     if _bash_arith(n_text) == 0:
         findings.append(
             ".checks is empty; the report enumerated nothing, so its green would mean nothing"
         )
 
-    # :93-108. A FOURTH jq PROCESS, and it re-derives `(.checks // [])` itself
-    # rather than reusing the length run's value -- so on a non-object document
-    # it fails with its OWN copy of the diagnostic, which lands INSIDE the
-    # finding instead of on stderr like the first three. A jq that could not
-    # FINISH is a named refusal, never a silence.
+    # :93-108. A FOURTH jq PROCESS, and it re-derives `(.checks // [])` itself rather than reusing the length run's value -- so on a non-object document it fails with its OWN copy of the diagnostic, which lands INSIDE the finding instead of on stderr like the first three. A jq that could not FINISH is a named refusal, never a silence.
     try:
         findings.extend(_bad_entries(_alt(_jq_index(doc, "checks"), [])))
     except _JqError as exc:
@@ -352,10 +346,7 @@ def validate_report(want_platform: str, report: str) -> tuple[str, int]:
     return ("", 0)
 
 
-# ---------------------------------------------------------------------------
-# The twin's own selftest (:96-130). BOTH directions, because a validator with
-# only positive controls will happily accept anything.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's own selftest (:96-130). BOTH directions, because a validator with only positive controls will happily accept anything. ---------------------------------------------------------------------------
 
 _GOOD = (
     '{"platform":"linux","arch":"amd64","backend":"kvm","checks":'
@@ -504,13 +495,9 @@ def run() -> int:
 
     # PRINT THE SHAPE, not just the verdict (:181-194).
     #
-    # FOUR SEPARATE jq PROCESSES, and that is the whole reason this block is
-    # written out rather than computed once. Each one fails INDEPENDENTLY:
-    # against `checks:[1,2,3]` the `length` run succeeds and prints 3 while the
+    # FOUR SEPARATE jq PROCESSES, and that is the whole reason this block is written out rather than computed once. Each one fails INDEPENDENTLY: against `checks:[1,2,3]` the `length` run succeeds and prints 3 while the
     # three `select(.status==...)` runs each abort on the first element, so the
-    # twin emits three diagnostics and a line reading
-    # `3 probe(s) reported --  ok,  warn,  fail`. A port that computed the four
-    # numbers in one pass would print `0 ok, 0 warn, 0 fail` and no
+    # twin emits three diagnostics and a line reading `3 probe(s) reported -- ok, warn, fail`. A port that computed the four numbers in one pass would print `0 ok, 0 warn, 0 fail` and no
     # diagnostics; that is exactly what the first draft of this file did, and
     # the ledger's variant 4 caught it.
     doc: Any = None

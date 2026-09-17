@@ -55,15 +55,10 @@ FLAGS = ("admin", "auto", "body", "body-file", "draft")
 ROOT = corpus.repo_root()
 ARTIFACT_DIR = pathlib.Path(__file__).resolve().parent / ".artifacts"
 
-# A root that cannot resolve, so `hook_target_root`'s "git said no" branch is
-# exercised on every case rather than only on the ones with a real `cd`.
+# A root that cannot resolve, so `hook_target_root`'s "git said no" branch is exercised on every case rather than only on the ones with a real `cd`.
 ABSENT_ROOT = "/nonexistent-root-for-the-shellscan-differential"
 
-# The driver. It is a string rather than a `.sh` file in the tree on purpose:
-# this workstream moves `.claude` to Python, and a second language checked in
-# beside the port would be the thing the language gate exists to refuse. A
-# fixture written to a temporary directory is not a second language in the
-# tree, and it keeps the driver next to the comparison it feeds.
+# The driver. It is a string rather than a `.sh` file in the tree on purpose: this workstream moves `.claude` to Python, and a second language checked in beside the port would be the thing the language gate exists to refuse. A fixture written to a temporary directory is not a second language in the tree, and it keeps the driver next to the comparison it feeds.
 DRIVER = r"""#!/usr/bin/env bash
 LIB="$1"; IN_DIR="$2"; ROOT="$3"; TMP="$4"; ABSENT="$5"
 # shellcheck source=/dev/null
@@ -183,25 +178,12 @@ def parse_stream(text):
     return records
 
 
-# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a
-# PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks
-# about 12,000 subshells across 416 input files, and this module's tests are otherwise pure in-process comparison -- so
-# without this declaration its cases scatter across every worker and each one pays
-# the full driver again.
+# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks about 12,000 subshells across 416 input files, and this module's tests are otherwise pure in-process comparison -- so without this declaration its cases scatter across every worker and each one pays the full driver again.
 #
-# Measured 2026-09-07: this file and test_shellscan_differential.py together serve
-# 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000
-# forks of duplicated setup before a single one of those tests does useful work,
-# which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs
-# 1013.59s on a quiesced box).
+# Measured 2026-09-07: this file and test_shellscan_differential.py together serve 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000 forks of duplicated setup before a single one of those tests does useful work, which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs 1013.59s on a quiesced box).
 #
-# The group pins all of this module's tests to ONE worker, so the fixture is built
-# once. It is INERT without `--dist loadgroup`, so it changes nothing today.
-# A SEPARATE GROUP FROM test_guards_differential.py, deliberately. Sharing one
-# would pin all 6446 tests of both modules to a SINGLE worker -- trading 8x
-# fixture duplication for serialising 72 percent of the corpus onto one core,
-# which is the same mistake in the other direction. Two groups let the two
-# drivers build on two workers concurrently while each is still built once.
+# The group pins all of this module's tests to ONE worker, so the fixture is built once. It is INERT without `--dist loadgroup`, so it changes nothing today. A SEPARATE GROUP FROM test_guards_differential.py, deliberately. Sharing one would pin all 6446 tests of both modules to a SINGLE worker -- trading 8x fixture duplication for serialising 72 percent of the corpus onto one core,
+# which is the same mistake in the other direction. Two groups let the two drivers build on two workers concurrently while each is still built once.
 XDIST_GROUP = "hooks-shellscan"
 
 
@@ -232,12 +214,7 @@ def bash_results(tmp_path_factory):
         capture_output=True,
         check=False,
         # BYTES, then decoded by hand. `encoding=` puts the pipe in text mode,
-        # and text mode translates universal newlines: a lone \r in a command
-        # comes back as \n. That is not a difference between the two
-        # implementations, it is the harness rewriting the oracle's answer --
-        # and it was found by this differential failing on a \r case, which is
-        # the reason the corpus carries one.
-        # An inherited CLAUDE_PROJECT_DIR or GIT_INDEX_FILE would reach git
+        # and text mode translates universal newlines: a lone \r in a command comes back as \n. That is not a difference between the two implementations, it is the harness rewriting the oracle's answer -- and it was found by this differential failing on a \r case, which is the reason the corpus carries one. An inherited CLAUDE_PROJECT_DIR or GIT_INDEX_FILE would reach git
         # here; the lib reads neither, but a differential that depends on the
         # caller's environment is one that passes for the wrong reason.
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
@@ -279,9 +256,7 @@ def render(diffs, label, cmd):
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# The corpus itself, before anything is compared against it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus itself, before anything is compared against it ---------------------------------------------------------------------------
 
 
 def test_corpus_is_real_and_large_enough():
@@ -322,9 +297,7 @@ def test_corpus_covers_the_shapes_the_findings_name():
     assert not missing, "corpus no longer covers: %s (counts %r)" % (missing, counts)
 
 
-# ---------------------------------------------------------------------------
-# The differential
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(("label", "cmd"), CASES, ids=[label for label, _ in CASES])
@@ -391,9 +364,7 @@ def test_the_differential_can_fail(tmp_path):
     )
 
 
-# ---------------------------------------------------------------------------
-# Section 5c of the driver contract: comment archaeology
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Section 5c of the driver contract: comment archaeology ---------------------------------------------------------------------------
 
 # The ratio the contract sets. Docstrings count as comments; a module
 # docstring is the natural home for a file-header block.
@@ -430,10 +401,7 @@ def python_comment_bytes(path):
                 count += 1
     tree = ast.parse(text)
     for node in ast.walk(tree):
-        # `.body` is a LIST on a module, function or class, and a single
-        # expression on an IfExp or a lambda. Walking every node and assuming
-        # the first shape raises TypeError on the second, which is how this
-        # was found.
+        # `.body` is a LIST on a module, function or class, and a single expression on an IfExp or a lambda. Walking every node and assuming the first shape raises TypeError on the second, which is how this was found.
         body = getattr(node, "body", None)
         if not isinstance(body, list):
             continue
@@ -450,11 +418,7 @@ def python_comment_bytes(path):
     return total, count
 
 
-# Every line of the original naming a DATE, an ISSUE, a REVIEW ROUND or a
-# FILE:LINE. The ratio cannot see these: prose can be padded while the one
-# paragraph that names a dated incident is dropped, and that paragraph is the
-# only record of why a line is shaped the way it is. So they are extracted
-# mechanically and each must survive somewhere in the port.
+# Every line of the original naming a DATE, an ISSUE, a REVIEW ROUND or a FILE:LINE. The ratio cannot see these: prose can be padded while the one paragraph that names a dated incident is dropped, and that paragraph is the only record of why a line is shaped the way it is. So they are extracted mechanically and each must survive somewhere in the port.
 ARCHAEOLOGY = (
     r"\b20\d\d-\d\d-\d\d\b",
     r"#\d+",

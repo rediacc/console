@@ -52,8 +52,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 TOOLCHAIN_ENV = ROOT / ".devcontainer" / "toolchain.env"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The four fake checksums, one per platform, chosen so a slot mix-up is
-# readable without a diff.
+# The four fake checksums, one per platform, chosen so a slot mix-up is readable without a diff.
 SHA_MAC_ARM = "1" * 64
 SHA_MAC_X64 = "2" * 64
 SHA_LINUX_ARM = "3" * 64
@@ -67,9 +66,7 @@ DOWNLOAD_SHAS = {
 
 ORIGIN_SHA = "c" * 40
 
-# The formula fixture, carrying the real file's shape: two `on_*` blocks, two
-# `if Hardware::CPU.arm?` / `else` pairs, four `sha256` lines and a `version`
-# line. `test_the_fixture_matches_the_real_formulas_shape` keeps it honest.
+# The formula fixture, carrying the real file's shape: two `on_*` blocks, two `if Hardware::CPU.arm?` / `else` pairs, four `sha256` lines and a `version` line. `test_the_fixture_matches_the_real_formulas_shape` keeps it honest.
 FORMULA = """class RediaccCli < Formula
   desc "Rediacc CLI - automation and scripting tool"
   homepage "https://www.rediacc.com"
@@ -202,8 +199,7 @@ sys.stderr.write("fake gh: this script must never call gh\\n")
 sys.exit(91)
 """
 
-# Everything either subject needs on PATH, and nothing else. `git`, `curl` and
-# `gh` are deliberately absent from this list: they arrive as fakes.
+# Everything either subject needs on PATH, and nothing else. `git`, `curl` and `gh` are deliberately absent from this list: they arrive as fakes.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -298,8 +294,7 @@ def _run(
 
     env = {
         "PATH": stub,
-        # A SCRATCH HOME, because `git config --global` writes into it when
-        # GITHUB_PAT is set and the real one must not be touched even by a fake.
+        # A SCRATCH HOME, because `git config --global` writes into it when GITHUB_PAT is set and the real one must not be touched even by a fake.
         "HOME": str(tmp_path / ("%s-home" % side)),
         "TMPDIR": str(tmp_path / ("%s-tmp" % side)),
         "LC_ALL": "C",
@@ -373,9 +368,7 @@ def assert_agree(old, new, label: str) -> None:
     assert n_formula == o_formula, "%s: the formula file diverged" % label
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before anything is touched
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before anything is touched ---------------------------------------------------------------------------
 
 
 def test_no_version_is_refused_and_nothing_is_called(tmp_path: pathlib.Path) -> None:
@@ -453,9 +446,7 @@ def test_a_missing_toolchain_env_refuses_before_any_argument_is_read(
     assert_agree(old, new, "no-toolchain-env")
 
 
-# ---------------------------------------------------------------------------
-# Two deliberate divergences, asserted in both directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Two deliberate divergences, asserted in both directions ---------------------------------------------------------------------------
 
 
 def test_divergence_help_and_unbound_operand_name_their_own_script(
@@ -488,9 +479,7 @@ def test_divergence_help_and_unbound_operand_name_their_own_script(
     assert old_u[0].stderr != new_u[0].stderr
 
 
-# ---------------------------------------------------------------------------
-# The download path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The download path ---------------------------------------------------------------------------
 
 
 def test_the_download_path_writes_each_checksum_into_its_own_platform_block(
@@ -590,9 +579,7 @@ def test_an_unresolvable_origin_main_ends_the_run_with_gits_own_status(
     assert_agree(old, new, "rev-parse-fails")
 
 
-# ---------------------------------------------------------------------------
-# The local-checksum path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The local-checksum path ---------------------------------------------------------------------------
 
 
 def test_local_checksums_are_computed_and_reported(tmp_path: pathlib.Path) -> None:
@@ -637,9 +624,7 @@ def test_a_local_checksum_directory_that_does_not_exist_is_fatal_on_the_first_na
     assert_agree(old, new, "missing-local-dir")
 
 
-# ---------------------------------------------------------------------------
-# The commit / push / pointer paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The commit / push / pointer paths ---------------------------------------------------------------------------
 
 
 def test_push_commits_in_the_tap_then_commits_and_pushes_the_pointer(
@@ -708,9 +693,7 @@ def test_an_unchanged_formula_is_not_committed(tmp_path: pathlib.Path) -> None:
     assert "✓ Formula already at version 2.5.0" in old[0].stderr
     flat = "\n".join(old[1])
     assert "bump rediacc-cli to 2.5.0" not in flat, "an unchanged formula was committed"
-    # AND THE POINTER STILL MOVES. `commit_and_push` returning early does not
-    # stop `update_submodule_pointer`, so the parent repo is still committed and
-    # pushed when its index says the gitlink changed. Reproduced, not repaired.
+    # AND THE POINTER STILL MOVES. `commit_and_push` returning early does not stop `update_submodule_pointer`, so the parent repo is still committed and pushed when its index says the gitlink changed. Reproduced, not repaired.
     assert "update homebrew-tap submodule pointer [skip ci]" in flat
     assert_agree(old, new, "already-current")
 
@@ -789,9 +772,7 @@ def test_gh_is_never_invoked(tmp_path: pathlib.Path) -> None:
     assert old[0].returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, constants, and the plant
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, constants, and the plant ---------------------------------------------------------------------------
 
 
 def test_pure_helpers() -> None:

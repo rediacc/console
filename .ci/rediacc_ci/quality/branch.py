@@ -107,9 +107,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The event this gate is about. Anything else is not a pull request and the gate
-# says so and exits 0, which is a SKIP and not a pass: there is no branch to be
-# behind when nothing is proposing a merge.
+# The event this gate is about. Anything else is not a pull request and the gate says so and exits 0, which is a SKIP and not a pass: there is no branch to be behind when nothing is proposing a merge.
 PR_EVENT = "pull_request"
 
 # The base branch when GitHub does not name one. `main`, matching the twin.
@@ -161,9 +159,7 @@ def indent(text: str, width: int = 4) -> list[str]:
     return [" " * width + line for line in body.split("\n")]
 
 
-# The rebase recipe, exactly as the twin echoes it. A tuple of lines rather than
-# one triple-quoted string, because the twin interpolates the base branch into
-# two of them and a single blob would hide which.
+# The rebase recipe, exactly as the twin echoes it. A tuple of lines rather than one triple-quoted string, because the twin interpolates the base branch into two of them and a single blob would hide which.
 def recipe(base: str, head: str) -> list[str]:
     """The sixteen-line REBASE LOCALLY block, in the twin's order and spacing.
 
@@ -225,24 +221,18 @@ def main(argv: list[str] | None = None) -> int:
 
     log.step("Checking branch status against origin/%s..." % base)
 
-    # Fetch the base branch to ensure we have latest. See the port notes for the
-    # twin's paragraph on why the refspec is explicit.
+    # Fetch the base branch to ensure we have latest. See the port notes for the twin's paragraph on why the refspec is explicit.
     log.info("Fetching origin/%s..." % base)
     fetched = run_git(
         ["fetch", "origin", fetch_refspec(base), "--quiet"], root, capture_stderr=False
     )
     if fetched.returncode != 0:
-        # The twin runs this under `set -e`, so git's own diagnostic is the
-        # message and git's status is the gate's. Reproduced rather than
-        # improved: see the port notes.
+        # The twin runs this under `set -e`, so git's own diagnostic is the message and git's status is the gate's. Reproduced rather than improved: see the port notes.
         return fetched.returncode
 
     # Check 1: Is the PR behind the base branch?
     #
-    # FAIL LOUDLY. This used to end in `|| echo "0"`, and 0 is the same value the
-    # gate reads as "up-to-date" two lines down, where it exits 0. So a missing
-    # origin ref, a shallow clone with no merge base, or any other rev-list
-    # failure reported the branch as current and let the merge proceed.
+    # FAIL LOUDLY. This used to end in `|| echo "0"`, and 0 is the same value the gate reads as "up-to-date" two lines down, where it exits 0. So a missing origin ref, a shallow clone with no merge base, or any other rev-list failure reported the branch as current and let the merge proceed.
     counted = run_git(["rev-list", "--count", "HEAD..origin/%s" % base], root)
     if counted.returncode != 0:
         log.error("git rev-list failed for HEAD..origin/%s (exit %d)" % (base, counted.returncode))
@@ -271,14 +261,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Check 2: would rebasing conflict?
     #
-    # `git merge-tree --write-tree` answers this WITHOUT touching the working
-    # tree, the index, HEAD, or any ref -- it writes only loose objects into the
-    # object database. That is the whole reason it replaced the in-place
-    # `git rebase` that used to live here: this job's checkout is a real tree,
-    # and a gate has no business rewriting one.
+    # `git merge-tree --write-tree` answers this WITHOUT touching the working tree, the index, HEAD, or any ref -- it writes only loose objects into the object database. That is the whole reason it replaced the in-place `git rebase` that used to live here: this job's checkout is a real tree, and a gate has no business rewriting one.
     #
-    # It is a THREE-WAY MERGE probe, not a replay of each commit, so read it as
-    # an indication and not a proof: a merge that resolves cleanly can still stop
+    # It is a THREE-WAY MERGE probe, not a replay of each commit, so read it as an indication and not a proof: a merge that resolves cleanly can still stop
     # a per-commit rebase, and vice versa. Exit 0 = clean, 1 = conflicts,
     # anything else = the probe itself could not run (e.g. unrelated histories),
     # which is reported as unknown rather than silently as "clean".
@@ -322,9 +307,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def _git(root: pathlib.Path, *args: str) -> None:
@@ -471,8 +454,7 @@ def selftest() -> int:
             _run(clashing, GITHUB_EVENT_NAME=PR_EVENT, GITHUB_BASE_REF="main"),
             1,
         )
-        # The probe itself, driven directly, so the three arms are told apart
-        # rather than inferred from one exit code.
+        # The probe itself, driven directly, so the three arms are told apart rather than inferred from one exit code.
         probe = subprocess.run(
             ["git", "merge-tree", "--write-tree", "origin/main", "HEAD"],
             cwd=str(clashing),
@@ -490,21 +472,14 @@ def selftest() -> int:
         )
         ctl.check("CONTROL: merge-tree reports a clean merge as exit 0", probe.returncode, 0)
 
-        # THE THIRD ARM. An orphan branch has no common ancestor with main, so
-        # the probe cannot run at all and must be reported as unknown rather
-        # than as clean. Measured while porting: exit 128,
-        # "fatal: refusing to merge unrelated histories".
+        # THE THIRD ARM. An orphan branch has no common ancestor with main, so the probe cannot run at all and must be reported as unknown rather than as clean. Measured while porting: exit 128, "fatal: refusing to merge unrelated histories".
         orphan = _fixture(base / "orphan", behind=2, conflict=False)
         _git(orphan, "checkout", "-q", "--orphan", "unrelated")
         _git(orphan, "rm", "-rqf", ".")
         (orphan / "only.txt").write_text("only\n", encoding="utf-8")
         _git(orphan, "add", "-A", "--", ".")
         _git(orphan, "commit", "-qm", "unrelated root")
-        # ORDER MATTERS HERE, and getting it wrong is instructive. Probing
-        # BEFORE the gate has fetched leaves `origin/main` unresolvable, and
-        # `git merge-tree` then exits 1 with "not something we can merge" --
-        # which the twin's case statement reads as CONFLICTS, not as unknown.
-        # The real flow always fetches first, so the twin is never in that
+        # ORDER MATTERS HERE, and getting it wrong is instructive. Probing BEFORE the gate has fetched leaves `origin/main` unresolvable, and `git merge-tree` then exits 1 with "not something we can merge" -- which the twin's case statement reads as CONFLICTS, not as unknown. The real flow always fetches first, so the twin is never in that
         # state; the control below runs the gate first for the same reason.
         ctl.check(
             "PLANT: an unrelated history still reds rather than reporting clean",
@@ -527,9 +502,7 @@ def selftest() -> int:
             b"refusing to merge unrelated histories" in probe.stdout,
         )
 
-        # A BASE BRANCH THAT DOES NOT EXIST is git's failure, not the gate's, and
-        # the gate must not survive it: exit 0 here would be the `|| echo "0"`
-        # defect wearing a different hat.
+        # A BASE BRANCH THAT DOES NOT EXIST is git's failure, not the gate's, and the gate must not survive it: exit 0 here would be the `|| echo "0"` defect wearing a different hat.
         ctl.truthy(
             "PLANT: a missing base ref exits non-zero with git's own status",
             _run(clean, GITHUB_EVENT_NAME=PR_EVENT, GITHUB_BASE_REF="no-such-branch") != 0,

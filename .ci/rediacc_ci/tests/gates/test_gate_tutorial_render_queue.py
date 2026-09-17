@@ -40,8 +40,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-tutorial-render-queue.sh"
 
-# Reads packages/www/scripts/, package.json and scripts/ci-runner/manifest.ts off
-# the real working tree on every case. See the module docstring.
+# Reads packages/www/scripts/, package.json and scripts/ci-runner/manifest.ts off the real working tree on every case. See the module docstring.
 REAL_TREE_TWIN = True
 
 PREDICATE_REL = "packages/www/scripts/list-tutorial-render-pairs.js"
@@ -131,9 +130,7 @@ def test_selftest_has_controls(gate):
     listed."""
     result = run_predicate(gate, "--selftest")
     body = result.combined
-    # `grep -c -i control`: COUNT OF MATCHING LINES, not of occurrences. A line
-    # naming "control" twice counts once on the bash side, so it must count once
-    # here too or the port's floor would be looser than the twin's.
+    # `grep -c -i control`: COUNT OF MATCHING LINES, not of occurrences. A line naming "control" twice counts once on the bash side, so it must count once here too or the port's floor would be looser than the twin's.
     control_count = len([ln for ln in body.splitlines() if "control" in ln.lower()])
     if control_count < 2:
         gate.log_fail(
@@ -193,8 +190,7 @@ def test_harness_can_actually_fail(gate):
     because `node` errors on everything."""
     binary = node(gate)
     with harness.temp_dir() as tmp:
-        # A predicate that cheerfully reports zero pairs on an empty tree -- the
-        # exact defect.
+        # A predicate that cheerfully reports zero pairs on an empty tree -- the exact defect.
         fake = tmp / "fake-predicate.js"
         fake.write_text('console.log("");\nprocess.exit(0);\n', encoding="utf-8")
         result = harness.run(

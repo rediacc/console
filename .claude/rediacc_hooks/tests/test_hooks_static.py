@@ -14,10 +14,7 @@ import pytest
 
 from rediacc_hooks.tests import hookcases, hooklabels
 
-# `case(` at list indent, with NO `$` anchor. Anchoring to end-of-line would tie this
-# floor to one formatter decision: `ruff format` puts a short row on a single line and
-# a long one across several, so an anchored count would drop rows the day a payload got
-# shorter -- a floor failing for its own reasons rather than for the corpus's.
+# `case(` at list indent, with NO `$` anchor. Anchoring to end-of-line would tie this floor to one formatter decision: `ruff format` puts a short row on a single line and a long one across several, so an anchored count would drop rows the day a payload got shorter -- a floor failing for its own reasons rather than for the corpus's.
 CASE_CALL_RE = re.compile(r"^ {4}case\(", re.MULTILINE)
 
 
@@ -57,8 +54,7 @@ def test_every_case_names_a_guard_that_exists():
 def test_a_guard_case(kase):
     code, said = hookcases.run_guard(kase.key, kase.payload, want_stderr=kase.needle is not None)
     ok = code == kase.expected and (kase.needle is None or kase.needle in said)
-    # Emitted BEFORE the assertion, and with the real verdict, so the label multiset a
-    # failing run produces is still complete. A comparison that lost a label whenever a
+    # Emitted BEFORE the assertion, and with the real verdict, so the label multiset a failing run produces is still complete. A comparison that lost a label whenever a
     # case failed would report the failure twice and the shape of the run not at all.
     hooklabels.record(kase.expected, kase.label, ok=ok)
     assert code == kase.expected, "%s: expected exit %d, got %d%s" % (

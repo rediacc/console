@@ -36,9 +36,7 @@ RUNNER = ".ci/scripts/test/mutate-check.sh"
 FIXDIR = ".ci/scripts/test/fixtures/mutate-check"
 MODULE = "mutate_check"
 
-# A runner collapsed into "always succeed", with and without the reassuring text
-# scenario 1 greps for. Scenario 1 is the ONLY one that may exit 0, so the loud
-# stub passes exactly one scenario and the quiet one passes none.
+# A runner collapsed into "always succeed", with and without the reassuring text scenario 1 greps for. Scenario 1 is the ONLY one that may exit 0, so the loud stub passes exactly one scenario and the quiet one passes none.
 STUB_LOUD = '#!/usr/bin/env bash\necho "Both directions hold"\nexit 0\n'
 STUB_QUIET = "#!/usr/bin/env bash\nexit 0\n"
 
@@ -75,9 +73,7 @@ def build(
 
     suite = root / FIXDIR / "fixture-suite.sh"
     if unindent:
-        # THE SAME RUNTIME OUTPUT, a source text scenario 5's grep no longer
-        # matches. Rewriting the echo as a printf is what makes this case test
-        # scenario 5 alone rather than breaking the runner's own FAIL matching.
+        # THE SAME RUNTIME OUTPUT, a source text scenario 5's grep no longer matches. Rewriting the echo as a printf is what makes this case test scenario 5 alone rather than breaking the runner's own FAIL matching.
         lines = []
         for line in suite.read_text(encoding="utf-8").split("\n"):
             stripped = line.strip()
@@ -100,13 +96,9 @@ def build(
     return root
 
 
-# THE RUNNER NAMES ITS SANDBOX AFTER ITS OWN PID (`mutate-check.$$`), so the two
-# sides quote a different path in the scenario-4 detail block for reasons that
-# have nothing to do with either implementation. That is environment volatility,
+# THE RUNNER NAMES ITS SANDBOX AFTER ITS OWN PID (`mutate-check.$$`), so the two sides quote a different path in the scenario-4 detail block for reasons that have nothing to do with either implementation. That is environment volatility,
 # which `scripts/lib/shadow-gate.ts` handles with its `<tmp>` mask; this file
-# compares raw bytes, so it has to mask the same thing itself. Masked NARROWLY --
-# only the pid -- because masking `/tmp/...` wholesale would also hide a port
-# that quoted the wrong file.
+# compares raw bytes, so it has to mask the same thing itself. Masked NARROWLY -- only the pid -- because masking `/tmp/...` wholesale would also hide a port that quoted the wrong file.
 _SANDBOX_PID = re.compile(r"mutate-check\.\d+")
 
 
@@ -169,9 +161,7 @@ def test_a_missing_runner_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
     assert new_err == old_err
 
 
-# ---------------------------------------------------------------------------
-# The decision functions, driven directly. Both directions for every rule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(

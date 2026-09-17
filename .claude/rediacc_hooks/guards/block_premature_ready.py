@@ -27,10 +27,7 @@ DEFECT = ("hookio.grep_q_line(UNDO, seg)", "hookio.grep_q_line(UNDO, scan)")
 
 UNDO = r"--undo"
 
-# `gh` answering is what reaches the enforcement path at all. The suite's own
-# `ready_case` stubs it for exactly this reason, and its comment says why the
-# old "cannot be tested here, it is the network" claim was not a good one:
-# "the command that would have disproved it took one minute to write".
+# `gh` answering is what reaches the enforcement path at all. The suite's own `ready_case` stubs it for exactly this reason, and its comment says why the old "cannot be tested here, it is the network" claim was not a good one: "the command that would have disproved it took one minute to write".
 ENVS = [
     ("gh-silent-failure", {}, {}),
     ("ci-green", {}, {"gh": "#!/bin/sh\necho SUCCESS\n"}),
@@ -66,16 +63,10 @@ EDGE_CASES = [
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    # Two-stage false-positive defense, both learned from live firings:
-    # 1. Strip quoted strings (multi-line aware: newlines are folded so a quoted
-    #    commit message spanning lines is one strippable blob) -- v2 fired on a
+    # Two-stage false-positive defense, both learned from live firings: 1. Strip quoted strings (multi-line aware: newlines are folded so a quoted commit message spanning lines is one strippable blob) -- v2 fired on a
     #    `git commit -m` body whose prose said "; gh pr ready is hook-gated".
     # 2. Command-position anchor on what remains (line start or after ; & | $( )
-    #    -- v1 fired on a heredoc mentioning the command in prose.
-    # Bypass-resistant scanning so `sh -c 'gh pr ready'` cannot skip the green
-    # gate. SCAN carries both the prose-stripped command and any unwrapped
-    # wrapper payload, and every field below is parsed from it -- one view, no
-    # drift between two regexes. See lib/command-scan.sh.
+    # -- v1 fired on a heredoc mentioning the command in prose. Bypass-resistant scanning so `sh -c 'gh pr ready'` cannot skip the green gate. SCAN carries both the prose-stripped command and any unwrapped wrapper payload, and every field below is parsed from it -- one view, no drift between two regexes. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not shellscan.gh_pr_at_command_pos(scan, "ready"):
         return hookio.ALLOW
@@ -84,16 +75,14 @@ def run(ev):
     # from the whole bash line. Line-wide parsing let a sibling command donate its
     # fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an
     # always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531`
-    # looked like a non-console flip -- both would have skipped the green gate
-    # entirely. See hook_gh_pr_segment.
+    # looked like a non-console flip -- both would have skipped the green gate entirely. See hook_gh_pr_segment.
     cwd = ev.field("cwd")
     segs = shellscan.gh_pr_segment(scan, "ready")
     records, _ = shellscan._records(shellscan._here_string(segs))
     for seg in records:
         if seg == "":
             continue
-        # --undo (always safe: it can only push a PR back to draft) must belong to
-        # THIS invocation, not to a sibling one earlier on the line.
+        # --undo (always safe: it can only push a PR back to draft) must belong to THIS invocation, not to a sibling one earlier on the line.
         if hookio.grep_q_line(UNDO, seg):
             continue
 
@@ -103,8 +92,7 @@ def run(ev):
         if repo != "rediacc/console":
             continue
 
-        # PR selector: first bare number/URL/branch token after `ready`, else the
-        # session cwd's current branch (matching gh's own default resolution).
+        # PR selector: first bare number/URL/branch token after `ready`, else the session cwd's current branch (matching gh's own default resolution).
         sel = shellscan._command_substitution(shellscan.pr_selector(seg, "ready"))
         if sel == "":
             sel = hookio.git_out(["-C", cwd or ".", "branch", "--show-current"])

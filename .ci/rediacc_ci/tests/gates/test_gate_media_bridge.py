@@ -103,17 +103,12 @@ def stage(directory: pathlib.Path) -> pathlib.Path:
 
 
 def test_every_moved_function_is_solely_owned_by_this_module(gate):
-    # WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all
-    # nine, and this asserted the bodies were byte-identical. run.sh has no copies
-    # now, so the equivalent question is ownership: exactly one file defines each
-    # name, it is this module, run.sh and media.sh define none of them, and
-    # media-entry.sh resolves every name to this file's body.
+    # WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all nine, and this asserted the bodies were byte-identical. run.sh has no copies now, so the equivalent question is ownership: exactly one file defines each name, it is this module, run.sh and media.sh define none of them, and media-entry.sh resolves every name to this file's body.
     media_verify.media_assert_module_owns(gate, "bridge.sh", *MOVED)
 
 
 def test_the_ssh_config_constant_lives_here_and_only_here(gate):
-    # _BRIDGE_SSH_CONFIG is not a function, so the ownership assertion cannot see
-    # it, and it is the single value every other helper in this module depends on.
+    # _BRIDGE_SSH_CONFIG is not a function, so the ownership assertion cannot see it, and it is the single value every other helper in this module depends on.
     lines = MODULE.read_text(encoding="utf-8").splitlines()
     if not [line for line in lines if line.startswith("_BRIDGE_SSH_CONFIG=")]:
         gate.log_fail(
@@ -146,19 +141,12 @@ def test_the_ssh_config_constant_lives_here_and_only_here(gate):
 
 
 def test_the_ownership_assertion_can_fail(gate, tmp_path):
-    # A worker index off by one is the exact defect this module invites, but a
-    # mutated BODY is no longer detectable by comparison -- there is nothing left to
-    # compare it against. What IS detectable, and what the cutover made an
-    # invariant, is a SECOND definition, so _worker_ip is the name the shared
-    # control re-plants into each origin.
+    # A worker index off by one is the exact defect this module invites, but a mutated BODY is no longer detectable by comparison -- there is nothing left to compare it against. What IS detectable, and what the cutover made an invariant, is a SECOND definition, so _worker_ip is the name the shared control re-plants into each origin.
     media_verify.media_assert_ownership_control(gate, tmp_path, "bridge.sh", "_worker_ip")
 
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate, tmp_path):
-    # The off-by-one the fidelity assertion used to guard is still guarded, by the
-    # fixture cases further down (`_worker_ip 1` must be the FIRST entry of
-    # worker_ips). This control proves those cases are reading this module: it
-    # rewrites the index in a COPY and requires the addresses they assert to change.
+    # The off-by-one the fidelity assertion used to guard is still guarded, by the fixture cases further down (`_worker_ip 1` must be the FIRST entry of worker_ips). This control proves those cases are reading this module: it rewrites the index in a COPY and requires the addresses they assert to change.
     staged = stage(tmp_path / "staged")
     mutant = tmp_path / "mutant"
     mutant.mkdir(parents=True, exist_ok=True)
@@ -184,8 +172,7 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate, tmp_path):
 
 
 def test_run_sh_still_reaches_this_module(gate, tmp_path):
-    # THE DELEGATION ITSELF, driven end to end in a sandbox repo: ./run.sh, its
-    # exec, media-entry.sh's case tree, bridge.sh, with a marker planted inside the
+    # THE DELEGATION ITSELF, driven end to end in a sandbox repo: ./run.sh, its exec, media-entry.sh's case tree, bridge.sh, with a marker planted inside the
     # function body so nothing downstream of it runs.
     repo = media_verify_ext.media_chain_sandbox(tmp_path)
     media_verify_ext.probe(repo, "bridge.sh", "provision_start")
@@ -314,10 +301,7 @@ def test_the_ssh_and_rsync_wrappers_build_the_right_command(gate, tmp_path):
 
 
 def test_provisioning_is_a_thin_wrapper_over_rdc_ops(gate, tmp_path):
-    # These three had NO definition anywhere in the repo once, and every caller
-    # died with "provision_start: command not found". A fake rdc.sh at the fixture
-    # root proves they exist, that they delegate, and that start still forwards
-    # "$@" -- without libvirt.
+    # These three had NO definition anywhere in the repo once, and every caller died with "provision_start: command not found". A fake rdc.sh at the fixture root proves they exist, that they delegate, and that start still forwards "$@" -- without libvirt.
     root = tmp_path / "ops"
     root.mkdir(parents=True, exist_ok=True)
     calls = root / "rdc-calls"

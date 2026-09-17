@@ -54,30 +54,21 @@ import sys
 
 from rediacc_ci import log
 
-# ---------------------------------------------------------------------------
-# The twin's constants
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
 # `.ci/config/constants.sh:169`, `readonly PUBLISH_IMAGES=("renet" "rdc")`.
-# Restated rather than sourced (constants.sh hard-requires
-# `.devcontainer/toolchain.env` and `exit 1`s without it, which would make this
-# port refuse on a checkout where the twin's own dependency is merely absent),
-# and pinned against constants.sh by a staleness alarm in the differential.
+# Restated rather than sourced (constants.sh hard-requires `.devcontainer/toolchain.env` and `exit 1`s without it, which would make this port refuse on a checkout where the twin's own dependency is merely absent), and pinned against constants.sh by a staleness alarm in the differential.
 PUBLISH_IMAGES = ("renet", "rdc")
 
 # `.ci/config/constants.sh:162`,
 # `PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"`.
-# `:-` means unset OR EMPTY takes the default, which is why the read below is
-# `or` rather than a two-argument `get`.
+# `:-` means unset OR EMPTY takes the default, which is why the read below is `or` rather than a two-argument `get`.
 REGISTRY_DEFAULT = "ghcr.io/rediacc"
 
 # The prefix `${PUBLISH_DOCKER_REGISTRY#ghcr.io/}` strips (twin :67).
 GHCR_PREFIX = "ghcr.io/"
 
-# Where `set -u` kills the twin when a value-taking flag is last on the command
-# line. bash names the line of the ASSIGNMENT, not of the `case` arm, and the
-# port reproduces the whole message including that number so a caller who greps
-# CI logs for it still finds it. The differential asserts the constant still
+# Where `set -u` kills the twin when a value-taking flag is last on the command line. bash names the line of the ASSIGNMENT, not of the `case` arm, and the port reproduces the whole message including that number so a caller who greps CI logs for it still finds it. The differential asserts the constant still
 # points at `STAGING_TAG="$2"` in the twin, so a twin edit reds here rather than
 # silently drifting.
 UNBOUND_LINE_TAG = 26
@@ -231,10 +222,7 @@ def _gh_list(org: str, package: str) -> str:
             check=False,
         )
     except (FileNotFoundError, PermissionError) as exc:
-        # bash writes `<script>: line N: gh: <reason>` INTO the captured value,
-        # not to the terminal, because `2>&1` is inside the substitution. The
-        # exact text is unobservable (it is only ever fed to jq, which rejects
-        # it), so the shape is reproduced and the outcome is identical.
+        # bash writes `<script>: line N: gh: <reason>` INTO the captured value, not to the terminal, because `2>&1` is inside the substitution. The exact text is unobservable (it is only ever fed to jq, which rejects it), so the shape is reproduced and the outcome is identical.
         return "%s: gh: %s" % (sys.argv[0], exc.strerror)
     return proc.stdout.rstrip("\n")
 

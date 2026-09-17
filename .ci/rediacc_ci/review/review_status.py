@@ -160,24 +160,18 @@ EVENTS_WITH_PR_NUMBER = (
     "workflow_dispatch",
 )
 
-# `WR_CONCLUSION` values that mean no verdict was produced. `cancelled` is
-# deliberately absent: Claude Review runs with cancel-in-progress, so a
-# superseded push cancels the older run BY DESIGN and a newer run is already on
-# its way.
+# `WR_CONCLUSION` values that mean no verdict was produced. `cancelled` is deliberately absent: Claude Review runs with cancel-in-progress, so a superseded push cancels the older run BY DESIGN and a newer run is already on its way.
 FAILED_CONCLUSIONS = ("failure", "timed_out")
 
 ARTIFACT_NAME = "review-target"
 ARTIFACT_MEMBER = "review-target.txt"
 
 # `sed -n "s/^NAME='\(.*\)'[[:space:]]*$/\1/p"`. GREEDY on purpose, like the
-# sed: a line with two quoted runs yields everything between the first and the
-# last quote. `[[:space:]]` inside a line is space, tab, vertical tab, form feed
-# and carriage return -- not the newline, which sed never sees inside a line.
+# sed: a line with two quoted runs yields everything between the first and the last quote. `[[:space:]]` inside a line is space, tab, vertical tab, form feed and carriage return -- not the newline, which sed never sees inside a line.
 PREFIX_RE = "^%s='(.*)'[ \t\v\f\r]*$"
 
 # `sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p'` over the marker
-# bodies. Lowercase hex, exactly 40, and the LAST match across all lines wins
-# (`| tail -n 1`) -- never the first, because a marker body is multi-line.
+# bodies. Lowercase hex, exactly 40, and the LAST match across all lines wins (`| tail -n 1`) -- never the first, because a marker body is multi-line.
 MARKER_SHA_RE = re.compile(r".*claude-reviewed: ([0-9a-f]{40}).*")
 
 # `git config -f .gitmodules --get-regexp '^submodule\..*\.path$'`.
@@ -446,8 +440,7 @@ def artifact_pr(repo: str, run_id: str) -> str:
         "--jq",
         '.artifacts[] | select(.name == "%s") | .id' % ARTIFACT_NAME,
     ]
-    # `... | grep -q .` inside an `if`: a gh failure is a false condition, not a
-    # refusal, because `set -e` does not apply to a condition.
+    # `... | grep -q .` inside an `if`: a gh failure is a false condition, not a refusal, because `set -e` does not apply to a condition.
     code, listing = _gh(probe_args, quiet=True)
     if code != 0 or not listing.strip():
         return ""
@@ -534,8 +527,7 @@ def _read_gate_constants(gate_script: pathlib.Path) -> tuple[str, str]:
     try:
         text = gate_script.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        # `sed` on an unreadable file prints its own error and yields nothing,
-        # which lands in the parse-failure arm below.
+        # `sed` on an unreadable file prints its own error and yields nothing, which lands in the parse-failure arm below.
         text = ""
     marker = parse_prefix(text, "MARKER_PREFIX")
     attempt = parse_prefix(text, "ATTEMPT_PREFIX")
@@ -549,10 +541,7 @@ def _read_gate_constants(gate_script: pathlib.Path) -> tuple[str, str]:
         log.error("  Without it the cap reads LOWER here than in the gate, and the deadlock")
         log.error("  guard below cannot fire on a capped PR -- the #553 failure mode.")
         raise ReporterError(1)
-    # The twin's two `declare -F` guards. STRUCTURAL rather than reachable here
-    # -- an import failure would have ended this process at the import -- and
-    # kept because the contract they state ("the gate and this script must share
-    # ONE numerator") is what the reuse of core.review_budget rests on.
+    # The twin's two `declare -F` guards. STRUCTURAL rather than reachable here -- an import failure would have ended this process at the import -- and kept because the contract they state ("the gate and this script must share ONE numerator") is what the reuse of core.review_budget rests on.
     for attr, message in (
         ("spend_total", "review_spend_total() is missing from ../lib/common.sh"),
         ("cap_for", "review_cap_for() is missing from ../lib/common.sh"),
@@ -648,16 +637,14 @@ def _hygiene(hygiene_dir: pathlib.Path, pr: str, repo: str, failures: list[str])
             log.info("hygiene ok: %s" % script)
         else:
             text = out.decode("utf-8", "surrogateescape")
-            # `$(tail -n 20 "$out_file")`: the last 20 lines, with the trailing
-            # newlines the command substitution would have stripped.
+            # `$(tail -n 20 "$out_file")`: the last 20 lines, with the trailing newlines the command substitution would have stripped.
             lines = text.split("\n")
             if lines and lines[-1] == "":
                 lines.pop()
             tail = "\n".join(lines[-20:]).rstrip("\n")
             failures.append("`%s` failed:\n\n```\n%s\n```" % (script, tail))
             log.error("hygiene failed: %s" % script)
-        # `cat "$out_file"`: BYTES, because a hygiene script's output is not
-        # this reporter's to re-encode.
+        # `cat "$out_file"`: BYTES, because a hygiene script's output is not this reporter's to re-encode.
         sys.stdout.flush()
         sys.stdout.buffer.write(out)
         sys.stdout.buffer.flush()
@@ -687,16 +674,11 @@ def build_summary(
 
 
 def run() -> int:
-    # `os.environ.get(...)` SPELLED OUT AT EVERY READ, not through a local
-    # alias. `check:ci-python-env-registry` derives a module's environment
-    # inputs from the AST and an alias hides every one of them from it, which
-    # is the undeclared-input hole that gate exists to close.
+    # `os.environ.get(...)` SPELLED OUT AT EVERY READ, not through a local alias. `check:ci-python-env-registry` derives a module's environment inputs from the AST and an alias hides every one of them from it, which is the undeclared-input hole that gate exists to close.
     for cmd in ("gh", "jq", "python3"):
         # `python3` is declared because the artifact lookup reads a zip member
         # with it. An UNDECLARED binary is a MUTE DEATH: under `set -euo
-        # pipefail` a command-not-found inside a command substitution exits 127
-        # immediately, before any log_error and before post_check, leaving the
-        # head with no check-run and no annotation.
+        # pipefail` a command-not-found inside a command substitution exits 127 immediately, before any log_error and before post_check, leaving the head with no check-run and no annotation.
         common.require_cmd(cmd)
     repo = common.require_var("GITHUB_REPOSITORY")
 
@@ -714,10 +696,7 @@ def run() -> int:
     pr = _resolve_pr(repo, event)
 
     if not pr:
-        # Reachable only when no review-target artifact was written, i.e. the
-        # triggering run had no PR at all (a push to main). GREPPABLE ON
-        # PURPOSE: if this line ever appears for a run that DID have a PR, the
-        # handoff broke and the silence is the bug, not the verdict.
+        # Reachable only when no review-target artifact was written, i.e. the triggering run had no PR at all (a push to main). GREPPABLE ON PURPOSE: if this line ever appears for a run that DID have a PR, the handoff broke and the silence is the bug, not the verdict.
         log.info(
             "no review-target artifact on run %s; no PR to report on"
             % (os.environ.get("WR_RUN_ID") or "?")
@@ -790,9 +769,7 @@ def run() -> int:
     currency_ok, currency_detail = _currency(repo, head_sha, last_sha)
 
     try:
-        # Posted reports PLUS spent attempts: the same total the gate caps on.
-        # Counting posted reports alone made this script read 0/3 while the gate
-        # read 3/3 on the SAME PR, which is why the deadlock guard never fired.
+        # Posted reports PLUS spent attempts: the same total the gate caps on. Counting posted reports alone made this script read 0/3 while the gate read 3/3 on the SAME PR, which is why the deadlock guard never fired.
         review_count = review_budget.spend_total(
             review_budget.report_count(pr, repo=repo),
             review_budget.spent_attempt_count(pr, attempt_prefix, repo=repo),
@@ -807,8 +784,7 @@ def run() -> int:
     pr_loc = review_budget.diff_loc(pr, repo=repo, on_error=review_budget.DIFF_LOC_FAILS_TO_ZERO)
     max_reviews = review_budget.cap_for(pr_loc)
     notes.append("Currency: %s." % currency_detail)
-    # "spent", not "posted": this number is reports PLUS attempts that burned
-    # their budget and posted nothing.
+    # "spent", not "posted": this number is reports PLUS attempts that burned their budget and posted nothing.
     notes.append(
         "Review passes spent: %d/%d (posted reports + spent attempts; cap %d for a %d-line diff)."
         % (review_count, max_reviews, max_reviews, pr_loc)
@@ -831,10 +807,7 @@ def run() -> int:
     elif review_budget.head_is_exhausted(
         review_budget.attempt_states(pr, attempt_prefix, repo=repo), head_sha
     ):
-        # THE SAME DEADLOCK, ONE LEVEL DOWN. The free re-attempts are
-        # deliberately not charged, so a head can exhaust its own ceiling while
-        # the PR is still well under its cap -- at which point the gate refuses
-        # this head and the branch above cannot see why.
+        # THE SAME DEADLOCK, ONE LEVEL DOWN. The free re-attempts are deliberately not charged, so a head can exhaust its own ceiling while the PR is still well under its cap -- at which point the gate refuses this head and the branch above cannot see why.
         warnings.append(
             "**HEAD REVIEW ATTEMPTS EXHAUSTED** for `%s` (%d reportless attempts, %d/%d of the PR "
             "budget spent): %s. The review pipeline will not retry this head, so the marker can "

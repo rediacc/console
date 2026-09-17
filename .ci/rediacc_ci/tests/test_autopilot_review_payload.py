@@ -199,8 +199,7 @@ def test_author_filter_variants() -> None:
         ["--threads", "threads.json", "--author-filter", "dependabot"],
     )
     _sides("filter-misses", [_thread("T1", root_author="dependabot[bot]")])
-    # A substring match, which is what `contains` does: `github-actions` is
-    # inside `github-actions[bot]`.
+    # A substring match, which is what `contains` does: `github-actions` is inside `github-actions[bot]`.
     _sides("substring", [_thread("T1", root_author="pre-github-actions-post")])
 
 
@@ -277,8 +276,7 @@ def test_usage_refusals() -> None:
     assert exit_code == 2
     assert b"usage: review-payload.sh" in stderr
 
-    # `require_file` exits 1, NOT 2: it is common.sh's refusal, not this
-    # script's usage message, and the two carry different codes.
+    # `require_file` exits 1, NOT 2: it is common.sh's refusal, not this script's usage message, and the two carry different codes.
     exit_code, _, stderr, _ = _sides("missing-file", [], ["--threads", "nope.json"])
     assert exit_code == 1
     assert b"does not exist" in stderr
@@ -295,8 +293,7 @@ def test_usage_refusals() -> None:
         )
         if bad == "":
             # `${ARG_MAX_BYTES:-49152}`: an EMPTY value takes the default, so
-            # this one is a success, not a refusal. Pinned because the `-`/`:-`
-            # distinction is exactly what the author-filter guard turns on.
+            # this one is a success, not a refusal. Pinned because the `-`/`:-` distinction is exactly what the author-filter guard turns on.
             assert code == 0, "an empty --max-bytes should fall back to the default"
         else:
             assert code == 2, "--max-bytes=%r was accepted" % bad
@@ -345,10 +342,7 @@ def test_jq_runtime_errors_are_reproduced_exactly() -> None:
     assert code == 5
     assert b"threads.json:4" in err, "the (at file:N) offset is not the newline count"
 
-    # BOTH SIDES OF jq's ERROR-MESSAGE TRUNCATION. jq quotes values into a
-    # 15-byte buffer, so `"github-actions"` (16 bytes) comes out cut and `"gh"`
-    # does not. A port that skipped the truncation agrees on the short one and
-    # diverges on the default filter, which is the case that actually ships.
+    # BOTH SIDES OF jq's ERROR-MESSAGE TRUNCATION. jq quotes values into a 15-byte buffer, so `"github-actions"` (16 bytes) comes out cut and `"gh"` does not. A port that skipped the truncation agrees on the short one and diverges on the default filter, which is the case that actually ships.
     code, _, err, _ = _sides(
         "containment-truncated",
         None,
@@ -370,8 +364,7 @@ def test_jq_runtime_errors_are_reproduced_exactly() -> None:
     _sides("login-is-a-number", None, raw=b'[{"comments":{"nodes":[{"author":{"login":5}}]}}]')
     _sides("nodes-is-a-string", None, raw=b'[{"comments":{"nodes":"hi"}}]')
     _sides("element-is-an-array", None, raw=b"[[]]")
-    # A null ELEMENT is not an error in jq: it indexes to null all the way down
-    # and is dropped by the author filter.
+    # A null ELEMENT is not an error in jq: it indexes to null all the way down and is dropped by the author filter.
     _sides("element-is-null", None, raw=b"[null]")
 
 

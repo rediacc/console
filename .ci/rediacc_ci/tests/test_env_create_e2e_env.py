@@ -96,11 +96,7 @@ def run_both(
     cwd.mkdir(parents=True, exist_ok=True)
     assert_is_scratch(cwd)
 
-    # DELETED FIRST, ALWAYS. A test that calls this twice would otherwise read
-    # the PREVIOUS call's file when the current one refuses to write, and two
-    # stale files compare equal -- a differential passing on evidence from a run
-    # it is not describing. Caught here: the Defect A case below drove exactly
-    # that and reported an over-budget refusal as having produced a file.
+    # DELETED FIRST, ALWAYS. A test that calls this twice would otherwise read the PREVIOUS call's file when the current one refuses to write, and two stale files compare equal -- a differential passing on evidence from a run it is not describing. Caught here: the Defect A case below drove exactly that and reported an over-budget refusal as having produced a file.
     runs: list[Run] = []
     for side, invocation in (
         ("old", "bash %s/%s" % (diff.repo(), TWIN)),
@@ -137,9 +133,7 @@ def both(tmp_path: pathlib.Path, *args: str, **kwargs: object) -> tuple[Run, Run
     return old, new
 
 
-# ---------------------------------------------------------------------------
-# The documented flags, one case per line of the twin's own header
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The documented flags, one case per line of the twin's own header ---------------------------------------------------------------------------
 
 DOCUMENTED_CASES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("defaults", ("--output", "{out}")),
@@ -232,9 +226,7 @@ def test_the_generated_file_is_actually_compared(tmp_path: pathlib.Path) -> None
     assert "VM_CEPH_NODES=21 22 23" in ceph_old.produced
 
 
-# ---------------------------------------------------------------------------
-# Missing and malformed arguments
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Missing and malformed arguments ---------------------------------------------------------------------------
 
 
 def test_no_arguments_at_all_prints_the_usage_and_exits_1(tmp_path: pathlib.Path) -> None:
@@ -273,8 +265,7 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_2_from_common_sh(
     old, new = run_both(tmp_path, ("--a.b=1", "--output", "{out}"))
     assert old.code == 2
     assert old.produced is None
-    # The PATH is compared here rather than normalised: the port reproduces
-    # common.sh's own unnormalised `$SCRIPT_DIR/../lib/common.sh` verbatim.
+    # The PATH is compared here rather than normalised: the port reproduces common.sh's own unnormalised `$SCRIPT_DIR/../lib/common.sh` verbatim.
     expected = "%s/.ci/scripts/env/../lib/common.sh: line %d: printf: `ARG_A.B'" % (
         diff.repo(),
         port.PRINTF_LINE,
@@ -318,9 +309,7 @@ def test_a_directory_that_cannot_be_created_surfaces_mkdirs_own_message(
     assert (old.code, old.stdout, old.stderr) == (new.code, new.stdout, new.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The RAM budget, and DEFECT A
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The RAM budget, and DEFECT A ---------------------------------------------------------------------------
 
 
 def test_a_topology_over_the_ceiling_is_refused(tmp_path: pathlib.Path) -> None:
@@ -446,17 +435,12 @@ def test_the_documented_divergence_on_an_unsupported_operator_is_real(
     assert "= 17408 MB" in old.stderr
     assert old.produced is None
     assert new.code == 0, "the port treats the shift as Defect A's arithmetic error"
-    # The clause is asked of the running bash, not spelled here: bash 5.3 says
-    # "arithmetic syntax error" where 5.2 says "syntax error", and this tree's
-    # hosts are 5.3 while every CI runner is 5.2. A literal here passes locally
-    # and fails only in the one place nobody could see.
+    # The clause is asked of the running bash, not spelled here: bash 5.3 says "arithmetic syntax error" where 5.2 says "syntax error", and this tree's hosts are 5.3 while every CI runner is 5.2. A literal here passes locally and fails only in the one place nobody could see.
     assert "%s in expression" % bash_dialect.arith_syntax_error() in new.stderr
     assert new.produced is not None
 
 
-# ---------------------------------------------------------------------------
-# DEFECT B: the node count is globbed against the working directory
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- DEFECT B: the node count is globbed against the working directory ---------------------------------------------------------------------------
 
 
 def five_file_directory(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -500,9 +484,7 @@ def test_whitespace_in_a_node_list_is_split_for_the_count_and_kept_in_the_file(
     both(tmp_path, "--output", "{out}", "--vm-workers", value)
 
 
-# ---------------------------------------------------------------------------
-# DEFECT D: the environment, and the twin's own env fallbacks
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- DEFECT D: the environment, and the twin's own env fallbacks ---------------------------------------------------------------------------
 
 
 def test_defect_d_arg_output_from_the_environment_works_with_no_flag(
@@ -589,9 +571,7 @@ def test_a_tty_on_stderr_colours_both_sides_the_same_way(tmp_path: pathlib.Path)
     assert_equivalent(tmp_path, old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 DIRNAME_INPUTS = [
@@ -708,9 +688,7 @@ def test_deep_variable_recursion_is_bounded_rather_than_a_stack_overflow() -> No
         port.arithmetic("v0", scope)
 
 
-# ---------------------------------------------------------------------------
-# The pins
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pins ---------------------------------------------------------------------------
 
 
 def twin_lines() -> list[str]:

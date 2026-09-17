@@ -77,19 +77,15 @@ import re
 
 from rediacc_ci import battery, paths
 
-# The two sources, as path PARTS rather than joined strings, so a component is
-# greppable on its own and the separator is the platform's.
+# The two sources, as path PARTS rather than joined strings, so a component is greppable on its own and the separator is the platform's.
 LOCK_SUBDIR = ("scripts", "ci-runner", "gates.lock.json")
 TWIN_RUNNER_SUBDIR = (".ci", "scripts", "test", "run-all.sh")
 
 # `NAME=(\n ... \n)` in bash. Anchored at both ends with DOTALL between, so a
-# single-line array (which run-all.sh does not write) is deliberately not matched
-# rather than half-matched.
+# single-line array (which run-all.sh does not write) is deliberately not matched rather than half-matched.
 BASH_ARRAY_RE = re.compile(r"^(\w+)=\(\n(.*?)^\)", re.MULTILINE | re.DOTALL)
 
-# The one name every real-tree twin shares. A single string constant, because two
-# spellings of it would silently create two groups that can run concurrently --
-# which is the failure the section above argues against.
+# The one name every real-tree twin shares. A single string constant, because two spellings of it would silently create two groups that can run concurrently -- which is the failure the section above argues against.
 REAL_TREE_GROUP = "real-tree"
 
 # The module attribute a test file sets to name a resource no registry knows.

@@ -72,10 +72,7 @@ export interface PolicyDecision {
  * literal.
  */
 export function matchesGlob(pattern: string, value: string): boolean {
-  // Split on the wildcard first, then escape each literal chunk. Escaping the
-  // pattern in a single pass would force the segment-separating spaces to double
-  // as the wildcard sentinel, which makes the exact pattern "repo fork" match
-  // "repoXXXfork".
+  // Split on the wildcard first, then escape each literal chunk. Escaping the pattern in a single pass would force the segment-separating spaces to double as the wildcard sentinel, which makes the exact pattern "repo fork" match "repoXXXfork".
   const source = pattern
     .split('*')
     .map((literal) => literal.replaceAll(/[.+?^${}()|[\]\\]/g, '\\$&'))
@@ -202,11 +199,7 @@ export function evaluatePolicy(
     }
   }
 
-  // Commands are an ALLOW-LIST, and the list is required. A document that
-  // resolves NO commands rule for this caller allows nothing — it does not allow
-  // everything. This is the one place the model must fail closed: a rule that
-  // scopes, say, `machines` but forgets `commands` would otherwise silently
-  // grant every command (repo secret get, cluster destroy) on those machines.
+  // Commands are an ALLOW-LIST, and the list is required. A document that resolves NO commands rule for this caller allows nothing — it does not allow everything. This is the one place the model must fail closed: a rule that scopes, say, `machines` but forgets `commands` would otherwise silently grant every command (repo secret get, cluster destroy) on those machines.
   // An author who genuinely wants everything writes `commands: { allow: ['*'] }`.
   const commands = resolve(tiers, 'commands');
   if (!commands) {

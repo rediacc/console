@@ -95,15 +95,11 @@ import tempfile
 import time
 
 # The twin's `local timeout=180` / `local interval=2` (:85-87). Named rather than
-# inlined so a test can assert the real file still carries the values the twin
-# does. The differential does NOT shrink them -- it nulls the `sleep` call
-# instead, so both sides keep the real arithmetic and still perform all 90
-# probes.
+# inlined so a test can assert the real file still carries the values the twin does. The differential does NOT shrink them -- it nulls the `sleep` call instead, so both sides keep the real arithmetic and still perform all 90 probes.
 TIMEOUT_SECONDS = 180
 INTERVAL_SECONDS = 2
 
-# Bash-internal names that describe the sourcing shell rather than the
-# configuration it produced. See the module docstring.
+# Bash-internal names that describe the sourcing shell rather than the configuration it produced. See the module docstring.
 _SHELL_PRIVATE = frozenset({"_", "SHLVL", "PWD", "OLDPWD"})
 
 
@@ -276,11 +272,7 @@ def main(argv: list[str]) -> int:
     print(flush=True)  # the twin's bare `echo ""`
     print("Running containers:", flush=True)
 
-    # `docker ps ... | grep -E "(NAME|rediacc)" || true`. The pipeline is
-    # reproduced with a real `grep` rather than with a Python filter so the
-    # differential's argv record shows the same two processes the twin spawns,
-    # and so ugrep-vs-GNU-grep differences (this repo runs ugrep 7.5.0) land on
-    # both sides identically instead of on the bash side only.
+    # `docker ps ... | grep -E "(NAME|rediacc)" || true`. The pipeline is reproduced with a real `grep` rather than with a Python filter so the differential's argv record shows the same two processes the twin spawns, and so ugrep-vs-GNU-grep differences (this repo runs ugrep 7.5.0) land on both sides identically instead of on the bash side only.
     ps: subprocess.Popen[bytes] | None
     try:
         ps = subprocess.Popen(
@@ -288,9 +280,7 @@ def main(argv: list[str]) -> int:
             stdout=subprocess.PIPE,
         )
     except FileNotFoundError:
-        # bash still runs the RIGHT-HAND side of the pipe when the left-hand
-        # command does not exist: grep reads EOF, exits 1, and `|| true` eats
-        # it. Returning early here would drop a process the twin spawns.
+        # bash still runs the RIGHT-HAND side of the pipe when the left-hand command does not exist: grep reads EOF, exits 1, and `|| true` eats it. Returning early here would drop a process the twin spawns.
         ps = None
     subprocess.run(
         ["grep", "-E", "(NAME|rediacc)"],

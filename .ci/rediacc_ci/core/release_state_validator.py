@@ -214,15 +214,10 @@ DEFAULT_BUCKET = "rediacc-releases"
 # `RSV_SENTINEL_KEY=".released"` (:73). The commit marker, written LAST.
 SENTINEL_KEY = ".released"
 
-# Strict semver with the `v` prefix, the `grep -E` at :110, :120, :287, :307
-# and :384. Pre-release tags are deliberately OUTSIDE the contract, so they are
-# filtered rather than judged.
+# Strict semver with the `v` prefix, the `grep -E` at :110, :120, :287, :307 and :384. Pre-release tags are deliberately OUTSIDE the contract, so they are filtered rather than judged.
 STRICT_SEMVER = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
-# The sed at :109, deliberately LOOSER than STRICT_SEMVER: `v[0-9][0-9.]*`. The
-# grep behind it is what tightens the result, so the two stages stay separate
-# here exactly as they are two stages there. Folding them into one pattern would
-# quietly change which keys are even considered.
+# The sed at :109, deliberately LOOSER than STRICT_SEMVER: `v[0-9][0-9.]*`. The grep behind it is what tightens the result, so the two stages stay separate here exactly as they are two stages there. Folding them into one pattern would quietly change which keys are even considered.
 SENTINEL_LINE = r"^%s/(v[0-9][0-9.]*)/%s$"
 
 # `.ci/config/release-contract-floor.txt`, relative to the repository root. The
@@ -230,8 +225,7 @@ SENTINEL_LINE = r"^%s/(v[0-9][0-9.]*)/%s$"
 # for.
 FLOOR_FILE_REL = ".ci/config/release-contract-floor.txt"
 
-# The two channels, in the twin's loop order (check-release-state.sh:70). Order
-# is observable: each channel emits its own OK or DRIFT line.
+# The two channels, in the twin's loop order (check-release-state.sh:70). Order is observable: each channel emits its own OK or DRIFT line.
 CHANNELS = ("edge", "stable")
 
 
@@ -326,9 +320,7 @@ def _run(argv: list[str], *, cwd: str | None = None) -> subprocess.CompletedProc
         return subprocess.CompletedProcess(argv, 127, "", "%s: command not found\n" % argv[0])
 
 
-# ---------------------------------------------------------------------------
-# Live probes (AWS + git)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Live probes (AWS + git) ---------------------------------------------------------------------------
 
 
 def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
@@ -370,8 +362,7 @@ def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
     )
     pattern = re.compile(SENTINEL_LINE % (re.escape(product), re.escape(SENTINEL_KEY)))
     found: list[str] = []
-    # `tr '\t' '\n'`: `--output text` packs the whole array onto one tab-joined
-    # line, so the tab split is not cosmetic, it is what makes there be records.
+    # `tr '\t' '\n'`: `--output text` packs the whole array onto one tab-joined line, so the tab split is not cosmetic, it is what makes there be records.
     for line in records(proc.stdout.replace("\t", "\n")):
         match = pattern.match(line)
         if match and STRICT_SEMVER.match(match.group(1)):
@@ -555,9 +546,7 @@ def _indent_stderr(text: str) -> None:
         print("    %s" % line, file=sys.stderr)
 
 
-# ---------------------------------------------------------------------------
-# Pre-contract floor (where the sentinel contract starts)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pre-contract floor (where the sentinel contract starts) ---------------------------------------------------------------------------
 
 
 def pre_contract_floor(
@@ -662,9 +651,7 @@ def assert_bijection(
     out: list[str] = []
     floor = pre_contract_floor(cli_versions, root=root, env=env)
     if not floor:
-        # Neither sentinels nor an override: the contract is not in effect for
-        # this state at all (a fresh dev bucket). See DEFECT 2 for the other way
-        # to reach this line, which is the one that matters.
+        # Neither sentinels nor an override: the contract is not in effect for this state at all (a fresh dev bucket). See DEFECT 2 for the other way to reach this line, which is the one that matters.
         out.append(
             "OK: release-state bijection holds -- no cli sentinels yet (contract not in effect)"
         )
@@ -751,8 +738,7 @@ def assert_channel_pointer_tagged(
     out: list[str] = []
     drift = 0
 
-    # An unreadable pointer is NOT a clean channel. Both files are written
-    # seconds apart by the same uploader, so a missing one means the read failed
+    # An unreadable pointer is NOT a clean channel. Both files are written seconds apart by the same uploader, so a missing one means the read failed
     # or the write tore; either way the question was not answered.
     if not latest_ver or not manifest_ver:
         out.append(
@@ -770,9 +756,7 @@ def assert_channel_pointer_tagged(
         )
         drift = 1
 
-    # The in-flight version legitimately has no tag yet: the pointer for release
-    # X is written before X's tag is pushed. Excluding it is what makes this
-    # relation safe to run on the release path at all.
+    # The in-flight version legitimately has no tag yet: the pointer for release X is written before X's tag is pushed. Excluding it is what makes this relation safe to run on the release path at all.
     if in_flight and latest_ver == in_flight:
         if drift == 0:
             out.append(
@@ -795,9 +779,7 @@ def assert_channel_pointer_tagged(
     return out, drift
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CLI ---------------------------------------------------------------------------
 
 
 def _read_list(spec: str | None) -> list[str]:
@@ -841,8 +823,7 @@ def main(argv: list[str]) -> int:
 
     if verb == "pointer":
         positional = [a for a in rest if not a.startswith("--")]
-        # The three positionals are consumed BEFORE the flag values, so a
-        # `--tags` argument cannot be mistaken for the channel.
+        # The three positionals are consumed BEFORE the flag values, so a `--tags` argument cannot be mistaken for the channel.
         for flag in ("--tags", "--in-flight"):
             value = _opt(rest, flag)
             if value in positional:

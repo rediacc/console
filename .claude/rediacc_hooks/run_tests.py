@@ -57,14 +57,13 @@ def resolve_pytest(root):
     out = proc.stdout.decode("utf-8", "surrogateescape")
     err = proc.stderr.decode("utf-8", "surrogateescape")
     if proc.returncode != 0:
-        # The bootstrap's own message is the useful one -- it names the pin, the
-        # URL and the checksum. Reprinting it beats paraphrasing it.
+        # The bootstrap's own message is the useful one -- it names the pin, the URL and the checksum. Reprinting it beats paraphrasing it.
         sys.stderr.write(out)
         sys.stderr.write(err)
         print("run_tests: %s could not provide pytest" % bootstrap, file=sys.stderr)
         raise SystemExit(2)
     for line in out.splitlines():
-        # `ok   pytest 9.1.1 already at <path>` / `... installed at <path>`.
+        # `ok pytest 9.1.1 already at <path>` / `... installed at <path>`.
         if " pytest " in line and " at " in line:
             return line.rsplit(" at ", 1)[1].strip()
     sys.stderr.write(out)
@@ -77,21 +76,14 @@ def main(argv):
     pytest_bin = resolve_pytest(root)
     tests = str((root / ".claude" / "rediacc_hooks" / "tests").relative_to(root))
     args = list(argv)
-    # THE TESTS DIRECTORY IS APPENDED UNLESS THE CALLER NAMED A PATH, and the
-    # first cut of this only did it when there were NO arguments at all. So
-    # `run_tests.py -k proc` fell through to pytest with no path, pytest fell
-    # back to `testpaths` in pyproject.toml -- which is `.ci/rediacc_ci/tests`,
-    # a DIFFERENT package -- and reported "37 passed" from a suite this runner
-    # has nothing to do with. A runner that silently runs someone else's tests
-    # is worse than one that fails.
+    # THE TESTS DIRECTORY IS APPENDED UNLESS THE CALLER NAMED A PATH, and the first cut of this only did it when there were NO arguments at all. So `run_tests.py -k proc` fell through to pytest with no path, pytest fell back to `testpaths` in pyproject.toml -- which is `.ci/rediacc_ci/tests`, a DIFFERENT package -- and reported "37 passed" from a suite this runner has nothing to do
+    # with. A runner that silently runs someone else's tests is worse than one that fails.
     named = [a for a in args if not a.startswith("-") and ((root / a).exists() or "::" in a)]
     if not named:
         args.append(tests)
-    # CWD IS THE REPO ROOT, always. pytest discovers `pyproject.toml` by walking
-    # up from its arguments, and that file carries `pythonpath`, `cache_dir`
+    # CWD IS THE REPO ROOT, always. pytest discovers `pyproject.toml` by walking up from its arguments, and that file carries `pythonpath`, `cache_dir`
     # (pointing into the gitignored `.ci/cache`) and `filterwarnings = error`.
-    # Run from elsewhere and it finds a different rootdir, silently, with none
-    # of those applied.
+    # Run from elsewhere and it finds a different rootdir, silently, with none of those applied.
     print("run_tests: %s %s (cwd %s)" % (pytest_bin, " ".join(args), root))
     return subprocess.run([pytest_bin, *args], check=False, cwd=str(root)).returncode
 

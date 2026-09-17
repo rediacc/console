@@ -76,8 +76,7 @@ def test_wanted_matches_the_shell_sort() -> None:
     assert tm.wanted() == [line for line in out.split("\n") if line != ""]
 
 
-# NAMED AWAY FROM "PASS" ON PURPOSE. `S105` flags any constant whose name
-# contains PASS as a hardcoded credential, and it is right to be crude about
+# NAMED AWAY FROM "PASS" ON PURPOSE. `S105` flags any constant whose name contains PASS as a hardcoded credential, and it is right to be crude about
 # that; the rule is not disabled for one shell snippet. This greps a go-test
 # transcript for the tests that did not report success, so it is named for that.
 _TESTS_WITHOUT_SUCCESS_LOOP = (
@@ -141,8 +140,7 @@ def test_the_run_regex_selects_exactly_the_expected_set_under_go() -> None:
     if shutil.which("go") is None:
         pytest.skip("no Go toolchain on this host; the ledger covers this end to end")
 
-    # A throwaway module so the check does not depend on the submodule being
-    # present, and so it cannot be satisfied by whatever renet currently holds.
+    # A throwaway module so the check does not depend on the submodule being present, and so it cannot be satisfied by whatever renet currently holds.
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
         (root / "go.mod").write_text("module probe\n\ngo 1.21\n", encoding="utf-8")

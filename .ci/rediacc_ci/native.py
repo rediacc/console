@@ -56,13 +56,10 @@ if TYPE_CHECKING:  # `os` appears only in PathLike annotations, never at runtime
 from rediacc_ci import log
 from rediacc_ci.core import platform as plat
 
-# The install root the CLI's own updater uses. Not derived and not configurable:
-# `packages/cli/src/utils/platform.ts` hard-codes the same path, and a second
-# spelling here would install somewhere the CLI does not look.
+# The install root the CLI's own updater uses. Not derived and not configurable: `packages/cli/src/utils/platform.ts` hard-codes the same path, and a second spelling here would install somewhere the CLI does not look.
 INSTALL_SUBDIR = (".local", "share", "rediacc", "bin")
 
-# `dist/cli/rdc-<platform>-<arch><exe>`, which is where
-# `.ci/scripts/build/build-cli-executables.sh` writes and nowhere else.
+# `dist/cli/rdc-<platform>-<arch><exe>`, which is where `.ci/scripts/build/build-cli-executables.sh` writes and nowhere else.
 BUILD_SUBDIR = ("dist", "cli")
 
 USAGE = """usage: python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
@@ -115,10 +112,7 @@ def plan(
     has one exception type to print and the message keeps the wording the bash
     refusal had ("Unsupported platform X for --native").
     """
-    # The raw uname strings, resolved HERE and passed down explicitly. `os_for` and
-    # `arch_for` would default to the host themselves, but then the refusal below
-    # could not name what it refused, and the bash it replaces printed the raw value:
-    # "Unsupported platform MINGW32_NT-6.1 for --native" is actionable, "None" is not.
+    # The raw uname strings, resolved HERE and passed down explicitly. `os_for` and `arch_for` would default to the host themselves, but then the refusal below could not name what it refused, and the bash it replaces printed the raw value: "Unsupported platform MINGW32_NT-6.1 for --native" is actionable, "None" is not.
     real_system = system if system is not None else _host.system()
     real_machine = machine if machine is not None else _host.machine()
     try:
@@ -136,8 +130,7 @@ def plan(
     built = root_path.joinpath(*BUILD_SUBDIR, "rdc-%s-%s%s" % (sea_platform, sea_arch, exe))
     dest = home_path.joinpath(*INSTALL_SUBDIR, "rdc%s" % exe)
     # `${dest%$exe}.old$exe` in bash: rdc.old on Linux and macOS, rdc.old.exe on
-    # Windows. cleanupOldBinary() in packages/cli/src/utils/platform.ts looks for
-    # exactly this and silently leaves anything else behind.
+    # Windows. cleanupOldBinary() in packages/cli/src/utils/platform.ts looks for exactly this and silently leaves anything else behind.
     stem = str(dest)[: len(str(dest)) - len(exe)] if exe else str(dest)
     return Plan(
         sea_platform=sea_platform,
@@ -162,9 +155,7 @@ def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
         raise NativeError("%s exited %d" % (argv[0], completed.returncode))
 
 
-# The bash the three shared helpers are reached through, as ONE program. Written out
-# here rather than inline so the call below reads as a call, and so the exact sequence a
-# reviewer has to compare against `rdc.sh`'s old lines 143-145 is on consecutive lines.
+# The bash the three shared helpers are reached through, as ONE program. Written out here rather than inline so the call below reads as a call, and so the exact sequence a reviewer has to compare against `rdc.sh`'s old lines 143-145 is on consecutive lines.
 _PREPARE_PROGRAM = """
 set -euo pipefail
 source "$1/.ci/config/constants.sh"
@@ -199,11 +190,7 @@ def prepare_toolchain(root: pathlib.Path) -> None:
 
 def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     """Steps 1-3 of the sequence `rdc.sh`'s header documented, in that order."""
-    # 1. Cross-build renet for BOTH linux arches into the slots
-    #    build-cli-executables.sh embeds (private/bin/renet-linux-<arch>). The SEA
-    #    embeds linux renet binaries for remote provisioning and a remote machine may
-    #    be amd64 or arm64, so both must be present. Delegated to build.sh's
-    #    stage_linux so the per-arch cross-compile lives in exactly one place.
+    # 1. Cross-build renet for BOTH linux arches into the slots build-cli-executables.sh embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
     log.step("Cross-building renet (both linux arches) -> private/bin")
     _stream(
         ["./build.sh", "stage_linux", str(root / "private" / "bin")], cwd=root / "private" / "renet"
@@ -224,9 +211,7 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     if not pathlib.Path(built_plan.built).is_file():
         raise NativeError("Built SEA not found at %s" % built_plan.built)
 
-    # 3. Back up the existing user binary and replace it. The install directory is
-    #    NOT created: its absence means rdc was never installed, and silently
-    #    creating it would put a binary somewhere nothing on PATH points at.
+    # 3. Back up the existing user binary and replace it. The install directory is NOT created: its absence means rdc was never installed, and silently creating it would put a binary somewhere nothing on PATH points at.
     dest = pathlib.Path(built_plan.dest)
     if not dest.parent.is_dir():
         raise NativeError("Install dir %s does not exist; is rdc installed?" % dest.parent)

@@ -74,8 +74,7 @@ GEN = ROOT / "scripts" / "gen-docs.ts"
 TARGET = ROOT / "scripts" / "data" / "doc-registry.md"
 SNAPSHOT = ROOT / "scripts" / "data" / "doc-registry-preport.json"
 
-# The named controls `--selftest` must still be running. NAMED, not counted: a
-# count survives someone deleting one control and adding another.
+# The named controls `--selftest` must still be running. NAMED, not counted: a count survives someone deleting one control and adding another.
 SELFTEST_CONTROLS = (
     "planted: an unterminated region is refused",
     "planted: a nested region is refused",

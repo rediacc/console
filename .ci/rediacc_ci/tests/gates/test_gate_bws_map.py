@@ -61,8 +61,7 @@ SECRET_MAP = {
     "secrets": {
         "ALPHA_TOKEN": {"id": "aaaaaaaa-0000-4000-8000-000000000001"},
         "ORPHAN_TOKEN": {"id": "aaaaaaaa-0000-4000-8000-000000000002"},
-        # PREFIX_EU must be mapped or exempt: the deploy script below builds it
-        # by SUFFIX expansion from regions.json.
+        # PREFIX_EU must be mapped or exempt: the deploy script below builds it by SUFFIX expansion from regions.json.
         "PREFIX_EU": {"id": "aaaaaaaa-0000-4000-8000-000000000003"},
     },
 }

@@ -161,9 +161,7 @@ describe('repo push / pull declare the SOURCE datastore (#74)', () => {
     expect(callFor('backup_push')?.datastore).toBeUndefined();
   });
 
-  // The control for the three above: the post-push deploy runs on the TARGET, and
-  // it must NOT inherit the source's mount even though the same options object is
-  // in scope carrying it.
+  // The control for the three above: the post-push deploy runs on the TARGET, and it must NOT inherit the source's mount even though the same options object is in scope carrying it.
   it('post-push deploy on the target declares nothing, even with a named source', async () => {
     placeOnNamedDatastore();
 
@@ -174,9 +172,7 @@ describe('repo push / pull declare the SOURCE datastore (#74)', () => {
   });
 });
 
-// `repo list --datastore <name>` resolved the datastore's HOLDER machine and then
-// listed that machine's DEFAULT pool — dispatching at the right host and answering
-// about the one place the operator did not ask about.
+// `repo list --datastore <name>` resolved the datastore's HOLDER machine and then listed that machine's DEFAULT pool — dispatching at the right host and answering about the one place the operator did not ask about.
 describe('repo list --datastore lists that datastore (#74)', () => {
   it('names the datastore mount it was asked about', async () => {
     await handleRepoList({ datastore: 'tier1' });

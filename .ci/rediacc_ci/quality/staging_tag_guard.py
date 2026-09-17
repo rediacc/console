@@ -129,46 +129,30 @@ DEFAULT_TARGET_REL = ".ci/scripts/docker/cleanup-staging.sh"
 SCAN_DIRS = (".ci", ".github")
 SCAN_SUFFIXES = (".sh", ".yml")
 
-# `.py` callers are scoped to `.ci/scripts` ONLY, not all of SCAN_DIRS, and this
-# is NOT what agent/PLAN-w7p4w-docker-cutover.md §3 literally says ("widen the
+# `.py` callers are scoped to `.ci/scripts` ONLY, not all of SCAN_DIRS, and this is NOT what agent/PLAN-w7p4w-docker-cutover.md §3 literally says ("widen the
 # `grep --include` list to add `--include='*.py'`"). Doing that literally --
-# scanning ALL of `.ci` for `.py` -- was tried first and turned 1 real call site
-# into 18: `.ci/rediacc_ci` is this package's OWN implementation, tests and
-# regex constants, and it is FULL of self-referential mentions of this exact
-# needle (this module's own NEEDLE_RE/CALL_RE source, the synthetic caller
-# fixtures in test_quality_staging_tag_guard.py, the `cleanup-staging.sh`
-# mention in `cleanup_staging.py`'s own docstring, the cleanup_channel_docker_tags.py
-# port's prose). That is the SAME "extension-shaped matcher" class of bug this
-# gate's own header warns about, just for `.py` instead of `.sh`. `.ci/scripts`
-# is the directory that actually holds executable entry points and release
-# forwarders (mirroring what `.sh` already is for the twin), so `.py` scanning
+# scanning ALL of `.ci` for `.py` -- was tried first and turned 1 real call site into 18: `.ci/rediacc_ci` is this package's OWN implementation, tests and regex constants, and it is FULL of self-referential mentions of this exact needle (this module's own NEEDLE_RE/CALL_RE source, the synthetic caller fixtures in test_quality_staging_tag_guard.py, the `cleanup-staging.sh` mention
+# in `cleanup_staging.py`'s own docstring, the cleanup_channel_docker_tags.py port's prose). That is the SAME "extension-shaped matcher" class of bug this gate's own header warns about, just for `.py` instead of `.sh`. `.ci/scripts` is the directory that actually holds executable entry points and release forwarders (mirroring what `.sh` already is for the twin), so `.py` scanning
 # is scoped there and nowhere else in `.ci`.
 PY_SCAN_DIR = ".ci/scripts"
 PY_SUFFIX = ".py"
 
-# The safety rail itself, as it appears in the subject: an escaped caret in ERE,
-# so a LITERAL "^staging-" anywhere in the line.
+# The safety rail itself, as it appears in the subject: an escaped caret in ERE, so a LITERAL "^staging-" anywhere in the line.
 RAIL_RE = re.compile(r"\^staging-")
 
-# `grep -vE ':[0-9]+:[[:space:]]*#'` -- a grep hit whose matched line is a
-# comment. Unanchored, exactly as the twin's is.
+# `grep -vE ':[0-9]+:[[:space:]]*#'` -- a grep hit whose matched line is a comment. Unanchored, exactly as the twin's is.
 COMMENT_HIT_RE = re.compile(r":[0-9]+:[ \t\n\r\f\v]*#")
 
-# `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an
-# EXECUTING call, not a mention in prose. Widened to match either the bash
-# twin's name or the Python port's, per agent/PLAN-w7p4w-docker-cutover.md §3.
+# `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an EXECUTING call, not a mention in prose. Widened to match either the bash twin's name or the Python port's, per agent/PLAN-w7p4w-docker-cutover.md §3.
 CALL_RE = re.compile(r"cleanup[-_]staging\.(sh|py)[\"']?[ \t\n\r\f\v]+(--tag|\"\$)")
 
-# `grep -qE '\^staging-|--tag[[:space:]]+["\']?staging-'` -- a caller proves it
-# cannot pass a tag the guard rejects, either by testing the prefix itself or by
-# passing a literal.
+# `grep -qE '\^staging-|--tag[[:space:]]+["\']?staging-'` -- a caller proves it cannot pass a tag the guard rejects, either by testing the prefix itself or by passing a literal.
 GUARDED_RE = re.compile(r"\^staging-|--tag[ \t\n\r\f\v]+[\"']?staging-")
 
 # The needle the recursive scan looks for, `grep -rn 'cleanup[-_]staging\.(sh|py)'`.
 NEEDLE_RE = re.compile(r"cleanup[-_]staging\.(sh|py)")
 
-# `gate_finish 3` in the twin: the rail, the call-site floor, and at least one
-# caller. A battery that did not run is not a green one.
+# `gate_finish 3` in the twin: the rail, the call-site floor, and at least one caller. A battery that did not run is not a green one.
 MIN_CONTROLS = 3
 
 
@@ -252,8 +236,7 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
             if path.suffix in SCAN_SUFFIXES:
                 pass
             elif path.suffix == PY_SUFFIX:
-                # Scoped to PY_SCAN_DIR regardless of which SCAN_DIRS entry this
-                # walk is under -- see PY_SCAN_DIR's own comment for why.
+                # Scoped to PY_SCAN_DIR regardless of which SCAN_DIRS entry this walk is under -- see PY_SCAN_DIR's own comment for why.
                 try:
                     path.relative_to(py_scan_base)
                 except ValueError:
@@ -308,8 +291,7 @@ def main(argv: list[str] | None = None) -> int:
 
     tally = _GateTally()
 
-    # The safety rail itself. If this goes, every assertion below is meaningless.
-    # `grep -c` counts LINES, and the twin wants exactly one.
+    # The safety rail itself. If this goes, every assertion below is meaningless. `grep -c` counts LINES, and the twin wants exactly one.
     rail_lines = sum(
         1
         for line in target.read_text(encoding="utf-8", errors="replace").split("\n")
@@ -320,17 +302,13 @@ def main(argv: list[str] | None = None) -> int:
     hits, files_read = grep_hits(root)
     call_files, n_calls = executing_calls(hits, target)
 
-    # PRINT THE SHAPE, NOT JUST THE VERDICT, and print it as CHATTER. The twin
-    # says nothing about how much tree it read, so "no call site found" cannot be
-    # told apart from "the scan read nothing". This line is the difference, and
-    # the `→` prefix is what keeps it out of the compared finding set.
+    # PRINT THE SHAPE, NOT JUST THE VERDICT, and print it as CHATTER. The twin says nothing about how much tree it read, so "no call site found" cannot be told apart from "the scan read nothing". This line is the difference, and the `→` prefix is what keeps it out of the compared finding set.
     print(
         "→ staging tag guard: scanned %d file(s) under %s" % (files_read, " and ".join(SCAN_DIRS)),
         file=sys.stderr,
     )
 
-    # ANTI-VACUITY. A rename or a moved tree would find zero call sites and this
-    # gate would pass having checked nothing at all.
+    # ANTI-VACUITY. A rename or a moved tree would find zero call sites and this gate would pass having checked nothing at all.
     tally.check("at least one executing call site was found", "1" if n_calls >= 1 else "0", "1")
     if n_calls < 1:
         print(
@@ -343,24 +321,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # Each caller must prove it cannot pass a tag the guard rejects: either it
-    # passes a literal `staging-` value, or it tests for the prefix itself before
-    # calling.
+    # Each caller must prove it cannot pass a tag the guard rejects: either it passes a literal `staging-` value, or it tests for the prefix itself before calling.
     for path in call_files:
         rel = path[len(str(root)) + 1 :] if path.startswith(str(root) + "/") else path
         # A CALL FILE THAT CANNOT BE READ IS UNGUARDED, NOT A CRASH. `${hit%%:*}`
-        # strips at the FIRST colon, so a scanned path containing one -- say
-        # `.ci/scripts/release/a:b.sh` -- yields the truncated `.../release/a`,
-        # which exists in neither implementation's tree. The twin hands that to
-        # `grep -qE ... "$f"`, grep prints `No such file or directory` and exits
-        # non-zero, `guarded` stays 0, and the gate still reaches a VERDICT. This
-        # port called `read_text` on it and died with an uncaught FileNotFoundError:
-        # same exit status by accident, no verdict, and a traceback that reads as
-        # environmental flake rather than as the control failure it replaced.
+        # strips at the FIRST colon, so a scanned path containing one -- say `.ci/scripts/release/a:b.sh` -- yields the truncated `.../release/a`, which exists in neither implementation's tree. The twin hands that to `grep -qE ... "$f"`, grep prints `No such file or directory` and exits non-zero, `guarded` stays 0, and the gate still reaches a VERDICT. This port called `read_text`
+        # on it and died with an uncaught FileNotFoundError: same exit status by accident, no verdict, and a traceback that reads as environmental flake rather than as the control failure it replaced.
         # Measured 2026-09-06 on a fixture whose only caller was `a:b.sh`; the
-        # twin reported `.ci/scripts/release/a guards its call ... (got '0' want
-        # '1')` and this port reported a stack trace. `grep -q`'s failure is the
-        # contract, so an unreadable file reads as empty and fails its control.
+        # twin reported `.ci/scripts/release/a guards its call ... (got '0' want '1')` and this port reported a stack trace. `grep -q`'s failure is the contract, so an unreadable file reads as empty and fails its control.
         try:
             body = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -368,17 +336,10 @@ def main(argv: list[str] | None = None) -> int:
         guarded = "1" if GUARDED_RE.search(body) else "0"
         tally.check("%s guards its call against a non-staging tag" % rel, guarded, "1")
 
-    # THE SUBJECT LINE IS THE TWIN'S, WORD FOR WORD, AND THAT COST ONE MISMATCH.
-    # `gate_finish` interpolates it into BOTH verdicts, and the failing one --
-    # "✗ <subject>: N of M control(s) failed" -- carries the ✗ marker, so it is a
-    # FINDING and not chatter. This port first read "(%d call site(s) across %d
-    # file(s) scanned)" here, on the assumption that a verdict line is banner
-    # text a port may reword. The shadow differential refused all three trees
+    # THE SUBJECT LINE IS THE TWIN'S, WORD FOR WORD, AND THAT COST ONE MISMATCH. `gate_finish` interpolates it into BOTH verdicts, and the failing one -- "✗ <subject>: N of M control(s) failed" -- carries the ✗ marker, so it is a FINDING and not chatter. This port first read "(%d call site(s) across %d file(s) scanned)" here, on the assumption that a verdict line is banner text a
+    # port may reword. The shadow differential refused all three trees
     # with MISMATCH_FINDINGS on 2026-09-06 and named the line; the rows are in
-    # `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay
-    # disqualified. The scanned-file count, which is genuinely worth printing,
-    # now goes out above as its own `→` line, where `shadow-gate.ts` classifies
-    # it as chatter and a port is allowed to say more than its twin.
+    # `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay disqualified. The scanned-file count, which is genuinely worth printing, now goes out above as its own `→` line, where `shadow-gate.ts` classifies it as chatter and a port is allowed to say more than its twin.
     subject = "staging tag guard (%d call site(s))" % n_calls
     if not tally.finish(MIN_CONTROLS, subject):
         print(
@@ -402,9 +363,7 @@ RAIL_LINE = '[[ "$TAG" =~ ^staging- ]] || exit 1\n'
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice."""
     # floor=16 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot
-    # fail. See rediacc_ci.controls for the five drifted copies that taught it.
-    # It tracks the case count below (16), so deleting a case reds the gate.
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it. It tracks the case count below (16), so deleting a case reds the gate.
     ctl = Controls("staging-tag-guard", floor=16, verbose=True)
     saved_env = dict(os.environ)
 
@@ -454,8 +413,7 @@ def selftest() -> int:
         0,
     )
 
-    # THE PLANT. The 2026-09-06 defect itself: a call with CHANNEL and no
-    # pre-check, which the rail rejects every time.
+    # THE PLANT. The 2026-09-06 defect itself: a call with CHANNEL and no pre-check, which the rail rejects every time.
     ctl.check(
         "PLANT: an unguarded call is the 2026-09-06 defect",
         run({".ci/scripts/release/cleanup-channel-docker-tags.sh": unguarded_caller}),
@@ -477,8 +435,7 @@ def selftest() -> int:
         1,
     )
 
-    # The rail itself, both directions. Widening the guard is the tempting "fix"
-    # this gate exists to refuse.
+    # The rail itself, both directions. Widening the guard is the tempting "fix" this gate exists to refuse.
     ctl.check(
         "PLANT: the rail removed from cleanup-staging.sh fails",
         run({".ci/scripts/release/ok.sh": guarded_caller}, rail=""),
@@ -512,10 +469,7 @@ def selftest() -> int:
         run({".ci/scripts/release/ok.sh": guarded_caller}, target="nowhere/cleanup-staging.sh"),
         1,
     )
-    # A VERDICT, NOT A TRACEBACK. Both sides truncate this caller's path at its
-    # first colon and then look for a file that is not there. Before 2026-09-06
-    # this raised FileNotFoundError out of main(), which exits 1 for the wrong
-    # reason and prints a stack trace where the twin prints a failing control.
+    # A VERDICT, NOT A TRACEBACK. Both sides truncate this caller's path at its first colon and then look for a file that is not there. Before 2026-09-06 this raised FileNotFoundError out of main(), which exits 1 for the wrong reason and prints a stack trace where the twin prints a failing control.
     ctl.check(
         "PLANT: a colon in a caller's path fails its control, never a traceback",
         run({".ci/scripts/release/a:b.sh": unguarded_caller}),

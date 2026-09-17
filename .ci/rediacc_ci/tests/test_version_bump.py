@@ -58,8 +58,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 CLI_MANIFEST = "packages/cli/package.json"
 
-# Everything either subject needs on PATH. `jq` is REAL on both sides: the port
-# asks the same jq the twin asks, so its formatting cannot drift between them.
+# Everything either subject needs on PATH. `jq` is REAL on both sides: the port asks the same jq the twin asks, so its formatting cannot drift between them.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq", "mktemp", "mv", "rm", "cat")
 
 
@@ -221,9 +220,7 @@ def assert_agree(old, new, label: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before any file is touched
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before any file is touched ---------------------------------------------------------------------------
 
 
 def test_no_arguments_refuses_with_the_error_on_stderr_and_usage_on_stdout(
@@ -304,9 +301,7 @@ def test_missing_jq_is_refused_after_the_argument_validation(
     assert_agree(old, new, "missing-jq")
 
 
-# ---------------------------------------------------------------------------
-# The explicit-version path, which is the only one that works today
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The explicit-version path, which is the only one that works today ---------------------------------------------------------------------------
 
 
 def test_an_explicit_version_is_written_and_echoed(tmp_path: pathlib.Path) -> None:
@@ -410,9 +405,7 @@ def test_output_writes_the_version_to_a_file(tmp_path: pathlib.Path) -> None:
     assert_agree(old, new, "output-file")
 
 
-# ---------------------------------------------------------------------------
-# The increment paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The increment paths ---------------------------------------------------------------------------
 
 
 def test_patch_minor_and_major_increments(tmp_path: pathlib.Path) -> None:
@@ -511,9 +504,7 @@ def test_a_two_part_current_version_produces_an_invalid_version(
     assert_agree(old, new, "two-part-version")
 
 
-# ---------------------------------------------------------------------------
-# Missing files
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Missing files ---------------------------------------------------------------------------
 
 
 def test_a_missing_target_manifest_warns_then_fails_at_the_end(
@@ -543,9 +534,7 @@ def test_a_missing_root_manifest_dies_with_jqs_own_status(
     assert_agree(old, new, "missing-root-manifest")
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, driven against real bash
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, driven against real bash ---------------------------------------------------------------------------
 
 
 def _bash_dot_fields(text: str) -> list[str]:

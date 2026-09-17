@@ -20,8 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { glob } from 'glob';
 // Curated contract examples (also parsed and gated by the contract generator;
-// validated here too so this script stays the one place that proves every
-// `rdc …` line in the repo against the command tree)
+// validated here too so this script stays the one place that proves every `rdc …` line in the repo against the command tree)
 import { COMMAND_EXAMPLES } from '../../packages/cli/src/config/command-docs.ts';
 // Reuse the existing validation library from www package
 import {
@@ -38,23 +37,15 @@ import { scanText as scanPositional } from '../lib/positional-cli-detector.ts';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
 
-// ---------------------------------------------------------------------------
-// File targets (paths relative to repo root)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- File targets (paths relative to repo root) ---------------------------------------------------------------------------
 const TARGET_GLOBS = [
   // Root project docs
   'CLAUDE.md',
   'docs/**/*.{md,mdx}',
-  // The tracked agent notes tree follows docs/ here, and this is NOT optional
-  // coverage. Plans are written in `rdc` commands, and this gate has already
-  // earned its keep on one: PLAN-localize-cheat-sheet-rendering.md cited two
-  // invocations that the parser REJECTS, and this scan is what caught them.
-  // Moving plans out of docs/ without moving the glob would silence the gate on
-  // exactly the file class where it has a proven catch -- a gate that keeps
-  // passing because it stopped looking.
+  // The tracked agent notes tree follows docs/ here, and this is NOT optional coverage. Plans are written in `rdc` commands, and this gate has already earned its keep on one: PLAN-localize-cheat-sheet-rendering.md cited two invocations that the parser REJECTS, and this scan is what caught them. Moving plans out of docs/ without moving the glob would silence the gate on exactly the
+  // file class where it has a proven catch -- a gate that keeps passing because it stopped looking.
   //
-  // Yes, this surfaces findings from session notes. That is the point: a plan
-  // teaching a command that does not run is how the next session learns it.
+  // Yes, this surfaces findings from session notes. That is the point: a plan teaching a command that does not run is how the next session learns it.
   'agent/**/*.{md,mdx}',
   '.claude/skills/rdc/*.md',
 
@@ -63,31 +54,18 @@ const TARGET_GLOBS = [
   'packages/cli/src/commands/**/*.ts',
   'packages/cli/templates/**/docker-compose.yml',
 
-  // i18n locales — ALL languages (positional-syntax drift surfaces in
-  // translated `rdc …` fragments even when the surrounding prose is
-  // correctly translated).
+  // i18n locales — ALL languages (positional-syntax drift surfaces in translated `rdc …` fragments even when the surrounding prose is correctly translated).
   // All 13 locales. et/ko/pt/it were absent and therefore never validated;
-  // measured clean at the time they were added, so this closes a latent hole
-  // rather than importing a backlog.
+  // measured clean at the time they were added, so this closes a latent hole rather than importing a backlog.
   'packages/cli/src/i18n/locales/{ar,de,en,es,et,fr,it,ja,ko,pt,ru,tr,zh}/cli.json',
   'private/account/web/src/i18n/locales/en/**/*.json',
 
-  // Surfaces that carried real stale commands with NO gate at all. `.cast`
-  // recordings are deliberately absent: validate-tutorial-cast-output.js
-  // already gates those, and double-gating one surface with two engines means
-  // two suppression records to keep honest.
+  // Surfaces that carried real stale commands with NO gate at all. `.cast` recordings are deliberately absent: validate-tutorial-cast-output.js already gates those, and double-gating one surface with two engines means two suppression records to keep honest.
   'packages/www/src/content/blog/**/*.{md,mdx}',
   'private/account/web/src/data/study-content/**/*.ts',
-  // NOT tutorial-storyboard/**: each step carries BOTH `command` (an
-  // abbreviated display label, e.g. "rdc machine add") and `commandFull` (the
-  // runnable form with its arguments). This extractor reads raw strings and
-  // cannot tell the two apart, so it reports the label as missing positional
+  // NOT tutorial-storyboard/**: each step carries BOTH `command` (an abbreviated display label, e.g. "rdc machine add") and `commandFull` (the runnable form with its arguments). This extractor reads raw strings and cannot tell the two apart, so it reports the label as missing positional
   // args. The storyboards' real stale commands WERE fixed in this campaign;
-  // gating them needs a field-aware extractor that reads only `commandFull`.
-  // NOT exam-question-bank.json: its answers discuss commands in prose
-  // ("rdc repo delete cryptographically erases the LUKS volume, and ..."),
-  // which this extractor reads as a command with 14 positional args. Precision
-  // over recall -- a gate that cries wolf gets suppressed, which is the exact
+  // gating them needs a field-aware extractor that reads only `commandFull`. NOT exam-question-bank.json: its answers discuss commands in prose ("rdc repo delete cryptographically erases the LUKS volume, and ..."), which this extractor reads as a command with 14 positional args. Precision over recall -- a gate that cries wolf gets suppressed, which is the exact
   // failure this campaign removed. Its one real defect is fixed by hand; gating
   // it needs an extractor that distinguishes a command from a sentence.
 
@@ -99,8 +77,7 @@ const TARGET_GLOBS = [
   'private/renet/cmd/renet/dev.go',
   'private/renet/cmd/renet/dev_init.go',
 
-  // www: AGENTS.md, marp presentations, Astro components, templates
-  // (www docs markdown is covered by validate-docs-cli-usage.js in the www package)
+  // www: AGENTS.md, marp presentations, Astro components, templates (www docs markdown is covered by validate-docs-cli-usage.js in the www package)
   'packages/www/public/AGENTS.md',
   'packages/www/src/marp/**/*.{md,mdx}',
   'packages/www/src/components/**/*.astro',
@@ -124,31 +101,17 @@ const COMMAND_PATH_GLOBS = [
   '*.sh',
   'scripts/**/*.sh',
   '.ci/scripts/**/*.sh',
-  // THE PORTED GATES, added 2026-09-08. `.ci/scripts/**/*.sh` was the whole of this
-  // scan's `.ci` coverage, and W7 P4 has moved 120 quality gates to `check_*.py` -- 45 of
-  // them with no `.sh` twin left. A tool that names its subject by a `.sh` extension stops
-  // seeing that subject the moment it is ported, and stops SILENTLY: a matcher that
-  // matches nothing reports nothing and still exits 0. `*.sh` at the root stays as it is:
-  // that one is `run.sh` and `rdc.sh` by intent, not a family.
+  // THE PORTED GATES, added 2026-09-08. `.ci/scripts/**/*.sh` was the whole of this scan's `.ci` coverage, and W7 P4 has moved 120 quality gates to `check_*.py` -- 45 of them with no `.sh` twin left. A tool that names its subject by a `.sh` extension stops seeing that subject the moment it is ported, and stops SILENTLY: a matcher that matches nothing reports nothing and still
+  // exits 0. `*.sh` at the root stays as it is: that one is `run.sh` and `rdc.sh` by intent, not a family.
   //
-  // NO EXTRACTOR CHANGE IS NEEDED and that is deliberate rather than an omission. The
-  // router at the scan site picks `scanShellText` for `.sh` and `scanSourceText`
+  // NO EXTRACTOR CHANGE IS NEEDED and that is deliberate rather than an omission. The router at the scan site picks `scanShellText` for `.sh` and `scanSourceText`
   // otherwise; a Python gate embeds a command in a string literal exactly as the
-  // TypeScript sources do, so the source extractor is the right one, and it also brings
-  // `scanSourceOptions` -- the flag check `.sh` files deliberately skip. What the two
-  // source scanners DID need is in `command-path-checker.ts`: a `#` skip the option
-  // scanner was missing, a control-function skip, and a prose-position test.
+  // TypeScript sources do, so the source extractor is the right one, and it also brings `scanSourceOptions` -- the flag check `.sh` files deliberately skip. What the two source scanners DID need is in `command-path-checker.ts`: a `#` skip the option scanner was missing, a control-function skip, and a prose-position test.
   //
-  // THE COST WAS MEASURED DOWN TO ZERO, not argued away. Driven 2026-09-08 with these two
-  // globs in place: 17 errors, then 7 once `COMMAND_PATH_IGNORE` below learned Python's
-  // test naming, then 6 once `scanSourceText`'s comment skip learned `#`, then 5 once
-  // `scanSourceOptions` learned it too, then 1 once control-function bodies were skipped,
-  // then 0 once mid-sentence prose stopped being read as an invocation.
+  // THE COST WAS MEASURED DOWN TO ZERO, not argued away. Driven 2026-09-08 with these two globs in place: 17 errors, then 7 once `COMMAND_PATH_IGNORE` below learned Python's test naming, then 6 once `scanSourceText`'s comment skip learned `#`, then 5 once `scanSourceOptions` learned it too, then 1 once control-function bodies were skipped, then 0 once mid-sentence prose stopped
+  // being read as an invocation.
   //
-  // WHAT THE WIDENING BUYS TODAY, stated so nobody reads more into it: across the 214
-  // Python files that survive `COMMAND_PATH_IGNORE` the scan finds exactly FOUR `rdc`
-  // references and zero defects. The value is prospective and the hazard is the point --
-  // every gate that ports from here on lands inside a scan instead of outside one.
+  // WHAT THE WIDENING BUYS TODAY, stated so nobody reads more into it: across the 214 Python files that survive `COMMAND_PATH_IGNORE` the scan finds exactly FOUR `rdc` references and zero defects. The value is prospective and the hazard is the point -- every gate that ports from here on lands inside a scan instead of outside one.
   '.ci/scripts/**/*.py',
   '.ci/rediacc_ci/**/*.py',
 ];
@@ -207,9 +170,7 @@ const MARKDOWN_FENCE_WHITELIST_PATTERNS = [
   /CLAUDE\.md$/,
 ];
 
-// ---------------------------------------------------------------------------
-// Placeholder normalisation
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Placeholder normalisation ---------------------------------------------------------------------------
 
 /**
  * Replace <placeholder> and {{template}} tokens with concrete dummy values
@@ -227,16 +188,13 @@ function normalisePlaceholders(text: string): string {
   // Replace <placeholder> tokens with dummy values
   result = result.replace(/<([a-zA-Z][\w-]*)>/g, 'PLACEHOLDER');
 
-  // Remove [optional] tokens (e.g., [repo]) that aren't flags
-  // Keep [--flag] and [-f] patterns intact
+  // Remove [optional] tokens (e.g., [repo]) that aren't flags Keep [--flag] and [-f] patterns intact
   result = result.replace(/\[([a-zA-Z][\w-]*)\]/g, '');
 
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// Context-aware skipping
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Context-aware skipping ---------------------------------------------------------------------------
 
 /** Lines matching these patterns are intentionally showing wrong syntax. */
 const SKIP_CONTEXT_PATTERNS = [
@@ -257,9 +215,7 @@ function isSkippableContext(lines: string[], lineIndex: number): boolean {
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// Error tracking
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Error tracking ---------------------------------------------------------------------------
 
 interface Violation {
   file: string;
@@ -290,9 +246,7 @@ function formatParsedError(parsed: ReturnType<typeof parseRdcCommand>): string {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Extractors
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Extractors ---------------------------------------------------------------------------
 
 /**
  * Extract rdc commands from markdown shell code fences.
@@ -320,15 +274,12 @@ function extractFromMarkdown(content: string, filePath: string, violations: Viol
     }
 
     if (!inFence) {
-      // Even outside fences, we still want to catch positional-syntax
-      // violations in prose (e.g., `- \`rdc machine query <machine>\``,
-      // `Claude Code runs: rdc machine query prod-1`, table cells).
+      // Even outside fences, we still want to catch positional-syntax violations in prose (e.g., `- \`rdc machine query <machine>\``, `Claude Code runs: rdc machine query prod-1`, table cells).
       checkPositionalSyntax(lines[i], filePath, i + 1, violations, lines);
       continue;
     }
     if (!trimmed || trimmed.startsWith('#')) {
-      // Comments inside shell fences should still be checked for
-      // positional syntax (they frequently contain example commands).
+      // Comments inside shell fences should still be checked for positional syntax (they frequently contain example commands).
       checkPositionalSyntax(lines[i], filePath, i + 1, violations, lines);
       continue;
     }
@@ -373,9 +324,7 @@ function normaliseInvocation(command: string): string {
   const m = /^(?:\.\/)?rdc\.sh(?=\s|$)/.exec(command);
   if (!m) return command;
   let rest = command.slice(m[0].length);
-  // `./rdc.sh --native` / `--dev` are consumed BY THE WRAPPER and never reach the
-  // CLI, so passing them to the parser would invent a new false-positive class while
-  // fixing a blind spot. See rdc.sh:82.
+  // `./rdc.sh --native` / `--dev` are consumed BY THE WRAPPER and never reach the CLI, so passing them to the parser would invent a new false-positive class while fixing a blind spot. See rdc.sh:82.
   let stripped = true;
   while (stripped) {
     stripped = false;
@@ -423,7 +372,7 @@ function extractFromTypeScript(content: string, filePath: string, violations: Vi
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Match patterns like:  $ rdc ...  in help text strings and JSX display
+    // Match patterns like: $ rdc ... in help text strings and JSX display
     const rdcMatches = line.matchAll(/\$\s+(?:\.\/)?rdc(?:\.sh)?\s+[^\n`'"]+/g);
     for (const match of rdcMatches) {
       let command = match[0].replace(/^\$\s+/, '').trim();
@@ -494,8 +443,7 @@ function looksLikeCommand(text: string): boolean {
   // Second token must be a known subcommand
   if (!KNOWN_SUBCOMMANDS.has(parts[1])) return false;
 
-  // Skip if the command text contains non-ASCII characters (translated prose)
-  // Allow a few specific Unicode chars that might appear in placeholder names
+  // Skip if the command text contains non-ASCII characters (translated prose) Allow a few specific Unicode chars that might appear in placeholder names
   const cleaned = text.replace(/<[^>]+>/g, '').replace(/\{\{[^}]+\}\}/g, '');
   if (containsNonAscii(cleaned)) {
     return false;
@@ -723,9 +671,7 @@ async function scanForStaleCommandPaths(violations: Violation[]): Promise<void> 
       });
     }
 
-    // Options too: a real command named with a flag it does not accept is just
-    // as broken as a command that does not exist, and shipped exactly that
-    // (`rdc job logs --id <id>` -> "unknown option '--id'").
+    // Options too: a real command named with a flag it does not accept is just as broken as a command that does not exist, and shipped exactly that (`rdc job logs --id <id>` -> "unknown option '--id'").
     if (!relPath.endsWith('.sh')) {
       for (const hit of scanSourceOptions(content, { python })) {
         violations.push({
@@ -757,9 +703,7 @@ function dedupeViolations(violations: Violation[]): void {
   violations.length = writeIdx;
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Main ---------------------------------------------------------------------------
 
 const colors = {
   red: (s: string) => `\x1b[31m${s}\x1b[0m`,
@@ -791,9 +735,7 @@ async function main(): Promise<void> {
     const content = fs.readFileSync(absPath, 'utf-8');
     const ext = path.extname(relPath);
 
-    // Whole-file positional-syntax scan. Catches wrapped forms that the
-    // narrow per-filetype extractors miss (command substitution, inline
-    // prose, markdown list items, table cells, comments).
+    // Whole-file positional-syntax scan. Catches wrapped forms that the narrow per-filetype extractors miss (command substitution, inline prose, markdown list items, table cells, comments).
     scanFileForPositional(content, relPath, violations);
 
     if (ext === '.md') {

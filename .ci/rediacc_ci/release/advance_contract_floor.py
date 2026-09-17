@@ -90,21 +90,14 @@ from rediacc_ci.core import release_state_validator as rsv
 
 SELF = "advance-contract-floor.py"
 
-# `.ci/config/release-contract-floor.txt`, relative to the repository root
-# (:50). Spelled here rather than imported from `release_state_validator`
-# (which carries the same path as `FLOOR_FILE_REL`) because the twin spells it
-# locally too, and the two files agreeing is a fact a test should be able to
-# assert rather than a fact the code assumes.
+# `.ci/config/release-contract-floor.txt`, relative to the repository root (:50). Spelled here rather than imported from `release_state_validator` (which carries the same path as `FLOOR_FILE_REL`) because the twin spells it locally too, and the two files agreeing is a fact a test should be able to assert rather than a fact the code assumes.
 FLOOR_FILE = ".ci/config/release-contract-floor.txt"
 
-# `grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$FLOOR_FILE" | head -1` (:55). Strict:
-# a comment, a blank line or a prerelease in the file is simply not the floor,
-# and the result is the SAME as an absent file -- see `<unset>` below.
+# `grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$FLOOR_FILE" | head -1` (:55). Strict: a comment, a blank line or a prerelease in the file is simply not the floor, and the result is the SAME as an absent file -- see `<unset>` below.
 FLOOR_LINE_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
 # `${current:-v0.0.0}` (:61-62) and `${current:-<unset>}` (:63, :66). Two
-# different defaults for the same empty value: one for the comparison, one for
-# the message. Kept apart because they are.
+# different defaults for the same empty value: one for the comparison, one for the message. Kept apart because they are.
 NO_FLOOR_COMPARES_AS = "v0.0.0"
 NO_FLOOR_READS_AS = "<unset>"
 
@@ -112,8 +105,7 @@ NO_FLOOR_READS_AS = "<unset>"
 # count; the floor is about the CLI release contract.
 PRODUCT = "cli"
 
-# The environment the twin demands, IN ITS ORDER (:38-42). Order is observable:
-# only the first missing one is ever named.
+# The environment the twin demands, IN ITS ORDER (:38-42). Order is observable: only the first missing one is ever named.
 REQUIRED_ENV = (
     "CLOUDFLARE_R2_ACCESS_KEY_ID",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
@@ -122,8 +114,7 @@ REQUIRED_ENV = (
     "GIT_BOT_EMAIL",
 )
 
-# The defect named in the module docstring, as a constant so a test can assert
-# it by name instead of restating the sentence.
+# The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
 PROBE_FAILURE_READS_AS_EMPTY_BUCKET = True
 
 
@@ -237,8 +228,7 @@ def main(argv: list[str]) -> int:
 
     floor_path = root / FLOOR_FILE
     if not floor_path.is_file():
-        # STDOUT, and exit 0. A missing floor file is not an error: the ratchet
-        # simply has nothing to compare against yet.
+        # STDOUT, and exit 0. A missing floor file is not an error: the ratchet simply has nothing to compare against yet.
         print("::warning::%s not present; skipping ratchet advance" % FLOOR_FILE, flush=True)
         return 0
 
@@ -251,8 +241,7 @@ def main(argv: list[str]) -> int:
     if not advance:
         return 0
 
-    # :67. WRITTEN BEFORE ANY git RUNS -- see the second defect in the module
-    # docstring: a failing commit or push leaves this edit behind.
+    # :67. WRITTEN BEFORE ANY git RUNS -- see the second defect in the module docstring: a failing commit or push leaves this edit behind.
     floor_path.write_text(oldest + "\n", encoding="utf-8")
 
     for args in (
@@ -264,8 +253,7 @@ def main(argv: list[str]) -> int:
     ):
         rc = _git(root, args)
         if rc != 0:
-            # `set -e`: the script dies HERE with git's own status, and git's
-            # own diagnostic on stderr is the only explanation anyone gets.
+            # `set -e`: the script dies HERE with git's own status, and git's own diagnostic on stderr is the only explanation anyone gets.
             return rc
     return 0
 

@@ -260,18 +260,14 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     )
     assert plant_a != original, "the line Plant A targets is no longer present verbatim"
 
-    # Plant B: regress Bug 2 (the missing `if` branch) in _narrow_re only,
-    # leaving _WIDE_RE (and Plant A's line, in the ORIGINAL source) alone.
+    # Plant B: regress Bug 2 (the missing `if` branch) in _narrow_re only, leaving _WIDE_RE (and Plant A's line, in the ORIGINAL source) alone.
     plant_b = original.replace(
         r'return re.compile(r"(^[ \t]*|[|&;]\s*|\$\(|^[ \t]*if\s+)" + re.escape(cmd) + r"\b")',
         r'return re.compile(r"(^[ \t]*|[|&;]\s*|\$\()" + re.escape(cmd) + r"\b")',
     )
     assert plant_b != original, "the line Plant B targets is no longer present verbatim"
 
-    # `_console_root()` resolves three parents up from wherever the subject
-    # file lives, so the twin is placed at the SAME relative depth as PORT
-    # inside a fresh throwaway tree, exactly how PORT itself is exercised
-    # everywhere else in this file.
+    # `_console_root()` resolves three parents up from wherever the subject file lives, so the twin is placed at the SAME relative depth as PORT inside a fresh throwaway tree, exactly how PORT itself is exercised everywhere else in this file.
     twin_root = tmp_path / "twin-tree"
     (twin_root / ".ci" / "scripts" / "security").mkdir(parents=True)
     (twin_root / ".ci" / "x").mkdir(parents=True)

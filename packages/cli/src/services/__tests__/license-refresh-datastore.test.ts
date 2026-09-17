@@ -132,8 +132,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
 
   afterEach(() => warnSpy.mockRestore());
 
-  // The scan half, asserted rather than assumed: this is the flag that makes a
-  // named-datastore repo visible, and it is why the scan was never the bug.
+  // The scan half, asserted rather than assumed: this is the flag that makes a named-datastore repo visible, and it is why the scan was never the bug.
   it('scans every attached datastore, not only the machine default', async () => {
     const { sftp, exec } = createSftp([scanEntry({ requestedSizeGb: 4 })]);
 
@@ -188,9 +187,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
   });
 
   it("falls back to the caller's recorded placement when the scan cannot answer", async () => {
-    // Empty scan: no licence installed yet. This is the `rdc subscription
-    // refresh --repo` first-issuance shape, and the only thing that knows where
-    // the repo lives is the placement the caller recorded.
+    // Empty scan: no licence installed yet. This is the `rdc subscription refresh --repo` first-issuance shape, and the only thing that knows where the repo lives is the placement the caller recorded.
     const { sftp, exec } = createSftp([], { [NAMED_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
@@ -205,8 +202,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     expect(issuedSizeGb()).toBe(7);
   });
 
-  // CONTROL, direction 2: no placement and no scan answer must leave the
-  // machine default in place. A fix that hard-coded a named mount fails here.
+  // CONTROL, direction 2: no placement and no scan answer must leave the machine default in place. A fix that hard-coded a named mount fails here.
   it('keeps the machine default when neither the scan nor the caller names a datastore', async () => {
     const { sftp, exec } = createSftp([], { [DEFAULT_MOUNT]: SEVEN_GIB });
 
@@ -222,8 +218,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     expect(issuedSizeGb()).toBe(7);
   });
 
-  // CONTROL, direction 3: the machine's own datastore override still wins over
-  // the compiled-in default.
+  // CONTROL, direction 3: the machine's own datastore override still wins over the compiled-in default.
   it("honours the machine's datastore override", async () => {
     const { sftp, exec } = createSftp([], { '/srv/pool': SEVEN_GIB });
 
@@ -238,8 +233,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     expect(probes(exec)).toEqual([expectedProbe('/srv/pool')]);
   });
 
-  // The machine's own answer outranks the caller's, because the scan reads
-  // where the repo actually is and the config only says where it was put.
+  // The machine's own answer outranks the caller's, because the scan reads where the repo actually is and the config only says where it was put.
   it('prefers the scan-reported mount over the caller-supplied one when they disagree', async () => {
     const { sftp, exec } = createSftp(
       [scanEntry({ datastoreId: DATASTORE_ID, datastorePath: NAMED_MOUNT })],
@@ -258,8 +252,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     expect(issuedSizeGb()).toBe(7);
   });
 
-  // The mount-mutation control, written as an assertion: a single wrong
-  // character in the expected command must not match.
+  // The mount-mutation control, written as an assertion: a single wrong character in the expected command must not match.
   it('the mount assertion is falsifiable: a mutated mount does not match', async () => {
     const { sftp, exec } = createSftp([scanEntry({ datastorePath: NAMED_MOUNT })], {
       [NAMED_MOUNT]: SEVEN_GIB,
@@ -326,9 +319,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
     expect(warnings[0]).toContain(REPO_GUID);
   });
 
-  // The sentinel is what makes this expressible: under `else echo 0` a missing
-  // image and a real zero were the same bytes. A real zero is a MEASUREMENT,
-  // so it floors to 1 GB and says nothing.
+  // The sentinel is what makes this expressible: under `else echo 0` a missing image and a real zero were the same bytes. A real zero is a MEASUREMENT, so it floors to 1 GB and says nothing.
   it('treats a genuine zero-byte image as measured, not as a failed probe', async () => {
     const { sftp } = createSftp([], { [NAMED_MOUNT]: 0 });
 

@@ -85,8 +85,7 @@ export function usedClasses(source: string): Set<string> {
 /** Class names that some rule actually selects. */
 export function styledClasses(css: string): Set<string> {
   const out = new Set<string>();
-  // Strip comments and declaration bodies so a value like `content: '.foo'` cannot
-  // masquerade as a selector.
+  // Strip comments and declaration bodies so a value like `content: '.foo'` cannot masquerade as a selector.
   const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
   const selectorText = withoutComments.replace(/\{[^{}]*\}/g, '{}');
   for (const m of selectorText.matchAll(/\.([a-zA-Z][\w-]*)/g)) out.add(m[1]);
@@ -180,9 +179,7 @@ function main(): void {
   const orphans = [...used.keys()].filter((c) => !styled.has(c)).sort();
 
   if (argv.includes('--write-baseline')) {
-    // COMPOSITION. The header two dozen lines up says this baseline "only ever shrinks",
-    // and until now nothing enforced that on the WRITE path: a reseed could drop ten
-    // orphans, absorb one fresh one, and print a smaller number while doing it. The ids
+    // COMPOSITION. The header two dozen lines up says this baseline "only ever shrinks", and until now nothing enforced that on the WRITE path: a reseed could drop ten orphans, absorb one fresh one, and print a smaller number while doing it. The ids
     // here carry the SELECTOR text, so rewriting a rule re-keys the entry; hand-edit the
     // one line rather than reseeding when that happens.
     const had = existsSync(BASELINE);

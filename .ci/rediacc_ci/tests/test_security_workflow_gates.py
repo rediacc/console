@@ -47,8 +47,7 @@ PORT_REL = ".ci/rediacc_ci/security/workflow_gates.py"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
-# The minimum of the package a path-invoked port needs. Deliberately short: the
-# fixture must not become a second copy of the repository.
+# The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 PACKAGE_FILES = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/paths.py",
@@ -245,9 +244,7 @@ def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The real repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real repository ---------------------------------------------------------------------------
 
 
 def test_the_real_repository_agrees() -> None:
@@ -280,8 +277,7 @@ def test_the_real_repository_agrees() -> None:
         )
         results.append((proc.returncode, proc.stdout, proc.stderr))
     assert_same(results[0], results[1])
-    # Anti-vacuity for this test itself: it must have SEEN the counts, not just
-    # matched two empty strings.
+    # Anti-vacuity for this test itself: it must have SEEN the counts, not just matched two empty strings.
     assert "external caller call-site(s) verified" in results[0][1]
     assert "sparse Bitwarden-fetching job(s) check out the map" in results[0][1]
 
@@ -306,9 +302,7 @@ def test_colour_is_emitted_when_ci_is_not_true(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 1
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 1 ---------------------------------------------------------------------------
 
 
 def test_check1_reports_a_needs_result_if_without_an_override(tmp_path: pathlib.Path) -> None:
@@ -334,10 +328,7 @@ def test_check1_accepts_every_documented_override(tmp_path: pathlib.Path) -> Non
     for i, override in enumerate(
         ("always()", "! cancelled()", "!cancelled()", "failure()", "success()")
     ):
-        # DOUBLE-QUOTED, and that is not cosmetic: a bare `!` opens a YAML TAG,
-        # so `if: !cancelled() && ...` does not parse and CHECK 1 reports a
-        # yaml-error instead of the override it was meant to accept. The first
-        # version of this case did exactly that and looked like a port defect.
+        # DOUBLE-QUOTED, and that is not cosmetic: a bare `!` opens a YAML TAG, so `if: !cancelled() && ...` does not parse and CHECK 1 reports a yaml-error instead of the override it was meant to accept. The first version of this case did exactly that and looked like a port defect.
         body += (
             "  j%d:\n    runs-on: ubuntu-latest\n"
             "    if: \"%s && needs.one.result == 'success'\"\n"
@@ -400,9 +391,7 @@ def test_a_missing_workflow_directory_is_a_failure(tmp_path: pathlib.Path) -> No
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 2
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 2 ---------------------------------------------------------------------------
 
 
 def test_check2_a_reading_an_undeclared_secret(tmp_path: pathlib.Path) -> None:
@@ -525,17 +514,14 @@ def test_check2_on_parsed_as_the_boolean_true(tmp_path: pathlib.Path) -> None:
     fx = build_fixture(tmp_path)
     old, new = run_both(fx)
     assert "does not pass required" not in old[2]
-    # The contract arms only run when `workflow_call` RESOLVED, which for this
-    # callee is only possible through the `doc.get(True)` branch.
+    # The contract arms only run when `workflow_call` RESOLVED, which for this callee is only possible through the `doc.get(True)` branch.
     assert workflow_gates.workflow_call({True: {"workflow_call": {"secrets": {}}}}) == {
         "secrets": {}
     }
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 3
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 3 ---------------------------------------------------------------------------
 
 
 def _slim(fx: pathlib.Path, extra: str) -> None:
@@ -649,9 +635,7 @@ def _without_traceback(text: str) -> str:
     return "\n".join(keep)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 4
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 4 ---------------------------------------------------------------------------
 
 
 def ec_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -739,9 +723,7 @@ def test_check4_stands_down_on_a_fixture_tree_with_no_registry(tmp_path: pathlib
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 5
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 5 ---------------------------------------------------------------------------
 
 
 def test_check5_a_cone_without_the_map(tmp_path: pathlib.Path) -> None:
@@ -801,9 +783,7 @@ def test_check5_ignores_a_full_checkout(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# CHECK 6
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 6 ---------------------------------------------------------------------------
 
 
 def test_check6_an_optional_step_before_the_monitor(tmp_path: pathlib.Path) -> None:
@@ -1032,9 +1012,7 @@ def test_check6_a_renamed_monitor_does_reach_the_vacuity_message(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_strip_comment_lines_blanks_the_line_and_keeps_the_count() -> None:
@@ -1088,8 +1066,7 @@ def test_step_label_survives_every_shape_yaml_can_hand_back() -> None:
     assert workflow_gates.step_label({"name": "Monitor"}) == "Monitor"
     assert workflow_gates.step_label({"uses": "actions/checkout@v4"}) == "actions/checkout@v4"
     assert workflow_gates.step_label({"name": "N", "uses": "u"}) == "N"
-    # An empty or null name falls back to `uses:`, which is what the old inline
-    # `s.get("name") or ...` did and the only part of it worth keeping.
+    # An empty or null name falls back to `uses:`, which is what the old inline `s.get("name") or ...` did and the only part of it worth keeping.
     assert workflow_gates.step_label({"name": "", "uses": "u"}) == "u"
     assert workflow_gates.step_label({"name": None, "uses": "u"}) == "u"
     # The shapes that used to raise TypeError one line later.
@@ -1120,9 +1097,7 @@ def test_the_exemption_list_is_a_list_not_a_set_literal() -> None:
     assert "DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK)" in body
 
 
-# ---------------------------------------------------------------------------
-# A PLANTED DEFECT, on a throwaway copy, never on the file on disk
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A PLANTED DEFECT, on a throwaway copy, never on the file on disk ---------------------------------------------------------------------------
 
 
 def test_a_planted_regression_of_the_checkout_exemption_is_caught(

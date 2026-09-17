@@ -69,9 +69,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-runner-advice.sh"
 
-# test_real_tree_seam_free (no seams at all), test_awk_and_python_agree_on_the_verdict
-# (the real report.awk) and test_real_allowlist_blockers_are_substantive (the real
-# allowlist) all read the tracked tree. The lock says so too. See the docstring.
+# test_real_tree_seam_free (no seams at all), test_awk_and_python_agree_on_the_verdict (the real report.awk) and test_real_allowlist_blockers_are_substantive (the real allowlist) all read the tracked tree. The lock says so too. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check_runner_advice.py"
@@ -108,9 +106,7 @@ jobs:
       - run: echo work
 """
 
-# `waster` is 0.20 cores and 900 MiB over two minutes on a 4-vCPU VM: the
-# textbook MOVE_TO_SLIM. Everything else classifies to a verdict that must not
-# fire.
+# `waster` is 0.20 cores and 900 MiB over two minutes on a 4-vCPU VM: the textbook MOVE_TO_SLIM. Everything else classifies to a verdict that must not fire.
 BASELINE_JSON = """{
   "format": 1,
   "refreshed_at": %(stamp)s,
@@ -235,9 +231,7 @@ def digest(path) -> str:
     return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
 
 
-# ---------------------------------------------------------------------------
-# The cost direction, and its control.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The cost direction, and its control. ---------------------------------------------------------------------------
 
 
 def test_oversized_job_fails(gate):
@@ -417,9 +411,7 @@ def test_under_observed_move_is_an_advisory(gate):
         gate.log_pass("a MOVE observed once is an advisory; three observations make it a failure")
 
 
-# ---------------------------------------------------------------------------
-# Anti-vacuity, and the one exception to it.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Anti-vacuity, and the one exception to it. ---------------------------------------------------------------------------
 
 
 def test_empty_baseline_refuses(gate):
@@ -442,8 +434,7 @@ def test_empty_baseline_refuses(gate):
             "sit on the runner their own profile justifies",
             "must not print a success line",
         )
-        # The refusal EXPLAINS the bootstrap exception, so the annotation is what
-        # must be absent, not the word.
+        # The refusal EXPLAINS the bootstrap exception, so the annotation is what must be absent, not the word.
         gate.assert_not_contains(
             result.combined,
             "::warning title=Runner sizing (bootstrap)::",
@@ -471,9 +462,7 @@ def test_pristine_baseline_warns_and_passes(gate):
             result.rc,
             "the pristine as-committed baseline must pass (output: %s)" % result.combined,
         )
-        # The warning is the FIRE direction for this arm. A pristine run that
-        # exits 0 SILENTLY is the failure this whole gate exists to prevent, so
-        # passing without saying so must fail this test.
+        # The warning is the FIRE direction for this arm. A pristine run that exits 0 SILENTLY is the failure this whole gate exists to prevent, so passing without saying so must fail this test.
         gate.assert_contains(
             result.combined,
             "::warning title=Runner sizing (bootstrap)::",
@@ -508,19 +497,14 @@ def test_pristine_shape_is_exact(gate):
         gate.assert_exit_code(1, result.rc, "a null stamp with SOME jobs is not pristine")
         gate.assert_contains(result.combined, "VACUOUS INPUT", "refuses rather than bootstrapping")
 
-        # (2) stamp set, zero jobs -- already covered above, asserted here as
-        # part of the shape matrix so the two halves of the predicate are both
-        # pinned.
+        # (2) stamp set, zero jobs -- already covered above, asserted here as part of the shape matrix so the two halves of the predicate are both pinned.
         (d / "base.json").write_text(
             '{"format": 1, "refreshed_at": "%s", "jobs": {}}\n' % fresh_stamp(), encoding="utf-8"
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
         gate.assert_exit_code(1, result.rc, "a stamped baseline with zero jobs is not pristine")
 
-        # (3) no refreshed_at key at all: a file somebody has edited, not the
-        # committed shape. Caught one layer earlier, by the structural validator,
-        # which is why the message is about the missing key rather than
-        # pristineness.
+        # (3) no refreshed_at key at all: a file somebody has edited, not the committed shape. Caught one layer earlier, by the structural validator, which is why the message is about the missing key rather than pristineness.
         (d / "base.json").write_text('{"format": 1, "jobs": {}}\n', encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
         gate.assert_exit_code(
@@ -595,9 +579,7 @@ def test_unknown_format_refuses(gate):
             result.combined, "Traceback", "must be a named failure, never a stack trace"
         )
 
-        # CONTROL: the same file, untouched, is read fine -- so the three
-        # refusals above are the version check working rather than the fixture
-        # being broken.
+        # CONTROL: the same file, untouched, is read fine -- so the three refusals above are the version check working rather than the fixture being broken.
         baseline(d / "base.json", fresh_stamp())
         workflow(d / "wf", "ubuntu-slim")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
@@ -649,8 +631,7 @@ def test_bad_record_names_the_job_and_field(gate):
             "names job and field",
         )
 
-        # `true` is the interesting one: bool is a subclass of int in Python, so
-        # a naive isinstance check would arithmetic it as 1 rather than reject it.
+        # `true` is the interesting one: bool is a subclass of int in Python, so a naive isinstance check would arithmetic it as 1 rather than reject it.
         baseline(d / "base.json", fresh_stamp())
 
         def boolean_count(data):
@@ -841,8 +822,7 @@ def test_stale_baseline_fails(gate):
 
         # A stamp that is PRESENT but not a date must not read as "fresh". This
         # is the staleness path's own failure; a stamp that is missing entirely
-        # is caught one layer earlier by the structural validator, which is
-        # asserted separately in test_pristine_shape_is_exact.
+        # is caught one layer earlier by the structural validator, which is asserted separately in test_pristine_shape_is_exact.
         def bad_stamp(data):
             data["refreshed_at"] = "some time last week"
 
@@ -870,9 +850,7 @@ def test_empty_workflow_dir_refuses(gate):
         gate.log_pass("zero parsed job/runs-on pairs refuses rather than passing vacuously")
 
 
-# ---------------------------------------------------------------------------
-# awk / python coherence, and the trust rule they share.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- awk / python coherence, and the trust rule they share. ---------------------------------------------------------------------------
 
 
 def synth_tsv(out, tier, cceil, mceil, label, src, hint, n, cpu, mem, env: str = "") -> None:
@@ -1083,18 +1061,12 @@ def test_github_hosted_vm_is_trusted(gate):
         )
         gate.assert_contains(row, "verdict=NONE", "and its row stays NONE")
 
-        # CONTROL 2: github-hosted, but the PID 1 fingerprint says container. The
-        # fingerprint must win, or slim's container gets sized off host numbers.
+        # CONTROL 2: github-hosted, but the PID 1 fingerprint says container. The fingerprint must win, or slim's container gets sized off host numbers.
         #
         # The second assertion is the load-bearing one and looks pedantic on
         # purpose. verdict=NONE alone does NOT pin the fingerprint clause inside
-        # hosted_vm: the older PROC_HOST-plus-container arm refuses this input
-        # independently, so deleting the clause leaves the verdict unchanged and
-        # a verdict-only control passes over the mutation (measured, not
-        # assumed). WHICH arm spoke does change, so the wording is what proves
-        # the clause is still there -- and the clause is worth keeping because it
-        # makes the trust condition self-contained rather than dependent on the
-        # order of the arms below it.
+        # hosted_vm: the older PROC_HOST-plus-container arm refuses this input independently, so deleting the clause leaves the verdict unchanged and a verdict-only control passes over the mutation (measured, not assumed). WHICH arm spoke does change, so the wording is what proves the clause is still there -- and the clause is worth keeping because it makes the trust condition
+        # self-contained rather than dependent on the order of the arms below it.
         advisory, row = advise_once(
             gate,
             d,
@@ -1117,8 +1089,7 @@ def test_github_hosted_vm_is_trusted(gate):
             "the trust arm must exclude containers itself, not lean on the arm below it",
         )
 
-        # CONTROL 3: a pre-2026-08-09 TSV with no env field at all must keep the
-        # OLD behaviour rather than being retroactively trusted.
+        # CONTROL 3: a pre-2026-08-09 TSV with no env field at all must keep the OLD behaviour rather than being retroactively trusted.
         advisory, row = advise_once(gate, d, "legacy", *shape)
         gate.assert_contains(row, "env=unknown", "a 10-field META defaults to the untrusted side")
         gate.assert_contains(
@@ -1217,8 +1188,7 @@ def test_hosted_vm_record_fires_the_gate(gate):
         )
         gate.assert_contains(result.combined, "fixture.yml:waster", "names the job")
 
-        # CONTROL: same record, evidence removed. The gate must go quiet rather
-        # than guess from numbers nobody can attribute.
+        # CONTROL: same record, evidence removed. The gate must go quiet rather than guess from numbers nobody can attribute.
         def drop_evidence(data):
             data["jobs"]["fixture.yml:waster"]["env"] = "unknown"
 
@@ -1270,9 +1240,7 @@ def test_real_allowlist_blockers_are_substantive(gate):
             % (REAL_ALLOWLIST, result.combined),
         )
 
-        # CONTROL: the same machinery on a planted low-effort reason must reject
-        # it, so the pass above is the validator working rather than the
-        # validator being pointed at nothing.
+        # CONTROL: the same machinery on a planted low-effort reason must reject it, so the pass above is the validator working rather than the validator being pointed at nothing.
         (d / "bad").write_text("# BLOCKER: tbd\nfixture.yml:waster\n", encoding="utf-8")
         result = run_validator(gate, d / "bad")
         gate.assert_exit_code(1, result.rc, "a low-effort BLOCKER must be rejected")
@@ -1292,9 +1260,7 @@ def test_real_tree_seam_free(gate):
     refuse. Anything else -- a crash, a silent 0 over an empty baseline -- fails
     this case."""
     python3 = require_python(gate)
-    # The seams must be ABSENT, not merely unset in this process: `harness.run`
-    # overlays os.environ, so a `RUNNER_ADVICE_*` inherited from an outer shell
-    # would silently make this case seam-BEARING and its name a lie.
+    # The seams must be ABSENT, not merely unset in this process: `harness.run` overlays os.environ, so a `RUNNER_ADVICE_*` inherited from an outer shell would silently make this case seam-BEARING and its name a lie.
     seamless = {k: v for k, v in os.environ.items() if not k.startswith("RUNNER_ADVICE_")}
     result = harness.run([python3, os.fspath(GATE)], env=seamless, env_replace=True)
     gate.assert_exit_code(
@@ -1304,9 +1270,7 @@ def test_real_tree_seam_free(gate):
         % result.combined,
     )
     if "Runner sizing (bootstrap)" in result.combined:
-        # PRISTINE. Exit 0 is only acceptable WITH the warning: a silent pass
-        # over an unseeded baseline is the exact shape this gate exists to
-        # prevent, so the annotation is asserted, not tolerated.
+        # PRISTINE. Exit 0 is only acceptable WITH the warning: a silent pass over an unseeded baseline is the exact shape this gate exists to prevent, so the annotation is asserted, not tolerated.
         gate.assert_contains(
             result.combined,
             "::warning title=Runner sizing (bootstrap)::",

@@ -182,9 +182,7 @@ def parse_databases(blob: str) -> list[dict] | None:
     except (ValueError, RecursionError):
         return None
     if not isinstance(value, list):
-        # Unreachable through `sed_from_first_bracket`, which guarantees a
-        # leading `[`. Answered rather than asserted: a crash in a reaper is
-        # worse than the twin's behaviour on input neither can receive.
+        # Unreachable through `sed_from_first_bracket`, which guarantees a leading `[`. Answered rather than asserted: a crash in a reaper is worse than the twin's behaviour on input neither can receive.
         return None
     return value
 
@@ -238,8 +236,7 @@ def compute_cutoff(max_age: str) -> tuple[str | None, int]:
     if gnu == 0:
         argv = ["date", "-u", "-d", "%s minutes ago" % max_age, CUTOFF_FORMAT]
     else:
-        # BSD/macOS. `-v-30M`, with the value glued to the flag exactly as the
-        # twin writes it.
+        # BSD/macOS. `-v-30M`, with the value glued to the flag exactly as the twin writes it.
         argv = ["date", "-u", "-v-%sM" % max_age, CUTOFF_FORMAT]
     sys.stdout.flush()
     proc = subprocess.run(argv, stdout=subprocess.PIPE, check=False)

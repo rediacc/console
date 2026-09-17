@@ -148,27 +148,13 @@ ROOT = pathlib.Path(
 )
 # THREE HAND-WRITTEN HOPS BECAME ZERO HERE, and the `.ci` one is the reason the
 # import block above is now unbroken: this file used to reach the package with
-# `sys.path.insert(0, str(ROOT / ".ci"))` and then pay an `E402` for the import
-# that followed it. `import _cipath` is the same hop written where every other
-# gate in this directory writes it, so `from rediacc_ci.controls import plant`
-# is an ordinary import again. It also fixes a latent divergence nothing was
-# exercising: the old spelling loaded the LIBRARY from `$PLAN_RECORD_ROOT/.ci`,
-# so pointing this gate at a fixture would have judged the fixture with the
-# fixture's own copy of `controls`. `_cipath` resolves from `__file__`, which is
-# the tree the gate was started from either way.
+# `sys.path.insert(0, str(ROOT / ".ci"))` and then pay an `E402` for the import that followed it. `import _cipath` is the same hop written where every other gate in this directory writes it, so `from rediacc_ci.controls import plant` is an ordinary import again. It also fixes a latent divergence nothing was exercising: the old spelling loaded the LIBRARY from
+# `$PLAN_RECORD_ROOT/.ci`, so pointing this gate at a fixture would have judged the fixture with the fixture's own copy of `controls`. `_cipath` resolves from `__file__`, which is the tree the gate was started from either way.
 #
-# The other two hops go through the package's resolver. `paths.on_sys_path` is
-# idempotent where `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is
-# the ONE place the `.claude/hooks/stop` literal lives. ROOT is passed
-# explicitly: this gate honours its own PLAN_RECORD_ROOT override, which the
-# resolver's default root does not read.
+# The other two hops go through the package's resolver. `paths.on_sys_path` is idempotent where `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives. ROOT is passed explicitly: this gate honours its own PLAN_RECORD_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
-# W12 P3.4b. THE CITATION EXTRACTOR IS BORROWED, NOT REBUILT. `citations()` lives
-# in the sibling gate and its path regex carries five separately paid-for
-# extension rounds (dotfiles, .astro, .mdx, .cast, leading dots). A fresh regex
-# here would re-open every one of them, and the two gates would then disagree
-# about what a pointer even is. Same stance check_plan_citations itself takes
+# W12 P3.4b. THE CITATION EXTRACTOR IS BORROWED, NOT REBUILT. `citations()` lives in the sibling gate and its path regex carries five separately paid-for extension rounds (dotfiles, .astro, .mdx, .cast, leading dots). A fresh regex here would re-open every one of them, and the two gates would then disagree about what a pointer even is. Same stance check_plan_citations itself takes
 # towards wl_planrec. The sibling is reached from THIS FILE's directory, never
 # from ROOT: a fixture override must not be able to swap the extractor out.
 paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
@@ -180,10 +166,7 @@ try:
     from check_plan_citations import citations as _citations
     from check_plan_citations import unresolved as _unresolved
 except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
-    # A check that cannot see must SAY it cannot see. The record grammar lives in
-    # wl_planrec and there is deliberately no second copy of it here: a gate that
-    # re-implemented the parser would drift from the writer, and the first symptom
-    # would be a green run over records it was reading wrong.
+    # A check that cannot see must SAY it cannot see. The record grammar lives in wl_planrec and there is deliberately no second copy of it here: a gate that re-implemented the parser would drift from the writer, and the first symptom would be a green run over records it was reading wrong.
     print(
         f"VACUOUS INPUT: cannot import the record parser from "
         f"{ROOT / '.claude' / 'hooks' / 'stop'} ({_exc}). This gate reads the record "
@@ -195,25 +178,18 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
 
 # Floor over the PLAN corpus, not over the records. Zero records is the correct
 # state today (phase 1 builds the machinery; no real plan is compacted yet), so a
-# floor on records would be a gate that cannot pass. A floor on the plans is what
-# catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
+# floor on records would be a gate that cannot pass. A floor on the plans is what catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_RECORD_MIN_PLANS", "20"))
 
-# THE ADVISORY CENSUS. `agent/census-*.jsonl` is globbed by `--census-report` so
-# that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already
-# uses, to keep an append-only log out of merge conflicts) needs no reader change.
+# THE ADVISORY CENSUS. `agent/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change.
 CENSUS_REL = "agent/census-plan-record.jsonl"
 CENSUS_GLOB = "census-*.jsonl"
 
-# The POLICY window from the box this census exists to serve ("a two-week advisory
-# census before any blocking rung"), not a floor. It is what `--census-report`
+# The POLICY window from the box this census exists to serve ("a two-week advisory census before any blocking rung"), not a floor. It is what `--census-report`
 # compares the recorded span against; it never gates this run.
 CENSUS_WINDOW_DAYS = int(os.environ.get("PLAN_RECORD_CENSUS_DAYS", "14"))
 
-# The candidate rules, keyed by the rung a future blocking version would carry.
-# The text is the refusal that rung would print, kept HERE rather than at the
-# three call sites so the census row, the report and the eventual rung cannot
-# drift into describing three different rules.
+# The candidate rules, keyed by the rung a future blocking version would carry. The text is the refusal that rung would print, kept HERE rather than at the three call sites so the census row, the report and the eventual rung cannot drift into describing three different rules.
 CANDIDATES = {
     "C9-history-append-only": (
         "`## History` is documented as append-only and this record lost or rewrote a "
@@ -235,43 +211,19 @@ def _git(root, *args):
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
-# ---------------------------------------------------------------------------
-# W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
+# --------------------------------------------------------------------------- W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
 #
-# P3.4a made `Supersedes`, `Extends` and `Related` PARSE: `wl_planrec.py:203-215`
-# lists them in HEADER_FIELD_KEYS so a `# PLAN: ...` heading is not mistaken for
-# a field. That is the whole of what "parse" bought. NOTHING RESOLVED THEM.
-# Measured 2026-09-09: `wl_planrec.parse()` does not even return their values
-# (`:584-598`), and `git grep Supersedes -- '.ci/scripts/quality/*'` returned
-# nothing at all. A plan could say it supersedes a document that does not exist
-# and no instrument would notice, which is the same failure class as the 37 dead
-# citations `check_plan_citations.py` was written for.
+# P3.4a made `Supersedes`, `Extends` and `Related` PARSE: `wl_planrec.py:203-215` lists them in HEADER_FIELD_KEYS so a `# PLAN: ...` heading is not mistaken for a field. That is the whole of what "parse" bought. NOTHING RESOLVED THEM. Measured 2026-09-09: `wl_planrec.parse()` does not even return their values (`:584-598`), and `git grep Supersedes -- '.ci/scripts/quality/*'`
+# returned nothing at all. A plan could say it supersedes a document that does not exist and no instrument would notice, which is the same failure class as the 37 dead citations `check_plan_citations.py` was written for.
 #
 # THE ARITIES DIFFER, WHICH IS WHY THIS IS THREE RULES AND NOT ONE:
 #
-#   Supersedes  AT LEAST ONE pointer. A supersession is an instruction to a
-#               reader: go read that instead. Naming nothing is unfalsifiable and
-#               unactionable, so it is a finding even though every pointer
-#               present resolves.
-#   Extends     EXACTLY ONE. You extend one document. Two leaves a reader with no
-#               way to know which one carries the base they need, and zero is the
-#               Supersedes case again.
-#   Related     ANY NUMBER, INCLUDING NONE. This is deliberate asymmetry, not an
-#               oversight: `Related:` is a note, and a note whose value is an
-#               issue URL or a sentence carries no in-tree pointer and is still a
-#               true statement. What is checked is that any pointer it DOES carry
-#               resolves.
+# Supersedes AT LEAST ONE pointer. A supersession is an instruction to a reader: go read that instead. Naming nothing is unfalsifiable and unactionable, so it is a finding even though every pointer present resolves. Extends EXACTLY ONE. You extend one document. Two leaves a reader with no way to know which one carries the base they need, and zero is the Supersedes case again.
+# Related ANY NUMBER, INCLUDING NONE. This is deliberate asymmetry, not an oversight: `Related:` is a note, and a note whose value is an issue URL or a sentence carries no in-tree pointer and is still a true statement. What is checked is that any pointer it DOES carry resolves.
 #
-# THE VALUE IS A BLOCK, NOT A LINE, and this is load-bearing rather than
-# generous. Both real users in this tree wrap: `agent/PLAN-bws-rotation-on-failure.md:4-5`
-# puts its only resolvable pointer on the SECOND line, and reading the key's own
-# line alone would report that plan as superseding nothing. The block ends at a
-# blank line, at the next header field, or at a markdown heading.
+# THE VALUE IS A BLOCK, NOT A LINE, and this is load-bearing rather than generous. Both real users in this tree wrap: `agent/PLAN-bws-rotation-on-failure.md:4-5` puts its only resolvable pointer on the SECOND line, and reading the key's own line alone would report that plan as superseding nothing. The block ends at a blank line, at the next header field, or at a markdown heading.
 #
-# SCOPE IS EVERY PLAN, NOT EVERY RECORD. Both subjects in this tree carry
-# `Status: draft`, so a rule scoped to compaction records would have zero
-# subjects and pass forever, which is the shape this repo calls a rule with no
-# subject.
+# SCOPE IS EVERY PLAN, NOT EVERY RECORD. Both subjects in this tree carry `Status: draft`, so a rule scoped to compaction records would have zero subjects and pass forever, which is the shape this repo calls a rule with no subject.
 
 HEADER_XREF_KEYS = ("Supersedes", "Extends", "Related")
 #: (minimum, maximum) pointers. `None` means unbounded.
@@ -324,9 +276,7 @@ def header_xref_problems(root, rel, text):
                 f"{high}. Split the rest into `Related:`, which takes any number."
             )
         for kind, token in found:
-            # `unresolved`, not `R.resolve` directly: the `object` kind has TWO
-            # acceptable answers (a blob or a commit) and R.resolve has no such
-            # kind at all, so calling it here would raise on a sha-shaped token.
+            # `unresolved`, not `R.resolve` directly: the `object` kind has TWO acceptable answers (a blob or a commit) and R.resolve has no such kind at all, so calling it here would raise on a sha-shaped token.
             bad, why = _unresolved(root, kind, token)
             if bad:
                 problems.append(f"{rel}: `{key}:` cites {kind} `{token}` -- {why}")
@@ -345,20 +295,14 @@ def _git_raw(root, *args):
     return r.stdout if r.returncode == 0 else ""
 
 
-# ---------------------------------------------------------------------------
-# The rules.
+# --------------------------------------------------------------------------- The rules.
 
 
-# One `git show <sha>:<ledger>` per (repo, COMMIT), not per box. The 33-plan wave
-# this gate was built for carries several boxes each, and one plan's boxes were
-# almost always ticked in the same ledger regeneration -- so without this the
-# gate pays a git process per box to read the same blob back.
+# One `git show <sha>:<ledger>` per (repo, COMMIT), not per box. The 33-plan wave this gate was built for carries several boxes each, and one plan's boxes were almost always ticked in the same ledger regeneration -- so without this the gate pays a git process per box to read the same blob back.
 #
-# THE ROOT IS PART OF THE KEY. `main()` runs `selftest()` against a throwaway
-# fixture repo BEFORE it judges the real tree, through this same module-level
+# THE ROOT IS PART OF THE KEY. `main()` runs `selftest()` against a throwaway fixture repo BEFORE it judges the real tree, through this same module-level
 # dict. Keying on the commit alone would let a fixture sha answer for a real one;
-# collisions are not realistic, but "not realistic" is a worse reason than
-# "cannot happen", and the second costs one tuple.
+# collisions are not realistic, but "not realistic" is a worse reason than "cannot happen", and the second costs one tuple.
 _LEDGER_CACHE = {}
 
 
@@ -464,9 +408,7 @@ def problems_for(root, rel, text, current_ledger):
         if done == "open":
             continue
         if done == "abandoned":
-            # THE SECOND DIRECTION, and it is what stops `abandoned` being a
-            # dodge. If the current ledger attests this signature, a proof was
-            # available and the record declined to use it.
+            # THE SECOND DIRECTION, and it is what stops `abandoned` being a dodge. If the current ledger attests this signature, a proof was available and the record declined to use it.
             if R.attested_at(current_ledger, rel, sig):
                 out.append(
                     "%s: box %r records `done=abandoned`, but %s attests signature %s under "
@@ -495,10 +437,7 @@ def problems_for(root, rel, text, current_ledger):
                 % (rel, b["body"][:60], done, sig, rel)
             )
 
-    # ---- R5 `(record)` inside a box line ----------------------------------
-    # rec["problems"] already carries this one -- parse() finds it while it has
-    # the raw line in hand, which is the only place the distinction between "in
-    # the box" and "on the annotation line" still exists. Folded in at the top.
+    # ---- R5 `(record)` inside a box line ---------------------------------- rec["problems"] already carries this one -- parse() finds it while it has the raw line in hand, which is the only place the distinction between "in the box" and "on the annotation line" still exists. Folded in at the top.
 
     # ---- R6 an unfilled placeholder under `compacted` ---------------------
     if rec["status"] == R.STATUS_COMPACTED:
@@ -557,16 +496,9 @@ def index_problems(root, rows, census="", update=False):
         print(f"✓ wrote {R.INDEX_REL}: {len(rows)} record(s)")
         return []
     if not want:
-        # ZERO RECORDS, NO CENSUS, AND A NON-EMPTY INDEX. `--update` deliberately
-        # does NOT "fix" this by truncating the file: nothing in this program
-        # deletes a committed document, and an --update that silently emptied one
-        # would be the first. It is reported in both modes, with the removal left
-        # to a person who can see what the file still claims.
+        # ZERO RECORDS, NO CENSUS, AND A NON-EMPTY INDEX. `--update` deliberately does NOT "fix" this by truncating the file: nothing in this program deletes a committed document, and an --update that silently emptied one would be the first. It is reported in both modes, with the removal left to a person who can see what the file still claims.
         #
-        # Since W12 P1.7 this branch is only reachable when there are no plans
-        # EITHER, because any plan at all renders a census and makes `want`
-        # non-empty. That is the correct narrowing: an index over a tree with no
-        # plans and no records really is a document that says nothing.
+        # Since W12 P1.7 this branch is only reachable when there are no plans EITHER, because any plan at all renders a census and makes `want` non-empty. That is the correct narrowing: an index over a tree with no plans and no records really is a document that says nothing.
         return [
             (
                 f"{R.INDEX_REL} exists ({len(got)} bytes) but there are no compacted or "
@@ -575,12 +507,8 @@ def index_problems(root, rows, census="", update=False):
                 f"committed document."
             )
         ]
-    # THE CENSUS IS NAMED SEPARATELY. Once agent/INDEX.md carries both tables, a
-    # message about "the records on disk" sends the reader to look at the record
-    # table when the drift is almost always in the census: 83 plans change far
-    # more often than a handful of compaction records do, and SessionStart is
-    # what reads the census. Saying "0 record(s)" and nothing else is how a
-    # correct verdict gets dismissed as a stale gate.
+    # THE CENSUS IS NAMED SEPARATELY. Once agent/INDEX.md carries both tables, a message about "the records on disk" sends the reader to look at the record table when the drift is almost always in the census: 83 plans change far more often than a handful of compaction records do, and SessionStart is what reads the census. Saying "0 record(s)" and nothing else is how a correct
+    # verdict gets dismissed as a stale gate.
     n_census = len(PI.parse_census(census)) if census else 0
     return [
         (
@@ -618,13 +546,8 @@ def _prior_record_text(root, rel, current):
     when nothing is modified, HEAD's own blob IS the bytes on disk and is
     stepped over).
     """
-    # A SEARCH BOUND, NOT A FLOOR (driver contract section 6 governs floors, and
-    # this is not one). Exhausting it yields SILENCE, which is a false negative in
-    # an advisory census rather than a false red -- the safe direction. It is 100
-    # rather than a handful because of the revive path: a record revived back into
-    # a plan, edited for a week and re-compacted has every one of those plan
-    # commits sitting between the two record versions, and a tight cap would stop
-    # before reaching the baseline exactly when C9 has the most to say.
+    # A SEARCH BOUND, NOT A FLOOR (driver contract section 6 governs floors, and this is not one). Exhausting it yields SILENCE, which is a false negative in an advisory census rather than a false red -- the safe direction. It is 100 rather than a handful because of the revive path: a record revived back into a plan, edited for a week and re-compacted has every one of those plan
+    # commits sitting between the two record versions, and a tight cap would stop before reaching the baseline exactly when C9 has the most to say.
     log = _git(root, "log", "--format=%H", "--", rel)
     for sha in log.split()[:100]:
         blob = _git_raw(root, "show", "%s:%s" % (sha, rel))
@@ -650,9 +573,7 @@ def candidate_findings(root, rel, text):
         was = [ln.strip() for ln in (R.parse(prior) or {}).get("history", [])]
         now = [ln.strip() for ln in rec["history"]]
         if now[: len(was)] != was:
-            # WHICH bullet broke it, not just that one did. A count alone sends
-            # the reader to `git log -p` on a 30 KB file to find out whether a
-            # line was deleted or reworded, and those are different defects.
+            # WHICH bullet broke it, not just that one did. A count alone sends the reader to `git log -p` on a 30 KB file to find out whether a line was deleted or reworded, and those are different defects.
             lost = [b for b in was if b not in now]
             out.append(
                 (
@@ -680,11 +601,7 @@ def candidate_findings(root, rel, text):
 
     # ---- C11 the Full-Text upgrade that never happened -------------------
     if rec["blob"] and not rec["full_text_sha"]:
-        # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the
-        # difference is not a refinement. `--find-object` matches ADDITIONS and
-        # DELETIONS alike, so the newest hit for a compacted plan is usually the
-        # commit that REMOVED the plan text -- which may sit on an unmerged
-        # branch. Taking `-1` therefore answered "not landed" for a blob that
+        # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the difference is not a refinement. `--find-object` matches ADDITIONS and DELETIONS alike, so the newest hit for a compacted plan is usually the commit that REMOVED the plan text -- which may sit on an unmerged branch. Taking `-1` therefore answered "not landed" for a blob that
         # landed twenty commits ago; the fixture caught it on the first run.
         carried = _git(
             root, "log", "--format=%H", "-20", "--all", "--find-object=" + rec["blob"]
@@ -763,9 +680,7 @@ def census_rows(path):
     return out
 
 
-# The row fields that carry an OBSERVATION. `ts` is deliberately absent: two runs
-# minutes apart over an unchanged tree observe the same thing, and the clock is
-# not the observation.
+# The row fields that carry an OBSERVATION. `ts` is deliberately absent: two runs minutes apart over an unchanged tree observe the same thing, and the clock is not the observation.
 CENSUS_PAYLOAD_KEYS = ("commit", "plans_examined", "records_examined", "by_status", "candidates")
 
 
@@ -843,8 +758,7 @@ def census_append(root, row, expect_plans, expect_records):
     every_run = os.environ.get("PLAN_RECORD_CENSUS_EVERY_RUN") == "1"
 
     if not every_run and census_is_same_day_repeat(last, row):
-        # FLOOR 4. Re-read from disk rather than trusting `have`, so a file
-        # truncated between the two reads is caught rather than assumed away.
+        # FLOOR 4. Re-read from disk rather than trusting `have`, so a file truncated between the two reads is caught rather than assumed away.
         back = census_rows(path)
         if not back or not all(back[-1].get(k) == row.get(k) for k in CENSUS_PAYLOAD_KEYS):
             return False, (
@@ -863,10 +777,7 @@ def census_append(root, row, expect_plans, expect_records):
     before = len(have)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # A TRAILING NEWLINE ON EVERY ROW IS NOT COSMETIC. `check-editorconfig.sh`
-        # walks `git ls-files` extension-blind and fails any tracked file that does
-        # not end with one, so a writer that omitted it on the last row would red a
-        # whole-tree gate that has nothing to do with plan records.
+        # A TRAILING NEWLINE ON EVERY ROW IS NOT COSMETIC. `check-editorconfig.sh` walks `git ls-files` extension-blind and fails any tracked file that does not end with one, so a writer that omitted it on the last row would red a whole-tree gate that has nothing to do with plan records.
         with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
     except (OSError, TypeError, ValueError) as exc:
@@ -973,11 +884,7 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CONTROL FIRST. Every verdict above is meaningless if these do not fire, so the
-# fixture is a REAL git repository with a real origin/main, a real ledger and a
-# real blob. Nothing here is mocked: R1's ancestor test, R2's `rev-parse
-# <sha>:<path>` and R4's `git show <sha>:<ledger>` are the rules most likely to
+# --------------------------------------------------------------------------- CONTROL FIRST. Every verdict above is meaningless if these do not fire, so the fixture is a REAL git repository with a real origin/main, a real ledger and a real blob. Nothing here is mocked: R1's ancestor test, R2's `rev-parse <sha>:<path>` and R4's `git show <sha>:<ledger>` are the rules most likely to
 # be satisfied by a stub while being broken against git.
 
 
@@ -1045,11 +952,7 @@ def build_fixture(td):
             encoding="utf-8",
         )
 
-    # TWO LEDGER COMMITS, and the shape is the point rather than a convenience.
-    # The first has the box still OPEN, the second attests the tick. That is what
-    # makes R4 testable at all: a single-commit fixture has no commit whose ledger
-    # lacks the signature, so the "asserted, not present" plant cannot be built
-    # and the control silently proves nothing. It also exercises the oldest-first
+    # TWO LEDGER COMMITS, and the shape is the point rather than a convenience. The first has the box still OPEN, the second attests the tick. That is what makes R4 testable at all: a single-commit fixture has no commit whose ledger lacks the signature, so the "asserted, not present" plant cannot be built and the control silently proves nothing. It also exercises the oldest-first
     # walk in `ledger_history` -- `done=` must name the SECOND commit, and the
     # assertion straight after build_fixture checks exactly that.
     write_ledger([])
@@ -1063,8 +966,7 @@ def build_fixture(td):
     write_ledger([sig_done])
     _run(root, "git", "add", "-A")
     _run(root, "git", "commit", "-qm", "fixture: the box is ticked")
-    # A remote-tracking ref so the `ancestor` resolver has an origin/main to
-    # answer against, without a network or a second repository.
+    # A remote-tracking ref so the `ancestor` resolver has an origin/main to answer against, without a network or a second repository.
     _run(root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
 
     text, _notes = R.compact(root, rel, "deadbeef", why="auto", park=True)
@@ -1124,8 +1026,7 @@ def selftest():
             plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + "0" * 40),
             "does not resolve to a blob",
         )
-        # R1b: a commit that is not an ancestor of origin/main. An all-zero sha is
-        # not a commit at all, which is the same rule's other exit.
+        # R1b: a commit that is not an ancestor of origin/main. An all-zero sha is not a commit at all, which is the same rule's other exit.
         expect_finding(
             "R1: a Full-Text commit that does not resolve is reported",
             plant(
@@ -1145,18 +1046,14 @@ def selftest():
             ),
             "which is not this record's own path",
         )
-        # R2: the commit is real and landed, and carries DIFFERENT bytes. Built by
-        # pointing Full-Text-Blob at the LEDGER's blob, which resolves (so R1
-        # passes) and is not the plan's (so only R2 can fire).
+        # R2: the commit is real and landed, and carries DIFFERENT bytes. Built by pointing Full-Text-Blob at the LEDGER's blob, which resolves (so R1 passes) and is not the plan's (so only R2 can fire).
         other = _git(root, "rev-parse", "HEAD:" + R.LEDGER_REL)
         expect_finding(
             "R2: a real blob that is not the one at <sha>:<path> is reported",
             plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
             "One of the two pointers names bytes the other does not",
         )
-        # R3 floor: point at a blob smaller than the record. The ledger blob is
-        # small, so the same substitution serves -- and its R2 finding is a
-        # different string, so the two rules stay separately observable.
+        # R3 floor: point at a blob smaller than the record. The ledger blob is small, so the same substitution serves -- and its R2 finding is a different string, so the two rules stay separately observable.
         expect_finding(
             "R3: a blob smaller than the record is reported as nothing compacted",
             plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
@@ -1175,9 +1072,7 @@ def selftest():
         )
         # THE OLDEST-FIRST WALK, asserted before the plants that depend on it.
         # `done=` must name the commit that FIRST attested the tick, which is the
-        # second of the two. Naming the newest instead would be a date with no
-        # meaning -- the ledger is rewritten wholesale by --update, so every
-        # signature in it appears in every later commit.
+        # second of the two. Naming the newest instead would be a date with no meaning -- the ledger is rewritten wholesale by --update, so every signature in it appears in every later commit.
         ck(
             "CONTROL: done= names the FIRST attesting commit, not the newest",
             R.sha9(_git(root, "rev-parse", "HEAD")) in done_line
@@ -1214,9 +1109,7 @@ def selftest():
             plant(clean, box_line, box_line + " (record)"),
             "carries `(record)` inside it",
         )
-        # R6: a placeholder under `compacted`. The fixture is `parked` (it has an
-        # open box), so the status is flipped as part of the plant -- which is
-        # also the control for `parked` being EXEMPT, asserted straight after.
+        # R6: a placeholder under `compacted`. The fixture is `parked` (it has an open box), so the status is flipped as part of the plant -- which is also the control for `parked` being EXEMPT, asserted straight after.
         with_ph = plant(clean, "## Why\n", "## Why\n" + R.placeholder("why") + "\n", 1)
         expect_finding(
             "R6: an unfilled placeholder under `compacted` is reported",
@@ -1235,8 +1128,7 @@ def selftest():
             plant(clean, "Record-Sig: " + rec["record_sig"], "Record-Sig: 00000000"),
             "hashes to",
         )
-        # R7 CONTROL: editing PROSE must NOT move the signature, or the record
-        # becomes un-editable and people work around it instead of using it.
+        # R7 CONTROL: editing PROSE must NOT move the signature, or the record becomes un-editable and people work around it instead of using it.
         edited = plant(clean, "## Lessons\n", "## Lessons\n- a sharpened lesson\n", 1)
         er = R.parse(edited)
         ck(
@@ -1270,21 +1162,15 @@ def selftest():
             f"render_index([])={R.render_index([])!r} problems={index_problems(root, [])}",
         )
 
-        # R8 CENSUS (W12 P1.7), both directions. The census is the half of
-        # agent/INDEX.md that SessionStart reads instead of opening every plan, and
-        # the hook's own freshness check is `stat` only. So this equality is the
-        # ONLY thing standing between a plan edited to the same byte length and a
-        # session reading a confidently wrong number. A control that only proved
-        # the matching case would leave that unproven.
+        # R8 CENSUS (W12 P1.7), both directions. The census is the half of agent/INDEX.md that SessionStart reads instead of opening every plan, and the hook's own freshness check is `stat` only. So this equality is the ONLY thing standing between a plan edited to the same byte length and a session reading a confidently wrong number. A control that only proved the matching case
+        # would leave that unproven.
         cen = PI.render_census(PI.census_rows(root))
         ck(
             "R8 CENSUS CONTROL: the fixture renders a non-empty census naming the plan",
             PI.CENSUS_SECTION in cen and rel in cen,
             f"{cen[:160]!r}",
         )
-        # THE PERTURBATION IS ASSERTED TO BE ONE. `str.replace` over a pattern
-        # that is not there is a no-op, and a "stale census" that is byte-identical
-        # to the fresh one would make the next control pass for the wrong reason.
+        # THE PERTURBATION IS ASSERTED TO BE ONE. `str.replace` over a pattern that is not there is a no-op, and a "stale census" that is byte-identical to the fresh one would make the next control pass for the wrong reason.
         drifted = cen.replace("| %d |" % len(cen.splitlines()), "| 99999 |", 1)
         if drifted == cen:
             drifted = cen.replace(f"`{rel}`", "`agent/PLAN-not-on-disk.md`", 1)
@@ -1304,9 +1190,7 @@ def selftest():
             index_problems(root, rows, census=drifted) != [],
             "a drifted census was accepted",
         )
-        # AND THE MISSING-CENSUS DIRECTION. An index that still carries only the
-        # record table, once a census is due, is exactly as wrong as a stale one:
-        # the hook would read CENSUS_ABSENT and fall back forever.
+        # AND THE MISSING-CENSUS DIRECTION. An index that still carries only the record table, once a census is due, is exactly as wrong as a stale one: the hook would read CENSUS_ABSENT and fall back forever.
         R.write_atomic(root / R.INDEX_REL, R.render_index(rows))
         ck(
             "R8 CENSUS: an index carrying NO census when one is due is reported",
@@ -1315,27 +1199,17 @@ def selftest():
         )
         (root / R.INDEX_REL).unlink()
 
-        # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a
-        # record and must produce NOTHING. Without this, a parse() that returned
-        # a record for every file would look identical to a clean tree.
+        # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a record and must produce NOTHING. Without this, a parse() that returned a record for every file would look identical to a clean tree.
         ck(
             "CONTROL: the gate says nothing about a file that is not a record",
             judge("# P\nStatus: executing\n\n## Tasks\n- [ ] something entirely ordinary\n") == [],
         )
 
-        # ------------------------------------------------------------------
-        # THE ADVISORY CENSUS, both directions on every candidate.
+        # ------------------------------------------------------------------ THE ADVISORY CENSUS, both directions on every candidate.
         #
-        # An advisory check is the easiest thing in the world to make vacuous:
-        # delete its call site and it reports exactly what a clean corpus
-        # reports, forever, while the two-week clock silently never starts. So
-        # every candidate is planted AND its negation is planted, and the
-        # recorder itself is driven through all four of its floors.
+        # An advisory check is the easiest thing in the world to make vacuous: delete its call site and it reports exactly what a clean corpus reports, forever, while the two-week clock silently never starts. So every candidate is planted AND its negation is planted, and the recorder itself is driven through all four of its floors.
         #
-        # THE RECORD IS COMMITTED FIRST, because C9's baseline is "the previous
-        # committed version that was already a record" and without a commit
-        # there is no baseline -- which would make both C9 controls pass by
-        # measuring nothing.
+        # THE RECORD IS COMMITTED FIRST, because C9's baseline is "the previous committed version that was already a record" and without a commit there is no baseline -- which would make both C9 controls pass by measuring nothing.
         (root / rel).write_text(clean, encoding="utf-8")
         _run(root, "git", "add", "-A")
         _run(root, "git", "commit", "-qm", "fixture: the plan is compacted into a record")
@@ -1355,9 +1229,7 @@ def selftest():
             "no committed baseline; both C9 controls below would prove nothing",
         )
 
-        # C9, the flagged direction: the bullet was REWRITTEN, not appended to.
-        # This is the exact shape three real records in agent/ are in -- a
-        # revive-and-re-compact replaces the single bullet rather than adding one.
+        # C9, the flagged direction: the bullet was REWRITTEN, not appended to. This is the exact shape three real records in agent/ are in -- a revive-and-re-compact replaces the single bullet rather than adding one.
         ck(
             "C9: a `## History` bullet rewritten since the last committed version is flagged",
             "C9-history-append-only" in cand(plant(clean, hist_line, hist_line + " EDITED", 1)),
@@ -1368,8 +1240,7 @@ def selftest():
             "C9-history-append-only"
             not in cand(clean + "- 2026-01-02T00:00:00Z revived and re-compacted\n"),
         )
-        # C9's own vacuity control: with no committed baseline there is nothing to
-        # compare, and the candidate must stay SILENT rather than guess.
+        # C9's own vacuity control: with no committed baseline there is nothing to compare, and the candidate must stay SILENT rather than guess.
         ck(
             "C9 CONTROL: a record with no committed history is not flagged",
             "C9-history-append-only"
@@ -1379,10 +1250,7 @@ def selftest():
             ),
         )
 
-        # C10, both directions. The fixture is `parked` and `--why auto` left
-        # `<FILL: outcome>` and `<FILL: lessons>` in it -- which is precisely the
-        # state R6 EXEMPTS, and precisely what the candidate rung would stop
-        # exempting forever.
+        # C10, both directions. The fixture is `parked` and `--why auto` left `<FILL: outcome>` and `<FILL: lessons>` in it -- which is precisely the state R6 EXEMPTS, and precisely what the candidate rung would stop exempting forever.
         ck(
             "C10: a `parked` record still carrying `<FILL:>` is flagged",
             "C10-parked-placeholder" in cand(clean),
@@ -1488,10 +1356,7 @@ def selftest():
             census_report(root, out=io.StringIO(), err=io.StringIO()) == 1,
         )
 
-        # ---- R9, THREE PLANTS BECAUSE THE ARITIES DIFFER -------------------
-        # One control cannot cover these: `Supersedes` needs at least one
-        # pointer, `Extends` needs exactly one, and `Related` needs none. A
-        # single fixture would prove whichever arity it happened to have.
+        # ---- R9, THREE PLANTS BECAUSE THE ARITIES DIFFER ------------------- One control cannot cover these: `Supersedes` needs at least one pointer, `Extends` needs exactly one, and `Related` needs none. A single fixture would prove whichever arity it happened to have.
         def xref(label, body, needle, want=True):
             got = header_xref_problems(root, "agent/PLAN-x.md", body)
             hit = any(needle in g for g in got)
@@ -1525,9 +1390,7 @@ def selftest():
             "# t\nSupersedes: `agent/PLAN-no-such-plan-zzz.md`.\n",
             "does not exist",
         )
-        # THE CONTINUATION LINE, which is not a nicety: the only real
-        # `Supersedes:` user in this tree puts its sole resolvable pointer on the
-        # SECOND line, and a line-at-a-time reader reports it as naming nothing.
+        # THE CONTINUATION LINE, which is not a nicety: the only real `Supersedes:` user in this tree puts its sole resolvable pointer on the SECOND line, and a line-at-a-time reader reports it as naming nothing.
         xref(
             "R9 CONTROL: a pointer on a CONTINUATION line counts",
             "# t\nSupersedes: the config and its reader entirely, and the\n`%s:1` row.\n" % here,
@@ -1588,10 +1451,7 @@ def selftest():
 
 def main(argv):
     update = "--update" in argv
-    # A PURE READER, and it runs before anything else on purpose. `--census-report`
-    # answers "has the window elapsed" from the recorded rows and must stay usable
-    # on a tree whose R1..R8 verdict is red -- the window is about the CANDIDATE
-    # rules and has nothing to say about the enforced ones.
+    # A PURE READER, and it runs before anything else on purpose. `--census-report` answers "has the window elapsed" from the recorded rows and must stay usable on a tree whose R1..R8 verdict is red -- the window is about the CANDIDATE rules and has nothing to say about the enforced ones.
     if "--census-report" in argv:
         return census_report(ROOT)
     print("plan records: controls first, then the verdict")
@@ -1637,13 +1497,8 @@ def main(argv):
         n_records += 1
         problems.extend(problems_for(ROOT, rel, text, current))
 
-    # ---- R9, OVER EVERY PLAN AND NOT ONLY THE RECORDS ----------------------
-    # The loop above filters to RECORD_STATES because R1..R8 are statements
-    # about a compaction record. R9 is not: both `Supersedes:` users in this
-    # tree carry `Status: draft`, so scoping R9 to records would give it zero
-    # subjects and a permanent green. The count is printed below, because a rule
-    # whose subject count silently reaches zero is a rule that has stopped
-    # asserting anything.
+    # ---- R9, OVER EVERY PLAN AND NOT ONLY THE RECORDS ---------------------- The loop above filters to RECORD_STATES because R1..R8 are statements about a compaction record. R9 is not: both `Supersedes:` users in this tree carry `Status: draft`, so scoping R9 to records would give it zero subjects and a permanent green. The count is printed below, because a rule whose subject
+    # count silently reaches zero is a rule that has stopped asserting anything.
     n_xref = 0
     for rel, _status, _n in recs:
         try:
@@ -1656,11 +1511,7 @@ def main(argv):
         problems.extend(header_xref_problems(ROOT, rel, text))
 
     rows = R.index_rows(ROOT, recs)
-    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade
-    # described the wrong way round. `recs` is reused so the directory is not
-    # walked twice, but `plan_box_census` reads all 83 files to count boxes. That
-    # cost is deliberately paid HERE, once per CI run, so that SessionStart and
-    # PostCompact -- which fire on every session and every compaction -- pay one
+    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade described the wrong way round. `recs` is reused so the directory is not walked twice, but `plan_box_census` reads all 83 files to count boxes. That cost is deliberately paid HERE, once per CI run, so that SessionStart and PostCompact -- which fire on every session and every compaction -- pay one
     # file read instead. The point was never to stop reading the plans; it was to
     # stop reading them on the interactive path.
     census = PI.render_census(
@@ -1668,14 +1519,10 @@ def main(argv):
     )
     problems.extend(index_problems(ROOT, rows, census=census, update=update))
 
-    # ---- THE ADVISORY CENSUS -------------------------------------------------
-    # IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it
-    # wherever some unrelated rule failed is a window nobody can reason about, and
-    # the candidates say nothing about R1..R8 either way.
+    # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
     # `census_row` is computed from its OWN re-read of every plan; the two counts
-    # handed to `census_append` come from the verdict loop above. That is the
-    # two-readings floor, and it is why the counts are passed rather than shared.
+    # handed to `census_append` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
     census_ok, census_msg = census_append(ROOT, census_row(ROOT, recs), len(recs), n_records)
 
     if problems:
@@ -1692,9 +1539,7 @@ def main(argv):
             "    .claude/hooks/stop/worklist.py --plan-revive <me> <path> --write",
             file=sys.stderr,
         )
-        # The census verdict is reported here too, and it does NOT change this
-        # exit code: 1 already says "findings", and a census failure on top of
-        # findings is a second thing to fix, not a different one.
+        # The census verdict is reported here too, and it does NOT change this exit code: 1 already says "findings", and a census failure on top of findings is a second thing to fix, not a different one.
         print(("  " + census_msg) if census_ok else ("✗ " + census_msg), file=sys.stderr)
         return 1
 
@@ -1712,10 +1557,7 @@ def main(argv):
             "  0 records is the expected state until the first compaction wave. The rules\n"
             "  above ran against the planted fixtures in --selftest, not against nothing."
         )
-    # THE ONE WAY THE CENSUS REACHES AN EXIT CODE, and it is never because a
-    # candidate FIRED. Exit 2 is this file's "instrument control failed" code, and
-    # a census that recorded nothing is exactly that: it reports what a clean
-    # corpus reports, forever, while the two-week clock never starts.
+    # THE ONE WAY THE CENSUS REACHES AN EXIT CODE, and it is never because a candidate FIRED. Exit 2 is this file's "instrument control failed" code, and a census that recorded nothing is exactly that: it reports what a clean corpus reports, forever, while the two-week clock never starts.
     if not census_ok:
         print("✗ " + census_msg, file=sys.stderr)
         print(

@@ -68,10 +68,7 @@ run_it() {
 }
 """
 
-# A lock that names gate tests and declares NO mutex tree: resource on any of
-# them. This is the retarget's equivalent of the derived-assignment shape: the
-# file parses, the entries are real, and the registered set comes out EMPTY --
-# exactly the state the refusal exists to catch.
+# A lock that names gate tests and declares NO mutex tree: resource on any of them. This is the retarget's equivalent of the derived-assignment shape: the file parses, the entries are real, and the registered set comes out EMPTY -- exactly the state the refusal exists to catch.
 NO_WRITERS = json.dumps(
     [
         {"id": "gate-test:a", "run": ".ci/scripts/test/gates/test-a.sh"},
@@ -168,12 +165,7 @@ def run_both(
         ),
         pytest.param(
             {"test-a.sh": WRITER, "test-b.sh": WRITER, "test-c.sh": WRITER},
-            # A NAME THAT IS NOT IN THE BATTERY, on purpose. An EMPTY tuple here
-            # would make the declared set empty and trip the anti-vacuity refusal
-            # instead, which is a different case (and is covered by
-            # `test_a_lock_declaring_no_writers_refuses`). The first draft of this
-            # parameter did exactly that and asserted three violations against a
-            # refusal.
+            # A NAME THAT IS NOT IN THE BATTERY, on purpose. An EMPTY tuple here would make the declared set empty and trip the anti-vacuity refusal instead, which is a different case (and is covered by `test_a_lock_declaring_no_writers_refuses`). The first draft of this parameter did exactly that and asserted three violations against a refusal.
             ("test-elsewhere.sh",),
             3,
             id="three-unregistered",
@@ -202,8 +194,7 @@ def test_a_registered_writer_alone_is_green_on_both_sides(tmp_path: pathlib.Path
     assert new_exit == 0
     assert new_out == old_out
     assert new_err == old_err
-    # THE COUNT IS PRINTED IN THE GREEN LINE, so a reader can see the verdict was
-    # not trivial. BOTH counts: the battery scanned, and the set declared.
+    # THE COUNT IS PRINTED IN THE GREEN LINE, so a reader can see the verdict was not trivial. BOTH counts: the battery scanned, and the set declared.
     assert "among 2 gate tests" in old_err
     assert "(1 declared" in old_err
 
@@ -282,9 +273,7 @@ def test_an_empty_gates_directory_refuses(tmp_path: pathlib.Path) -> None:
     assert new_err == old_err
 
 
-# ---------------------------------------------------------------------------
-# The scanner, driven directly. Both directions for every rule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The scanner, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
 _SEED = 'REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"\n'
 _TEMP = 'TMP="$(mktemp -d)"\n'

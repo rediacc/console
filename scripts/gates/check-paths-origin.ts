@@ -256,9 +256,7 @@ function selftest(): number {
     ).length === 0
   );
 
-  // THE REAL LOCK AND THE REAL TREE, read the way main() reads them. A fixture
-  // proving the logic while the tracked file it aims at carries zero real
-  // findings would be a control on the function and nothing about the estate.
+  // THE REAL LOCK AND THE REAL TREE, read the way main() reads them. A fixture proving the logic while the tracked file it aims at carries zero real findings would be a control on the function and nothing about the estate.
   if (fs.existsSync(LOCK)) {
     const tracked = execFileSync('git', ['ls-files'], {
       cwd: REPO_ROOT,
@@ -324,12 +322,9 @@ function main(): number {
   );
   const scoped = entries.filter((e) => e.paths !== undefined).length;
 
-  // ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a lock that
-  // failed to parse, a renamed `paths` key, or a filter that silently matched zero
-  // entries all print the same tick as a clean tree. 47 paths-bearing entries exist
+  // ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a lock that failed to parse, a renamed `paths` key, or a filter that silently matched zero entries all print the same tick as a clean tree. 47 paths-bearing entries exist
   // today; the floor sits well below that rather than at it, because a floor equal to
-  // the current count turns every legitimate removal into a failure and teaches people
-  // to lower floors.
+  // the current count turns every legitimate removal into a failure and teaches people to lower floors.
   if (scoped < MIN_SCOPED_ENTRIES) {
     console.error(
       `✗ VACUOUS: only ${scoped} paths-bearing entry(ies) found in ${path.relative(REPO_ROOT, LOCK)}, ` +

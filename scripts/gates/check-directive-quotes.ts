@@ -61,18 +61,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Config ---------------------------------------------------------------------------
 
-// Languages that have an official Directive (EU) 2022/2555 translation we
-// vendor a snapshot for. Sourced from scripts/data/nis2-directive-2022-2555-<lang>.txt.
+// Languages that have an official Directive (EU) 2022/2555 translation we vendor a snapshot for. Sourced from scripts/data/nis2-directive-2022-2555-<lang>.txt.
 const SNAPSHOT_LANGS = NIS2_SNAPSHOT_LANGS;
 type SnapshotLang = Nis2SnapshotLang;
 
-// All locales the www site ships content in. Locales not in SNAPSHOT_LANGS
-// fall back to the English snapshot for the directive-quote check (no official
-// EU directive translation exists in those languages).
+// All locales the www site ships content in. Locales not in SNAPSHOT_LANGS fall back to the English snapshot for the directive-quote check (no official EU directive translation exists in those languages).
 const ALL_CONTENT_LANGS = SITE_LOCALES;
 type ContentLang = (typeof ALL_CONTENT_LANGS)[number];
 
@@ -96,9 +91,7 @@ const ALLOWLIST_PATH = path.join(repoRoot, '.ci', 'config', 'directive-quotes-al
 
 // All-language content. File language is detected from path:
 //   packages/www/src/content/{blog,docs}/<lang>/...           -> <lang>
-//   private/growth/dist/nis2-directive-summary-<lang>-a4/...  -> <lang>
-//   private/growth/dist/nis2-directive-summary-a4/...         -> en (legacy en-only path)
-//   packages/www/src/pages/.../<file>.astro                   -> en (Astro page is single-template)
+// private/growth/dist/nis2-directive-summary-<lang>-a4/... -> <lang> private/growth/dist/nis2-directive-summary-a4/... -> en (legacy en-only path) packages/www/src/pages/.../<file>.astro -> en (Astro page is single-template)
 const SCAN_GLOBS = [
   'packages/www/src/content/blog/*/**/*.md',
   'packages/www/src/content/blog/*/**/*.mdx',
@@ -115,13 +108,9 @@ const NIS2_MENTION_PATTERNS: RegExp[] = [
   /\b32022L2555\b/i,
 ];
 
-// Capture an article reference plus any number of `(N)` / `(a)` modifiers.
-// Accept English "Article" plus the most common EU-language equivalents so
-// translated content can use the native word for "article" without losing
-// the rule-A trigger. ja/ar/ru/tr/zh/ko translations keep English "Article"
+// Capture an article reference plus any number of `(N)` / `(a)` modifiers. Accept English "Article" plus the most common EU-language equivalents so translated content can use the native word for "article" without losing the rule-A trigger. ja/ar/ru/tr/zh/ko translations keep English "Article"
 // per glossary; this regex still picks them up via the case-insensitive
-// English alternative. Avoid trailing `\b` after `)` because that breaks at
-// the first `(` and yields a truncated match.
+// English alternative. Avoid trailing `\b` after `)` because that breaks at the first `(` and yields a truncated match.
 const ARTICLE_REF =
   /\b(?:Article|Artikel|art[íi]culo|articolo|artigo|artikkel|статья|статьи|Madde|المادة|条|조)\s+2[0-3](?:\([0-9a-z]+\))*/i;
 const RECITAL_REF = /\bRecital\s+\d+\b/i;
@@ -130,18 +119,14 @@ const ANNEX_REF = /\bAnnex\s+(I|II|III)\b/i;
 // Markers (HTML comments).
 const QUOTE_MARKER = /<!--\s*nis2-quote:\s*([^-][^>]*?)\s*-->/i;
 const SKIP_MARKER = /<!--\s*nis2-quote-skip:\s*([^>]*?)\s*-->/i;
-// Override the snapshot the next quote is verified against. Used in non-EU
-// language files (ja/ar/ru/tr/zh/ko) when the directive quote is rendered in
-// English with surrounding prose explaining why.
+// Override the snapshot the next quote is verified against. Used in non-EU language files (ja/ar/ru/tr/zh/ko) when the directive quote is rendered in English with surrounding prose explaining why.
 const QUOTE_LANG_MARKER = /<!--\s*nis2-quote-lang:\s*([a-z]{2})\s*-->/i;
 
 // Quote payload patterns.
 const BLOCKQUOTE_PAT = /^>\s*"([^"]+)"\s*$/;
 const INLINE_QUOTE_PAT = /"([^"\n]{20,})"/g; // require 20+ chars to skip scare-quotes
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
 interface QuoteCase {
   file: string;
@@ -163,9 +148,7 @@ interface CheckResult {
   filesSkippedAllowlist: string[];
 }
 
-// ---------------------------------------------------------------------------
-// Snapshot loading + normalisation
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Snapshot loading + normalisation ---------------------------------------------------------------------------
 
 interface LoadedSnapshot {
   flatText: string;
@@ -279,9 +262,7 @@ function nearestSubstring(source: string, frag: string): string | undefined {
   return source.slice(ctxStart, ctxEnd).replace(/\s+/g, ' ').trim();
 }
 
-// ---------------------------------------------------------------------------
-// File-level scanning
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- File-level scanning ---------------------------------------------------------------------------
 
 /**
  * Detect the file's content language from path. Frontmatter `language:` is
@@ -452,9 +433,7 @@ function extractQuotesFromFile(
   return { quotes, skipped };
 }
 
-// ---------------------------------------------------------------------------
-// Verification
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Verification ---------------------------------------------------------------------------
 
 function verifyQuote(
   q: QuoteCase,
@@ -488,9 +467,7 @@ function verifyQuote(
   return { ok: true };
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Main ---------------------------------------------------------------------------
 
 function main() {
   // Validate allowlist BLOCKER reasons (fail-closed if anyone forgets).

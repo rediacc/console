@@ -71,14 +71,9 @@ describe('config/command-registry', () => {
 
     it('machine experimental subcommands are declared', () => {
       const def = getCommandDef('machine');
-      // `health` is a registry entry but carries no gating any more — it used to
-      // be experimental, which made `rdc machine health` answer "unknown
-      // command" unless an env var was set, so the one command that aggregates
-      // machine issues was the one nobody could run.
+      // `health` is a registry entry but carries no gating any more — it used to be experimental, which made `rdc machine health` answer "unknown command" unless an env var was set, so the one command that aggregates machine issues was the one nobody could run.
       expect(def?.subcommands?.health).toBeDefined();
-      // containers/services/repos were folded into `machine status --containers` etc.
-      // by the P4 reshape. A registry entry for a command that no longer exists is a
-      // name waiting to be silently re-bound, so it must stay gone.
+      // containers/services/repos were folded into `machine status --containers` etc. by the P4 reshape. A registry entry for a command that no longer exists is a name waiting to be silently re-bound, so it must stay gone.
       expect(def?.subcommands?.containers).toBeUndefined();
       expect(def?.subcommands?.services).toBeUndefined();
       expect(def?.subcommands?.repos).toBeUndefined();

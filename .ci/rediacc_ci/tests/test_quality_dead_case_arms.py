@@ -55,8 +55,7 @@ def _bash_extract(directory: pathlib.Path) -> list[str]:
 
 
 def _bash_live(key: str, code_dir: pathlib.Path) -> bool:
-    # `out` is deliberately not read: `grep -q` prints nothing and the EXIT
-    # CODE is the whole answer.
+    # `out` is deliberately not read: `grep -q` prints nothing and the EXIT CODE is the whole answer.
     code, _out, err = diff.bash_streams('K="%s"; C="%s"; %s' % (key, code_dir, LIVE))
     assert err == "", err
     assert code in (0, 1), code

@@ -46,11 +46,7 @@ TWIN = ROOT / ".ci" / "scripts" / "release" / "reprobe-r2-sentinel.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "reprobe_r2_sentinel.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `FAKE_AWS_MODE` selects which of the three probe outcomes the fake produces.
-# The 404 wording is the real one an S3-compatible endpoint returns for a
-# missing key, because the library decides "absent" by TEXT MATCH on stderr
-# (`404|Not Found|NoSuchKey`) -- the aws CLI returns 254 for a 404 and for an
-# auth failure alike, so the exit code cannot separate them.
+# `FAKE_AWS_MODE` selects which of the three probe outcomes the fake produces. The 404 wording is the real one an S3-compatible endpoint returns for a missing key, because the library decides "absent" by TEXT MATCH on stderr (`404|Not Found|NoSuchKey`) -- the aws CLI returns 254 for a 404 and for an auth failure alike, so the exit code cannot separate them.
 FAKE_AWS = """#!/usr/bin/python3
 import os
 import sys
@@ -111,8 +107,7 @@ def _run(
         "LC_ALL": "C",
         "LANG": "C",
         # Both sides decide colour from the stream and from NO_COLOR; pinning it
-        # removes a pty from the comparison without removing the marker
-        # difference the UNKNOWN case exists to record.
+        # removes a pty from the comparison without removing the marker difference the UNKNOWN case exists to record.
         "NO_COLOR": "1",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -172,9 +167,7 @@ def assert_agree(old: tuple, new: tuple, label: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# The controls on the harness
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls on the harness ---------------------------------------------------------------------------
 
 
 def test_the_fake_aws_shadows_any_real_one(tmp_path: pathlib.Path) -> None:
@@ -192,9 +185,7 @@ def test_both_subjects_exist() -> None:
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 
-# ---------------------------------------------------------------------------
-# The three probe outcomes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three probe outcomes ---------------------------------------------------------------------------
 
 
 def test_sealed_sentinel_reports_present_and_exits_zero(tmp_path: pathlib.Path) -> None:
@@ -248,8 +239,7 @@ def test_unknown_probe_diverges_only_by_the_log_error_marker(tmp_path: pathlib.P
     assert not new[2].startswith("✗"), (
         "the library grew the ✗ marker; delete the _demark() normalisation and this case"
     )
-    # The aws stderr is indented four spaces and echoed by both, which is the
-    # half that tells an operator the probe failed on credentials.
+    # The aws stderr is indented four spaces and echoed by both, which is the half that tells an operator the probe failed on credentials.
     assert "    An error occurred (InvalidAccessKeyId)" in old[2]
     assert_agree(old, new, "unknown")
 
@@ -270,9 +260,7 @@ def test_a_custom_bucket_is_honoured_by_both(tmp_path: pathlib.Path) -> None:
     assert_agree(old, new, "custom-bucket")
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before any probe
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before any probe ---------------------------------------------------------------------------
 
 
 def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
@@ -374,9 +362,7 @@ def test_an_empty_variable_refuses_like_an_unset_one(tmp_path: pathlib.Path) -> 
     assert new[3] == []
 
 
-# ---------------------------------------------------------------------------
-# The loop shape, which is the twin's documented BLOCKER
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The loop shape, which is the twin's documented BLOCKER ---------------------------------------------------------------------------
 
 
 def test_the_product_list_is_still_one_element_on_both_sides() -> None:

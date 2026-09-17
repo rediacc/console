@@ -132,9 +132,7 @@ MISSING_VALUE = "dispatch-watchdog.sh: %s requires a value"
 # newline while bash's `=~` anchor does not.
 NUMERIC = re.compile(r"[0-9]+")
 
-# `grep -qE "not found on the default branch|HTTP 404.*watchdog-monitor"`
-# (twin :126). grep is LINE-oriented and `.` never crosses a newline, so this is
-# applied per line below rather than to the whole blob.
+# `grep -qE "not found on the default branch|HTTP 404.*watchdog-monitor"` (twin :126). grep is LINE-oriented and `.` never crosses a newline, so this is applied per line below rather than to the whole blob.
 BOOTSTRAP_404 = re.compile(r"not found on the default branch|HTTP 404.*watchdog-monitor")
 
 # The options that consume a following value, and the field each fills.
@@ -193,10 +191,7 @@ def parse_args(argv: list[str]) -> dict[str, str]:
             i += 2
         elif opt == "--pending-rerun":
             # `PENDING_RERUN="${2:-false}"` tolerates the absence AND the empty
-            # string -- `:-` is a default-on-unset-OR-EMPTY, so
-            # `--pending-rerun ''` is accepted as `false` rather than refused
-            # by the true/false check below. `shift 2` then does not tolerate
-            # the absence: Defect E, reproduced exactly as a silent exit 1.
+            # string -- `:-` is a default-on-unset-OR-EMPTY, so `--pending-rerun ''` is accepted as `false` rather than refused by the true/false check below. `shift 2` then does not tolerate the absence: Defect E, reproduced exactly as a silent exit 1.
             out["pending_rerun"] = (argv[i + 1] if i + 1 < len(argv) else "") or "false"
             if i + 1 >= len(argv):
                 raise ArgError(None)
@@ -312,8 +307,7 @@ def main(argv: list[str]) -> int:
             % (args["generation"], MAX_GENERATIONS)
         )
         return 0
-    # `over_cap is None` is Defect C's abort arm: the twin's `if` is not taken
-    # and the run continues, cap unchecked.
+    # `over_cap is None` is Defect C's abort arm: the twin's `if` is not taken and the run continues, cap unchecked.
 
     run_api = "repos/%s/actions/runs/%s" % (repository, args["run_id"])
     if not args["head_ref"]:
@@ -323,8 +317,7 @@ def main(argv: list[str]) -> int:
             return status
         args["head_ref"] = value
     if not args["pr_number"]:
-        # Best-effort: .pull_requests is populated for same-repo branches. When
-        # it stays empty the monitor simply skips the PR-label reads.
+        # Best-effort: .pull_requests is populated for same-repo branches. When it stays empty the monitor simply skips the PR-label reads.
         status, value = gh_api(run_api, '.pull_requests[0].number // ""')
         if status != 0:
             return status
@@ -341,9 +334,7 @@ def main(argv: list[str]) -> int:
             return 0
         dispatch_err = out
 
-    # Defect D: the lookup's exit status is DISCARDED and its empty output is
-    # used as a ref, exactly as the twin's command substitution in an `elif`
-    # condition discards it.
+    # Defect D: the lookup's exit status is DISCARDED and its empty output is used as a ref, exactly as the twin's command substitution in an `elif` condition discards it.
     _status, default_branch = gh_api("repos/%s" % repository, ".default_branch")
     status, out = dispatch(default_branch, args, repository)
     if status == 0:
@@ -355,8 +346,7 @@ def main(argv: list[str]) -> int:
     dispatch_err = out
 
     if is_bootstrap_404(dispatch_err):
-        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT
-        # branch's registry, so until watchdog-monitor.yml has landed on main it
+        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT branch's registry, so until watchdog-monitor.yml has landed on main it
         # cannot be dispatched from ANY ref. One-time bootstrap condition; fail
         # OPEN with a loud warning instead of failing the job.
         log.warn(

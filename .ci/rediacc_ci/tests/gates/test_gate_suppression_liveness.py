@@ -68,20 +68,16 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-suppression-liveness.sh"
 
-# test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both
-# drive the subject over the real tree. See the docstring.
+# test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both drive the subject over the real tree. See the docstring.
 REAL_TREE_TWIN = True
 
 SUBJECT_REL = "scripts/gates/check-suppression-liveness.ts"
 SUBJECT = paths.from_root(*SUBJECT_REL.split("/"))
 
-# `probes: 12 run, 0 skipped   entries: 87 checked   findings: 1 (0 fail, 1 warn)`
+# `probes: 12 run, 0 skipped entries: 87 checked findings: 1 (0 fail, 1 warn)`
 SUMMARY_RE = re.compile(r"probes: (\d+) run, (\d+) skipped\s+entries: (\d+) checked")
 
-# Floors for the ADDED shape case only. Deliberately far under the live numbers
-# (12 probes / 87 entries on 2026-09-08): this is a "the sweep still sweeps"
-# refusal, not a ratchet, and a ratchet here would be a second source of truth for
-# counts the policy files already own.
+# Floors for the ADDED shape case only. Deliberately far under the live numbers (12 probes / 87 entries on 2026-09-08): this is a "the sweep still sweeps" refusal, not a ratchet, and a ratchet here would be a second source of truth for counts the policy files already own.
 REAL_PROBE_FLOOR = 6
 REAL_ENTRY_FLOOR = 20
 
@@ -95,8 +91,7 @@ REQUIRED_SOURCES = (
     ".github/actions/app-token/action.yml",
 )
 
-# Present in a full checkout, absent in one without the submodule. The twin guards
-# each with `[[ -f ]]`, and so does this.
+# Present in a full checkout, absent in one without the submodule. The twin guards each with `[[ -f ]]`, and so does this.
 OPTIONAL_SOURCES = (
     "private/renet/Dockerfile",
     "private/renet/go.mod",

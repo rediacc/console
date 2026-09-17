@@ -153,8 +153,7 @@ function selftest(): number {
     if (!ok) bad++;
   };
 
-  // The splice must be reversible: stripping the markers must give back the input
-  // byte for byte, or `--write` run twice would drift.
+  // The splice must be reversible: stripping the markers must give back the input byte for byte, or `--write` run twice would drift.
   const body = ['  {', "    id: 'a',", '  },', '  {', "    id: 'b',", '  },'];
   const gen = [true, false];
   const sp = spans(body);
@@ -182,15 +181,13 @@ function selftest(): number {
     'the markers bracket the generated entry and not its neighbour'
   );
 
-  // A span scanner that loses an entry would splice by a shifted index, which is
-  // the one failure that silently marks the WRONG entries as generated.
+  // A span scanner that loses an entry would splice by a shifted index, which is the one failure that silently marks the WRONG entries as generated.
   check(
     sp.length === 2,
     'CONTROL: the span scanner finds both entries, so splice indices cannot shift'
   );
 
-  // Interleaved runs must not be merged into one region, or 358 hand entries would
-  // land inside a generated region and be reported as drift forever after.
+  // Interleaved runs must not be merged into one region, or 358 hand entries would land inside a generated region and be reported as drift forever after.
   const g2 = [true, false, true];
   let r2 = 0;
   for (let i = 0; i < g2.length; i++) if (g2[i] && (i === 0 || !g2[i - 1])) r2++;
@@ -204,9 +201,7 @@ function main(argv: string[]): number {
   const write = argv.includes('--write');
   const text = fs.readFileSync(MANIFEST, 'utf-8');
   const raw = text.split('\n');
-  // The markers are the OUTPUT, so they are stripped before anything is measured:
-  // otherwise the second run compares the file against a version of itself that
-  // already contains its own answer, and could never report drift.
+  // The markers are the OUTPUT, so they are stripped before anything is measured: otherwise the second run compares the file against a version of itself that already contains its own answer, and could never report drift.
   const isMarker = (l: string): boolean =>
     l.startsWith('  // >>> gen-manifest') || l.startsWith('  // <<< gen-manifest');
   const lines = raw.filter((l) => !isMarker(l));
@@ -277,8 +272,7 @@ function main(argv: string[]): number {
     return 1;
   }
 
-  // Only marker lines are inserted: every generated entry's text is already proven
-  // equal to its own serialisation, so the array does not move and the lock cannot.
+  // Only marker lines are inserted: every generated entry's text is already proven equal to its own serialisation, so the array does not move and the lock cannot.
   const out: string[] = [];
   let r = 0;
   for (let i = 0, s = 0; i < lines.length; i++) {

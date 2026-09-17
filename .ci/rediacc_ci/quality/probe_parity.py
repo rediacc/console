@@ -116,33 +116,24 @@ import sys
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The two subjects, spelled exactly as the twin spells them, because the spelling
-# lands in the finding text and in the log_step banner.
+# The two subjects, spelled exactly as the twin spells them, because the spelling lands in the finding text and in the log_step banner.
 CONSUMER = "packages/cli/src/utils/secure-storage.ts"
 PROBE = "scripts/drills/transfer.sh"
 
 # Cleanup-only verbs, carried verbatim from the twin with its reasoning:
 # "The consumer unlinks; the probe purges. Both remove the key and neither is on
-# the success path the probe exists to predict, so they are interchangeable here.
-# Anything else must be exercised."
+# the success path the probe exists to predict, so they are interchangeable here. Anything else must be exercised."
 EXEMPT_VERBS = ("unlink", "purge", "revoke")
 
 # The em dash the twin's require_input lead carries. Named rather than embedded;
 # see the port notes.
 EM_DASH = "—"
 
-# `grep -oE "execFileSync\('keyctl', \['[a-z]+"` then `grep -oE "'[a-z]+$"`.
-# TWO STAGES, NOT ONE, because that is what the twin does and the intermediate
-# string is what the second pattern anchors against. Collapsing them into one
-# capture group would give the same answer today and a different one the moment
-# the consumer's call shape grows a second quoted argument before the verb.
+# `grep -oE "execFileSync\('keyctl', \['[a-z]+"` then `grep -oE "'[a-z]+$"`. TWO STAGES, NOT ONE, because that is what the twin does and the intermediate string is what the second pattern anchors against. Collapsing them into one capture group would give the same answer today and a different one the moment the consumer's call shape grows a second quoted argument before the verb.
 CONSUMER_CALL = re.compile(r"execFileSync\('keyctl', \['[a-z]+")
 TRAILING_VERB = re.compile(r"'[a-z]+$")
 
-# `grep -oE '(^|[^-[:alnum:]_])keyctl [a-z]+'`. The leading alternation is the
-# word boundary: it rejects `xkeyctl show` and `re-keyctl add` while admitting a
-# line that STARTS with the command. POSIX [[:alnum:]] is spelled out rather than
-# abbreviated to `\w`, which in Python also admits `_` and every unicode letter.
+# `grep -oE '(^|[^-[:alnum:]_])keyctl [a-z]+'`. The leading alternation is the word boundary: it rejects `xkeyctl show` and `re-keyctl add` while admitting a line that STARTS with the command. POSIX [[:alnum:]] is spelled out rather than abbreviated to `\w`, which in Python also admits `_` and every unicode letter.
 PROBE_CALL = re.compile(r"(?:^|[^-a-zA-Z0-9_])keyctl [a-z]+")
 
 # `sed 's/[[:space:]]*#.*$//'`, first match only, per line.
@@ -175,8 +166,7 @@ def probe_verbs(text: str) -> list[str]:
         stripped = COMMENT_STRIP.sub("", line, count=1)
         for hit in PROBE_CALL.findall(stripped):
             # `awk '{print $NF}'`: the last whitespace-separated field. The match
-            # may carry a leading boundary character, which this discards exactly
-            # as awk does.
+            # may carry a leading boundary character, which this discards exactly as awk does.
             fields = hit.split()
             if fields:
                 verbs.add(fields[-1])
@@ -251,9 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("partial probe this gate exists to catch.")
         return 1
 
-    # `tr '\n' ' '` leaves a TRAILING SPACE on both banner lines. Reproduced,
-    # because the differential compares normalized text and a gate that quietly
-    # tidied its own output would be a difference nobody chose.
+    # `tr '\n' ' '` leaves a TRAILING SPACE on both banner lines. Reproduced, because the differential compares normalized text and a gate that quietly tidied its own output would be a difference nobody chose.
     log.info("consumer verbs: %s " % " ".join(consumer))
     log.info("probe verbs:    %s " % " ".join(probe))
 
@@ -284,8 +272,7 @@ def selftest() -> int:
     the corpus below, so adding a case raises it automatically and deleting one
     that stopped running turns the suite red rather than quietly shortening it.
     """
-    # The corpus, as (label, text, expected) triples. The FLOOR is len(corpus)
-    # plus the fixed structural checks, computed at the end.
+    # The corpus, as (label, text, expected) triples. The FLOOR is len(corpus) plus the fixed structural checks, computed at the end.
     consumer_cases = [
         ("one call", "execFileSync('keyctl', ['add', k])", ["add"]),
         (
@@ -296,8 +283,7 @@ def selftest() -> int:
             ),
             ["add", "pipe"],
         ),
-        # NEGATIVE: a different binary must not contribute a verb. Without this
-        # the extractor could be `\['[a-z]+` and still pass every positive case.
+        # NEGATIVE: a different binary must not contribute a verb. Without this the extractor could be `\['[a-z]+` and still pass every positive case.
         ("a different command is ignored", "execFileSync('gpg', ['add', k])", []),
         ("prose mentioning keyctl add is ignored", "// we call keyctl add here", []),
         ("nothing at all", "", []),
@@ -310,8 +296,7 @@ def selftest() -> int:
             "keyctl purge user\nkeyctl add @u\nkeyctl add @s\n",
             ["add", "purge"],
         ),
-        # THE FOUNDING NEGATIVE. A verb named only in a comment must NOT count:
-        # this is the exact defect the twin's planted-defect proof found.
+        # THE FOUNDING NEGATIVE. A verb named only in a comment must NOT count: this is the exact defect the twin's planted-defect proof found.
         ("a verb only in a comment does not count", "    # keyctl pipe reads it back", []),
         ("a trailing comment does not hide the code before it", "keyctl add  # then pipe", ["add"]),
         # NEGATIVE: the leading boundary class must reject a longer identifier.
@@ -322,8 +307,7 @@ def selftest() -> int:
     missing_cases = [
         ("a gap is reported", ["add", "pipe"], ["add"], ["pipe"]),
         ("full coverage reports nothing", ["add", "pipe"], ["add", "pipe"], []),
-        # BOTH DIRECTIONS ON THE EXEMPTION: it must forgive its three verbs and
-        # must NOT forgive anything else.
+        # BOTH DIRECTIONS ON THE EXEMPTION: it must forgive its three verbs and must NOT forgive anything else.
         ("an exempt verb is forgiven", ["unlink", "purge", "revoke"], [], []),
         ("a non-exempt verb is not forgiven", ["search"], [], ["search"]),
         (

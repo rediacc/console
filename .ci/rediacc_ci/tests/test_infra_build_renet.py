@@ -64,10 +64,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "build_renet.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/infra/build-renet.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/infra/build_renet.py")
 
-# The recording `./build.sh`, standing in for the real Go build. Written as
-# Python and configured by its own TEXT rather than through the environment: the
-# subject under test reads three environment variables of its own, and a fixture
-# that added five more would make any env-shaped divergence unattributable.
+# The recording `./build.sh`, standing in for the real Go build. Written as Python and configured by its own TEXT rather than through the environment: the subject under test reads three environment variables of its own, and a fixture that added five more would make any env-shaped divergence unattributable.
 FAKE_BUILD_SH = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -83,20 +80,12 @@ if PRODUCES:
 sys.exit(RC)
 """
 
-# The fake `uname`. TWO forms are answered, and the second one is a finding
-# about the harness worth recording: `-m` is asked by `common.sh:510`
+# The fake `uname`. TWO forms are answered, and the second one is a finding about the harness worth recording: `-m` is asked by `common.sh:510`
 # (`CI_ARCH="$(detect_arch)"`, evaluated AT SOURCE TIME), and `-s` twice by the
-# twin -- once for `common.sh:509`'s `detect_os` and once for the twin's own
-# `.exe` decision. The port sources nothing, so it asks `-s` once and `-m`
-# never. That call-count difference is NOT compared anywhere below, deliberately:
-# it comes from a library the twin happens to source and not from the subject's
-# own logic, and the OBSERVABLE it feeds (`CI_OS`/`CI_ARCH`, exported into a
+# twin -- once for `common.sh:509`'s `detect_os` and once for the twin's own `.exe` decision. The port sources nothing, so it asks `-s` once and `-m` never. That call-count difference is NOT compared anywhere below, deliberately: it comes from a library the twin happens to source and not from the subject's own logic, and the OBSERVABLE it feeds (`CI_OS`/`CI_ARCH`, exported into a
 # child that no longer exists) is unread by either subject.
 #
-# Any OTHER form exits 1 loudly rather than answering, so a subject that started
-# asking a different question shows up as a failure instead of a silent default.
-# The first draft answered only `-s` and the `-m` call put a diagnostic into the
-# twin's stderr on every case, which read as a divergence in the subject.
+# Any OTHER form exits 1 loudly rather than answering, so a subject that started asking a different question shows up as a failure instead of a silent default. The first draft answered only `-s` and the `-m` call put a diagnostic into the twin's stderr on every case, which read as a divergence in the subject.
 FAKE_UNAME = """#!/usr/bin/env python3
 import sys
 SYSTEM = %(system)r
@@ -116,19 +105,14 @@ sys.stderr.write("fake go should never be executed: %r\\n" % (sys.argv[1:],))
 sys.exit(97)
 """
 
-# Prints one identity from the port, for the digest cross-check below. A
-# separate process, so the environment `build_identity()` reads can be STATED
-# rather than inherited from whoever is running the suite.
+# Prints one identity from the port, for the digest cross-check below. A separate process, so the environment `build_identity()` reads can be STATED rather than inherited from whoever is running the suite.
 IDENTITY_HARNESS = (
     "import sys; sys.path.insert(0, sys.argv[1]); "
     "from rediacc_ci.infra import build_renet; "
     "print(build_renet.build_identity([]))"
 )
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather
-# than derived: a PATH built by copying "everything except go" is a PATH nobody
-# can state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except go" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -253,8 +237,7 @@ def _run(
         "HOME": str(root.parent),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -288,8 +271,7 @@ def _run(
         "calls": calls,
         "stamp": stamp_path.read_text(encoding="utf-8") if stamp_path.exists() else None,
         "binaries": sorted(p.name for p in bin_dir.iterdir()) if bin_dir.is_dir() else None,
-        # Masked like stdout/stderr: the fixture root differs between the two
-        # runs by construction, and an unmasked comparison would report every
+        # Masked like stdout/stderr: the fixture root differs between the two runs by construction, and an unmasked comparison would report every
         # case as divergent for that reason alone.
         "github_env": (
             gh.read_text(encoding="utf-8").replace(str(root), "<root>") if github_env else None
@@ -299,9 +281,7 @@ def _run(
 
 KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexamplekeymaterialforthetestfixture"
 
-# `default|` plus the first 16 hex of sha256("") and of KEY. Computed here rather
-# than imported from the port: a constant the SUBJECT supplies cannot contradict
-# the subject.
+# `default|` plus the first 16 hex of sha256("") and of KEY. Computed here rather than imported from the port: a constant the SUBJECT supplies cannot contradict the subject.
 EMPTY_KEY_DIGEST = "e3b0c44298fc1c14"
 
 CASES = [
@@ -479,8 +459,7 @@ def test_a_missing_sha256sum_is_the_one_deliberate_divergence(tmp_path):
     assert new["stamp"] == "default|" + EMPTY_KEY_DIGEST, (
         "the port must keep the key component: %r" % new["stamp"]
     )
-    # The rest of the run agrees, which is what makes this a scoped divergence
-    # rather than two unrelated programs.
+    # The rest of the run agrees, which is what makes this a scoped divergence rather than two unrelated programs.
     assert new["stdout"] == old["stdout"]
     assert new["calls"] == old["calls"]
     assert new["binaries"] == old["binaries"]

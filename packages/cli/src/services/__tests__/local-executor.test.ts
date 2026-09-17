@@ -68,10 +68,7 @@ vi.mock('../config/config-resources.js', () => ({
 }));
 
 // The three network-facing verbs are stubbed; everything else stays REAL. In
-// particular `isDatastoreScopedId` — the executor asks it whether a resolved
-// datastore identity will actually scope the write, and the licence writer asks
-// it where to put the file. Stubbing it here would let the two answers drift,
-// which is the exact class of bug this module is guarding against.
+// particular `isDatastoreScopedId` — the executor asks it whether a resolved datastore identity will actually scope the write, and the licence writer asks it where to put the file. Stubbing it here would let the two answers drift, which is the exact class of bug this module is guarding against.
 vi.mock('../account/license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -79,13 +76,8 @@ vi.mock('../account/license.js', async (importOriginal) => ({
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
-// The opportunistic licence refresh is gated by a COOLDOWN persisted to a real
-// file under the user's state dir. Without this mock the test reads whatever
-// that file happens to hold on the machine running it: on a developer box that
-// has run `rdc` recently the cooldown suppresses the refresh and the test
-// passes, while CI — with a clean state dir — takes the refresh path and gets a
-// different error code. It passed locally and failed in CI for exactly that
-// reason. Point it at a per-process temp path so the test decides its own state.
+// The opportunistic licence refresh is gated by a COOLDOWN persisted to a real file under the user's state dir. Without this mock the test reads whatever that file happens to hold on the machine running it: on a developer box that has run `rdc` recently the cooldown suppresses the refresh and the test passes, while CI — with a clean state dir — takes the refresh path and gets a
+// different error code. It passed locally and failed in CI for exactly that reason. Point it at a per-process temp path so the test decides its own state.
 vi.mock('../account/license-refresh-state.js', () => ({
   isRefreshDue: vi.fn(() => Promise.resolve(false)),
   markRefreshAttempted: vi.fn(() => Promise.resolve()),
@@ -189,8 +181,7 @@ describe('localExecutorService first-use onboarding', () => {
   });
 
   it('issues a license on missing-license recovery for operate-tier repository_up (rediacc/console#482)', async () => {
-    // repository_up is on the pre-flight deny-list, but recovery after a
-    // genuine missing-license failure on a fresh machine must still issue.
+    // repository_up is on the pre-flight deny-list, but recovery after a genuine missing-license failure on a fresh machine must still issue.
     mockExecStreaming
       .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
         handlers.onStderr?.(
@@ -641,10 +632,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     }
   });
 
-  // `rdc repo commit` freezes a working fork into a NEW immutable repo, and
-  // renet's cmd layer refuses to start without a licence for that new repo's
-  // name (cmd/renet/repository_commit.go's
-  // ValidateInstalledRepoLicenseForCreate(scope, commitName)). Against an
+  // `rdc repo commit` freezes a working fork into a NEW immutable repo, and renet's cmd layer refuses to start without a licence for that new repo's name (cmd/renet/repository_commit.go's ValidateInstalledRepoLicenseForCreate(scope, commitName)). Against an
   // enforcing binary the CLI never minted one, so commit was broken outright;
   // dev builds carry --nolicense, which is what hid it.
   describe('repo commit pre-issuance', () => {
@@ -662,9 +650,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     };
 
     beforeEach(() => {
-      // `repo commit` passes no --size, so the licence is sized from the
-      // working fork's image on disk, the same way a fork is: the commit
-      // starts life as a reflink of it.
+      // `repo commit` passes no --size, so the licence is sized from the working fork's image on disk, the same way a fork is: the commit starts life as a reflink of it.
       mockExec.mockResolvedValue(`${2 * 1024 * 1024 * 1024}\n`);
     });
 
@@ -675,9 +661,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
       expect(result.success).toBe(true);
       expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
-      // The target is params.tag (the commit object), exactly as for a fork.
-      // Minting against params.repository would licence a repo that already
-      // has one and leave the commit unlicensed, which is the bug.
+      // The target is params.tag (the commit object), exactly as for a fork. Minting against params.repository would licence a repo that already has one and leave the commit unlicensed, which is the bug.
       expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
         repositoryGuid: commitGuid,
         kind: 'fork',
@@ -710,11 +694,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       });
     });
 
-    // commit_meta rewrites an already-pushed commit's out-of-volume state
-    // mirror. It is CREATE tier in renet's map, but it provisions nothing: its
-    // cmd layer runs no licence check, and the dispatch check resolves the
-    // EXISTING repo. Pre-issuing for it would mint a second licence for a repo
-    // that already has one and spend a monthly issuance on a metadata write.
+    // commit_meta rewrites an already-pushed commit's out-of-volume state mirror. It is CREATE tier in renet's map, but it provisions nothing: its cmd layer runs no licence check, and the dispatch check resolves the EXISTING repo. Pre-issuing for it would mint a second licence for a repo that already has one and spend a monthly issuance on a metadata write.
     it('does not pre-issue for the metadata-only commit_meta verb', async () => {
       mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1', grandGuid: 'grand-1' });
 
@@ -755,19 +735,14 @@ describe('localExecutorService create/fork licensing flow', () => {
     expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
 
-  // Bug #46: `kubeCluster` used to ALSO rewrite machineName to the cluster's
-  // control node. KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST
-  // never reroutes the machine either: the caller's derived machine must stand,
-  // or every volume-level op on a k8s repo (trim, diff, commit, repo up's LUKS
-  // mount) runs on the control node instead of the host that mounts the datastore.
+  // Bug #46: `kubeCluster` used to ALSO rewrite machineName to the cluster's control node. KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never reroutes the machine either: the caller's derived machine must stand, or every volume-level op on a k8s repo (trim, diff, commit, repo up's LUKS mount) runs on the control node instead of the host that mounts the datastore.
   describe('bug #46: kubeCluster injects KUBECONFIG but never reroutes the machine', () => {
     it('runs on the caller-derived machine (the datastore attach host), not the control node', async () => {
       mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
 
       await localExecutorService.execute({
         functionName: 'repository_trim',
-        // What resolveRepoRef derives: state.datastores[D].attachedTo. This is a
-        // WORKER, deliberately not the cluster's control node.
+        // What resolveRepoRef derives: state.datastores[D].attachedTo. This is a WORKER, deliberately not the cluster's control node.
         machineName: 'worker-1',
         kubeCluster: 'c1',
         captureOutput: true,
@@ -812,22 +787,14 @@ describe('localExecutorService create/fork licensing flow', () => {
 
   // ── #74: the datastore CHANNEL ────────────────────────────────────────────
   //
-  // renet reads the datastore from the MACHINE VAULT (`p.Datastore()` ->
-  // `machineDatastore`, set only by `WithMachineVault`), which the executor builds
+  // renet reads the datastore from the MACHINE VAULT (`p.Datastore()` -> `machineDatastore`, set only by `WithMachineVault`), which the executor builds
   // from the config machine record. `repository_create` calls `AddDatastore`, which
-  // reads that vault — NOT the params bag. (The kube_* verbs DO read a `datastore`
-  // param, which is exactly how a caller comes to believe the param is heard: the
-  // same name is live on one verb and inert on another.)
+  // reads that vault — NOT the params bag. (The kube_* verbs DO read a `datastore` param, which is exactly how a caller comes to believe the param is heard: the same name is live on one verb and inert on another.)
   //
-  // So a repo on a NAMED datastore had no way to say where it lived, and every
-  // dispatch silently used the machine's default docker datastore instead.
+  // So a repo on a NAMED datastore had no way to say where it lived, and every dispatch silently used the machine's default docker datastore instead.
   //
-  // ★ THIS IS THE TEST THAT MAKES AN INERT FIX IMPOSSIBLE. It asks the CALLEE what
-  // it will accept, not the caller what it meant to send: it asserts the executor
-  // actually threads ExecuteOptions.datastore into the machine record handed to the
-  // vault builder — the one field renet ever reads. A test that only checked that
-  // some command set `params.datastore` would pass while the wire carried the wrong
-  // datastore, which is precisely the bug this guards.
+  // ★ THIS IS THE TEST THAT MAKES AN INERT FIX IMPOSSIBLE. It asks the CALLEE what it will accept, not the caller what it meant to send: it asserts the executor actually threads ExecuteOptions.datastore into the machine record handed to the vault builder — the one field renet ever reads. A test that only checked that some command set `params.datastore` would pass while the wire
+  // carried the wrong datastore, which is precisely the bug this guards.
   describe('datastore override (#74)', () => {
     it('threads options.datastore into the machine record the vault is built from', async () => {
       await localExecutorService.execute({
@@ -843,9 +810,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     });
 
     it('leaves the machine default intact when no datastore is declared', async () => {
-      // The fallback is CORRECT for a machine with no named datastore, and #74 is
-      // that the caller stayed silent — not that the default exists. A caller that
-      // declares nothing must still get the machine's own datastore.
+      // The fallback is CORRECT for a machine with no named datastore, and #74 is that the caller stayed silent — not that the default exists. A caller that declares nothing must still get the machine's own datastore.
       mockGetLocalMachine.mockResolvedValue({
         machineName: 'hostinger',
         ip: '127.0.0.1',
@@ -867,22 +832,13 @@ describe('localExecutorService create/fork licensing flow', () => {
 
   // ── Datastore-scoped pre-issuance ─────────────────────────────────────────
   //
-  // Live on a real VM: `repo create <r> --datastore <d>` against an enforcing
-  // renet printed "License activated" (slot claimed, meter moved) and then died
+  // Live on a real VM: `repo create <r> --datastore <d>` against an enforcing renet printed "License activated" (slot claimed, meter moved) and then died
   // with exit 10 LICENSE_REQUIRED, repo rolled back. The licence was real; it
-  // was in the wrong place. The CLI wrote it to the unscoped
-  // `license/repos/<guid>/`, while renet's create-tier check for a
-  // datastore-resident repo reads ONLY `license/datastores/<id>/repos/<guid>/`
-  // — a clean break with no dual read (pkg/license/store.go RepoLicenseBaseDir).
+  // was in the wrong place. The CLI wrote it to the unscoped `license/repos/<guid>/`, while renet's create-tier check for a datastore-resident repo reads ONLY `license/datastores/<id>/repos/<guid>/` — a clean break with no dual read (pkg/license/store.go RepoLicenseBaseDir).
   //
-  // The identity was unavailable to the pre-issuance path for a structural
-  // reason: every LATER touch reads it from renet's licence scan, and the scan
-  // is empty here because the repo does not exist yet. The DATASTORE does exist,
-  // so the identity comes from the machine's datastore registry instead.
+  // The identity was unavailable to the pre-issuance path for a structural reason: every LATER touch reads it from renet's licence scan, and the scan is empty here because the repo does not exist yet. The DATASTORE does exist, so the identity comes from the machine's datastore registry instead.
   //
-  // These tests ask what reaches `issueRepoLicense`, which is the function that
-  // both stamps the payload and picks the store path. Asserting that some
-  // command "knows" the datastore would pass while the wire stayed unscoped.
+  // These tests ask what reaches `issueRepoLicense`, which is the function that both stamps the payload and picks the store path. Asserting that some command "knows" the datastore would pass while the wire stayed unscoped.
   describe('datastore-scoped repo licensing (create/fork pre-issuance)', () => {
     const DS_ID = '06a4f728-4c53-4b0e-9f61-2f0a1d3e5c77';
 
@@ -917,8 +873,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       const result = await localExecutorService.execute(datastoreCreate);
 
       expect(result.success).toBe(true);
-      // One field, two jobs: the server embeds it in the signed payload and the
-      // writer puts the blob on the path renet reads for this datastore.
+      // One field, two jobs: the server embeds it in the signed payload and the writer puts the blob on the path renet reads for this datastore.
       expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
         repositoryGuid: 'guid-1',
         kind: 'grand',
@@ -961,8 +916,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       mockGetRepository.mockResolvedValue({
         repositoryGuid: 'guid-1',
         grandGuid: 'grand-1',
-        // Placement is a property of the FAMILY, so the parent's read is the
-        // fork's answer: a fork lands in the datastore its parent lives in.
+        // Placement is a property of the FAMILY, so the parent's read is the fork's answer: a fork lands in the datastore its parent lives in.
         placement: { datastore: 'drill-ds' },
       });
 
@@ -983,19 +937,14 @@ describe('localExecutorService create/fork licensing flow', () => {
     it('re-issues with identity proofs under the same scope, so the proven blob lands scoped too', async () => {
       await localExecutorService.execute(datastoreCreate);
 
-      // The post-create refresh prefers renet's scan, which now sees the repo.
-      // The resolved id rides along as the fallback for a scan that cannot
-      // answer — without it the PROVEN reissue would land unscoped and undo the
-      // pre-issuance fix one step later.
+      // The post-create refresh prefers renet's scan, which now sees the repo. The resolved id rides along as the fallback for a scan that cannot answer — without it the PROVEN reissue would land unscoped and undo the pre-issuance fix one step later.
       expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
         repositoryGuid: 'guid-1',
         datastoreId: DS_ID,
       });
     });
 
-    // Failing closed is the whole point: an unscoped write is INVISIBLE to
-    // renet's validation, so "issue anyway and hope" costs an activation and
-    // still fails the create. Refusing costs nothing — it runs before issuance.
+    // Failing closed is the whole point: an unscoped write is INVISIBLE to renet's validation, so "issue anyway and hope" costs an activation and still fails the create. Refusing costs nothing — it runs before issuance.
     describe('refuses rather than issuing into a scope it cannot name', () => {
       it('when the datastore is absent from the machine registry', async () => {
         registryReturns([{ name: 'other-ds', datastoreId: DS_ID }]);
@@ -1029,10 +978,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         expect(mockIssueRepoLicense).not.toHaveBeenCalled();
       });
 
-      // The refusal belongs to the path that SPENDS. Once the repo exists, the
-      // scan is the authority and this resolution is only a fallback, so a
-      // registry that goes unreadable must not fail an operation that already
-      // succeeded.
+      // The refusal belongs to the path that SPENDS. Once the repo exists, the scan is the authority and this resolution is only a fallback, so a registry that goes unreadable must not fail an operation that already succeeded.
       it('but never after the repo exists: a post-create registry failure is not fatal', async () => {
         let calls = 0;
         mockExec.mockImplementation((command: string) => {
@@ -1102,8 +1048,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     });
 
     it('reassembles a line split across chunks', async () => {
-      // What `repo logs --follow` depends on: a socket read can split mid-line, and
-      // a handler that printed per-chunk would tear the line in half.
+      // What `repo logs --follow` depends on: a socket read can split mid-line, and a handler that printed per-chunk would tear the line in half.
       streamStdout(['[container_logs] li', 'ne1\n']);
       const out = captureStdout();
       await localExecutorService.execute({
@@ -1168,9 +1113,7 @@ describe('localExecutorService create/fork licensing flow', () => {
   describe("refusals survive the executor's catch-all", () => {
     it('rethrows a CliExitError instead of flattening it to exit 1', async () => {
       // The catch-all turns a thrown error into {success:false, exitCode:1}. That
-      // is right for an execution failure and WRONG for a deliberate refusal: a
-      // BUSY provisioning-lock timeout reached the user as an anonymous exit 1,
-      // losing its code, its retryable flag and its "here is the pid" next-action.
+      // is right for an execution failure and WRONG for a deliberate refusal: a BUSY provisioning-lock timeout reached the user as an anonymous exit 1, losing its code, its retryable flag and its "here is the pid" next-action.
       const { busy } = await import('../../utils/cli-exit-error.js');
       const { CliExitError } = await import('../../utils/cli-exit-error.js');
       mockProvisionRenetToRemote.mockImplementationOnce(() => {

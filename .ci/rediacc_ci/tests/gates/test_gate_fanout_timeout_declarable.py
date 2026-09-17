@@ -60,10 +60,7 @@ from rediacc_ci import paths
 
 HERE = pathlib.Path(__file__).resolve().parent
 
-# The calls that hand work to a subject process. `harness.run` is included
-# because it is this tree's own wrapper around `subprocess.run` and forwards
-# `timeout` straight through -- gating only the stdlib name would miss every
-# gate test in the directory, which is most of them.
+# The calls that hand work to a subject process. `harness.run` is included because it is this tree's own wrapper around `subprocess.run` and forwards `timeout` straight through -- gating only the stdlib name would miss every gate test in the directory, which is most of them.
 RUNNERS = frozenset({"run", "Popen", "check_output", "call"})
 RUNNER_OWNERS = frozenset({"subprocess", "harness", "proc"})
 
@@ -259,9 +256,7 @@ def problems(source: str) -> list[str]:
 
 # ---- the synthetic corpus the analyser is judged against --------------------
 #
-# BY CONSTRUCTION, never by mutating a tracked file: these prove the predicates
-# still discriminate, which is the only thing that makes the real scan's silence
-# mean anything.
+# BY CONSTRUCTION, never by mutating a tracked file: these prove the predicates still discriminate, which is the only thing that makes the real scan's silence mean anything.
 
 _CLEAN_DIRECT = """
 import subprocess
@@ -337,14 +332,9 @@ def drive(subject):
     return subprocess.run(["bash", subject], timeout=600)
 """
 
-# THE FALSE POSITIVE THIS GATE ACTUALLY PRODUCED ON ITS FIRST RUN, kept as a
-# control so it cannot come back. This is the shape of `test_gate_media_docs.py`:
-# it globs at TEST time, and what it globs is DATA (which media modules exist,
+# THE FALSE POSITIVE THIS GATE ACTUALLY PRODUCED ON ITS FIRST RUN, kept as a control so it cannot come back. This is the shape of `test_gate_media_docs.py`: it globs at TEST time, and what it globs is DATA (which media modules exist,
 # for a coverage assertion) rather than the thing it runs; its subjects are fixed
-# module-level constants whose cost its author measured. The first membership
-# rule here asked only "has a glob and runs a subject with a timeout" and flagged
-# it, which would have demanded a declarable timeout from a module whose subject
-# set cannot grow behind anyone's back.
+# module-level constants whose cost its author measured. The first membership rule here asked only "has a glob and runs a subject with a timeout" and flagged it, which would have demanded a declarable timeout from a module whose subject set cannot grow behind anyone's back.
 _GLOBS_DATA_RUNS_FIXED_SUBJECTS = """
 import subprocess
 COVERAGE = ROOT / "coverage.sh"
@@ -355,9 +345,7 @@ def test_every_module_is_covered(gate):
     gate.assert_eq(result.rc, 0, "probe ran")
 """
 
-# ONE HOP, which is the real member's spelling: the glob sits inside a helper the
-# module body calls. A direct-only membership rule would miss the single case
-# this gate exists for.
+# ONE HOP, which is the real member's spelling: the glob sits inside a helper the module body calls. A direct-only membership rule would miss the single case this gate exists for.
 _DISCOVERED_VIA_HELPER = """
 import subprocess
 def ported():

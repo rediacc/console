@@ -136,11 +136,7 @@ def selftest() -> int:
         narrowed is not None and narrowed < full,
         "narrowed=%s full=%s" % (narrowed, full),
     )
-    # CONTROL ON THE PLANT: `.` compared with itself must not look like a narrowing,
-    # or every verdict below is an artefact of the comparison rather than of the args.
-    # Two SEPARATE runs of the same args, not one cached answer: this proves the
-    # oracle is deterministic, so `mine < full` below reports the arguments rather
-    # than the variance of the instrument.
+    # CONTROL ON THE PLANT: `.` compared with itself must not look like a narrowing, or every verdict below is an artefact of the comparison rather than of the args. Two SEPARATE runs of the same args, not one cached answer: this proves the oracle is deterministic, so `mine < full` below reports the arguments rather than the variance of the instrument.
     check("CONTROL: the full scope does not narrow itself", biome_count(["."], fresh=True) == full)
     return bad
 

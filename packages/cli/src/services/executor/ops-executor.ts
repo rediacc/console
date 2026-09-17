@@ -80,12 +80,8 @@ class OpsExecutorService {
     try {
       const context = await configService.getCurrent();
       if (context?.renetPath && context.renetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
-        // Only if it is actually there. A configured renetPath outlives the
-        // checkout it was written from -- this repo uses worktrees, and a
-        // config carrying another worktree's absolute path made `rdc ops
-        // status` die with a bare `spawn /some/other/tree/bin/renet ENOENT`
-        // one line after ./rdc.sh printed "Renet available at:" a DIFFERENT
-        // path it had just built. Naming the stale setting is the whole fix.
+        // Only if it is actually there. A configured renetPath outlives the checkout it was written from -- this repo uses worktrees, and a config carrying another worktree's absolute path made `rdc ops status` die with a bare `spawn /some/other/tree/bin/renet ENOENT` one line after ./rdc.sh printed "Renet available at:" a DIFFERENT path it had just built. Naming the stale setting
+        // is the whole fix.
         if (existsSync(context.renetPath)) {
           return context.renetPath;
         }
@@ -128,8 +124,7 @@ class OpsExecutorService {
       capture?: boolean;
       backend?: OpsBackend;
       timeout?: number;
-      // Grace between SIGTERM and SIGKILL on timeout. Exposed only so the
-      // regression test can drive the real kill path in ~1s instead of 10s.
+      // Grace between SIGTERM and SIGKILL on timeout. Exposed only so the regression test can drive the real kill path in ~1s instead of 10s.
       sigkillGraceMs?: number;
     } = {}
   ): Promise<OpsCommandResult> {
@@ -148,12 +143,7 @@ class OpsExecutorService {
       const child = spawn(renetPath, args, {
         env,
         stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : ['inherit', 'pipe', 'pipe'],
-        // detached: renet spawns the VM process (QEMU/KVM) as its own child.
-        // A new process group makes `child.pid` the group leader, so a timeout
-        // can signal the WHOLE tree (renet + the VM grandchild) via a negative
-        // pid — killing renet alone would orphan the grandchild. renet ops runs
-        // non-interactively (-o json), so it never needs the controlling TTY
-        // this detaches from.
+        // detached: renet spawns the VM process (QEMU/KVM) as its own child. A new process group makes `child.pid` the group leader, so a timeout can signal the WHOLE tree (renet + the VM grandchild) via a negative pid — killing renet alone would orphan the grandchild. renet ops runs non-interactively (-o json), so it never needs the controlling TTY this detaches from.
         detached: true,
       });
 
@@ -178,8 +168,7 @@ class OpsExecutorService {
 
       // Signal the whole process group (renet + its VM grandchild). detached
       // made child.pid the group leader, so a negative pid reaches the tree;
-      // fall back to the child alone if the group is already gone or the
-      // platform has no process groups (Windows).
+      // fall back to the child alone if the group is already gone or the platform has no process groups (Windows).
       const killGroup = (signal: NodeJS.Signals): void => {
         try {
           if (child.pid) process.kill(-child.pid, signal);
@@ -204,13 +193,8 @@ class OpsExecutorService {
 
       const timer = setTimeout(() => {
         timedOut = true;
-        // Round-31's fix rejected here immediately and unref'd the SIGKILL
-        // timer, so process.exit() (reached via handleError) fired before the
-        // 10s escalation, leaving renet AND the QEMU grandchild alive. Instead:
-        // SIGTERM the group now, escalate to SIGKILL after the grace window,
-        // and settle only when the child actually `close`s -- so the kill
-        // completes BEFORE the CLI exits. A hard cap still guarantees we never
-        // hang forever if `close` never arrives (uninterruptible sleep).
+        // Round-31's fix rejected here immediately and unref'd the SIGKILL timer, so process.exit() (reached via handleError) fired before the 10s escalation, leaving renet AND the QEMU grandchild alive. Instead: SIGTERM the group now, escalate to SIGKILL after the grace window, and settle only when the child actually `close`s -- so the kill completes BEFORE the CLI exits. A hard
+        // cap still guarantees we never hang forever if `close` never arrives (uninterruptible sleep).
         killGroup('SIGTERM');
         escalateTimer = setTimeout(() => killGroup('SIGKILL'), sigkillGrace);
         hardCapTimer = setTimeout(() => {

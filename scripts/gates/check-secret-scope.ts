@@ -71,12 +71,8 @@ import {
   selftestVerdict,
 } from '../lib/shrink-only-baseline.js';
 
-// ANCHORED ON THIS FILE, not on the caller's working directory. This read
-// `process.env.SECRET_SCOPE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
-// did not see: its pattern only matched cwd as the FIRST argument of
-// path.resolve/join, so the commonest shape of its own rule passed. The
-// seam is preserved -- SECRET_SCOPE_ROOT still overrides -- but the default is
-// derived from this file's location.
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.SECRET_SCOPE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- SECRET_SCOPE_ROOT still overrides -- but the default is derived
+// from this file's location.
 const ROOT = envRoot('SECRET_SCOPE_ROOT');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
 const BASELINE = join(ROOT, '.ci', 'config', 'secret-scope-baseline.json');
@@ -168,20 +164,17 @@ function selftest(): number {
     'a NEW org-scope read is an addition',
     baselineAdditions(old, [...old, 'b.yml:NEW']).join() === 'b.yml:NEW'
   );
-  // CONTROL: the same call with nothing new must be empty, or the assertion above
-  // would pass against a baselineAdditions that reports everything.
+  // CONTROL: the same call with nothing new must be empty, or the assertion above would pass against a baselineAdditions that reports everything.
   check('CONTROL: an unchanged set adds nothing', baselineAdditions(old, old).length === 0);
   check(
     'the write path REFUSES a growing set',
     selftestVerdict({ additions: ['b.yml:NEW'] })?.kind === 'would-grow'
   );
-  // CONTROL: draining must be permitted, or the gate would freeze the backlog
-  // forever instead of ratcheting it down.
+  // CONTROL: draining must be permitted, or the gate would freeze the backlog forever instead of ratcheting it down.
   check('CONTROL: the write path ALLOWS a shrinking set', selftestVerdict({}) === null);
   // The floor is the difference between "clean" and "did not run".
   check('an empty corpus is under the floor', countWorkflows('/nonexistent') < MIN_WORKFLOWS);
-  // CONTROL: the REAL corpus must clear it, or the floor would red every run and
-  // get raised away by the next person who trips on it.
+  // CONTROL: the REAL corpus must clear it, or the floor would red every run and get raised away by the next person who trips on it.
   check('CONTROL: the real corpus clears the floor', countWorkflows(WORKFLOWS) >= MIN_WORKFLOWS);
   check('the allowlist exempts GITHUB_TOKEN', ALLOWED.has('GITHUB_TOKEN'));
   check('the allowlist exempts the bootstrap', ALLOWED.has('BWS_ACCESS_TOKEN'));

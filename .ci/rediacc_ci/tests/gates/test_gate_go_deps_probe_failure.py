@@ -60,8 +60,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-go-deps-probe-failure.sh"
 
 REAL_GATE = paths.from_root(".ci", "scripts", "quality", "check-go-deps.sh")
 
-# The five behaviours of the fake `go`, lifted from the twin's heredoc verbatim
-# so a reader can diff the two. `clean` emits only the main module, which is what
+# The five behaviours of the fake `go`, lifted from the twin's heredoc verbatim so a reader can diff the two. `clean` emits only the main module, which is what
 # a real `go list -m` always emits at minimum; `empty` is the mode a genuinely
 # broken toolchain cannot easily produce and is the subtlest of the five.
 GO_SHIM = """#!/bin/bash
@@ -135,8 +134,7 @@ def build_fixture(gate, root: pathlib.Path) -> Fixture:
 
 def test_healthy_clean_tree_passes(gate):
     gate.log_test("baseline: a clean module list must pass")
-    # Without this the failure cases could pass for the wrong reason, e.g. the
-    # gate erroring on the fixture itself.
+    # Without this the failure cases could pass for the wrong reason, e.g. the gate erroring on the fixture itself.
     with harness.temp_dir() as root:
         fixture = build_fixture(gate, root)
         fixture.install_fake_go("clean")
@@ -179,8 +177,7 @@ def test_probe_failure_is_not_up_to_date(gate):
 
 def test_probe_failure_surfaces_the_real_error(gate):
     gate.log_test("the diagnostic must name the underlying cause")
-    # A diagnostic that does not name it sends the reader hunting through their
-    # own tree for a dependency problem that is really a toolchain problem.
+    # A diagnostic that does not name it sends the reader hunting through their own tree for a dependency problem that is really a toolchain problem.
     with harness.temp_dir() as root:
         fixture = build_fixture(gate, root)
         fixture.install_fake_go("fail")
@@ -194,8 +191,7 @@ def test_probe_failure_surfaces_the_real_error(gate):
 
 def test_empty_output_is_a_failure_not_a_clean_tree(gate):
     gate.log_test("exit 0 with empty stdout looked exactly like success")
-    # `go list -m` on a real module always emits at least the main module, so
-    # zero modules means the probe returned nothing usable.
+    # `go list -m` on a real module always emits at least the main module, so zero modules means the probe returned nothing usable.
     with harness.temp_dir() as root:
         fixture = build_fixture(gate, root)
         fixture.install_fake_go("empty")
@@ -218,8 +214,7 @@ def test_unparsable_output_is_a_failure(gate):
 
 def test_real_gate_has_no_swallowing_redirects(gate):
     gate.log_test("the fix is worthless if the swallowing shape comes back")
-    # The twin runs `grep -A2 'go list -u -m -json all'` over the REAL gate. This
-    # is the same window in Python: the matching line plus the two after it. Read
+    # The twin runs `grep -A2 'go list -u -m -json all'` over the REAL gate. This is the same window in Python: the matching line plus the two after it. Read
     # from the real file and not the fixture copy on purpose, since the fixture
     # copy is what the cases above already exercised behaviourally.
     source = REAL_GATE.read_text(encoding="utf-8").splitlines()

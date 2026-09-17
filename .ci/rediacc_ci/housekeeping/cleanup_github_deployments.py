@@ -70,8 +70,7 @@ from rediacc_ci.core import common
 
 USAGE = "Usage: cleanup-github-deployments.sh --repo <owner/repo> --environment <name> [--dry-run]"
 
-# `true`, exactly. common.sh's parse_args stores strings, and the twin compares
-# against this one literal -- `--dry-run false` therefore means NOT dry run.
+# `true`, exactly. common.sh's parse_args stores strings, and the twin compares against this one literal -- `--dry-run false` therefore means NOT dry run.
 DRY_RUN_ON = "true"
 
 
@@ -110,8 +109,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as exc:
-        # `printf -v` on a key that is not a valid identifier: bash writes this
-        # and returns 2, and `set -e` takes the whole script down with it.
+        # `printf -v` on a key that is not a valid identifier: bash writes this and returns 2, and `set -e` takes the whole script down with it.
         print(str(exc), file=sys.stderr)
         return getattr(exc, "code", 2)
 
@@ -161,8 +159,7 @@ def main(argv: list[str]) -> int:
         if dry_run == DRY_RUN_ON:
             log.warn("[DRY-RUN] Would delete deployment %s (%s)" % (deployment_id, environment))
             continue
-        # Best-effort, exactly as the twin: `|| true`. A deployment that is
-        # already inactive answers 422 and that is not an error here.
+        # Best-effort, exactly as the twin: `|| true`. A deployment that is already inactive answers 422 and that is not an error here.
         _gh_silent(
             ["api", statuses_path(repo, deployment_id), "-X", "POST", "-f", "state=inactive"]
         )

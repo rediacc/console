@@ -45,8 +45,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-knip-blockers.sh"
 
-# test_accepts_real_config runs the validator over the real knip.jsonc, and the
-# validator git-greps the whole working tree for @public tags. See the docstring.
+# test_accepts_real_config runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags. See the docstring.
 REAL_TREE_TWIN = True
 
 SUBJECT_REL = "scripts/gates/check-knip-blockers.ts"
@@ -57,9 +56,7 @@ REAL_CONFIG = paths.from_root(REAL_CONFIG_REL)
 # `check-knip-blockers: 53 suppression entries validated in knip.jsonc`
 VALIDATED_RE = re.compile(r"(\d+) suppression entries validated")
 
-# The validator's own floor for a corpus that has not collapsed. Deliberately far
-# under the live count (53 on 2026-09-08): this is a "the reader still reads"
-# assertion, not a ratchet, and a ratchet here would be a second source of truth
+# The validator's own floor for a corpus that has not collapsed. Deliberately far under the live count (53 on 2026-09-08): this is a "the reader still reads" assertion, not a ratchet, and a ratchet here would be a second source of truth
 # for a number knip.jsonc already owns.
 CORPUS_FLOOR = 10
 

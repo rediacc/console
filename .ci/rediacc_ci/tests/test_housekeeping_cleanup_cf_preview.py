@@ -47,9 +47,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "housekeeping" / "cleanup_cf_preview.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
 ACCOUNT = "acct-fixture"
-# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a
-# constant called TOKEN is "a hardcoded password" to the linter even when its
-# value is visibly a fixture.
+# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a constant called TOKEN is "a hardcoded password" to the linter even when its value is visibly a fixture.
 BEARER = "tok-fixture"
 
 FAKE_CURL = """#!/usr/bin/python3
@@ -115,8 +113,7 @@ sys.exit(0)
 """
 
 # common.sh needs `dirname` and `uname` at source time and `tr` in parse_args;
-# the twin itself needs `jq`, which is a REQUIRED command of the subject and is
-# therefore the real binary on both sides -- the port shells out to the same one.
+# the twin itself needs `jq`, which is a REQUIRED command of the subject and is therefore the real binary on both sides -- the port shells out to the same one.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq")
 
 
@@ -549,8 +546,7 @@ def test_pure_helpers() -> None:
         "-H",
         "Content-Type: application/json",
     ]
-    # The two `|| echo` fallbacks are DIFFERENT shapes, and both must be false
-    # under `.success // false`.
+    # The two `|| echo` fallbacks are DIFFERENT shapes, and both must be false under `.success // false`.
     assert port.LIST_FALLBACK == '{"result":[]}'
     assert port.DELETE_FALLBACK == '{"success":false}'
 
@@ -562,12 +558,8 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
-    # The target is the SELECT CLAUSE ALONE, not the whole statement. The first
-    # version of this plant matched two source lines including their indentation,
-    # and `ruff format` re-wrapped them minutes later -- the guard below caught
-    # it, which is the reason the guard is an assertion rather than a comment.
-    # `select(true)` keeps the jq program valid and `$branch` still bound, so the
-    # ONLY thing the mutant loses is the refusal.
+    # The target is the SELECT CLAUSE ALONE, not the whole statement. The first version of this plant matched two source lines including their indentation, and `ruff format` re-wrapped them minutes later -- the guard below caught it, which is the reason the guard is an assertion rather than a comment. `select(true)` keeps the jq program valid and `$branch` still bound, so the ONLY
+    # thing the mutant loses is the refusal.
     mutated = original.replace(
         "select(.deployment_trigger.metadata.branch == $branch) ",
         "select(true) ",

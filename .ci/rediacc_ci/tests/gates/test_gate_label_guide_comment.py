@@ -52,9 +52,7 @@ REAL_LABELS = paths.from_root(".github", "labels.yml")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 ASSERT_CI_COMPLETE = paths.from_root(".ci", "scripts", "ci", "assert-ci-complete.sh")
 
-# Fixture labels file with a KNOWN set. Every name here must appear in the
-# rendered table, and the row count is asserted, so a renderer that quietly drops
-# entries cannot pass by rendering "enough" of them.
+# Fixture labels file with a KNOWN set. Every name here must appear in the rendered table, and the row count is asserted, so a renderer that quietly drops entries cannot pass by rendering "enough" of them.
 FIXTURE_LABELS = """\
 # A comment line, which the reader must skip rather than choke on.
 - name: fixture-alpha
@@ -84,8 +82,7 @@ FIXTURE_LABELS = """\
   guide: true
 """
 
-# Guide-visible rows expected from the fixture: alpha, beta, gamma (field absent)
-# plus fixture-shown (explicitly true). fixture-hidden is excluded.
+# Guide-visible rows expected from the fixture: alpha, beta, gamma (field absent) plus fixture-shown (explicitly true). fixture-hidden is excluded.
 FIXTURE_COUNT = 4
 FIXTURE_DECLARED = 5
 
@@ -215,8 +212,7 @@ def test_creates_when_absent(gate, tmp_path):
 
 
 def test_ignores_unrelated_comments(gate, tmp_path):
-    # The control for the finder: ordinary PR chatter must not be mistaken for
-    # the guide, or the guide would never be posted on a busy PR.
+    # The control for the finder: ordinary PR chatter must not be mistaken for the guide, or the guide would never be posted on a busy PR.
     guide = Guide(gate, tmp_path)
     trace = guide.trace_of(
         guide.labels,
@@ -243,9 +239,7 @@ def test_updates_when_the_body_differs(gate, tmp_path):
 
 
 def test_identical_body_performs_no_write_at_all(gate, tmp_path):
-    # THE LOAD-BEARING CASE. Asserted as trace EQUALITY: "no create" alone would
-    # be satisfied by a module that calls updateComment on every run, which is
-    # the same spam wearing a different verb.
+    # THE LOAD-BEARING CASE. Asserted as trace EQUALITY: "no create" alone would be satisfied by a module that calls updateComment on every run, which is the same spam wearing a different verb.
     guide = Guide(gate, tmp_path)
     current = [{"id": 77, "body": "@@RENDER@@", "user": BOT}]
     trace = guide.trace_of(guide.labels, current)
@@ -258,8 +252,7 @@ def test_identical_body_performs_no_write_at_all(gate, tmp_path):
 
 
 def test_a_non_bot_marker_comment_cannot_suppress_the_guide(gate, tmp_path):
-    # Anyone who can comment on a PR could otherwise post an empty comment
-    # carrying the marker and silence the guide forever.
+    # Anyone who can comment on a PR could otherwise post an empty comment carrying the marker and silence the guide forever.
     guide = Guide(gate, tmp_path)
     trace = guide.trace_of(
         guide.labels,
@@ -271,9 +264,7 @@ def test_a_non_bot_marker_comment_cannot_suppress_the_guide(gate, tmp_path):
 
 
 def test_body_renders_every_declared_label(gate, tmp_path):
-    # Driven from the fixture so the COUNT can be asserted. A renderer that
-    # silently drops entries would otherwise stay green forever: a table with
-    # most of the labels looks exactly like a table with all of them.
+    # Driven from the fixture so the COUNT can be asserted. A renderer that silently drops entries would otherwise stay green forever: a table with most of the labels looks exactly like a table with all of them.
     guide = Guide(gate, tmp_path)
     body = guide.body_of(guide.labels, [])
     gate.assert_contains(body, "fixture-alpha", "the first label is rendered")
@@ -286,10 +277,7 @@ def test_body_renders_every_declared_label(gate, tmp_path):
 
 
 def test_guide_false_is_omitted_and_its_control_is_present(gate, tmp_path):
-    # `guide: false` means "declared so the inventory gate is satisfied, but do
-    # NOT list it". THE CONTROL IS THE POINT: an assertion that fixture-hidden is
-    # absent is satisfied just as well by a renderer that dropped everything, so
-    # the two opt-IN shapes are asserted in the same breath.
+    # `guide: false` means "declared so the inventory gate is satisfied, but do NOT list it". THE CONTROL IS THE POINT: an assertion that fixture-hidden is absent is satisfied just as well by a renderer that dropped everything, so the two opt-IN shapes are asserted in the same breath.
     guide = Guide(gate, tmp_path)
     body = guide.body_of(guide.labels, [])
     gate.assert_not_contains(body, "fixture-hidden", "a guide:false label is not listed")
@@ -300,8 +288,7 @@ def test_guide_false_is_omitted_and_its_control_is_present(gate, tmp_path):
 
 
 def test_the_omitted_count_is_stated(gate, tmp_path):
-    # A reader who applies `duplicate` and cannot find it in the table needs to
-    # know the omission was deliberate rather than a bug in this comment.
+    # A reader who applies `duplicate` and cannot find it in the table needs to know the omission was deliberate rather than a bug in this comment.
     guide = Guide(gate, tmp_path)
     body = guide.body_of(guide.labels, [])
     gate.assert_contains(
@@ -314,9 +301,7 @@ def test_the_omitted_count_is_stated(gate, tmp_path):
 
 
 def test_a_malformed_guide_value_fails_loudly(gate, tmp_path):
-    # Coercion here is the dangerous shape: `guide: no` read as a truthy string
-    # would SHOW a label meant to be hidden, and `guide: yes` under a
-    # falsy-string reading would hide one meant to be shown.
+    # Coercion here is the dangerous shape: `guide: no` read as a truthy string would SHOW a label meant to be hidden, and `guide: yes` under a falsy-string reading would hide one meant to be shown.
     guide = Guide(gate, tmp_path)
     bad = guide.write(
         "badguide.yml",
@@ -329,9 +314,7 @@ def test_a_malformed_guide_value_fails_loudly(gate, tmp_path):
 
 
 def test_hiding_everything_trips_the_guide_floor(gate, tmp_path):
-    # The second vacuity route: a parser change that mis-read the field would
-    # mark every entry hidden while the declaration count still cleared
-    # MIN_LABELS, and the table would come out empty with nothing complaining.
+    # The second vacuity route: a parser change that mis-read the field would mark every entry hidden while the declaration count still cleared MIN_LABELS, and the table would come out empty with nothing complaining.
     guide = Guide(gate, tmp_path)
     hidden = guide.write(
         "allhidden.yml",
@@ -351,9 +334,7 @@ def test_body_says_it_is_generated(gate, tmp_path):
     body = guide.body_of(guide.labels, [])
     gate.assert_contains(body, ".github/labels.yml", "the body names its source of truth")
     gate.assert_contains(body, "next CI run overwrites it", "and warns against hand-editing")
-    # AND IT MUST BE READABLE. This trailer is the only thing that tells a reader
-    # their edits get overwritten, so rendering it as <sub> (tiny subscript text,
-    # exactly where an eye skips) defeats the one job it has.
+    # AND IT MUST BE READABLE. This trailer is the only thing that tells a reader their edits get overwritten, so rendering it as <sub> (tiny subscript text, exactly where an eye skips) defeats the one job it has.
     gate.assert_not_contains(body, "<sub>", "the trailer must not render as tiny subscript text")
     gate.assert_contains(body, "> Generated from", "it renders as a normal-size blockquote footer")
     gate.log_pass("the rendered body tells a human not to hand-edit it, at a size they can read")
@@ -368,8 +349,7 @@ def test_a_pipe_in_a_description_does_not_break_the_table(gate, tmp_path):
 
 
 def test_malformed_labels_file_fails_loudly(gate, tmp_path):
-    # The failure mode this replaces: a grep-shaped reader that picks out the
-    # lines it recognises and silently yields a SHORT table.
+    # The failure mode this replaces: a grep-shaped reader that picks out the lines it recognises and silently yields a SHORT table.
     guide = Guide(gate, tmp_path)
     bad = guide.write(
         "bad.yml",
@@ -395,8 +375,7 @@ def test_a_label_without_a_description_fails_loudly(gate, tmp_path):
 
 
 def test_a_truncated_labels_file_trips_the_floor(gate, tmp_path):
-    # Strict parsing rejects malformed lines but cannot notice a file truncated
-    # to something still well-formed. The floor covers that.
+    # Strict parsing rejects malformed lines but cannot notice a file truncated to something still well-formed. The floor covers that.
     guide = Guide(gate, tmp_path)
     short = guide.write("short.yml", '- name: only-one\n  description: "lonely"\n')
     out = guide.run(short, [])
@@ -408,10 +387,7 @@ def test_a_truncated_labels_file_trips_the_floor(gate, tmp_path):
 
 
 def test_the_real_labels_file_renders_every_label(gate, tmp_path):
-    # ANTI-VACUITY against the real tree: the fixture cases prove the renderer
-    # works on a file this test wrote, which says nothing about the real one.
-    # The expected count is DERIVED from the real file (declared minus
-    # guide:false), never hardcoded.
+    # ANTI-VACUITY against the real tree: the fixture cases prove the renderer works on a file this test wrote, which says nothing about the real one. The expected count is DERIVED from the real file (declared minus guide:false), never hardcoded.
     guide = Guide(gate, tmp_path)
     if not REAL_LABELS.is_file():
         gate.log_fail("the real labels file is missing: %s" % paths.relative_to_root(REAL_LABELS))
@@ -423,8 +399,7 @@ def test_the_real_labels_file_renders_every_label(gate, tmp_path):
     rows = body.count("| `")
     gate.assert_eq(rows, expected, "the real guide lists exactly the guide-visible labels")
 
-    # Anti-vacuity on the filter itself: if the real file ever stopped carrying
-    # any guide:false entry, the equality above would hold trivially and this
+    # Anti-vacuity on the filter itself: if the real file ever stopped carrying any guide:false entry, the equality above would hold trivially and this
     # case would stop testing the filter at all.
     if hidden <= 0:
         gate.log_fail(
@@ -443,9 +418,7 @@ def test_the_real_labels_file_renders_every_label(gate, tmp_path):
 
 
 def test_ci_yml_wires_the_job_with_the_narrowest_grant(gate):
-    # The module is inert unless ci.yml actually calls it, and the whole reason
-    # it is its OWN job is the permission: pull-requests:write must not be added
-    # to `initialize`, which carries a 20-step surface.
+    # The module is inert unless ci.yml actually calls it, and the whole reason it is its OWN job is the permission: pull-requests:write must not be added to `initialize`, which carries a 20-step surface.
     if not CI_WORKFLOW.is_file():
         gate.log_fail("ci.yml is missing: %s" % paths.relative_to_root(CI_WORKFLOW))
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
@@ -484,8 +457,7 @@ def test_ci_yml_wires_the_job_with_the_narrowest_grant(gate):
 
 
 def test_assert_ci_complete_judges_the_job(gate):
-    # A job absent from the aggregator can go red while `CI Complete` stays
-    # green. SOFT, not HARD: the job legitimately skips on push-to-main.
+    # A job absent from the aggregator can go red while `CI Complete` stays green. SOFT, not HARD: the job legitimately skips on push-to-main.
     if not ASSERT_CI_COMPLETE.is_file():
         gate.log_fail("the aggregator is missing: %s" % paths.relative_to_root(ASSERT_CI_COMPLETE))
     result = harness.run(["bash", str(ASSERT_CI_COMPLETE)])

@@ -175,9 +175,7 @@ BASE_FIXTURES = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 
 def test_the_fake_gh_is_the_gh() -> None:
@@ -224,9 +222,7 @@ def test_the_mutations_are_the_twins_mutations() -> None:
     assert twin[start : twin.index("'", start)] == rr.ID_SHAPE
 
 
-# ---------------------------------------------------------------------------
-# Dispatch and usage
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Dispatch and usage ---------------------------------------------------------------------------
 
 
 def test_unknown_subcommands_including_the_empty_one() -> None:
@@ -284,8 +280,7 @@ def test_max_body_must_be_a_number_and_is_checked_after_the_files() -> None:
         )
         assert code == 2, value
         assert b"--max-body must be a number, got '%s'" % value.encode() in err, err
-    # ORDER: a bad --max-body with a missing verdict is the FILE error, because
-    # require_file runs first.
+    # ORDER: a bad --max-body with a missing verdict is the FILE error, because require_file runs first.
     code, _, err, _, _ = _sides(
         "maxbody-order",
         ["plan", "--verdict", "nope.json", "--threads", "threads.json", "--max-body", "abc"],
@@ -295,9 +290,7 @@ def test_max_body_must_be_a_number_and_is_checked_after_the_files() -> None:
     assert b"Required file 'nope.json' does not exist" in err
 
 
-# ---------------------------------------------------------------------------
-# plan: the disposition parser
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- plan: the disposition parser ---------------------------------------------------------------------------
 
 
 def test_a_clean_plan() -> None:
@@ -414,8 +407,7 @@ def test_a_multi_line_disposition_is_silently_dropped() -> None:
     assert plan == {"replies": [], "skipped": [], "flagged": False}, plan
     assert b"review-reply plan: 0 reply/resolve pair(s) planned" in err
     assert b"disposition(s) name no thread" not in err, "the silence is the defect"
-    # CONTROL, so the case is not simply "this fixture never plans anything":
-    # the SAME disposition on ONE line plans a reply.
+    # CONTROL, so the case is not simply "this fixture never plans anything": the SAME disposition on ONE line plans a reply.
     fixtures["verdict.json"] = verdict("thread T_acme1: first line")
     code, out, _, _, _ = _sides("plan-multiline-control", PLAN_ARGV, fixtures=fixtures)
     assert json.loads(out)["replies"][0]["body"] == "first line"
@@ -526,9 +518,7 @@ def test_out_writes_the_plan_to_a_file_instead_of_stdout() -> None:
     assert b"1 reply/resolve pair(s) planned" in err
 
 
-# ---------------------------------------------------------------------------
-# apply: the writes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- apply: the writes ---------------------------------------------------------------------------
 
 PLAN_FILE = (
     json.dumps(
@@ -664,8 +654,7 @@ def test_the_id_shape_is_rechecked_at_the_write() -> None:
         assert code == 1, bad
         assert b"does not match the id shape; refusing" in err, bad
         assert calls == [], "a refused id must not reach gh: %r" % calls
-    # And a REFUSED id in position 2 stops the run AFTER position 1 was written,
-    # which is the non-transactional shape named in the port's docstring.
+    # And a REFUSED id in position 2 stops the run AFTER position 1 was written, which is the non-transactional shape named in the port's docstring.
     plan = json.dumps(
         {
             "replies": [
@@ -759,9 +748,7 @@ def test_a_plan_jq_cannot_read() -> None:
     assert calls == []
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_matches_id_shape_both_directions() -> None:

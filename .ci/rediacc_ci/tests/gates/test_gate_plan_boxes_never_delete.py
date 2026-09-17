@@ -45,8 +45,7 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_boxes.py")
 HOOKS = paths.from_root(".claude", "hooks", "stop")
 LIFECYCLE = paths.from_root(".ci", "config", "plan-lifecycle.json")
 
-# One more than PLAN_BOXES_MIN_PLANS (20). The floor is a real anti-vacuity clause and
-# lowering it through its env override would be testing a different gate.
+# One more than PLAN_BOXES_MIN_PLANS (20). The floor is a real anti-vacuity clause and lowering it through its env override would be testing a different gate.
 FILLERS = 21
 
 

@@ -104,15 +104,10 @@ TIMEOUT_RC = 124
 SPAWN_FAILED_RC = 127
 
 # Every call is bounded. There is no `timeout=None` path, and that is the whole
-# point of the module: an unbounded subprocess in a gate is a CI job that hangs
-# to the runner's own cap with nothing on either stream to say why. A caller that
-# genuinely needs longer says so with a number, at the call site, where a
-# reviewer sees it.
+# point of the module: an unbounded subprocess in a gate is a CI job that hangs to the runner's own cap with nothing on either stream to say why. A caller that genuinely needs longer says so with a number, at the call site, where a reviewer sees it.
 DEFAULT_TIMEOUT = 60.0
 
-# The default retry shape, matching common.sh:187-210: exponential, base 2, no
-# jitter, no cap. Named rather than inlined so the ONE place the repo's backoff
-# policy is written down is greppable.
+# The default retry shape, matching common.sh:187-210: exponential, base 2, no jitter, no cap. Named rather than inlined so the ONE place the repo's backoff policy is written down is greppable.
 DEFAULT_ATTEMPTS = 3
 DEFAULT_DELAY = 2.0
 DEFAULT_FACTOR = 2.0
@@ -174,14 +169,9 @@ class Result:
                 self.duration,
                 self.returncode,
             )
-        # A SIGNALLED CHILD DID NOT "EXIT", and saying so sends the reader after
-        # the wrong cause. `subprocess` reports a signalled child as a NEGATIVE
+        # A SIGNALLED CHILD DID NOT "EXIT", and saying so sends the reader after the wrong cause. `subprocess` reports a signalled child as a NEGATIVE
         # returncode and a shell in between reports 128+N; either way the process
-        # was terminated from outside rather than deciding to fail, so the thing
-        # to suspect is a deadline or an OOM kill, not the command's own logic.
-        # Learned the expensive way on 2026-09-08 in `wl_judge`, whose equivalent
-        # line read "judge exited 143" and let a reader conclude the model was
-        # unreachable -- the remedy that message offers is to DISABLE the gate.
+        # was terminated from outside rather than deciding to fail, so the thing to suspect is a deadline or an OOM kill, not the command's own logic. Learned the expensive way on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the remedy that message offers is to DISABLE the gate.
         sig = (
             -self.returncode
             if self.returncode < 0
@@ -250,14 +240,11 @@ def run(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            # Its own session, so a timeout can signal the whole tree. This is
-            # defect 2 in the module docstring: common.sh:248 signals one pid and
-            # `bash -c 'sleep 300 & wait'` outlives its own wrapper.
+            # Its own session, so a timeout can signal the whole tree. This is defect 2 in the module docstring: common.sh:248 signals one pid and `bash -c 'sleep 300 & wait'` outlives its own wrapper.
             start_new_session=kill_group,
         )
     except (OSError, ValueError) as exc:
-        # 127, matching wl_git.py:110 and wl_reggate.py:763. A command that is not
-        # installed is a genuine breakage and must not look like a finding.
+        # 127, matching wl_git.py:110 and wl_reggate.py:763. A command that is not installed is a genuine breakage and must not look like a finding.
         return Result(
             argv,
             SPAWN_FAILED_RC,
@@ -271,11 +258,7 @@ def run(
         timed_out = False
     except subprocess.TimeoutExpired:
         _kill(proc, kill_group)
-        # A SECOND communicate() AFTER THE KILL, and it is not optional. The
-        # pipes still hold whatever the child wrote before it died, and without
-        # this call they are never drained -- the partial output is lost and the
-        # file descriptors leak. Partial output is usually the only evidence of
-        # WHY something hung.
+        # A SECOND communicate() AFTER THE KILL, and it is not optional. The pipes still hold whatever the child wrote before it died, and without this call they are never drained -- the partial output is lost and the file descriptors leak. Partial output is usually the only evidence of WHY something hung.
         try:
             out, err = proc.communicate(timeout=10)
         except subprocess.TimeoutExpired:  # pragma: no cover - a SIGKILLed pipe holder

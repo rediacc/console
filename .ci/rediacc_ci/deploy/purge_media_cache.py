@@ -58,28 +58,20 @@ from rediacc_ci.core import common
 
 # `ZONE_ID="9e802649c143c9cefd811d8fd671d31c" # rediacc.com` (:25) and
 # `HOSTNAME="media.rediacc.com"` (:26). LITERALS, not arguments: a caller cannot
-# point this at another zone or another hostname by accident, and that is the
-# reason the script takes no options at all.
+# point this at another zone or another hostname by accident, and that is the reason the script takes no options at all.
 ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"
 PURGE_HOSTNAME = "media.rediacc.com"
 
 CF_API_BASE = "https://api.cloudflare.com/client/v4"
 
 # `--data "{\"hosts\": [\"${HOSTNAME}\"]}"` (:43). Hand-built by the twin rather
-# than by jq, SPACE AFTER THE COLON INCLUDED, so it is a literal here too: the
-# fake curl records argv, and a body compacted differently is a different
-# request even though Cloudflare would accept either.
+# than by jq, SPACE AFTER THE COLON INCLUDED, so it is a literal here too: the fake curl records argv, and a body compacted differently is a different request even though Cloudflare would accept either.
 PURGE_BODY = '{"hosts": ["%s"]}' % PURGE_HOSTNAME
 
-# The two defects named in the module docstring, as constants so the tests can
-# assert them by name rather than by restating the sentences.
+# The two defects named in the module docstring, as constants so the tests can assert them by name rather than by restating the sentences.
 A_TRANSPORT_FAILURE_IS_SILENT = True
 
-# The one message that interpolates REMOTE text (:46). common.sh logs through
-# `echo -e`, which interprets backslash escapes in the message, while
-# `rediacc_ci.log` formats the message as data. A Cloudflare error containing a
-# literal backslash-n therefore renders as a newline through the twin and as two
-# characters here. The differential asserts BOTH directions so nobody "fixes" it.
+# The one message that interpolates REMOTE text (:46). common.sh logs through `echo -e`, which interprets backslash escapes in the message, while `rediacc_ci.log` formats the message as data. A Cloudflare error containing a literal backslash-n therefore renders as a newline through the twin and as two characters here. The differential asserts BOTH directions so nobody "fixes" it.
 PURGE_FAILED_PREFIX = "Purge failed: "
 
 

@@ -95,18 +95,13 @@ def raises(label, fn, needle=""):
     print("FAIL  %s: did not refuse" % label, file=sys.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The fixture.
+# --------------------------------------------------------------------------- The fixture.
 
 TASK_DONE = "Regenerate the secret reachability baseline with the org admin token"
 TASK_OPEN = "Delete the old GitHub org secrets once every consumer reads the vault"
 REL = "agent/PLAN-fixture.md"
 
-# Padding is PROSE, never bullets, for the same reason test-planfile.py's is: a
-# bullet in the padding would become a task and quietly change what every case
-# below asserts. It is long because the size ratio is a real rule -- the blob
-# must be at least BLOB_RATIO times the record -- and a fixture that cannot
-# satisfy a rule is a fixture that proves nothing about it.
+# Padding is PROSE, never bullets, for the same reason test-planfile.py's is: a bullet in the padding would become a task and quietly change what every case below asserts. It is long because the size ratio is a real rule -- the blob must be at least BLOB_RATIO times the record -- and a fixture that cannot satisfy a rule is a fixture that proves nothing about it.
 PAD = (
     "This paragraph exists so the plan is genuinely larger than the record it "
     "compacts into, which is the anti-vacuity half of the size rule.\n" * 200
@@ -179,8 +174,7 @@ def build(td):
 
     ledger([])
     sh(root, "git", "add", "-A")
-    # A PR-TASK trailer, so derive() has a real epic to find rather than a
-    # hand-written list. The trailer grammar is scripts/gates/check-pr-task-trailers.ts's.
+    # A PR-TASK trailer, so derive() has a real epic to find rather than a hand-written list. The trailer grammar is scripts/gates/check-pr-task-trailers.ts's.
     sh(root, "git", "commit", "-qm", "fixture: the box is open\n\nPR-TASK: abc123def")
     before = git_out(root, "rev-parse", "HEAD")
 
@@ -197,18 +191,14 @@ ROOT, BEFORE, AFTER = build(TD.name)
 RECORD, NOTES = R.compact(ROOT, REL, "deadbeef", why="auto", park=True)
 REC = R.parse(RECORD)
 
-# ---------------------------------------------------------------------------
-# 1. THE GRAMMAR. Parsed back out of the exact bytes that would go on disk.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. THE GRAMMAR. Parsed back out of the exact bytes that would go on disk. ---------------------------------------------------------------------------
 truthy("the rendered record parses as a record", REC is not None)
 control("no parse problems in a freshly built record", REC["problems"], [])
 control("the fixture has one open box, so the status is `parked`", REC["status"], R.STATUS_PARKED)
 control("the H1 is the plan's own heading, not its Status line", REC["title"], "A fixture plan")
 control("the Owner is preserved verbatim", REC["owner"], "deadbeef")
 
-# THE HEADER WINDOW. wl_checks reads the first PLAN_HEADER_LINES lines and
-# nothing below it, so a record whose header fell past that line would be
-# invisible to every status consumer in this repo while looking correct.
+# THE HEADER WINDOW. wl_checks reads the first PLAN_HEADER_LINES lines and nothing below it, so a record whose header fell past that line would be invisible to every status consumer in this repo while looking correct.
 control("wl_planrec's header window matches wl_checks'", R.HEADER_LINES, K.PLAN_HEADER_LINES)
 head = "\n".join(RECORD.splitlines()[: K.PLAN_HEADER_LINES])
 truthy("Status is inside the header window", "Status: parked" in head)
@@ -220,18 +210,14 @@ recs = {rel: st for rel, st, _n in K.plan_records(ROOT)}
 control("wl_checks.plan_records reads the record's status", recs.get(REL), "parked")
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 2. THE ONE PROPERTY. `(record)` lines must be invisible to the real parser,
-#    and the record must parse to exactly the plan's boxes.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. THE ONE PROPERTY. `(record)` lines must be invisible to the real parser, and the record must parse to exactly the plan's boxes. ---------------------------------------------------------------------------
 ann = "    (record) sig=deadbeef done=123456789"
 falsy("BULLET_RE does not match a (record) line", P.BULLET_RE.match(ann))
 falsy("CHECKBOX_RE does not match a (record) line", P.CHECKBOX_RE.match(ann))
 falsy("wl_planfile's open-box regex does not match it", F.OPEN_BOX_LINE.match(ann))
 falsy("wl_planfile's done-box regex does not match it", F.DONE_BOX_LINE.match(ann))
 control("plan_tasks reads no task out of a (record) line", P.plan_tasks(ann), [])
-# The CONTROL for that control: a line that IS a box must be seen, or the four
-# assertions above would hold for a parser that sees nothing at all.
+# The CONTROL for that control: a line that IS a box must be seen, or the four assertions above would hold for a parser that sees nothing at all.
 truthy("plan_tasks does read a real box line", bool(P.plan_tasks("- [x] " + TASK_DONE)))
 
 control(
@@ -243,8 +229,7 @@ control(
 control("both boxes carry an attestation line", len(REC["boxes"]), 2)
 truthy("the box lines survive byte-identical", all(b["line"] in PLAN for b in REC["boxes"]))
 
-# The invariant is ENFORCED at construction, not merely observed. A record whose
-# prose smuggled a checkbox in must be refused.
+# The invariant is ENFORCED at construction, not merely observed. A record whose prose smuggled a checkbox in must be refused.
 raises(
     "a record that gains a box from lifted prose is refused",
     lambda: R._assert_boxes_preserved(
@@ -259,17 +244,14 @@ control(
     None,
 )
 
-# `--why auto` lifts sections VERBATIM, and this tree's `## Status` sections
-# routinely quote their own ticked boxes. Stripping them is what makes the
-# invariant above satisfiable rather than a rule that reds on real input.
+# `--why auto` lifts sections VERBATIM, and this tree's `## Status` sections routinely quote their own ticked boxes. Stripping them is what makes the invariant above satisfiable rather than a rule that reds on real input.
 lifted = R._auto_prose("## Status\nprose here\n- [x] " + TASK_DONE + "\nmore prose\n")
 falsy("_auto_prose strips checkbox lines out of lifted text", "- [x]" in lifted["Outcome"])
 truthy("CONTROL: _auto_prose keeps the prose around them", "prose here" in lifted["Outcome"])
 
 # ---------------------------------------------------------------------------
 # 3. THE SIGNATURE. check_plan_boxes.py hashes the parser's own dedup key; this
-#    module restates that in four lines and the two must never drift.
-# ---------------------------------------------------------------------------
+# module restates that in four lines and the two must never drift. ---------------------------------------------------------------------------
 sys.path.insert(0, str(HERE.parents[2] / ".ci" / "scripts" / "quality"))
 try:
     import check_plan_boxes as CPB
@@ -292,9 +274,7 @@ truthy(
 blob_edit = R.parse(RECORD.replace("Full-Text-Blob: " + REC["blob"], "Full-Text-Blob: " + "1" * 40))
 truthy("changing the blob DOES move the signature", R.record_sig(blob_edit) != R.record_sig(REC))
 
-# ---------------------------------------------------------------------------
-# 4. resolve(), all eight kinds, both directions.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. resolve(), all eight kinds, both directions. ---------------------------------------------------------------------------
 truthy("resolve blob: a real blob", R.resolve(ROOT, "blob", REC["blob"])[0])
 falsy("resolve blob: forty zeros", R.resolve(ROOT, "blob", "0" * 40)[0])
 falsy("resolve blob: a COMMIT is not a blob", R.resolve(ROOT, "blob", AFTER)[0])
@@ -329,9 +309,7 @@ try:
 except ValueError:
     pass
 
-# ---------------------------------------------------------------------------
-# 5. launder(). The model's prose is the only untrusted input this module takes.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. launder(). The model's prose is the only untrusted input this module takes. ---------------------------------------------------------------------------
 clean, replaced = R.launder(ROOT, "see package.json:1 and check:ci-plan-record and %s" % AFTER)
 control("launder leaves resolvable pointers alone", replaced, [])
 control("...and does not rewrite the text", clean.count(R.UNRESOLVED), 0)
@@ -343,9 +321,7 @@ control("launder replaces all four unresolvable shapes", dirty.count(R.UNRESOLVE
 control("...and reports each one", len(replaced), 4)
 truthy("...naming the kind it failed", any(x.startswith("fileline:") for x in replaced))
 # THE RUN-ID EXCEPTION, both directions. `[0-9a-f]{7,40}` also matches a CI run
-# id, and a run id is the most citable fact a record can carry -- laundering one
-# to defend against an all-digit git object would destroy real evidence to
-# prevent a case that does not occur.
+# id, and a run id is the most citable fact a record can carry -- laundering one to defend against an all-digit git object would destroy real evidence to prevent a case that does not occur.
 kept, rep2 = R.launder(ROOT, "job 100500447167 went red")
 control("an all-digit token survives laundering", kept.count(R.UNRESOLVED), 0)
 control("...and is not reported", rep2, [])
@@ -400,10 +376,7 @@ control(
 )
 control("...and nothing for a signature nobody attests", R.done_commit(hist, REL, "deadbeef"), "")
 
-# ---------------------------------------------------------------------------
-# 7. compact(): every refusal, and the pair that proves it is not refusing
-#    everything.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 7. compact(): every refusal, and the pair that proves it is not refusing everything. ---------------------------------------------------------------------------
 raises(
     "compacting a plan with open boxes and no --park is refused",
     lambda: R.compact(ROOT, REL, "deadbeef", why="auto"),
@@ -436,8 +409,7 @@ raises(
 )
 # ORDER MATTERS HERE. A record just written by `--write` is BOTH a record and a
 # dirty path; if the dirty branch won, the message would say "commit the path
-# first", and doing that then compacts the RECORD -- pointing the new blob at
-# the record instead of the plan. Pinned so the ordering cannot be shuffled back.
+# first", and doing that then compacts the RECORD -- pointing the new blob at the record instead of the plan. Pinned so the ordering cannot be shuffled back.
 (ROOT / REL).write_text(RECORD + "\nan uncommitted trailing line\n", encoding="utf-8")
 raises(
     "a record that is ALSO dirty still reports being a record, not being dirty",
@@ -456,16 +428,13 @@ raises(
     "does not exist",
 )
 
-# ---------------------------------------------------------------------------
-# 8. revive(): the round trip, which is the whole promise.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 8. revive(): the round trip, which is the whole promise. ---------------------------------------------------------------------------
 body, note = R.revive(ROOT, REL)
 control("revive returns the plan's exact original bytes", body, PLAN)
 truthy("...and says which blob it came from", REC["blob"][:12] in note)
 R.write_atomic(ROOT / REL, body)
 control("write_atomic put those bytes on disk", (ROOT / REL).read_text(encoding="utf-8"), PLAN)
-# Committed, because that is what a real revive is followed by -- and because
-# every case below compacts again, which refuses a dirty path by design.
+# Committed, because that is what a real revive is followed by -- and because every case below compacts again, which refuses a dirty path by design.
 sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "the plan is live again")
 raises(
@@ -482,9 +451,7 @@ raises(
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 9. Sizes, placeholders and the index.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 9. Sizes, placeholders and the index. ---------------------------------------------------------------------------
 truthy("the record is smaller than the plan", len(RECORD) < len(PLAN))
 truthy(
     "...by at least the ratio the gate enforces",
@@ -513,29 +480,20 @@ control("...and is a pure function of the set", idx, R.render_index(list(reverse
 truthy("the index carries the recovery recipe", "git log --find-object=" in idx)
 truthy("...and counts both kinds", "1 compacted, 1 parked" in idx)
 
-# ---------------------------------------------------------------------------
-# 10. THE STATUS WIRING, asserted through the real consumers rather than by
-#     re-reading the frozensets. A word added to a set nothing consults is a
-#     word that changes nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 10. THE STATUS WIRING, asserted through the real consumers rather than by re-reading the frozensets. A word added to a set nothing consults is a word that changes nothing. ---------------------------------------------------------------------------
 truthy("`compacted` is a FINISHED state", "compacted" in F.FINISHED_STATES)
 truthy("`parked` is a NOT_STARTED state", "parked" in F.NOT_STARTED_STATES)
 falsy("a compacted plan is out of the advisory's scope", F.in_scope_status("compacted"))
 falsy("a parked plan is out of the advisory's scope too", F.in_scope_status("parked"))
 truthy("`compacted` counts as done to plans_block", "compacted" in K.PLAN_DONE_STATES)
 falsy("`parked` deliberately does NOT: its work is unfinished", "parked" in K.PLAN_DONE_STATES)
-# The pair: an ordinary status must still be IN scope, or the four assertions
-# above would hold for an in_scope_status that returned False for everything.
+# The pair: an ordinary status must still be IN scope, or the four assertions above would hold for an in_scope_status that returned False for everything.
 truthy("CONTROL: an ordinary status is still in scope", F.in_scope_status("executing"))
 truthy("CONTROL: an unparseable status is still in scope", F.in_scope_status("UNKNOWN"))
 
-# ---------------------------------------------------------------------------
-# 10b. THE BYTE-EXACT ROUND TRIP, on a plan whose bytes a stripping reader would
+# --------------------------------------------------------------------------- 10b. THE BYTE-EXACT ROUND TRIP, on a plan whose bytes a stripping reader would
 #      damage. `wl_core._git` ends in .strip(); a revive built on it silently
-#      drops a trailing blank line, and the revived file then no longer hashes
-#      to the blob it came from -- which contradicts the single claim the whole
-#      design rests on. One plan in the real tree already ends that way.
-# ---------------------------------------------------------------------------
+# drops a trailing blank line, and the revived file then no longer hashes to the blob it came from -- which contradicts the single claim the whole design rests on. One plan in the real tree already ends that way. ---------------------------------------------------------------------------
 EDGE = "agent/PLAN-edge.md"
 EDGE_TEXT = (
     "# Edge\nStatus: executing\n\n## Why\nA reason.\n\n"
@@ -570,10 +528,7 @@ control(
     R.parse(edge_rec)["blob"],
 )
 
-# ---------------------------------------------------------------------------
-# 10c. THE OWNER LINE IS PRESERVED VERBATIM. Resolving it to a session id loses
-#      provenance on five of this repo's plans and CHANGES WHAT TWO OF THEM SAY.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 10c. THE OWNER LINE IS PRESERVED VERBATIM. Resolving it to a session id loses provenance on five of this repo's plans and CHANGES WHAT TWO OF THEM SAY. ---------------------------------------------------------------------------
 OWN = "agent/PLAN-owned.md"
 OWN_TEXT = PLAN.replace("Owner: deadbeef", "Owner: unowned (drafted by 9d92d9b6, 2026-08-28)")
 (ROOT / OWN).write_text(OWN_TEXT, encoding="utf-8")
@@ -603,11 +558,7 @@ control(
 )
 (ROOT / OWN).write_text(OWN_TEXT, encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 10d. clip(): a line boundary AND a balanced fence. An odd fence makes
-#      plan_tasks treat ## Boxes as fenced, so the record parses to zero boxes
-#      and the compaction is refused while blaming the boxes.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 10d. clip(): a line boundary AND a balanced fence. An odd fence makes plan_tasks treat ## Boxes as fenced, so the record parses to zero boxes and the compaction is refused while blaming the boxes. ---------------------------------------------------------------------------
 FENCED = "prose line\n" * 3 + "```\ncode inside a fence\n```\n"
 control("clip leaves short text alone", R.clip("abc", 100), "abc")
 cut = R.clip(FENCED, 40)
@@ -620,8 +571,7 @@ control(
     "a very long single line here",
 )
 
-# ---------------------------------------------------------------------------
-# 10e. THE SIZE FLOOR AT WRITE TIME. Property 5 says size is bounded in BOTH
+# --------------------------------------------------------------------------- 10e. THE SIZE FLOOR AT WRITE TIME. Property 5 says size is bounded in BOTH
 #      directions; only the ceiling was enforced until a control asked.
 # ---------------------------------------------------------------------------
 TINY = "agent/PLAN-tiny.md"
@@ -648,11 +598,7 @@ truthy(
     bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
-# ---------------------------------------------------------------------------
-# 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is
-#      under 8 characters, so the line exists in the plan and in NEITHER list --
-#      and _assert_boxes_preserved cannot see it, because it runs the same
-#      parser on both sides.
+# --------------------------------------------------------------------------- 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is under 8 characters, so the line exists in the plan and in NEITHER list -- and _assert_boxes_preserved cannot see it, because it runs the same parser on both sides.
 # ---------------------------------------------------------------------------
 SHORT = "agent/PLAN-short.md"
 (ROOT / SHORT).write_text(PLAN + "- [x] ok\n", encoding="utf-8")
@@ -680,11 +626,7 @@ truthy(
     ),
 )
 
-# ---------------------------------------------------------------------------
-# 10g. THE LISTINGS. `--plan-compact <me>` with no path is a READ, which is what
-#      the compaction wave starts with and what lets the identity suite drive
-#      these verbs without planting a git repository per verb.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 10g. THE LISTINGS. `--plan-compact <me>` with no path is a READ, which is what the compaction wave starts with and what lets the identity suite drive these verbs without planting a git repository per verb. ---------------------------------------------------------------------------
 recs_now = K.plan_records(ROOT)
 cands = R.candidates(ROOT, recs_now)
 by_rel = {c[0]: c for c in cands}
@@ -700,17 +642,10 @@ truthy("records lists the record", any(r[0] == OWN for r in recs_list))
 truthy("...and says its blob resolves", all(r[3] for r in recs_list if r[0] == OWN))
 (ROOT / OWN).write_text(OWN_TEXT, encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 10h. `--why model` DEGRADES, and the trailer says so. The model arm is the one
-#      that can be unavailable in any environment, so the interesting case is
-#      the failure: it must fall back to `--why auto` and must NOT leave
-#      `Why-Source: model` behind. A record claiming a provenance it does not
-#      have is the same quiet lie the gate refuses on the reading side.
+# --------------------------------------------------------------------------- 10h. `--why model` DEGRADES, and the trailer says so. The model arm is the one that can be unavailable in any environment, so the interesting case is the failure: it must fall back to `--why auto` and must NOT leave `Why-Source: model` behind. A record claiming a provenance it does not have is the same
+# quiet lie the gate refuses on the reading side.
 #
-#      NO NETWORK IS TOUCHED. `wl_judge.resolve_claude` is `shutil.which` with a
-#      `~/.local/bin/claude` fallback, so an empty PATH and an empty HOME make it
-#      unresolvable deterministically -- git is kept reachable by absolute path.
-# ---------------------------------------------------------------------------
+# NO NETWORK IS TOUCHED. `wl_judge.resolve_claude` is `shutil.which` with a `~/.local/bin/claude` fallback, so an empty PATH and an empty HOME make it unresolvable deterministically -- git is kept reachable by absolute path. ---------------------------------------------------------------------------
 _gitdir = pathlib.Path(tempfile.mkdtemp())
 _gitbin = _gitdir / "git"
 _gitbin.symlink_to(shutil.which("git"))
@@ -736,15 +671,11 @@ control(
 )
 control("the degraded record is still a valid record", R.parse(model_rec)["problems"], [])
 
-# ---------------------------------------------------------------------------
-# 12. W12 P2.1  THE EDGE INDEX AND why_lines().
+# --------------------------------------------------------------------------- 12. W12 P2.1 THE EDGE INDEX AND why_lines().
 #
-#     THE THREE ANSWERS ARE THE POINT. "No record names this file" and "there is
-#     no index to read" are DIFFERENT results, and both are different from an
-#     empty list, which is what a caller reads as breakage. Each is pinned here
+# THE THREE ANSWERS ARE THE POINT. "No record names this file" and "there is no index to read" are DIFFERENT results, and both are different from an empty list, which is what a caller reads as breakage. Each is pinned here
 #     with its sibling, because a function that returned WHY_NO_EDGE for every
-#     input would look identical to a working one on a tree with no records.
-# ---------------------------------------------------------------------------
+# input would look identical to a working one on a tree with no records. ---------------------------------------------------------------------------
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
 _rows = [
@@ -774,9 +705,7 @@ falsy(
     R.EDGE_SECTION in R.render_index([("agent/PLAN-c.md", "compacted", 1, 0, 0, "c" * 40)]),
 )
 
-# THE ROUND TRIP, which is the property the whole push rests on: what
-# render_edges writes, why_index must read back. Two parsers over one markdown
-# table is exactly the shape that drifts, so it is pinned rather than trusted.
+# THE ROUND TRIP, which is the property the whole push rests on: what render_edges writes, why_index must read back. Two parsers over one markdown table is exactly the shape that drifts, so it is pinned rather than trusted.
 R.write_atomic(ROOT / R.INDEX_REL, R.render_index(_rows))
 control("why_index reads back exactly what render_edges wrote", R.why_index(ROOT), _edges)
 falsy(
@@ -784,8 +713,7 @@ falsy(
     any(k.startswith("agent/PLAN-") for k in R.why_index(ROOT)),
 )
 
-# why_lines needs a record ON DISK to quote, so the fixture's record is written
-# to its own path and indexed under a file it touches.
+# why_lines needs a record ON DISK to quote, so the fixture's record is written to its own path and indexed under a file it touches.
 _why_rel = "agent/PLAN-why-fixture.md"
 _why_rec = RECORD.replace(
     "## Why\n", "## Why\nBecause the ledger was the only second reading.\n", 1
@@ -810,9 +738,7 @@ control(
     R.WHY_NO_INDEX,
 )
 
-# An ABSOLUTE path must give the same answer as the repo-relative one. A lookup
-# that missed on the prefix would answer "nothing is recorded" about a file that
-# has a record, which is the one wrong answer this function must not produce.
+# An ABSOLUTE path must give the same answer as the repo-relative one. A lookup that missed on the prefix would answer "nothing is recorded" about a file that has a record, which is the one wrong answer this function must not produce.
 R.write_atomic(
     ROOT / R.INDEX_REL,
     R.render_index([(_why_rel, "parked", 1, 1, 0, REC["blob"], ("run.sh",))]),
@@ -824,28 +750,18 @@ control(
     R.WHY_EDGES,
 )
 
-# ---------------------------------------------------------------------------
-# 13. W12 P2.3  why_for_paths(): SILENT when nothing matches.
+# --------------------------------------------------------------------------- 13. W12 P2.3 why_for_paths(): SILENT when nothing matches.
 #
-#     The opposite rule to --plan-why's, deliberately. Both callers APPEND to a
-#     block that is already being emitted, so an empty answer must add nothing
-#     at all -- a sentence saying "no records" in the PostCompact briefing and
-#     in every red-CI block would be noise on every stop.
-# ---------------------------------------------------------------------------
+# The opposite rule to --plan-why's, deliberately. Both callers APPEND to a block that is already being emitted, so an empty answer must add nothing at all -- a sentence saying "no records" in the PostCompact briefing and in every red-CI block would be noise on every stop. ---------------------------------------------------------------------------
 control("why_for_paths adds NOTHING when no path matches", R.why_for_paths(ROOT, ["nope.ts"]), "")
 truthy("CONTROL: and does fire when one does", R.why_for_paths(ROOT, ["run.sh"]) != "")
 truthy("...naming the record it found", _why_rel in R.why_for_paths(ROOT, ["run.sh"]))
 (ROOT / R.INDEX_REL).unlink()
 control("with no index at all it is silent too", R.why_for_paths(ROOT, ["run.sh"]), "")
 
-# ---------------------------------------------------------------------------
-# 14. W12 P2.5  --plan-tick.
+# --------------------------------------------------------------------------- 14. W12 P2.5 --plan-tick.
 #
-#     THE INVARIANT UNDER TEST is the same one compaction has: the evidence line
-#     must be INVISIBLE to wl_planfid.plan_tasks, and the box's own signature must
-#     not move. A moved signature is what check_plan_boxes.py's A1 reports as a
-#     box that VANISHED, so a tick that re-worded its box would look exactly like
-#     the abuse that gate exists to catch.
+# THE INVARIANT UNDER TEST is the same one compaction has: the evidence line must be INVISIBLE to wl_planfid.plan_tasks, and the box's own signature must not move. A moved signature is what check_plan_boxes.py's A1 reports as a box that VANISHED, so a tick that re-worded its box would look exactly like the abuse that gate exists to catch.
 # ---------------------------------------------------------------------------
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 _sig_open = R.box_sig(TASK_OPEN)
@@ -883,9 +799,7 @@ control(
     "...with the counts to match", (_doc["plans"][REL]["open"], _doc["plans"][REL]["done"]), (0, 2)
 )
 
-# THE RESTATEMENT CONTROL. ledger_row is check_plan_boxes.scan restated, not
-# imported, so the two are asserted equal here -- which is the only thing that
-# keeps the restatement from drifting into a second opinion.
+# THE RESTATEMENT CONTROL. ledger_row is check_plan_boxes.scan restated, not imported, so the two are asserted equal here -- which is the only thing that keeps the restatement from drifting into a second opinion.
 sys.path.insert(0, str(HERE.parents[2] / ".ci" / "scripts" / "quality"))
 try:
     import importlib.util as _ilu
@@ -920,10 +834,7 @@ raises(
     lambda: R.plan_tick(ROOT, REL, "zzzzzzzz", "cited .ci/config/plan-boxes.json:1", "deadbeef"),
     "no OPEN box matches",
 )
-# AMBIGUITY NEEDS ITS OWN FIXTURE, and the first version of this control did not
-# have one: it passed against the "no OPEN box matches" refusal, whose message
-# also contains the word "matches". A control that can be satisfied by the wrong
-# refusal proves nothing about the right one.
+# AMBIGUITY NEEDS ITS OWN FIXTURE, and the first version of this control did not have one: it passed against the "no OPEN box matches" refusal, whose message also contains the word "matches". A control that can be satisfied by the wrong refusal proves nothing about the right one.
 _amb = "agent/PLAN-ambiguous.md"
 (ROOT / _amb).write_text(
     "# Ambiguous\nStatus: executing\nOwner: deadbeef\n\n## Tasks\n"
@@ -981,20 +892,12 @@ falsy(
 )
 (ROOT / "agent" / "PLAN-rec2.md").unlink()
 
-# ---------------------------------------------------------------------------
-# 14b. dirty_paths() and the .strip() that ate the first character.
+# --------------------------------------------------------------------------- 14b. dirty_paths() and the .strip() that ate the first character.
 #
-#      REGRESSION CONTROL, and the defect was live. Porcelain format is two
-#      status characters, a space, then the path, and for an UNSTAGED
-#      modification the first character is a space. `wl_core._git` ends in
-#      `.strip()`, so the first line of output lost that space and `ln[3:]`
-#      returned a truncated path -- `un.sh` for `run.sh`. `candidates()` compares
-#      plan paths against this set to print "REFUSED: uncommitted changes", so a
-#      dirty plan on the FIRST line of git status was listed as ready, which is
-#      the opposite of the truth about the one thing that listing exists to say.
+# REGRESSION CONTROL, and the defect was live. Porcelain format is two status characters, a space, then the path, and for an UNSTAGED modification the first character is a space. `wl_core._git` ends in `.strip()`, so the first line of output lost that space and `ln[3:]` returned a truncated path -- `un.sh` for `run.sh`. `candidates()` compares plan paths against this set to print
+# "REFUSED: uncommitted changes", so a dirty plan on the FIRST line of git status was listed as ready, which is the opposite of the truth about the one thing that listing exists to say.
 #
-#      Both directions: the modified path is IN the set, and a clean one is NOT.
-# ---------------------------------------------------------------------------
+# Both directions: the modified path is IN the set, and a clean one is NOT. ---------------------------------------------------------------------------
 (ROOT / REL).write_text(PLAN + "\nan uncommitted line\n", encoding="utf-8")
 _dirty = R.dirty_paths(ROOT, ".")
 truthy("dirty_paths reports a modified path by its FULL name", REL in _dirty)
@@ -1003,21 +906,15 @@ _cands = {c[0]: c[4] for c in R.candidates(ROOT, K.plan_records(ROOT))}
 truthy(
     "...so candidates() calls it out rather than offering it", "uncommitted" in _cands.get(REL, "")
 )
-# Restoring the committed bytes IS the clean state -- no commit needed, and
-# attempting one fails with "nothing to commit", which is the proof.
+# Restoring the committed bytes IS the clean state -- no commit needed, and attempting one fails with "nothing to commit", which is the proof.
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 falsy("CONTROL: a CLEAN path is not in the set", REL in R.dirty_paths(ROOT, "."))
 _cands = {c[0]: c[4] for c in R.candidates(ROOT, K.plan_records(ROOT))}
 truthy("...and candidates() offers it again", "uncommitted" not in _cands.get(REL, "ready"))
 
-# ---------------------------------------------------------------------------
-# 15. W12 P2.6  Pointer stamps, in BOTH directions.
+# --------------------------------------------------------------------------- 15. W12 P2.6 Pointer stamps, in BOTH directions.
 #
-#     `git hash-object` STORES NOTHING without -w, so an id over uncommitted
-#     bytes is not a promise of recovery. The stamp must say which case it is in,
-#     because a stamp that always printed `git show` would advertise a recovery
-#     command that returns nothing -- the exact failure the record gate exists
-#     to refuse, one layer down.
+# `git hash-object` STORES NOTHING without -w, so an id over uncommitted bytes is not a promise of recovery. The stamp must say which case it is in, because a stamp that always printed `git show` would advertise a recovery command that returns nothing -- the exact failure the record gate exists to refuse, one layer down.
 # ---------------------------------------------------------------------------
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 _blob, _ok, _sent = R.pointer_stamp(ROOT, REL)
@@ -1037,12 +934,9 @@ truthy(
 falsy("...and does not offer a recovery command it cannot honour", "git show" in _sent2)
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 16. W12 P2.2  why-on-edit.py, driven as the real hook with real payloads.
+# --------------------------------------------------------------------------- 16. W12 P2.2 why-on-edit.py, driven as the real hook with real payloads.
 #
-#     BOTH DIRECTIONS PER RULE. A guard that only ever blocks is a guard nobody
-#     can work under, and one that never blocks is one nothing proves.
-# ---------------------------------------------------------------------------
+# BOTH DIRECTIONS PER RULE. A guard that only ever blocks is a guard nobody can work under, and one that never blocks is one nothing proves. ---------------------------------------------------------------------------
 HOOK = HERE.parent / "why-on-edit.py"
 
 
@@ -1076,8 +970,7 @@ control("a NEW near-duplicate plan is refused", _rc, 2)
 truthy("...naming the neighbour it duplicates", "PLAN-secret-migration.md" in _e)
 truthy("...and offering --plan-why rather than only saying no", "--plan-why" in _e)
 
-# CONTROL 1: the same slug, but the file already EXISTS. Editing a plan is the
-# normal thing to do and must never be refused.
+# CONTROL 1: the same slug, but the file already EXISTS. Editing a plan is the normal thing to do and must never be refused.
 (ROOT / "agent" / "PLAN-secret-migration-2.md").write_text(PLAN, encoding="utf-8")
 _rc, _o, _e = hook(
     {
@@ -1138,8 +1031,7 @@ _rc2, _o2, _e2 = hook(
     ROOT,
 )
 control("the SECOND edit of the same path in one epoch is silent", _o2.strip(), "")
-# And a different session (a different epoch ledger) speaks again, which is what
-# proves the silence above was the once-per-epoch rule and not a broken lookup.
+# And a different session (a different epoch ledger) speaks again, which is what proves the silence above was the once-per-epoch rule and not a broken lookup.
 _rc3, _o3, _e3 = hook(
     {
         "tool_name": "Edit",
@@ -1151,9 +1043,7 @@ _rc3, _o3, _e3 = hook(
 truthy("CONTROL: a different session speaks again", "additionalContext" in _o3)
 (ROOT / R.INDEX_REL).unlink()
 
-# ---------------------------------------------------------------------------
-# 11. THE CONTROL FOR THE CONTROLS.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 11. THE CONTROL FOR THE CONTROLS. ---------------------------------------------------------------------------
 control("the fixture plan really does parse as two tasks", len(P.plan_tasks(PLAN)), 2)
 falsy("a plain plan is not a record", R.is_record(PLAN))
 truthy("the rendered record IS one", R.is_record(RECORD))

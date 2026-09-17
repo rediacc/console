@@ -124,16 +124,12 @@ def lines_matching(text: str, prefix: str) -> str:
 
 
 def test_every_moved_tutorial_function_is_solely_owned_by_this_module(gate):
-    # WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all
-    # fourteen and this compared the bodies byte for byte. run.sh has no copies now,
-    # so the claim worth asserting is ownership.
+    # WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all fourteen and this compared the bodies byte for byte. run.sh has no copies now, so the claim worth asserting is ownership.
     media_verify.media_assert_module_owns(gate, "tutorials.sh", *TUTORIAL_MOVED)
 
 
 def test_the_recorded_terminal_geometry_lives_here_and_only_here(gate):
-    # TUTORIAL_COLS/TUTORIAL_ROWS are the single source of truth for the cast header
-    # and every downstream renderer, and being plain assignments the ownership
-    # assertion cannot see them.
+    # TUTORIAL_COLS/TUTORIAL_ROWS are the single source of truth for the cast header and every downstream renderer, and being plain assignments the ownership assertion cannot see them.
     source = TUTORIALS.read_text(encoding="utf-8").splitlines()
     for key in ("TUTORIAL_COLS", "TUTORIAL_ROWS"):
         in_module = [line for line in source if line.startswith("%s=" % key)]
@@ -174,11 +170,7 @@ def test_the_ownership_assertion_can_fail(gate, tmp_path):
 
 
 def test_the_absence_assertion_can_fail(gate, tmp_path):
-    # THE OTHER HALF OF THE CUTOVER PROOF HAS ITS OWN VACUITY, and it is worse than
-    # the ownership assertion's because it is invisible: `grep -q pat a b` with b
-    # missing exits 2, which reads as "not found". Every arm plants the pattern in
-    # ONE origin and requires a finding, then a fourth removes an origin and
-    # requires a finding for that too.
+    # THE OTHER HALF OF THE CUTOVER PROOF HAS ITS OWN VACUITY, and it is worse than the ownership assertion's because it is invisible: `grep -q pat a b` with b missing exits 2, which reads as "not found". Every arm plants the pattern in ONE origin and requires a finding, then a fourth removes an origin and requires a finding for that too.
     repo = media_verify_ext.media_chain_sandbox(tmp_path)
 
     if media_verify_ext.absent_from_origins(r"^TUTORIAL_COLS=", repo) is not None:
@@ -217,9 +209,7 @@ def test_the_absence_assertion_can_fail(gate, tmp_path):
 
 
 def test_run_sh_still_reaches_this_module(gate, tmp_path):
-    # THE DELEGATION ITSELF, for the surface that carries almost all of it. Two verbs
-    # are probed rather than one because they take different routes through the case
-    # tree: `www tutorials <verb>` is two levels deep, `www all` is one.
+    # THE DELEGATION ITSELF, for the surface that carries almost all of it. Two verbs are probed rather than one because they take different routes through the case tree: `www tutorials <verb>` is two levels deep, `www all` is one.
     repo = media_verify_ext.media_chain_sandbox(tmp_path)
 
     media_verify_ext.probe(repo, "tutorials.sh", "www_tutorials_record")
@@ -282,9 +272,7 @@ def test_run_sh_still_reaches_this_module(gate, tmp_path):
 
 
 def test_grand_env_wildcard_detection(gate, tmp_path):
-    # The `*` must never be glob-expanded against the cwd, which is why the function
-    # uses `read -ra`. A fixture directory full of files is staged so a regression
-    # would produce a filename rather than "WILD".
+    # The `*` must never be glob-expanded against the cwd, which is why the function uses `read -ra`. A fixture directory full of files is staged so a regression would produce a filename rather than "WILD".
     tmp_path.joinpath("decoy-one").write_text("", encoding="utf-8")
     tmp_path.joinpath("decoy-two").write_text("", encoding="utf-8")
     with harness.fake_bin("+uname"):
@@ -387,10 +375,7 @@ def test_the_numeric_options_are_validated_before_any_work_starts(gate, tmp_path
             "forcing it to 0 so renders stay off the GPU",
             "hardware encoding is refused, loudly",
         )
-        # THE SPLIT IS THE ASSERTION. --subtitle belongs to the narration process and
-        # --debug to the renderer, and the two are collected into different variables
-        # by the same while-loop. Checking only that both appear somewhere would pass
-        # even if the loop sent both to both.
+        # THE SPLIT IS THE ASSERTION. --subtitle belongs to the narration process and --debug to the renderer, and the two are collected into different variables by the same while-loop. Checking only that both appear somewhere would pass even if the loop sent both to both.
         producer_line = lines_matching(result.combined, "producer:")
         pool_line = lines_matching(result.combined, "pool:")
         gate.assert_contains(producer_line, "--subtitle", "--subtitle is a TTS flag")
@@ -439,15 +424,12 @@ def test_the_teaser_functions_are_solely_owned_by_this_module(gate):
 def test_the_teaser_ownership_assertion_can_fail(gate, tmp_path):
     # `die` is the name this control uses because media.sh wrote it in the ONE-LINE
     # `die() { ...; }` form, and the shared control plants that spelling into
-    # media.sh specifically. A block-only search would report the re-planted copy as
-    # absent and pass, so this is also the case that proves `fidelity_extract_any` is
-    # wired in.
+    # media.sh specifically. A block-only search would report the re-planted copy as absent and pass, so this is also the case that proves `fidelity_extract_any` is wired in.
     media_verify.media_assert_ownership_control(gate, tmp_path, "teaser.sh", "die")
 
 
 def test_the_teaser_archaeology_is_here_and_nowhere_else(gate):
-    # The incident prose is what makes these three functions the shape they are, and
-    # it is the part no structural assertion can see.
+    # The incident prose is what makes these three functions the shape they are, and it is the part no structural assertion can see.
     teaser = TEASER.read_text(encoding="utf-8")
     media_sh = (ROOT / "media.sh").read_text(encoding="utf-8")
     for sentence in (
@@ -510,9 +492,7 @@ def test_media_sh_still_reaches_this_module(gate, tmp_path):
 
 def test_teaser_dies_before_it_can_half_finish(gate, tmp_path):
     (tmp_path / "private/growth/video_pipeline").mkdir(parents=True, exist_ok=True)
-    # python3 and ffmpeg are deliberately absent: every case here must be refused
-    # BEFORE anything is executed, which is the property that keeps a tree from being
-    # left mid-operation with its sentinels already deleted.
+    # python3 and ffmpeg are deliberately absent: every case here must be refused BEFORE anything is executed, which is the property that keeps a tree from being left mid-operation with its sentinels already deleted.
     with harness.fake_bin("+cat +uname"):
         result = run_teaser(tmp_path, "growth_run")
         gate.assert_exit_code(1, result.rc, "growth_run with no pipeline must die")

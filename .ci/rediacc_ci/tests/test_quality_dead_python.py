@@ -77,12 +77,9 @@ def test_real_tree_every_route_carries_something_or_says_why():
         if f.endswith(".py") and (root / f).is_file()
     }
     assert set(report.corpus) == tracked
-    # Every corpus file is accounted for: routed, or named in a finding. Stated
-    # as a covering rather than as a sum, because a stale-exemption finding can
-    # name a file that is also routed and a sum would then read as a leak.
+    # Every corpus file is accounted for: routed, or named in a finding. Stated as a covering rather than as a sum, because a stale-exemption finding can name a file that is also routed and a sum would then read as a leak.
     assert set(report.corpus) <= set(report.routes) | {f["file"] for f in report.findings}
-    # Both halves of the corpus refused separately: an empty route table and an
-    # empty referrer set are different failures with the same green.
+    # Both halves of the corpus refused separately: an empty route table and an empty referrer set are different failures with the same green.
     assert report.referrers > 0
     assert report.by_route()["wired"] > 0
     assert report.by_route()["pytest"] > 0
@@ -100,12 +97,8 @@ def test_the_gate_can_fail_on_the_real_tree(tmp_path):
     report = dp.scan(root)
     assert report.findings == []
 
-    # A file the gate can see, in a directory it scans, that nothing names.
-    # THE PROBE'S NAME IS GENERATED, never written down. A fixed name spelled in
-    # this file would be a mention from a pytest-collected file, which is a real
-    # admission route: the first attempt at the real-tree version of this control
-    # planted `check_<fixed>.py`, the gate admitted it because this docstring
-    # named it, and exit 0 looked like a gate that could not fail.
+    # A file the gate can see, in a directory it scans, that nothing names. THE PROBE'S NAME IS GENERATED, never written down. A fixed name spelled in this file would be a mention from a pytest-collected file, which is a real admission route: the first attempt at the real-tree version of this control planted `check_<fixed>.py`, the gate admitted it because this docstring named it,
+    # and exit 0 looked like a gate that could not fail.
     probe = "check_%s.py" % secrets.token_hex(6)
     rel = ".ci/scripts/quality/" + probe
     fixture = dp._fixture(tmp_path / "tree", {rel: "X = 1\n"})
@@ -149,16 +142,9 @@ def test_shadow_route_is_parsed_from_the_real_ledger():
     #
     # A route expires when the ledger's bash twin is GONE, which is not a defect: it is
     # what a COMPLETED cutover looks like. This assertion read `expired == {}` and so held
-    # only while no port had finished, then went red on 2026-09-09 the moment E1 deleted
-    # `.ci/lib/setup.sh` -- reporting the programme's first successful bash deletion as a
-    # broken parser. That is the same shape E3 found in `test-run-sh.sh`, where an
-    # anti-vacuity floor of `n_legacy > 0` would have redded at the exact moment the
-    # migration it guarded succeeded.
+    # only while no port had finished, then went red on 2026-09-09 the moment E1 deleted `.ci/lib/setup.sh` -- reporting the programme's first successful bash deletion as a broken parser. That is the same shape E3 found in `test-run-sh.sh`, where an anti-vacuity floor of `n_legacy > 0` would have redded at the exact moment the migration it guarded succeeded.
     #
-    # WHAT IS STILL WORTH ASSERTING is that an expired route never leaves a file
-    # unreachable: the shadow route is one of several, and `check:ci-dead-python` is the
-    # gate that judges reachability overall. So every expired port must still be reached,
-    # which is a claim about the ESTATE and not about how long a cutover has been running.
+    # WHAT IS STILL WORTH ASSERTING is that an expired route never leaves a file unreachable: the shadow route is one of several, and `check:ci-dead-python` is the gate that judges reachability overall. So every expired port must still be reached, which is a claim about the ESTATE and not about how long a cutover has been running.
     report = dp.scan(root)
     for port, why in sorted(expired.items()):
         assert port in report.routes, (

@@ -24,8 +24,7 @@ function resolveKey(obj, dotPath) {
 
 /** Walk the left-nested Commander method chain looking for a .summary() call */
 function hasSummaryInChain(node) {
-  // node is the .description(...) CallExpression
-  // Walk callee.object chain to find a .summary() call
+  // node is the .description(...) CallExpression Walk callee.object chain to find a .summary() call
   let current = node.callee.object; // object .description was called on
   while (current) {
     if (

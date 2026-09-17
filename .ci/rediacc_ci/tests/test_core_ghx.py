@@ -33,16 +33,12 @@ from rediacc_ci import paths, proc
 from rediacc_ci.core import ghx
 from rediacc_ci.tests import differential as diff
 
-# ---------------------------------------------------------------------------
-# THE FROZEN MEASUREMENTS
+# --------------------------------------------------------------------------- THE FROZEN MEASUREMENTS
 #
-# Captured on this host 2026-09-06, gh 2.98.0. Each capture command is exact, so
-# a reader who doubts the string re-runs it rather than reasoning about it.
-# ---------------------------------------------------------------------------
+# Captured on this host 2026-09-06, gh 2.98.0. Each capture command is exact, so a reader who doubts the string re-runs it rather than reasoning about it. ---------------------------------------------------------------------------
 
 # GH_CONFIG_DIR=$(mktemp -d) env -u GH_TOKEN -u GITHUB_TOKEN \
-#   gh pr list --repo rediacc/console --state open --json number
-# -> exit 4, empty stdout
+# gh pr list --repo rediacc/console --state open --json number -> exit 4, empty stdout
 MEASURED_UNAUTH_RC = 4
 MEASURED_UNAUTH_STDERR = (
     "To get started with GitHub CLI, please run:  gh auth login\n"
@@ -57,12 +53,11 @@ MEASURED_AUTH_STATUS_STDERR = (
     "You are not logged into any GitHub hosts. To log in, run: gh auth login\n"
 )
 
-# gh frobnicate  -> exit 1
+# gh frobnicate -> exit 1
 MEASURED_UNKNOWN_VERB_RC = 1
 MEASURED_UNKNOWN_VERB_STDERR = 'unknown command "frobnicate" for "gh"\n'
 
-# What GitHub answers when the token is present and the budget is not. Not
-# captured from a live 403 here (that would mean spending the budget to prove the
+# What GitHub answers when the token is present and the budget is not. Not captured from a live 403 here (that would mean spending the budget to prove the
 # string); it is the documented body, and the case that matters is the ORDERING
 # it exercises, not the exact wording.
 RATE_LIMIT_STDERR = (
@@ -71,19 +66,14 @@ RATE_LIMIT_STDERR = (
     "To get started with GitHub CLI, please run:  gh auth login\n"
 )
 
-# A 404 body from `gh api`, which is a JSON OBJECT and not the array a caller of
-# a list endpoint is expecting. This is the shape `json_list` refuses.
+# A 404 body from `gh api`, which is a JSON OBJECT and not the array a caller of a list endpoint is expecting. This is the shape `json_list` refuses.
 NOT_FOUND_BODY = '{"message":"Not Found","documentation_url":"https://docs.github.com/rest"}'
 
-# What a proxy or a captive portal answers instead of an API. The direct
-# analogue of the 404 whose HTML body became a signing key
-# (docs/dev-environments.md:102-110).
+# What a proxy or a captive portal answers instead of an API. The direct analogue of the 404 whose HTML body became a signing key (docs/dev-environments.md:102-110).
 HTML_BODY = "<!DOCTYPE html>\n<html><head><title>404 Not Found</title></head></html>\n"
 
 
-# ---------------------------------------------------------------------------
-# The fake binary
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fake binary ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -165,9 +155,7 @@ def _rows(*refs: str) -> str:
     return json.dumps([{"headRefName": ref} for ref in refs])
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY: prove the fake is what runs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY: prove the fake is what runs ---------------------------------------------------------------------------
 
 
 def test_the_fake_gh_is_the_one_that_runs(fake_bin):
@@ -201,9 +189,7 @@ def test_the_measured_constants_match_the_module():
     assert ghx.NOT_INSTALLED_RC == proc.SPAWN_FAILED_RC
 
 
-# ---------------------------------------------------------------------------
-# THE FOUNDING CASE: a failed call is not an empty answer
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE FOUNDING CASE: a failed call is not an empty answer ---------------------------------------------------------------------------
 
 
 def _assert_failure_is_not_an_empty_answer():
@@ -234,8 +220,7 @@ def test_control_planting_the_or_echo_defect_makes_the_failure_case_fail(fake_bi
     some unrelated reason and nobody would know."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     monkeypatch.setattr(ghx, "pr_list", lambda **_kwargs: [])
-    # `pytest.raises` that sees nothing raised fails with `Failed`, so catching
-    # that IS the statement "the assertion above no longer holds".
+    # `pytest.raises` that sees nothing raised fails with `Failed`, so catching that IS the statement "the assertion above no longer holds".
     with pytest.raises(pytest.fail.Exception):
         _assert_failure_is_not_an_empty_answer()
 
@@ -260,13 +245,9 @@ def test_the_stderr_survives_and_names_the_cause(fake_bin):
     assert caught.value.returncode == MEASURED_UNAUTH_RC
 
 
-# ---------------------------------------------------------------------------
-# TRAP 2, IN BASH: the pipeline that cannot tell the two apart
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 2, IN BASH: the pipeline that cannot tell the two apart ---------------------------------------------------------------------------
 
-# The advice printed by .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:230-233,
-# frozen verbatim. This is the thing `branch_indexes` replaces, and the case
-# below runs it rather than describing it.
+# The advice printed by .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:230-233, frozen verbatim. This is the thing `branch_indexes` replaces, and the case below runs it rather than describing it.
 GUARD_PIPELINE = (
     'gh pr list --state all --limit 100 --json headRefName --jq ".[].headRefName" '
     '| grep "^${d}-" | sed "s/^${d}-//" | sort -n | tail -1'
@@ -378,9 +359,7 @@ def test_the_day_argument_is_validated(fake_bin):
             ghx.branch_indexes(bad, repo="r/c")
 
 
-# ---------------------------------------------------------------------------
-# .stdout is the check that cannot be skipped
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- .stdout is the check that cannot be skipped ---------------------------------------------------------------------------
 
 
 def test_stdout_raises_on_a_failed_call_and_stdout_raw_does_not():
@@ -399,9 +378,7 @@ def test_every_accessor_routes_through_the_raising_property():
     zero-argument accessor on GhResult is called, and each one must refuse.
     """
     result = ghx.GhResult(["gh", "x"], 1, "[]", "boom")
-    # Derived, not typed: everything public that is neither a stored field nor
-    # one of the three deliberate non-output accessors. A new output accessor
-    # added later joins this set automatically and must obey the same rule.
+    # Derived, not typed: everything public that is neither a stored field nor one of the three deliberate non-output accessors. A new output accessor added later joins this set automatically and must obey the same rule.
     accessors = {
         name
         for name in dir(ghx.GhResult)
@@ -423,9 +400,7 @@ def test_error_refuses_to_describe_a_success():
         result.error()
 
 
-# ---------------------------------------------------------------------------
-# Classification
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Classification ---------------------------------------------------------------------------
 
 
 def _classify_case(rc: int, stderr: str) -> str | None:
@@ -508,9 +483,7 @@ def test_auth_state_says_unknown_rather_than_unauthenticated_when_gh_is_absent()
     assert ghx.auth_state() == ghx.AUTH_UNKNOWN
 
 
-# ---------------------------------------------------------------------------
-# TRAP 3: exit 0 is not a promise about the body
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 3: exit 0 is not a promise about the body ---------------------------------------------------------------------------
 
 
 def test_an_html_body_is_refused_rather_than_parsed(fake_bin):
@@ -568,9 +541,7 @@ def test_lines_distinguishes_nothing_from_could_not_ask(fake_bin):
         ghx.gh(["x"]).lines()
 
 
-# ---------------------------------------------------------------------------
-# Secrets are write-only
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Secrets are write-only ---------------------------------------------------------------------------
 
 
 def test_secret_value_always_raises_and_says_why():
@@ -589,9 +560,7 @@ def test_there_is_no_other_way_to_ask_for_a_secret_value():
     Derived from `__all__` rather than typed out, so a future function called
     `read_secret` or `get_secret_value` fails this the day it is added.
     """
-    # Exception CLASSES are excluded by shape, not by name: SecretValueUnavailableError
-    # is part of the refusal, not a way around it. Anything else callable whose
-    # name mentions a secret is a getter until proven otherwise.
+    # Exception CLASSES are excluded by shape, not by name: SecretValueUnavailableError is part of the refusal, not a way around it. Anything else callable whose name mentions a secret is a getter until proven otherwise.
     getters = set()
     for name in ghx.__all__:
         if "secret" not in name.lower() or name in {"secret_names", "secret_value"}:
@@ -624,9 +593,7 @@ def test_secret_names_needs_exactly_one_scope():
             ghx.secret_names(**kwargs)
 
 
-# ---------------------------------------------------------------------------
-# The call itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The call itself ---------------------------------------------------------------------------
 
 
 def test_the_noninteractive_environment_reaches_the_child(argv_recorder):
@@ -678,16 +645,12 @@ def test_one_attempt_is_the_default(fake_bin):
     assert slept == []
 
 
-# ---------------------------------------------------------------------------
-# The argv dispatcher, driven as a real process with the streams kept apart
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The argv dispatcher, driven as a real process with the streams kept apart ---------------------------------------------------------------------------
 
 
 def _module_run(bindir: pathlib.Path, args: list[str]) -> subprocess.CompletedProcess:
     env = dict(os.environ)
-    # ONLY the fake directory, so nothing can reach the real gh through the tail
-    # of a PATH. The interpreter is an absolute path and `paths.repo_root()` is
-    # derived from the package location, so the child needs nothing else.
+    # ONLY the fake directory, so nothing can reach the real gh through the tail of a PATH. The interpreter is an absolute path and `paths.repo_root()` is derived from the package location, so the child needs nothing else.
     env["PATH"] = str(bindir)
     env["PYTHONPATH"] = str(paths.repo_root() / ".ci")
     return subprocess.run(
@@ -735,9 +698,7 @@ def test_the_dispatcher_reports_a_bad_day_as_usage(fake_bin):
     assert "MMDD" in done.stderr
 
 
-# ---------------------------------------------------------------------------
-# The module's own hygiene
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The module's own hygiene ---------------------------------------------------------------------------
 
 
 def test_all_names_in_dunder_all_exist():
@@ -748,8 +709,7 @@ def test_all_names_in_dunder_all_exist():
 def test_no_em_dashes_in_the_module_or_this_file():
     """House rule for this workstream, checked on the artefacts rather than
     trusted to the author."""
-    # chr(8212) rather than the literal character, or this file would fail its
-    # own check the moment it was written.
+    # chr(8212) rather than the literal character, or this file would fail its own check the moment it was written.
     em_dash = chr(8212)
     for path in (
         paths.repo_root() / ".ci/rediacc_ci/core/ghx.py",

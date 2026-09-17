@@ -171,10 +171,7 @@ export const noHardcodedNullishDefaults = {
           return;
         }
 
-        // Allow: booleans, arrays, objects, identifiers, member expressions, etc.
-        // These are not flagged as they're either:
-        // - Acceptable primitives (true/false)
-        // - Already using constants (identifiers/member expressions)
+        // Allow: booleans, arrays, objects, identifiers, member expressions, etc. These are not flagged as they're either: - Acceptable primitives (true/false) - Already using constants (identifiers/member expressions)
         // - Structural defaults ([], {})
       },
     };

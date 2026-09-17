@@ -65,8 +65,7 @@ WORKFLOW = paths.from_root(".ci", "breakpoint", "workflow", "breakpoint.yml")
 GONE_TIMEOUT_S = 10.0
 GONE_POLL_S = 0.05
 
-# How long a fixture process stays alive if nothing kills it. Long enough that the
-# assertions below are about teardown rather than about a race with its own exit.
+# How long a fixture process stays alive if nothing kills it. Long enough that the assertions below are about teardown rather than about a race with its own exit.
 FIXTURE_LIFETIME_S = "300"
 
 

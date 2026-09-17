@@ -23,13 +23,10 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
 
   const results = [];
 
-  // The rule only acts on files whose parent directory is named `en`, and it
-  // looks for the manifest one level above that.
+  // The rule only acts on files whose parent directory is named `en`, and it looks for the manifest one level above that.
   //
   // The manifest's real shape is `{ "hashes": { <key>: <crc32> } }`. Writing a
-  // FLAT object here was the spec's first mistake, and the rule read it as an
-  // empty manifest and answered `newKey`: a hash file whose top-level key is
-  // wrong degrades silently to "nothing is recorded", which is worth knowing.
+  // FLAT object here was the spec's first mistake, and the rule read it as an empty manifest and answered `newKey`: a hash file whose top-level key is wrong degrades silently to "nothing is recorded", which is worth knowing.
   withFixture({ '.translation-hashes.json': '{"hashes": {}}' }, (root) => {
     const enFile = path.join(root, 'en', 'common.json');
 
@@ -37,9 +34,7 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
       runCases(jsonRuleTester(), `${ruleId} (non-en is skipped)`, translationStaleness, {
         valid: [
           {
-            // Any language other than `en` returns an empty visitor, so no
-            // manifest is even consulted. This is why a missing manifest under
-            // a translated tree is silent rather than noisy.
+            // Any language other than `en` returns an empty visitor, so no manifest is even consulted. This is why a missing manifest under a translated tree is silent rather than noisy.
             code: '{"greeting": "Merhaba"}',
             filename: path.join(root, 'tr', 'common.json'),
           },
@@ -53,22 +48,17 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
         valid: [],
         invalid: [
           {
-            // An empty manifest exists, so this is `newKey`, not
-            // `missingHashFile`. The key is namespaced by the file basename.
+            // An empty manifest exists, so this is `newKey`, not `missingHashFile`. The key is namespaced by the file basename.
             code: '{"greeting": "Hello"}',
             filename: enFile,
-            // Only the messageId is asserted. The message also carries the
-            // freshly computed crc32, and a test that recomputed it with the
-            // rule's own function would prove only that the function equals
-            // itself. The DECISION is the assertion worth making.
+            // Only the messageId is asserted. The message also carries the freshly computed crc32, and a test that recomputed it with the rule's own function would prove only that the function equals itself. The DECISION is the assertion worth making.
             errors: [{ messageId: 'newKey' }],
           },
         ],
       })
     );
 
-    // Now put a WRONG hash in the manifest and the verdict changes from
-    // "new key" to "stale translation" without the source file moving.
+    // Now put a WRONG hash in the manifest and the verdict changes from "new key" to "stale translation" without the source file moving.
     fs.writeFileSync(
       path.join(root, '.translation-hashes.json'),
       JSON.stringify({ hashes: { 'common.greeting': 'deadbeef' } })
@@ -81,10 +71,7 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
           {
             code: '{"greeting": "Hello"}',
             filename: enFile,
-            // Same key, same file, same rule: the verdict flipped from
-            // `newKey` to `staleTranslation` purely because the manifest now
-            // records a value and it disagrees. That flip is the rule's whole
-            // job and no planted-violation probe can see it.
+            // Same key, same file, same rule: the verdict flipped from `newKey` to `staleTranslation` purely because the manifest now records a value and it disagrees. That flip is the rule's whole job and no planted-violation probe can see it.
             errors: [{ messageId: 'staleTranslation' }],
           },
         ],
@@ -92,8 +79,7 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
     );
   });
 
-  // A tree with no manifest at all reports `missingHashFile` once against the
-  // document, not once per key.
+  // A tree with no manifest at all reports `missingHashFile` once against the document, not once per key.
   withFixture({ 'en/.keep': '' }, (root) => {
     results.push(
       runCases(jsonRuleTester(), `${ruleId} (manifest missing)`, translationStaleness, {

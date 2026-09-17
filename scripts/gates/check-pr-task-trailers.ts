@@ -179,9 +179,7 @@ const selftest = (): number => {
   check('no commits yields no verdicts', judge([], known).length === 0);
 
   // W12 P3.1b. THE LEDGER READER. These prove the helper; the plant that proves
-  // the FEATURE is driven through the real invocation with WORKLIST_EPICS_LEDGER
-  // and PR_HEAD_REF, and is recorded in the box. A selftest control alone would
-  // only show that a function nothing calls still works.
+  // the FEATURE is driven through the real invocation with WORKLIST_EPICS_LEDGER and PR_HEAD_REF, and is recorded in the box. A selftest control alone would only show that a function nothing calls still works.
   const oneEpic = '{"at":"t","by":"s","id":"aaa111","title":"x","covers":[]}';
   const twoEpic = '{"at":"t","by":"s","id":"bbb222","title":"y","covers":[]}';
   check('a ledger line yields its id', ledgerEpicIds(oneEpic)[0] === 'aaa111');
@@ -189,15 +187,13 @@ const selftest = (): number => {
     'a repeated id is counted once, because --epic add appends a second record',
     ledgerEpicIds(`${oneEpic}\n${oneEpic}`).length === 1
   );
-  // A TORN LINE MUST NOT BE FATAL, and must not swallow the lines around it:
-  // the ledger is appended to under a lock by several sessions.
+  // A TORN LINE MUST NOT BE FATAL, and must not swallow the lines around it: the ledger is appended to under a lock by several sessions.
   check(
     'a torn line is skipped and its neighbours still read',
     ledgerEpicIds(`${oneEpic}\n{"id":"ccc\n${twoEpic}`).join(',') === 'aaa111,bbb222'
   );
   check('a record with no id is skipped', ledgerEpicIds('{"at":"t","title":"x"}').length === 0);
-  // CONTROL, the anti-vacuity half: the empty case must read as ZERO rather than
-  // as anything, or the caller's refusal below could never fire.
+  // CONTROL, the anti-vacuity half: the empty case must read as ZERO rather than as anything, or the caller's refusal below could never fire.
   check(
     'CONTROL: an empty ledger yields no ids, so the refusal can fire',
     ledgerEpicIds('').length === 0
@@ -207,8 +203,7 @@ const selftest = (): number => {
     ledgerEpicIds('not json\n{oops\n').length === 0
   );
 
-  // BOTH DIRECTIONS, which is the box's acceptance criterion. Agreement must be
-  // SILENT: a comparison that always finds something is not a comparison.
+  // BOTH DIRECTIONS, which is the box's acceptance criterion. Agreement must be SILENT: a comparison that always finds something is not a comparison.
   const agree = bothWays(['a1b2c3', 'd4e5f6'], ['d4e5f6', 'a1b2c3']);
   check(
     'CONTROL: equal sets in any order report no disagreement',
@@ -230,9 +225,7 @@ const selftest = (): number => {
     })()
   );
 
-  // THE REAL LEDGER, read the way main() reads it. A helper that works on
-  // fixtures while the tracked file it is aimed at yields nothing is the
-  // vacuity this repo keeps paying for.
+  // THE REAL LEDGER, read the way main() reads it. A helper that works on fixtures while the tracked file it is aimed at yields nothing is the vacuity this repo keeps paying for.
   const realLedger = path.join(REPO, 'agent', 'worklist', 'epics.jsonl');
   check(
     `the tracked ledger ${fs.existsSync(realLedger) ? 'parses to' : 'is ABSENT, so this reads'} ` +
@@ -240,12 +233,8 @@ const selftest = (): number => {
     fs.existsSync(realLedger) && ledgerEpicIds(fs.readFileSync(realLedger, 'utf8')).length > 0
   );
 
-  // BASE-REF RESOLUTION, the CI-only failure this gate died on: PR_BASE_REF was
-  // set correctly and the ref was still absent from the checkout, so the gate
-  // reported an "ambiguous argument" about the RANGE and said nothing about the
-  // missing fetch. Both directions, against real git rather than a stub -- a
-  // stub would only prove the helper's arithmetic, and the defect was that the
-  // ref genuinely was not there.
+  // BASE-REF RESOLUTION, the CI-only failure this gate died on: PR_BASE_REF was set correctly and the ref was still absent from the checkout, so the gate reported an "ambiguous argument" about the RANGE and said nothing about the missing fetch. Both directions, against real git rather than a stub -- a stub would only prove the helper's arithmetic, and the defect was that the ref
+  // genuinely was not there.
   const canResolve = (ref: string): boolean => {
     try {
       execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
@@ -263,16 +252,11 @@ const selftest = (): number => {
     !canResolve('origin/zzz-no-such-ref-ever')
   );
 
-  // THE SYNTHETIC MERGE COMMIT, and why `--no-merges` did not save us from it.
-  // On PR #579 this gate reported GitHub's `refs/pull/N/merge` commit as an
+  // THE SYNTHETIC MERGE COMMIT, and why `--no-merges` did not save us from it. On PR #579 this gate reported GitHub's `refs/pull/N/merge` commit as an
   // untagged commit. The reflex reading is "--no-merges is missing"; it was
-  // there. `--no-merges` counts PARENTS, and in a depth-1 checkout the merge
-  // commit's parents are grafted away, so git sees a parentless root.
+  // there. `--no-merges` counts PARENTS, and in a depth-1 checkout the merge commit's parents are grafted away, so git sees a parentless root.
   //
-  // Both directions against real git, in a scratch repo: a two-parent commit IS
-  // excluded, and a parentless commit whose subject reads exactly like a merge
-  // is NOT. Without the second control the fix below (name the tip explicitly)
-  // looks like belt-and-braces instead of the actual repair.
+  // Both directions against real git, in a scratch repo: a two-parent commit IS excluded, and a parentless commit whose subject reads exactly like a merge is NOT. Without the second control the fix below (name the tip explicitly) looks like belt-and-braces instead of the actual repair.
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-'));
   const g = (...args: string[]): string =>
     execFileSync('git', args, { cwd: scratch, encoding: 'utf8' }).trim();
@@ -302,8 +286,7 @@ const selftest = (): number => {
       'CONTROL: a PARENTLESS commit that reads as a merge is NOT excluded -- the #579 defect',
       listed(graftedMerge).startsWith('Merge ')
     );
-    // The merge-base precondition, which stops a too-shallow range from
-    // inventing findings instead of naming the missing depth.
+    // The merge-base precondition, which stops a too-shallow range from inventing findings instead of naming the missing depth.
     const orphan = g('commit-tree', empty, '-m', 'orphan');
     const hasBase = (x: string, y: string): boolean => {
       try {
@@ -313,13 +296,8 @@ const selftest = (): number => {
         return false;
       }
     };
-    // A BARE `git fetch origin <branch>` DOES NOT ALWAYS CREATE origin/<branch>.
-    // It updates the remote-tracking ref only when the fetched ref matches
-    // remote.origin.fetch, and actions/checkout configures a NARROW refspec on
-    // a PR. Both directions against real git, because the whole tip fix rests
-    // on this: with a narrow refspec the bare form leaves the tracking ref
-    // absent, and the explicit form creates it.
-    // The scratch repo's commits were built with commit-tree, so no branch
+    // A BARE `git fetch origin <branch>` DOES NOT ALWAYS CREATE origin/<branch>. It updates the remote-tracking ref only when the fetched ref matches remote.origin.fetch, and actions/checkout configures a NARROW refspec on a PR. Both directions against real git, because the whole tip fix rests on this: with a narrow refspec the bare form leaves the tracking ref absent, and the
+    // explicit form creates it. The scratch repo's commits were built with commit-tree, so no branch
     // points at them yet; the fetch below needs a real refs/heads/main.
     g('branch', '-f', 'main', b);
     const narrow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-clone-'));
@@ -358,11 +336,7 @@ const selftest = (): number => {
     check('two commits on one history share a merge base', hasBase(a, b));
     check('CONTROL: two unrelated roots do NOT, so the precondition can fire', !hasBase(b, orphan));
 
-    // MERGE-BASE RECOVERY UNDER A GENUINELY SHALLOW FETCH. b7cc15b1 pulled the
-    // has-merge-base-or-deepen loop out of main() into `mergeBaseAfterDeepen` so
-    // this shape is a permanent control rather than the one-off manual repro (a
-    // throwaway --depth 50 clone, checked by hand) that shipped with the fix.
-    // Real git, a real shallow fetch, both directions.
+    // MERGE-BASE RECOVERY UNDER A GENUINELY SHALLOW FETCH. b7cc15b1 pulled the has-merge-base-or-deepen loop out of main() into `mergeBaseAfterDeepen` so this shape is a permanent control rather than the one-off manual repro (a throwaway --depth 50 clone, checked by hand) that shipped with the fix. Real git, a real shallow fetch, both directions.
     const disjoint = g('commit-tree', empty, '-m', 'disjoint root');
     g('branch', '-f', 'disjoint', disjoint);
     const shallow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-shallow-'));
@@ -405,11 +379,9 @@ const selftest = (): number => {
   return fail === 0 ? 0 : 1;
 };
 
-// THE DEEPEN LOOP ITSELF, pulled out of main() so `--selftest` can drive it
-// against a real shallow fetch instead of only being exercised by hand once
+// THE DEEPEN LOOP ITSELF, pulled out of main() so `--selftest` can drive it against a real shallow fetch instead of only being exercised by hand once
 // (b7cc15b1 shipped with a manual repro against a throwaway --depth 50 clone;
-// the repro itself did not persist). `cwd` is a parameter, not `REPO`, purely
-// so the selftest below can point it at a scratch checkout.
+// the repro itself did not persist). `cwd` is a parameter, not `REPO`, purely so the selftest below can point it at a scratch checkout.
 const mergeBaseAfterDeepen = (cwd: string, base: string, tip: string): boolean => {
   const hasMergeBase = (): boolean => {
     try {
@@ -460,18 +432,10 @@ const main = (): number => {
   }
   const snapIds = knownEpicIds(fs.readFileSync(snapPath, 'utf8'));
 
-  // W12 P3.1b. THE LEDGER IS THE ORACLE, NOT THE SNAPSHOT. Until 2026-09-09 the
-  // valid-id set was scraped from agent/pr/<branch>.md alone -- a GENERATED
-  // markdown file, tracked, hand-editable, and only as fresh as the last
-  // `worklist.py --publish`. So an id could be accepted because a document said
-  // so while no epic event had ever been recorded, and a real epic could be
-  // rejected because nobody had re-published. The ledger, agent/worklist/epics.jsonl,
-  // is what `wl_epic.record_epic` appends to.
+  // W12 P3.1b. THE LEDGER IS THE ORACLE, NOT THE SNAPSHOT. Until 2026-09-09 the valid-id set was scraped from agent/pr/<branch>.md alone -- a GENERATED markdown file, tracked, hand-editable, and only as fresh as the last `worklist.py --publish`. So an id could be accepted because a document said so while no epic event had ever been recorded, and a real epic could be rejected
+  // because nobody had re-published. The ledger, agent/worklist/epics.jsonl, is what `wl_epic.record_epic` appends to.
   //
-  // WORKLIST_EPICS_LEDGER is the test seam, the same shape as WORKLIST_PUBLISH_ROOT
-  // in worklist.py: it lets a control point this at a file in /tmp so a plant can
-  // be driven through the REAL invocation without writing to a tracked ledger
-  // that only the worklist verbs may touch.
+  // WORKLIST_EPICS_LEDGER is the test seam, the same shape as WORKLIST_PUBLISH_ROOT in worklist.py: it lets a control point this at a file in /tmp so a plant can be driven through the REAL invocation without writing to a tracked ledger that only the worklist verbs may touch.
   const ledgerRel = 'agent/worklist/epics.jsonl';
   const ledgerPath = process.env.WORKLIST_EPICS_LEDGER || path.join(REPO, ledgerRel);
   if (!fs.existsSync(ledgerPath)) {
@@ -489,8 +453,7 @@ const main = (): number => {
     return 1;
   }
 
-  // ACCEPTANCE, both directions, because the two disagreements have different
-  // causes and different fixes.
+  // ACCEPTANCE, both directions, because the two disagreements have different causes and different fixes.
   const { ledgerOnly, snapshotOnly } = bothWays(ledgerIds, snapIds);
   if (ledgerOnly.length > 0 || snapshotOnly.length > 0) {
     console.error(`✗ the epic ledger and agent/pr/${branch.replace(/\//g, '-')}.md disagree.`);
@@ -512,17 +475,11 @@ const main = (): number => {
   // Local range against origin/main; in CI the PR base is authoritative.
   const base = process.env.PR_BASE_REF || 'origin/main';
 
-  // THE BASE REF MUST EXIST, AND IN CI IT OFTEN DOES NOT. `PR_BASE_REF` was set
-  // correctly (`origin/main`) and the gate still died with
-  // `fatal: ambiguous argument 'origin/main..HEAD': unknown revision` -- because
-  // the PR checkout simply had not fetched that ref. Green on every developer
+  // THE BASE REF MUST EXIST, AND IN CI IT OFTEN DOES NOT. `PR_BASE_REF` was set correctly (`origin/main`) and the gate still died with `fatal: ambiguous argument 'origin/main..HEAD': unknown revision` -- because the PR checkout simply had not fetched that ref. Green on every developer
   // machine, where origin/main is always present; red in CI for a reason that
   // names the RANGE and not the missing fetch.
   //
-  // So the gate carries its own precondition rather than trusting a workflow
-  // step to have arranged it: a future edit to the checkout cannot silently
-  // take this gate down with it. One fetch, best-effort, only when the ref is
-  // genuinely absent.
+  // So the gate carries its own precondition rather than trusting a workflow step to have arranged it: a future edit to the checkout cannot silently take this gate down with it. One fetch, best-effort, only when the ref is genuinely absent.
   const resolves = (ref: string): boolean => {
     try {
       execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
@@ -537,12 +494,8 @@ const main = (): number => {
   if (!resolves(base)) {
     const remoteRef = base.startsWith('origin/') ? base.slice('origin/'.length) : base;
     try {
-      // AN EXPLICIT REFSPEC, not a bare branch name. `git fetch origin main`
-      // only updates refs/remotes/origin/main when the fetched ref matches
-      // remote.origin.fetch, and actions/checkout configures a NARROW refspec
-      // (refs/pull/N/merge on a PR). A bare fetch there succeeds, writes
-      // FETCH_HEAD, leaves origin/main absent -- and this gate would then fail
-      // closed on every PR for a reason that reads like a broken checkout.
+      // AN EXPLICIT REFSPEC, not a bare branch name. `git fetch origin main` only updates refs/remotes/origin/main when the fetched ref matches remote.origin.fetch, and actions/checkout configures a NARROW refspec (refs/pull/N/merge on a PR). A bare fetch there succeeds, writes FETCH_HEAD, leaves origin/main absent -- and this gate would then fail closed on every PR for a reason
+      // that reads like a broken checkout.
       execFileSync(
         'git',
         [
@@ -567,25 +520,13 @@ const main = (): number => {
     }
   }
 
-  // AND SO MUST THE TIP, which is the failure that actually landed. Measured on
-  // PR #579, run 33077…: this gate reported `1 of 1 commit(s) are not
-  // attributable`, naming `55b982fc0  Merge f05ea28fc… into d7d9fa46…`. That is
-  // GitHub's SYNTHETIC merge commit -- `refs/pull/N/merge`, the thing
-  // actions/checkout puts at HEAD on a pull_request event -- and it belongs to
-  // no epic because no human wrote it.
+  // AND SO MUST THE TIP, which is the failure that actually landed. Measured on PR #579, run 33077…: this gate reported `1 of 1 commit(s) are not attributable`, naming `55b982fc0 Merge f05ea28fc… into d7d9fa46…`. That is GitHub's SYNTHETIC merge commit -- `refs/pull/N/merge`, the thing actions/checkout puts at HEAD on a pull_request event -- and it belongs to no epic because no
+  // human wrote it.
   //
-  // `--no-merges` was already on the log call and did not exclude it. It could
-  // not: the quality-code lane checks out at the default fetch-depth 1, so the
-  // merge commit's parents are GRAFTED AWAY and git sees a parentless root, not
-  // a merge. The same shallowness is why the range held one commit instead of
-  // the branch's thirty -- fetching the base made `origin/main` resolvable
-  // without making HEAD's ancestry present.
+  // `--no-merges` was already on the log call and did not exclude it. It could not: the quality-code lane checks out at the default fetch-depth 1, so the merge commit's parents are GRAFTED AWAY and git sees a parentless root, not a merge. The same shallowness is why the range held one commit instead of the branch's thirty -- fetching the base made `origin/main` resolvable without
+  // making HEAD's ancestry present.
   //
-  // Fixing it in the workflow (fetch-depth: 0) would work and is the wrong
-  // place: it puts this gate's precondition in a shared lane where the next
-  // person tuning checkout cost silently removes it. So the gate names its own
-  // tip -- the PR's real head branch, fetched if absent -- exactly as it
-  // already does for the base.
+  // Fixing it in the workflow (fetch-depth: 0) would work and is the wrong place: it puts this gate's precondition in a shared lane where the next person tuning checkout cost silently removes it. So the gate names its own tip -- the PR's real head branch, fetched if absent -- exactly as it already does for the base.
   let tip = 'HEAD';
   const headRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
   if (headRef) {
@@ -617,21 +558,13 @@ const main = (): number => {
     tip = remoteTip;
   }
 
-  // A SHALLOW `A..B` IS NOT AN ERROR, IT IS A WRONG ANSWER. Both refs above are
-  // fetched at depth 200, and if their merge base falls outside that window git
-  // does not complain -- it lists everything reachable from the tip, which here
-  // would report main's own untagged history as this PR's fault. Ask for the
-  // merge base explicitly so the failure is the missing depth, named, rather
-  // than two hundred invented findings.
+  // A SHALLOW `A..B` IS NOT AN ERROR, IT IS A WRONG ANSWER. Both refs above are fetched at depth 200, and if their merge base falls outside that window git does not complain -- it lists everything reachable from the tip, which here would report main's own untagged history as this PR's fault. Ask for the merge base explicitly so the failure is the missing depth, named, rather than
+  // two hundred invented findings.
   //
-  // DEEPEN RATHER THAN GUESS A BIGGER NUMBER, in `mergeBaseAfterDeepen` below. The
-  // depth above was 200 and this branch reached 227 commits, so the merge base fell
-  // outside the window and the gate failed closed -- correctly, and for a reason
-  // that will recur on any branch that outlives the constant. Raising 200 to 500
-  // only moves the cliff. So the loop asks whether the merge base is reachable, and
+  // DEEPEN RATHER THAN GUESS A BIGGER NUMBER, in `mergeBaseAfterDeepen` below. The depth above was 200 and this branch reached 227 commits, so the merge base fell outside the window and the gate failed closed -- correctly, and for a reason that will recur on any branch that outlives the constant. Raising 200 to 500 only moves the cliff. So the loop asks whether the merge base is
+  // reachable, and
   // if not, deepens and asks again, ending at --unshallow -- driven by the QUESTION
-  // rather than by a guess about history size. A repository that is already
-  // complete makes `--deepen` a no-op, so the common case costs one merge-base call.
+  // rather than by a guess about history size. A repository that is already complete makes `--deepen` a no-op, so the common case costs one merge-base call.
   if (!mergeBaseAfterDeepen(REPO, base, tip)) {
     console.error(`✗ ${base} and ${tip} have no common ancestor in this checkout.`);
     console.error('  Deepening the shallow fetch to --unshallow did not reveal one.');
@@ -663,10 +596,7 @@ const main = (): number => {
     });
 
   if (commits.length === 0) {
-    // An OPEN PR always has at least one commit, so an empty range under CI is
-    // a broken range, not a clean one. Reporting "skipped" there is the shape
-    // this repo calls a gate that cannot fail: it prints a success line for the
-    // exact topology defect it exists to survive.
+    // An OPEN PR always has at least one commit, so an empty range under CI is a broken range, not a clean one. Reporting "skipped" there is the shape this repo calls a gate that cannot fail: it prints a success line for the exact topology defect it exists to survive.
     if (headRef) {
       console.error(`✗ ${base}..${tip} is empty, but a pull request always has commits.`);
       console.error('  Something is wrong with the range, not with the branch. Refusing to');

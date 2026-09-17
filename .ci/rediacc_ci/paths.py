@@ -67,23 +67,17 @@ import pathlib
 import sys
 from collections.abc import Iterable, Iterator
 
-# The single environment override for the whole package. Named once, here, so a
-# harness pointing the program at a fixture sets one variable rather than
-# discovering a ninth per-gate name the day a gate ignores it.
+# The single environment override for the whole package. Named once, here, so a harness pointing the program at a fixture sets one variable rather than discovering a ninth per-gate name the day a gate ignores it.
 ROOT_ENV = "REDIACC_CI_ROOT"
 
-# <root>/.ci/rediacc_ci/paths.py -> the package, .ci, the root. Written as three
-# named steps rather than `parents[2]` because the number is the part that goes
-# wrong when a file moves, and a name cannot be off by one silently.
+# <root>/.ci/rediacc_ci/paths.py -> the package, .ci, the root. Written as three named steps rather than `parents[2]` because the number is the part that goes wrong when a file moves, and a name cannot be off by one silently.
 PACKAGE_DIR = pathlib.Path(__file__).resolve().parent
 CI_DIR = PACKAGE_DIR.parent
 _STATIC_ROOT = CI_DIR.parent
 
 # The well-known directories below are FUNCTIONS, not constants computed at
 # import time. A constant would be captured before $REDIACC_CI_ROOT could be
-# read, so a harness pointing the program at a fixture would get the fixture's
-# root and the real tree's subdirectories -- the exact half-applied override the
-# eight per-gate `*_ROOT` variables already produce today.
+# read, so a harness pointing the program at a fixture would get the fixture's root and the real tree's subdirectories -- the exact half-applied override the eight per-gate `*_ROOT` variables already produce today.
 
 
 class RootError(RuntimeError):
@@ -227,20 +221,12 @@ def on_sys_path(directory: os.PathLike[str] | str) -> str:
 
 # Directory names no corpus walk in this package may descend into, at any depth.
 #
-# `.git` and `node_modules` are here because every gate in this package scans
-# TRACKED SOURCE, and both are invisible to `git ls-files`. A gate that reads
-# them is judging content CI will never see.
+# `.git` and `node_modules` are here because every gate in this package scans TRACKED SOURCE, and both are invisible to `git ls-files`. A gate that reads them is judging content CI will never see.
 #
-# `.worktrees` is the same argument for a directory that holds whole CHECKOUTS:
-# `scripts/dev/worktree.sh` puts them at `$ROOT_DIR/.worktrees` and `.gitignore:146`
-# excludes them.
+# `.worktrees` is the same argument for a directory that holds whole CHECKOUTS: `scripts/dev/worktree.sh` puts them at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them.
 PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees")
 
-# Pruned as a (parent, name) PAIR rather than by name alone. `worktrees` is far
-# too common a word to prune wherever it appears -- doing so would silently drop
-# a real `docs/worktrees/` or `scripts/worktrees/` from a gate's corpus, which is
-# the same class of invisible-corpus-loss this module exists to prevent. Only
-# `.claude/worktrees` is a checkout holder.
+# Pruned as a (parent, name) PAIR rather than by name alone. `worktrees` is far too common a word to prune wherever it appears -- doing so would silently drop a real `docs/worktrees/` or `scripts/worktrees/` from a gate's corpus, which is the same class of invisible-corpus-loss this module exists to prevent. Only `.claude/worktrees` is a checkout holder.
 PRUNED_DIR_PAIRS = ((".claude", "worktrees"),)
 
 
@@ -304,12 +290,7 @@ def walk_tree(
     """
     extra = frozenset(exclude_dirs)
     for dirpath, dirnames, filenames in os.walk(root, followlinks=follow_symlinks):
-        # `normpath` BEFORE `basename`, because `os.path.basename(".claude/")` is
-        # the EMPTY STRING. A caller that passes a root with a trailing separator
-        # would otherwise fail to match the `.claude`/`worktrees` pair at the top
-        # level, which is precisely the level `shfmt`-shaped callers walk from,
-        # and the prune would silently not happen for the one directory it was
-        # written for.
+        # `normpath` BEFORE `basename`, because `os.path.basename(".claude/")` is the EMPTY STRING. A caller that passes a root with a trailing separator would otherwise fail to match the `.claude`/`worktrees` pair at the top level, which is precisely the level `shfmt`-shaped callers walk from, and the prune would silently not happen for the one directory it was written for.
         parent = os.path.basename(os.path.normpath(dirpath))
         dirnames[:] = [
             name

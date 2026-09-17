@@ -62,8 +62,7 @@ PORT_REL = ".ci/rediacc_ci/security/dependency_inventory.py"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
-# The minimum of the package a path-invoked port needs. Deliberately short: the
-# fixture must not become a second copy of the repository.
+# The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 COPIED = (
     TWIN_REL,
     ".ci/scripts/lib/common.sh",
@@ -74,9 +73,7 @@ COPIED = (
     PORT_REL,
 )
 
-# Files a real run must not touch. `go mod graph` and `go list -m -json all` CAN
-# write go.sum when a checksum is missing, which is the one way this "read-only"
-# tool could mutate the tree.
+# Files a real run must not touch. `go mod graph` and `go list -m -json all` CAN write go.sum when a checksum is missing, which is the one way this "read-only" tool could mutate the tree.
 GUARDED = (
     "package-lock.json",
     "private/account/package-lock.json",
@@ -122,10 +119,7 @@ GO_GRAPH = (
     "github.com/x/b@v2.0.0 github.com/x/c@v3.0.0\n"
 )
 
-# THE FAKES RECORD BEFORE THEY ANSWER. Every invocation appends one
-# `FAKECALL ...` line naming the exact argv and the cwd relative to the fixture
-# root, which is what makes "did the port ask the same questions" an assertion
-# rather than an inference from matching output.
+# THE FAKES RECORD BEFORE THEY ANSWER. Every invocation appends one `FAKECALL ...` line naming the exact argv and the cwd relative to the fixture root, which is what makes "did the port ask the same questions" an assertion rather than an inference from matching output.
 FAKE_NPM = """#!/bin/bash
 printf 'FAKECALL npm %s [cwd=%s]\\n' "$*" "${PWD#$FIXTURE_ROOT}" >>"$FAKE_LOG"
 key=all
@@ -263,9 +257,7 @@ def mask_generated(text: str) -> str:
     return re.sub(r'"generatedAt": "[^"]*"', '"generatedAt": "<MASKED>"', text)
 
 
-# ---------------------------------------------------------------------------
-# Real runs against this repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Real runs against this repository ---------------------------------------------------------------------------
 
 
 def _hashes() -> dict[str, str]:
@@ -348,9 +340,7 @@ def test_the_real_repository_agrees_in_json_format() -> None:
     assert _hashes() == before, "a real run mutated a lockfile"
 
 
-# ---------------------------------------------------------------------------
-# Argument handling (no external tool involved)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling (no external tool involved) ---------------------------------------------------------------------------
 
 
 def test_help_is_byte_identical(fixture: pathlib.Path) -> None:
@@ -396,8 +386,7 @@ def test_the_jq_diagnostics_still_match_this_host() -> None:
     )
     port.jq_argjson_banner.cache_clear()
     assert port.jq_argjson_banner() == banner.stderr
-    # ANTI-VACUITY: a probe that returned "" and fell back would still satisfy
-    # the equality above if jq had also printed nothing. Pin the shape.
+    # ANTI-VACUITY: a probe that returned "" and fell back would still satisfy the equality above if jq had also printed nothing. Pin the shape.
     assert banner.stderr.startswith("jq: invalid JSON text passed to --argjson\n")
     assert "online docs  at https://" in banner.stderr
     missing = subprocess.run(
@@ -452,9 +441,7 @@ def test_a_missing_option_value(fixture: pathlib.Path, flag: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Fixture happy paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture happy paths ---------------------------------------------------------------------------
 
 
 def test_the_fixture_baseline_is_green(fixture: pathlib.Path) -> None:
@@ -576,9 +563,7 @@ def test_output_to_a_file(fixture: pathlib.Path, fmt: str) -> None:
     assert mask_generated(new[3]) == mask_generated(old[3])
 
 
-# ---------------------------------------------------------------------------
-# Fixture failure paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture failure paths ---------------------------------------------------------------------------
 
 
 def test_a_missing_workspace_node_modules(fixture: pathlib.Path) -> None:
@@ -754,9 +739,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(fixture: pathlib.Path) -> N
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The exported helpers, driven directly (the selftest half)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exported helpers, driven directly (the selftest half) ---------------------------------------------------------------------------
 
 
 def test_walk_tree_emits_one_record_per_occurrence() -> None:

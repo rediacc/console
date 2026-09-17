@@ -34,9 +34,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-designed-failure.sh"
 SUT = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 SWEEPER = paths.from_root(".ci", "scripts", "housekeeping", "retry-failed-runs.sh")
 
-# Three by-design paths, one real-error setFailed. These are COUNTS OF A KNOWN
-# SET rather than thresholds: the twin asserts equality both ways for the same
-# reason, because a fourth by-design site is as much a change as a lost one.
+# Three by-design paths, one real-error setFailed. These are COUNTS OF A KNOWN SET rather than thresholds: the twin asserts equality both ways for the same reason, because a fourth by-design site is as much a change as a lost one.
 BY_DESIGN_SITES = 3
 REAL_SETFAILED_SITES = 1
 
@@ -75,8 +73,7 @@ def test_by_design_paths_do_not_fail_the_step(gate):
     gate.log_test("every BY-DESIGN path must exit 0, not setFailed")
     # Phase 3b, operator-approved 2026-08-26. Three paths were failing the step
     # while the watchdog had worked perfectly: it cancelled the run, it
-    # deliberately did NOT cancel an exempt run, or it is holding a pending
-    # rerun. 63 of 64 repo-wide `failure` conclusions were these.
+    # deliberately did NOT cancel an exempt run, or it is holding a pending rerun. 63 of 64 repo-wide `failure` conclusions were these.
     found = source(gate).count("await signalByDesign(")
     gate.assert_eq(
         found,
@@ -88,8 +85,7 @@ def test_by_design_paths_do_not_fail_the_step(gate):
 
 def test_a_real_error_still_fails(gate):
     gate.log_test("a REAL error must still setFailed -- 3b must not mute everything")
-    # The whole value of 3b is that `failure` regains meaning. If the genuine
-    # error path were converted too, the workflow could never report one.
+    # The whole value of 3b is that `failure` regains meaning. If the genuine error path were converted too, the workflow could never report one.
     body = source(gate)
     if REAL_ERROR_LINE not in body:
         gate.log_fail(
@@ -107,8 +103,7 @@ def test_a_real_error_still_fails(gate):
 def test_summary_failure_does_not_swallow_the_verdict(gate):
     gate.log_test("a summary that cannot be written must NOT suppress the failure")
     # The write is diagnostics; the annotation is the signal. If a throw from
-    # core.summary could escape, the watchdog would exit 0 having cancelled a
-    # pipeline -- a false green on the one path that matters most.
+    # core.summary could escape, the watchdog would exit 0 having cancelled a pipeline -- a false green on the one path that matters most.
     body = signal_by_design_body(gate)
     gate.assert_contains(
         body,
@@ -135,9 +130,7 @@ def test_summary_names_the_monitored_run(gate):
 
 def test_retry_sweeper_still_excludes_this_workflow(gate):
     gate.log_test("the marker is an explanation, NOT a substitute for the path exclusion")
-    # A reader might reasonably think a self-describing failure makes the
-    # sweeper's exclusion redundant. It does not: `conclusion` is still
-    # `failure`, and that is what the API returns.
+    # A reader might reasonably think a self-describing failure makes the sweeper's exclusion redundant. It does not: `conclusion` is still `failure`, and that is what the API returns.
     if not SWEEPER.is_file():
         gate.log_fail("the nightly retry sweeper is missing")
     gate.assertions += 1
@@ -151,16 +144,13 @@ def test_retry_sweeper_still_excludes_this_workflow(gate):
 
 def test_control_marker_removal_is_detectable(gate, tmp_path):
     gate.log_test("CONTROL: a plain annotation must be caught")
-    # BY CONSTRUCTION: write the OLD annotation form, not a mutation of the new
-    # one, and require the detector to say it is unmarked.
+    # BY CONSTRUCTION: write the OLD annotation form, not a mutation of the new one, and require the detector to say it is unmarked.
     mutant = tmp_path / "pre-fix.cjs"
     mutant.write_text(PRE_FIX_ANNOTATION + "\n", encoding="utf-8")
     if "await signalByDesign(" in mutant.read_text(encoding="utf-8"):
         gate.log_fail("CONTROL DID NOT FIRE: the pre-fix annotation read as marked")
     gate.assertions += 1
-    # And the other half, which the twin leaves implicit: the pre-fix form is
-    # exactly what `test_a_real_error_still_fails` counts, so it must be seen by
-    # that regex. A control that fires for BOTH reasons proves neither.
+    # And the other half, which the twin leaves implicit: the pre-fix form is exactly what `test_a_real_error_still_fails` counts, so it must be seen by that regex. A control that fires for BOTH reasons proves neither.
     gate.assert_eq(
         len(SETFAILED_RE.findall(mutant.read_text(encoding="utf-8"))),
         1,

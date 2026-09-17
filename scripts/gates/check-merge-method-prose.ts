@@ -120,8 +120,7 @@ const selftest = (): number => {
     'CONTROL: a bare mention with no imperative is not a prescription',
     !prescribes('the post-squash pointer bump')
   );
-  // THE ONE THAT CAUGHT THE VACUITY. A line-wide negation test read this as a
-  // warning, because it bans --admin, and reported clean on the real defect.
+  // THE ONE THAT CAUGHT THE VACUITY. A line-wide negation test read this as a warning, because it bans --admin, and reported clean on the real defect.
   ok(
     'a line that BANS one flag and PRESCRIBES another is still a finding',
     prescribes(
@@ -129,8 +128,7 @@ const selftest = (): number => {
         "wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'."
     )
   );
-  // THE TWO FAILED ATTEMPTS, pinned so neither can come back. Both passed the
-  // isolated-string controls above and both reported the live tree clean.
+  // THE TWO FAILED ATTEMPTS, pinned so neither can come back. Both passed the isolated-string controls above and both reported the live tree clean.
   const REAL_LINE =
     "BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required check. " +
     "The sanctioned path: wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'. " +

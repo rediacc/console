@@ -246,8 +246,7 @@ export function classifyBody(disk: readonly string[], derived: readonly string[]
   const added = b.rows.filter((r) => (inA.get(r) ?? 0) === 0);
   const removed = a.rows.filter((r) => (inB.get(r) ?? 0) === 0);
 
-  // Compare the two sequences restricted to the rows they share. Any position that
-  // disagrees there is a genuine reordering rather than a consequence of an add or a drop.
+  // Compare the two sequences restricted to the rows they share. Any position that disagrees there is a genuine reordering rather than a consequence of an add or a drop.
   const commonA = a.rows.filter((r) => (inB.get(r) ?? 0) > 0);
   const commonB = b.rows.filter((r) => (inA.get(r) ?? 0) > 0);
   const moved: string[] = [];
@@ -450,9 +449,7 @@ function selftest(): number {
   const p = P('fixture', [row('a', 'one'), row('b', 'two'), row('c', 'three')]);
   const body = renderBody(p, p.rows(''));
 
-  // --- the emitted SHAPE, pinned line by line. This is what makes the second
-  // --- implementation honest: if scripts/gen-docs.ts render() changes, this fails HERE,
-  // --- rather than surfacing as every region in the tree drifting at once.
+  // --- the emitted SHAPE, pinned line by line. This is what makes the second --- implementation honest: if scripts/gen-docs.ts render() changes, this fails HERE, --- rather than surfacing as every region in the tree drifting at once.
   ck(
     'the rendered body has the exact shape gen-docs writes',
     body[0] === '' &&
@@ -490,8 +487,7 @@ function selftest(): number {
     d1
   );
 
-  // THE CONTROL THIS GATE TURNS ON. Same rows, different order: every count is equal, every
-  // set is equal, and only an order-aware comparison can see it.
+  // THE CONTROL THIS GATE TURNS ON. Same rows, different order: every count is equal, every set is equal, and only an order-aware comparison can see it.
   const reordered = renderBody(p, [row('b', 'two'), row('a', 'one'), row('c', 'three')]);
   const d2 = classifyBody(reordered, body);
   ck(
@@ -640,13 +636,8 @@ function selftest(): number {
 
   // ------------------------------------------------------------------ W11 P5a
   //
-  // THE FOUR PROVIDERS ADDED IN W11 P5a PARSE FOREIGN LANGUAGES: two bash
-  // dispatchers, two workflow YAMLs, two sync scripts and a Python module. A
-  // parser is where a provider goes silently wrong, because a scan that matches
-  // NOTHING renders as a shorter table rather than as an error, and a shorter
-  // table reads as a smaller subject. These controls exercise the exported
-  // helpers directly, in BOTH directions: something that must be found, and
-  // something that must NOT be.
+  // THE FOUR PROVIDERS ADDED IN W11 P5a PARSE FOREIGN LANGUAGES: two bash dispatchers, two workflow YAMLs, two sync scripts and a Python module. A parser is where a provider goes silently wrong, because a scan that matches NOTHING renders as a shorter table rather than as an error, and a shorter table reads as a smaller subject. These controls exercise the exported helpers
+  // directly, in BOTH directions: something that must be found, and something that must NOT be.
 
   /**
    * The refusal fired. A parser that returns an EMPTY answer where it should throw is the
@@ -684,8 +675,7 @@ function selftest(): number {
     verbs.join(',') === 'devbox,provision,setup',
     verbs
   );
-  // The trap .ci/scripts/test/gates/test-run-sh.sh:177-179 names: an inner `case`
-  // whose arms sit at the SAME indent as a real subcommand. An indentation rule
+  // The trap .ci/scripts/test/gates/test-run-sh.sh:177-179 names: an inner `case` whose arms sit at the SAME indent as a real subcommand. An indentation rule
   // reports `1` and `shell` as verbs; a depth rule cannot.
   ck('CONTROL: an INNER case arm is not a top-level verb', !verbs.includes('shell'), verbs);
   ck('CONTROL: a numeric inner arm is not a verb', !verbs.includes('1'), verbs);
@@ -706,9 +696,7 @@ function selftest(): number {
       ','
     ) === 'setup,test'
   );
-  // ZERO IS NOT A FAILURE HERE, and this control is the reason the provider has no
-  // floor. `PORTED_VERBS` is empty until the first verb moves (run.sh:37-39 says
-  // so), and a floor would have been red for the whole programme.
+  // ZERO IS NOT A FAILURE HERE, and this control is the reason the provider has no floor. `PORTED_VERBS` is empty until the first verb moves (run.sh:37-39 says so), and a floor would have been red for the whole programme.
   ck(
     'CONTROL: an EMPTY ported table is zero rows, not a refusal',
     portedVerbs('PORTED_VERBS=()').length === 0
@@ -860,8 +848,7 @@ function main(argv: string[]): number {
     return bad === 0 ? 0 : 1;
   }
 
-  // Controls before the verdict, same order and same reason as scripts/gen-gates-lock.ts:
-  // a report from an instrument that cannot fail is worse than no report.
+  // Controls before the verdict, same order and same reason as scripts/gen-gates-lock.ts: a report from an instrument that cannot fail is worse than no report.
   if (selftest() !== 0) {
     return refused(
       'CONTROL FAILED: this gate cannot detect drift, so it refuses to rule on the docs.'
@@ -921,9 +908,7 @@ function main(argv: string[]): number {
     }
   };
 
-  // 2. ANTI-VACUITY on the scan itself. Zero of anything here is a broken instrument, never
-  //    an empty subject: a repository with no markdown, or no generated region, is not this
-  //    repository, and a green over nothing is exactly the shape this gate exists to refuse.
+  // 2. ANTI-VACUITY on the scan itself. Zero of anything here is a broken instrument, never an empty subject: a repository with no markdown, or no generated region, is not this repository, and a green over nothing is exactly the shape this gate exists to refuse.
   if (a.scanned === 0) {
     return refused(
       `VACUOUS: no markdown file was read under ${root}.`,
@@ -951,9 +936,7 @@ function main(argv: string[]): number {
       `${a.regions.length} region(s) parsed`
   );
 
-  // 3. EVERY PROVIDER IS STILL USED. This is the check gen-docs cannot make about itself:
-  //    it verifies the regions it FINDS, so a document that loses its markers stops being
-  //    checked rather than failing.
+  // 3. EVERY PROVIDER IS STILL USED. This is the check gen-docs cannot make about itself: it verifies the regions it FINDS, so a document that loses its markers stops being checked rather than failing.
   const used = new Set(a.regions.map((r) => r.region.provider));
   const unused = importedIds.filter((id) => !used.has(id));
   if (unused.length > 0) {
@@ -967,9 +950,7 @@ function main(argv: string[]): number {
     pass(`every provider is used by a region: ${importedIds.join(', ')}`);
   }
 
-  // 4. EVERY PROVIDER STILL SEES SOMETHING. gen-docs asserts this only under `--list`,
-  //    which no gate runs, so an empty provider would render an empty table and verify
-  //    clean against it forever.
+  // 4. EVERY PROVIDER STILL SEES SOMETHING. gen-docs asserts this only under `--list`, which no gate runs, so an empty provider would render an empty table and verify clean against it forever.
   const empties: string[] = [];
   const shape: string[] = [];
   for (const p of PROVIDERS) {
@@ -1055,9 +1036,7 @@ function main(argv: string[]): number {
   return 0;
 }
 
-// THE IMPORT GUARD. This module exports its helpers so a control can drive them directly.
-// Without the guard, importing one would run the whole gate inside the importer and exit,
-// which is what scripts/gen-docs.ts:607 does today and why this file cannot import it.
+// THE IMPORT GUARD. This module exports its helpers so a control can drive them directly. Without the guard, importing one would run the whole gate inside the importer and exit, which is what scripts/gen-docs.ts:607 does today and why this file cannot import it.
 if (path.resolve(process.argv[1] ?? '') === path.resolve(import.meta.filename)) {
   process.exit(main(process.argv.slice(2)));
 }

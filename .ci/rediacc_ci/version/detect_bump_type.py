@@ -75,9 +75,7 @@ DEFAULT_MAX_COMMITS = "50"
 MAJOR_LABEL = "bump-major"
 MINOR_LABEL = "bump-minor"
 
-# The jq expression, byte-identical to the twin's, because the fake `gh` in the
-# differential applies the CALLER's own expression to a fixture file: a reworded
-# expression would mean the two sides are asking different questions.
+# The jq expression, byte-identical to the twin's, because the fake `gh` in the differential applies the CALLER's own expression to a fixture file: a reworded expression would mean the two sides are asking different questions.
 PULLS_JQ = (
     '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) | map(.name) | join(","))"'
 )
@@ -246,8 +244,7 @@ class Detector:
             if api_ok:
                 self.verbose_log("no merged PRs found in %s" % range_desc)
             else:
-                # EVERY lookup failed, so nothing was checked. Reported as a
-                # fallback rather than folded into a clean `patch`.
+                # EVERY lookup failed, so nothing was checked. Reported as a fallback rather than folded into a clean `patch`.
                 self.fallback_patch("every commits/<sha>/pulls lookup failed")
 
         if found_major:
@@ -275,9 +272,7 @@ class Detector:
 
 
 def main(argv: list[str]) -> int:
-    # The twin's `for arg in "$@"` recognises `--verbose` and silently ignores
-    # everything else, including an unknown flag. Reproduced: refusing here
-    # would turn a typo into a failed release step.
+    # The twin's `for arg in "$@"` recognises `--verbose` and silently ignores everything else, including an unknown flag. Reproduced: refusing here would turn a typo into a failed release step.
     verbose = "--verbose" in argv
     print(Detector(verbose).run())
     return 0

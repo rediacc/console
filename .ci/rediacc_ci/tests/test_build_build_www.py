@@ -49,8 +49,7 @@ TWIN_REL = ".ci/scripts/build/build-www.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_www.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 
-# Everything the port imports, transitively, and nothing else. A seventh entry
-# appearing here means the port grew a dependency, which is worth noticing.
+# Everything the port imports, transitively, and nothing else. A seventh entry appearing here means the port grew a dependency, which is worth noticing.
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
@@ -64,21 +63,14 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 # `dirname` for `get_repo_root` (common.sh:207), `uname` because SOURCING
 # common.sh runs `CI_OS="$(detect_os)"` and `CI_ARCH="$(detect_arch)"` at
-# :509-510 -- two forks on every source, whether or not the caller wants them --
-# and `mkdir` for the fake npm's own bookkeeping. Anything not listed is ABSENT.
+# :509-510 -- two forks on every source, whether or not the caller wants them -- and `mkdir` for the fake npm's own bookkeeping. Anything not listed is ABSENT.
 #
-# THE `uname` FORKS ARE A NAMED DIVERGENCE, not a reproduced one: the port
-# imports a module rather than sourcing a library, so it never runs them. It is
-# invisible in output on any machine that HAS uname, and on one that does not
-# the twin prints two `common.sh: line 64: uname: command not found` lines that
-# the port has no reason to forge. The fixture therefore supplies uname.
+# THE `uname` FORKS ARE A NAMED DIVERGENCE, not a reproduced one: the port imports a module rather than sourcing a library, so it never runs them. It is invisible in output on any machine that HAS uname, and on one that does not the twin prints two `common.sh: line 64: uname: command not found` lines that the port has no reason to forge. The fixture therefore supplies uname.
 PATH_MINIMUM = ("dirname", "uname", "mkdir")
 
 # The recording fake. It writes its own argv to the call log with a distinct
 # prefix -- the same prefix the K=5 ledger scopes `--finding-re` to, because
-# `shadow-gate.ts` classifies every `→ `/`✓ ` line as CHATTER before any
-# message-text regex is consulted, and this script reports ONLY through those
-# two glyphs on its success path.
+# `shadow-gate.ts` classifies every `→ `/`✓ ` line as CHATTER before any message-text regex is consulted, and this script reports ONLY through those two glyphs on its success path.
 FAKE_NPM = """#!/bin/bash
 printf 'CALL npm' >>"$FAKE_CALL_LOG"
 for a in "$@"; do printf '\\t%s' "$a" >>"$FAKE_CALL_LOG"; done
@@ -181,9 +173,7 @@ def run_both(root: pathlib.Path, **kw):
     return old, new, old_calls, new_calls
 
 
-# `$0` as bash prints it: the ABSOLUTE path the script was invoked with, whose
-# fixture-root prefix is also per-test. Both are collapsed to `<SELF>`, and
-# nothing else is masked.
+# `$0` as bash prints it: the ABSOLUTE path the script was invoked with, whose fixture-root prefix is also per-test. Both are collapsed to `<SELF>`, and nothing else is masked.
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
 
 
@@ -215,9 +205,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
 
 
-# ---------------------------------------------------------------------------
-# The control on the control: the scratch PATH really is sealed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control: the scratch PATH really is sealed ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
@@ -235,9 +223,7 @@ def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
     assert shutil.which("docker", path=dropped) is None
 
 
-# ---------------------------------------------------------------------------
-# The four exit paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four exit paths ---------------------------------------------------------------------------
 
 
 def test_a_complete_build_prints_three_lines_and_exits_zero(tmp_path) -> None:
@@ -292,9 +278,7 @@ def test_a_failing_npm_is_reported_as_a_failed_build(tmp_path) -> None:
     _agree(old, new, "npm-fail", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The defects, each with its own case
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects, each with its own case ---------------------------------------------------------------------------
 
 
 def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
@@ -341,9 +325,7 @@ def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path
     _agree(old, new, "npm-absent", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The `cd`, the stream discipline, and the real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The `cd`, the stream discipline, and the real tree ---------------------------------------------------------------------------
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
@@ -398,9 +380,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
     assert proc.stdout.strip() == str(ROOT)
 
 
-# ---------------------------------------------------------------------------
-# The control: this differential can actually fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:

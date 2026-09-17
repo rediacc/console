@@ -121,8 +121,7 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every message it emits. A literal rather than
-# argv[0], because the bytes must survive the port and argv[0] here is a `.py`.
+# The twin's own name, printed in every message it emits. A literal rather than argv[0], because the bytes must survive the port and argv[0] here is a `.py`.
 SELF = "set-account-worker-secrets.sh"
 
 # The channel that takes Stripe. Every other value of TARGET is the edge
@@ -130,16 +129,14 @@ SELF = "set-account-worker-secrets.sh"
 STABLE = "stable"
 
 # The three `${VAR:?...}` stand-ins, IN THE TWIN'S ORDER (:106-108), which is
-# observable: a run missing all three names WORKER_NAME. Each message repeats the
-# script name because the twin's own text begins with it (divergence A).
+# observable: a run missing all three names WORKER_NAME. Each message repeats the script name because the twin's own text begins with it (divergence A).
 MISSING_MESSAGES: tuple[tuple[str, str], ...] = (
     ("WORKER_NAME", "WORKER_NAME: %s: WORKER_NAME must be set" % SELF),
     ("TARGET", "TARGET: %s: TARGET must be set" % SELF),
     ("SUFFIX", "SUFFIX: %s: SUFFIX must be set" % SELF),
 )
 
-# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the
-# order the twin evaluates them. STRIPE_WEBHOOK_SECRET is first and is reached on
+# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the order the twin evaluates them. STRIPE_WEBHOOK_SECRET is first and is reached on
 # the stable channel only; the other three are reached on both.
 SUFFIXED_PREFIXES: tuple[str, ...] = (
     "STRIPE_WEBHOOK_SECRET",
@@ -156,16 +153,11 @@ IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 # prefixes this with its file and a line number; the port cannot.
 INVALID_VARIABLE_NAME = "%s: invalid variable name"
 
-# The suffix ASIA borrows from, and the two names it borrows (:128-131). Literal
-# in the twin, literal here: `regions.json` gives asia `sesRegion: eu-central-1`,
-# so the region and the credential agree once the borrow has happened.
+# The suffix ASIA borrows from, and the two names it borrows (:128-131). Literal in the twin, literal here: `regions.json` gives asia `sesRegion: eu-central-1`, so the region and the credential agree once the borrow has happened.
 ASIA = "ASIA"
 ASIA_BORROWS = ("AWS_SES_ACCESS_KEY_ID_EU", "AWS_SES_SECRET_ACCESS_KEY_EU")
 
-# The bucket, by channel (:139-143). Not a secret: the names are public and
-# already committed in workers/account/wrangler.*.toml as the BACKUP_BUCKET
-# binding. Two constants rather than a table, because the twin's `if` has exactly
-# two arms and a table invites a third that does not exist.
+# The bucket, by channel (:139-143). Not a secret: the names are public and already committed in workers/account/wrangler.*.toml as the BACKUP_BUCKET binding. Two constants rather than a table, because the twin's `if` has exactly two arms and a table invites a third that does not exist.
 BUCKET_VAR_STABLE = "BACKUP_BUCKET_STABLE"
 BUCKET_VAR_EDGE = "BACKUP_BUCKET_EDGE"
 
@@ -189,16 +181,9 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The twenty-nine `--arg <var> <value>` pairs (:219-247) in the twin's ORDER,
-# which is also the key order of the object it builds (:248-277). ORDER IS
-# OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the
-# differential re-derives this list from the twin's source and compares.
+# The twenty-nine `--arg <var> <value>` pairs (:219-247) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
-# (Worker key, jq variable, environment variable read for it). The third field is
-# EMPTY for the seven values this script COMPUTES rather than reads, and those
-# seven are the whole difference between this script and its two siblings:
-# `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET is the one
-# Worker key with no same-named variable anywhere: it comes from the channel.
+# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the seven values this script COMPUTES rather than reads, and those seven are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET is the one Worker key with no same-named variable anywhere: it comes from the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv", "ACCOUNT_ED25519_PRIVATE_KEY"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
@@ -235,23 +220,13 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("SELLER_EMAIL", "seller_email", "SELLER_EMAIL"),
 )
 
-# The fifteen unconditional `_require_nonempty` calls (:198-212), in order. The
-# FIRST empty one ends the run, so the order is observable in the message.
+# The fifteen unconditional `_require_nonempty` calls (:198-212), in order. The FIRST empty one ends the run, so the order is observable in the message.
 #
-# WHY THESE, in the twin's own words (:167-197): the Worker schema marks most of
-# them optional() and normalises "" to undefined, so an empty value deploys
-# cleanly and SILENTLY turns the feature off -- email stops with requests still
-# returning 200, Turnstile disables itself, telemetry goes dark, backups 503.
-# `required: true` on the GitHub side used to be the guard, and a job-start
-# Bitwarden fetch has no equivalent: a correct UUID pointing at an empty value
-# injects "" without complaint.
+# WHY THESE, in the twin's own words (:167-197): the Worker schema marks most of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off -- email stops with requests still returning 200, Turnstile disables itself, telemetry goes dark, backups 503. `required: true` on the GitHub side used to be the guard, and a job-start
+# Bitwarden fetch has no equivalent: a correct UUID pointing at an empty value injects "" without complaint.
 #
-# THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO
-# LOOKING FOR. For the four fan-ins the store holds `<NAME>_<SUFFIX>`, so
-# "Check the secret store for that name" is one suffix short of the truth on
-# AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, OBS_OTLP_CREDENTIALS and
-# STRIPE_WEBHOOK_SECRET. Reproduced, and reported to the driver rather than
-# repaired here.
+# THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO LOOKING FOR. For the four fan-ins the store holds `<NAME>_<SUFFIX>`, so "Check the secret store for that name" is one suffix short of the truth on AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, OBS_OTLP_CREDENTIALS and STRIPE_WEBHOOK_SECRET. Reproduced, and reported to the driver rather than repaired
+# here.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -270,17 +245,13 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
 )
 
-# The two demanded on the stable channel only (:213-216). On edge the twin has
-# already blanked both, so demanding them there would refuse every edge deploy.
+# The two demanded on the stable channel only (:213-216). On edge the twin has already blanked both, so demanding them there would refuse every edge deploy.
 REQUIRED_NONEMPTY_STABLE: tuple[str, ...] = (
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
 )
 
-# THE HAPPY PATH SAYS NOTHING OF ITS OWN: the twin ends on the pipe into wrangler
-# (:278), with no closing `log_info`. Named as a constant because it is the reason
-# the differential compares the document rather than the streams, and because it
-# is why the preview sibling's hard-coded "15" has no third occurrence to check.
+# THE HAPPY PATH SAYS NOTHING OF ITS OWN: the twin ends on the pipe into wrangler (:278), with no closing `log_info`. Named as a constant because it is the reason the differential compares the document rather than the streams, and because it is why the preview sibling's hard-coded "15" has no third occurrence to check.
 SUCCESS_IS_SILENT = True
 
 
@@ -414,7 +385,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
     suffix = env.get("SUFFIX", "")
 
     # 1. Stripe. The KEY is account-wide (one Stripe account, acct_1ONIroAH2UKrsSNm);
-    #    only the WEBHOOK signing secret is per-endpoint, hence per-region.
+    # only the WEBHOOK signing secret is per-endpoint, hence per-region.
     if target == STABLE:
         stripe_key = env.get("STRIPE_SECRET_KEY", "")
         stripe_webhook = indirect(env, "STRIPE_WEBHOOK_SECRET", suffix)
@@ -423,8 +394,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
         stripe_key = ""
         stripe_webhook = ""
 
-    # 2. SES region fan-in, and 3. the ASIA borrow, which happens AFTER the
-    #    suffixed pair has been read.
+    # 2. SES region fan-in, and 3. the ASIA borrow, which happens AFTER the suffixed pair has been read.
     ses_access_key_id = indirect(env, "AWS_SES_ACCESS_KEY_ID", suffix)
     ses_secret_access_key = indirect(env, "AWS_SES_SECRET_ACCESS_KEY", suffix)
     if suffix == ASIA:
@@ -433,10 +403,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
 
     otlp_creds = indirect(env, "OBS_OTLP_CREDENTIALS", suffix)
 
-    # 4. The backup plane. The bucket follows the CHANNEL and is refused when
-    #    empty: backup-chunk-store.ts reads `env.ACCOUNT_BACKUP_S3_BUCKET ?? ''`,
-    #    so an empty value does NOT throw there. It mints presigned URLs against
-    #    bucket "" and every backup upload 404s at runtime.
+    # 4. The backup plane. The bucket follows the CHANNEL and is refused when empty: backup-chunk-store.ts reads `env.ACCOUNT_BACKUP_S3_BUCKET ?? ''`, so an empty value does NOT throw there. It mints presigned URLs against bucket "" and every backup upload 404s at runtime.
     bucket_var = BUCKET_VAR_STABLE if target == STABLE else BUCKET_VAR_EDGE
     backup_bucket = env.get(bucket_var, "")
     if not backup_bucket:
@@ -525,8 +492,7 @@ def _wrangler(argv: list[str], payload: str) -> int:
 def main(argv: list[str]) -> int:
     del argv  # the twin parses nothing; extra arguments are ignored by both
 
-    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both
-    # binaries names jq, and both run BEFORE the three `:?` refusals.
+    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq, and both run BEFORE the three `:?` refusals.
     for tool in ("jq", "npx"):
         try:
             common.require_cmd(tool)

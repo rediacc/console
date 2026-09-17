@@ -105,8 +105,7 @@ CASES = [
     ("status-no-state-file", None, ["status"], FROZEN_NOW),
     ("status-port-and-started", "started=1700000000\nport=9123\n", ["status"], FROZEN_NOW),
     ("status-one-minute-uptime", "started=1700000000\nport=8080\n", ["status"], 1700000061),
-    # 25 hours: the twin's `printf '%02d:%02d:%02d'` does NOT roll into days, so
-    # this prints `25:00:00`. `datetime.timedelta` would print `1 day, 1:00:00`.
+    # 25 hours: the twin's `printf '%02d:%02d:%02d'` does NOT roll into days, so this prints `25:00:00`. `datetime.timedelta` would print `1 day, 1:00:00`.
     ("status-over-24-hours", "started=1700000000\nport=8080\n", ["status"], 1700090000),
     # `cut -d= -f2` takes the SECOND field only, so a value containing `=` is
     # truncated on both sides. A bug, preserved, because the twin has it.
@@ -267,8 +266,7 @@ def test_service_logs_dispatch_both_directions() -> None:
     assert service.service_logs_target("web")[1][-1] == "rediacc-service-web"
     assert service.service_logs_target("rustfs")[1][-1] == "rediacc-service-rustfs"
     assert service.service_logs_target("all") == ("compose", ["logs", "-f"])
-    # `all | ""` share an arm in the twin, so an EMPTY service follows everything
-    # rather than refusing. Pinned because it looks like a typo and is not.
+    # `all | ""` share an arm in the twin, so an EMPTY service follows everything rather than refusing. Pinned because it looks like a typo and is not.
     assert service.service_logs_target("") == ("compose", ["logs", "-f"])
     assert service.service_logs_target("nosuch") is None
 

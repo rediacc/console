@@ -64,8 +64,7 @@ COMMENT = re.compile(r"^\s*#")
 
 LONG = "feature/an-extremely-long-branch-name-that-nobody-would-ever-type-but-git-happily-accepts-x"
 
-# (input, expected). A 90-char name is included because the truncation to 40 can land
-# ON a dash, and a trailing dash is not a legal DNS label.
+# (input, expected). A 90-char name is included because the truncation to 40 can land ON a dash, and a trailing dash is not a legal DNS label.
 SLUG_ROWS = (
     ("feat/x", "feat-x"),
     ("feat//x", "feat-x"),
@@ -150,9 +149,7 @@ def test_the_hostname_rules_hold(gate):
         gate, "devbox_slugify", "devbox_slug_drift", "devbox_route_label", "devbox_state_get"
     )
 
-    # ---------------------------------------------------------------------
-    # 1. devbox_slugify -- the pure rule
-    # ---------------------------------------------------------------------
+    # --------------------------------------------------------------------- 1. devbox_slugify -- the pure rule ---------------------------------------------------------------------
     gate.log_test("devbox_slugify: the branch-name-to-hostname rule")
     for value, want in SLUG_ROWS:
         got = sh(gate, prelude, "devbox_slugify %s" % shell_quote(value))
@@ -165,8 +162,7 @@ def test_the_hostname_rules_hold(gate):
         if len(got) > 40:
             gate.no("slugify: '%s' produced %d chars; the cap is 40" % (value, len(got)))
 
-    # CONTROL, by construction: the pre-change rule did not COLLAPSE runs of dashes.
-    # Write that rule as its own function and require the feat//x row to go RED.
+    # CONTROL, by construction: the pre-change rule did not COLLAPSE runs of dashes. Write that rule as its own function and require the feat//x row to go RED.
     nocollapse = """devbox_slugify_planted() {
     local s
     s="$(LC_ALL=C printf '%s' "${1:-}" |
@@ -186,12 +182,7 @@ def test_the_hostname_rules_hold(gate):
             % planted
         )
 
-    # ---------------------------------------------------------------------
-    # 2. The deliberate collision
-    # ---------------------------------------------------------------------
-    # feat/x and feat-x are DIFFERENT branches that share ONE hostname. Assert the
-    # INPUTS differ first: if a refactor ever made them equal, comparing the outputs
-    # alone would pass while proving nothing.
+    # --------------------------------------------------------------------- 2. The deliberate collision --------------------------------------------------------------------- feat/x and feat-x are DIFFERENT branches that share ONE hostname. Assert the INPUTS differ first: if a refactor ever made them equal, comparing the outputs alone would pass while proving nothing.
     gate.log_test("devbox_slugify: the separator collision is deliberate, not accidental")
     a, b = "feat/x", "feat-x"
     slug_a = sh(gate, prelude, "devbox_slugify %s" % shell_quote(a))
@@ -209,11 +200,7 @@ def test_the_hostname_rules_hold(gate):
             "and the refusal path in devbox_up" % (a, b)
         )
 
-    # ---------------------------------------------------------------------
-    # 3. devbox_branch on a DETACHED HEAD
-    # ---------------------------------------------------------------------
-    # The whole point of symbolic-ref. Build a REAL repo, detach it, and require the
-    # slug to fall back to the worktree basename rather than to `head`.
+    # --------------------------------------------------------------------- 3. devbox_branch on a DETACHED HEAD --------------------------------------------------------------------- The whole point of symbolic-ref. Build a REAL repo, detach it, and require the slug to fall back to the worktree basename rather than to `head`.
     gate.log_test("devbox_branch: a detached HEAD yields no branch, so no shared 'head' hostname")
     git = harness.require_tool("git", "install git; the detached-HEAD case needs a real repo")
     with harness.temp_dir() as tmp:
@@ -242,8 +229,7 @@ def test_the_hostname_rules_hold(gate):
             repo,
             lift(gate, "devbox_branch", "devbox_slug_basename", "devbox_slug", "devbox_slugify"),
         )
-        # DEVBOX_SLUG is unset for these four: the escape hatch is asserted separately
-        # below, and leaving it set here would answer every one of them.
+        # DEVBOX_SLUG is unset for these four: the escape hatch is asserted separately below, and leaving it set here would answer every one of them.
         clean = {"DEVBOX_SLUG": ""}
 
         branch = sh(gate, slug_prelude, "devbox_branch", env=clean)
@@ -311,9 +297,7 @@ def test_the_hostname_rules_hold(gate):
         else:
             gate.no("slug: DEVBOX_SLUG override gave '%s', expected 'my-box-2'" % override)
 
-        # -----------------------------------------------------------------
-        # 4. Identity and ports must NOT depend on the branch
-        # -----------------------------------------------------------------
+        # ----------------------------------------------------------------- 4. Identity and ports must NOT depend on the branch -----------------------------------------------------------------
         # A branch is renamed; a path is not. If either of these ever consults the
         # slug, a rename orphans the container or shuffles its port block.
         gate.log_test("identity and ports stay path-derived")
@@ -351,9 +335,7 @@ def test_the_hostname_rules_hold(gate):
         else:
             gate.no("CONTROL DID NOT FIRE: a slug-keyed container lookup went undetected")
 
-        # -----------------------------------------------------------------
-        # 5. Drift: recorded vs baked vs wanted
-        # -----------------------------------------------------------------
+        # ----------------------------------------------------------------- 5. Drift: recorded vs baked vs wanted -----------------------------------------------------------------
         gate.log_test("devbox_slug_drift: a stale hostname is REPORTED, never printed as a URL")
         if sh(gate, prelude, "devbox_slug_drift alpha alpha alpha") == "":
             gate.ok("drift: three agreeing names report nothing")
@@ -369,9 +351,7 @@ def test_the_hostname_rules_hold(gate):
         else:
             gate.no('drift: a renamed branch produced "%s"' % out)
 
-        # The recorded key comes from the state file through the REAL accessor, not a
-        # hand-rolled parser: this change added a key to a format that already had two
-        # readers, and a third would be the bug.
+        # The recorded key comes from the state file through the REAL accessor, not a hand-rolled parser: this change added a key to a format that already had two readers, and a third would be the bug.
         state = tmp / ".devbox-state"
         state.write_text(
             "# Generated by ./run.sh setup - do not edit\n"
@@ -403,9 +383,7 @@ def test_the_hostname_rules_hold(gate):
         else:
             gate.no("CONTROL DID NOT FIRE: the silent variant still produced output")
 
-    # ---------------------------------------------------------------------
-    # 6. devbox_route_label: traefik's 404 is not "live"
-    # ---------------------------------------------------------------------
+    # --------------------------------------------------------------------- 6. devbox_route_label: traefik's 404 is not "live" ---------------------------------------------------------------------
     gate.log_test("devbox_route_label: an unmatched Host must never be labelled live")
     label = sh(gate, prelude, "devbox_route_label 404 '' no")
     if "no such router" in label and "live" not in label:

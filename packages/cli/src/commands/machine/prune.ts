@@ -47,16 +47,12 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
     return;
   }
 
-  // renet emits the prunable-resources / result struct as JSON. Parse and render
-  // it so the operator can see what a real prune would remove (dry-run) or what
-  // was removed. Fall back gracefully if the output isn't the expected JSON
-  // (e.g. an older renet that ignores --output json).
+  // renet emits the prunable-resources / result struct as JSON. Parse and render it so the operator can see what a real prune would remove (dry-run) or what was removed. Fall back gracefully if the output isn't the expected JSON (e.g. an older renet that ignores --output json).
   let parsed: Record<string, unknown>;
   try {
     parsed = parseDatastorePruneOutput(result.stdout ?? '');
   } catch {
-    // Report passthrough, not a parse: renet's diagnostics now arrive on
-    // stderr (data/diag channel split), so include both streams.
+    // Report passthrough, not a parse: renet's diagnostics now arrive on stderr (data/diag channel split), so include both streams.
     const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
     if (raw) outputService.print(raw);
     outputService.success(t('commands.machine.prune.datastoreCompleted'));
@@ -98,9 +94,7 @@ async function pruneUnits(machineName: string, options: PruneOptions): Promise<v
     return;
   }
 
-  // `renet prune` emits a human-readable report, not JSON, so pass it through
-  // rather than inventing a parse for a format that has no schema. Diagnostics
-  // arrive on stderr since the data/diag channel split — include both streams.
+  // `renet prune` emits a human-readable report, not JSON, so pass it through rather than inventing a parse for a format that has no schema. Diagnostics arrive on stderr since the data/diag channel split — include both streams.
   const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
   if (raw) outputService.print(raw);
   outputService.success(t('commands.machine.prune.unitsCompleted'));

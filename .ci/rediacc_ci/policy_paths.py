@@ -62,22 +62,16 @@ from rediacc_ci import paths
 
 # The repository root, derived from the package's own location. `paths.CI_DIR`
 # is `<root>/.ci`, computed once at import of that module; taking its parent
-# here costs no filesystem call, whereas `paths.repo_root()` would `is_dir()`
-# an override on every call and break rule 1.
+# here costs no filesystem call, whereas `paths.repo_root()` would `is_dir()` an override on every call and break rule 1.
 _STATIC_ROOT = paths.CI_DIR.parent
 
-# The directory, relative to the repository root, that holds the policy files.
-# `.ci/policy` since W4 P2 (commit b80552370). MUST equal POLICY_DIR in
+# The directory, relative to the repository root, that holds the policy files. `.ci/policy` since W4 P2 (commit b80552370). MUST equal POLICY_DIR in
 # scripts/lib/policy-paths.ts; check:ci-policy-inventory compares the two.
 POLICY_DIR = ".ci/policy"
 
-# Every suppression policy file, by bare name. MUST equal POLICY_FILES in
-# scripts/lib/policy-paths.ts, name for name.
+# Every suppression policy file, by bare name. MUST equal POLICY_FILES in scripts/lib/policy-paths.ts, name for name.
 #
-# `.ci-trigger` is DELIBERATELY ABSENT and stays at the repository root: no
-# entries, no BLOCKER lines, no parser anywhere in the tree, and its whole
-# semantic is a root gesture a human performs by hand to force a full CI round.
-# `.ci/policy/README.md` section 3 records that decision and its evidence.
+# `.ci-trigger` is DELIBERATELY ABSENT and stays at the repository root: no entries, no BLOCKER lines, no parser anywhere in the tree, and its whole semantic is a root gesture a human performs by hand to force a full CI round. `.ci/policy/README.md` section 3 records that decision and its evidence.
 POLICY_FILES: tuple[str, ...] = (
     ".actions-upgrade-blocklist",
     ".audit-allowlist",
@@ -95,28 +89,17 @@ POLICY_FILES: tuple[str, ...] = (
     ".profiler-coverage-allowlist",
     ".runner-advice-allowlist",
     ".unverified-download-allowlist",
-    # D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both
-    # are deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a
+    # D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both are deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a
     # list of exempted entries, so a name-per-line dotfile could not hold it; and it
-    # is policy by the README's four-part predicate all the same, because every number
-    # in it is a claim about the world that a change to .claude/settings.json can stop
-    # being true. It is reached through policy_path() from
-    # .ci/rediacc_ci/quality/hook_exec_baseline.py and nowhere else.
+    # is policy by the README's four-part predicate all the same, because every number in it is a claim about the world that a change to .claude/settings.json can stop being true. It is reached through policy_path() from .ci/rediacc_ci/quality/hook_exec_baseline.py and nowhere else.
     "hook-exec-baseline.json",
-    # D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files
-    # at 183 read sites, with no registry and no schema before this. A typo'd name
-    # reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
-    # Reached through policy_path() from
-    # .ci/rediacc_ci/quality/worklist_env_registry.py and nowhere else. JSON for the
-    # same reason as the line above: it holds a table, not a list of entries.
+    # D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at 183 read sites, with no registry and no schema before this. A typo'd name reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction. Reached through policy_path() from .ci/rediacc_ci/quality/worklist_env_registry.py and nowhere else. JSON for the same reason as the line
+    # above: it holds a table, not a list of entries.
     "worklist-env-registry.json",
     ".w7p5a-real-run-blocklist",
     # T-SCHED W7P5-a Section 4, 2026-09-15. `.w7p5a-real-run-blocklist` BLOCKs an
     # entire path's port; this one BLOCKs only a `ledger`-status path's REAL-RUN leg,
-    # which the box's acceptance ("dry-run parity plus one real run each") requires
-    # separately. The two must not share a file: the existing gate treats any
-    # allowlist entry whose path has graduated to "ledger" as STALE, so a path that
-    # is genuinely ledgered but real-run-blocked would misreport as a leftover.
+    # which the box's acceptance ("dry-run parity plus one real run each") requires separately. The two must not share a file: the existing gate treats any allowlist entry whose path has graduated to "ledger" as STALE, so a path that is genuinely ledgered but real-run-blocked would misreport as a leftover.
     ".w7p5a-real-run-leg-blocklist",
 )
 
@@ -176,10 +159,7 @@ def policy_path(name: str, root: str | os.PathLike[str] | None = None) -> pathli
     if name not in _VALID:
         _refuse(name)
     base = _STATIC_ROOT if root is None else pathlib.Path(root)
-    # POLICY_DIR is split rather than joined as one segment so that a future
-    # value of "" degrades to the repository root instead of introducing an
-    # empty path component. Written as a comprehension, not an `if`, so there
-    # is no branch that today's literal makes dead.
+    # POLICY_DIR is split rather than joined as one segment so that a future value of "" degrades to the repository root instead of introducing an empty path component. Written as a comprehension, not an `if`, so there is no branch that today's literal makes dead.
     return base.joinpath(*[part for part in POLICY_DIR.split("/") if part], name)
 
 

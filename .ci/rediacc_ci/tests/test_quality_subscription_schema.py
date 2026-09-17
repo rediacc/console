@@ -79,9 +79,7 @@ def test_a_formatter_that_cannot_run_leaves_a_comparable_file(
     formatted = tmp_path / "formatted.json"
     monkeypatch.setenv("PATH", str(tmp_path / "no-such-bin"))
     mod.format_through_stdin(tmp_path, fresh, formatted)
-    # PATH is restored BEFORE the comparison, because `files_differ` shells out
-    # to `diff` and an empty PATH would make it answer "they differ" for the
-    # wrong reason -- which would pass this assertion while proving nothing.
+    # PATH is restored BEFORE the comparison, because `files_differ` shells out to `diff` and an empty PATH would make it answer "they differ" for the wrong reason -- which would pass this assertion while proving nothing.
     monkeypatch.undo()
     assert formatted.read_text(encoding="utf-8") == '{"generated":true}\n'
     assert mod.files_differ(fresh, formatted) is False

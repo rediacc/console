@@ -57,10 +57,7 @@ TWIN = ROOT / ".ci" / "scripts" / "quality" / "page-density.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "quality" / "page_density.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# A recording stub: name, argv, cwd, then whatever the case asked it to do.
-# `#!/usr/bin/python3` absolute, not `/usr/bin/env python3`: these run with a
-# PATH that deliberately holds almost nothing, and `env` would fail to resolve
-# the interpreter.
+# A recording stub: name, argv, cwd, then whatever the case asked it to do. `#!/usr/bin/python3` absolute, not `/usr/bin/env python3`: these run with a PATH that deliberately holds almost nothing, and `env` would fail to resolve the interpreter.
 STUB = """#!/usr/bin/python3
 import os
 import sys
@@ -154,8 +151,7 @@ def run_both(tmp_path: pathlib.Path, stubs: tuple[str, ...], **overrides: str):
     path = _stub_path(tmp_path, *stubs)
     old_env = _env(path, tmp_path / "old-calls.log", **overrides)
     new_env = _env(path, tmp_path / "new-calls.log", **overrides)
-    # cwd is deliberately NOT the repo: both subjects must cd to the root
-    # themselves, and starting them there would hide a port that did not.
+    # cwd is deliberately NOT the repo: both subjects must cd to the root themselves, and starting them there would hide a port that did not.
     old, old_calls = _run(TWIN, old_env, tmp_path)
     new, new_calls = _run(PORT, new_env, tmp_path)
     return old, new, old_calls, new_calls

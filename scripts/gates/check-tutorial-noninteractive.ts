@@ -112,9 +112,7 @@ function collectRules(node: Record<string, unknown>, i18n: unknown, trail: strin
  */
 function extractInvocations(line: string): string[] {
   const out: string[] = [];
-  // Quotes are KEPT here (tokenize strips them). Excluding them truncated
-  // `rdc machine prune "$M" … --force` at the first quote, hiding the flag that
-  // was already present and reporting a false positive.
+  // Quotes are KEPT here (tokenize strips them). Excluding them truncated `rdc machine prune "$M" … --force` at the first quote, hiding the flag that was already present and reporting a false positive.
   const re = /\brdc\s+[^\n;|&<>]*/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(line)) !== null) {

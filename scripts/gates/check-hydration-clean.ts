@@ -182,9 +182,7 @@ export function scanSource(src: string, file: string): HydrationFinding[] {
         continue;
       }
 
-      // ONE HOP. Any identifier the argument names -- called or passed bare -- whose
-      // module-level body tests the environment makes this initializer environment
-      // dependent just as surely as an inline test would.
+      // ONE HOP. Any identifier the argument names -- called or passed bare -- whose module-level body tests the environment makes this initializer environment dependent just as surely as an inline test would.
       for (const ident of new Set(arg.match(/[A-Za-z_$][\w$]*/g) ?? [])) {
         const body = bodies.get(ident);
         if (body && ENV_TEST.test(body)) {
@@ -316,11 +314,8 @@ const C = () => {
   check('the walker finds .tsx files on disk', walk(tmp).length === 1);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  // THE REFUSAL ITSELF, live and uncontrolled until 2026-09-08. Driven against an
-  // empty `--root` it printed `✗ Refusing to run: ... does not exist.` and exited
-  // 1, so the guard worked -- but nothing asserted it, and deleting those two
-  // lines would have left a gate that scans zero files and reports a clean tree.
-  // That is the anti-vacuity hole the floor below it exists to close, one level up.
+  // THE REFUSAL ITSELF, live and uncontrolled until 2026-09-08. Driven against an empty `--root` it printed `✗ Refusing to run: ... does not exist.` and exited 1, so the guard worked -- but nothing asserted it, and deleting those two lines would have left a gate that scans zero files and reports a clean tree. That is the anti-vacuity hole the floor below it exists to close, one
+  // level up.
   check(
     'REFUSAL: a scan root that does not exist is refused',
     (refuseReason('/nope/does/not/exist', false, MIN_FILES) ?? '').includes('does not exist'),

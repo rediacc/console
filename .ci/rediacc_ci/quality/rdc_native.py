@@ -52,20 +52,15 @@ from rediacc_ci import controls, log, paths
 # The subject, relative to the repo root.
 RDC_SH = "rdc.sh"
 
-# THE CEILING, and the four lines of headroom are deliberate. `run.sh` sits at 120 of 120
-# and its own box records that as a constraint rather than a comfort: the next verb ported
-# there cannot add a line without a ceiling change in the same commit. A wrapper this size
-# should be able to gain a sentence of explanation without an author having to touch the
-# gate, and 4 lines is nowhere near the 93 that left. The success line prints the spare.
+# THE CEILING, and the four lines of headroom are deliberate. `run.sh` sits at 120 of 120 and its own box records that as a constraint rather than a comfort: the next verb ported there cannot add a line without a ceiling change in the same commit. A wrapper this size should be able to gain a sentence of explanation without an author having to touch the gate, and 4 lines is nowhere
+# near the 93 that left. The success line prints the spare.
 CEILING = 185
 
 # A floor as well as a ceiling. A `rdc.sh` that has become a two-line stub is not a win,
 # it is a file somebody truncated; every assertion below would pass on it.
 FLOOR = 40
 
-# The three platform arms, times the spellings `uname` really emits, times both arches.
-# Read off the bash that was deleted (`rdc.sh:89-118` at HEAD~), NOT derived from the
-# subject's own tables. See the module docstring.
+# The three platform arms, times the spellings `uname` really emits, times both arches. Read off the bash that was deleted (`rdc.sh:89-118` at HEAD~), NOT derived from the subject's own tables. See the module docstring.
 #
 # Each row: (uname -s, uname -m, sea platform, sea arch, exe suffix).
 ARMS: tuple[tuple[str, str, str, str, str], ...] = (
@@ -80,16 +75,13 @@ ARMS: tuple[tuple[str, str, str, str, str], ...] = (
     ("CYGWIN_NT-10.0", "aarch64", "win", "arm64", ".exe"),
 )
 
-# The two refusals the bash had, kept word for word. A platform or an architecture with no
-# pinned build must STOP, not fall through to a default: the whole install step overwrites
-# the user's `rdc` with whatever was produced.
+# The two refusals the bash had, kept word for word. A platform or an architecture with no pinned build must STOP, not fall through to a default: the whole install step overwrites the user's `rdc` with whatever was produced.
 REFUSALS: tuple[tuple[str, str, str], ...] = (
     ("Plan9", "x86_64", "Unsupported platform Plan9 for --native"),
     ("Linux", "riscv64", "Unsupported arch riscv64 for --native"),
 )
 
-# A fixed HOME for every probe, so `dest` and `backup` are comparable against a literal
-# and no assertion depends on whose machine the gate runs on.
+# A fixed HOME for every probe, so `dest` and `backup` are comparable against a literal and no assertion depends on whose machine the gate runs on.
 PROBE_HOME = "/nonexistent-probe-home"
 
 
@@ -284,9 +276,7 @@ def selftest() -> bool:
         any("delegates" in f for f in wrapper_findings("#!/bin/bash\n" + "# filler\n" * 60)),
     )
 
-    # -- the differential, against an UNMUTATED copy first ------------------------------
-    # The negative direction, and it runs first on purpose: if the copy mechanism itself
-    # were broken, the mutated run below would "fire" for a reason that has nothing to do
+    # -- the differential, against an UNMUTATED copy first ------------------------------ The negative direction, and it runs first on purpose: if the copy mechanism itself were broken, the mutated run below would "fire" for a reason that has nothing to do
     # with the mutation. Proving the copy is clean is what makes the next result evidence.
     with tempfile.TemporaryDirectory() as tmp:
         clean_ci = _mutated_copy(ci_dir, tmp)

@@ -169,8 +169,7 @@ function compareVersions(a: string, b: string): number {
 
   if (!va || !vb) return 0;
 
-  // Check if 'a' is a major-only version (e.g., "v3" vs "v3.1.0")
-  // Major-only versions are considered floating tags that track latest in that major line
+  // Check if 'a' is a major-only version (e.g., "v3" vs "v3.1.0") Major-only versions are considered floating tags that track latest in that major line
   const aIsMajorOnly = /^v?\d+$/.test(a.replace(/^v/, ''));
 
   if (va.major !== vb.major) return va.major < vb.major ? -1 : 1;
@@ -194,12 +193,8 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
     return blocklist;
   }
 
-  // Use the shared BLOCKER parser/validator rather than a bespoke one, so this
-  // suppression mechanism is held to the same standard as every other list in
-  // the repo (see docs/agent-reference/suppressions.md, "Suppression mechanisms and the BLOCKER
-  // convention"). Previously this file accepted any trailing comment — or none
-  // at all — as a "reason", which is how it stayed outside the convention.
-  // Mirrors loadBlocklist() in check-deps.ts.
+  // Use the shared BLOCKER parser/validator rather than a bespoke one, so this suppression mechanism is held to the same standard as every other list in the repo (see docs/agent-reference/suppressions.md, "Suppression mechanisms and the BLOCKER convention"). Previously this file accepted any trailing comment — or none at all — as a "reason", which is how it stayed outside the
+  // convention. Mirrors loadBlocklist() in check-deps.ts.
   const entries = parseBlockeredList(BLOCKLIST_FILE);
   const failures = verifyAllBlockers(entries, BLOCKLIST_FILE);
   if (failures.length > 0) {
@@ -223,20 +218,15 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
 function parseWorkflowFiles(): Map<string, ActionInfo> {
   const actions = new Map<string, ActionInfo>();
 
-  // Scanning is delegated to collectActionRefs(), which covers BOTH
-  // .github/workflows and composite actions under .github/actions. Keeping one
-  // scanner matters: this gate and scripts/gates/check-suppression-liveness.ts must
-  // agree on what "referenced" means, or one will condemn what the other sees.
+  // Scanning is delegated to collectActionRefs(), which covers BOTH .github/workflows and composite actions under .github/actions. Keeping one scanner matters: this gate and scripts/gates/check-suppression-liveness.ts must agree on what "referenced" means, or one will condemn what the other sees.
   //
-  // The composite half was a real blind spot — actions/create-github-app-token
-  // is pinned only in .github/actions/app-token/action.yml, so the action that
-  // mints every CI token in this repo went unchecked for freshness.
+  // The composite half was a real blind spot — actions/create-github-app-token is pinned only in .github/actions/app-token/action.yml, so the action that mints every CI token in this repo went unchecked for freshness.
   for (const [actionName, refs] of collectActionRefs(CONSOLE_ROOT)) {
     let version: string | null = null;
     let sha: string | null = null;
     const { ref, comment } = refs[0];
 
-    // owner/repo@<40-hex sha>  # vX.Y.Z   (the pinned form used throughout)
+    // owner/repo@<40-hex sha> # vX.Y.Z (the pinned form used throughout)
     if (/^[a-f0-9]{40}$/i.test(ref)) {
       sha = ref;
       if (comment) {
@@ -457,11 +447,7 @@ async function checkActions(): Promise<void> {
       continue;
     }
 
-    // Outdated, but possibly TOO FRESH to demand. A release published inside the
-    // age window is reported as a notice and does not fail the gate: the upgrade
-    // is real, it is simply not yet takeable under this repo's supply-chain
-    // posture. It becomes a normal finding once the window passes, so nothing is
-    // lost, and no blocklist entry has to be invented for a non-blocked version.
+    // Outdated, but possibly TOO FRESH to demand. A release published inside the age window is reported as a notice and does not fail the gate: the upgrade is real, it is simply not yet takeable under this repo's supply-chain posture. It becomes a normal finding once the window passes, so nothing is lost, and no blocklist entry has to be invented for a non-blocked version.
     if (isReleaseDeferred(release.publishedAt)) {
       deferred.push({
         name: actionName,
@@ -501,10 +487,7 @@ async function checkActions(): Promise<void> {
 
   if (mustUpgrade.length > 0) {
     hasFailure = true;
-    // Output is deliberately SHARP, not comprehensive. Listing every call site
-    // produced hundreds of file:line entries per action (actions/checkout alone
-    // is pinned at 137 sites), which buried the one thing a reader — human or
-    // agent — actually needs: the exact command that fixes it.
+    // Output is deliberately SHARP, not comprehensive. Listing every call site produced hundreds of file:line entries per action (actions/checkout alone is pinned at 137 sites), which buried the one thing a reader — human or agent — actually needs: the exact command that fixes it.
     console.log(`${RED}Outdated actions (${mustUpgrade.length}):${NC}\n`);
     for (const action of mustUpgrade) {
       const n = action.locations.length;
@@ -518,12 +501,9 @@ async function checkActions(): Promise<void> {
     console.log(`\n${YELLOW}To upgrade — resolves the new SHA and rewrites every pin:${NC}\n`);
     for (const action of mustUpgrade) {
       if (!action.sha) continue;
-      // repos/<repo>/commits/<tag> resolves to the commit SHA for BOTH
-      // lightweight and annotated tags, unlike git/ref/tags which returns the
-      // tag object for annotated tags and needs a second dereference.
+      // repos/<repo>/commits/<tag> resolves to the commit SHA for BOTH lightweight and annotated tags, unlike git/ref/tags which returns the tag object for annotated tags and needs a second dereference.
       console.log(`  NEW=$(gh api repos/${action.name}/commits/${action.latest} --jq .sha) && \\`);
-      // Search .github, not .github/workflows: composite actions under
-      // .github/actions/*/action.yml pin third-party actions too.
+      // Search .github, not .github/workflows: composite actions under .github/actions/*/action.yml pin third-party actions too.
       console.log(`    find .github -name '*.yml' -o -name '*.yaml' | xargs sed -i \\`);
       console.log(
         `      "s|${action.name}@${action.sha}\\( *\\)# ${action.version}|${action.name}@\${NEW}\\1# ${action.latest}|g"`
@@ -544,11 +524,7 @@ async function checkActions(): Promise<void> {
     console.log();
   }
 
-  // Deferred, not blocked, and deliberately reported even though the gate
-  // passes: a silent defer is indistinguishable from a gate that stopped
-  // looking, which is the failure mode this repo keeps finding in its own
-  // tooling. Naming them means the next run's "must upgrade" is never a
-  // surprise.
+  // Deferred, not blocked, and deliberately reported even though the gate passes: a silent defer is indistinguishable from a gate that stopped looking, which is the failure mode this repo keeps finding in its own tooling. Naming them means the next run's "must upgrade" is never a surprise.
   if (deferred.length > 0) {
     console.log(`${BLUE}Deferred upgrades (${deferred.length}) -- too fresh to take yet:${NC}\n`);
     for (const action of deferred) {
@@ -599,22 +575,12 @@ async function checkActions(): Promise<void> {
     process.exit(1);
   }
 
-  // ANTI-VACUITY. A gate that passes when it checked NOTHING is broken by
-  // definition, and this one did exactly that: with every GitHub API lookup
-  // rate-limited it printed "All GitHub Actions are up-to-date (14 unknown)"
-  // and exited 0. Fourteen unknown means fourteen unchecked, which is the
-  // opposite of up-to-date. Measured 2026-07-28 by running the gate without a
-  // token until the anonymous rate limit tripped.
+  // ANTI-VACUITY. A gate that passes when it checked NOTHING is broken by definition, and this one did exactly that: with every GitHub API lookup rate-limited it printed "All GitHub Actions are up-to-date (14 unknown)" and exited 0. Fourteen unknown means fourteen unchecked, which is the opposite of up-to-date. Measured 2026-07-28 by running the gate without a token until the
+  // anonymous rate limit tripped.
   //
-  // An offline or rate-limited CI run would therefore have reported freshness it
-  // never verified, indefinitely, which is the same swallowed-failure shape this
-  // repo keeps finding in its own tooling: empty evidence rendered as a clean
-  // result.
+  // An offline or rate-limited CI run would therefore have reported freshness it never verified, indefinitely, which is the same swallowed-failure shape this repo keeps finding in its own tooling: empty evidence rendered as a clean result.
   //
-  // Scope is deliberately narrow: only a TOTAL lookup failure is fatal. A
-  // partial one still proves something about the actions it did reach, and
-  // failing the build for one flaky lookup would make the gate the flakiest
-  // thing in CI.
+  // Scope is deliberately narrow: only a TOTAL lookup failure is fatal. A partial one still proves something about the actions it did reach, and failing the build for one flaky lookup would make the gate the flakiest thing in CI.
   if (actions.size > 0 && unknown.length === actions.size) {
     console.log(
       `${RED}✗ Could not resolve the latest release for ANY of the ${actions.size} action(s).${NC}`

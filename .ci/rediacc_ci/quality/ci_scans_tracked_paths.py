@@ -104,17 +104,11 @@ SELF = "check-ci-scans-tracked-paths.sh"
 # The two surfaces scanned, and the two extensions. Anything a runner executes
 # lives in one of these; a third surface is a deliberate widening, not a typo.
 SURFACES = ((".github", "workflows"), (".ci", "scripts"))
-# `.py` ALONGSIDE `.sh`, and the twin at .ci/scripts/quality/check-ci-scans-tracked-paths.sh:85
-# carries the same widening, because the two must agree or the shadow differential
-# disagrees on the corpus rather than on the verdict. SURFACES above already puts
-# `.ci/scripts` in scope, so only the extension filter was keeping the ported gates
-# out. Measured 2026-09-08: 45 quality gates exist ONLY as `check_*.py`, with no
-# `.sh` twin left to cover them by accident, so a ported gate that invokes a
-# gitignored path was judged by nothing.
+# `.py` ALONGSIDE `.sh`, and the twin at .ci/scripts/quality/check-ci-scans-tracked-paths.sh:85 carries the same widening, because the two must agree or the shadow differential disagrees on the corpus rather than on the verdict. SURFACES above already puts `.ci/scripts` in scope, so only the extension filter was keeping the ported gates out. Measured 2026-09-08: 45 quality gates
+# exist ONLY as `check_*.py`, with no `.sh` twin left to cover them by accident, so a ported gate that invokes a gitignored path was judged by nothing.
 INCLUDES = (".yml", ".sh", ".py")
 
-# The command-position prefixes. A line whose whitespace-stripped form does not
-# start with one of these is not running anything, whatever else it names.
+# The command-position prefixes. A line whose whitespace-stripped form does not start with one of these is not running anything, whatever else it names.
 COMMAND_PREFIXES = (
     "run:",
     "- run:",
@@ -133,9 +127,7 @@ COMMAND_PREFIXES = (
 # Interpreters whose FIRST argument is the thing being run.
 INTERPRETERS = ("bash ", "sh ", "source ", "node ", "python3 ", "tsx ")
 
-# The seven characters the twin's sed escapes. Written as a set rather than as a
-# copy of the bracket expression, because the bracket expression's ordering rules
-# (`]` first, `^` not first) are what make it readable as a class at all.
+# The seven characters the twin's sed escapes. Written as a set rather than as a copy of the bracket expression, because the bracket expression's ordering rules (`]` first, `^` not first) are what make it readable as a class at all.
 SED_SPECIALS = "].[^$*/"
 
 
@@ -158,8 +150,7 @@ def ignored_roots(root: pathlib.Path) -> list[str]:
         return []
     # ONE `git check-ignore` call, not one per directory. `--stdin` answers the
     # same question for the whole list; the twin pays a process per directory and
-    # that is the only place this port is deliberately faster rather than
-    # identical, because the ANSWER is the same set.
+    # that is the only place this port is deliberately faster rather than identical, because the ANSWER is the same set.
     proc = subprocess.run(
         ["git", "-C", str(root), "check-ignore", "--stdin"],
         input="\n".join(candidates).encode("utf-8"),
@@ -247,8 +238,7 @@ def executable_token(stripped: str) -> str | None:
     if exe.startswith("npm "):
         return None
     if exe.startswith("npx "):
-        # `npx <pkg> <arg>`: the twin drops `npx `, then drops the next word, so
-        # the token tested is the ARGUMENT to the tool rather than the tool.
+        # `npx <pkg> <arg>`: the twin drops `npx `, then drops the next word, so the token tested is the ARGUMENT to the tool rather than the tool.
         exe = exe[4:]
         exe = exe.split(" ", 1)[1] if " " in exe else exe
     elif exe.startswith(INTERPRETERS):
@@ -265,8 +255,7 @@ def scan(root: pathlib.Path) -> list[str]:
     """
     roots = ignored_roots(root)
     if not roots:
-        # A TWIN DEFECT, carried. See the port notes: no ignored directories
-        # means this gate examined nothing and still reports clean.
+        # A TWIN DEFECT, carried. See the port notes: no ignored directories means this gate examined nothing and still reports clean.
         return []
     pattern = roots_pattern(roots)
     exe_pattern = re.compile(r"^\.?/?(%s)/" % pattern)
@@ -295,9 +284,7 @@ def scan(root: pathlib.Path) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# The control tree, built by CONSTRUCTION.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control tree, built by CONSTRUCTION. ---------------------------------------------------------------------------
 
 CONTROL_WORKFLOW = (
     "jobs:\n"
@@ -348,8 +335,7 @@ def run_controls(where: pathlib.Path) -> str | None:
     return None
 
 
-# The closing advice, kept as one block because the twin writes it with a single
-# quoted heredoc and its paragraph breaks are part of the message.
+# The closing advice, kept as one block because the twin writes it with a single quoted heredoc and its paragraph breaks are part of the message.
 ADVICE = """
 A runner checks out tracked files only, so that step runs against a file that is not
 there. Move the check into the repo that owns the code and run it from that repo's own
@@ -384,9 +370,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def selftest() -> int:
@@ -416,13 +400,8 @@ def selftest() -> int:
     ctl.check("a direct bash call yields its script", executable_token("bash x/y.sh"), "x/y.sh")
     ctl.check("a ./ invocation is itself", executable_token("./x/y.sh --flag"), "./x/y.sh")
     ctl.check("source yields its argument", executable_token("source x/y.sh"), "x/y.sh")
-    # TWIN BLIND SPOT, found by planting it and reported rather than repaired.
-    # `. ` is in the command-position list but NOT in the interpreter-strip list
-    # (`check-ci-scans-tracked-paths.sh:58` admits it, `:71` does not strip it),
-    # so a dot-sourced script resolves to the single token `.`, which can never
-    # match `^\.?/?(<roots>)/`. A `. private/growth/x.sh` line is therefore
-    # invisible to both implementations. Pinned here so a reader meets it as a
-    # known hole instead of assuming coverage.
+    # TWIN BLIND SPOT, found by planting it and reported rather than repaired. `. ` is in the command-position list but NOT in the interpreter-strip list (`check-ci-scans-tracked-paths.sh:58` admits it, `:71` does not strip it), so a dot-sourced script resolves to the single token `.`, which can never match `^\.?/?(<roots>)/`. A `. private/growth/x.sh` line is therefore invisible
+    # to both implementations. Pinned here so a reader meets it as a known hole instead of assuming coverage.
     ctl.check(
         "TWIN BLIND SPOT: the dot-source form resolves to '.' and can never match",
         executable_token(". x/y.sh"),
@@ -488,9 +467,7 @@ def selftest() -> int:
             [],
         )
 
-        # -- a tree with NO ignored directories ------------------------------
-        # The twin returns clean here having examined nothing. Pinned as a
-        # DEFECT so the next reader meets it as a decision.
+        # -- a tree with NO ignored directories ------------------------------ The twin returns clean here having examined nothing. Pinned as a DEFECT so the next reader meets it as a decision.
         bare = base / "bare"
         (bare / ".github" / "workflows").mkdir(parents=True)
         subprocess.run(

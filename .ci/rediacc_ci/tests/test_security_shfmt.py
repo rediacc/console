@@ -62,9 +62,7 @@ TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
 
-# The minimum of the package a path-invoked port needs. `core/toolchain.py` is
-# the shared acquisition path both sides go through, so its bash original comes
-# too.
+# The minimum of the package a path-invoked port needs. `core/toolchain.py` is the shared acquisition path both sides go through, so its bash original comes too.
 COPIED = (
     TWIN_REL,
     ".ci/scripts/lib/toolchain.sh",
@@ -105,8 +103,7 @@ main() {
 main "$@"
 """
 
-# Not shell at all. shfmt writes a parse error to STDERR and exits non-zero,
-# which is the only fixture path that puts anything on stderr.
+# Not shell at all. shfmt writes a parse error to STDERR and exits non-zero, which is the only fixture path that puts anything on stderr.
 UNPARSEABLE_SH = "#!/bin/bash\nif then fi\n"
 
 FAKE_SHFMT = """#!/bin/bash
@@ -217,15 +214,8 @@ def run_both(
 
         def _mask(text: str, side: str = side) -> str:
             masked = text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
-            # THE TEMP NAME IS RANDOM ON PURPOSE, so it is the one token here a
-            # differential must not demand equality of. Both helpers moved off a
-            # shared `$bin.tmp` onto a per-process `mktemp` name precisely so
-            # that concurrent acquirers stop corrupting each other, and the two
-            # sides draw from different alphabets (`mktemp` vs `tempfile`).
-            # Masking it keeps the comparison on what is actually observable --
-            # the flags, the URL, the order, the fact that a temp is used at all
-            # -- exactly as `<cache>` above does for a path that is also not a
-            # behavioural claim.
+            # THE TEMP NAME IS RANDOM ON PURPOSE, so it is the one token here a differential must not demand equality of. Both helpers moved off a shared `$bin.tmp` onto a per-process `mktemp` name precisely so that concurrent acquirers stop corrupting each other, and the two sides draw from different alphabets (`mktemp` vs `tempfile`). Masking it keeps the comparison on what is
+            # actually observable -- the flags, the URL, the order, the fact that a temp is used at all -- exactly as `<cache>` above does for a path that is also not a behavioural claim.
             return differential.mask_toolchain_tmp(masked)
 
         results.append((proc.returncode, _mask(proc.stdout), _mask(proc.stderr)))
@@ -285,9 +275,7 @@ def assert_agree(fx: pathlib.Path, **kwargs: object) -> tuple:
     return old
 
 
-# ---------------------------------------------------------------------------
-# Diff-block plumbing, used by the real-run case
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Diff-block plumbing, used by the real-run case ---------------------------------------------------------------------------
 
 
 def diff_blocks(text: str) -> tuple[list[str], list[str]]:
@@ -314,9 +302,7 @@ def block_files(blocks: list[str]) -> list[str]:
     return [b.split("\n", 1)[0].split()[1].removesuffix(".orig") for b in blocks]
 
 
-# ---------------------------------------------------------------------------
-# The real run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 
 def real_scope_hashes() -> dict[str, str]:
@@ -452,15 +438,10 @@ def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     _pro, old_blocks = diff_blocks(old[1])
     _pro, new_blocks = diff_blocks(new[1])
     if not old_blocks:
-        # A CLEAN TREE IS A RESULT, NOT AN ABSENCE, and this used to `pytest.skip`
-        # here. That made the gate above this file RED WHENEVER THE TREE WAS
+        # A CLEAN TREE IS A RESULT, NOT AN ABSENCE, and this used to `pytest.skip` here. That made the gate above this file RED WHENEVER THE TREE WAS
         # CLEAN: `check:ci-pytest` refuses `passed != collected` on purpose,
-        # because a skipped test is not a passing one, so the healthiest possible
-        # state of the tree was the one state in which this case stopped counting.
-        # The attribution claim genuinely has nothing to bite on with no diff
-        # blocks -- but the DIFFERENTIAL still does, and it is the stronger half:
-        # the two implementations must agree that there is nothing to report.
-        # This arm fails if either side invents a finding the other does not see.
+        # because a skipped test is not a passing one, so the healthiest possible state of the tree was the one state in which this case stopped counting. The attribution claim genuinely has nothing to bite on with no diff blocks -- but the DIFFERENTIAL still does, and it is the stronger half: the two implementations must agree that there is nothing to report. This arm fails if
+        # either side invents a finding the other does not see.
         assert new_blocks == [], (
             "the tree is shfmt-clean for the twin and NOT for the port; the port "
             "invented %d diff block(s):\n%s" % (len(new_blocks), new[1])
@@ -482,8 +463,7 @@ def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     rank = {path: i for i, path in enumerate(found)}
     twin_files = block_files(old_blocks)
     # Only the `.ci` scope runs when it has findings; `set -e` ends the script
-    # there. That is the twin's own defect, reproduced, and it is what makes the
-    # comparison against a single `find .ci` legitimate.
+    # there. That is the twin's own defect, reproduced, and it is what makes the comparison against a single `find .ci` legitimate.
     assert all(f.startswith(".ci/") for f in twin_files), twin_files
     assert all(f in rank for f in twin_files), "a diff names a file find did not"
     assert [rank[f] for f in twin_files] == sorted(rank[f] for f in twin_files), (
@@ -494,9 +474,7 @@ def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     assert port_files == sorted(port_files), "the port's block order is not byte order"
 
 
-# ---------------------------------------------------------------------------
-# Fixture runs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture runs ---------------------------------------------------------------------------
 
 
 def test_a_clean_fixture_passes_and_names_every_scope(fixture: pathlib.Path) -> None:
@@ -610,9 +588,7 @@ def test_an_unacquirable_shfmt_is_exit_77_not_a_verdict(fixture: pathlib.Path) -
     assert "Every lane's toolchain:" in old[1], "the two hints go to STDOUT, like log_info"
 
 
-# ---------------------------------------------------------------------------
-# Colour, which this twin decides differently from common.sh
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, which this twin decides differently from common.sh ---------------------------------------------------------------------------
 
 
 def test_colour_is_on_off_a_tty_because_this_twin_never_tests_one(
@@ -636,9 +612,7 @@ def test_ci_true_disables_colour_on_both_sides(fixture: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_shell_files_is_sorted_and_finds_the_nested_ones() -> None:

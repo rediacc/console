@@ -79,9 +79,7 @@ PHASES: tuple[Phase, ...] = (
     Phase(
         "init-submodules.sh",
         ".devcontainer/init-submodules.sh",
-        # BEST EFFORT, `|| true`, for the same reason devcontainer.json is: a
-        # developer without access to every private submodule should still get a
-        # working devbox (.ci/legacy/run-legacy.sh:629-631).
+        # BEST EFFORT, `|| true`, for the same reason devcontainer.json is: a developer without access to every private submodule should still get a working devbox (.ci/legacy/run-legacy.sh:629-631).
         False,
         condition="$ROOT_DIR/.gitmodules exists",
     ),
@@ -91,16 +89,12 @@ PHASES: tuple[Phase, ...] = (
     Phase("ensure_bashcov_sup", ".ci/lib/local-common.sh:566", False),
     Phase("setup_git_identity", ".ci/lib/setup.sh:609", False),
     Phase("setup_git_credentials", ".ci/lib/setup.sh:689", True),
-    # `ensure_deps` is called bare: its exit code is IGNORED by setup(), which
-    # is why `fatal` is False here even though the function itself can fail.
+    # `ensure_deps` is called bare: its exit code is IGNORED by setup(), which is why `fatal` is False here even though the function itself can fail.
     Phase("ensure_deps", ".ci/lib/local-common.sh:203", False),
     Phase(
         "check:env-credential-drift",
         "package.json",
-        # ADVISORY AND NEVER FATAL, and the bash argues the point at length
-        # (.ci/legacy/run-legacy.sh:660-670): "blocking a developer's bootstrap
-        # on a credential only an ops owner can rotate strands the one person
-        # who cannot fix it".
+        # ADVISORY AND NEVER FATAL, and the bash argues the point at length (.ci/legacy/run-legacy.sh:660-670): "blocking a developer's bootstrap on a credential only an ops owner can rotate strands the one person who cannot fix it".
         False,
         condition="SKIP_ENV_DRIFT_CHECK != 1 and private/account/.env exists",
     ),
@@ -112,12 +106,8 @@ PHASES: tuple[Phase, ...] = (
 # Every key, for the readers below. A tuple so a caller cannot reorder it.
 PHASE_KEYS: tuple[str, ...] = tuple(phase.key for phase in PHASES)
 
-# `setup_docker_probe` IS NOT HERE ON PURPOSE. It is defined at
-# `.ci/lib/setup.sh:575` and called from no file in the repository, measured
-# 2026-09-09 by `grep -rn setup_docker_probe` over the whole tree: the only two
-# occurrences are its own definition and a prose list in
-# `docs/ci-overhaul/06-progress.md:5109`. `setup()` runs
-# `ensure_docker_installed` instead. `host.docker_probe` carries the port so the
+# `setup_docker_probe` IS NOT HERE ON PURPOSE. It is defined at `.ci/lib/setup.sh:575` and called from no file in the repository, measured 2026-09-09 by `grep -rn setup_docker_probe` over the whole tree: the only two occurrences are its own definition and a prose list in `docs/ci-overhaul/06-progress.md:5109`. `setup()` runs `ensure_docker_installed` instead. `host.docker_probe`
+# carries the port so the
 # code is not lost; this list carries the truth about what runs.
 DEFINED_BUT_UNCALLED: tuple[str, ...] = ("setup_docker_probe",)
 

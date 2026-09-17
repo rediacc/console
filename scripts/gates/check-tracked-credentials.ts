@@ -75,12 +75,8 @@ import {
   selftestVerdict,
 } from '../lib/shrink-only-baseline.js';
 
-// ANCHORED ON THIS FILE, not on the caller's working directory. This read
-// `process.env.TRACKED_CRED_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
-// did not see: its pattern only matched cwd as the FIRST argument of
-// path.resolve/join, so the commonest shape of its own rule passed. The
-// seam is preserved -- TRACKED_CRED_ROOT still overrides -- but the default is
-// derived from this file's location.
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.TRACKED_CRED_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- TRACKED_CRED_ROOT still overrides -- but the default is derived
+// from this file's location.
 const ROOT = envRoot('TRACKED_CRED_ROOT');
 const BASELINE = join(ROOT, '.ci', 'config', 'tracked-credentials-baseline.json');
 const KEY = 'credentialShapedFindings';
@@ -241,19 +237,16 @@ function selftest(): number {
   // finding in its OWN scan the moment the file is tracked -- which is exactly what
   // happened on the first run after `git add`, and the baseline note forbids the easy
   // way out ("rotate it, do not baseline it") for a reason. It also states this gate's
-  // honest limit out loud: it matches LITERALS, so a credential split across a
-  // concatenation evades it here and anywhere else. Every scanner of this kind shares
+  // honest limit out loud: it matches LITERALS, so a credential split across a concatenation evades it here and anywhere else. Every scanner of this kind shares
   // that limit; the gate is a floor against carelessness, not against intent.
   const plantedAwsId = 'AKIA' + 'WXE5TUDQ4T2EY5KV';
   check('an AWS access key id is detected', AWS_RE.test(`key ${plantedAwsId} here`));
-  // CONTROL: without this the gate would fire on every document discussing AWS, and the
-  // next person to trip on it would delete the pattern rather than narrow it.
+  // CONTROL: without this the gate would fire on every document discussing AWS, and the next person to trip on it would delete the pattern rather than narrow it.
   check('CONTROL: prose naming AKIA does not match', !AWS_RE.test('we rotate the AKIA keys'));
   // The redacted spelling this repo now uses must stay clean, or the gate reds on its own fix.
   check('CONTROL: the redacted spelling is clean', !AWS_RE.test('ses-eu `AKIA...redacted`'));
 
-  // Assembled from parts for the same reason as the AWS id above: a literal here
-  // would make this gate a finding in its own scan.
+  // Assembled from parts for the same reason as the AWS id above: a literal here would make this gate a finding in its own scan.
   const ghp = 'ghp' + '_' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8';
   check('a GitHub token is detected', TOKEN_RE.test(`token ${ghp} here`));
   check('a Slack token is detected', TOKEN_RE.test('xox' + 'b-1234567890-abcdef'));
@@ -261,8 +254,7 @@ function selftest(): number {
   // full shape is a credential.
   check('CONTROL: the bare prefix is not a finding', !TOKEN_RE.test('a ghp_ style token'));
   check('CONTROL: a short xox- string is not a finding', !TOKEN_RE.test('xox-abc'));
-  // The three the sweep found missing, each assembled from parts so this file is
-  // not itself a finding.
+  // The three the sweep found missing, each assembled from parts so this file is not itself a finding.
   check(
     'a fine-grained GitHub PAT is detected',
     TOKEN_RE.test('github' + '_pat_' + 'A'.repeat(24))
@@ -270,14 +262,12 @@ function selftest(): number {
   check('a Stripe webhook secret is detected', TOKEN_RE.test('whsec' + '_' + 'B'.repeat(28)));
   check('a Stripe live key is detected', TOKEN_RE.test('sk' + '_live_' + 'C'.repeat(24)));
   check('an sk- style key is detected', TOKEN_RE.test('sk' + '-' + 'D'.repeat(36)));
-  // CONTROL: the elided spelling this repo uses in prose must stay clean, or the
-  // gate reds on the very documents that record a past leak safely.
+  // CONTROL: the elided spelling this repo uses in prose must stay clean, or the gate reds on the very documents that record a past leak safely.
   check(
     'CONTROL: an ELIDED key in prose is not a finding',
     !TOKEN_RE.test('the active key `sk_live_...kVQA`, last used 2026-02-25')
   );
-  // CONTROL: a region suffix is not a credential. `ASIA` is in the AWS alternation,
-  // and STRIPE_SECRET_KEY_ASIA appears all over this repo.
+  // CONTROL: a region suffix is not a credential. `ASIA` is in the AWS alternation, and STRIPE_SECRET_KEY_ASIA appears all over this repo.
   check(
     'CONTROL: a region suffix named ASIA is not a finding',
     !AWS_RE.test('STRIPE_SECRET_KEY_ASIA') && !AWS_RE.test('OTLP_CLIENT_CREDENTIALS_ASIA')
@@ -295,9 +285,7 @@ function selftest(): number {
       `-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,A1\n\n${body}\n`
     )
   );
-  // THE LOAD-BEARING CONTROL. This exact shape appears in 41 tracked files -- docs,
-  // doc-comments, config fixtures. If it ever starts matching, this gate reds on
-  // documentation and gets switched off within the day.
+  // THE LOAD-BEARING CONTROL. This exact shape appears in 41 tracked files -- docs, doc-comments, config fixtures. If it ever starts matching, this gate reds on documentation and gets switched off within the day.
   check(
     'CONTROL: a PEM header with an ELISION is not a finding',
     !hasPemBody('"-----BEGIN OPENSSH PRIVATE KEY-----\\n...\\n-----END OPENSSH PRIVATE KEY-----"')
@@ -307,16 +295,11 @@ function selftest(): number {
     !hasPemBody('the private key is in Bitwarden')
   );
 
-  // THE TWO LISTS MUST NOT DRIFT APART AGAIN. This gate covered 4 of the 7 shapes
-  // in wl_store.py::_SECRET_SHAPES for months, while that redactor -- whose own
-  // comment says the shapes "must never reach a TRACKED file" -- caught all 7 at
+  // THE TWO LISTS MUST NOT DRIFT APART AGAIN. This gate covered 4 of the 7 shapes in wl_store.py::_SECRET_SHAPES for months, while that redactor -- whose own comment says the shapes "must never reach a TRACKED file" -- caught all 7 at
   // its door. Aligning them once fixes today; this keeps them aligned, by reading
   // the redactor's list rather than a copy of it.
   //
-  // BEHAVIOURAL, not textual. Comparing pattern SOURCES said this gate did not
-  // cover `ghp_`, because it spells that alternation `(ghp|gho|ghu|ghs|ghr)_` --
-  // a false alarm about a shape it has always caught. So each shape gets a sample
-  // and the question is whether the gate DETECTS it.
+  // BEHAVIOURAL, not textual. Comparing pattern SOURCES said this gate did not cover `ghp_`, because it spells that alternation `(ghp|gho|ghu|ghs|ghr)_` -- a false alarm about a shape it has always caught. So each shape gets a sample and the question is whether the gate DETECTS it.
   const redactor = join(ROOT, '.claude', 'hooks', 'stop', 'wl_store.py');
   const sampleFor: Record<string, string> = {
     '-----BEGIN': `-----BEGIN RSA PRIVATE KEY-----\n${'M'.repeat(64)}\n`,

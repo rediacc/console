@@ -55,10 +55,7 @@ repo_root = corpus.repo_root
 
 # The suite's payload builders, and the event each one produces. Reading them
 # out of the suite would be the purer move; they are transcribed here because
-# they are seven one-line `printf` functions, and a parser for them would be
-# more code than they are. `test_builders_match_the_suite` compares this table
-# against the real definitions on every run, so a change to either side is a
-# failure rather than a silent drift.
+# they are seven one-line `printf` functions, and a parser for them would be more code than they are. `test_builders_match_the_suite` compares this table against the real definitions on every run, so a change to either side is a failure rather than a silent drift.
 BUILDERS = {
     "bash_json": lambda a: {"tool_input": {"command": a[0]}},
     "bash_bg_json": lambda a: {"tool_input": {"command": a[0], "run_in_background": True}},
@@ -69,8 +66,7 @@ BUILDERS = {
     "ask_json": lambda a: {"tool_input": {"questions": [{"question": a[0], "header": "x"}]}},
 }
 
-# The shapes each builder's `printf` must have for the table above to be a
-# faithful transcription. Compared against the suite on every run.
+# The shapes each builder's `printf` must have for the table above to be a faithful transcription. Compared against the suite on every run.
 BUILDER_SHAPES = {
     "bash_json": '{"tool_input":{"command":%s}}',
     "bash_bg_json": '{"tool_input":{"command":%s,"run_in_background":true}}',
@@ -81,17 +77,13 @@ BUILDER_SHAPES = {
     "ask_json": '{"tool_input":{"questions":[{"question":%s,"header":"x"}]}}',
 }
 
-# Vacuity floors, both corpus-derived rather than hand-typed (driver contract
-# section 6). The first is a RATIO of the call sites counted in the same pass,
+# Vacuity floors, both corpus-derived rather than hand-typed (driver contract section 6). The first is a RATIO of the call sites counted in the same pass,
 # so adding suite cases raises it; the second is the base case that stops the
-# ratio meaning anything over a gutted file, exactly as `corpus.MIN_COMMANDS`
-# is for the shellscan corpus.
+# ratio meaning anything over a gutted file, exactly as `corpus.MIN_COMMANDS` is for the shellscan corpus.
 RECOVERY_FLOOR = 0.85
 MIN_CASES = 300
 
-# How many foreign payloads each guard is additionally run against. Drawn by a
-# stable hash rather than at random, so a failure reproduces and a rerun
-# compares the same set.
+# How many foreign payloads each guard is additionally run against. Drawn by a stable hash rather than at random, so a failure reproduces and a rerun compares the same set.
 CROSS_SAMPLE = 40
 
 
@@ -214,8 +206,7 @@ def harvest_cases():
         guard_word, i = _raw_word(src, i)
         # `.py` AS WELL AS `.sh`, and `guards/` as well as a chain name. The
         # ported guards are modules; a reader anchored to the old spelling would
-        # recover ZERO cases for all 46 of them and the recovery ratio below
-        # would be the only thing that said so.
+        # recover ZERO cases for all 46 of them and the recovery ratio below would be the only thing that said so.
         if not re.fullmatch(r"[a-z_-]+/[A-Za-z0-9_.-]+\.(?:sh|py)", guard_word):
             continue
         sites += 1
@@ -224,9 +215,7 @@ def harvest_cases():
         payload = _payload_from(raw, names)
         if payload is None:
             continue
-        # The differential frames its stream with these two control characters
-        # (the same guard `corpus.harvest` states), so a payload carrying one
-        # would corrupt the frame instead of failing a comparison.
+        # The differential frames its stream with these two control characters (the same guard `corpus.harvest` states), so a payload carrying one would corrupt the frame instead of failing a comparison.
         if "\x1e" in payload or "\x1f" in payload:
             continue
         line = src.count("\n", 0, m.start()) + 1
@@ -275,11 +264,9 @@ def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
     return [payload for _, payload in scored[:limit]]
 
 
-# Event shapes no suite case produces, and every one of them is a shape a guard
-# can be handed by the real harness. The suite's builders always emit a
+# Event shapes no suite case produces, and every one of them is a shape a guard can be handed by the real harness. The suite's builders always emit a
 # well-formed document; the harness does not promise one, and `jq -r` answers
-# each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is
-# what these pin).
+# each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is what these pin).
 DEGENERATE_PAYLOADS = [
     ("empty stdin", ""),
     ("malformed json", "{not json"),
@@ -310,8 +297,7 @@ DEGENERATE_PAYLOADS = [
 
 
 # The retired bash originals. They are NOT hooks and nothing registers them; see
-# `.claude/oracles/README.md` for why they are kept and why they
-# had to leave `.claude/hooks/`.
+# `.claude/oracles/README.md` for why they are kept and why they had to leave `.claude/hooks/`.
 ORACLES = "oracles"
 
 

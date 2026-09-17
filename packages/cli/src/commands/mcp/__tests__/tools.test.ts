@@ -182,9 +182,7 @@ describe('MCP tool definitions', () => {
 
     it('machine_deprovision appends --force', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_deprovision')!;
-      // The reshape gave `machine deprovision` a positional <name>. The builder derives
-      // argv from the live Commander tree, so it followed on its own — this assertion is
-      // what had to catch up.
+      // The reshape gave `machine deprovision` a positional <name>. The builder derives argv from the live Commander tree, so it followed on its own — this assertion is what had to catch up.
       expect(tool.command({ name: 'old-server' })).toEqual([
         'machine',
         'deprovision',
@@ -202,9 +200,7 @@ describe('MCP tool definitions', () => {
         'repo_delete',
         'repo_push',
         'repo_pull',
-        // repo_exec replaced term_exec (w2b): the tool that used to build
-        // `term connect -m <machine> -c <cmd>` and whose argv silently went
-        // invalid when -m died. It is a real leaf now, so it is auto-derived.
+        // repo_exec replaced term_exec (w2b): the tool that used to build `term connect -m <machine> -c <cmd>` and whose argv silently went invalid when -m died. It is a real leaf now, so it is auto-derived.
         'repo_exec',
       ];
       for (const name of guarded) {
@@ -259,9 +255,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('the backup tools bind their repo to the <ref> positional too', () => {
-      // Previously repoArg was 'repo', but no such field existed in the derived
-      // MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on
-      // repo_push / repo_pull. Binding to the real positional actually enables it.
+      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on repo_push / repo_pull. Binding to the real positional actually enables it.
       expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('ref');
       expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('ref');
     });
@@ -303,13 +297,8 @@ describe('MCP tool definitions', () => {
   });
 
   describe('enum options (.choices())', () => {
-    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and
-    // carries an mcp block, so its derived schema must turn that closed set into a
-    // z.enum — accepting in-set values and rejecting anything else, rather than the
-    // permissive z.string() the auto-deriver produced before A5. The other
-    // value-taking options (`--since`, `--path`) are held constant so this asserts
-    // the enum constraint in isolation. (Value-taking options derive to REQUIRED
-    // fields in this deriver — see deriveSchema — so all three are supplied.)
+    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and carries an mcp block, so its derived schema must turn that closed set into a z.enum — accepting in-set values and rejecting anything else, rather than the permissive z.string() the auto-deriver produced before A5. The other value-taking options (`--since`, `--path`) are held constant so this asserts
+    // the enum constraint in isolation. (Value-taking options derive to REQUIRED fields in this deriver — see deriveSchema — so all three are supplied.)
     it('derives a z.enum for an option declared with .choices()', () => {
       const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
       const schema = z.object(tool.schema);
@@ -332,11 +321,7 @@ describe('MCP tool definitions', () => {
 
   describe('custom tools', () => {
     it('has exactly 3 custom tools', () => {
-      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf).
-      // 4 -> 3: machine_health retired — it ran `machine status --system`, not
-      // the health checker, so the tool named "health" never returned the
-      // aggregated issues. `machine health` is no longer experimental, so the
-      // contract-derived tool of that name now runs the real command.
+      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf). 4 -> 3: machine_health retired — it ran `machine status --system`, not the health checker, so the tool named "health" never returned the aggregated issues. `machine health` is no longer experimental, so the contract-derived tool of that name now runs the real command.
       expect(CUSTOM_TOOLS.length).toBe(3);
     });
 

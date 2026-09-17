@@ -41,9 +41,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")
 STOP = os.path.join(ROOT, ".claude", "hooks", "stop")
 # The modules that DRIVE a stop. A rule is wired iff one of these calls it.
 DRIVERS = ("wl_checks.py", "wl_judge.py")
-# Below this, discovery is broken rather than the tree being empty. Raised 3 -> 4 when
-# wl_histfirst landed: a floor that sits below the real count lets a rule be deleted
-# without the floor noticing, which is the failure this gate exists to prevent.
+# Below this, discovery is broken rather than the tree being empty. Raised 3 -> 4 when wl_histfirst landed: a floor that sits below the real count lets a rule be deleted without the floor noticing, which is the failure this gate exists to prevent.
 MIN_RULES = 4
 
 
@@ -91,11 +89,8 @@ def wiring_of(module, drivers):
     # `import wl_x`, `import wl_x as X`, `from wl_x import ...`
     imp = re.compile(r"^\s*(?:import\s+%s\b|from\s+%s\s+import)" % (module, module), re.MULTILINE)
     for name, raw in drivers.items():
-        # COMMENTS ARE NOT CALLS, and the first cut of this got it wrong -- its own SANITY
-        # control caught it. `# wl_shapedup.run(...) used to be here` matched the call
-        # regex, so the exact defect the gate exists for (call site deleted, import and a
-        # comment left behind) read as wired. Same mention-vs-invocation distinction the
-        # pre-bash guards keep paying for, in a gate written to catch a deletion.
+        # COMMENTS ARE NOT CALLS, and the first cut of this got it wrong -- its own SANITY control caught it. `# wl_shapedup.run(...) used to be here` matched the call regex, so the exact defect the gate exists for (call site deleted, import and a comment left behind) read as wired. Same mention-vs-invocation distinction the pre-bash guards keep paying for, in a gate written to
+        # catch a deletion.
         src = re.sub(r"(?m)^\s*#.*$", "", raw)
         src = re.sub(r"(?<!:)#.*$", "", src, flags=re.MULTILINE)
         if imp.search(src):
@@ -147,8 +142,7 @@ def selftest():
         "the finding names which driver imported it",
         "wl_checks.py" in judge(rules, imported_only)[0][2],
     )
-    # A comment mentioning the call must not read as the call. This is the same
-    # mention-vs-invocation distinction the pre-bash guards keep paying for.
+    # A comment mentioning the call must not read as the call. This is the same mention-vs-invocation distinction the pre-bash guards keep paying for.
     check(
         "CONTROL: a commented-out call is not a call",
         len(judge(rules, {"wl_checks.py": "import wl_rule\n#wl_rule.run(a)\n", "wl_judge.py": ""}))

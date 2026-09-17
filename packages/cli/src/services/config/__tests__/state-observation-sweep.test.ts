@@ -96,8 +96,7 @@ describe('dropMachineObservations: `machine remove` (#89 class, third site)', ()
     await dropMachineObservations('cfg', 'm1');
 
     expect(mutated?.state?.machines).not.toHaveProperty('m1');
-    // The hazard: a hint naming a machine that is gone. resolve-machine FOLLOWS a wrong
-    // hint (it only throws on a missing one), and machine names are deterministic.
+    // The hazard: a hint naming a machine that is gone. resolve-machine FOLLOWS a wrong hint (it only throws on a missing one), and machine names are deterministic.
     expect(mutated?.state?.datastores).not.toHaveProperty('onM1');
 
     // The other machine, and both DECLARATIONS, are untouched.

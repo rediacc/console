@@ -168,10 +168,7 @@ def _bin(
         ssh.chmod(0o755)
     tools = [
         ("sleep", "", 0),
-        # `cut -d' ' -f1-3 /proc/loadavg` and `nproc`, stubbed so the failure
-        # line is deterministic. A non-zero rc drives the twin's `|| echo
-        # unavailable` / `|| echo unknown` fallbacks, which are otherwise
-        # unreachable on any machine with a /proc.
+        # `cut -d' ' -f1-3 /proc/loadavg` and `nproc`, stubbed so the failure line is deterministic. A non-zero rc drives the twin's `|| echo unavailable` / `|| echo unknown` fallbacks, which are otherwise unreachable on any machine with a /proc.
         ("cut", "" if cut_rc else "0.10 0.20 0.30\n", cut_rc),
         ("nproc", "" if nproc_rc else "8\n", nproc_rc),
     ]
@@ -370,8 +367,7 @@ def test_vm_net_base_default_targets() -> None:
     )
     assert "Waiting for 192.168.111.1 as fixtureuser..." in stderr
     assert "Waiting for 192.168.111.11 as fixtureuser..." in stderr
-    # The login target is the field carrying `@`, NOT a fixed index: the argv
-    # ends `<user>@<vm>  echo  ready`, so `[-2]` is the literal `echo`.
+    # The login target is the field carrying `@`, NOT a fixed index: the argv ends `<user>@<vm> echo ready`, so `[-2]` is the literal `echo`.
     hosts = [f for c in calls if c.startswith("ssh\t") for f in c.split("\t") if "@" in f]
     assert hosts == ["fixtureuser@192.168.111.1", "fixtureuser@192.168.111.11"], hosts
 

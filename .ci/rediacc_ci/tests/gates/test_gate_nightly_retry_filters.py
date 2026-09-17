@@ -158,8 +158,7 @@ def test_name_match_would_not_have_worked(gate):
     text = source(gate)
     if "watchdog-monitor.yml" not in text:
         gate.log_fail("the watchdog path is not excluded at all")
-    # A name-based exclusion is unwritable: the name carries a run id and a
-    # generation number, so no literal can match it.
+    # A name-based exclusion is unwritable: the name carries a run id and a generation number, so no literal can match it.
     if "EXCLUDED_PATHS" not in text and "is_excluded" not in text:
         gate.log_fail("exclusion is not path-based; a generated display name cannot be matched")
     gate.log_pass("exclusion is path-keyed")

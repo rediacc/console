@@ -53,10 +53,7 @@ TWIN_REL = ".ci/scripts/deploy/sync-media-from-r2.sh"
 PORT_REL = ".ci/rediacc_ci/deploy/sync_media_from_r2.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The eight files a fixture tree needs: the twin, the bash library it sources,
-# and the Python package the port imports. Listed explicitly rather than
-# copytree'd, so a new dependency shows up here as an edit instead of being
-# dragged in silently by a wildcard.
+# The eight files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
 TREE_FILES = (
     TWIN_REL,
     ".ci/scripts/lib/common.sh",
@@ -69,12 +66,9 @@ TREE_FILES = (
     PORT_REL,
 )
 
-# NAMED `SIGNING_KEY` RATHER THAN `SECRET_KEY`, and the reason is the linter
-# rather than taste: ruff S105 keys on the NAME, so a constant spelled with
-# "secret" in it is "a hardcoded password" even when its value is visibly a
+# NAMED `SIGNING_KEY` RATHER THAN `SECRET_KEY`, and the reason is the linter rather than taste: ruff S105 keys on the NAME, so a constant spelled with "secret" in it is "a hardcoded password" even when its value is visibly a
 # fixture. The gate's own message forbids buying past it with a per-line noqa,
-# and `deploy/purge_media_cache`'s differential made the same rename for the
-# same reason. Both values reach nothing but a Python script on a scratch PATH.
+# and `deploy/purge_media_cache`'s differential made the same rename for the same reason. Both values reach nothing but a Python script on a scratch PATH.
 ACCESS_KEY = "fixture-access-key"
 SIGNING_KEY = "fixture-signing-key"
 ENDPOINT = "https://r2.example.invalid"
@@ -108,8 +102,7 @@ sys.exit(int(os.environ.get("FAKE_AWS_RC") or 0))
 
 # `common.sh` needs `dirname` at source time and `uname`/`tr` in the detection
 # helpers it runs there; `mkdir` is called by the SUBJECT on both sides and is
-# deliberately the real binary, so a failing `mkdir` produces the same bytes
-# through both implementations.
+# deliberately the real binary, so a failing `mkdir` produces the same bytes through both implementations.
 PATH_MINIMUM = ("dirname", "uname", "tr", "mkdir")
 
 
@@ -597,8 +590,7 @@ def test_pure_helpers() -> None:
         port.require_secret_key({port.SIGNING_KEY_ENV: None})
     assert str(caught.value) == "CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: unbound variable"
 
-    # `--audio-only` selects the audio leg and NOT the other two: the negative
-    # half of the control, without which a helper that returned all three legs
+    # `--audio-only` selects the audio leg and NOT the other two: the negative half of the control, without which a helper that returned all three legs
     # for every input would still pass everything above.
     assert port.SOLUTIONS not in port.parse_args(["--audio-only"]).selected()
     assert port.TUTORIALS not in port.parse_args(["--audio-only"]).selected()

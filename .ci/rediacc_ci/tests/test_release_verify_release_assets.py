@@ -21,25 +21,12 @@ from rediacc_ci.tests import differential as diff
 if TYPE_CHECKING:
     import pathlib
 
-# SERIALISED, BECAUSE THE SUBJECT HARD-CODES ITS SCRATCH PATHS. Both sides write
-# `/tmp/release.json` and `/tmp/release.err` and then read them back
-# (verify-release-assets.sh:34,41 and the port's mirror of it), so under
-# `--dist loadgroup` the four cases in this file land on four different workers
-# and overwrite one another's file between the write and the read. The failure
-# is a lie about the CODE: a case whose fixture says two assets reads a
-# neighbour's empty one and reports "Release v1.2.3 has no rdc-* CLI assets".
+# SERIALISED, BECAUSE THE SUBJECT HARD-CODES ITS SCRATCH PATHS. Both sides write `/tmp/release.json` and `/tmp/release.err` and then read them back (verify-release-assets.sh:34,41 and the port's mirror of it), so under `--dist loadgroup` the four cases in this file land on four different workers and overwrite one another's file between the write and the read. The failure is a lie
+# about the CODE: a case whose fixture says two assets reads a neighbour's empty one and reports "Release v1.2.3 has no rdc-* CLI assets".
 #
-# Observed in CI on 2026-09-15 (job 104583449222) after unrelated provisioning
-# made the suite busier -- it is a RACE, so it had been winning silently, not
-# absent. The same class and the same remedy as `deploy-fixed-tmp`, whose own
-# note states the principle: "the group name is the mutex, so every module
-# sharing a fixed /tmp path has to share one name."
+# Observed in CI on 2026-09-15 (job 104583449222) after unrelated provisioning made the suite busier -- it is a RACE, so it had been winning silently, not absent. The same class and the same remedy as `deploy-fixed-tmp`, whose own note states the principle: "the group name is the mutex, so every module sharing a fixed /tmp path has to share one name."
 #
-# ITS OWN NAME RATHER THAN `deploy-fixed-tmp`, and that is the principle applied
-# rather than ignored: swept first, and `/tmp/release.json` and
-# `/tmp/release.err` are touched by exactly one twin/port pair, driven by exactly
-# this module. It shares no path with the deploy trio, so joining their mutex
-# would serialise it against tests it can never collide with.
+# ITS OWN NAME RATHER THAN `deploy-fixed-tmp`, and that is the principle applied rather than ignored: swept first, and `/tmp/release.json` and `/tmp/release.err` are touched by exactly one twin/port pair, driven by exactly this module. It shares no path with the deploy trio, so joining their mutex would serialise it against tests it can never collide with.
 pytestmark = pytest.mark.xdist_group("release-fixed-tmp")
 
 TWIN = ".ci/scripts/release/verify-release-assets.sh"

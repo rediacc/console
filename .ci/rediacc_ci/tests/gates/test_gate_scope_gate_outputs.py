@@ -80,16 +80,13 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-scope-gate-outputs.sh"
 
-# build_fixture copies the real .ci/scripts/ci and every case runs that copy.
-# See the docstring.
+# build_fixture copies the real .ci/scripts/ci and every case runs that copy. See the docstring.
 REAL_TREE_TWIN = True
 
 CI_SRC_REL = ".ci/scripts/ci"
 CI_SRC = paths.from_root(*CI_SRC_REL.split("/"))
 
-# The three files the cases below actually execute. A copy missing any of them
-# turns every run_gate into a "command not found" with nothing to say about the
-# output contract.
+# The three files the cases below actually execute. A copy missing any of them turns every run_gate into a "command not found" with nothing to say about the output contract.
 REQUIRED_ENGINE_FILES = ("scope-shadow.sh", "scope-map.cjs", "skip-plan-reconcile.cjs")
 
 BASELINE_RUN_ID = 1111
@@ -100,15 +97,11 @@ SCOPE_MODE_RE = re.compile(r"^scope_mode=", re.MULTILINE)
 
 # THE WORKFLOW CONTRACT, spelled out as literals on purpose.
 #
-# ci.yml's `initialize` job declares one output per name below and reads them out
-# of $GITHUB_OUTPUT. An output emitted under a name that is not on this list is
-# SILENTLY DROPPED by the outputs block: no error, no warning, and the job it was
-# meant to skip simply runs. So a rename on either side is invisible at runtime and
-# shows up only as "the scope engine stopped saving any time", which nobody notices
+# ci.yml's `initialize` job declares one output per name below and reads them out of $GITHUB_OUTPUT. An output emitted under a name that is not on this list is SILENTLY DROPPED by the outputs block: no error, no warning, and the job it was meant to skip simply runs. So a rename on either side is invisible at runtime and shows up only as "the scope engine stopped saving any time",
+# which nobody notices
 # for weeks.
 #
-# Deriving this list from scope-map would defeat the point. It is a second,
-# independent copy of the spelling, and the case below asserts the two agree.
+# Deriving this list from scope-map would defeat the point. It is a second, independent copy of the spelling, and the case below asserts the two agree.
 WORKFLOW_CONTRACT_KEYS = (
     "run_unit",
     "run_e2e_workers",
@@ -131,8 +124,7 @@ WORKFLOW_CONTRACT_KEYS = (
 )
 
 
-# ---------------------------------------------------------------------------
-# tools
+# --------------------------------------------------------------------------- tools
 
 
 def require_tools() -> tuple[str, str]:
@@ -155,8 +147,7 @@ class FixtureError(harness.GateAssertionError):
     end-to-end test most often loses."""
 
 
-# ---------------------------------------------------------------------------
-# the fixture
+# --------------------------------------------------------------------------- the fixture
 
 
 class Fixture:
@@ -259,8 +250,7 @@ class Fixture:
     def _write_gh_responses(self) -> None:
         # The baseline plan C1's run attested. Built THROUGH the real buildPlan so
         # its 18 keys cannot drift from scope-map's; a hand-written key list here
-        # would silently stop being a full plan the day a surface is added, and the
-        # test would then pass for the wrong reason.
+        # would silently stop being a full plan the day a surface is added, and the test would then pass for the wrong reason.
         self.baseline_plan = self.work / "baseline-plan.json"
         self._node_eval(
             """
@@ -281,8 +271,7 @@ require("fs").writeFileSync(process.argv[5], JSON.stringify(plan, null, 2));
 
         # The per-job outcomes attestPlan reconciles that plan against, generated
         # from the reconciler's OWN name table for the same anti-drift reason.
-        # Every job succeeded, so the strict reconcile the baseline reader performs
-        # passes and C1 becomes usable.
+        # Every job succeeded, so the strict reconcile the baseline reader performs passes and C1 becomes usable.
         self.jobs_json = self.work / "jobs.json"
         self._node_eval(
             """
@@ -474,8 +463,7 @@ def fixture(tmp_path_factory):
     return Fixture(tmp_path_factory.mktemp("scope-gate-outputs"))
 
 
-# ---------------------------------------------------------------------------
-# The cases, in the twin's CALL order so the two files can be read side by side.
+# --------------------------------------------------------------------------- The cases, in the twin's CALL order so the two files can be read side by side.
 
 
 def test_the_fixture_carries_a_real_engine(gate, fixture):
@@ -518,8 +506,7 @@ def test_emitted_names_match_the_workflow_contract(gate, fixture):
         "and spelling",
     )
 
-    # CONTROL: the comparison is over a non-empty set. An empty JOB_SURFACES and an
-    # empty literal list would compare equal and assert nothing.
+    # CONTROL: the comparison is over a non-empty set. An empty JOB_SURFACES and an empty literal list would compare equal and assert nothing.
     gate.assert_eq(
         len([k for k in WORKFLOW_CONTRACT_KEYS if k]),
         18,
@@ -533,9 +520,7 @@ def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
     run = fixture.run_gate("reduced")
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
 
-    # CONTROL, and it runs BEFORE anything reads the lines. An emitter that writes
-    # nothing would satisfy every other case in this file, so if a reduced plan
-    # produces no false line at all, nothing below is evidence of anything.
+    # CONTROL, and it runs BEFORE anything reads the lines. An emitter that writes nothing would satisfy every other case in this file, so if a reduced plan produces no false line at all, nothing below is evidence of anything.
     n = run.count_false()
     if n == 0:
         gate.log_fail(
@@ -543,8 +528,7 @@ def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
             "every other case here would still pass.\n--- gate.log ---\n%s" % run.log
         )
 
-    # `sorted()` is code-point order, which is byte order for these ASCII keys and
-    # the same order node's sort produced for EXPECTED_FALSE. It has no locale rung,
+    # `sorted()` is code-point order, which is byte order for these ASCII keys and the same order node's sort produced for EXPECTED_FALSE. It has no locale rung,
     # which is what removes the collation trap the twin's `LC_ALL=C` guards against;
     # see the module docstring.
     gate.assert_eq(
@@ -630,9 +614,7 @@ def test_engine_failure_emits_no_false_line(gate, fixture):
         "and must say so as full, so the reconcile step stays tolerant",
     )
 
-    # CONTROL: the same fixture, same command, working shim. If this did not produce
-    # false lines, the assertion above would be measuring the fixture rather than
-    # the failure.
+    # CONTROL: the same fixture, same command, working shim. If this did not produce false lines, the assertion above would be measuring the fixture rather than the failure.
     control = fixture.run_gate("enginefail-control")
     gate.assert_exit_code(0, control.rc, "the control run must exit 0")
     n = control.count_false()
@@ -654,9 +636,7 @@ def test_operator_override_forces_full_without_running_the_engine(gate, fixture)
         gate.assert_eq(run.count_false(), 0, "%s must not skip a single job" % switch)
         gate.assert_contains(run.emitted, "scope_mode=full", "%s must report full" % switch)
 
-        # The override must be legible in the artifact, not just in the outputs: a
-        # later run reads this plan as a baseline candidate and an operator reads it
-        # to find out why a round was full.
+        # The override must be legible in the artifact, not just in the outputs: a later run reads this plan as a baseline candidate and an operator reads it to find out why a round was full.
         plan = run.plan()
         reasons = json.dumps(plan.get("full_reasons")) + "|" + str(plan.get("mode"))
         gate.assert_contains(
@@ -666,9 +646,7 @@ def test_operator_override_forces_full_without_running_the_engine(gate, fixture)
         )
         gate.assert_contains(reasons, "|full", "%s must produce a full plan" % switch)
 
-        # THE ENGINE MUST NOT HAVE RUN. An operator forcing a full round must not
-        # depend on the engine being healthy enough to answer, and must not wait on
-        # a baseline walk. No scope-baseline.json means neither happened.
+        # THE ENGINE MUST NOT HAVE RUN. An operator forcing a full round must not depend on the engine being healthy enough to answer, and must not wait on a baseline walk. No scope-baseline.json means neither happened.
         if (run.outdir / "scope-baseline.json").exists():
             gate.log_fail(
                 "%s ran the baseline walk anyway -- the kill switch is downstream of the "

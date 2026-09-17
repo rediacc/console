@@ -22,10 +22,7 @@ import { outputService } from '../core/output.js';
 
 /** Warn if the active config has no config-storage enrollment (offline check). */
 export async function warnIfConfigStorageUnenrolled(): Promise<void> {
-  // Fail-safe: only nudge when we can PROVE there is no enrollment. Any error
-  // reading the config (missing file, locked, mocked away in a test) leaves the
-  // operation it decorates untouched — a DR nudge must never break a backup or
-  // a restore.
+  // Fail-safe: only nudge when we can PROVE there is no enrollment. Any error reading the config (missing file, locked, mocked away in a test) leaves the operation it decorates untouched — a DR nudge must never break a backup or a restore.
   let enrolled = true;
   try {
     const name = configService.getEffectiveConfigName();

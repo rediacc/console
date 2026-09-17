@@ -87,8 +87,7 @@ function main(): void {
   }
 
   // The arch set of the first component is the reference; every other component
-  // must match it exactly. A component quietly losing an arch is the shape of the
-  // defect this gate is for.
+  // must match it exactly. A component quietly losing an arch is the shape of the defect this gate is for.
   const reference = Object.keys(components[0][1].arches ?? {}).sort();
   if (reference.length === 0) {
     console.error(`${RED}✗ component '${components[0][0]}' declares no architectures${NC}`);

@@ -103,8 +103,7 @@ import sys
 
 from rediacc_ci.core import proxyx
 
-# `grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.|Getuid'` (:116). Kept
-# character-for-character equal to the twin's grep AND to the pattern its
+# `grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.|Getuid'` (:116). Kept character-for-character equal to the twin's grep AND to the pattern its
 # header quotes; see this module's docstring for why the fourth alternative
 # is deliberately broader than "privileged" and why the fifth was added.
 EXCLUDE_RE = re.compile(r"Geteuid|RequireRoot|requireRoot|testutil\.|Getuid")
@@ -205,8 +204,7 @@ def run() -> int:
     p.preflight()
 
     # `cd "$RENET_DIR" || exit 2` (:82). Every subprocess below gets cwd=renet
-    # rather than this process chdir'ing, so a caller importing the module is
-    # left where it was.
+    # rather than this process chdir'ing, so a caller importing the module is left where it was.
     if not renet.is_dir():
         return 2
     cwd = str(renet)
@@ -280,8 +278,7 @@ def run() -> int:
     else:
         p.bad(f"go test exited {rc}")
         print("  --- go test stdout (failures) ---", file=sys.stderr)
-        # `grep -E '^(FAIL|---|\s+---)' "$OUT" >&2 || tail -40 "$OUT" >&2`: the
-        # tail is the FALLBACK taken only when grep matched nothing at all.
+        # `grep -E '^(FAIL|---|\s+---)' "$OUT" >&2 || tail -40 "$OUT" >&2`: the tail is the FALLBACK taken only when grep matched nothing at all.
         fail_re = re.compile(r"^(FAIL|---|\s+---)")
         hits = [line for line in proc.stdout.split("\n") if fail_re.search(line)]
         if hits:

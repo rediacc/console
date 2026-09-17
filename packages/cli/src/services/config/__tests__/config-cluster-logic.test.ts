@@ -90,10 +90,7 @@ describe('removeClusterFromStore (#22)', () => {
 
     await removeClusterFromStore('cfg', 'b1src');
 
-    // #89: state.datastores[dscp].attachedTo named `b1src-cp-1`. Machine names are
-    // DETERMINISTIC, so a same-name recreate re-mints that machine — and the stale hint
-    // re-aims derived-machine routing at a brand-new machine that has no such datastore.
-    // #22's own failure mode, arriving through the field #22 did not clear.
+    // #89: state.datastores[dscp].attachedTo named `b1src-cp-1`. Machine names are DETERMINISTIC, so a same-name recreate re-mints that machine — and the stale hint re-aims derived-machine routing at a brand-new machine that has no such datastore. #22's own failure mode, arriving through the field #22 did not clear.
     expect(mutated?.state?.datastores).not.toHaveProperty('dscp');
     expect(mutated?.state?.repos).not.toHaveProperty('shop');
 

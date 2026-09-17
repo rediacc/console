@@ -92,9 +92,7 @@ export async function findFreeLocalPort(): Promise<number> {
 export async function openRepoTunnel(spec: TunnelSpec): Promise<TunnelHandle> {
   const { connectionDetails, localPort, remoteIP, remotePort } = spec;
 
-  // Fail fast if the local port is taken — otherwise ssh would print
-  // "Address already in use" yet keep running, and we would wrongly
-  // report the tunnel as active.
+  // Fail fast if the local port is taken — otherwise ssh would print "Address already in use" yet keep running, and we would wrongly report the tunnel as active.
   await assertLocalPortFree(localPort);
 
   const sshConnection = new SSHConnection(

@@ -70,8 +70,7 @@ for (const [name, [published, now, minAge]] of Object.entries(Q)) {
 process.stdout.write('\\n@@RESULT@@' + JSON.stringify(out));
 """
 
-# A ONE-SLOT DICT rather than a rebound module global: the answers are memoised,
-# not reassigned, so no `global` statement is needed to write them.
+# A ONE-SLOT DICT rather than a rebound module global: the answers are memoised, not reassigned, so no `global` statement is needed to write them.
 _ANSWERS: dict[str, dict[str, str]] = {}
 
 

@@ -114,8 +114,7 @@ PY_PACKAGE_INIT = paths.from_root(".ci", "rediacc_ci", "__init__.py")
 # the file the split was undoing, one reasonable special case at a time.
 ROUTER_LINE_CEILING = 120
 
-# The lane decision, taken in a fresh shell that sources exactly what a real gate
-# sources. Byte-for-byte the twin's, including the order of the three sources.
+# The lane decision, taken in a fresh shell that sources exactly what a real gate sources. Byte-for-byte the twin's, including the order of the three sources.
 LANE_SNIPPET = (
     ". .ci/config/constants.sh; . .ci/scripts/lib/toolchain.sh; "
     ". .ci/lib/local-common.sh; gate_lane_decide"
@@ -247,8 +246,7 @@ def arms_of(source: str) -> set[str]:
             continue
         for part in re.sub(r"\).*$", "", line, count=1).split("|"):
             verb = part.strip(" \t").replace('"', "")
-            # `*` is the fallback, `""` the bare-verb default, a leading `-` a flag
-            # alias of the verb beside it, a bare number an inner arm.
+            # `*` is the fallback, `""` the bare-verb default, a leading `-` a flag alias of the verb beside it, a bare number an inner arm.
             if verb in ("", "*") or verb.startswith("-") or verb.isdigit():
                 continue
             if depth == 1:
@@ -287,9 +285,7 @@ def documented_in(source: str) -> set[str]:
         found.add("TOP " + top)
         if len(words) < 2:
             continue
-        # `<cmd>` means "the subcommands are enumerated in the description", which
-        # is how devbox and worktree are written. Anything else in brackets is a
-        # PARAMETER (`<slug>`, `[opts]`), not a subcommand.
+        # `<cmd>` means "the subcommands are enumerated in the description", which is how devbox and worktree are written. Anything else in brackets is a PARAMETER (`<slug>`, `[opts]`), not a subcommand.
         if words[1] == "<cmd>":
             parts = description.split("|")
             if len(parts) < 2:
@@ -425,9 +421,7 @@ def verb_findings(gate, router, legacy) -> list[str]:
     findings += ["dispatched-but-undocumented %s" % v for v in sorted(dispatched - documented_top)]
     findings += ["documented-but-unreachable %s" % v for v in sorted(documented_top - dispatched)]
 
-    # SECOND LEVEL, only for the verbs that OWN a nested case. `provision`, `www`,
-    # `rotation` and `worktree` delegate their whole subcommand tree to another
-    # program, so their documented subcommands are that program's inventory and not
+    # SECOND LEVEL, only for the verbs that OWN a nested case. `provision`, `www`, `rotation` and `worktree` delegate their whole subcommand tree to another program, so their documented subcommands are that program's inventory and not
     # this file's; demanding they appear as arms here would be wrong.
     for top in sorted(
         {e[len("SUB ") :].split("/", 1)[0] for e in legacy_arms if e.startswith("SUB ")}
@@ -440,8 +434,7 @@ def verb_findings(gate, router, legacy) -> list[str]:
         findings += [
             "documented-but-unreachable %s/%s" % (top, s) for s in sorted(described - armed)
         ]
-        # THE THIRD INVENTORY. A verb's own `Usage:` line is what a user sees after a
-        # typo, and it drifted from both of the others unnoticed for months.
+        # THE THIRD INVENTORY. A verb's own `Usage:` line is what a user sees after a typo, and it drifted from both of the others unnoticed for months.
         usage = usage_of(legacy_text, top)
         if usage:
             findings += ["usage-line-drift %s/%s" % (top, s) for s in sorted(armed ^ usage)]
@@ -711,10 +704,7 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
     strings were a THIRD inventory agreeing with neither. A check over top-level
     verbs alone finds none of that and would have shipped green.
     """
-    # ANTI-VACUITY BEFORE THE ASSERTION, because every claim here is "this set is
-    # empty" and an extractor that matched nothing satisfies all of them at once.
-    # SET-DERIVED AND STATE-INDEPENDENT: see `vacuity_findings` for why the clause
-    # that used to require a non-empty legacy dispatcher had to go.
+    # ANTI-VACUITY BEFORE THE ASSERTION, because every claim here is "this set is empty" and an extractor that matched nothing satisfies all of them at once. SET-DERIVED AND STATE-INDEPENDENT: see `vacuity_findings` for why the clause that used to require a non-empty legacy dispatcher had to go.
     router, ported, legacy, docs, subs, doc_subs = counts_of(gate)
     vacuity = vacuity_findings(router, ported, legacy, docs, subs, doc_subs)
     if vacuity:
@@ -737,8 +727,7 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
     else:
         gate.ok("router arms + legacy arms == the verbs show_help documents, with no overlap")
 
-    # CONTROL, three ways, on COPIES so no tracked file is ever mutated. Each plants
-    # one of the three failure shapes and requires the report to name it.
+    # CONTROL, three ways, on COPIES so no tracked file is ever mutated. Each plants one of the three failure shapes and requires the report to name it.
     with harness.temp_dir() as ctl:
         router, legacy = ctl / "run.sh", ctl / "legacy.sh"
         shutil.copyfile(RUN, router)
@@ -897,8 +886,7 @@ def test_the_router_stays_a_router(gate):
     count MINUS the whole `PORTED_VERBS` table, so no port ever pays for the shape of
     the table and no ceiling ever has to be raised to land one.
     """
-    # `wc -l`, which counts NEWLINES: a final line with no terminator is not counted
-    # by either, so the two numbers cannot drift on a file the formatter has seen.
+    # `wc -l`, which counts NEWLINES: a final line with no terminator is not counted by either, so the two numbers cannot drift on a file the formatter has seen.
     router_lines = RUN.read_bytes().count(b"\n")
     table_rows, table_bad = router_table_of(read(RUN))
     logic_lines = router_lines - table_rows
@@ -918,8 +906,7 @@ def test_the_router_stays_a_router(gate):
             "ceiling is %d and logic belongs on one side or the other"
             % (logic_lines, table_rows, ROUTER_LINE_CEILING)
         )
-    # The Python arm names a module that has to exist, or the first port fails with
-    # ModuleNotFoundError and a verb nobody can reach.
+    # The Python arm names a module that has to exist, or the first port fails with ModuleNotFoundError and a verb nobody can reach.
     if "python3 -m rediacc_ci" in read(RUN) and PY_PACKAGE_INIT.is_file():
         gate.ok("the router's Python arm names rediacc_ci, and that package is on disk")
     else:
@@ -930,8 +917,7 @@ def test_the_router_stays_a_router(gate):
     gate.tally_finish("the router stays a router")
 
 
-# The fixture for the ADDED case. Every line in it is here because one of the
-# twin's comments says a simpler rule reads it wrong. See the module docstring.
+# The fixture for the ADDED case. Every line in it is here because one of the twin's comments says a simpler rule reads it wrong. See the module docstring.
 TRAP_ROUTER = """#!/bin/bash
 PORTED_VERBS=()
 
@@ -1036,10 +1022,7 @@ def test_the_extractors_survive_the_traps_the_awk_documents(gate):
     )
     gate.ok("usage_of: `two [nested|group]|three` keeps three and drops the nested pair")
 
-    # THE NEGATIVE CONTROL FOR THE READER ITSELF. A file with no `main()` and no
-    # `show_help()` must yield NOTHING, not a partial parse of whatever it holds --
-    # an extractor that reads arms outside `main()` would report the legacy file's
-    # helper functions as verbs.
+    # THE NEGATIVE CONTROL FOR THE READER ITSELF. A file with no `main()` and no `show_help()` must yield NOTHING, not a partial parse of whatever it holds -- an extractor that reads arms outside `main()` would report the legacy file's helper functions as verbs.
     stray = 'helper() {\n    case "$1" in\n        ghost) : ;;\n    esac\n}\n'
     gate.assert_eq(arms_of(stray), set(), "arms_of reads main() and nothing else")
     gate.assert_eq(documented_in(stray), set(), "documented_in reads show_help() and nothing else")

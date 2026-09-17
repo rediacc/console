@@ -53,8 +53,7 @@ vi.mock('../config/config-base.js', () => ({
   },
 }));
 
-// Cold-loads the full config module graph on first import (see the sibling
-// guid-map suite for the same allowance).
+// Cold-loads the full config module graph on first import (see the sibling guid-map suite for the same allowance).
 describe('addRepository credential collision guard', { timeout: 30000 }, () => {
   beforeEach(() => {
     mockConfig = {};

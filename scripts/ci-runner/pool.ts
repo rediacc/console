@@ -81,10 +81,7 @@ type GateStatus = 'ok' | 'fail' | 'blocked' | 'skipped';
  * with a real verdict: 1 is a finding, 2 is usage, 124 is a timeout, 127 is
  * not-found (which is a genuine breakage, not a considered "cannot run").
  */
-// NOT exported: nothing outside this module imports it, and knip's
-// --treat-config-hints-as-errors counts an unused export as a finding. The
-// shell gates that exit 77 (check-python-lint.sh, shfmt.sh) cannot import a
-// TypeScript constant anyway, so the value is duplicated there as a literal
+// NOT exported: nothing outside this module imports it, and knip's --treat-config-hints-as-errors counts an unused export as a finding. The shell gates that exit 77 (check-python-lint.sh, shfmt.sh) cannot import a TypeScript constant anyway, so the value is duplicated there as a literal
 // with this comment as its reference point.
 const CANNOT_RUN = 77;
 
@@ -222,22 +219,17 @@ export async function runPool(
   const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome }>>();
   // The isolation contract's two claim strengths. Exclusive is a set because a
   // resource has at most one writer at a time; shared is a COUNT because any
-  // number of readers may hold one and the last one out has to be the one that
-  // releases it. A plain Set here would have the first reader to finish unlock a
-  // resource three others were still reading, which is the shape of bug that
-  // only ever shows up as an unreproducible mid-enumeration error.
+  // number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only ever shows up as an unreproducible mid-enumeration error.
   const heldExclusive = new Set<string>();
   const heldShared = new Map<string, number>();
   let slots = 0;
   let heavyRunning = 0;
   let stopped = false;
 
-  // A missing or corrupt duration cache must never fail the run, so an
-  // unknown gate is simply assumed cheap-ish and sorts late.
+  // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
   const expected = (spec: GateSpec): number =>
     opts.durations.get(spec.id) ?? (spec.weight ?? 1) * 5000;
-  // Clamped: a gate declaring more weight than the whole budget would never
-  // be admissible and would hang the pool at --jobs 1.
+  // Clamped: a gate declaring more weight than the whole budget would never be admissible and would hang the pool at --jobs 1.
   const effWeight = (spec: GateSpec): number =>
     Math.min(Math.max(1, spec.weight ?? 1), Math.max(1, opts.jobs));
   const rank = (a: GateSpec, b: GateSpec): number =>
@@ -245,8 +237,7 @@ export async function runPool(
 
   // THE CONTRACT, and this is the whole of it. An exclusive claim conflicts with
   // any claim on the same resource; a shared claim conflicts only with an
-  // exclusive one. Shared against shared is deliberately admissible, which is the
-  // asymmetry the header explains and the reason this is not one Set.
+  // exclusive one. Shared against shared is deliberately admissible, which is the asymmetry the header explains and the reason this is not one Set.
   const blockedByClaim = (spec: GateSpec): boolean =>
     (spec.mutex ?? []).some((r) => heldExclusive.has(r) || (heldShared.get(r) ?? 0) > 0) ||
     sharedClaims(spec).some((r) => heldExclusive.has(r));
@@ -283,9 +274,7 @@ export async function runPool(
   };
 
   while (unstarted.size > 0 || running.size > 0) {
-    // A dependency that failed poisons its dependents transitively, so run
-    // the propagation to a fixpoint. Reporting them as skipped rather than
-    // passed is what keeps a broken prerequisite from reading as green.
+    // A dependency that failed poisons its dependents transitively, so run the propagation to a fixpoint. Reporting them as skipped rather than passed is what keeps a broken prerequisite from reading as green.
     let changed = true;
     while (changed) {
       changed = false;
@@ -319,12 +308,8 @@ export async function runPool(
     }
 
     if (running.size === 0 && unstarted.size > 0) {
-      // Nothing is in flight and nothing was admissible: the budget is
-      // smaller than the head of the queue. Admit it anyway rather than
-      // spin. No claim can be the blocker here, since nothing holds one --
-      // but the predicate is still consulted rather than assumed, because
-      // "cannot happen" is how a stall turns into a silent over-admission
-      // that violates the very exclusion this branch is bypassing.
+      // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
+      // bypassing.
       const head = ready.find((spec) => !blockedByClaim(spec));
       if (head === undefined) {
         throw new Error('ci-runner: internal error, pool stalled with work outstanding');
@@ -346,9 +331,7 @@ export async function runPool(
       else heldShared.delete(r);
     }
 
-    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that
-    // claims it cannot run AND trips the anti-vacuity oracle is not a machine
-    // missing a tool, it is a gate lying about what it did.
+    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that claims it cannot run AND trips the anti-vacuity oracle is not a machine missing a tool, it is a gate lying about what it did.
     const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;
     const failed = !cannotRun && (outcome.code !== 0 || outcome.vacuity !== undefined);
     record({
@@ -365,8 +348,7 @@ export async function runPool(
     if (failed && opts.failFast) stopped = true;
   }
 
-  // Manifest order, not completion order: the exit code and the summary must
-  // be identical across runs even though the scheduling never is.
+  // Manifest order, not completion order: the exit code and the summary must be identical across runs even though the scheduling never is.
   return specs.map((spec) => {
     const result = results.get(spec.id);
     if (result === undefined)

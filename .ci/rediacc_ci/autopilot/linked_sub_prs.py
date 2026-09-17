@@ -190,9 +190,7 @@ def scan(body: bytes, owner: str, path: str, stderr=None) -> list[bytes]:
         if not matched:
             continue
         if binary:
-            # grep prints this ONCE PER INVOCATION THAT MATCHED, and the twin
-            # invokes grep once per submodule, so a binary body linking three
-            # submodules produces three lines. Exit stays 0.
+            # grep prints this ONCE PER INVOCATION THAT MATCHED, and the twin invokes grep once per submodule, so a binary body linking three submodules produces three lines. Exit stays 0.
             print("grep: %s: binary file matches" % path, file=stream, flush=True)
             continue
         prefix = ("%s/%s " % (owner, name)).encode("utf-8", "surrogateescape")
@@ -204,8 +202,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as exc:
-        # parse_args QUIRK 3: `printf -v` refuses a key that is not a valid
-        # shell identifier and takes the twin down with exit 2.
+        # parse_args QUIRK 3: `printf -v` refuses a key that is not a valid shell identifier and takes the twin down with exit 2.
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)
         return exc.code
 

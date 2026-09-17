@@ -48,8 +48,7 @@ from rediacc_ci.deploy import verify_edge_endpoints as edge
 WWW = "https://www.rediacc.com"
 RELEASES = "https://releases.rediacc.com"
 
-# Reused rather than re-spelled: these are the SAME two `grep -qi` patterns the
-# edge twin uses, character for character, on the same header block.
+# Reused rather than re-spelled: these are the SAME two `grep -qi` patterns the edge twin uses, character for character, on the same header block.
 HSTS = edge.HSTS
 NOSNIFF = edge.NOSNIFF
 
@@ -140,9 +139,7 @@ def _verify() -> int:
 
     status = _status_or_die("%s/about?cb=%s" % (WWW, rnda))
     if status != "410":
-        # THE EM DASH IS AN ESCAPE ON PURPOSE. The twin's line 77 carries a
-        # literal U+2014 and this port must emit the same byte, but a literal em
-        # dash in authored source is banned house-wide.
+        # THE EM DASH IS AN ESCAPE ON PURPOSE. The twin's line 77 carries a literal U+2014 and this port must emit the same byte, but a literal em dash in authored source is banned house-wide.
         print(
             "::error::www /about expected 410 (curated redirect table), got %s "
             "\u2014 old worker bundle likely live" % status,

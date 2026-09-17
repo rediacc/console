@@ -38,16 +38,13 @@ BASH_TWIN = ".ci/scripts/test/gates/test-preview-worker-reaping.sh"
 
 SUT = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
 
-# The selector, as the phase uses it, written ONCE. A second spelling of it here
-# and in the subject-agreement case below is how a gate and its subject drift.
+# The selector, as the phase uses it, written ONCE. A second spelling of it here and in the subject-agreement case below is how a gate and its subject drift.
 PR_WORKER_PATTERN = "^pr-([0-9]+)$"
 PR_WORKER_RE = re.compile(PR_WORKER_PATTERN)
 
 MUST_MATCH = ("pr-1", "pr-574", "pr-99999")
 
-# EVERY Worker name this repo actually defines, swept 2026-08-26 from all
-# wrangler.*.toml plus the one `wrangler delete`. Invented names prove less than
-# real ones: these are the Workers a bad selector would destroy.
+# EVERY Worker name this repo actually defines, swept 2026-08-26 from all wrangler.*.toml plus the one `wrangler delete`. Invented names prove less than real ones: these are the Workers a bad selector would destroy.
 MUST_NOT_MATCH = (
     "account-server",  # private/account/wrangler.toml:22
     "rediacc-account-eu",  # workers/account/wrangler.eu.toml:1

@@ -52,9 +52,7 @@ REAL_TREE_TWIN = True
 ROOT = paths.repo_root()
 GATE = ROOT / "scripts" / "gates" / "check-ci-parity.ts"
 
-# The script sets a case can give the fixture. Per-case rather than shared
-# because R1 fires on any `check:ci-*` key the manifest does not carry, so a
-# one-size package.json would redden every case for a reason it is not about.
+# The script sets a case can give the fixture. Per-case rather than shared because R1 fires on any `check:ci-*` key the manifest does not carry, so a one-size package.json would redden every case for a reason it is not about.
 SCRIPTS_ALPHA = '"check:ci-alpha": ".ci/scripts/quality/check-alpha.sh"'
 SCRIPTS_BETA = '"check:ci-beta": "tsx scripts/check-beta.ts"'
 SCRIPTS_ALPHA_BETA = SCRIPTS_ALPHA + ",\n    " + SCRIPTS_BETA
@@ -116,8 +114,7 @@ def scaffold(root: pathlib.Path, steps: str, scripts: str = SCRIPTS_ALPHA) -> No
     """
     for sub in (".github/workflows", ".ci/scripts/quality", ".ci/policy", "scripts"):
         (root / sub).mkdir(parents=True, exist_ok=True)
-    # The gate existence-checks every path-shaped leaf, so the fixture's leaves
-    # have to be real files or every case would fail for the wrong reason.
+    # The gate existence-checks every path-shaped leaf, so the fixture's leaves have to be real files or every case would fail for the wrong reason.
     for leaf in (
         ".ci/scripts/quality/check-alpha.sh",
         "scripts/check-beta.ts",
@@ -539,9 +536,7 @@ def test_missing_entry_job_collapses_the_surface(gate):
         scaffold(d, STEP_ALPHA)
         ci = d / ".github/workflows/ci.yml"
         text = ci.read_text(encoding="utf-8")
-        # A CONSTRUCTION, not a pattern: the replacement is asserted to have
-        # landed, so a reworded scaffold cannot leave this case testing the
-        # unmodified fixture and passing for the wrong reason.
+        # A CONSTRUCTION, not a pattern: the replacement is asserted to have landed, so a reworded scaffold cannot leave this case testing the unmodified fixture and passing for the wrong reason.
         if "\n  quality:\n" not in text:
             gate.log_fail("the scaffold no longer declares a `quality:` job; the plant cannot land")
         ci.write_text(text.replace("\n  quality:\n", "\n  quality-renamed:\n"), encoding="utf-8")

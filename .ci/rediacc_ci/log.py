@@ -98,12 +98,9 @@ import io
 import os
 import sys
 
-# The escape sequences, taken from .ci/scripts/lib/common.sh:19-24, which is the
-# only pre-existing variant that tests the stream it writes to and is therefore
-# the one this module is differentially checked against. YELLOW is the bright
+# The escape sequences, taken from .ci/scripts/lib/common.sh:19-24, which is the only pre-existing variant that tests the stream it writes to and is therefore the one this module is differentially checked against. YELLOW is the bright
 # form (1;33) that common.sh uses, NOT the 0;33 in .ci/bootstrap.sh: a
-# differential cannot be run against both, so the one with more callers wins and
-# the other is named here so the choice is visible rather than accidental.
+# differential cannot be run against both, so the one with more callers wins and the other is named here so the choice is visible rather than accidental.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[1;33m"
@@ -111,11 +108,7 @@ BLUE = "\033[0;34m"
 CYAN = "\033[0;36m"
 NC = "\033[0m"
 
-# The glyph and colour per level, matching common.sh:35-54 exactly so a ported
-# script's output is byte-identical. `success` is the one level common.sh does
-# not define -- it comes from emit-advisory.sh:74, which is precisely the file
-# whose unconditional definitions caused the incident above, so it is carried
-# here to remove the reason that library had to define anything at all.
+# The glyph and colour per level, matching common.sh:35-54 exactly so a ported script's output is byte-identical. `success` is the one level common.sh does not define -- it comes from emit-advisory.sh:74, which is precisely the file whose unconditional definitions caused the incident above, so it is carried here to remove the reason that library had to define anything at all.
 _LEVELS = {
     "info": (GREEN, "\u2713"),
     "success": (GREEN, "\u2713"),
@@ -125,8 +118,7 @@ _LEVELS = {
     "debug": (CYAN, "[DEBUG]"),
 }
 
-# The environment variable that turns on debug output, and its truth value.
-# `"true"` exactly, not any truthy string: common.sh:52 tests
+# The environment variable that turns on debug output, and its truth value. `"true"` exactly, not any truthy string: common.sh:52 tests
 # `"${DEBUG:-false}" == "true"`, and a Python port that accepted "1" would be
 # quietly noisier than the thing it replaces on any machine where DEBUG=1 is set
 # for some other tool.
@@ -159,9 +151,7 @@ def colour_allowed(stream=None, env=None) -> bool:
     try:
         return bool(target.isatty())
     except (AttributeError, ValueError):
-        # ValueError: a closed file raises rather than answering. "Not a tty" is
-        # the safe answer for both, because escapes written to something broken
-        # are the failure mode that outlives the run, in a log file.
+        # ValueError: a closed file raises rather than answering. "Not a tty" is the safe answer for both, because escapes written to something broken are the failure mode that outlives the run, in a log file.
         return False
 
 
@@ -182,19 +172,11 @@ class Logger:
         # `stream=None` IS RESOLVED AT EMIT TIME, NOT HERE, and that is the whole
         # point of the property below. This line used to read
         #     self.stream = sys.stderr if stream is None else stream
-        # which captured whatever `sys.stderr` happened to be at CONSTRUCTION.
-        # Under pytest's `capsys` that is a per-test CaptureIO which teardown then
-        # CLOSES, so a module-global logger built during one test kept writing to
-        # a dead file and every later `log.*` in the process raised
-        # `ValueError: I/O operation on closed file` from `emit`.
+        # which captured whatever `sys.stderr` happened to be at CONSTRUCTION. Under pytest's `capsys` that is a per-test CaptureIO which teardown then CLOSES, so a module-global logger built during one test kept writing to a dead file and every later `log.*` in the process raised `ValueError: I/O operation on closed file` from `emit`.
         #
         # It was invisible serially because a later test in the same file happened
         # to rebuild the global; xdist distributes a module across processes, so
-        # the healer and the poisoner land in different workers. It was then
-        # patched module-by-module with autouse fixtures -- test_log.py and two
-        # others -- which left every OTHER module unprotected and the class
-        # unfixed. This is the root: an explicit stream is still bound by value,
-        # exactly as callers expect, and only the None case follows sys.stderr.
+        # the healer and the poisoner land in different workers. It was then patched module-by-module with autouse fixtures -- test_log.py and two others -- which left every OTHER module unprotected and the class unfixed. This is the root: an explicit stream is still bound by value, exactly as callers expect, and only the None case follows sys.stderr.
         self._stream = stream
         self.env = os.environ if env is None else env
         self.colour = colour_allowed(self.stream, self.env) if colour is None else colour
@@ -228,9 +210,7 @@ class Logger:
         argument to get wrong.
         """
         self.stream.write(self.format(level, message) + "\n")
-        # A stream without flush(), or a closed one, must not turn a log line into
-        # a traceback: the place a logger is called is the place something has
-        # already gone wrong.
+        # A stream without flush(), or a closed one, must not turn a log line into a traceback: the place a logger is called is the place something has already gone wrong.
         with contextlib.suppress(AttributeError, ValueError):
             self.stream.flush()
 
@@ -260,11 +240,7 @@ class Logger:
             self.emit("debug", message)
 
 
-# The process-wide default. Constructed lazily rather than at import, because a
-# module-level Logger would capture whatever sys.stderr was at import time --
-# and pytest's capsys, a subprocess wrapper and `contextlib.redirect_stderr` all
-# REPLACE sys.stderr afterwards. A captured stream is the classic reason a test
-# sees no output from a logger that is working perfectly.
+# The process-wide default. Constructed lazily rather than at import, because a module-level Logger would capture whatever sys.stderr was at import time -- and pytest's capsys, a subprocess wrapper and `contextlib.redirect_stderr` all REPLACE sys.stderr afterwards. A captured stream is the classic reason a test sees no output from a logger that is working perfectly.
 _default: Logger | None = None
 
 

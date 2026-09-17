@@ -181,13 +181,9 @@ export function commentLineMask(content: string): boolean[] {
     const line = lines[i];
     const startedInside = inHtml || inBlock;
     let scan = line;
-    // Text on this line that is OUTSIDE any comment. Accumulating it is the whole fix:
-    // the previous version judged the line by whatever `scan` happened to hold when the
-    // loop broke, and when a line OPENS a block that does not close, `scan` holds the
+    // Text on this line that is OUTSIDE any comment. Accumulating it is the whole fix: the previous version judged the line by whatever `scan` happened to hold when the loop broke, and when a line OPENS a block that does not close, `scan` holds the
     // comment's own prose. So `{/* Server-rendered trigger, not part of the React island`
-    // was read as "a comment plus trailing code" and un-masked, and the gate reported the
-    // comment's first line as a hardcoded user-facing string. Three such lines in
-    // DocsLayout.astro and DocsSidebar.astro made the CI-blocking `check:i18n` chain red.
+    // was read as "a comment plus trailing code" and un-masked, and the gate reported the comment's first line as a hardcoded user-facing string. Three such lines in DocsLayout.astro and DocsSidebar.astro made the CI-blocking `check:i18n` chain red.
     let codeOutside = '';
     // Consume opens and closes left to right so a one-line block does not latch.
     for (;;) {

@@ -33,16 +33,10 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-adhoc-sanctioned.sh"
 ORDER = 33
 
-# HEREDOC BODIES ONLY: swapping in the full scanner is the failure the header
-# below records, and it turns this guard's strongest fixture green while
-# catching nothing.
+# HEREDOC BODIES ONLY: swapping in the full scanner is the failure the header below records, and it turns this guard's strongest fixture green while catching nothing.
 DEFECT = ("shellscan._strip_heredocs(cmd)", "shellscan.scan_target(cmd)")
 
-# DERIVED FROM THIS SCRIPT'S OWN LOCATION, not from CLAUDE_PROJECT_DIR.
-# That variable is set by the agent harness and is ABSENT in CI and in a bare
-# shell, where the fallback `.` made the registry unfindable -- and this guard
-# fails open by design, so it silently allowed every banned command. Its own
-# controls caught it, but only once they ran somewhere without the variable.
+# DERIVED FROM THIS SCRIPT'S OWN LOCATION, not from CLAUDE_PROJECT_DIR. That variable is set by the agent harness and is ABSENT in CI and in a bare shell, where the fallback `.` made the registry unfindable -- and this guard fails open by design, so it silently allowed every banned command. Its own controls caught it, but only once they ran somewhere without the variable.
 LIB = hookio.repo_root() / ".claude" / "hooks" / "lib"
 
 _REGISTRY = []
@@ -53,8 +47,7 @@ EDGE_CASES = [
         "a hand-rolled poll, whose banned half lives INSIDE quotes",
         'until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do',
     ),
-    # The counters from the registry's own rows: a legitimately different
-    # command that must NOT match.
+    # The counters from the registry's own rows: a legitimately different command that must NOT match.
     ("reading a run once is not watching it", "gh run view 123 --json conclusion,jobs"),
     ("the sanctioned tool itself", ".ci/scripts/ci/ci-trace.py --wait"),
     # A heredoc body is DATA, so a note quoting a banned recipe is allowed...
@@ -86,9 +79,7 @@ def _registry():
 
 def run(ev):
     # `CMD=$(... jq -r ...) || exit 0` followed by `[ -n "$CMD" ] || exit 0`:
-    # a jq FAILURE and an empty command take the same branch, so one test
-    # covers both. An absent key is still the four characters `null`, which
-    # this guard scans like any other string.
+    # a jq FAILURE and an empty command take the same branch, so one test covers both. An absent key is still the four characters `null`, which this guard scans like any other string.
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
@@ -100,21 +91,13 @@ def run(ev):
 
     # HEREDOC BODIES ONLY, and the quotes deliberately STAY. Every other guard
     # in this sweep moved to hook_scan_target, which also strips quoted spans;
-    # doing that here broke the guard's best case, and the failure is worth
-    # recording because it marks the limit of the technique.
+    # doing that here broke the guard's best case, and the failure is worth recording because it marks the limit of the technique.
     #
-    # This guard's targets legitimately live INSIDE quotes. Its strongest
-    # fixture is a hand-rolled watch loop -- `until [ "$(gh run view $R --json
+    # This guard's targets legitimately live INSIDE quotes. Its strongest fixture is a hand-rolled watch loop -- `until [ "$(gh run view $R --json
     # status ...)" = completed ]` -- where the banned command sits in a command
-    # substitution inside a quoted test. Prose-stripping deleted exactly the
-    # part that matters and the case went green while catching nothing.
+    # substitution inside a quoted test. Prose-stripping deleted exactly the part that matters and the case went green while catching nothing.
     #
-    # A heredoc body is different: it is DATA, never executed, so dropping it is
-    # safe and it kills the false positive that actually costs something here --
-    # a worklist note or a doc quoting a banned recipe. The residue is that
-    # `echo 'gh run watch 123'` is still refused. That is the price of seeing
-    # inside quotes, it is paid knowingly, and the sanctioned alternative is in
-    # the message.
+    # A heredoc body is different: it is DATA, never executed, so dropping it is safe and it kills the false positive that actually costs something here -- a worklist note or a doc quoting a banned recipe. The residue is that `echo 'gh run watch 123'` is still refused. That is the price of seeing inside quotes, it is paid knowingly, and the sanctioned alternative is in the message.
     scan = shellscan._command_substitution(shellscan._strip_heredocs(cmd))
 
     module = _registry()

@@ -76,8 +76,7 @@ def main(argv: list[str]) -> int:
                 run_json = json.loads(lookup.stdout)
             except json.JSONDecodeError:
                 # `jq -r` on non-JSON input exits 5; under `set -euo pipefail`
-                # that aborts the twin silently, before any output. Same
-                # silence here, same reasoning as check_edge_manifest.py.
+                # that aborts the twin silently, before any output. Same silence here, same reasoning as check_edge_manifest.py.
                 return 1
         run_branch = run_json.get("head_branch") or ""
         run_conclusion = run_json.get("conclusion") or ""

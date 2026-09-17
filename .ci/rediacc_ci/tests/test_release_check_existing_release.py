@@ -21,9 +21,7 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/release/check-existing-release.sh"
 MODULE = "check_existing_release"
 
-# Both invocations run with cwd set to a SCRATCH repo (so `git fetch`/`git tag`
-# act on its `origin`, not this checkout), so the twin path and PYTHONPATH must
-# be ABSOLUTE -- relative to this checkout, not to the scratch cwd.
+# Both invocations run with cwd set to a SCRATCH repo (so `git fetch`/`git tag` act on its `origin`, not this checkout), so the twin path and PYTHONPATH must be ABSOLUTE -- relative to this checkout, not to the scratch cwd.
 _TWIN_ABS = str(pathlib.Path(diff.repo()) / TWIN)
 _CI_ABS = str(pathlib.Path(diff.repo()) / ".ci")
 

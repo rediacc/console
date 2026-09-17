@@ -147,12 +147,10 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its three guard messages. A literal, because
-# the bytes must survive the port.
+# The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable-hotfix.sh"
 
-# `for dir in cli apt rpm apk archlinux` (twin :64). ORDER MATTERS to both the
-# call log and the purge list, which is how this port is proved equivalent.
+# `for dir in cli apt rpm apk archlinux` (twin :64). ORDER MATTERS to both the call log and the purge list, which is how this port is proved equivalent.
 CHANNEL_DIRS = ("cli", "apt", "rpm", "apk", "archlinux")
 
 # `BUCKET="rediacc-releases"` (twin :61) and the public host (twin :81), both
@@ -161,17 +159,14 @@ BUCKET = "rediacc-releases"
 PUBLIC_HOST = "https://releases.rediacc.com"
 
 # `CC_MUTABLE="no-cache"` (twin :63). The whole subject of the twin's
-# Cache-Control paragraph: channel paths reuse filenames across releases, so a
-# cached body under the same URL breaks APKINDEX/Release signatures.
+# Cache-Control paragraph: channel paths reuse filenames across releases, so a cached body under the same URL breaks APKINDEX/Release signatures.
 CC_MUTABLE = "no-cache"
 
 # `TMP="/tmp/promote-${dir}"` (twin :67). A FIXED path, which is fact 3 in the
-# module docstring. Named here so the differential can assert the shape rather
-# than restating it, and so the cutover box has one place to change.
+# module docstring. Named here so the differential can assert the shape rather than restating it, and so the cutover box has one place to change.
 TMP_PREFIX = "/tmp/promote-"
 
-# The two scratch files the rewrite loops reuse (twin :90, :105). Neither is
-# ever removed.
+# The two scratch files the rewrite loops reuse (twin :90, :105). Neither is ever removed.
 CONFIG_SCRATCH = "/tmp/config"
 SCRIPT_SCRATCH = "/tmp/script"
 
@@ -184,29 +179,24 @@ INSTALL_FILES = ("cli/stable/install.sh", "cli/stable/install.ps1")
 # `sed_in_place 's|/edge/|/stable/|g'` (twin :91).
 CONFIG_SED = "s|/edge/|/stable/|g"
 
-# The two install-script substitutions (twin :107-108), in the twin's order: the
-# shell default first, the PowerShell one second.
+# The two install-script substitutions (twin :107-108), in the twin's order: the shell default first, the PowerShell one second.
 INSTALL_SED = (
     "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g",
     's|} else { "edge" }|} else { "stable" }|g',
 )
 
-# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :117), where SCRIPT_DIR is
-# `.ci/scripts/deploy`. Relative to the repository root so the cutover to
-# `cf_purge_urls.py` is a one-line change in the box that owns it.
+# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :117), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to `cf_purge_urls.py` is a one-line change in the box that owns it.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # The three `${VAR:?msg}` guards (twin :47-49), in order, as (name, message).
-# The messages are the twin's verbatim, each already prefixed with the script
-# name.
+# The messages are the twin's verbatim, each already prefixed with the script name.
 REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("CLOUDFLARE_R2_ACCESS_KEY_ID", "%s: CLOUDFLARE_R2_ACCESS_KEY_ID must be set" % SELF),
     ("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "%s: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set" % SELF),
     ("CLOUDFLARE_R2_ENDPOINT", "%s: CLOUDFLARE_R2_ENDPOINT must be set" % SELF),
 )
 
-# The three facts in the module docstring, as constants so a test can assert
-# each by name instead of restating the sentence.
+# The three facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 PURGE_LIST_CONTAINS_DUPLICATES = True
 VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = True
 STALE_TMP_IS_PROMOTED = True
@@ -482,8 +472,7 @@ def _promote_dirs(endpoint: str) -> list[str]:
 
         urls += [channel_url(dir_name, strip_prefix(f, tmp + "/")) for f in read_lines(listing)]
 
-        # `rm -rf "$TMP"`. Only reached on the success path, which is fact 3 in
-        # the module docstring. `ignore_errors` is `-f`.
+        # `rm -rf "$TMP"`. Only reached on the success path, which is fact 3 in the module docstring. `ignore_errors` is `-f`.
         shutil.rmtree(tmp, ignore_errors=True)
     return urls
 
@@ -574,9 +563,7 @@ def main(argv: list[str]) -> int:
         print("%s: %s" % (exc.name, exc.message), file=sys.stderr)
         return 1
 
-    # `export`ed (twin :51-53), so the `aws` child sees them. R2 speaks S3, and
-    # the twin's header names the mapping because a missing bridge surfaces as an
-    # unhelpful credentials error rather than as a missing variable.
+    # `export`ed (twin :51-53), so the `aws` child sees them. R2 speaks S3, and the twin's header names the mapping because a missing bridge surfaces as an unhelpful credentials error rather than as a missing variable.
     os.environ["AWS_ACCESS_KEY_ID"] = values["CLOUDFLARE_R2_ACCESS_KEY_ID"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = values["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
     os.environ["AWS_DEFAULT_REGION"] = "auto"

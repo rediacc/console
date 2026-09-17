@@ -124,8 +124,7 @@ export function rewriteRegions(
     }
     out.push(lines[i] ?? '');
     i += 1;
-    // Keep the marker's own explanatory comment lines. Same rule as gate-bind: the block
-    // explains itself to whoever opens the file, so the generator must not eat it.
+    // Keep the marker's own explanatory comment lines. Same rule as gate-bind: the block explains itself to whoever opens the file, so the generator must not eat it.
     while (i < region.close && COMMENT_RE.test(lines[i] ?? '')) {
       out.push(lines[i] ?? '');
       i += 1;

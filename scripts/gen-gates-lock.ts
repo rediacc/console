@@ -130,8 +130,7 @@ function selftest(): number {
       .join('|')
       .includes('- c')
   );
-  // THE CONTROL THAT MATTERS. Reordering changes no id and no field, so a set-based
-  // comparison reports "no difference" -- while pool.ts schedules differently.
+  // THE CONTROL THAT MATTERS. Reordering changes no id and no field, so a set-based comparison reports "no difference" -- while pool.ts schedules differently.
   ck(
     'REORDERING is caught, and reported as order rather than as add+remove',
     describeDrift(base, render([g('a'), g('c'), g('b')]))
@@ -164,8 +163,7 @@ function main(argv: string[]): number {
     return bad === 0 ? 0 : 1;
   }
 
-  // Controls before the verdict, same order and same reason as every other gate here: a
-  // report from an instrument that cannot fail is worse than no report.
+  // Controls before the verdict, same order and same reason as every other gate here: a report from an instrument that cannot fail is worse than no report.
   if (selftest() !== 0) {
     process.stderr.write(
       'CONTROL FAILED: gen-gates-lock cannot detect drift, so it refuses to rule on the lock.\n'

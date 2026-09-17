@@ -84,8 +84,7 @@ export function parseExampleValues(
   if (!tokens) return fail('unterminated quote');
   if (tokens[0] !== 'rdc') return fail('must start with "rdc"');
 
-  // Longest-prefix pathKey match: the tokens after `rdc` must resolve to THIS
-  // command, so an example filed under the wrong key cannot slip through.
+  // Longest-prefix pathKey match: the tokens after `rdc` must resolve to THIS command, so an example filed under the wrong key cannot slip through.
   let matched = '';
   for (let i = 1; i < tokens.length; i++) {
     const candidate = tokens.slice(1, i + 1).join(' ');
@@ -104,8 +103,7 @@ export function parseExampleValues(
   for (let i = 0; i < rest.length; i++) {
     const token = rest[i];
 
-    // End-of-options: everything after `--` belongs to the trailing variadic
-    // positional verbatim, so no later token may be read as a flag. NOTE the
+    // End-of-options: everything after `--` belongs to the trailing variadic positional verbatim, so no later token may be read as a flag. NOTE the
     // `values` map does NOT retain the `--` itself; a consumer rebuilding a
     // command line from `values` must re-insert it before that positional.
     if (token === '--') {

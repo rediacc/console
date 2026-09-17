@@ -25,8 +25,7 @@ test.describe('Parallel Execution @bridge @ops', () => {
     for (const [ip, result] of results) {
       if (!basicWorkerIps.includes(ip)) continue;
       expect(result.code).toBe(0);
-      // hostname -I may return multiple IPs (including Docker bridge 172.17.0.1)
-      // Check that our expected IP is the first one in the output
+      // hostname -I may return multiple IPs (including Docker bridge 172.17.0.1) Check that our expected IP is the first one in the output
       const firstIp = result.stdout.trim().split(/\s+/)[0];
       expect(firstIp).toBe(ip);
       console.warn(`Worker ${ip}: OK`);

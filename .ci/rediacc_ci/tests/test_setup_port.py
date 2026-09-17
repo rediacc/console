@@ -49,9 +49,7 @@ if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation her
 ROOT = paths.repo_root()
 BODY = ROOT.joinpath(*phases.SETUP_BODY_FILE)
 
-# ---------------------------------------------------------------------------
-# the phase order
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the phase order ---------------------------------------------------------------------------
 
 
 def test_phase_order_matches_run_setup() -> None:
@@ -86,12 +84,9 @@ def test_docker_probe_is_ported_but_not_a_phase() -> None:
     assert callable(host.docker_probe)
 
 
-# ---------------------------------------------------------------------------
-# node_pick_lts, against the heredoc it replaces
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- node_pick_lts, against the heredoc it replaces ---------------------------------------------------------------------------
 
-# Each row is a property, not a sample. A row with no property is a row that
-# will be deleted the first time someone tidies this file.
+# Each row is a property, not a sample. A row with no property is a row that will be deleted the first time someone tidies this file.
 
 
 def test_node_pick_lts_survives_garbage() -> None:
@@ -107,14 +102,10 @@ def test_node_pick_lts_survives_garbage() -> None:
     assert host.node_pick_lts("[]", "22") is None
 
 
-# ---------------------------------------------------------------------------
-# go_pick_sha
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- go_pick_sha ---------------------------------------------------------------------------
 
 
-# ---------------------------------------------------------------------------
-# the identity helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the identity helpers ---------------------------------------------------------------------------
 
 
 def test_dominant_author_excludes_bots() -> None:
@@ -123,9 +114,7 @@ def test_dominant_author_excludes_bots() -> None:
     assert host.dominant_author("") == ""
 
 
-# ---------------------------------------------------------------------------
-# the flag grammar
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the flag grammar ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -150,9 +139,7 @@ def test_parse_args(argv: list[str], want: machine.Options) -> None:
     assert machine.parse_args(argv) == want
 
 
-# ---------------------------------------------------------------------------
-# the extractor this package shares with a quality gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the extractor this package shares with a quality gate ---------------------------------------------------------------------------
 
 
 def test_function_body_matches_the_gates_extractor() -> None:
@@ -175,9 +162,7 @@ def test_function_body_python_ends_at_the_dedent() -> None:
     assert phases.function_body_python(source, "c") == ""
 
 
-# ---------------------------------------------------------------------------
-# the ledger this port stands on
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the ledger this port stands on ---------------------------------------------------------------------------
 
 
 def test_ledger_carries_five_equivalent_trees() -> None:

@@ -84,8 +84,7 @@ from rediacc_ci.core import proxyx
 
 SUBJECT_REL = ".ci/scripts/test/test-linux-packages.sh"
 
-# `grep -cE '^run_test "'` (:60). Anchored, so a `run_test` nested in an `if`
-# does not count -- which is the twin's behaviour and therefore this one's.
+# `grep -cE '^run_test "'` (:60). Anchored, so a `run_test` nested in an `if` does not count -- which is the twin's behaviour and therefore this one's.
 RUN_TEST_RE = re.compile(r'^run_test "')
 
 # `grep -oE 'Results: [0-9]+ passed, [0-9]+ failed \(total [0-9]+\)'` (:89).
@@ -173,8 +172,7 @@ def run() -> int:
 
     p = proxyx.Proxy("linux-packages", f"{SUBJECT_REL} --dry-run")
 
-    # :46-49. Both streams discarded, `|| true` swallows a failure, and the
-    # trailing newline of the printed directory is stripped by `$( )`.
+    # :46-49. Both streams discarded, `|| true` swallows a failure, and the trailing newline of the printed directory is stripped by `$( )`.
     if shutil.which("nfpm") is None:
         proc = subprocess.run(
             [str(root / ".ci" / "scripts" / "build" / "ensure-nfpm.sh")],
@@ -183,10 +181,7 @@ def run() -> int:
             text=True,
             check=False,
         )
-        # `$( ... || true )` captures whatever was printed REGARDLESS of the
-        # exit status: `|| true` only rewrites the substitution's own status,
-        # which nothing here reads. So a subject that printed a directory and
-        # then failed still has its directory used, exactly as in bash.
+        # `$( ... || true )` captures whatever was printed REGARDLESS of the exit status: `|| true` only rewrites the substitution's own status, which nothing here reads. So a subject that printed a directory and then failed still has its directory used, exactly as in bash.
         nfpm_dir = proc.stdout.rstrip("\n")
         if nfpm_dir:
             os.environ["PATH"] = f"{nfpm_dir}:{os.environ.get('PATH', '')}"
@@ -218,8 +213,7 @@ def run() -> int:
         print(f"  against {subject}.", file=sys.stderr)
         return 1
 
-    # :73-77. Streams read SEPARATELY: the subject writes its log_* lines to
-    # stderr and nfpm's own chatter to stdout, so a merged capture hides which
+    # :73-77. Streams read SEPARATELY: the subject writes its log_* lines to stderr and nfpm's own chatter to stdout, so a merged capture hides which
     # side spoke. `BOTH="$(cat "$OUT" "$ERR")"` concatenates them in that order
     # and the `$( )` strips the trailing newlines of the pair.
     sub = subprocess.run([subject, "--dry-run"], capture_output=True, text=True, check=False)

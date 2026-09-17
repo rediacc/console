@@ -86,17 +86,12 @@ from rediacc_ci.controls import Controls
 
 SELF = os.path.basename(__file__)
 
-# Both halves of the quality estate. A port landing under the first glob is in
-# scope the MOMENT it exists -- no registration, no baseline row, no hand edit,
-# which is the whole reason this is two globs and not a file list.
+# Both halves of the quality estate. A port landing under the first glob is in scope the MOMENT it exists -- no registration, no baseline row, no hand edit, which is the whole reason this is two globs and not a file list.
 SCOPE = (".ci/rediacc_ci/quality/*.py", ".ci/scripts/quality/check_*.py")
 
 HARNESS_MODULE = "rediacc_ci.controls"
 HARNESS_NAMES = ("plant", "plant_re")
-# ONLY `.replace`. For `.sub`/`.subn` the RECEIVER is a compiled regex, not the
-# fixture -- `SPACE_RE.sub("", " \t\n")` exercises the pattern itself and is not a
-# plant at all. Measured: including them produced two false positives in
-# `no_otlp_creds.py` on the first real run. `re.sub(pattern, repl, X)` would need
+# ONLY `.replace`. For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture -- `SPACE_RE.sub("", " \t\n")` exercises the pattern itself and is not a plant at all. Measured: including them produced two false positives in `no_otlp_creds.py` on the first real run. `re.sub(pattern, repl, X)` would need
 # the THIRD ARGUMENT checked, not the receiver; no control region in this corpus
 # uses that shape today, so it is deliberately not guessed at.
 SUBSTITUTORS = ("replace",)
@@ -355,8 +350,7 @@ def selftest(verbose: bool = False) -> int:
     c.check("...because the import is shadowed", has_harness(ast.parse(_SHADOWED)), False)
     c.check("...while the unshadowed import counts", has_harness(ast.parse(_CLEAN)), True)
 
-    # THE TWO EXEMPTIONS, each with its MIRROR. An exemption that always fires is
-    # the blanket refusal inverted, and would be worse than no gate at all.
+    # THE TWO EXEMPTIONS, each with its MIRROR. An exemption that always fires is the blanket refusal inverted, and would be worse than no gate at all.
     c.check(
         "two substitutions as siblings in one call are normalisation",
         findings_for(_NORMALISER_PAIR),
@@ -377,11 +371,7 @@ def selftest(verbose: bool = False) -> int:
         len(findings_for(_UNGUARDED_ASSIGN)),
         1,
     )
-    # THE TWO REFUSALS, driven against real starved trees rather than asserted.
-    # `test-gate-anti-vacuity.sh` cannot reach these: its fixture copies
-    # `.ci/rediacc_ci` wholesale, so it hands this gate its real inputs and the
-    # gate correctly exits 0. Claiming a diagnostic there that cannot fire would
-    # be a false entry in a hand-verified registry, so the coverage lives here.
+    # THE TWO REFUSALS, driven against real starved trees rather than asserted. `test-gate-anti-vacuity.sh` cannot reach these: its fixture copies `.ci/rediacc_ci` wholesale, so it hands this gate its real inputs and the gate correctly exits 0. Claiming a diagnostic there that cannot fire would be a false entry in a hand-verified registry, so the coverage lives here.
     with tempfile.TemporaryDirectory() as tmp:
         empty = pathlib.Path(tmp)
         mods, sites, _ = scan(empty)
@@ -389,8 +379,7 @@ def selftest(verbose: bool = False) -> int:
         c.check("...and no plant site", sites, 0)
         c.check("...and main() refuses on the MODULE arm", main_against(empty), "modules")
 
-        # A tree with modules but no harness use: the rename case, and the one a
-        # token-counting gate would pass.
+        # A tree with modules but no harness use: the rename case, and the one a token-counting gate would pass.
         (empty / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
         (empty / ".ci" / "rediacc_ci" / "quality" / "m.py").write_text("x = 1\n")
         mods2, sites2, _ = scan(empty)
@@ -451,8 +440,7 @@ def _root() -> pathlib.Path:
 
 def main(argv: list[str]) -> int:
     verbose = "--verbose" in argv
-    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls
-    # run only when asked is a gate whose controls do not run in CI.
+    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls run only when asked is a gate whose controls do not run in CI.
     rc = selftest(verbose)
     if rc != 0:
         return rc

@@ -51,11 +51,8 @@ def path_env(*prefixes) -> dict:
     return env_with(PATH=os.pathsep.join([str(p) for p in prefixes] + [os.environ["PATH"]]))
 
 
-# --- block_raw_pr_body_edit: the body-file arms need real files ---------------
-# The PR body is generated, so a hand-written whole-body write silently drops the
-# worklist-epics block and CI fails minutes later naming nothing useful. The CREATE
-# arm cannot insist on being a whole-body write -- there is no block yet to destroy --
-# so a body already carrying the block passes and only a blockless one is refused.
+# --- block_raw_pr_body_edit: the body-file arms need real files --------------- The PR body is generated, so a hand-written whole-body write silently drops the worklist-epics block and CI fails minutes later naming nothing useful. The CREATE arm cannot insist on being a whole-body write -- there is no block yet to destroy -- so a body already carrying the block passes and only a
+# blockless one is refused.
 EPIC_MARK = "<!-- worklist-epics:begin -->"
 
 
@@ -91,16 +88,13 @@ def test_block_raw_pr_body_edit_body_files(tmp_path):
     )
     # ONE COMMAND CAN DO BOTH, and reading the flags line-wide gets the scope wrong in
     # both directions. hook_gh_pr_segment exists for exactly this; the first draft of
-    # the create arm did not use it, so a legal `create --body <with the block> && edit
-    # --add-label x` was refused for the edit's sake.
+    # the create arm did not use it, so a legal `create --body <with the block> && edit --add-label x` was refused for the edit's sake.
     block.check(
         "check 2 guards/block_raw_pr_body_edit.py",
         bash_json("gh pr create --draft --fill && gh pr edit 42 --body-file %s" % with_md),
         "raw-pr-body: a create beside it does not let a raw EDIT through",
     )
-    # THE SANCTIONED FORM IS A WHOLE-BODY WRITE TOO. Found 2026-09-04 while babysitting
-    # #585: this guard's message prescribed `gh pr edit --body-file`,
-    # block-adhoc-sanctioned.sh refused that and prescribed the `gh api ... -X PATCH -F
+    # THE SANCTIONED FORM IS A WHOLE-BODY WRITE TOO. Found 2026-09-04 while babysitting #585: this guard's message prescribed `gh pr edit --body-file`, block-adhoc-sanctioned.sh refused that and prescribed the `gh api ... -X PATCH -F
     # body=@file` form, and that form had no marker check at all.
     both = tmp_path / "both.md"
     both.write_text(
@@ -132,26 +126,15 @@ def test_block_raw_pr_body_edit_body_files(tmp_path):
     block.done()
 
 
-# --- block_unlinked_commit_author: the identity has to come from the fixture ---
-# THE CONFIG WAS NOT THE CAUSE -- the checkout's only user.email source was the
-# correct one -- so every BLOCK case below is an OVERRIDE path. A guard that read
-# `git config` alone would have watched all 30 go past.
+# --- block_unlinked_commit_author: the identity has to come from the fixture --- THE CONFIG WAS NOT THE CAUSE -- the checkout's only user.email source was the correct one -- so every BLOCK case below is an OVERRIDE path. A guard that read `git config` alone would have watched all 30 go past.
 #
-# The fixture cache must contain the REAL resolved author, or every case blocks --
-# including the ALLOW ones, which is how the first draft of this block failed.
+# The fixture cache must contain the REAL resolved author, or every case blocks -- including the ALLOW ones, which is how the first draft of this block failed.
 #
-# AND THE IDENTITY ITSELF, because borrowing the machine's is what broke in CI: a
-# GitHub runner has no global user.email and actions/checkout does not set one, so
-# `git var` resolves nothing, the guard correctly refuses a commit it cannot
-# attribute, and the prose CONTROL went red for a reason that has nothing to do with
-# what it asserts. Measured 2026-09-03, job 100727875171.
+# AND THE IDENTITY ITSELF, because borrowing the machine's is what broke in CI: a GitHub runner has no global user.email and actions/checkout does not set one, so `git var` resolves nothing, the guard correctly refuses a commit it cannot attribute, and the prose CONTROL went red for a reason that has nothing to do with what it asserts. Measured 2026-09-03, job 100727875171.
 #
-# AS CONFIG, NOT AS GIT_AUTHOR_EMAIL, and that distinction is the whole trick: git
-# resolves GIT_AUTHOR_EMAIL with HIGHER precedence than user.email, so exporting it
+# AS CONFIG, NOT AS GIT_AUTHOR_EMAIL, and that distinction is the whole trick: git resolves GIT_AUTHOR_EMAIL with HIGHER precedence than user.email, so exporting it
 # masked the `-c user.email=bad@...` case -- the guard resolved the good address and
-# permitted the very override it exists to refuse. A global config file sits BELOW
-# every override the refuse cases use, which is exactly where an ambient identity
-# belongs.
+# permitted the very override it exists to refuse. A global config file sits BELOW every override the refuse cases use, which is exactly where an ambient identity belongs.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_unlinked_commit_author(tmp_path):
     block = hookblocks.Block("unlinked-author")
@@ -184,9 +167,7 @@ def test_block_unlinked_commit_author(tmp_path):
         "unlinked-author: --author= override is refused (quoted value survives the scan)",
         env=env,
     )
-    # The ALLOW half. Without it, over-blocking is invisible -- and this guard's whole
-    # claim is that it CANNOT repeat block-commit-meta.sh's false-positive history,
-    # because an author email is never in the command text to begin with.
+    # The ALLOW half. Without it, over-blocking is invisible -- and this guard's whole claim is that it CANNOT repeat block-commit-meta.sh's false-positive history, because an author email is never in the command text to begin with.
     block.check(
         "check 0 guards/block_unlinked_commit_author.py",
         bash_json('git commit -m "fix: drop bad@example.com from the docs"'),
@@ -208,11 +189,8 @@ def test_block_unlinked_commit_author(tmp_path):
     block.done()
 
 
-# --- warn_stale_index: `git commit` takes the INDEX, not the working tree ------
-# Needs a REAL repo in a known state, because the condition it reports is a property
-# of the index rather than of the command line. Two defects in one session motivated
-# it: `git commit -F` swept in a peer's staged files, and a file staged then edited
-# committed its stale version under a message that described the edits.
+# --- warn_stale_index: `git commit` takes the INDEX, not the working tree ------ Needs a REAL repo in a known state, because the condition it reports is a property of the index rather than of the command line. Two defects in one session motivated it: `git commit -F` swept in a peer's staged files, and a file staged then edited committed its stale version under a message that
+# described the edits.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_warn_stale_index(tmp_path):
     block = hookblocks.Block("stale-index")
@@ -245,22 +223,16 @@ def test_warn_stale_index(tmp_path):
     probe("warn", "after a separator, still named", "cd . && git commit -F msg.txt")
     # CONTROL: -a takes the WORKING TREE for tracked paths, so there is no staleness.
     probe("silent", "CONTROL: commit -a is not index-only", "git commit -a -m x")
-    # CONTROL: the mention-vs-target class. The first draft of this guard warned on
-    # this line, which is why it is pinned rather than remembered.
+    # CONTROL: the mention-vs-target class. The first draft of this guard warned on this line, which is why it is pinned rather than remembered.
     probe("silent", "CONTROL: unquoted prose is not a command", "echo do not run git commit here")
     probe("silent", "CONTROL: a non-commit is out of scope", "git status")
     block.done()
 
 
-# --- block_git_empty_commit: the advice must not name a run that does not exist -
-# THE FINDING THIS CLOSES. The hook blocked unconditionally while its ONLY advice was
-# "rerun the run" -- unreachable when no run exists, which is exactly what a GitHub
-# Actions outage produces (observed 2026-08-26: three pushes to PR #577, zero runs,
-# Actions in major_outage). The fix added a VERIFIED escape, and the fix itself was
-# hand-tested with a throwaway probe -- i.e. nothing prevented its return.
+# --- block_git_empty_commit: the advice must not name a run that does not exist - THE FINDING THIS CLOSES. The hook blocked unconditionally while its ONLY advice was "rerun the run" -- unreachable when no run exists, which is exactly what a GitHub Actions outage produces (observed 2026-08-26: three pushes to PR #577, zero runs, Actions in major_outage). The fix added a VERIFIED
+# escape, and the fix itself was hand-tested with a throwaway probe -- i.e. nothing prevented its return.
 #
-# The escape must not become a bypass, so all four directions are pinned, with `gh`
-# shimmed so none of them touch the network.
+# The escape must not become a bypass, so all four directions are pinned, with `gh` shimmed so none of them touch the network.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_git_empty_commit(tmp_path):
     block = hookblocks.Block("empty-commit")
@@ -292,8 +264,7 @@ def test_block_git_empty_commit(tmp_path):
             bad = "message WRONGLY advised: " + notneedle
         block.note(expected, label, ok=not bad, detail=bad)
 
-    # The property the finding names: with genuinely no run, the hook must NOT tell the
-    # session to rerun one.
+    # The property the finding names: with genuinely no run, the hook must NOT tell the session to rerun one.
     run(
         0,
         "0",
@@ -309,8 +280,7 @@ def test_block_git_empty_commit(tmp_path):
         "empty-commit: 3 check-runs -> blocked, DOES advise the rerun",
         needle="gh run rerun",
     )
-    # Anti-vacuity: an unreadable API fails CLOSED. "I could not check" must never be
-    # recorded as "there is no run".
+    # Anti-vacuity: an unreadable API fails CLOSED. "I could not check" must never be recorded as "there is no run".
     run(
         2,
         "FAIL",
@@ -323,12 +293,9 @@ def test_block_git_empty_commit(tmp_path):
     block.done()
 
 
-# --- block_plan_without_tasks / block_compacted_plan_edit ---------------------
-# Fixtures are built HERE rather than pointed at a real plan in agent/, so deleting
-# or rewriting any plan in the tree cannot silently void these cases.
+# --- block_plan_without_tasks / block_compacted_plan_edit --------------------- Fixtures are built HERE rather than pointed at a real plan in agent/, so deleting or rewriting any plan in the tree cannot silently void these cases.
 
-# Prose under an action-shaped heading: 6 bullets that PARSE as tasks and are nothing
-# of the kind.
+# Prose under an action-shaped heading: 6 bullets that PARSE as tasks and are nothing of the kind.
 PLAN_PROSE = "\n".join(
     ["Status: ready", "", "# A plan", "", "## Part 0 - DECIDED by the operator", ""]
     + ["%d. A locked decision sentence long enough to be a task %d." % (i + 1, i) for i in range(6)]
@@ -344,8 +311,7 @@ PLAN_TASKS = "\n".join(
     + ["- [ ] Do the concrete thing number %d at file.ts:%d" % (i, i + 10) for i in range(3)]
     + ["", "x" * 500]
 )
-# A COMPACTED RECORD keeps the plan's path and moves its full text to a git blob, so
-# the header IS the only pointer back.
+# A COMPACTED RECORD keeps the plan's path and moves its full text to a git blob, so the header IS the only pointer back.
 REC_BLOB = "0123456789abcdef0123456789abcdef01234567"
 REC_BODY = (
     "\n".join(
@@ -388,16 +354,14 @@ def test_block_plan_without_tasks_and_compacted_records(tmp_path):
         "plan-tasks: a plan with no list at all is blocked",
         "finds 0 tasks in it",
     )
-    # `plan-tasks: the harness plan directory is in scope too` lives in
-    # hookcases.STATIC: its file_path is the harness plan directory, not this fixture.
+    # `plan-tasks: the harness plan directory is in scope too` lives in hookcases.STATIC: its file_path is the harness plan directory, not this fixture.
     block.check_out(
         "check_out 2 guards/block_plan_without_tasks.py",
         tool_json("Edit", str(agent / "PLAN-absent.md"), "new_string", PLAN_PROSE),
         "plan-tasks: an edit CREATING a prose plan is blocked",
         "has NO checkbox task",
     )
-    # The message is the product here: a block that does not spell out the fix sends
-    # the author back to the same prose. Pin the three things it must say.
+    # The message is the product here: a block that does not spell out the fix sends the author back to the same prose. Pin the three things it must say.
     block.check_out(
         "check_out 2 guards/block_plan_without_tasks.py",
         tool_json("Write", new, "content", PLAN_PROSE),
@@ -410,8 +374,7 @@ def test_block_plan_without_tasks_and_compacted_records(tmp_path):
         "plan-tasks: the block says which states do NOT parse",
         "'- [?]' and '- [>]' do NOT parse",
     )
-    # The ALLOW direction. Without these the guard cannot be shown to leave legitimate
-    # work alone, which is how an over-blocking guard gets deleted.
+    # The ALLOW direction. Without these the guard cannot be shown to leave legitimate work alone, which is how an over-blocking guard gets deleted.
     block.check(
         "check 0 guards/block_plan_without_tasks.py",
         tool_json("Write", new, "content", PLAN_TASKS),
@@ -437,9 +400,7 @@ def test_block_plan_without_tasks_and_compacted_records(tmp_path):
         "compacted-record: a Write over a record is refused",
         "COMPACTED PLAN RECORD",
     )
-    # THE ACCIDENT THIS GUARD IS NAMED FOR: the Edit tool's own advice is to pass a
-    # minimal unique substring, and for a header line that is the bare 40-hex blob. A
-    # line-anchored pattern does not see it.
+    # THE ACCIDENT THIS GUARD IS NAMED FOR: the Edit tool's own advice is to pass a minimal unique substring, and for a header line that is the bare 40-hex blob. A line-anchored pattern does not see it.
     block.check_out(
         "check_out 2 guards/block_compacted_plan_edit.py",
         tool_json("Edit", rec, "old_string", REC_BLOB),
@@ -501,8 +462,7 @@ def test_block_second_open_pr(tmp_path):
         "sh -c 'gh pr create --draft -t x -b y'",
         "one-pr: sh -c wrapping does not bypass it",
     )
-    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it
-    # would block the FIRST PR too and simply stop all work.
+    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it would block the FIRST PR too and simply stop all work.
     gh_case(0, "[]", 0, "gh pr create --draft -t x -b y", "one-pr CONTROL: the first PR is allowed")
     gh_case(0, "[]", 0, "gh pr view 567", "one-pr CONTROL: a non-create gh command is ignored")
     # FAILS CLOSED: an unreadable list is not evidence that the list is empty.
@@ -514,17 +474,12 @@ def test_block_second_open_pr(tmp_path):
         "one-pr: an unreadable PR list blocks rather than assuming none",
         "cannot verify",
     )
-    # DIRECT CASES FOR THE SAME TWO DIRECTIONS, and they are not duplication of the
-    # five above. `hook_integrity.covmap` credits a helper-wrapped case by reading which
-    # single guard the helper's body names -- and since the W5 P7 cutover this guard is
-    # a Python module reached through the dispatcher, so no helper body names it that
-    # way and every one of those five became invisible to the coverage assertion. The
+    # DIRECT CASES FOR THE SAME TWO DIRECTIONS, and they are not duplication of the five above. `hook_integrity.covmap` credits a helper-wrapped case by reading which single guard the helper's body names -- and since the W5 P7 cutover this guard is a Python module reached through the dispatcher, so no helper body names it that way and every one of those five became invisible to the
+    # coverage assertion. The
     # guard then read block=0,allow=0: a fully covered guard reported as newly
     # uncovered, and the cheap way to clear that red is to baseline it.
     #
-    # So the two directions are ALSO asserted directly, in the shape both readers see.
-    # The helper cases stay: they cover the failure modes (sh -c wrapping, an unreadable
-    # list) that these two do not.
+    # So the two directions are ALSO asserted directly, in the shape both readers see. The helper cases stay: they cover the failure modes (sh -c wrapping, an unreadable list) that these two do not.
     blocking = path_env(stub_gh(tmp_path / "gh-block", one_open, 0))
     allowing = path_env(stub_gh(tmp_path / "gh-allow", "[]", 0))
     block.check(
@@ -570,8 +525,7 @@ def test_block_premature_ready(tmp_path):
         "gh pr ready 42 --repo rediacc/console",
         "premature-ready CONTROL: a green CI Complete lets the flip through",
     )
-    # AND DIRECTLY, for the reason spelled out at the one-open-PR cases above: after the
-    # cutover a helper body no longer names its guard, so the coverage reader credited
+    # AND DIRECTLY, for the reason spelled out at the one-open-PR cases above: after the cutover a helper body no longer names its guard, so the coverage reader credited
     # this guard with block=0 while `ready_case 2 FAILURE` was asserting the block
     # direction on every run. The helper keeps the CI-conclusion matrix; this is the one
     # line the gate can see.
@@ -584,21 +538,12 @@ def test_block_premature_ready(tmp_path):
     block.done()
 
 
-# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain ---
-# Every other case in the suite runs on a machine that has jq, where require-jq.sh
-# exits 0 at its first line. These three are the only place it does any work at all.
+# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain --- Every other case in the suite runs on a machine that has jq, where require-jq.sh exits 0 at its first line. These three are the only place it does any work at all.
 #
-# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered first
-# in all three PreToolUse chains and NOWHERE on PostToolUse, while both post-bash
-# hooks read stdin with `jq -r ... 2>/dev/null`. With no jq they got an empty string,
-# matched nothing, and exited 0 -- failing OPEN and silently. The exit is not a block
-# there: the Bash call has already run. It is the only thing that makes the broken
-# toolchain VISIBLE instead of letting two hooks quietly do nothing.
+# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered first in all three PreToolUse chains and NOWHERE on PostToolUse, while both post-bash hooks read stdin with `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing, and exited 0 -- failing OPEN and silently. The exit is not a block there: the Bash call has already run. It is the
+# only thing that makes the broken toolchain VISIBLE instead of letting two hooks quietly do nothing.
 #
-# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp stdin and
-# `grep -qE` for the two carve-out matches. `command -v` and `printf` are bash
-# builtins and need no binary on disk. jq is absent by construction, which is the
-# entire point -- and bash itself is invoked by ABSOLUTE path.
+# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp stdin and `grep -qE` for the two carve-out matches. `command -v` and `printf` are bash builtins and need no binary on disk. jq is absent by construction, which is the entire point -- and bash itself is invoked by ABSOLUTE path.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
     block = hookblocks.Block("require-jq")
@@ -610,8 +555,7 @@ def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
     (withjq / "jq").symlink_to(shutil.which("jq"))
     bash = shutil.which("bash")
     guard = HOOKS / "require-jq.sh"
-    # Payloads are built HERE, with jq on the PATH, and only then handed to a run under
-    # a PATH that has none.
+    # Payloads are built HERE, with jq on the PATH, and only then handed to a run under a PATH that has none.
     pre = bash_json("git push --force origin main")
     post = hookcases.inject_json("gh pr checks 42", "all checks passed")
 
@@ -626,8 +570,7 @@ def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
             check=False,
         )
         said = done.stderr.decode("utf-8", "replace")
-        # An empty needle asserts SILENCE, not "no assertion": the jq-present arm's
-        # whole claim is that the guard says nothing at all.
+        # An empty needle asserts SILENCE, not "no assertion": the jq-present arm's whole claim is that the guard says nothing at all.
         ok = done.returncode == expected and (needle in said if needle else said == "")
         block.note(
             expected,
@@ -648,21 +591,16 @@ def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
         "require-jq: a PostToolUse Bash payload is REFUSED when jq is missing",
         "On PostToolUse the tool has ALREADY run",
     )
-    # CONTROL, the direction that matters most: a guard that refuses everything would
-    # pass both cases above and be useless. With jq present it must be mute.
+    # CONTROL, the direction that matters most: a guard that refuses everything would pass both cases above and be useless. With jq present it must be mute.
     nojq_case(
         0, pre, "require-jq CONTROL: silent and exit 0 when jq IS present", "", sandbox=withjq
     )
     block.done()
 
 
-# --- block_merge_with_unpushed: unpushed commits are invisible to the server ---
-# The only place the question is answerable is the machine holding the commits, at
-# the moment the merge is typed.
+# --- block_merge_with_unpushed: unpushed commits are invisible to the server --- The only place the question is answerable is the machine holding the commits, at the moment the merge is typed.
 #
-# The fixture builds its remote-tracking ref with `update-ref` rather than pushing: a
-# real `git push` here would be judged by block_unverified_push against the CONSOLE
-# tree, because that guard does not scope by `git -C`.
+# The fixture builds its remote-tracking ref with `update-ref` rather than pushing: a real `git push` here would be judged by block_unverified_push against the CONSOLE tree, because that guard does not scope by `git -C`.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_merge_with_unpushed(tmp_path):
     block = hookblocks.Block("merge-unpushed")
@@ -721,20 +659,12 @@ def test_block_merge_with_unpushed(tmp_path):
     block.done()
 
 
-# --- a guard must judge the tree the COMMAND touches, not this one ------------
-# hook_target_root is what makes that true, and it had NO case until now: it was
-# verified by hand and committed, so deleting the call would have broken three guards
-# silently. That is the exact shape this harness exists to prevent.
+# --- a guard must judge the tree the COMMAND touches, not this one ------------ hook_target_root is what makes that true, and it had NO case until now: it was verified by hand and committed, so deleting the call would have broken three guards silently. That is the exact shape this harness exists to prevent.
 #
-# THE DEFECT IT CLOSES WAS LIVE. `git -C <scratch> push origin main` was refused by
-# block_unverified_push because the gate-run stamp it compares belongs to CONSOLE and
-# a scratch tree can never match it (reproduced 2026-09-01, exit 2). warn_remote_drift
-# had the same shape latently, and block_untagged_commit had already hand-rolled the
-# fix -- three copies, which is why the walk moved to a shared helper.
+# THE DEFECT IT CLOSES WAS LIVE. `git -C <scratch> push origin main` was refused by block_unverified_push because the gate-run stamp it compares belongs to CONSOLE and a scratch tree can never match it (reproduced 2026-09-01, exit 2). warn_remote_drift had the same shape latently, and block_untagged_commit had already hand-rolled the fix -- three copies, which is why the walk moved
+# to a shared helper.
 #
-# block_untagged_commit anchors these because its verdict is DETERMINISTIC in both
-# directions: a commit with no PR-TASK trailer is refused here and irrelevant
-# elsewhere. The push guards depend on a gate-run stamp, which a harness cannot pin.
+# block_untagged_commit anchors these because its verdict is DETERMINISTIC in both directions: a commit with no PR-TASK trailer is refused here and irrelevant elsewhere. The push guards depend on a gate-run stamp, which a harness cannot pin.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
     block = hookblocks.Block("target-root")
@@ -756,9 +686,7 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
         bash_json("cd %s && git commit -m 'chore: no trailer here'" % other),
         "target-root: a cd into another repo exempts the whole line",
     )
-    # The two guards the fix was made FOR. Only the exempting direction is asserted
-    # here: their blocking direction depends on a gate-run stamp and a remote's
-    # position, neither of which a harness can pin, and both are covered elsewhere.
+    # The two guards the fix was made FOR. Only the exempting direction is asserted here: their blocking direction depends on a gate-run stamp and a remote's position, neither of which a harness can pin, and both are covered elsewhere.
     block.check(
         "check 0 guards/block_unverified_push.py",
         bash_json("git -C %s push origin main" % other),
@@ -772,17 +700,10 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
     block.done()
 
 
-# --- block_untagged_commit: the id cases need a REAL epic to judge against -----
-# THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the
-# id that happened to be in the tree the day it was written, which is the same class
-# of defect as the branch resolution below: it passes on one machine and asserts
-# something else everywhere else.
+# --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
-# AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref
-# HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY
-# pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured
-# 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed
-# the suite in CI while passing on every developer machine. The precondition was right
+# AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The
+# precondition was right
 # to refuse a vacuous pass; it was wrong to treat CI's normal state as a broken one.
 EPIC_RE = re.compile(r"^`?PR-TASK:[ \t]*([0-9a-f]{6,32})`?$", re.MULTILINE)
 
@@ -808,18 +729,14 @@ def test_block_untagged_commit_reads_the_message_it_is_given(tmp_path):
     epic, relative = resolve_epic()
     # With no snapshot the guard has no set to judge against and ALLOWS any well-formed
     # trailer -- its documented behaviour, not a bug. So the shape cases run either way;
-    # only the id-validation case needs a real epic, and it says so out loud rather than
-    # silently not running.
+    # only the id-validation case needs a real epic, and it says so out loud rather than silently not running.
     identifier = epic or "f2757830"
     block.check(
         "check 0 guards/block_untagged_commit.py",
         bash_json('git commit -m "feat(x): a thing\n\nPR-TASK: %s"' % identifier),
         "untagged-commit CONTROL: a real trailer passes",
     )
-    # `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message longer than
-    # one line uses -- 36 consecutive commits in one session passed this guard without
-    # it ever looking at them. Two of the three "unreadable" shapes were never
-    # unreadable: a heredoc BODY is in the command string, and a -F file is on disk.
+    # `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message longer than one line uses -- 36 consecutive commits in one session passed this guard without it ever looking at them. Two of the three "unreadable" shapes were never unreadable: a heredoc BODY is in the command string, and a -F file is on disk.
     block.check(
         "check 0 guards/block_untagged_commit.py",
         bash_json("git commit -q -F - <<'MSG'\nfeat(x): a thing\n\nPR-TASK: %s\nMSG" % identifier),
@@ -838,8 +755,7 @@ def test_block_untagged_commit_reads_the_message_it_is_given(tmp_path):
         bash_json("git commit -F %s" % no_txt),
         "untagged-commit: -F <file> with no trailer is refused (was silently allowed)",
     )
-    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep` finds
-    # no epic, the per-epic review never selects the commit, and nothing reports the
+    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep` finds no epic, the per-epic review never selects the commit, and nothing reports the
     # gap. Shape alone cannot see this; the id is checked against the committed
     # snapshot, so this case needs one.
     if epic:
@@ -859,14 +775,9 @@ def test_block_untagged_commit_reads_the_message_it_is_given(tmp_path):
     block.done()
 
 
-# --- warn_remote_drift, then the pr-babysit ROUND LOG guards ------------------
-# warn_remote_drift needs a real repo pair (a bare origin, a stale local), because its
-# subject is git state, not the command string. The origin is a filesystem path so the
-# hook's fetch works offline.
+# --- warn_remote_drift, then the pr-babysit ROUND LOG guards ------------------ warn_remote_drift needs a real repo pair (a bare origin, a stale local), because its subject is git state, not the command string. The origin is a filesystem path so the hook's fetch works offline.
 #
-# ONE TEST FOR THE WHOLE SEQUENCE, deliberately. The round-log cases below ran inside
-# the same exported CLAUDE_PROJECT_DIR as the drift cases in the suite this ports, and
-# splitting them would silently change what the guards resolve against.
+# ONE TEST FOR THE WHOLE SEQUENCE, deliberately. The round-log cases below ran inside the same exported CLAUDE_PROJECT_DIR as the drift cases in the suite this ports, and splitting them would silently change what the guards resolve against.
 RLOG = "/home/x/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0818-1.md"
 
 
@@ -937,22 +848,14 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         env=env,
     )
 
-    # On 2026-08-19 a heartbeat tick refreshed the STATUS block with
-    # `p.write_text(s[:i] + new)`, which replaces from the STATUS heading to END OF
-    # FILE and silently deleted the entire round-history appendix, on a file with no
-    # backup. Two guards close it: a pre-edit one for whole-file tool writes, and a
-    # pre-bash one for the Bash heredoc that actually did it. Both must also NOT block
+    # On 2026-08-19 a heartbeat tick refreshed the STATUS block with `p.write_text(s[:i] + new)`, which replaces from the STATUS heading to END OF FILE and silently deleted the entire round-history appendix, on a file with no backup. Two guards close it: a pre-edit one for whole-file tool writes, and a pre-bash one for the Bash heredoc that actually did it. Both must also NOT block
     # the legitimate shapes, which is why every deny below has an allow beside it.
     heredoc = (
         "python3 - <<'PY'\nfrom pathlib import Path\n"
         "p=Path('%s'); s=p.read_text(); i=s.index('## STATUS')\n"
         "p.write_text(s[:i] + new)\nPY" % RLOG
     )
-    # EXISTENCE IS WHAT DECIDES NOW, so the fixture has to have it. This case used a
-    # path under /home/x/ that has never existed, and passed for the wrong reason: the
-    # guard was refusing on the NAME alone. That also refused CREATING a round log --
-    # and `worklist.py --roundlog` refuses to create one too, so the two halves of the
-    # contract deadlocked with no third door.
+    # EXISTENCE IS WHAT DECIDES NOW, so the fixture has to have it. This case used a path under /home/x/ that has never existed, and passed for the wrong reason: the guard was refusing on the NAME alone. That also refused CREATING a round log -- and `worklist.py --roundlog` refuses to create one too, so the two halves of the contract deadlocked with no third door.
     real = tmp_path / "reports" / "pr-babysit-0818-1.md"
     real.parent.mkdir(parents=True, exist_ok=True)
     real.write_text(
@@ -1013,10 +916,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: sed -i is blocked",
         env=env,
     )
-    # A NAME IS NOT A TARGET. The python arm used to fire on any write idiom as soon as
-    # a round-log name appeared ANYWHERE in the command. Measured 2026-08-27: it refused
-    # a heredoc editing a scratchpad state-body file whose CONTENT quoted a round-log
-    # path -- a write that could not have touched a round log.
+    # A NAME IS NOT A TARGET. The python arm used to fire on any write idiom as soon as a round-log name appeared ANYWHERE in the command. Measured 2026-08-27: it refused a heredoc editing a scratchpad state-body file whose CONTENT quoted a round-log path -- a write that could not have touched a round log.
     block.check(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json(
@@ -1038,9 +938,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: a python write whose ASSIGNED target is the log is blocked",
         env=env,
     )
-    # FAIL CLOSED, and this is the case that makes the narrowing safe rather than merely
-    # quieter: no resolvable literal target, a slicing write_text, a round-log name in
-    # the command. That is the 2026-08-19 shape verbatim and it must still fire.
+    # FAIL CLOSED, and this is the case that makes the narrowing safe rather than merely quieter: no resolvable literal target, a slicing write_text, a round-log name in the command. That is the 2026-08-19 shape verbatim and it must still fire.
     block.check(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(
@@ -1053,8 +951,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
     )
     # PYTHON COPY AND MOVE ARE WRITES TOO. The shell half has refused `cp` and `mv` onto
     # a round log since it was written; their python spelling was never covered, so
-    # shutil.copy and os.replace onto the log both returned 0 -- a one-line rename
-    # walked through a guard that read as thorough. Measured 2026-08-27.
+    # shutil.copy and os.replace onto the log both returned 0 -- a one-line rename walked through a guard that read as thorough. Measured 2026-08-27.
     block.check(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json("python3 - <<PY\nimport shutil\nshutil.copy('/tmp/x', '%s')\nPY" % RLOG),
@@ -1073,8 +970,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: shutil.move ONTO the log is a write, and is blocked",
         env=env,
     )
-    # And the control that keeps the new arm from becoming a blanket refusal: a copy
-    # between two innocent paths, with the log named only in a comment.
+    # And the control that keeps the new arm from becoming a blanket refusal: a copy between two innocent paths, with the log named only in a comment.
     block.check(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json(
@@ -1100,10 +996,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: reading passes",
         env=env,
     )
-    # THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced
-    # against the live hook before it was fixed. All three are ways a command that
-    # genuinely TRUNCATES the log was waved through, which is worse than an over-block:
-    # the guard reported safety it was not providing.
+    # THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced against the live hook before it was fixed. All three are ways a command that genuinely TRUNCATES the log was waved through, which is worse than an over-block: the guard reported safety it was not providing.
     block.check(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json("tee --output-error=warn %s" % RLOG),
@@ -1134,9 +1027,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: a bare tee still truncates",
         env=env,
     )
-    # cp names the log as a SOURCE here, which is a read, and backing the log up is the
-    # most useful thing a session can do with it. mv in the same position is NOT a read:
-    # it removes the log from its path, so the two verbs are deliberately different.
+    # cp names the log as a SOURCE here, which is a read, and backing the log up is the most useful thing a session can do with it. mv in the same position is NOT a read: it removes the log from its path, so the two verbs are deliberately different.
     block.check(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("cp %s /tmp/backup.md" % RLOG),
@@ -1155,11 +1046,8 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: mv away removes the log, still blocked",
         env=env,
     )
-    # THE OVER-BLOCK REGRESSIONS. Found in review, then reproduced twice against the
-    # live hook within minutes: the truncating verbs were matched ANYWHERE in the
-    # command rather than anchored to the log, so `truncate` hit the harness's own
-    # filename and a bare `cp`/`mv` hit a copy of unrelated files that merely shared a
-    # command line with a round-log READ. The guard blocked `cat <log>`.
+    # THE OVER-BLOCK REGRESSIONS. Found in review, then reproduced twice against the live hook within minutes: the truncating verbs were matched ANYWHERE in the command rather than anchored to the log, so `truncate` hit the harness's own filename and a bare `cp`/`mv` hit a copy of unrelated files that merely shared a command line with a round-log READ. The guard blocked `cat
+    # <log>`.
     block.check(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("cp /tmp/a /tmp/b && grep STATUS %s" % RLOG),
@@ -1223,16 +1111,10 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
     block.done()
 
 
-# THE DEADLOCK CHECK, and it is an INTERACTION -- which is why neither side's own
-# cases could see it. Tested in isolation both parties were correct:
-# `worklist.py --roundlog` refuses to create a log ("Write the wave header first"), and
-# the guard refuses whole-file writes to a round log. Put them in sequence and there
-# was NO DOOR AT ALL: the verb sends you to Write, and Write was refused. A session
-# following the documented path could not create a round log, which is exactly what
-# happened on 2026-08-27 when one tried.
+# THE DEADLOCK CHECK, and it is an INTERACTION -- which is why neither side's own cases could see it. Tested in isolation both parties were correct: `worklist.py --roundlog` refuses to create a log ("Write the wave header first"), and the guard refuses whole-file writes to a round log. Put them in sequence and there was NO DOOR AT ALL: the verb sends you to Write, and Write was
+# refused. A session following the documented path could not create a round log, which is exactly what happened on 2026-08-27 when one tried.
 #
-# So the assertion is about the PAIR: for a log that does not exist yet, the two must
-# not BOTH refuse. Whichever way a future change moves the responsibility -- guard
+# So the assertion is about the PAIR: for a log that does not exist yet, the two must not BOTH refuse. Whichever way a future change moves the responsibility -- guard
 # exempts creation, or the verb learns to create -- this stays true; it only goes red
 # if a door closes with no other one open.
 DEADLOCK_BODY = (
@@ -1267,9 +1149,7 @@ def _deadlock_probe(block, tmp_path) -> None:
         "(verb=%d guard=%d -- at least one door is open)" % (verb_rc, guard_rc),
         ok=not (verb_rc != 0 and guard_rc != 0),
     )
-    # CONTROL: the probe must be measuring a real refusal from the verb, or the
-    # assertion above passes because the verb happily creates logs -- a different
-    # world, and one this case would be silent about.
+    # CONTROL: the probe must be measuring a real refusal from the verb, or the assertion above passes because the verb happily creates logs -- a different world, and one this case would be silent about.
     block.note(
         0,
         "roundlog CONTROL: the verb does refuse to create, so the pair check is not vacuous",

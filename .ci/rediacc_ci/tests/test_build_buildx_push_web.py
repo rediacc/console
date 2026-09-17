@@ -58,21 +58,13 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `dirname` for the twin's own `SCRIPT_DIR` (:23), `uname` because sourcing
-# common.sh runs `detect_os`/`detect_arch` at :509-510. Anything not listed is
-# ABSENT -- including `docker`, unless a case asks for the fake.
+# `dirname` for the twin's own `SCRIPT_DIR` (:23), `uname` because sourcing common.sh runs `detect_os`/`detect_arch` at :509-510. Anything not listed is ABSENT -- including `docker`, unless a case asks for the fake.
 PATH_MINIMUM = ("dirname", "uname")
 
-# The recording fake. It writes its own argv AND its working directory to the
-# call log with a distinct prefix. The working directory is not decoration: the
-# twin never `cd`s, so the build context is whatever the caller's was, and
-# `test_defect_the_build_context_is_the_callers_directory` reads it from here.
+# The recording fake. It writes its own argv AND its working directory to the call log with a distinct prefix. The working directory is not decoration: the twin never `cd`s, so the build context is whatever the caller's was, and `test_defect_the_build_context_is_the_callers_directory` reads it from here.
 #
 # The `CALL docker` prefix is also what the K=5 ledger scopes `--finding-re` to.
-# `shadow-gate.ts` classifies any line starting `→ `/`✓ ` as CHATTER before any
-# message-text regex is consulted, and this script's ONLY success output is a
-# `✓ ` line, so a ledger keyed on message text alone would record
-# `VACUOUS_BOTH_EMPTY` for every row.
+# `shadow-gate.ts` classifies any line starting `→ `/`✓ ` as CHATTER before any message-text regex is consulted, and this script's ONLY success output is a `✓ ` line, so a ledger keyed on message text alone would record `VACUOUS_BOTH_EMPTY` for every row.
 FAKE_DOCKER = """#!/bin/bash
 {
     printf 'CWD\\t%s\\n' "$PWD"
@@ -221,9 +213,7 @@ def _argv_line(calls: str) -> list[str]:
     return lines[0].split("\t")
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker(tmp_path) -> None:
@@ -240,9 +230,7 @@ def test_the_scratch_path_cannot_reach_a_real_docker(tmp_path) -> None:
     assert shutil.which("podman", path=dropped) is None
 
 
-# ---------------------------------------------------------------------------
-# The success path, and the argv that is the whole point of the script
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The success path, and the argv that is the whole point of the script ---------------------------------------------------------------------------
 
 
 def test_amd64_builds_pushes_and_reports_the_tag(tmp_path) -> None:
@@ -317,9 +305,7 @@ def test_the_public_key_is_forwarded_when_it_is_set(tmp_path) -> None:
     _agree(old, new, "pubkey", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The refusals, in the twin's ORDER
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusals, in the twin's ORDER ---------------------------------------------------------------------------
 
 
 def test_a_missing_docker_refuses_before_any_variable_is_read(tmp_path) -> None:
@@ -395,9 +381,7 @@ def test_dockers_own_exit_status_is_propagated_not_flattened(tmp_path) -> None:
     _agree(old, new, "docker-17", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The defects, each with its own case
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects, each with its own case ---------------------------------------------------------------------------
 
 
 def test_defect_platform_is_never_validated_only_split(tmp_path) -> None:
@@ -478,9 +462,7 @@ def test_arch_of_matches_the_shells_own_parameter_expansion() -> None:
     assert proc.stdout.split("\n")[: len(cases)] == [port.arch_of(c) for c in cases]
 
 
-# ---------------------------------------------------------------------------
-# The control: this differential can actually fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:

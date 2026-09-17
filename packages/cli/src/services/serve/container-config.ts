@@ -101,8 +101,7 @@ export function createContainerConfigLoader(
     // the principal's latest grant (the CLI proxy path).
     const sessionId = sessions.sessionForExec(principal, configSessionId);
     if (!sessionId) {
-      // Same message the store itself produces, so the client is told the one
-      // thing that will fix this rather than shown a stack trace.
+      // Same message the store itself produces, so the client is told the one thing that will fix this rather than shown a stack trace.
       throw new SessionError(
         'This session has no config key yet. Complete the key grant before running commands.'
       );
@@ -114,8 +113,7 @@ export function createContainerConfigLoader(
     const cached = cache.get(sessionId);
     if (cached) return cached;
 
-    // Minted for THIS principal. The account server checks they are in the
-    // executor's org and are an active config-store member before answering.
+    // Minted for THIS principal. The account server checks they are in the executor's org and are an active config-store member before answering.
     const grant = await mintExecutorGrant(principal.userId);
     const target = pickConfig(grant.configs, principal.teamId);
 

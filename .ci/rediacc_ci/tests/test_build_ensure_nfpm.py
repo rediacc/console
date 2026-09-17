@@ -63,9 +63,7 @@ done
 cp "$FIXTURE_PAYLOAD" "$dest"
 """
 
-# A uname shim answering a fixed machine for `-m` and delegating otherwise. The
-# delegation matters: `bash` itself never calls uname here, but a shim that
-# answered every question would be a different program.
+# A uname shim answering a fixed machine for `-m` and delegating otherwise. The delegation matters: `bash` itself never calls uname here, but a shim that answered every question would be a different program.
 UNAME_SHIM = """#!/bin/bash
 for a in "$@"; do [[ "$a" == "-m" ]] && { echo %s; exit 0; }; done
 exec /usr/bin/uname "$@"
@@ -212,9 +210,7 @@ def assert_same(
     assert new.stderr == old.stderr, (old.stderr, new.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_real_tree_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
@@ -248,9 +244,7 @@ def test_real_tree_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
     assert old.returncode in (0, 22)
 
 
-# ---------------------------------------------------------------------------
-# The three cold-cache paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three cold-cache paths ---------------------------------------------------------------------------
 
 
 def test_cold_cache_downloads_verifies_and_prints_the_cache_dir(
@@ -305,9 +299,7 @@ def test_a_checksum_mismatch_aborts_before_extracting(tmp_path: pathlib.Path) ->
     assert not (fixture / ".ci" / "cache").exists()
 
 
-# ---------------------------------------------------------------------------
-# The refusal, driven through a PATH shim exactly as the registered gate does
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusal, driven through a PATH shim exactly as the registered gate does ---------------------------------------------------------------------------
 
 
 def test_an_unpinned_architecture_is_refused_through_a_path_shim(
@@ -338,9 +330,7 @@ def test_the_port_reads_uname_through_path_not_the_syscall() -> None:
     assert "os.uname()" not in source.split('"""')[2], "the code, not the docstring"
 
 
-# ---------------------------------------------------------------------------
-# The two defects, pinned rather than fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two defects, pinned rather than fixed ---------------------------------------------------------------------------
 
 
 def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
@@ -386,9 +376,7 @@ def test_defect_2_any_nfpm_on_path_wins_over_the_pin(tmp_path: pathlib.Path) -> 
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The two ways the pin read itself can fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two ways the pin read itself can fail ---------------------------------------------------------------------------
 
 
 def test_a_missing_toolchain_env_is_constants_shs_own_refusal(tmp_path: pathlib.Path) -> None:
@@ -425,9 +413,7 @@ def test_unpinned_version_exits_1_without_forging_bash_text(tmp_path: pathlib.Pa
     assert new.stderr == ""
 
 
-# ---------------------------------------------------------------------------
-# A PLANTED DEFECT, on a throwaway copy, never on the file on disk
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A PLANTED DEFECT, on a throwaway copy, never on the file on disk ---------------------------------------------------------------------------
 
 
 def test_a_planted_fix_of_defect_1_is_caught_by_the_differential(
@@ -466,9 +452,7 @@ def test_a_planted_fix_of_defect_1_is_caught_by_the_differential(
     assert hashlib.sha256(PORT.read_bytes()).hexdigest() == before, "the real port file moved"
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_pure_helpers_match_the_twins_literals() -> None:

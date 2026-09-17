@@ -79,33 +79,21 @@ IMPORT_RE = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_][\w]*)", re.MULTILINE)
 PIP_RE = re.compile(r"pip\s+install[^\n]*", re.IGNORECASE)
 
 
-# Directory names a script puts on sys.path, so its cross-directory imports can
-# be recognised as first-party.
-# THE NAMED-VARIABLE FORM. `[^)]*?` could not cross the `)` of a nested call, so
-# `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))` matched NOTHING and
-# the wl_* modules those five scripts import read as third-party dependencies the
-# gate would demand somebody pip install. Same defect as PARENTS_RE's first draft,
+# Directory names a script puts on sys.path, so its cross-directory imports can be recognised as first-party. THE NAMED-VARIABLE FORM. `[^)]*?` could not cross the `)` of a nested call, so `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))` matched NOTHING and the wl_* modules those five scripts import read as third-party dependencies the gate would demand somebody pip
+# install. Same defect as PARENTS_RE's first draft,
 # in the line right above it. `.*?` spans the call; the variable is still required
 # to be an ALL-CAPS name, which is what keeps this from matching arbitrary text.
 #
 # TWO SPELLINGS, NOT ONE, since PRE-A1. `rediacc_ci.paths.on_sys_path(d)` is the
 # canonical hop now and a bare `sys.path.insert` is the residue; both put a
-# directory on the path and this gate has to read either. Leaving the resolver
-# form out is not a cosmetic gap: the day `check_gate_reachability_coverage.py`
-# and `check_agent_hint_liveness.py` were cut over, this gate reported their
-# `wl_reggate` and `wl_agents` imports as third-party dependencies nobody could
-# pip install, on a change that added no dependency at all.
+# directory on the path and this gate has to read either. Leaving the resolver form out is not a cosmetic gap: the day `check_gate_reachability_coverage.py` and `check_agent_hint_liveness.py` were cut over, this gate reported their `wl_reggate` and `wl_agents` imports as third-party dependencies nobody could pip install, on a change that added no dependency at all.
 HOP = r"(?:sys\.path\.(?:insert|append)|paths\.on_sys_path)"
 SYS_PATH_RE = re.compile(HOP + r"\(.*?([A-Z_]+)\b")
 # `sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[N]))`, the
 # inline form; the capture is N.
 PARENTS_RE = re.compile(HOP + r"\(.*?parents\[(\d+)\]")
-# `paths.hooks_stop_dir(ROOT)` -- a hop whose directory is named by a FUNCTION and
-# so carries no literal and no ALL-CAPS variable for the two patterns above to
-# find. The mapping from helper to directory is not copied here: the helper is
-# CALLED, against this repo's root, so `paths.py` stays the one place the
-# `.claude/hooks/stop` literal lives. That is the whole reason those call sites
-# were moved onto it.
+# `paths.hooks_stop_dir(ROOT)` -- a hop whose directory is named by a FUNCTION and so carries no literal and no ALL-CAPS variable for the two patterns above to find. The mapping from helper to directory is not copied here: the helper is CALLED, against this repo's root, so `paths.py` stays the one place the `.claude/hooks/stop` literal lives. That is the whole reason those call
+# sites were moved onto it.
 PATHS_HELPER_RE = re.compile(r"paths\.(\w*_dir)\(")
 DIR_ASSIGN_RE = re.compile(r"^([A-Z_]+)\s*=\s*(.+)$", re.MULTILINE)
 
@@ -174,11 +162,8 @@ def first_party_modules(script: pathlib.Path, body: str, _seen=None) -> set[str]
     control depends on is not a widening, it is a hole.
     """
     names = {p.stem for p in script.parent.glob("*.py")}
-    # THE `/`-JOIN FORM, resolved from the sys.path LINE ITSELF rather than from a
-    # separate assignment: `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))`.
-    # Five scripts write this and their wl_* imports still read as third-party after
-    # SYS_PATH_RE was widened, because DIR_ASSIGN_RE looks for the literals on the
-    # variable's ASSIGNMENT line and here they are on the insert line.
+    # THE `/`-JOIN FORM, resolved from the sys.path LINE ITSELF rather than from a separate assignment: `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))`. Five scripts write this and their wl_* imports still read as third-party after SYS_PATH_RE was widened, because DIR_ASSIGN_RE looks for the literals on the variable's ASSIGNMENT line and here they are on the insert
+    # line.
     for line in body.split("\n"):
         if ("sys.path" not in line and "on_sys_path" not in line) or "/" not in line:
             continue
@@ -193,28 +178,17 @@ def first_party_modules(script: pathlib.Path, body: str, _seen=None) -> set[str]
         for var, value in DIR_ASSIGN_RE.findall(body):
             if var != hint:
                 continue
-            # A `parents[N]` ON THE ASSIGNMENT LINE, which the literal scan below
-            # cannot see because PARENTS_RE has to reach from `sys.path.insert(`
-            # to `parents[` inside ONE line, and `.` does not cross a newline:
+            # A `parents[N]` ON THE ASSIGNMENT LINE, which the literal scan below cannot see because PARENTS_RE has to reach from `sys.path.insert(` to `parents[` inside ONE line, and `.` does not cross a newline:
             #     CI_DIR = pathlib.Path(__file__).resolve().parents[2]
-            #     sys.path.insert(0, str(CI_DIR))
-            # `_cipath.py` is written that way on purpose (the number is checked
-            # against the directory it lands on, right there in the file), and
-            # resolving the VALUE here is what keeps this gate from depending on
-            # one particular spelling of the same computation.
+            # sys.path.insert(0, str(CI_DIR)) `_cipath.py` is written that way on purpose (the number is checked against the directory it lands on, right there in the file), and resolving the VALUE here is what keeps this gate from depending on one particular spelling of the same computation.
             #
-            # NOT `elif`, and not a `continue`: an assignment can carry BOTH a
-            # `parents[N]` and path literals -- `ROOT.parents[3] / ".claude" /
-            # "hooks"` is the shape -- and taking only the first arm would drop a
-            # directory this function used to find. Everything here only ever ADDS
-            # names, which is what makes it safe to widen.
+            # NOT `elif`, and not a `continue`: an assignment can carry BOTH a `parents[N]` and path literals -- `ROOT.parents[3] / ".claude" / "hooks"` is the shape -- and taking only the first arm would drop a directory this function used to find. Everything here only ever ADDS names, which is what makes it safe to widen.
             depth = re.search(r"parents\[(\d+)\]", value)
             if depth:
                 names |= _root_names(script, depth.group(1))
             # The literals are path PARTS to be joined, not alternatives.
             # HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
-            # yields three fragments, and testing each alone finds no directory
-            # at all, so the import stayed unrecognised.
+            # yields three fragments, and testing each alone finds no directory at all, so the import stayed unrecognised.
             parts = [a or b for a, b in re.findall(r'"([^"]+)"|\'([^\']+)\'', value)]
             if not parts:
                 continue
@@ -222,13 +196,10 @@ def first_party_modules(script: pathlib.Path, body: str, _seen=None) -> set[str]
             if candidate.is_dir():
                 names |= {p.stem for p in candidate.glob("*.py")}
 
-    # A HELPER NAMES THE DIRECTORY. `paths.on_sys_path(paths.hooks_stop_dir(ROOT))`
-    # has no literal and no directory variable, so every loop above finds nothing in
-    # it. The helper is called rather than tabulated, which is what keeps this arm
+    # A HELPER NAMES THE DIRECTORY. `paths.on_sys_path(paths.hooks_stop_dir(ROOT))` has no literal and no directory variable, so every loop above finds nothing in it. The helper is called rather than tabulated, which is what keeps this arm
     # from becoming a second copy of paths.py that drifts from the first.
     #
-    # `REPO`, not the helper's default root: this gate judges THIS tree, and
-    # `paths.repo_root()` would answer $REDIACC_CI_ROOT if a harness had set it.
+    # `REPO`, not the helper's default root: this gate judges THIS tree, and `paths.repo_root()` would answer $REDIACC_CI_ROOT if a harness had set it.
     for helper in set(PATHS_HELPER_RE.findall(body)):
         fn = getattr(ci_paths, helper, None)
         if not callable(fn):
@@ -240,37 +211,19 @@ def first_party_modules(script: pathlib.Path, body: str, _seen=None) -> set[str]
         if candidate.is_dir():
             names |= {p.stem for p in candidate.glob("*.py")}
 
-    # THE INLINE BOOTSTRAP, which is the idiom this repo actually writes and
-    # which the named-variable path above cannot see:
-    #     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
-    # A script that puts the package root on the path and then imports the package
-    # was being called a third-party dependency, with the gate demanding somebody
-    # `pip install rediacc_ci`. That is the same hole the docstring above
-    # describes, one spelling further along.
+    # THE INLINE BOOTSTRAP, which is the idiom this repo actually writes and which the named-variable path above cannot see: sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2])) A script that puts the package root on the path and then imports the package was being called a third-party dependency, with the gate demanding somebody `pip install rediacc_ci`. That is the
+    # same hole the docstring above describes, one spelling further along.
     #
-    # WHO STILL WRITES IT, since the count here used to say "eight scripts" and
-    # that number went to one the day the eighty-one gate entry points were cut
-    # over to `import _cipath`: `.ci/rediacc_ci/setup/tools.py`. The shim they
-    # were cut over to writes the named-variable form handled above, and is
-    # reached through the NEIGHBOUR loop at the bottom of this function.
+    # WHO STILL WRITES IT, since the count here used to say "eight scripts" and that number went to one the day the eighty-one gate entry points were cut over to `import _cipath`: `.ci/rediacc_ci/setup/tools.py`. The shim they were cut over to writes the named-variable form handled above, and is reached through the NEIGHBOUR loop at the bottom of this function.
     for depth in PARENTS_RE.findall(body):
         names |= _root_names(script, depth)
 
-    # A NEIGHBOUR CAN BE THE HOP, which is one directory hop further than any
-    # loop above can see because every one of them reads only THIS script's body.
+    # A NEIGHBOUR CAN BE THE HOP, which is one directory hop further than any loop above can see because every one of them reads only THIS script's body.
     #
-    # MEASURED, NOT ANTICIPATED. `.ci/scripts/quality/_cipath.py` was extracted so
-    # that eighty-one gate entry points would stop repeating the insert above. The
-    # moment they stopped, each of them held `import _cipath` and no `parents[N]`
-    # of its own, `rediacc_ci` fell out of the first-party set, and this gate
-    # reported 69 findings on a change that added no dependency at all. The
+    # MEASURED, NOT ANTICIPATED. `.ci/scripts/quality/_cipath.py` was extracted so that eighty-one gate entry points would stop repeating the insert above. The moment they stopped, each of them held `import _cipath` and no `parents[N]` of its own, `rediacc_ci` fell out of the first-party set, and this gate reported 69 findings on a change that added no dependency at all. The
     # extraction is the correct move and the blindness was here.
     #
-    # ONE HOP, NOT TRANSITIVE. The neighbour has to be a sibling `.py` that this
-    # script actually imports, which is exactly the shape an extracted sys.path
-    # shim has. A full transitive walk is the thing the module docstring says this
-    # gate does not do, and saying it in one place and doing it in another is how
-    # a documented limit stops being true.
+    # ONE HOP, NOT TRANSITIVE. The neighbour has to be a sibling `.py` that this script actually imports, which is exactly the shape an extracted sys.path shim has. A full transitive walk is the thing the module docstring says this gate does not do, and saying it in one place and doing it in another is how a documented limit stops being true.
     seen = set() if _seen is None else _seen
     seen.add(script.resolve())
     for imported in sorted(_imported_roots(body) & names):
@@ -293,11 +246,7 @@ def third_party_imports(script: pathlib.Path) -> set[str]:
         return set()
     names = _imported_roots(body)
     stdlib = set(sys.stdlib_module_names)
-    # LOCAL means anywhere in this repo, not just the script's own folder.
-    # check_agent_hint_liveness.py lives in .ci/scripts/quality and imports
-    # wl_agents from .claude/hooks/stop via a sys.path insert, so a
-    # same-directory test called a first-party module third-party and demanded
-    # somebody pip install it.
+    # LOCAL means anywhere in this repo, not just the script's own folder. check_agent_hint_liveness.py lives in .ci/scripts/quality and imports wl_agents from .claude/hooks/stop via a sys.path insert, so a same-directory test called a first-party module third-party and demanded somebody pip install it.
     return {n for n in names if n not in stdlib and n not in first_party_modules(script, body)}
 
 
@@ -332,8 +281,7 @@ def scan(workflow_files: list[pathlib.Path]):
                 run = str(step.get("run") or "")
                 if not run:
                     continue
-                # A step may install and then use in one block, so its own pip
-                # lines count for itself. Order within a step is the author's
+                # A step may install and then use in one block, so its own pip lines count for itself. Order within a step is the author's
                 # problem; order across steps is what this checks.
                 here = "\n".join(PIP_RE.findall(run))
                 for script in scripts_a_step_runs(run):
@@ -387,17 +335,8 @@ def run_controls() -> list[str]:
         if found:
             failures.append("a step running no Python at all was flagged")
 
-        # THE NEIGHBOUR HOP, pinned by a control because it was a real red.
-        # `check_npmrc.py` reaches `rediacc_ci` through `import _cipath`, a
-        # sibling module whose only job is the sys.path insert. Delete the
-        # neighbour loop in first_party_modules() and this control fires:
-        # measured at 69 findings across the real workflows, none of them a
-        # dependency anybody had to install.
-        # PROSE IS NOT AN IMPORT, both directions, because the regex this
-        # replaced could not tell them apart and reported `the`, `one` and `its`
-        # as missing dependencies. The negative half alone would be satisfied by
-        # a parser that saw nothing at all, so the real import is asserted in the
-        # same breath.
+        # THE NEIGHBOUR HOP, pinned by a control because it was a real red. `check_npmrc.py` reaches `rediacc_ci` through `import _cipath`, a sibling module whose only job is the sys.path insert. Delete the neighbour loop in first_party_modules() and this control fires: measured at 69 findings across the real workflows, none of them a dependency anybody had to install. PROSE IS NOT
+        # AN IMPORT, both directions, because the regex this replaced could not tell them apart and reported `the`, `one` and `its` as missing dependencies. The negative half alone would be satisfied by a parser that saw nothing at all, so the real import is asserted in the same breath.
         prose = (
             '"""A docstring that starts sentences the way this estate does.\n\n'
             "from the comparison. Found 2026-09-08 while cutting W7 P4 over.\n"
@@ -431,22 +370,13 @@ def run_controls() -> list[str]:
                     "needing a pip install: %s" % (shim.name, found)
                 )
 
-        # THE RESOLVER HOP, and it needs TWO subjects because PRE-A1 produced two
-        # shapes, read by two different arms of first_party_modules:
+        # THE RESOLVER HOP, and it needs TWO subjects because PRE-A1 produced two shapes, read by two different arms of first_party_modules:
         #
-        #   paths.on_sys_path(HOOK_DIR)                  SYS_PATH_RE + DIR_ASSIGN_RE
-        #   paths.on_sys_path(paths.hooks_stop_dir(ROOT))  PATHS_HELPER_RE
+        # paths.on_sys_path(HOOK_DIR) SYS_PATH_RE + DIR_ASSIGN_RE paths.on_sys_path(paths.hooks_stop_dir(ROOT)) PATHS_HELPER_RE
         #
-        # ONE SUBJECT WAS TRIED FIRST AND IT WAS NOT A CONTROL. With only the
-        # `HOOK_DIR` file here, disabling the PATHS_HELPER_RE loop entirely left
-        # this gate green: measured, the helper arm is worth 43 first-party names
-        # to `check_plan_boxes.py` and 0 to `check_gate_reachability_coverage.py`.
-        # A control that passes with the code it guards deleted is a claim about
-        # the control.
+        # ONE SUBJECT WAS TRIED FIRST AND IT WAS NOT A CONTROL. With only the `HOOK_DIR` file here, disabling the PATHS_HELPER_RE loop entirely left this gate green: measured, the helper arm is worth 43 first-party names to `check_plan_boxes.py` and 0 to `check_gate_reachability_coverage.py`. A control that passes with the code it guards deleted is a claim about the control.
         #
-        # The positive halves alone would pass on a resolver that returned every
-        # name in the repository, so each subject also asserts that a module which
-        # is genuinely not on disk is still absent.
+        # The positive halves alone would pass on a resolver that returned every name in the repository, so each subject also asserts that a module which is genuinely not on disk is still absent.
         resolver_subjects = (
             # file, spelling it must still write, module it must reach
             ("check_gate_reachability_coverage.py", "paths.on_sys_path(HOOK_DIR)", "wl_reggate"),

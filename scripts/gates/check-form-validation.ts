@@ -157,9 +157,7 @@ export function scanComponent(src: string, file: string): FormFinding[] {
 
   // ONE GUARD, ONE FINDING. submitHandlers() matches the enclosing component function too
   // whenever the handler is declared inside it, so the same `if (!email) return;` was
-  // reported twice -- once at the component's line and once at the handler's. Keeping the
-  // LAST occurrence keeps the innermost (and correct) line, and the key is the guard
-  // itself so two genuinely different guards still count as two.
+  // reported twice -- once at the component's line and once at the handler's. Keeping the LAST occurrence keeps the innermost (and correct) line, and the key is the guard itself so two genuinely different guards still count as two.
   const seen = new Map<string, FormFinding>();
 
   for (const handler of handlers) {
@@ -192,9 +190,7 @@ export function scanComponent(src: string, file: string): FormFinding[] {
       const fields = fieldIdentifiers(h.body);
       return guards(h.body).some((g) => {
         const idents = [...new Set(g.condition.match(/[A-Za-z_$][\w$]*/g) ?? [])];
-        // A captcha guard is not input validation. An empty form passes it untouched,
-        // which is exactly how ContactForm answers "Something went wrong" to a blank
-        // submit while LOOKING as though it validates.
+        // A captcha guard is not input validation. An empty form passes it untouched, which is exactly how ContactForm answers "Something went wrong" to a blank submit while LOOKING as though it validates.
         const validating = idents.filter((i) => fields.has(i) && !CAPTCHA_IDENTS.test(i));
         return validating.length > 0 && setsError(g.consequent);
       });
@@ -225,8 +221,7 @@ function selftest(): boolean {
     }
   };
 
-  // THE GOOD FORM, reduced from PartnerApplicationForm.tsx. Nothing may be reported here,
-  // or the gate is asking for something the repo has already shown to be achievable.
+  // THE GOOD FORM, reduced from PartnerApplicationForm.tsx. Nothing may be reported here, or the gate is asking for something the repo has already shown to be achievable.
   const GOOD = `const F = () => {
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -247,8 +242,7 @@ function selftest(): boolean {
     JSON.stringify(scanComponent(GOOD, 'Good.tsx'))
   );
 
-  // PLANT 1: ContactForm's shape -- noValidate, and the only guard is the captcha, which
-  // an empty form sails straight past.
+  // PLANT 1: ContactForm's shape -- noValidate, and the only guard is the captcha, which an empty form sails straight past.
   const CAPTCHA_STATE = `const F = () => {
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -268,12 +262,8 @@ function selftest(): boolean {
     JSON.stringify(captchaState)
   );
 
-  // THE SAME PLANT WITH THE CAPTCHA READ FROM AN INPUT, which is what makes
-  // CAPTCHA_IDENTS load-bearing rather than decorative. In the fixture above the token is
-  // React state, so `fields.has(...)` already excludes it and the name test decides
-  // nothing -- a rule that cannot fire, which is the exact defect class this program
-  // exists to remove. Read the token from an input and the name test is the ONLY thing
-  // standing between a bot check and a green gate.
+  // THE SAME PLANT WITH THE CAPTCHA READ FROM AN INPUT, which is what makes CAPTCHA_IDENTS load-bearing rather than decorative. In the fixture above the token is React state, so `fields.has(...)` already excludes it and the name test decides nothing -- a rule that cannot fire, which is the exact defect class this program exists to remove. Read the token from an input and the name
+  // test is the ONLY thing standing between a bot check and a green gate.
   const CAPTCHA_FROM_INPUT = `const F = () => {
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -314,8 +304,7 @@ function selftest(): boolean {
     'the same form is also reported for having no replacement validation',
     silent.some((f) => f.rule === 'novalidate-without-replacement')
   );
-  // The handler is declared INSIDE the component, so both function bodies contain the
-  // same guard. One defect must produce one finding.
+  // The handler is declared INSIDE the component, so both function bodies contain the same guard. One defect must produce one finding.
   check(
     'one guard nested inside a component function yields ONE finding, not two',
     silent.filter((f) => f.rule === 'silent-return').length === 1,
@@ -372,11 +361,8 @@ const h = (e) => { e.preventDefault(); const email = r.current?.value; if (!emai
   check('the walker finds components on disk', walk(tmp).length === 1);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  // THE REFUSAL ITSELF, live and uncontrolled until 2026-09-08. Driven against an
-  // empty `--root` it printed `✗ Refusing to run: ... does not exist.` and exited
-  // 1, so the guard worked -- but nothing asserted it, and deleting those two
-  // lines would have left a gate that scans zero files and reports a clean tree.
-  // That is the anti-vacuity hole the floor below it exists to close, one level up.
+  // THE REFUSAL ITSELF, live and uncontrolled until 2026-09-08. Driven against an empty `--root` it printed `✗ Refusing to run: ... does not exist.` and exited 1, so the guard worked -- but nothing asserted it, and deleting those two lines would have left a gate that scans zero files and reports a clean tree. That is the anti-vacuity hole the floor below it exists to close, one
+  // level up.
   check(
     'REFUSAL: a scan root that does not exist is refused',
     (refuseReason('/nope/does/not/exist', false, MIN_FORMS) ?? '').includes('does not exist'),

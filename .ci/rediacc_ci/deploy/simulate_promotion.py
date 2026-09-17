@@ -144,14 +144,12 @@ PUBLIC_HOST = "https://releases.rediacc.com"
 # so nothing under `<fmt>/<promoted>/` is safe to cache.
 CC_MUTABLE = "no-cache"
 
-# `for dir in apt rpm apk archlinux` (twin :179). ORDER MATTERS to the call log
-# and to the purge list. NOTE `cli` IS ABSENT: this script promotes only the
+# `for dir in apt rpm apk archlinux` (twin :179). ORDER MATTERS to the call log and to the purge list. NOTE `cli` IS ABSENT: this script promotes only the
 # package-manager repositories, because only those are what the install tests
 # exercise.
 CHANNEL_DIRS = ("apt", "rpm", "apk", "archlinux")
 
-# `aws configure set ...` (twin :62-64), in order. R2's S3 API drops multi-MB
-# streams under the CLI's default 10-way parallelism, so the transfer profile is
+# `aws configure set ...` (twin :62-64), in order. R2's S3 API drops multi-MB streams under the CLI's default 10-way parallelism, so the transfer profile is
 # tamed before anything moves. THESE MUTATE `~/.aws/config`; that is the twin's
 # behaviour and it is not sandboxed here either.
 AWS_CONFIGURE: tuple[tuple[str, str], ...] = (
@@ -172,28 +170,21 @@ COPY_BACKOFF_SECONDS = 5
 CP_ATTEMPTS = 5
 CP_BACKOFF_SECONDS = 15
 
-# GNU xargs' status when at least one invocation exited 1..125 (twin :198 under
-# `set -e`). Not 1: a caller reading the script's status sees 123.
+# GNU xargs' status when at least one invocation exited 1..125 (twin :198 under `set -e`). Not 1: a caller reading the script's status sees 123.
 XARGS_FAILURE_STATUS = 123
 
-# `/tmp/config` (twin :209-211). A FIXED path shared by both sed-fix files,
-# which is fact 4 in the module docstring.
+# `/tmp/config` (twin :209-211). A FIXED path shared by both sed-fix files, which is fact 4 in the module docstring.
 SED_FIX_SCRATCH = "/tmp/config"
 
-# The two files whose channel URLs are rewritten after the copy (twin :208).
-# Templates over the PROMOTED channel, because the rewrite happens on the copy
-# that has already landed there.
+# The two files whose channel URLs are rewritten after the copy (twin :208). Templates over the PROMOTED channel, because the rewrite happens on the copy that has already landed there.
 SED_FIX_FILES = ("rpm/%s/rediacc.repo", "archlinux/%s/rediacc.conf")
 
-# `.ci/scripts/deploy/cf-purge-urls.sh` (twin :226). RELATIVE in the twin, and
-# reached from the repository root the script `cd`s to at :36.
+# `.ci/scripts/deploy/cf-purge-urls.sh` (twin :226). RELATIVE in the twin, and reached from the repository root the script `cd`s to at :36.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
-# `export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX`
-# (twin :145, :183). The exports exist so the `bash -c` children xargs spawns
+# `export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX` (twin :145, :183). The exports exist so the `bash -c` children xargs spawns
 # can see them; nothing `aws` reads is among them. Reproduced anyway, because
-# the environment a child sees is part of what the two implementations are being
-# compared on.
+# the environment a child sees is part of what the two implementations are being compared on.
 EXPORTED_FOR_CHILDREN = (
     "BUCKET",
     "CC_MUTABLE",
@@ -202,8 +193,7 @@ EXPORTED_FOR_CHILDREN = (
     "DST_PREFIX",
 )
 
-# The five facts in the module docstring, as constants so a test can assert each
-# by name instead of restating the sentence.
+# The five facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 THE_ACCESS_KEY_MESSAGE_NAMES_A_DIFFERENT_VARIABLE = True
 THE_SECRET_KEY_IS_NEVER_CHECKED = True
 THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL = True
@@ -401,8 +391,7 @@ def list_keys(prefix: str, endpoint: str) -> list[str]:
         with open(keys_path, encoding="utf-8", errors="surrogateescape") as handle_in:
             text = handle_in.read()
     finally:
-        # `rm -f "$KEYS"` on both the refusal path (twin :193) and the normal
-        # one (twin :204).
+        # `rm -f "$KEYS"` on both the refusal path (twin :193) and the normal one (twin :204).
         with contextlib.suppress(FileNotFoundError):
             os.unlink(keys_path)
     return read_lines(text)
@@ -428,8 +417,7 @@ def copy_one_object(src_key: str, src_prefix: str, dst_prefix: str, endpoint: st
         return 1
     dst_key = dst_prefix + strip_prefix(src_key, src_prefix)
     for attempt in range(1, COPY_ATTEMPTS + 1):
-        # `>/dev/null` ON STDOUT ONLY: copy-object's JSON reply is discarded and
-        # its stderr is inherited.
+        # `>/dev/null` ON STDOUT ONLY: copy-object's JSON reply is discarded and its stderr is inherited.
         status = _run(copy_object_argv(dst_key, src_key, endpoint), stdout=subprocess.DEVNULL)
         if status == 0:
             return 0
@@ -473,11 +461,7 @@ def _copy_directory(
 
     keys = list_keys(src_prefix, endpoint)
 
-    # THE ANTI-VACUITY FLOOR (twin :192-196), reproduced with the twin's exact
-    # sentence. An empty listing is a FAILURE, not a fast success: the install
-    # tests that follow would run against an empty channel and pass while
-    # proving nothing. Fact 3 is about whether this line is reachable, not about
-    # whether it is right.
+    # THE ANTI-VACUITY FLOOR (twin :192-196), reproduced with the twin's exact sentence. An empty listing is a FAILURE, not a fast success: the install tests that follow would run against an empty channel and pass while proving nothing. Fact 3 is about whether this line is reachable, not about whether it is right.
     if not keys:
         log.error("no objects found under %s; refusing to promote an empty channel" % src_prefix)
         raise BashExitError(1)
@@ -565,8 +549,7 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # FACT 1: the test is on AWS_ACCESS_KEY_ID, the message names a different
-    # variable. FACT 2: AWS_SECRET_ACCESS_KEY is never tested at all.
+    # FACT 1: the test is on AWS_ACCESS_KEY_ID, the message names a different variable. FACT 2: AWS_SECRET_ACCESS_KEY is never tested at all.
     if not os.environ.get("AWS_ACCESS_KEY_ID", ""):
         log.error("CLOUDFLARE_R2_ACCESS_KEY_ID not set")
         return 1
@@ -579,8 +562,7 @@ def main(argv: list[str]) -> int:
 
     # `[[ -n "${GITHUB_ENV:-}" ]] && echo "PROMOTED=..." >>"$GITHUB_ENV"`
     # (twin :55). An AND-list, so an UNSET variable is not a failure; a set one
-    # whose file cannot be appended to IS, because the append is the command
-    # after the final `&&`.
+    # whose file cannot be appended to IS, because the append is the command after the final `&&`.
     github_env = os.environ.get("GITHUB_ENV", "")
     if github_env:
         try:
@@ -591,8 +573,7 @@ def main(argv: list[str]) -> int:
             return 1
 
     for key, value in AWS_CONFIGURE:
-        # UNGUARDED under `set -e`: an `aws configure set` that fails ends the
-        # run with aws's own status, before anything is listed or copied.
+        # UNGUARDED under `set -e`: an `aws configure set` that fails ends the run with aws's own status, before anything is listed or copied.
         status = _run(configure_argv(key, value))
         if status:
             return status
@@ -615,8 +596,7 @@ def main(argv: list[str]) -> int:
     if not purge_urls:
         return 0
 
-    # FACT 5: `"$CLOUDFLARE_ZONE_ID"` with no `:-`, under `set -u`, AFTER the
-    # promotion has already happened.
+    # FACT 5: `"$CLOUDFLARE_ZONE_ID"` with no `:-`, under `set -u`, AFTER the promotion has already happened.
     if "CLOUDFLARE_ZONE_ID" not in os.environ:
         print("%s: CLOUDFLARE_ZONE_ID: unbound variable" % SELF, file=sys.stderr, flush=True)
         return 1

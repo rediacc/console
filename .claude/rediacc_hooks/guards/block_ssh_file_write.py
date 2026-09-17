@@ -23,27 +23,20 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-ssh-file-write.sh"
 ORDER = 10
 
-# The bridge-VM carve-out, read from the RAW command rather than the scan. That
-# asymmetry is the bash's own: the write shapes are matched against the
-# prose-stripped scan, the address against `$CMD`, so an address that lives
-# inside a quoted span still exempts the command.
+# The bridge-VM carve-out, read from the RAW command rather than the scan. That asymmetry is the bash's own: the write shapes are matched against the prose-stripped scan, the address against `$CMD`, so an address that lives inside a quoted span still exempts the command.
 DEFECT = ("and not hookio.grep_q_line(BRIDGE, cmd)", "and True")
 
-# `sed -E 's/[0-9]?>+[[:space:]]*(&[0-9]|\\/dev\\/null)//g'` -- the read-only
-# plumbing, removed before the write shapes are looked for.
+# `sed -E 's/[0-9]?>+[[:space:]]*(&[0-9]|\\/dev\\/null)//g'` -- the read-only plumbing, removed before the write shapes are looked for.
 PLUMBING = hookio.rx(r"[0-9]?>+[{S}]*(&[0-9]|/dev/null)")
 
-# ANCHORED TO COMMAND POSITION 2026-08-28, found by
-# check:ci-guard-mention-anchoring. The first branch already required an actual
+# ANCHORED TO COMMAND POSITION 2026-08-28, found by check:ci-guard-mention-anchoring. The first branch already required an actual
 # `|` before `ssh`; the SECOND had no anchor at all, so
-# "echo the guard blocks ssh ... cat > file redirections" refused as if it were
-# the write itself. hook_scan_target's quote-stripping above covers the QUOTED
+# "echo the guard blocks ssh ... cat > file redirections" refused as if it were the write itself. hook_scan_target's quote-stripping above covers the QUOTED
 # case only, same class as block-git-empty-commit.sh's fix the same day.
 #
 # PORT NOTE ON `\s`. GNU grep's `\s` in the C locale is exactly `[[:space:]]`,
 # while Python's is Unicode-aware and would also match U+00A0. The class is
-# written out rather than carried across as `\s` so the two sides cannot
-# disagree on a non-breaking space.
+# written out rather than carried across as `\s` so the two sides cannot disagree on a non-breaking space.
 SSH_WRITE = hookio.rx(
     r"(\|[{S}]*\bssh\b[{S}][^|;&]*\btee\b|(^|[;&|(]|&&|\|\|)[{S}]*\bssh\b[{S}][^|;&]*\b(cat|echo|printf)\b[^|;&]*>)"
 )

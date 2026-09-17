@@ -107,47 +107,28 @@ SKIP_SUFFIXES = (
 # Same limit check_secret_reachability.py enforces on itself.
 REACH_MAX_AGE_DAYS = 45
 
-# Measured 2026-09-04: the walk yields thousands of files. The floor catches a bare
-# index or a wrong cwd, not today's count.
+# Measured 2026-09-04: the walk yields thousands of files. The floor catches a bare index or a wrong cwd, not today's count.
 MIN_FILES = int(os.environ.get("SECRET_RENAME_MIN_FILES", "500"))
 
 # Untracked files that are part of the surface.
 EXTRA = ["private/account/.env", "private/account/.env.bench"]
 
-# THE WALK CANNOT SEE A GITIGNORED SIBLING REPO, and that cost an outage.
-# files() uses `git ls-files --recurse-submodules`, which reaches submodules but
-# NOT private/growth -- its own git repository, gitignored by console. So the
+# THE WALK CANNOT SEE A GITIGNORED SIBLING REPO, and that cost an outage. files() uses `git ls-files --recurse-submodules`, which reaches submodules but NOT private/growth -- its own git repository, gitignored by console. So the
 # rename left private/growth/video_pipeline/{publish-solutions.sh,publish.py}
-# requiring R2_MEDIA_* while .env had already become CLOUDFLARE_R2_MEDIA_*, and
-# the publish pipeline died at its step-0 credential check. Loudly rather than
-# silently, but broken -- and invisible to every console-side scan, the same
-# blindness that once reported 9 of 10 keys in that repo as unreferenced.
+# requiring R2_MEDIA_* while .env had already become CLOUDFLARE_R2_MEDIA_*, and the publish pipeline died at its step-0 credential check. Loudly rather than silently, but broken -- and invisible to every console-side scan, the same blindness that once reported 9 of 10 keys in that repo as unreferenced.
 NON_SUBMODULE_REPOS = ("private/growth", "private/generative")
 
-# Runtime-constructed names: text substitution cannot see them. Listed, never edited.
-# `vars.NAME`, `VARS.NAME`, `vars['NAME']` -- GitHub contexts are case
-# insensitive and index-addressable. The leading class also excludes a DOT, so
-# `needs.x.outputs.vars.NAME` is a property path, not a variable reference, and
-# is left to the normal rename.
+# Runtime-constructed names: text substitution cannot see them. Listed, never edited. `vars.NAME`, `VARS.NAME`, `vars['NAME']` -- GitHub contexts are case insensitive and index-addressable. The leading class also excludes a DOT, so `needs.x.outputs.vars.NAME` is a property path, not a variable reference, and is left to the normal rename.
 VARS_CTX = re.compile(r"(?<![A-Za-z0-9_.])vars\s*[.\[]\s*['\"]?$", re.IGNORECASE)
-# `secrets.NAME` is a name that lives on GITHUB, not in this tree, and this tool
-# cannot rename it there: `gh secret set` cannot re-supply a value it is
-# forbidden to read. Rewriting the reference therefore points it at a secret
-# that does not exist -- and GitHub does not error on that, it substitutes the
-# EMPTY STRING, so the job runs and the credential is silently blank.
+# `secrets.NAME` is a name that lives on GITHUB, not in this tree, and this tool cannot rename it there: `gh secret set` cannot re-supply a value it is forbidden to read. Rewriting the reference therefore points it at a secret that does not exist -- and GitHub does not error on that, it substitutes the EMPTY STRING, so the job runs and the credential is silently blank.
 #
 # THIS ALREADY HAPPENED, and it is why the guard exists. The first --apply
 # rewrote both sides of `NEW: ${{ secrets.OLD }}` across 267 expressions: every
-# app-token mint, both GPG signing steps, every R2 upload and the whole account
-# deploy would have run with "" . Two of the new names were worse than wrong,
-# they were impossible -- `gh secret set GITHUB_ZZ_PROBE` answers
-# `HTTP 422: Secret names must not start with GITHUB_.` (probed 2026-09-02).
+# app-token mint, both GPG signing steps, every R2 upload and the whole account deploy would have run with "" . Two of the new names were worse than wrong, they were impossible -- `gh secret set GITHUB_ZZ_PROBE` answers `HTTP 422: Secret names must not start with GITHUB_.` (probed 2026-09-02).
 #
-# Same shape as VARS_CTX one line up, and for the same reason: a name this tool
-# does not own is reported, never rewritten. Surviving old spellings used to be
+# Same shape as VARS_CTX one line up, and for the same reason: a name this tool does not own is reported, never rewritten. Surviving old spellings used to be
 # recorded in .ci/config/github-secret-preimage.json; that file was DELETED once
-# the last rename landed, which its own docstring called the end state. There is
-# no dictionary to consult any more because there is nothing left to translate.
+# the last rename landed, which its own docstring called the end state. There is no dictionary to consult any more because there is nothing left to translate.
 SECRETS_CTX = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*[.\[]\s*['\"]?$", re.IGNORECASE)
 
 INDIRECTION = re.compile(r"\$\{!|key_var=|_VAR=\"|\bSUFFIX\b.*\$\{|\$\{[A-Z_]+_\$\{SUFFIX\}")
@@ -171,15 +152,8 @@ class Rules:
 
         def sub(m: re.Match[str]) -> str:
             old = m.group(2)
-            # A `vars.NAME` reference is an Actions VARIABLE, and this table is
-            # GitHub org SECRETS. `gh secret set` does not touch a variable, so
-            # rewriting the reference points it at a variable that was never
-            # renamed and the expression silently evaluates to "". That is not
-            # hypothetical: AUTOPILOT_APP_ID is in this table and is read as
-            # `vars.AUTOPILOT_APP_ID` at four app-token mint sites in
-            # autopilot.yml, whose own comment (:58-62) warns it is a variable
-            # NOT a secret -- and this script rewrote that warning too. Every
-            # autopilot token mint would have failed. Report, never rewrite.
+            # A `vars.NAME` reference is an Actions VARIABLE, and this table is GitHub org SECRETS. `gh secret set` does not touch a variable, so rewriting the reference points it at a variable that was never renamed and the expression silently evaluates to "". That is not hypothetical: AUTOPILOT_APP_ID is in this table and is read as `vars.AUTOPILOT_APP_ID` at four app-token mint
+            # sites in autopilot.yml, whose own comment (:58-62) warns it is a variable NOT a secret -- and this script rewrote that warning too. Every autopilot token mint would have failed. Report, never rewrite.
             before = text[max(0, m.start() - 48) : m.start()]
             if VARS_CTX.search(before) or SECRETS_CTX.search(before):
                 line = text.count("\n", 0, m.start()) + 1
@@ -227,10 +201,7 @@ def files() -> list[Path]:
             and not rel.endswith(("package-lock.json", ".min.js", ".map"))
         ):
             out.append(p)
-    # VACUITY FLOOR. This walk decides what a RENAME rewrites, so an empty or
-    # truncated one does not fail -- it silently renames nothing and reports every
-    # occurrence handled. `git ls-files` returning nothing (wrong cwd, a bare or
-    # broken index) is exactly that shape, and the blind-spot comment above this
+    # VACUITY FLOOR. This walk decides what a RENAME rewrites, so an empty or truncated one does not fail -- it silently renames nothing and reports every occurrence handled. `git ls-files` returning nothing (wrong cwd, a bare or broken index) is exactly that shape, and the blind-spot comment above this
     # function records what one missed sibling repo already cost.
     if len(out) < MIN_FILES:
         raise SystemExit(
@@ -269,9 +240,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    # Control, both directions: a `vars.` reference must survive untouched and be
-    # REPORTED, while the same name used as a secret must still be rewritten. One
-    # direction alone would pass on a script that rewrote nothing at all.
+    # Control, both directions: a `vars.` reference must survive untouched and be REPORTED, while the same name used as a secret must still be rewritten. One direction alone would pass on a script that rewrote nothing at all.
     vprobe = "vars.AUTOPILOT_APP_ID and secrets.AUTOPILOT_APP_ID"
     vgot, vcounts, _, vhits = rewrite(vprobe, rs)
     if vgot != "vars.AUTOPILOT_APP_ID and secrets.GITHUB_AUTOPILOT_APP_ID":
@@ -329,15 +298,11 @@ def main() -> int:
         print(f"no change in {args.show}")
         return 0
 
-    # PREFLIGHT, and it is a REFUSAL, not a warning. Every name this table renames
-    # TO must already exist in the Bitwarden map, because the rename is what makes
-    # the Bitwarden copy the one CI resolves. The case that made this mandatory:
+    # PREFLIGHT, and it is a REFUSAL, not a warning. Every name this table renames TO must already exist in the Bitwarden map, because the rename is what makes the Bitwarden copy the one CI resolves. The case that made this mandatory:
     # OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} -> OBS_OTLP_CREDENTIALS_{EU,US,ASIA},
-    # where none of the three targets existed in the map and no scan on either
-    # side could see it, because set-account-worker-secrets.sh:134 builds the name
+    # where none of the three targets existed in the map and no scan on either side could see it, because set-account-worker-secrets.sh:134 builds the name
     # at RUNTIME ("OBS_OTLP_CREDENTIALS_${SUFFIX}") so it never appears as a
-    # literal anywhere. Applying the rename would have failed _require_nonempty
-    # in all three regions -- the founding OTLP incident, reproduced by the
+    # literal anywhere. Applying the rename would have failed _require_nonempty in all three regions -- the founding OTLP incident, reproduced by the
     # migration built to prevent it. A dry run still reports; only --apply is
     # refused, so this cannot block the measurement it is meant to inform.
     try:
@@ -347,13 +312,8 @@ def main() -> int:
     except (OSError, ValueError, KeyError) as exc:
         print(f"REFUSING: cannot read .ci/config/bws-secret-map.json ({exc})", file=sys.stderr)
         return 1
-    # ONLY names the cutover will actually fetch from Bitwarden. A rename whose
-    # SOURCE is not a GitHub org secret is a local-file rename with no store
-    # counterpart -- SES_AK_ID/SES_AK_SECRET live only in private/account/.env
-    # and are read by the rotation tool itself, so demanding a map entry for
-    # AWS_IAM_ADMIN_* would block the rename on creating a secret nothing
-    # fetches. Getting this wrong in the strict direction is still a refusal to
-    # act, which is why it is re-derived rather than hand-listed.
+    # ONLY names the cutover will actually fetch from Bitwarden. A rename whose SOURCE is not a GitHub org secret is a local-file rename with no store counterpart -- SES_AK_ID/SES_AK_SECRET live only in private/account/.env and are read by the rotation tool itself, so demanding a map entry for AWS_IAM_ADMIN_* would block the rename on creating a secret nothing fetches. Getting this
+    # wrong in the strict direction is still a refusal to act, which is why it is re-derived rather than hand-listed.
     try:
         reach = json.loads((ROOT / ".ci" / "config" / "secret-reachability.json").read_text())[
             "repos"
@@ -449,11 +409,7 @@ def main() -> int:
         "check-autopilot-no-bypass.sh), regenerate the GENERATED files, then delete the old org secrets."
     )
     if args.apply:
-        # EXTRA's files are UNTRACKED and hold live values, so git is not the
-        # undo for them: `private/account/.env` rewritten wrongly is gone. Back
-        # every untracked target up beside itself before the first write, and
-        # refuse the whole run if a backup cannot be made -- a partial rewrite
-        # of a credential file is worse than no rewrite.
+        # EXTRA's files are UNTRACKED and hold live values, so git is not the undo for them: `private/account/.env` rewritten wrongly is gone. Back every untracked target up beside itself before the first write, and refuse the whole run if a backup cannot be made -- a partial rewrite of a credential file is worse than no rewrite.
         backups: list[str] = []
         for target in EXTRA:
             src = ROOT / target

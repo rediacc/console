@@ -66,13 +66,8 @@ ROOT = paths.repo_root()
 
 GUARD = "scripts/lib/shrink-only-baseline.ts"
 
-# THE SUBJECT SCANS FOR THIS STRING, AND THIS FILE IS IN ITS CORPUS. That is the
-# self-scanning trap batch 3's `label-references` port paid for, and this port hit
-# it on 2026-09-09: written out, the flag put THIS module and the
-# `test_gate_language_policy` port on the offender list within minutes, so a
-# literal transcription would have reddened the very check it implements. Split,
-# the contiguous string never appears in this file's bytes, and
-# `test_this_module_is_not_itself_an_offender` reds BY NAME if that changes.
+# THE SUBJECT SCANS FOR THIS STRING, AND THIS FILE IS IN ITS CORPUS. That is the self-scanning trap batch 3's `label-references` port paid for, and this port hit it on 2026-09-09: written out, the flag put THIS module and the `test_gate_language_policy` port on the offender list within minutes, so a literal transcription would have reddened the very check it implements. Split, the
+# contiguous string never appears in this file's bytes, and `test_this_module_is_not_itself_an_offender` reds BY NAME if that changes.
 FLAG = "--write-" + "baseline"
 
 # Files that name the flag but own no CLI branch of their own. Exempt BY NAME,
@@ -84,36 +79,23 @@ EXEMPT = (GUARD,)
 
 # The guard reaches a file either DIRECTLY or through the P7 choke point.
 #
-# `packages/www/scripts/lib/p7-backlog.js::writeBacklog` performs the composition
-# check itself and exits non-zero on refusal, which covers its four consumers
-# without any of them importing the guard by name. So a file that imports
-# p7-backlog IS guarded, and asserting otherwise would flag three validators that
-# are in fact protected.
+# `packages/www/scripts/lib/p7-backlog.js::writeBacklog` performs the composition check itself and exits non-zero on refusal, which covers its four consumers without any of them importing the guard by name. So a file that imports p7-backlog IS guarded, and asserting otherwise would flag three validators that are in fact protected.
 #
 # ONE HOP, deliberately, matching the precedent in check-gate-id-convention. A
 # two-hop chain would escape this. No such chain exists today; if one appears,
 # plant it as a control and widen the resolver THEN.
 GUARDED_VIA = ("shrink-only-baseline", "p7-backlog")
 
-# Known-unguarded CLIs. This list may only SHRINK. A new offender is not added
-# here, it is fixed: the whole point is that a new gate must not be born with the
-# old shape. EMPTY as of 2026-08-20, when the P7 choke point closed the last three.
+# Known-unguarded CLIs. This list may only SHRINK. A new offender is not added here, it is fixed: the whole point is that a new gate must not be born with the old shape. EMPTY as of 2026-08-20, when the P7 choke point closed the last three.
 PENDING: tuple[str, ...] = ()
 
-# An IMPORT, not a mention. A bare substring match would count a file that merely
-# names the module in a comment as guarded, which is how an over-permissive
-# matcher turns a gate into decoration. Anchored on the `from '...'` specifier.
+# An IMPORT, not a mention. A bare substring match would count a file that merely names the module in a comment as guarded, which is how an over-permissive matcher turns a gate into decoration. Anchored on the `from '...'` specifier.
 IMPORT_RE = {route: re.compile(r"from '[^']*%s" % re.escape(route)) for route in GUARDED_VIA}
 
-# THE PYTHON HALF HAS NO SHARED GUARD TO IMPORT, and pretending otherwise would
-# make this check unsatisfiable: the guard is TypeScript with no Python binding,
-# so `check_language_policy.py` carries a faithful PORT of its decision half and
-# says so in its own comment. Until a shared Python guard exists, CONSUMING THE
-# PORT is the contract. Three conditions, because any one alone is satisfiable
+# THE PYTHON HALF HAS NO SHARED GUARD TO IMPORT, and pretending otherwise would make this check unsatisfiable: the guard is TypeScript with no Python binding, so `check_language_policy.py` carries a faithful PORT of its decision half and says so in its own comment. Until a shared Python guard exists, CONSUMING THE PORT is the contract. Three conditions, because any one alone is
+# satisfiable
 # while the write path stays unconditional: the file must DEFINE or IMPORT
-# `write_verdict`, must CALL it somewhere other than its own definition, and must
-# compute `baseline_additions`. A file that only names them in a comment is not
-# guarded, which the mention control proves.
+# `write_verdict`, must CALL it somewhere other than its own definition, and must compute `baseline_additions`. A file that only names them in a comment is not guarded, which the mention control proves.
 PY_DEFINES_RE = re.compile(
     r"^(def write_verdict\(|from [\w.]+ import .*\bwrite_verdict\b)", re.MULTILINE
 )
@@ -171,9 +153,7 @@ def all_offerers() -> list[str]:
         try:
             text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # A corpus file can VANISH mid-run: this very detector plants and
-            # removes probes inside the scanned tree, and so does its twin. An
-            # unreadable neighbour is not this gate's finding.
+            # A corpus file can VANISH mid-run: this very detector plants and removes probes inside the scanned tree, and so does its twin. An unreadable neighbour is not this gate's finding.
             continue
         if FLAG in text:
             found.append(rel)
@@ -234,10 +214,7 @@ def probe(rel_dir: str, stem: str, suffix: str, body: str):
         path.unlink(missing_ok=True)
 
 
-# EVERY PROBE BODY IS RENDERED THROUGH `%s`, for the reason FLAG is split: a body
-# written out would make this module a corpus member and an offender in its own
-# scan. The probes still carry the real flag on DISK, which is the only place it
-# has to appear for the controls to mean anything.
+# EVERY PROBE BODY IS RENDERED THROUGH `%s`, for the reason FLAG is split: a body written out would make this module a corpus member and an offender in its own scan. The probes still carry the real flag on DISK, which is the only place it has to appear for the controls to mean anything.
 UNGUARDED_PY_BODY = '''#!/usr/bin/env python3
 """Temporary control fixture. Offers %s with no composition guard."""
 
@@ -362,8 +339,7 @@ def test_pending_set_only_shrinks(gate):
         text = (ROOT / f).read_text(encoding="utf-8", errors="replace")
         if any(pattern.search(text) for pattern in IMPORT_RE.values()):
             gate.log_fail("%s now reaches the guard; DELETE it from PENDING" % f)
-        # Visible every run, on purpose. A quiet exemption is how a gate stops
-        # meaning its name.
+        # Visible every run, on purpose. A quiet exemption is how a gate stops meaning its name.
         gate.log_info("STILL UNGUARDED: %s" % f)
     gate.log_pass("the unguarded set has not grown (%d known)" % len(PENDING))
 
@@ -391,9 +367,7 @@ def test_every_python_writer_consumes_the_guard(gate):
     gate.log_pass(
         "every Python baseline writer consumes the guard (%d offerer(s) scanned)" % len(py)
     )
-    # VISIBLE EVERY RUN. There is no shared Python guard yet, so each writer
-    # carries its own copy of the decision half. That is real duplication and it
-    # is stated rather than left to be discovered a second time.
+    # VISIBLE EVERY RUN. There is no shared Python guard yet, so each writer carries its own copy of the decision half. That is real duplication and it is stated rather than left to be discovered a second time.
     for f in py:
         gate.log_info("PORTED GUARD (no shared Python module exists yet): %s" % f)
 
@@ -600,8 +574,7 @@ def test_this_module_is_not_itself_an_offender(gate):
         )
     # AND THE SPLIT MUST STILL PRODUCE THE REAL FLAG. A control that only checks
     # for absence is satisfied by a typo, and a typo would make every probe below
-    # invisible to the scan while all four controls kept passing. CHECKED AGAINST
-    # THE TWIN, which is a `.sh` file and therefore outside this corpus, so it can
+    # invisible to the scan while all four controls kept passing. CHECKED AGAINST THE TWIN, which is a `.sh` file and therefore outside this corpus, so it can
     # carry the flag whole; a literal written here would either be a tautology or
     # a second thing to keep rendered.
     twin = (ROOT / BASH_TWIN).read_text(encoding="utf-8")

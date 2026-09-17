@@ -15,19 +15,10 @@
  * cache the policy for `max_age` seconds and re-fetch when the id changes.
  */
 
-// Intentionally single-MX. Do NOT add `mx: mail.rediacc.com` back without
-// first solving the TLS side. The Let's Encrypt cert Traefik serves on the
-// hostinger MTA only covers `mail.rediacc.io` — listing `mail.rediacc.com`
-// here tells STS-enforcing senders that delivering to that hostname is
+// Intentionally single-MX. Do NOT add `mx: mail.rediacc.com` back without first solving the TLS side. The Let's Encrypt cert Traefik serves on the hostinger MTA only covers `mail.rediacc.io` — listing `mail.rediacc.com` here tells STS-enforcing senders that delivering to that hostname is
 // TLS-valid, but the cert presents `CN=mail.rediacc.io` with no `.com` SAN,
-// so every such session fails with `certificate-host-mismatch` (Google TLS-RPT
-// 2026-04-20 had 29 failures this way). Adding it back requires ONE of:
-//   1. Extending the Traefik CF DNS-01 token to edit the `rediacc.com` zone
-//      (blast radius: token can rewrite MX/SPF/DKIM/DMARC/MTA-STS/apex — bad),
-//   2. CNAME delegation: add `_acme-challenge.mail.rediacc.com CNAME
-//      _acme-challenge.mail.rediacc.io` in the rediacc.com zone so lego
-//      follows the CNAME and writes the challenge TXT into rediacc.io
-//      (which the current token already controls), then add
+// so every such session fails with `certificate-host-mismatch` (Google TLS-RPT 2026-04-20 had 29 failures this way). Adding it back requires ONE of: 1. Extending the Traefik CF DNS-01 token to edit the `rediacc.com` zone (blast radius: token can rewrite MX/SPF/DKIM/DMARC/MTA-STS/apex — bad), 2. CNAME delegation: add `_acme-challenge.mail.rediacc.com CNAME
+// _acme-challenge.mail.rediacc.io` in the rediacc.com zone so lego follows the CNAME and writes the challenge TXT into rediacc.io (which the current token already controls), then add
 //      `tls.domains[0].sans=mail.rediacc.com` on the mail-acme router.
 // Until one of those is in place, `mail.rediacc.io` is the only valid MX.
 const POLICY = `version: STSv1
@@ -37,8 +28,7 @@ max_age: 604800
 `;
 
 export default {
-  // Synchronous: the policy body is a module constant, so there is nothing to
-  // await. workerd accepts `Response | Promise<Response>` from fetch handlers.
+  // Synchronous: the policy body is a module constant, so there is nothing to await. workerd accepts `Response | Promise<Response>` from fetch handlers.
   fetch(request: Request): Response {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/mta-sts.txt') {

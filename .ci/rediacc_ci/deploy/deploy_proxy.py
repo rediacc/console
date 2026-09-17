@@ -79,51 +79,38 @@ MISSING_TOKEN = (
 WORKER_SUBDIR = ("workers", "proxy")
 
 # `REGION="${ARG_REGION:-eu}"` (:27). READ AND PRINTED, NEVER PASSED ON: it
-# appears in exactly one log line (:44) and in no argv, because the region for
-# the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A
-# caller passing `--region us` therefore gets a message saying `us` and a deploy
+# appears in exactly one log line (:44) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy
 # of whatever the config names. Reproduced; the differential pins it by
 # comparing the recorded `npx` argv across regions.
 DEFAULT_REGION = "eu"
 
 # `DRY_RUN="${ARG_DRY_RUN:-false}"` (:28) and the one value that branches (:38).
-# The comparison is against the literal `true`, which is also what a bare
-# `--dry-run` with no value produces through `parse_args`. Anything else -- `1`,
-# `yes`, `True` -- IS A REAL DEPLOY.
+# The comparison is against the literal `true`, which is also what a bare `--dry-run` with no value produces through `parse_args`. Anything else -- `1`, `yes`, `True` -- IS A REAL DEPLOY.
 TRUE = "true"
 DEFAULT_DRY_RUN = "false"
 
-# `--outdir /tmp/rediacc-proxy-dry-run` (:40). A FIXED path in /tmp, not a
-# mktemp: two concurrent dry runs write the same directory, and so does anything
+# `--outdir /tmp/rediacc-proxy-dry-run` (:40). A FIXED path in /tmp, not a mktemp: two concurrent dry runs write the same directory, and so does anything
 # else that picks the name. Reproduced as the literal it is.
 DRY_RUN_OUTDIR = "/tmp/rediacc-proxy-dry-run"
 
 # The two workspace builds (:33-34), in order.
 WORKSPACES = ("@rediacc/shared", "@rediacc/cli")
 
-# The three closing lines (:47-49), byte for byte including the two-space indent
-# on the middle one. They go through `log_info`, so each gets the green check
-# glyph -- including the one that is a command to copy, which is why they are
-# quoted here whole rather than assembled.
+# The three closing lines (:47-49), byte for byte including the two-space indent on the middle one. They go through `log_info`, so each gets the green check glyph -- including the one that is a command to copy, which is why they are quoted here whole rather than assembled.
 CLOSING_LINES = (
     "Deployed. The executor still needs its own account token:",
     "  npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml",
     "That token must carry the proxy:exec scope and belong to the Rediacc org.",
 )
 
-# THE TWO DEFECTS NAMED IN THE DOCSTRING, as constants so the differential can
-# assert them by name rather than restating the sentences. Both driven against
+# THE TWO DEFECTS NAMED IN THE DOCSTRING, as constants so the differential can assert them by name rather than restating the sentences. Both driven against
 # the real twin on 2026-09-13 in a fixture tree; both reproduced, not repaired,
 # because repairing a twin is a cutover decision and this file is not it.
 #
-#   1. THE BUILD RUNS BEFORE THE DIRECTORY IS CHECKED. With `workers/proxy`
-#      absent, both `npm run build` calls complete and only then does the run
-#      die on `cd`. Measured in the fixture: two recorded npm calls, then
-#      `line 36: cd: .../workers/proxy: No such file or directory`, exit 1.
-#   2. THE ACCOUNT ID IS DOCUMENTED AND UNCHECKED. The header lists
-#      `CLOUDFLARE_ACCOUNT_ID` under "Requires:" and no line reads it. A deploy
+# 1. THE BUILD RUNS BEFORE THE DIRECTORY IS CHECKED. With `workers/proxy` absent, both `npm run build` calls complete and only then does the run die on `cd`. Measured in the fixture: two recorded npm calls, then `line 36: cd: .../workers/proxy: No such file or directory`, exit 1. 2. THE ACCOUNT ID IS DOCUMENTED AND UNCHECKED. The header lists `CLOUDFLARE_ACCOUNT_ID` under
+# "Requires:" and no line reads it. A deploy
 #      with the token set and the account id absent gets all the way to wrangler
-#      before anything notices, after the build.
+# before anything notices, after the build.
 THE_BUILD_RUNS_BEFORE_THE_DIRECTORY_IS_CHECKED = True
 THE_ACCOUNT_ID_IS_DOCUMENTED_AND_UNCHECKED = True
 

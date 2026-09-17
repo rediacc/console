@@ -48,17 +48,14 @@ CASES: list[tuple[str, bool, str]] = [
     ("rdc machine list prod-1", True, "zero-positional leaf given a bare word"),
     ("rdc machine list <name>", True, "zero-positional leaf given a placeholder"),
     ("rdc repo <name>", True, "parent given a placeholder; a parent expects a SUBCOMMAND"),
-    # MUST NOT FLAG -- the P4 ref grammar. These are the forms we now want taught,
-    # and the detector used to reject every one of them.
+    # MUST NOT FLAG -- the P4 ref grammar. These are the forms we now want taught, and the detector used to reject every one of them.
     ("rdc repo up <repo-ref>", False, "leaf whose primary name IS a positional ref"),
     ("rdc datastore create <name>", False, "leaf that really accepts <datastore>"),
     ("rdc repo replicate <ref>", False, "actionable parent that takes a positional"),
     # MUST NOT FLAG -- nothing positional is being taught at all.
     ("rdc repo secret list", False, "no token after the command path"),
     ("rdc machine list --name x", False, "a flag is not a positional"),
-    # MUST NOT FLAG -- a PROSE WORD that ends the clause is not an argument.
-    # German splits separable verbs (ausfuehren -> "fuehren Sie ... aus"), so the
-    # particle lands AFTER the command and the detector read it as a positional. The
+    # MUST NOT FLAG -- a PROSE WORD that ends the clause is not an argument. German splits separable verbs (ausfuehren -> "fuehren Sie ... aus"), so the particle lands AFTER the command and the detector read it as a positional. The
     # German is correct German; the detector was wrong, and it un-translated real work
     # to satisfy a parser bug. Dutch and the Nordic languages split verbs the same way.
     (
@@ -72,8 +69,7 @@ CASES: list[tuple[str, bool, str]] = [
         False,
         "an English prose word ending the clause is not an argument either",
     ),
-    # ...but the fix must not go too quiet: a real argument still flags even at the
-    # end of a sentence, because it is value-shaped rather than a bare prose word.
+    # ...but the fix must not go too quiet: a real argument still flags even at the end of a sentence, because it is value-shaped rather than a bare prose word.
     (
         "Run rdc machine list prod-1.",
         True,
@@ -81,11 +77,7 @@ CASES: list[tuple[str, bool, str]] = [
     ),
 ]
 
-# THE TABLE TRAVELS IN AN ENVIRONMENT VARIABLE, not in argv. `tsx --eval` does not
-# place a caller's trailing arguments where a plain `node --eval` does, so an
-# argv index here is a number that is right on one runner and `undefined` on
-# another -- and `JSON.parse(undefined)` throws inside Node, which arrives as a
-# stack trace about JSON rather than as a finding about the detector.
+# THE TABLE TRAVELS IN AN ENVIRONMENT VARIABLE, not in argv. `tsx --eval` does not place a caller's trailing arguments where a plain `node --eval` does, so an argv index here is a number that is right on one runner and `undefined` on another -- and `JSON.parse(undefined)` throws inside Node, which arrives as a stack trace about JSON rather than as a finding about the detector.
 DRIVER = """
 import { scanText } from %(detector)s;
 const CASES = JSON.parse(process.env.POSITIONAL_CASES);
@@ -129,8 +121,7 @@ def test_the_case_table_is_not_empty(gate):
         gate.log_fail("the case table is EMPTY, so the both-ways case below compares nothing")
     flagging = [c for c in CASES if c[1]]
     clean = [c for c in CASES if not c[1]]
-    # BOTH DIRECTIONS MUST BE REPRESENTED. A table of only must-flag cases would
-    # pass against a detector that flags literally everything.
+    # BOTH DIRECTIONS MUST BE REPRESENTED. A table of only must-flag cases would pass against a detector that flags literally everything.
     if not flagging or not clean:
         gate.log_fail(
             "the table has %d must-flag and %d must-not-flag case(s). A table with only "

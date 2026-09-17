@@ -39,9 +39,7 @@ TWIN = ROOT / ".ci" / "scripts" / "deploy" / "purge-media-cache.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "purge_media_cache.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a
-# constant called TOKEN is "a hardcoded password" to the linter even when its
-# value is visibly a fixture.
+# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a constant called TOKEN is "a hardcoded password" to the linter even when its value is visibly a fixture.
 BEARER = "tok-fixture"
 
 FAKE_CURL = """#!/usr/bin/python3

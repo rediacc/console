@@ -35,8 +35,7 @@ interface PackageJson {
 
 function flattenOverrideKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   // overrides allows nested scoping: { "some-pkg": { "nested": "1.0.0" } }
-  // For reason parity, we key by the top-level override only — nested overrides
-  // inherit the top-level reason.
+  // For reason parity, we key by the top-level override only — nested overrides inherit the top-level reason.
   const keys: string[] = [];
   for (const [k, v] of Object.entries(obj)) {
     if (typeof v === 'string') {

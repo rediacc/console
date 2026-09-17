@@ -89,17 +89,13 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
 
-# The default the twin carries. Named here so the one place it is written down is
-# next to the comment saying it is a default and not a pin.
+# The default the twin carries. Named here so the one place it is written down is next to the comment saying it is a default and not a pin.
 DEFAULT_RULESET_REPO = "rediacc/console"
 
-# The organisation variable that names the App. Deliberately has NO default: the
-# twin's own words are that "a wrong-or-absent id would make this gate pass
-# against nothing".
+# The organisation variable that names the App. Deliberately has NO default: the twin's own words are that "a wrong-or-absent id would make this gate pass against nothing".
 APP_ID_ENV = "GITHUB_AUTOPILOT_APP_ID"
 
-# The commands both implementations require on PATH. `jq` is here for the reason
-# in the port notes: this module never calls it, and its twin refuses without it.
+# The commands both implementations require on PATH. `jq` is here for the reason in the port notes: this module never calls it, and its twin refuses without it.
 REQUIRED_COMMANDS = ("gh", "jq")
 
 
@@ -143,8 +139,7 @@ def gh_api(path: str) -> tuple[int, str]:
         )
     except OSError:
         # No gh on PATH. require_cmd has already refused in the normal flow;
-        # reaching here means a caller drove this directly, and "the call did
-        # not succeed" is the honest answer.
+        # reaching here means a caller drove this directly, and "the call did not succeed" is the honest answer.
         return 127, ""
     return proc.returncode, proc.stdout.decode("utf-8", "replace")
 
@@ -243,8 +238,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log.step("Checking rediacc-autopilot (app %s) has no bypass on %s..." % (app_id, ruleset_repo))
 
-    # Find the ruleset by SHAPE, not by a pinned id: ids change when a ruleset is
-    # recreated, and a gate pointing at a deleted id would 404 rather than protect.
+    # Find the ruleset by SHAPE, not by a pinned id: ids change when a ruleset is recreated, and a gate pointing at a deleted id would 404 rather than protect.
     code, rulesets = gh_api("repos/%s/rulesets" % ruleset_repo)
     if code != 0:
         log.error("Could not list rulesets for %s." % ruleset_repo)
@@ -256,8 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         # THE ONE DELIBERATE DIVERGENCE. See the port notes: the twin dies here
         # with jq's own diagnostic and jq's exit status. Refusing in the
-        # repository's own vocabulary is strictly better and is NOT what the
-        # twin does, so it is named rather than hidden.
+        # repository's own vocabulary is strictly better and is NOT what the twin does, so it is named rather than hidden.
         log.error("Could not read the ruleset list for %s: %s." % (ruleset_repo, exc))
         log.error("Refusing to report a verdict from a payload this gate cannot parse.")
         return 1
@@ -278,8 +271,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             parsed = json.loads(body)
         except ValueError:
-            # Same divergence as above, at the second call. The twin's `jq -r
-            # '.name'` would print its own error and take the gate down with it.
+            # Same divergence as above, at the second call. The twin's `jq -r '.name'` would print its own error and take the gate down with it.
             log.error("Could not read ruleset %s." % ruleset_id)
             rc = 1
             continue
@@ -290,9 +282,7 @@ def main(argv: list[str] | None = None) -> int:
 
         name = _jq_string(parsed.get("name"))
 
-        # PRESENCE FIRST. See the header: an unauthenticated (or
-        # under-permissioned) read returns 200 with this key missing, which would
-        # otherwise read as "no bypass actors" and pass.
+        # PRESENCE FIRST. See the header: an unauthenticated (or under-permissioned) read returns 200 with this key missing, which would otherwise read as "no bypass actors" and pass.
         if "bypass_actors" not in parsed:
             log.error(
                 "Ruleset %s (%s) came back WITHOUT a bypass_actors field." % (ruleset_id, name)
@@ -327,14 +317,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# The unauthenticated payload's top-level keys, transcribed from the twin's
-# header. The blind-read control is built from THIS list rather than by deleting
-# a key from an authenticated payload, so it models what GitHub actually returns
-# rather than what a mutation happens to produce.
+# The unauthenticated payload's top-level keys, transcribed from the twin's header. The blind-read control is built from THIS list rather than by deleting a key from an authenticated payload, so it models what GitHub actually returns rather than what a mutation happens to produce.
 UNAUTHENTICATED_KEYS = (
     "id",
     "name",
@@ -414,8 +399,7 @@ def selftest() -> int:
         "bypass_actors" in authed,
         True,
     )
-    # The distinction the whole gate rests on: an empty list and a missing key
-    # produce the same answer from the hit query, and only one of them is clean.
+    # The distinction the whole gate rests on: an empty list and a missing key produce the same answer from the hit query, and only one of them is clean.
     ctl.check("an empty bypass list yields no hit", bypass_hit(authed, "42"), "")
     ctl.check("a missing bypass list yields no hit either", bypass_hit(blind, "42"), "")
 

@@ -51,9 +51,7 @@ from rediacc_ci import paths
 #
 # PATH is needed (bash resolves `git`, `timeout`, `sleep` through it). HOME is
 # needed because git refuses some operations without one. LC_ALL=C pins message
-# text and, more importantly, sort order: `git ls-files` output compared against
-# a Python sort diverges under a locale with different collation, which is a
-# difference in the TEST rather than in the thing under test.
+# text and, more importantly, sort order: `git ls-files` output compared against a Python sort diverges under a locale with different collation, which is a difference in the TEST rather than in the thing under test.
 BASE_ENV = {
     "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
     "HOME": os.environ.get("HOME", "/tmp"),
@@ -61,9 +59,7 @@ BASE_ENV = {
     "LANG": "C",
 }
 
-# How long any single differential child may run. A hung bash in a test suite is
-# indistinguishable from a slow one until CI's own job timeout fires 15 minutes
-# later, having reported nothing.
+# How long any single differential child may run. A hung bash in a test suite is indistinguishable from a slow one until CI's own job timeout fires 15 minutes later, having reported nothing.
 DEFAULT_TIMEOUT = 60
 
 
@@ -116,8 +112,7 @@ def read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
                 chunks.append(data)
                 continue
             if proc.poll() is not None:
-                # The child is gone and nothing is pending. One more short pass
-                # catches bytes written between the poll and the select.
+                # The child is gone and nothing is pending. One more short pass catches bytes written between the poll and the select.
                 deadline_hits += 1
                 if deadline_hits >= 2:
                     break
@@ -127,9 +122,7 @@ def read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
                     break
     finally:
         sel.close()
-    # ONLCR: the line discipline turns every \n into \r\n on the way out. That is
-    # the terminal's doing, not the program's, so it is undone here rather than
-    # by every caller comparing stripped strings.
+    # ONLCR: the line discipline turns every \n into \r\n on the way out. That is the terminal's doing, not the program's, so it is undone here rather than by every caller comparing stripped strings.
     return b"".join(chunks).replace(b"\r\n", b"\n")
 
 
@@ -186,10 +179,7 @@ def bash_streams(
         text=False,
         **kwargs,
     )
-    # CLOSED IN THE PARENT IMMEDIATELY. While this process holds the slave open,
-    # the master never sees EOF and read_pty would spin until its timeout on
-    # every single case -- turning a fast suite into a slow one for a reason that
-    # looks like flakiness.
+    # CLOSED IN THE PARENT IMMEDIATELY. While this process holds the slave open, the master never sees EOF and read_pty would spin until its timeout on every single case -- turning a fast suite into a slow one for a reason that looks like flakiness.
     os.close(slave_fd)
     try:
         tty_text = read_pty(master_fd, proc, timeout).decode("utf-8", "replace")
@@ -218,21 +208,12 @@ def escape_bytes(text: str) -> int:
     return text.count("\033")
 
 
-# `<cache>/shfmt-3.13.1/shfmt.1R2NkECK` -> `.../shfmt.<tmp>`, and the same for
-# shellcheck's `sc.XXXXXXXX` and actionlint's `al.XXXXXXXX` staging directories.
+# `<cache>/shfmt-3.13.1/shfmt.1R2NkECK` -> `.../shfmt.<tmp>`, and the same for shellcheck's `sc.XXXXXXXX` and actionlint's `al.XXXXXXXX` staging directories.
 #
-# BOTH toolchain download helpers give every process its OWN temp name, because
-# the single fixed path they shared before was a data-corruption race between
-# concurrent acquirers (the reasoning is at `.ci/scripts/lib/toolchain.sh`, in
-# `_toolchain_download_shfmt`). The randomness IS the fix, so it is the one
-# token a twin/port differential must not demand equality of -- `mktemp` and
-# `tempfile` draw from different alphabets and always will. Masking it leaves
-# every observable claim intact: the flags, the URL, the order, and the fact
-# that a temp path is used at all.
+# BOTH toolchain download helpers give every process its OWN temp name, because the single fixed path they shared before was a data-corruption race between concurrent acquirers (the reasoning is at `.ci/scripts/lib/toolchain.sh`, in `_toolchain_download_shfmt`). The randomness IS the fix, so it is the one token a twin/port differential must not demand equality of -- `mktemp` and
+# `tempfile` draw from different alphabets and always will. Masking it leaves every observable claim intact: the flags, the URL, the order, and the fact that a temp path is used at all.
 #
-# Shared rather than copied into each differential, because the first version of
-# this lived in the shfmt module alone and the shellcheck module failed the same
-# way twenty minutes later.
+# Shared rather than copied into each differential, because the first version of this lived in the shfmt module alone and the shellcheck module failed the same way twenty minutes later.
 _TOOLCHAIN_TMP_RE = re.compile(r"(/(?:shfmt|sc|al))\.[A-Za-z0-9_]{8}\b")
 
 

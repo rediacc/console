@@ -30,8 +30,7 @@ function loadEnglishTranscript(transcriptsDir, castFile) {
   }
 }
 
-// Rule-option default: values shorter than this are too small to judge as
-// "identical to English" (product names, "OK", punctuation).
+// Rule-option default: values shorter than this are too small to judge as "identical to English" (product names, "OK", punctuation).
 const DEFAULT_MIN_LENGTH = 3;
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -111,9 +110,7 @@ export const noUntranslatedTutorialTranscriptValues = {
     /** Report one event whose text is byte-identical to the English cast. */
     function checkEvent(element, index) {
       // @eslint/json wraps every array entry in an `Element` node whose
-      // `value` is the real node. Comparing the WRAPPER against 'Object' made
-      // this rule inert: `element.type` is 'Element' for every entry, so the
-      // walk returned before it ever looked at an event.
+      // `value` is the real node. Comparing the WRAPPER against 'Object' made this rule inert: `element.type` is 'Element' for every entry, so the walk returned before it ever looked at an event.
       const eventNode = element?.type === 'Element' ? element.value : element;
       if (!eventNode || eventNode.type !== 'Object') return;
 

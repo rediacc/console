@@ -27,8 +27,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import env
 from rediacc_ci.tests import differential as diff
 
-# The awkward file. Every line here exists because some spelling of it is in a
-# real .env or a real pins file in this tree: `export ` from a shell profile,
+# The awkward file. Every line here exists because some spelling of it is in a real .env or a real pins file in this tree: `export ` from a shell profile,
 # quoted values from account.sh, `=` inside base64 from the crypto keys, blank
 # and comment lines from account_env_add_if_missing's "\n# comment" writer.
 AWKWARD = """\
@@ -47,9 +46,7 @@ DUPLICATE=first
 DUPLICATE=second
 """
 
-# The keys AWKWARD is expected to define. A SET, compared as a set, so the
-# assertion fails both when a key stops parsing and when a new one appears --
-# and so there is no hand-typed count anywhere in this file.
+# The keys AWKWARD is expected to define. A SET, compared as a set, so the assertion fails both when a key stops parsing and when a new one appears -- and so there is no hand-typed count anywhere in this file.
 AWKWARD_KEYS = {
     "SIMPLE",
     "EXPORTED",
@@ -96,9 +93,7 @@ def _bash_source(path) -> dict[str, str]:
     return pairs
 
 
-# ---------------------------------------------------------------------------
-# the differential: what bash reads, this reads
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the differential: what bash reads, this reads ---------------------------------------------------------------------------
 
 
 def test_parse_agrees_with_bash_source_on_every_awkward_shape(tmp_path) -> None:
@@ -135,15 +130,12 @@ def test_control_the_differential_can_fail(tmp_path) -> None:
     assert theirs["EQUALS"] == "a=b=c"
     # The defect does not merely get the value wrong, it invents a KEY: the
     # left-hand side becomes everything before the LAST `=`. Both halves are
-    # asserted, because a comparison that only checked the value would pass on a
-    # mapping whose keys had all silently changed.
+    # asserted, because a comparison that only checked the value would pass on a mapping whose keys had all silently changed.
     assert "EQUALS" not in broken
     assert broken["EQUALS=a=b"] == "c"
 
 
-# ---------------------------------------------------------------------------
-# the parsing rules, each with its opposite
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the parsing rules, each with its opposite ---------------------------------------------------------------------------
 
 
 def test_export_prefix_is_stripped_and_a_key_called_exported_is_not() -> None:
@@ -293,9 +285,7 @@ def test_skipped_lines_are_reported_and_a_clean_file_reports_none() -> None:
     assert [lineno for lineno, _line in reported] == [2, 3]
 
 
-# ---------------------------------------------------------------------------
-# missing, unreadable, and the difference between them
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- missing, unreadable, and the difference between them ---------------------------------------------------------------------------
 
 
 def test_a_missing_file_is_not_an_error(tmp_path) -> None:
@@ -348,9 +338,7 @@ def test_an_unreadable_file_raises_rather_than_reading_as_empty(tmp_path) -> Non
         path.chmod(0o600)
 
 
-# ---------------------------------------------------------------------------
-# precedence
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- precedence ---------------------------------------------------------------------------
 
 
 def test_the_shell_wins_over_the_file(tmp_path) -> None:
@@ -397,9 +385,7 @@ def test_env_file_load_returns_only_the_files_keys(tmp_path) -> None:
     assert set(env.env_file_load(path, {"A": "x", "UNRELATED": "y"})) == {"A"}
 
 
-# ---------------------------------------------------------------------------
-# the argv dispatch, driven as bash drives it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the argv dispatch, driven as bash drives it ---------------------------------------------------------------------------
 
 
 def _module(script: str, environ=None):
@@ -477,9 +463,7 @@ def test_an_unknown_verb_and_a_missing_argument_both_refuse() -> None:
     assert "more arguments" in err
 
 
-# ---------------------------------------------------------------------------
-# the corpus: a real pins file, against the real bash that reads it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the corpus: a real pins file, against the real bash that reads it ---------------------------------------------------------------------------
 
 
 def test_the_real_toolchain_pins_agree_with_toolchain_pairs() -> None:

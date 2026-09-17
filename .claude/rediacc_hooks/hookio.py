@@ -77,8 +77,7 @@ DENY = 2
 # The placeholders `rx` below understands. `{S}` is the whole `[[:space:]]`
 # class and `{B}` is the same class without the newline, matching the two
 # constants re-exported above; there is no third, because a guard needing a
-# third would be inventing a fourth spelling of the thing this module exists to
-# have one of.
+# third would be inventing a fourth spelling of the thing this module exists to have one of.
 _RX_CLASSES = (("{S}", SPACE), ("{B}", BLANK))
 
 
@@ -157,11 +156,7 @@ class Event:
             except (ValueError, TypeError):
                 # NOT `None`. A payload of the four characters `null` PARSES,
                 # and `jq -r .tool_input.command` on it prints `null`; a
-                # payload of `nonsense` does not parse and jq exits 5 with an
-                # empty stdout. Measured 2026-09-06, both shapes, and the first
-                # cut of this collapsed them onto None and got the second one
-                # wrong -- a broken payload read as the string "null", which 26
-                # guards would then have scanned as a command.
+                # payload of `nonsense` does not parse and jq exits 5 with an empty stdout. Measured 2026-09-06, both shapes, and the first cut of this collapsed them onto None and got the second one wrong -- a broken payload read as the string "null", which 26 guards would then have scanned as a command.
                 self._doc = _BROKEN
         return self._doc
 
@@ -286,10 +281,7 @@ def _jq_raw(doc, path, empty):
     if node is None:
         return "" if empty else "null"
     if node is False and empty:
-        # `//` is jq's ALTERNATIVE operator and its left side is FALSY, not
-        # merely null: `false // empty` is empty. Measured against real jq
-        # 2026-09-06, and the first cut of this returned the word "false",
-        # which is what `// false` gives and what `// empty` never does.
+        # `//` is jq's ALTERNATIVE operator and its left side is FALSY, not merely null: `false // empty` is empty. Measured against real jq 2026-09-06, and the first cut of this returned the word "false", which is what `// false` gives and what `// empty` never does.
         return ""
     if isinstance(node, str):
         return _command_substitution(node + "\n")
@@ -326,9 +318,7 @@ def _jq_collect(doc, path):
     return out
 
 
-# ---------------------------------------------------------------------------
-# The shell primitives the guards use, beyond the ones `shellscan` already owns
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The shell primitives the guards use, beyond the ones `shellscan` already owns ---------------------------------------------------------------------------
 
 
 def grep_q(pattern, text, ignore_case=False, fixed=False):
@@ -439,9 +429,7 @@ def _glob_to_re(pattern):
     return "".join(out)
 
 
-# ---------------------------------------------------------------------------
-# Running things, the way a guard's `$( ... 2>/dev/null )` runs them
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Running things, the way a guard's `$( ... 2>/dev/null )` runs them ---------------------------------------------------------------------------
 
 
 def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):

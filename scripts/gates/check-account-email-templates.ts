@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-// ---- gate ----
-// kind: battery
-// step: i18n
-// needs: node, submodules
-// id: check:ci-i18n-account-email-templates
-// lane: quality-i18n
-// ---- end gate ----
+// ---- gate ---- kind: battery step: i18n needs: node, submodules id: check:ci-i18n-account-email-templates lane: quality-i18n ---- end gate ----
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,8 +24,7 @@ const TEMPLATE_FILES = [
   'partner-eval.ts',
   'partner-license.ts',
   'security.ts',
-  // Added 2026-09-07. Both were on disk and NOT in this list, so this gate was
-  // checking 11 of the 13 real templates and saying nothing about the other two.
+  // Added 2026-09-07. Both were on disk and NOT in this list, so this gate was checking 11 of the 13 real templates and saying nothing about the other two.
   'delegation-cert-renewal-alert.ts',
   'lead-magnet.ts',
 ];
@@ -144,11 +137,7 @@ function readJson(filePath: string): Record<string, unknown> {
 
 function findUsedTranslationKeys(content: string): Set<string> {
   const keys = new Set<string>();
-  // THE WORD BOUNDARY IS LOAD-BEARING. Without it `t\(` matches the tail of ANY
-  // identifier ending in t, so `renderCommonLayout('en', ...)` in
-  // delegation-cert-renewal-alert.ts was read as the translation call `t('en')` and
-  // reported as `references missing email locale key "en"`. Found 2026-09-07, when
-  // that file was added to TEMPLATE_FILES after never having been checked: a false
+  // THE WORD BOUNDARY IS LOAD-BEARING. Without it `t\(` matches the tail of ANY identifier ending in t, so `renderCommonLayout('en', ...)` in delegation-cert-renewal-alert.ts was read as the translation call `t('en')` and reported as `references missing email locale key "en"`. Found 2026-09-07, when that file was added to TEMPLATE_FILES after never having been checked: a false
   // finding that had been waiting for its first reader.
   for (const match of content.matchAll(/(?<![A-Za-z0-9_$])t\(\s*`([^`]+)`/g)) {
     keys.add(match[1]);

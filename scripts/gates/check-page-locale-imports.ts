@@ -59,9 +59,7 @@ const RED = '\x1b[0;31m';
 const GREEN = '\x1b[0;32m';
 const NC = '\x1b[0m';
 
-// ---------------------------------------------------------------------------
-// Reading imports without being fooled by text that merely LOOKS like one
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Reading imports without being fooled by text that merely LOOKS like one ---------------------------------------------------------------------------
 
 /**
  * Comments blanked, string bodies preserved.
@@ -245,9 +243,7 @@ function control(): void {
   console.log('  control  reports an import of src/content/docs/en/, and only that locale');
 }
 
-// ---------------------------------------------------------------------------
-// Disk inputs
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Disk inputs ---------------------------------------------------------------------------
 
 function walk(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir).sort()) {

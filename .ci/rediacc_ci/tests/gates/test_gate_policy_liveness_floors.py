@@ -99,9 +99,7 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     # Marker 1 of 3: package.json. Also the deps probe's oracle.
     shutil.copy2(paths.from_root("package.json"), root / "package.json")
     # Marker 2 of 3: .ci/scripts/quality, created above; only its existence is read.
-    # Marker 3 of 3: .github/workflows, and the parity-exempt probe's oracle. The
-    # WHOLE directory, not just ci.yml: the exempt entries name gates stepped from
-    # ci-quality.yml, and copying one workflow would condemn them all.
+    # Marker 3 of 3: .github/workflows, and the parity-exempt probe's oracle. The WHOLE directory, not just ci.yml: the exempt entries name gates stepped from ci-quality.yml, and copying one workflow would condemn them all.
     for workflow in sorted(paths.from_root(".github", "workflows").glob("*.yml")):
         shutil.copy2(workflow, root / ".github" / "workflows" / workflow.name)
     shutil.copy2(
@@ -117,22 +115,14 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     allowlist = root / ".ci" / "config" / "content-quality-allowlist.txt"
     shutil.copy2(paths.from_root(".ci", "config", "content-quality-allowlist.txt"), allowlist)
 
-    # The deps oracle here is the root manifest alone, so the copied blocklist's
-    # entries -- declared in packages/*/package.json in the real tree -- would be
-    # condemned as dead. Replace it with one entry the root manifest really does
-    # declare, which keeps the probe RUNNING (that is the point) without a false
-    # finding.
+    # The deps oracle here is the root manifest alone, so the copied blocklist's entries -- declared in packages/*/package.json in the real tree -- would be condemned as dead. Replace it with one entry the root manifest really does declare, which keeps the probe RUNNING (that is the point) without a false finding.
     (root / ".ci" / "policy" / ".deps-upgrade-blocklist").write_text(
         "# BLOCKER: live package pinned deliberately so this fixture exercises the deps "
         "probe for real\neslint\n",
         encoding="utf-8",
     )
 
-    # The content-quality probe's oracle is per-path existence, and creating
-    # packages/json above is enough to make it RUN. Materialise the paths its
-    # allowlist names, empty, so it runs and finds them live. Copying the allowlist
-    # without them would have made the baseline red for a reason that has nothing
-    # to do with input floors.
+    # The content-quality probe's oracle is per-path existence, and creating packages/json above is enough to make it RUN. Materialise the paths its allowlist names, empty, so it runs and finds them live. Copying the allowlist without them would have made the baseline red for a reason that has nothing to do with input floors.
     for line in allowlist.read_text(encoding="utf-8").splitlines():
         rel = line.strip()
         if not rel or rel.startswith("#"):
@@ -172,9 +162,7 @@ def test_real_tree_reports_per_probe_numbers(gate):
         result.out, "MISSING FILE", "no probe's file is missing on the real tree"
     )
 
-    # SELF-CONSISTENCY, so the census cannot drift from the run it describes: the
-    # roll-up total must equal the sum of the rows it is a roll-up of. A hard-coded
-    # 87 would be a hand-typed floor and would red on the next legitimate edit.
+    # SELF-CONSISTENCY, so the census cannot drift from the run it describes: the roll-up total must equal the sum of the rows it is a roll-up of. A hard-coded 87 would be a hand-typed floor and would red on the next legitimate edit.
     rows_sum = sum(int(n) for n in ROW_RE.findall(result.out))
     rollup = ROLLUP_RE.search(result.out)
     if not rollup:
@@ -212,9 +200,7 @@ def test_emptying_one_list_fails(gate):
     gate.log_test("ONE list emptied while the other probes stay full")
     with harness.temp_dir() as base:
         root = make_full_fixture(gate, base)
-        # The shape a bad edit or a truncating rewrite leaves behind: the header
-        # survives, the entries do not. Every other probe is untouched, so the run's
-        # TOTALS still look healthy and only the per-probe floor can see it.
+        # The shape a bad edit or a truncating rewrite leaves behind: the header survives, the entries do not. Every other probe is untouched, so the run's TOTALS still look healthy and only the per-probe floor can see it.
         (root / ".ci" / "policy" / ".deps-upgrade-blocklist").write_text(
             "# BLOCKER: header left behind by an edit that dropped every entry beneath it\n",
             encoding="utf-8",
@@ -236,11 +222,7 @@ def test_emptying_one_list_fails(gate):
 
 def test_declared_empty_lists_do_not_fail(gate):
     gate.log_test("a list that is ALLOWED to hold nothing is not starvation")
-    # Three lists are DELIBERATELY empty in this repo (.actions-upgrade-blocklist,
-    # .embed-assets-upgrade-blocklist, .devcontainer-upgrade-blocklist each say so
-    # in their own header). The fixture copies them as-is, so this asserts the
-    # floors distinguish "allowed to hold nothing" from "went empty". No mutation:
-    # the baseline IS the case.
+    # Three lists are DELIBERATELY empty in this repo (.actions-upgrade-blocklist, .embed-assets-upgrade-blocklist, .devcontainer-upgrade-blocklist each say so in their own header). The fixture copies them as-is, so this asserts the floors distinguish "allowed to hold nothing" from "went empty". No mutation: the baseline IS the case.
     with harness.temp_dir() as base:
         result = run_gate(make_full_fixture(gate, base))
         gate.assert_exit_code(0, result.rc, "declared-empty lists are not starvation")
@@ -272,10 +254,7 @@ def test_missing_file_fails_in_a_full_checkout(gate):
 def test_missing_file_is_silent_in_a_partial_checkout(gate):
     gate.log_test("THE CONTROL FOR THE PREDICATE: the same deletion in a partial root")
     # If this run ALSO failed, the gate's own fixtures could never be minimal; if
-    # the case above passed while this one did too, the predicate would be satisfied
-    # by everything and the presence floor would be decorative. Both directions
-    # have to hold, and the ONLY difference is one of the three full-checkout
-    # markers being taken away.
+    # the case above passed while this one did too, the predicate would be satisfied by everything and the presence floor would be decorative. Both directions have to hold, and the ONLY difference is one of the three full-checkout markers being taken away.
     with harness.temp_dir() as base:
         root = make_full_fixture(gate, base)
         (root / ".ci" / "policy" / ".cli-i18n-orphan-allowlist").unlink()
@@ -293,8 +272,7 @@ def test_missing_file_is_silent_in_a_partial_checkout(gate):
 def test_undeclared_probe_is_refused(gate):
     gate.log_test("a probe with no PROBE_INPUT_FLOORS row must refuse, not run silently")
     _require_tools(gate)
-    # Driven through --probe with a name no probe has, which is the nearest
-    # reachable proof that the lookup is REQUIRED rather than optional.
+    # Driven through --probe with a name no probe has, which is the nearest reachable proof that the lookup is REQUIRED rather than optional.
     result = harness.run([str(TSX), str(GATE), "--probe", "not-a-probe"], cwd=paths.repo_root())
     gate.assert_exit_code(2, result.rc, "an unknown probe name is refused")
     gate.assert_contains(result.combined, "unknown probe", "and named")

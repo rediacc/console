@@ -46,10 +46,7 @@ TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "docker" / "retag_image.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The digest answers are keyed by the TAG SUFFIX of the reference, so a case can
-# make the destination match, differ, or be unreadable. Everything else the fake
-# prints is constant, which is what keeps the call log the only witness to which
-# reference was pushed where.
+# The digest answers are keyed by the TAG SUFFIX of the reference, so a case can make the destination match, differ, or be unreadable. Everything else the fake prints is constant, which is what keeps the call log the only witness to which reference was pushed where.
 FAKE_DOCKER = r"""#!/usr/bin/python3
 import os
 import sys
@@ -81,9 +78,7 @@ if verb == "inspect":
 sys.exit(0)
 """
 
-# `dirname` for SCRIPT_DIR in the twin and in constants.sh, `uname`/`tr` for
-# common.sh's detection helpers, `basename` because the twin calls it for the
-# label, `python3` for the fake. Anything not listed is ABSENT.
+# `dirname` for SCRIPT_DIR in the twin and in constants.sh, `uname`/`tr` for common.sh's detection helpers, `basename` because the twin calls it for the label, `python3` for the fake. Anything not listed is ABSENT.
 PATH_MINIMUM = ("dirname", "basename", "uname", "tr", "python3")
 
 
@@ -202,9 +197,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
 
 
-# ---------------------------------------------------------------------------
-# Argument handling, in the twin's validation ORDER
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling, in the twin's validation ORDER ---------------------------------------------------------------------------
 
 
 def test_help_is_stdout_and_names_the_images(tmp_path) -> None:
@@ -303,9 +296,7 @@ def test_each_value_flag_dies_the_way_set_u_dies(tmp_path) -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# The real retag paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real retag paths ---------------------------------------------------------------------------
 
 
 def test_all_retags_both_images_and_pushes_latest(tmp_path) -> None:
@@ -425,9 +416,7 @@ def test_a_missing_docker_is_bashs_own_command_not_found(tmp_path) -> None:
     ), old.stderr
 
 
-# ---------------------------------------------------------------------------
-# Dry run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Dry run ---------------------------------------------------------------------------
 
 
 def test_dry_run_inspects_the_source_and_pushes_nothing(tmp_path) -> None:
@@ -466,9 +455,7 @@ def test_dry_run_with_a_missing_docker_names_the_probe_line(tmp_path) -> None:
     ), old.stderr
 
 
-# ---------------------------------------------------------------------------
-# --skip-if-exists: all four directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --skip-if-exists: all four directions ---------------------------------------------------------------------------
 
 
 def _skip(tmp_path, **digests):
@@ -484,8 +471,7 @@ def test_skip_if_exists_with_no_destination_falls_through_to_the_retag(tmp_path)
     old, new, old_calls, new_calls = _skip(tmp_path)
     _agree(old, new, "skip-absent", old_calls, new_calls)
     assert old.returncode == 0
-    # ONE probe (the destination), then the retag. The source is never probed,
-    # because the twin short-circuits on an empty destination digest.
+    # ONE probe (the destination), then the retag. The source is never probed, because the twin short-circuits on an empty destination digest.
     assert len(old_calls.splitlines()) == 2, old_calls
     assert "\tcreate\t-t\tghcr.io/rediacc/api:b\t" in old_calls
 
@@ -529,9 +515,7 @@ def test_skip_if_exists_retags_when_the_source_cannot_be_read(tmp_path) -> None:
     assert "\tcreate\t" in old_calls
 
 
-# ---------------------------------------------------------------------------
-# Defects of the twin, pinned rather than fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Defects of the twin, pinned rather than fixed ---------------------------------------------------------------------------
 
 
 def test_defect_the_failing_summary_is_still_a_green_tick(tmp_path) -> None:
@@ -560,9 +544,7 @@ def test_defect_nothing_verifies_the_destination_after_the_push(tmp_path) -> Non
     assert old_calls == "", "the silent fake recorded a call; the case is not what it says"
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -649,9 +631,7 @@ def test_the_merged_stream_keeps_the_twins_line_order(tmp_path) -> None:
     assert old.stdout.count("\n") >= 8, old.stdout
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_basename_matches_bash_on_trailing_slashes() -> None:
@@ -691,9 +671,7 @@ def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
     assert port.dry_run_default() == "yes"
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms ---------------------------------------------------------------------------
 
 
 def test_the_constants_are_still_constants_shs() -> None:

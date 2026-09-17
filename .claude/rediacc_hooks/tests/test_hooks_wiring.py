@@ -16,15 +16,9 @@ from rediacc_hooks.tests import hookblocks, hookcases
 HOOKS = hookcases.HOOKS
 SETTINGS = HOOKS.parent / "settings.json"
 
-# The chains a registration may name, plus a hook at the hooks ROOT such as
-# require-jq.sh, which belongs to no single chain because it is registered first in
-# several.
+# The chains a registration may name, plus a hook at the hooks ROOT such as require-jq.sh, which belongs to no single chain because it is registered first in several.
 #
-# WIDENED 2026-08-26 to cover two surfaces this was structurally blind to: `pre-ask/`
-# (the AskUserQuestion chain) and the root. Before that, a hook in either place could
-# be added, left unregistered, and reported as neither UNWIRED nor DANGLING -- the set
-# comparison simply never saw it, which is the same cannot-fail shape the guards
-# themselves exist to prevent.
+# WIDENED 2026-08-26 to cover two surfaces this was structurally blind to: `pre-ask/` (the AskUserQuestion chain) and the root. Before that, a hook in either place could be added, left unregistered, and reported as neither UNWIRED nor DANGLING -- the set comparison simply never saw it, which is the same cannot-fail shape the guards themselves exist to prevent.
 CHAINS = ("pre-bash", "pre-edit", "post-bash", "pre-ask")
 FILE_RE = re.compile(r"^(?:%s)/|^[A-Za-z0-9._-]+\.sh$" % "|".join(CHAINS))
 REG_RE = re.compile(r"^(?:%s)/[A-Za-z0-9._-]+\.sh$|^[A-Za-z0-9._-]+\.sh$" % "|".join(CHAINS))
@@ -91,18 +85,11 @@ def test_wiring_agrees_in_both_directions():
         "wiring: every hook on disk is registered, every registration exists",
     )
 
-    # CONTROL, so the green above is agreement and not a check that cannot fire: one
-    # fixture drops a real registration, the other invents one. Each must fail AND
-    # name the offender -- a bare non-zero would pass either fixture.
+    # CONTROL, so the green above is agreement and not a check that cannot fire: one fixture drops a real registration, the other invents one. Each must fail AND name the offender -- a bare non-zero would pass either fixture.
     #
-    # THE SUBJECT OF THE DROP CONTROL HAD TO MOVE at the W5 P7 cutover, and the reason
-    # is worth stating because it is how a control quietly stops firing. It dropped
+    # THE SUBJECT OF THE DROP CONTROL HAD TO MOVE at the W5 P7 cutover, and the reason is worth stating because it is how a control quietly stops firing. It dropped
     # block-worktree-add.sh's registration; that guard is a Python module now and
-    # settings.json does not name it, so the filter would have matched nothing, the
-    # fixture would have been identical to the real file, and the control would have
-    # reported the tree's own green as its own. A control that plants nothing proves
-    # nothing. block-pathspecless-git-commit.sh is the pre-bash guard still registered
-    # as a file, so it is the one that can be dropped.
+    # settings.json does not name it, so the filter would have matched nothing, the fixture would have been identical to the real file, and the control would have reported the tree's own green as its own. A control that plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash guard still registered as a file, so it is the one that can be dropped.
     dropped = json.loads(SETTINGS.read_text(encoding="utf-8"))
     for entries in (dropped.get("hooks") or {}).values():
         for entry in entries or []:
@@ -111,9 +98,7 @@ def test_wiring_agrees_in_both_directions():
                 for h in (entry.get("hooks") or [])
                 if "block-pathspecless-git-commit.sh" not in (h.get("command") or "")
             ]
-    # THE PLANT MUST BE PROVEN TO HAVE LANDED. Comparing the fixture to the original is
-    # one line and it is the difference between "the control fired" and "the filter
-    # matched nothing and the fixture is the tree".
+    # THE PLANT MUST BE PROVEN TO HAVE LANDED. Comparing the fixture to the original is one line and it is the difference between "the control fired" and "the filter matched nothing and the fixture is the tree".
     block.note(
         0,
         "wiring CONTROL: the unwired fixture really differs from settings.json",

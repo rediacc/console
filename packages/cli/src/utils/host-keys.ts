@@ -98,8 +98,7 @@ export function keyBlobAlgorithm(base64Key: string): string {
     const buf = Buffer.from(base64Key, 'base64');
     if (buf.length < 4) return '';
     const len = buf.readUInt32BE(0);
-    // Guard against a bogus length: algorithm names are short, and a corrupt
-    // blob must not cause an out-of-range read.
+    // Guard against a bogus length: algorithm names are short, and a corrupt blob must not cause an out-of-range read.
     if (len === 0 || len > 64 || buf.length < 4 + len) return '';
     const name = buf.subarray(4, 4 + len).toString('ascii');
     return /^[\w.@-]+$/.test(name) ? name : '';

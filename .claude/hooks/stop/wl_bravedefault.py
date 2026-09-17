@@ -79,9 +79,7 @@ import wl_rules
 # iff this is present, the same contract as the other two optional objects.
 BRAVE_MARKER = "A DEFAULT THAT DOES NOTHING IS NOT A DEFAULT"
 
-# THE SAME TOKEN the rest of the program already requires on every `- [?]`,
-# IMPORTED rather than re-spelled. A second copy of this regex would drift from
-# the first the day either changes, which is precisely the defect the sibling
+# THE SAME TOKEN the rest of the program already requires on every `- [?]`, IMPORTED rather than re-spelled. A second copy of this regex would drift from the first the day either changes, which is precisely the defect the sibling
 # rule in wl_classsweep exists to catch; writing it twice here would be that
 # rule failing inside its own pull request.
 DEFAULT_TOKEN = C.DEFAULT_TOKEN
@@ -228,14 +226,11 @@ def read_verdict(out):
     if bd["changes_state"]:
         return "silent", "the default commits to an action: %s" % _clean(bd, "default_text", 160)
     if reason not in TIMID_REASONS:
-        # A justified hold. The reason is KEPT in the note so an operator can
-        # audit whether "irreversible" was true, which is the only way this
-        # escape hatch can be checked at all.
+        # A justified hold. The reason is KEPT in the note so an operator can audit whether "irreversible" was true, which is the only way this escape hatch can be checked at all.
         return "silent", "holding is justified (%s): %s" % (reason, _clean(bd, "default_text", 120))
     quote = _clean(bd, "quote", 300)
     if not quote:
-        # Which deferral? Without that the order cannot be acted on, and an
-        # unactionable block is the noise that gets a rule routed around.
+        # Which deferral? Without that the order cannot be acted on, and an unactionable block is the noise that gets a rule routed around.
         return "degraded", "brave_default fired without naming the deferral"
     return "fire", {
         "quote": quote,
@@ -256,10 +251,7 @@ V_ACTION_GENERIC = (
     "Rewrite that deferral's DEFAULT as the action you would take alone -- the recommended "
     "one, stated as an executable step, not as a hold. %s"
 )
-# SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and
-# the first draft of this string put the rewrite instruction first, where the cap
-# ate the reason -- the same failure the sibling rule records above its own
-# V_ACTION_DROPPED. Caught by the test, not by reading it.
+# SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and the first draft of this string put the rewrite instruction first, where the cap ate the reason -- the same failure the sibling rule records above its own V_ACTION_DROPPED. Caught by the test, not by reading it.
 V_ACTION_RESERVED = (
     "Suggestion DROPPED: it named `%s`, which needs the operator's ask (standing order 1). "
     "Rewrite that DEFAULT as the action you would take alone, leaving the work UNCOMMITTED."
@@ -282,27 +274,16 @@ def enforce(out, payload):
         payload["default_text"][:80] or "(nothing)",
         _WHY.get(payload["hold_reason"], "for no stated reason"),
     )
-    # THE ORDER IS MODEL TEXT, AND A DEFAULT EXECUTES. `braver` becomes a `[?]`
-    # deferral's DEFAULT, which runs on a timer with nobody reading it first -- so a
-    # destructive string here is worse than the same string in a sweep order, not
-    # better. But the threshold is NARROWER than wl_classsweep's, deliberately: a
-    # braver default may legitimately write ("delete the stale baseline entries" is
-    # exactly what this rule exists to push a session toward), while the git verbs
-    # that discard uncommitted work are unacceptable on every path in this repo,
-    # because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
+    # THE ORDER IS MODEL TEXT, AND A DEFAULT EXECUTES. `braver` becomes a `[?]` deferral's DEFAULT, which runs on a timer with nobody reading it first -- so a destructive string here is worse than the same string in a sweep order, not better. But the threshold is NARROWER than wl_classsweep's, deliberately: a braver default may legitimately write ("delete the stale baseline
+    # entries" is exactly what this rule exists to push a session toward), while the git verbs that discard uncommitted work are unacceptable on every path in this repo, because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
     proposed = payload["braver"] or payload["instruction"]
     verb = wl_rules.names_tree_destroying(proposed)
     reserved = wl_rules.names_operator_reserved(proposed)
     if verb:
         action = V_ACTION_UNSAFE % verb
     elif reserved:
-        # NOT a safety refusal -- nothing here destroys anything. It is the
-        # standing order: committing, branching, pushing and opening a PR need
-        # the operator's ask, so an order carrying one tells the session to break
-        # a rule it must then quietly disobey. Measured 2026-09-02: this rule
-        # emitted "... then commit to the open branch" and the session did the
-        # rename and silently dropped the commit, which is the workaround this
-        # repo treats as a bug report.
+        # NOT a safety refusal -- nothing here destroys anything. It is the standing order: committing, branching, pushing and opening a PR need the operator's ask, so an order carrying one tells the session to break a rule it must then quietly disobey. Measured 2026-09-02: this rule emitted "... then commit to the open branch" and the session did the rename and silently dropped
+        # the commit, which is the workaround this repo treats as a bug report.
         action = V_ACTION_RESERVED % reserved
     elif payload["braver"]:
         action = V_ACTION % payload["braver"]

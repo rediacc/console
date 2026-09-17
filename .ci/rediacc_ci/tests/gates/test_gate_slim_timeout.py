@@ -77,8 +77,7 @@ def test_slim_over_ceiling_fails(gate, tmp_path):
     result = run_check(gate, tmp_path)
     gate.assert_exit_code(1, result.rc, "timeout-minutes: 30 on slim must fail")
     gate.assert_contains(result.combined, "above the 14-minute ceiling", "explains the ceiling")
-    # The fix is a different runner, not a bigger number. If this wording ever
-    # drifts to "raise the timeout", the gate is teaching the wrong lesson.
+    # The fix is a different runner, not a bigger number. If this wording ever drifts to "raise the timeout", the gate is teaching the wrong lesson.
     gate.assert_contains(result.combined, "ubuntu-latest", "points at the real fix")
     gate.log_pass("slim job with a timeout above the ceiling is reported")
 
@@ -91,8 +90,7 @@ def test_slim_at_ceiling_passes(gate, tmp_path):
 
 
 def test_non_slim_runner_ignored(gate, tmp_path):
-    # A slim job is required or the anti-vacuity guard fires, so pair the untimed
-    # latest job with a compliant slim one.
+    # A slim job is required or the anti-vacuity guard fires, so pair the untimed latest job with a compliant slim one.
     write_job(tmp_path, "wf1", "fat_job", "ubuntu-latest")
     write_job(tmp_path, "wf2", "thin_job", "ubuntu-slim", "5")
     result = run_check(gate, tmp_path)
@@ -115,9 +113,7 @@ def test_matrix_runner_ignored(gate, tmp_path):
 def test_no_slim_jobs_is_blind(gate, tmp_path):
     write_job(tmp_path, "wf", "fat_job", "ubuntu-latest")
     result = run_check(gate, tmp_path)
-    # Nothing to check is a failure, not a pass -- the same anti-vacuity rule the
-    # rest of this file follows. A renamed runner label must not silently turn
-    # this gate into a no-op that still reports success.
+    # Nothing to check is a failure, not a pass -- the same anti-vacuity rule the rest of this file follows. A renamed runner label must not silently turn this gate into a no-op that still reports success.
     gate.assert_exit_code(1, result.rc, "zero slim jobs must not report success")
     gate.assert_contains(result.combined, "this check is blind", "says why it refused")
     gate.log_pass("a tree with zero slim jobs fails as blind, not green")

@@ -48,8 +48,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "install_script_check.py"
 INSTALL_SH_REL = "packages/www/public/install.sh"
 INSTALL_SH = ROOT / INSTALL_SH_REL
 
-# The VALUE is the twin's literal verdict prefix as a NON-tty run emits it. The
-# NAME avoids "PASS", which ruff S105 reads as a hardcoded password.
+# The VALUE is the twin's literal verdict prefix as a NON-tty run emits it. The NAME avoids "PASS", which ruff S105 reads as a hardcoded password.
 OK_LINE = "PASS: "
 BAD_LINE = "FAIL: "
 
@@ -140,9 +139,7 @@ def assert_same(
     assert norm(new.stderr) == norm(old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The green path, piped and on a pty
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The green path, piped and on a pty ---------------------------------------------------------------------------
 
 
 def test_real_tree_agrees_byte_for_byte() -> None:
@@ -182,9 +179,7 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     assert old.stdout == _run(TWIN, ROOT).stdout
 
 
-# ---------------------------------------------------------------------------
-# Six of the fourteen cases, each reached by a real mutation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Six of the fourteen cases, each reached by a real mutation ---------------------------------------------------------------------------
 
 
 def test_a_wrong_detect_platform_is_caught_first(tmp_path: pathlib.Path) -> None:
@@ -266,9 +261,7 @@ def test_a_broken_channel_inheritance_is_caught(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_the_nojq_shim_hides_jq_and_keeps_the_rest(tmp_path: pathlib.Path) -> None:
@@ -279,8 +272,7 @@ def test_the_nojq_shim_hides_jq_and_keeps_the_rest(tmp_path: pathlib.Path) -> No
     for name in linked:
         assert name in install_script_check.NOJQ_TOOLS
         assert (shim / name).is_symlink()
-    # Every tool the host actually has must be there: a silently short shim
-    # would make the case measure the shim rather than install.sh.
+    # Every tool the host actually has must be there: a silently short shim would make the case measure the shim rather than install.sh.
     for tool in install_script_check.NOJQ_TOOLS:
         assert ((shim / tool).exists()) == (shutil.which(tool) is not None), tool
 
@@ -317,9 +309,7 @@ def test_mode_matches_real_stat(tmp_path: pathlib.Path) -> None:
         assert install_script_check._mode(target) == real
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

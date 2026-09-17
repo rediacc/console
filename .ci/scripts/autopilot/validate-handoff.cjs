@@ -1,35 +1,19 @@
 #!/usr/bin/env node
 // Validate the model's handoff file before the harness stages a single byte.
 //
-// THE INVARIANT THIS SERVES (docs/ci-overhaul/03-v2-autonomy.md section 0):
-// the model never holds a write token, so handoff.json is by definition
-// UNTRUSTED input to the write path. Everything here fails toward escalation:
-// every rejection exits non-zero with an `ESCALATE: <class>: ...` line on
-// stderr, and there is deliberately NO silent no-op path. A wedged model (no
-// handoff, garbage handoff, half a handoff) must be visible to the operator,
-// not quietly absorbed as "nothing to do".
+// THE INVARIANT THIS SERVES (docs/ci-overhaul/03-v2-autonomy.md section 0): the model never holds a write token, so handoff.json is by definition UNTRUSTED input to the write path. Everything here fails toward escalation: every rejection exits non-zero with an `ESCALATE: <class>: ...` line on stderr, and there is deliberately NO silent no-op path. A wedged model (no handoff,
+// garbage handoff, half a handoff) must be visible to the operator, not quietly absorbed as "nothing to do".
 //
-// Usage:
-//   validate-handoff.cjs --handoff <file> --root <checkout> \
-//     --base-head <sha> --status <file> [--allow-submodules true|false]
+// Usage: validate-handoff.cjs --handoff <file> --root <checkout> \ --base-head <sha> --status <file> [--allow-submodules true|false]
 //
 //   --root       the checkout the harness owns; every declared path must
-//                realpath-resolve to inside it.
-//   --base-head  the sha the HARNESS checked out (git rev-parse HEAD). The
-//                handoff's base_head must equal it exactly.
+// realpath-resolve to inside it. --base-head the sha the HARNESS checked out (git rev-parse HEAD). The handoff's base_head must equal it exactly.
 //   --status     capture of `git status --porcelain=v1 -z` taken by the
-//                harness. Passed as a file so this validator is pure and
-//                offline-testable: it runs no git, no network, no shell.
-//   --allow-submodules  the S6 stage flag, as a VALUE rather than an ambient
-//                read: absent falls back to AUTOPILOT_ALLOW_SUBMODULES in the
-//                environment, and anything other than the literal 'true' is
-//                off. A handoff carrying submodules[] while this is off is
-//                REJECTED rather than trimmed, because a round that quietly
-//                dropped its submodule half would push a console pointer bump
+// harness. Passed as a file so this validator is pure and offline-testable: it runs no git, no network, no shell. --allow-submodules the S6 stage flag, as a VALUE rather than an ambient read: absent falls back to AUTOPILOT_ALLOW_SUBMODULES in the environment, and anything other than the literal 'true' is off. A handoff carrying submodules[] while this is off is REJECTED rather
+// than trimmed, because a round that quietly dropped its submodule half would push a console pointer bump
 //                with nothing behind it.
 //
-// Exit: 0 valid (normalized verdict JSON on stdout), 1 escalate (reasons on
-// stderr), 2 usage error. There is no exit code meaning "ignore me".
+// Exit: 0 valid (normalized verdict JSON on stdout), 1 escalate (reasons on stderr), 2 usage error. There is no exit code meaning "ignore me".
 
 'use strict';
 
@@ -39,11 +23,7 @@ const path = require('path');
 const SCHEMA_FILE = path.join(__dirname, 'handoff.schema.json');
 const MAX_HANDOFF_BYTES = 65536;
 
-// Paths the harness must never stage, whatever the model says. `.github/**`
-// is its own class: the operator decision (03-v2-autonomy.md wall 2) is that
-// workflow fixes ESCALATE with the proposed patch attached as data. The rest
-// are blocked outright: they are the agent-config surface that wall 4 exists
-// to protect, and a "fix" touching them is indistinguishable from an attack.
+// Paths the harness must never stage, whatever the model says. `.github/**` is its own class: the operator decision (03-v2-autonomy.md wall 2) is that workflow fixes ESCALATE with the proposed patch attached as data. The rest are blocked outright: they are the agent-config surface that wall 4 exists to protect, and a "fix" touching them is indistinguishable from an attack.
 const DENY_GITHUB = ['.github'];
 const DENY_BLOCKED_PREFIXES = ['.claude', '.husky'];
 const DENY_BLOCKED_EXACT = [
@@ -54,11 +34,7 @@ const DENY_BLOCKED_EXACT = [
   '.gitmodules',
 ];
 
-// ---------------------------------------------------------------------------
-// Minimal interpreter for the subset of JSON Schema handoff.schema.json uses.
-// Interpreting the schema file (rather than duplicating its rules in code)
-// keeps the published contract and the enforcement from drifting apart.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Minimal interpreter for the subset of JSON Schema handoff.schema.json uses. Interpreting the schema file (rather than duplicating its rules in code) keeps the published contract and the enforcement from drifting apart. ---------------------------------------------------------------------------
 function validateNode(value, schema, ptr, errors) {
   if (schema.const !== undefined && value !== schema.const) {
     errors.push(`${ptr}: must equal '${schema.const}'`);
@@ -104,8 +80,7 @@ function validateNode(value, schema, ptr, errors) {
 }
 
 // git status --porcelain=v1 -z: `XY <path>\0`, renames/copies add `<orig>\0`.
-// Both sides of a rename count as dirty: either appearing undeclared is a
-// red flag.
+// Both sides of a rename count as dirty: either appearing undeclared is a red flag.
 function parseStatusZ(buf) {
   const dirty = new Set();
   const tokens = buf.toString('utf8').split('\0');
@@ -126,8 +101,7 @@ function underPrefix(p, base) {
   return p === base || p.startsWith(`${base}/`);
 }
 
-// Resolve `rel` under `root` through any symlinked ancestors. A path whose
-// real location leaves the checkout is an escape regardless of how it is
+// Resolve `rel` under `root` through any symlinked ancestors. A path whose real location leaves the checkout is an escape regardless of how it is
 // spelled; the deepest EXISTING ancestor is realpathed so a not-yet-created
 // file under a symlinked directory is still caught.
 function resolvesInsideRoot(root, rel) {
@@ -206,9 +180,7 @@ function validate(raw, opts) {
         `handoff.submodules: ${submodules.length} submodule change(s) declared while AUTOPILOT_ALLOW_SUBMODULES is not 'true'; refusing the whole round rather than pushing the console half of it`
       );
     }
-    // A submodule push only makes sense on a push round: escalate and
-    // no-change stage nothing, so the submodule commits would be minted and
-    // then stranded with no pointer advance to carry them.
+    // A submodule push only makes sense on a push round: escalate and no-change stage nothing, so the submodule commits would be minted and then stranded with no pointer advance to carry them.
     if (handoff.outcome !== 'push') {
       fail(
         'schema-violation',
@@ -239,25 +211,15 @@ function validate(raw, opts) {
 
   const dirty = parseStatusZ(opts.statusBuf);
 
-  // The handoff file is the CONTRACT, not a change: the model writes it into
-  // the workspace root, so git always reports it dirty, and it can never be
-  // declared in files[] (declaring it would commit the round's own control
-  // channel). Excluding exactly the contract path keeps both directions of
-  // the staged-set equality honest. Live proof this was missing: attempt 6
-  // on canary PR #562 (run 31327079213) had the model finally write a valid
-  // handoff and the boundary refused the round as undeclared-dirty over the
-  // handoff file itself.
+  // The handoff file is the CONTRACT, not a change: the model writes it into the workspace root, so git always reports it dirty, and it can never be declared in files[] (declaring it would commit the round's own control channel). Excluding exactly the contract path keeps both directions of the staged-set equality honest. Live proof this was missing: attempt 6 on canary PR #562
+  // (run 31327079213) had the model finally write a valid handoff and the boundary refused the round as undeclared-dirty over the handoff file itself.
   {
     const path = require('node:path');
     const rel = path.relative(opts.root, opts.handoffPath).split(path.sep).join('/');
     dirty.delete(rel);
   }
 
-  // The SHAPE rules, shared by console files[] and every submodule's files[].
-  // Extracted rather than copied: a submodule whose paths were policed by a
-  // second, slightly different copy of these rules is a hole that opens the day
-  // one copy is updated and the other is not. Returns the normalized path, or
-  // null when it failed (reasons already recorded).
+  // The SHAPE rules, shared by console files[] and every submodule's files[]. Extracted rather than copied: a submodule whose paths were policed by a second, slightly different copy of these rules is a hole that opens the day one copy is updated and the other is not. Returns the normalized path, or null when it failed (reasons already recorded).
   const checkPathShape = (entry, rootDir, label) => {
     const where = label ? `${label}/${entry}` : entry;
     if (path.posix.isAbsolute(entry) || path.isAbsolute(entry) || /^[A-Za-z]:/.test(entry)) {
@@ -312,8 +274,7 @@ function validate(raw, opts) {
     declared.add(norm);
   }
 
-  // Staged-set equality, the other direction: an edit the model did not
-  // declare is a red flag, not a rounding error.
+  // Staged-set equality, the other direction: an edit the model did not declare is a red flag, not a rounding error.
   for (const d of dirty) {
     if (!declared.has(d))
       fail('undeclared-dirty', `${d} changed in the tree but is not declared in files[]`);
@@ -346,10 +307,7 @@ function validate(raw, opts) {
       );
     }
 
-    // THE GITLINK MUST BE DECLARED. A submodule commit is only reachable from
-    // console through the pointer, so a round that pushes the submodule
-    // without advancing the pointer has published a commit nothing references
-    // and left the console PR describing a tree it does not contain.
+    // THE GITLINK MUST BE DECLARED. A submodule commit is only reachable from console through the pointer, so a round that pushes the submodule without advancing the pointer has published a commit nothing references and left the console PR describing a tree it does not contain.
     if (!declared.has(sm.path)) {
       fail(
         'submodule-gitlink-undeclared',
@@ -357,10 +315,7 @@ function validate(raw, opts) {
       );
     }
 
-    // Paths are relative to the SUBMODULE, so they are resolved against the
-    // submodule's own directory. A file naming its way back out of the
-    // submodule is the interesting attack, and it fails as a symlink escape
-    // or a traversal exactly as it would in console.
+    // Paths are relative to the SUBMODULE, so they are resolved against the submodule's own directory. A file naming its way back out of the submodule is the interesting attack, and it fails as a symlink escape or a traversal exactly as it would in console.
     const smRoot = path.join(opts.root, sm.path);
     let smRootUsable = true;
     try {

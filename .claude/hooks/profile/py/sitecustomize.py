@@ -114,10 +114,7 @@ def _esc(s):
 
 def _on_exit(root, day_dir):
     try:
-        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms
-        # wl_resprofile with PSI, cgroup scope and availability flags this file
-        # deliberately does not pay for. It stamps the marker "super" when it does,
-        # and the check happens HERE, at exit, so atexit ordering cannot decide it.
+        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms wl_resprofile with PSI, cgroup scope and availability flags this file deliberately does not pay for. It stamps the marker "super" when it does, and the check happens HERE, at exit, so atexit ordering cannot decide it.
         if os.environ.get(_ARMED) == "super":
             return
         rs = resource.getrusage(resource.RUSAGE_SELF)
@@ -174,8 +171,7 @@ def _install():
 
 _install()
 
-# The distro sitecustomize we shadow, verbatim: install the apport exception
-# handler if available.
+# The distro sitecustomize we shadow, verbatim: install the apport exception handler if available.
 try:
     import apport_python_hook
 except ImportError:

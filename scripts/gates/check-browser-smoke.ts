@@ -104,13 +104,8 @@ async function main(): Promise<void> {
   const base = `http://127.0.0.1:${port}`;
   const browser = await chromium.launch();
   const findings: Finding[] = [];
-  // Routes that could not reach network quiet and were checked after `domcontentloaded`
-  // instead. NAME THE REAL FALLBACK: this comment and the message below both said `load`
-  // until a review caught it -- `load` was the FIRST fallback tried and it hangs the same
-  // way networkidle does (see the comment on the goto call), so the chain moved to
-  // `domcontentloaded` without this line being updated. A message that names the wrong
-  // wait is worse than a vague one: it sends the next reader to the wrong place in the
-  // fallback chain when this ever needs touching again.
+  // Routes that could not reach network quiet and were checked after `domcontentloaded` instead. NAME THE REAL FALLBACK: this comment and the message below both said `load` until a review caught it -- `load` was the FIRST fallback tried and it hangs the same way networkidle does (see the comment on the goto call), so the chain moved to `domcontentloaded` without this line being
+  // updated. A message that names the wrong wait is worse than a vague one: it sends the next reader to the wrong place in the fallback chain when this ever needs touching again.
   const degraded: string[] = [];
   let checked = 0;
 
@@ -118,8 +113,7 @@ async function main(): Promise<void> {
     for (const route of routes) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
       const errs: string[] = [];
-      // Playwright's console text for a failed subresource is the bare
-      // "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      // Playwright's console text for a failed subresource is the bare "Failed to load resource: the server responded with a status of 404 (Not Found)"
       // with NO URL in it, so the URL has to come from the response stream instead. A
       // first attempt filtered on the console text and could never have matched anything;
       // it was caught by probing the real string rather than assuming its shape.
@@ -132,35 +126,25 @@ async function main(): Promise<void> {
       });
       page.on('pageerror', (e: Error) => errs.push(`${e.name}: ${e.message}`));
 
-      // `networkidle` IS THE RIGHT WAIT AND THE WRONG FAILURE. Islands have to hydrate
-      // before the assertions below mean anything, so waiting for quiet is correct. But a
+      // `networkidle` IS THE RIGHT WAIT AND THE WRONG FAILURE. Islands have to hydrate before the assertions below mean anything, so waiting for quiet is correct. But a
       // page carrying `<video preload="metadata">` pointed at media.rediacc.com issues a
-      // request that never completes in a sandboxed container, and then the gate reports
-      // `page.goto: Timeout 45000ms exceeded` -- a crash, on the FIRST route, with none of
-      // its three real assertions ever run. That happened on 2026-08-24 while the same job
-      // had passed on the previous commit with identical page code.
+      // request that never completes in a sandboxed container, and then the gate reports `page.goto: Timeout 45000ms exceeded` -- a crash, on the FIRST route, with none of its three real assertions ever run. That happened on 2026-08-24 while the same job had passed on the previous commit with identical page code.
       //
       // So: try for quiet, and on timeout fall back to `load` and keep going. A hanging
       // third-party request can no longer mask the checks; a broken island still fails
-      // them. The fallback is COUNTED and printed, because a gate that silently lowers its
-      // own bar is worse than one that fails.
+      // them. The fallback is COUNTED and printed, because a gate that silently lowers its own bar is worse than one that fails.
       let resp = null;
       try {
         resp = await page.goto(base + route, { waitUntil: 'networkidle', timeout: 30_000 });
       } catch {
-        // `load` WAS THE FIRST FALLBACK AND IT HANGS THE SAME WAY, which the run on
-        // 4dcd676b proved: `page.goto: Timeout 30000ms exceeded ... waiting until "load"`.
-        // `load` waits for subresources too, and the request that never finishes is a
-        // subresource. `domcontentloaded` fires when the HTML is parsed and is the only
-        // one of the three that a hanging media request cannot hold up.
+        // `load` WAS THE FIRST FALLBACK AND IT HANGS THE SAME WAY, which the run on 4dcd676b proved: `page.goto: Timeout 30000ms exceeded ... waiting until "load"`. `load` waits for subresources too, and the request that never finishes is a subresource. `domcontentloaded` fires when the HTML is parsed and is the only one of the three that a hanging media request cannot hold up.
         degraded.push(route);
         try {
           resp = await page.goto(base + route, {
             waitUntil: 'domcontentloaded',
             timeout: 30_000,
           });
-          // The beat islands would have had under networkidle. They hydrate from module
-          // scripts, so this is what stands in for the quiet that never came.
+          // The beat islands would have had under networkidle. They hydrate from module scripts, so this is what stands in for the quiet that never came.
           await page.waitForTimeout(3_000);
         } catch (e) {
           // THIRD FAILURE IS A FINDING, NOT A CRASH. A gate that dies reports nothing
@@ -186,9 +170,7 @@ async function main(): Promise<void> {
       }
       checked++;
 
-      // Drop the generic resource-load error ONLY when every 404 this page produced was
-      // media the repo deliberately does not check out. If even one 404 is something else,
-      // the error stands, so a genuinely broken asset still fails.
+      // Drop the generic resource-load error ONLY when every 404 this page produced was media the repo deliberately does not check out. If even one 404 is something else, the error stands, so a genuinely broken asset still fails.
       const mediaOnly404s = notFound.length > 0 && notFound.every(isAbsentByDesign);
       for (const e of errs) {
         if (mediaOnly404s && GENERIC_RESOURCE_ERROR.test(e)) continue;
@@ -201,8 +183,7 @@ async function main(): Promise<void> {
       if (navLinks < 5)
         findings.push({ route, kind: 'nav', detail: `only ${navLinks} nav link(s) rendered` });
 
-      // The language switcher is an island: if it fails to hydrate, the trigger is inert
-      // and the visitor is stranded in one locale. Assert the whole path, not its markup.
+      // The language switcher is an island: if it fails to hydrate, the trigger is inert and the visitor is stranded in one locale. Assert the whole path, not its markup.
       const hasTrigger = await page.locator('.language-trigger-icon').count();
       if (hasTrigger > 0) {
         await page.locator('.language-trigger-icon').first().click();
@@ -232,8 +213,7 @@ async function main(): Promise<void> {
     }
 
     if (selftest) {
-      // CONTROL: a page whose island is deliberately broken must be REPORTED, or a green
-      // run here means nothing. Inject a throwing script and require a console finding.
+      // CONTROL: a page whose island is deliberately broken must be REPORTED, or a green run here means nothing. Inject a throwing script and require a console finding.
       const page = await browser.newPage();
       const seen: string[] = [];
       page.on('pageerror', (e: Error) => seen.push(e.message));

@@ -81,8 +81,7 @@ sys.stderr.write("fake gh: unrouted call: %s\\n" % joined)
 sys.exit(90)
 """
 
-# `jq` and `date` are REAL here: the port asks the same two programs the twin
-# asks, so a symlink is the honest stub. `gh` is the only fake.
+# `jq` and `date` are REAL here: the port asks the same two programs the twin asks, so a symlink is the honest stub. `gh` is the only fake.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq", "date", "grep", "sed", "cat")
 
 
@@ -232,9 +231,7 @@ def a_run(
 SUMMARY = "considered=%d excluded=%d too-old=%d attempt-capped=%d dead-head=%d retried=%d"
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_missing_gh_is_refused_first(tmp_path: pathlib.Path) -> None:
@@ -271,9 +268,7 @@ def test_an_empty_but_successful_branch_listing_is_also_a_skip(
     assert_agree(old, new, "empty-branch-tips", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The five filters, one case each
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The five filters, one case each ---------------------------------------------------------------------------
 
 
 def test_no_failed_runs_reports_the_normal_night(tmp_path: pathlib.Path) -> None:
@@ -359,9 +354,7 @@ def test_a_head_that_is_no_longer_a_branch_tip_is_superseded(
     assert_agree(old, new, "dead-head", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The retry itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The retry itself ---------------------------------------------------------------------------
 
 
 def test_an_eligible_run_is_reran_and_the_call_is_exact(tmp_path: pathlib.Path) -> None:
@@ -452,8 +445,7 @@ def test_the_per_night_cap_breaks_the_loop_and_says_so(tmp_path: pathlib.Path) -
     assert old.returncode == 0
     assert "⚠ hit RETRY_MAX_PER_RUN=2; the rest wait for tomorrow" in old.stderr
     assert len([c for c in old_calls if "rerun-failed-jobs" in c]) == 2
-    # `break`, not `continue`: the two runs it did not reach are not counted as
-    # considered either, so the summary reports 3 and not 5.
+    # `break`, not `continue`: the two runs it did not reach are not counted as considered either, so the summary reports 3 and not 5.
     assert (SUMMARY % (3, 0, 0, 0, 0, 2)) in old.stderr
     assert_agree(old, new, "per-night-cap", old_calls, new_calls)
 
@@ -509,9 +501,7 @@ def test_an_unreadable_runs_listing_yields_no_candidates(tmp_path: pathlib.Path)
     assert_agree(old, new, "runs-unreadable", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The fallback logger world
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fallback logger world ---------------------------------------------------------------------------
 
 
 def test_the_fallback_logger_world_moves_info_and_step_to_stdout(
@@ -567,9 +557,7 @@ def test_the_fallback_world_require_cmd_is_its_own_and_still_reports(
     assert_agree(old, new, "fallback-require-cmd", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, driven against real bash
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, driven against real bash ---------------------------------------------------------------------------
 
 
 def _bash_read_fields(line: str) -> list[str]:

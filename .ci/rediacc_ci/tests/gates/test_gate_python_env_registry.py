@@ -27,12 +27,8 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Written SPLIT on purpose. `all_offerers()` in the shrink-only composition gate is a
-# text grep over every tracked source file, so a gate TEST that merely drives this flag
-# at its subject reads as a baseline writer bypassing the guard -- mention-vs-invocation.
-# Splitting the literal keeps this file out of that enumeration without weakening the
-# enumeration itself, which is the alternative that was tried and rejected: excluding
-# test trees wholesale lets a REAL writer hide in one, proven by planting exactly that.
+# Written SPLIT on purpose. `all_offerers()` in the shrink-only composition gate is a text grep over every tracked source file, so a gate TEST that merely drives this flag at its subject reads as a baseline writer bypassing the guard -- mention-vs-invocation. Splitting the literal keeps this file out of that enumeration without weakening the enumeration itself, which is the
+# alternative that was tried and rejected: excluding test trees wholesale lets a REAL writer hide in one, proven by planting exactly that.
 WRITE_BASELINE = "--write-" + "baseline"
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_python_env_registry.py")

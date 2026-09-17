@@ -49,33 +49,19 @@ const ALLOWED_IDENTICAL = new Set([
   'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
-  // 'Compliance' is the established term in this catalog's own German, and the
-  // count is not close: 45 de values already use the loanword against 1 using
-  // 'Konformität'. It is also the ordinary word in German regulatory writing.
-  // Added on 2026-08-19 because the gate was pushing a translator AWAY from the
-  // site's own convention: unable to edit this file, they reached for
-  // 'Konformität' purely to avoid an identical-value finding, which would have
-  // left one tag label disagreeing with 45 sibling strings. A gate that makes
-  // correct copy fail is a gate that gets written around.
+  // 'Compliance' is the established term in this catalog's own German, and the count is not close: 45 de values already use the loanword against 1 using 'Konformität'. It is also the ordinary word in German regulatory writing. Added on 2026-08-19 because the gate was pushing a translator AWAY from the site's own convention: unable to edit this file, they reached for 'Konformität'
+  // purely to avoid an identical-value finding, which would have left one tag label disagreeing with 45 sibling strings. A gate that makes correct copy fail is a gate that gets written around.
   'Compliance',
-  // 'Migration' for the same reason and on its own count: 23 German values
-  // already use the EN-identical singular against 3 using 'Migrationen'.
-  // Deliberately NOT added for French, where the same count is 4 against 2:
-  // six data points is a split, not a convention, and an allowlist entry added
-  // on a coin-flip is how an allowlist stops meaning anything. The French tag
-  // keeps its plural until there is evidence either way.
+  // 'Migration' for the same reason and on its own count: 23 German values already use the EN-identical singular against 3 using 'Migrationen'. Deliberately NOT added for French, where the same count is 4 against 2: six data points is a split, not a convention, and an allowlist entry added on a coin-flip is how an allowlist stops meaning anything. The French tag keeps its plural
+  // until there is evidence either way.
   'Migration',
-  // Partner-program tier badge names. Several locales (it/ja/pt/ru/zh/tr)
-  // keep these in English because their existing cross-reference copy
+  // Partner-program tier badge names. Several locales (it/ja/pt/ru/zh/tr) keep these in English because their existing cross-reference copy
   // embeds the English names ("livello Registered", "Silver ortağın...");
-  // 'Gold' is already exempt via MIN_STRING_LENGTH. Locales that fully
-  // localized the tier vocabulary (ar/de/es/et/fr/ko) translate them and
-  // are unaffected by this allowlist.
+  // 'Gold' is already exempt via MIN_STRING_LENGTH. Locales that fully localized the tier vocabulary (ar/de/es/et/fr/ko) translate them and are unaffected by this allowlist.
   'Registered',
   'Silver',
   'Platinum',
-  // Pure-formatting strings (bullet prefix + JSON-Pointer placeholder) —
-  // the rendered pointer is the meaningful content, not the bullet glyph.
+  // Pure-formatting strings (bullet prefix + JSON-Pointer placeholder) — the rendered pointer is the meaningful content, not the bullet glyph.
   '  • {{pointer}}',
   // Generated command title banner — brand name + untranslated program name.
   'rdc config edit — {{name}} (v{{version}})',
@@ -116,12 +102,7 @@ const ALLOWED_IDENTICAL = new Set([
   'Backblaze',
   'Cloudflare',
   'Ceph',
-  // WebAuthn/FIDO2 term kept untranslated by locales that follow the same
-  // convention as Apple/Google/Microsoft account UIs in that language (e.g.
-  // German). "Password" is likewise an established loanword in some locales
-  // (e.g. Italian, where "password" is standard tech vocabulary with no
-  // dedicated native translation in common use — confirmed consistent
-  // throughout it/settings.json).
+  // WebAuthn/FIDO2 term kept untranslated by locales that follow the same convention as Apple/Google/Microsoft account UIs in that language (e.g. German). "Password" is likewise an established loanword in some locales (e.g. Italian, where "password" is standard tech vocabulary with no dedicated native translation in common use — confirmed consistent throughout it/settings.json).
   'Passkey',
   'Password',
   // Storage provider brand names (keep as-is globally)
@@ -202,14 +183,12 @@ const ALLOWED_IDENTICAL = new Set([
   'Disk',
   'Memory',
   'Status',
-  // Console table column headers (columnLabel_*) kept as loanwords/cognates
-  // by several locales for the same reasons documented alongside the mirror
+  // Console table column headers (columnLabel_*) kept as loanwords/cognates by several locales for the same reasons documented alongside the mirror
   // entries in eslint.config.js's account-web extraUntranslatedPatterns:
   // "Commit" has no established local translation in any of the 12 locales
   // (every CLI translation keeps it untranslated); "Backend"/"Provider" are
   // loanwords in de/es/fr/it/pt matching packages/cli's own translations;
-  // "Repository" is Italian's own established word for the concept
-  // (navRepos/reposEmpty in this same console.json use it identically).
+  // "Repository" is Italian's own established word for the concept (navRepos/reposEmpty in this same console.json use it identically).
   'Commit',
   'Backend',
   'Provider',
@@ -217,10 +196,7 @@ const ALLOWED_IDENTICAL = new Set([
   // International words (same or very similar across languages)
   'Online',
   'Failover',
-  // Found 2026-08-31 wiring packages/shared/src/i18n/locales into this gate for the
-  // first time: 'Information' is the correct spelling in German and French too (not
-  // a leftover English placeholder), and 'Total' is the correct word in Spanish,
-  // French and Portuguese (all three use it identically, unlike German's 'Gesamt').
+  // Found 2026-08-31 wiring packages/shared/src/i18n/locales into this gate for the first time: 'Information' is the correct spelling in German and French too (not a leftover English placeholder), and 'Total' is the correct word in Spanish, French and Portuguese (all three use it identically, unlike German's 'Gesamt').
   'Information',
   'Total',
   'Rollback',
@@ -364,34 +340,18 @@ const ALLOWED_IDENTICAL = new Set([
   'Repositories were found on {{machine}} but none are tracked in your local config. Run: rdc config repository list and ensure the repo entries exist, then retry.',
   'The account server rejected license issuance for the repository. First error: {{error}}. Run: rdc subscription refresh repo --name <repo> -m {{machine}} for details.',
   'Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.',
-  // "Sandbox" is already an established loanword in es/fr/tr: each of those
-  // locales keeps it untranslated in admin.json's sandboxModeLabel/
-  // sandboxModeSubtitle ("Modo sandbox" / "Mode sandbox" / "Sandbox Modu").
-  // common.json's sandboxLabel is the same word, same locales, same choice.
+  // "Sandbox" is already an established loanword in es/fr/tr: each of those locales keeps it untranslated in admin.json's sandboxModeLabel/ sandboxModeSubtitle ("Modo sandbox" / "Mode sandbox" / "Sandbox Modu"). common.json's sandboxLabel is the same word, same locales, same choice.
   'Sandbox',
-  // RPO / RTO is a disaster-recovery industry acronym pair. Most locales
-  // that translate this key keep the acronym itself untranslated
-  // (de/ja/zh/pt/ru/it all use "RPO/RTO" verbatim, only adding a translated
-  // descriptor for ko/et/ar). es/fr/tr keep the acronym pair exactly as
-  // written in English, spaces included.
+  // RPO / RTO is a disaster-recovery industry acronym pair. Most locales that translate this key keep the acronym itself untranslated (de/ja/zh/pt/ru/it all use "RPO/RTO" verbatim, only adding a translated descriptor for ko/et/ar). es/fr/tr keep the acronym pair exactly as written in English, spaces included.
   'RPO / RTO',
-  // Plural forms of "Cluster"/"Datastore" (singular forms are already
-  // allowlisted above). fr/console.json's own body strings already treat
-  // both as untranslated loanwords in the singular
-  // (clustersEmpty: "Aucun cluster...", datastoresEmpty: "Aucun
-  // datastore...", columnLabel_cluster: "Cluster"), so the plural sidebar
-  // titles/nav labels follow the same established French convention.
+  // Plural forms of "Cluster"/"Datastore" (singular forms are already allowlisted above). fr/console.json's own body strings already treat both as untranslated loanwords in the singular (clustersEmpty: "Aucun cluster...", datastoresEmpty: "Aucun datastore...", columnLabel_cluster: "Cluster"), so the plural sidebar titles/nav labels follow the same established French convention.
   'Clusters',
   'Datastores',
   // French cognate: "communication"/"communications" is spelled identically
   // in French and English; settings.json's notificationsPageTitle uses the
   // correct native French word, which happens to match.
   'Communications',
-  // tr/admin.json already keeps "Lead Magnet" as an English loanword
-  // elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet
-  // İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so
-  // the short magnetLabel column header ("Magnet") follows the same
-  // established convention rather than introducing a different Turkish term.
+  // tr/admin.json already keeps "Lead Magnet" as an English loanword elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so the short magnetLabel column header ("Magnet") follows the same established convention rather than introducing a different Turkish term.
   'Magnet',
 ]);
 
@@ -504,8 +464,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^Rediacc\s+\(/, // Rediacc product labels with technical details
   /^Rediacc\s+\w+$/, // Rediacc product sub-labels (e.g., "Rediacc Retention", "Rediacc Verification")
   /\.patchInfo$/, // Patch info display strings (technical, kept in English)
-  // ── Array-based keys (newly visible after flatten fix) ──
-  // Terminal simulation metadata (structural, not content)
+  // ── Array-based keys (newly visible after flatten fix) ── Terminal simulation metadata (structural, not content)
   /\.terminal\.lines\.\d+\.type$/, // "command", "spacer", "check", "status"
   /\.terminal\.lines\.\d+\.prompt$/, // "$"
   /\.terminal\.lines\.\d+\.flag$/, // command flags
@@ -533,8 +492,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   // Cost visual environment names (example names)
   /\.costVisual\.\w+\.items\.\d+\.name$/, // "dev-alice", "dev-bob"
   /\.costVisual\.\w+\.items\.\d+\.detail$/, // "idle 16h/day"
-  // Logo wall categories
-  // Stat/metric numeric values (currencies, percentages, measurements)
+  // Logo wall categories Stat/metric numeric values (currencies, percentages, measurements)
   /\.statCallouts\.\d+\.number$/, // "$6.9M/yr", "60-80%"
   /\.stats\.\d+\.number$/, // "<5min", "99.99%"
   /^metrics\.items\.\d+\.number$/, // "< 60s", "0 bytes"

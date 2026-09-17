@@ -184,8 +184,7 @@ export class ConfigFileStorage {
   private migrationContext(): MigrationContext {
     return {
       getMasterPassword: () => this.requirePassword(),
-      // The v2 compound-blob unpack needs AES-GCM. The schema package is
-      // runtime-portable and carries no crypto provider, so the host injects one.
+      // The v2 compound-blob unpack needs AES-GCM. The schema package is runtime-portable and carries no crypto provider, so the host injects one.
       decryptLegacyBlob: (data, password) => nodeCryptoProvider.decrypt(data, password),
     };
   }
@@ -204,14 +203,11 @@ export class ConfigFileStorage {
 
     const raw = JSON.parse(content) as unknown;
     const migration = await runMigrations(raw, this.migrationContext());
-    // Hydrate encrypted leaves with type-valid stubs so the strict parse of the
-    // at-rest form succeeds without prompting for the master password. Sensitive
-    // values are decrypted lazily (loadDecrypted / update), never at load.
+    // Hydrate encrypted leaves with type-valid stubs so the strict parse of the at-rest form succeeds without prompting for the master password. Sensitive values are decrypted lazily (loadDecrypted / update), never at load.
     const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
     const config = parseConfig(RdcConfigSchema, hydrated, `config "${name}"`);
 
-    // Persist the upgraded shape so future loads skip the migration step.
-    // Best-effort: a read-only filesystem or lock failure must not break load.
+    // Persist the upgraded shape so future loads skip the migration step. Best-effort: a read-only filesystem or lock failure must not break load.
     if (migration.migrated) {
       try {
         await this.withLock(name, () => this.saveUnlocked(config, name));
@@ -259,13 +255,8 @@ export class ConfigFileStorage {
     const versioned: RdcConfig = bumpVersion ? { ...config, version: config.version + 1 } : config;
     const encrypted = await this.encryptConfig(versioned);
 
-    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME
-    // name that land in the same millisecond compute the identical tempPath.
-    // Whichever renames second then hits ENOENT, because the first already
-    // moved that path away (observed live: run 30512465488, storage.test.ts's
-    // "should not corrupt file under concurrent writes", a lock-window race
-    // under CI-runner load that did not reproduce under local stress testing).
-    // The random suffix makes every tempPath unique regardless of timing.
+    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME name that land in the same millisecond compute the identical tempPath. Whichever renames second then hits ENOENT, because the first already moved that path away (observed live: run 30512465488, storage.test.ts's "should not corrupt file under concurrent writes", a lock-window race under CI-runner load
+    // that did not reproduce under local stress testing). The random suffix makes every tempPath unique regardless of timing.
     const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}.${randomUUID()}`;
     const content = stringifyConfig(encrypted);
 
@@ -321,15 +312,10 @@ export class ConfigFileStorage {
    * responsible for touching only `state.*`.
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
-    // A STATE write must never CREATE a config file. Status is subordinate to
-    // the config's existence: when the file is gone (the tutorial preambles
+    // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles
     // `rm` it between runs; `config prune` removes it), a background writer —
-    // the executor daemon's post-request provision bookkeeping above all —
-    // must not resurrect an empty config. Observed live: the daemon recreated
-    // the file between a preamble's `rm` and its `config init`, which then
-    // died on "Config already exists" and cascaded through the whole tutorial
-    // sequence. Callers of updateState are best-effort by contract, so a
-    // missing config surfaces as a rejected promise they already tolerate.
+    // the executor daemon's post-request provision bookkeeping above all — must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a
+    // rejected promise they already tolerate.
     try {
       await fs.access(this.getPath(name));
     } catch {

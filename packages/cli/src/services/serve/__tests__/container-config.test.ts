@@ -52,9 +52,7 @@ function buf(data: Uint8Array): ArrayBuffer {
   return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 }
 
-// /v1/command runs the REAL Commander tree in-process, which would otherwise
-// read the developer's own config from disk. This is the only stub: the config
-// the EXECUTOR holds still comes from the encrypted blob under test.
+// /v1/command runs the REAL Commander tree in-process, which would otherwise read the developer's own config from disk. This is the only stub: the config the EXECUTOR holds still comes from the encrypted blob under test.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
@@ -73,8 +71,7 @@ vi.mock('../../config/config-resources.js', () => ({
     getLocalMachine: vi.fn((name: string) =>
       Promise.resolve({ ip: '10.0.0.1', user: 'root', name })
     ),
-    // `demo` is placed on `prod-1` so the dispatched `repo status demo` derives
-    // its machine from placement (spec/03 §2.3), the reshape's addressing.
+    // `demo` is placed on `prod-1` so the dispatched `repo status demo` derives its machine from placement (spec/03 §2.3), the reshape's addressing.
     getCurrent: vi.fn(() =>
       Promise.resolve({
         state: {},
@@ -317,8 +314,7 @@ describe('container-tier config loading', () => {
 
     expect(executed).toHaveLength(1);
 
-    // The config policy ran against is the DECRYPTED one. If the executor had
-    // failed to open the blob, these fields could not exist.
+    // The config policy ran against is the DECRYPTED one. If the executor had failed to open the blob, these fields could not exist.
     expect(authorizedAgainst).toHaveLength(1);
     const config = authorizedAgainst[0];
     expect(config.resources?.machines).toEqual({
@@ -330,10 +326,7 @@ describe('container-tier config loading', () => {
   // ── The rules must actually reach the executor ───────────────────────
 
   it('enforces a deny rule that exists ONLY inside the encrypted config', async () => {
-    // The policy document rides in the ciphertext and nowhere else. The account
-    // server cannot read it, the wire does not carry it, and the executor has no
-    // local copy: the ONLY way this rule can bind is if the executor genuinely
-    // decrypted the config it was handed.
+    // The policy document rides in the ciphertext and nowhere else. The account server cannot read it, the wire does not carry it, and the executor has no local copy: the ONLY way this rule can bind is if the executor genuinely decrypted the config it was handed.
     server.close();
     await boot(
       secretConfig({
@@ -345,9 +338,7 @@ describe('container-tier config loading', () => {
     await grantKey(OWNER_TOKEN);
     const response = await runCommand(OWNER_TOKEN);
 
-    // BEFORE THE FIX THIS WAS A 200. The policy was dropped on push, so the
-    // executor saw no document, fell back to MISSING_POLICY_DEFAULT, and an owner
-    // sailed straight through a rule that explicitly forbade the command.
+    // BEFORE THE FIX THIS WAS A 200. The policy was dropped on push, so the executor saw no document, fell back to MISSING_POLICY_DEFAULT, and an owner sailed straight through a rule that explicitly forbade the command.
     expect(response.status).toBe(403);
     expect(((await response.json()) as { error: string }).error).toMatch(/denies/);
     expect(executed).toHaveLength(0);
@@ -463,9 +454,7 @@ describe('container-tier config loading', () => {
   });
 
   it('draws the key from the NAMED session, not the latest-grant index', async () => {
-    // Two live grants by the same user: the index points at the second, but the
-    // request names the first. The per-session config cache makes the selection
-    // observable: repeating the named-session request must pull NOTHING new,
+    // Two live grants by the same user: the index points at the second, but the request names the first. The per-session config cache makes the selection observable: repeating the named-session request must pull NOTHING new,
     // while the headerless fallback (the second session) pays its own pull.
     const first = await grantKey();
     await grantKey();
@@ -482,9 +471,7 @@ describe('container-tier config loading', () => {
   it('refuses a header naming a session someone ELSE granted (principal mismatch)', async () => {
     const sessionId = await grantKey(OWNER_TOKEN);
 
-    // A different real user in the same org names the owner's session. Same
-    // ownership rule as the grant itself: refused, and indistinguishable from a
-    // session that does not exist.
+    // A different real user in the same org names the owner's session. Same ownership rule as the grant itself: refused, and indistinguishable from a session that does not exist.
     const response = await runCommand(OTHER_TOKEN, { 'X-Config-Session': sessionId });
 
     expect(response.status).toBe(404);

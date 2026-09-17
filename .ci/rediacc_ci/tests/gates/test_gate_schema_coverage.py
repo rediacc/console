@@ -36,13 +36,8 @@ BASH_TWIN = ".ci/scripts/test/gates/test-schema-coverage.sh"
 SUT = paths.from_root("scripts/gates", "check-schema-coverage.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 SHARED = paths.from_root("packages", "shared")
-# HOISTED, NOT PER-WORKSPACE, and the first draft of this port got it wrong.
-# npm hoists vitest to the ROOT node_modules in this monorepo, so a probe at
-# `packages/shared/node_modules/.bin/vitest` refuses on every machine. The twin
-# never noticed because `npx vitest` walks up the tree for it. That was a defect in
-# the CONTROL, not in the gate: the probe was looking in a directory that has never
-# existed here. Fixed by pointing at the hoisted binary and running it with cwd
-# inside packages/shared, which is where the suite path resolves from.
+# HOISTED, NOT PER-WORKSPACE, and the first draft of this port got it wrong. npm hoists vitest to the ROOT node_modules in this monorepo, so a probe at `packages/shared/node_modules/.bin/vitest` refuses on every machine. The twin never noticed because `npx vitest` walks up the tree for it. That was a defect in the CONTROL, not in the gate: the probe was looking in a directory that
+# has never existed here. Fixed by pointing at the hoisted binary and running it with cwd inside packages/shared, which is where the suite path resolves from.
 VITEST = paths.from_root("node_modules", ".bin", "vitest")
 WALKER_SUITE = "src/config-schema/__tests__/coverage.test.ts"
 
@@ -69,9 +64,7 @@ def test_gate_green_on_real_tree(gate):
 
 def test_walker_fires_on_synthetic_unregistered_leaf(gate):
     gate.log_test("the walker itself fires on schemas the real tree cannot produce")
-    # The vitest suite drives computeSchemaCoverage with synthetic schemas: an
-    # unregistered leaf must be reported uncovered. A non-zero exit here means the
-    # instrument cannot fire and the gate's green above is meaningless.
+    # The vitest suite drives computeSchemaCoverage with synthetic schemas: an unregistered leaf must be reported uncovered. A non-zero exit here means the instrument cannot fire and the gate's green above is meaningless.
     if not VITEST.is_file():
         gate.log_fail(
             "node_modules/.bin/vitest is absent, so the walker's own "

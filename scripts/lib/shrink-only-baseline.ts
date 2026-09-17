@@ -46,8 +46,7 @@ export const baselineAdditions = (
     .filter((id) => {
       if (seed === undefined) return true;
       // Ids are `<path>:<where>`; compare on the path half only. `lastIndexOf` rather than
-      // `indexOf` because a Windows-style or colon-bearing `where` would otherwise truncate
-      // the path and silently widen the exemption.
+      // `indexOf` because a Windows-style or colon-bearing `where` would otherwise truncate the path and silently widen the exemption.
       const file = id.slice(0, id.lastIndexOf(':'));
       return !(file === seed || file.startsWith(`${seed}/`));
     });

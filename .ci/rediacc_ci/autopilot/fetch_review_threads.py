@@ -123,9 +123,7 @@ PAGE_LIMIT = 50
 
 # THE QUERY, byte for byte from the twin, LEADING NEWLINE INCLUDED. It travels
 # as a single `-f query=` argument, so its bytes are part of the request and are
-# compared by the differential's call log. Reflowing it would change the request
-# without changing the result, which is exactly the kind of difference a
-# reviewer waves through and a cache does not.
+# compared by the differential's call log. Reflowing it would change the request without changing the result, which is exactly the kind of difference a reviewer waves through and a cache does not.
 QUERY = """
 query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
@@ -151,8 +149,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   }
 }"""
 
-# The accumulator. `+` on two objects is jq's RIGHT-biased shallow merge, which
-# is what tags each node with the repo and PR it came from.
+# The accumulator. `+` on two objects is jq's RIGHT-biased shallow merge, which is what tags each node with the repo and PR it came from.
 ACCUMULATE_PROGRAM = """$acc + (($page.data.repository.pullRequest.reviewThreads.nodes // [])
                      | map(. + {repo: $repo, pr: $pr}))"""
 
@@ -212,8 +209,7 @@ def gh_json(what: str, args: list[str], *, sleeper=time.sleep) -> tuple[bool, st
         attempt += 1
     log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
     if err:
-        # `[[ -s "$err" ]] && sed 's/^/    /' "$err" >&2`, including GNU sed's
-        # refusal to invent a final newline the input did not have.
+        # `[[ -s "$err" ]] && sed 's/^/ /' "$err" >&2`, including GNU sed's refusal to invent a final newline the input did not have.
         text = err.decode("utf-8", "replace")
         parts = text.split("\n")
         incomplete = parts[-1] != ""
@@ -345,9 +341,7 @@ class Fetcher:
                     "cannot fetch review threads for PR %s#%s; failing closed" % (target, number)
                 )
                 return 1
-            # A GraphQL error response is valid JSON and exits 0, so it is
-            # caught per page rather than only on the last one. THIS IS THE
-            # CHECK THAT STOPS A PERMISSION ERROR READING AS "no threads".
+            # A GraphQL error response is valid JSON and exits 0, so it is caught per page rather than only on the last one. THIS IS THE CHECK THAT STOPS A PERMISSION ERROR READING AS "no threads".
             if _jq_quiet(["-e", ".errors"], page_json):
                 _, message = _jq(["-r", ERROR_MESSAGE], page_json)
                 log.error("GraphQL query failed: %s" % message)
@@ -425,33 +419,27 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
     if not (pr and repo and out_path):
         log.error(USAGE)
         return 2
-    # The PR number is the only validated input, and it is validated because it
-    # travels as a TYPED GraphQL variable: a non-numeric value would be a server
-    # error paid for after the request rather than a refusal before it.
+    # The PR number is the only validated input, and it is validated because it travels as a TYPED GraphQL variable: a non-numeric value would be a server error paid for after the request rather than a refusal before it.
     if not (pr.isascii() and pr.isdigit()):
         log.error("--pr must be a number, got '%s'" % pr)
         return 2
 
     fetcher = Fetcher(sleeper=sleeper)
 
-    # Console's own threads are REQUIRED: without them the payload describes
-    # nothing and a review round would answer findings it never read.
+    # Console's own threads are REQUIRED: without them the payload describes nothing and a review round would answer findings it never read.
     if fetcher.fetch_target(repo, pr) != 0:
         log.error("cannot fetch review threads for the console PR; failing closed")
         return 1
 
     # The linked submodule PRs, when the caller supplied the console body.
     # BEST-EFFORT, and the twin's own paragraph says why at length; the short
-    # version is that the gate holds no cross-repo token, so a private
-    # submodule's PR is unreadable from here and killing the round over it would
-    # take fix rounds down with it.
+    # version is that the gate holds no cross-repo token, so a private submodule's PR is unreadable from here and killing the round over it would take fix rounds down with it.
     if _non_empty(body):
         _, targets = linked_targets(body)
         for target, number in targets:
             log.info("also fetching review threads for the linked %s#%s" % (target, number))
             if fetcher.fetch_target(target, number) != 0:
-                # STDOUT, because an Actions workflow command has to be on
-                # stdout to be recognised. See the module docstring.
+                # STDOUT, because an Actions workflow command has to be on stdout to be recognised. See the module docstring.
                 print(
                     "::warning::autopilot gate: could not read review threads for %s#%s "
                     "(the gate holds no cross-repo token); this round cannot answer them"

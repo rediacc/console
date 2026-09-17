@@ -65,10 +65,7 @@ def path_without(tool: str, scratch: pathlib.Path, base: str | None = None) -> s
         try:
             names = os.listdir(directory)
         except OSError:
-            # Unreadable directory: it cannot be mirrored, and it is also the
-            # directory the tool was found in, so DROPPING it is the safe end of
-            # the trade -- keeping it would leave the tool reachable, which is
-            # the one thing the caller asked to prevent.
+            # Unreadable directory: it cannot be mirrored, and it is also the directory the tool was found in, so DROPPING it is the safe end of the trade -- keeping it would leave the tool reachable, which is the one thing the caller asked to prevent.
             continue
         for name in names:
             if name == tool:
@@ -91,7 +88,5 @@ def assert_absent(tool: str, path: str) -> None:
     """
     found = shutil.which(tool, path=path)
     if found is not None:
-        # RAISED, not asserted: this module is not a test file, so `python -O`
-        # would strip an `assert` and turn the one check that makes the mask
-        # trustworthy into nothing at all.
+        # RAISED, not asserted: this module is not a test file, so `python -O` would strip an `assert` and turn the one check that makes the mask trustworthy into nothing at all.
         raise AssertionError("%s is still reachable at %s on the masked PATH" % (tool, found))

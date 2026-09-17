@@ -203,15 +203,13 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 # Applied to BOTH snapshots so it cannot hide a real change; see the header.
 FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 
-# The words a `setup --check` run must actually print. A check that prints
-# nothing is indistinguishable from a check that did not run.
+# The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
 REQUIRED_ROWS = ("node", "docker", "image", "devbox", "port block")
 
 # check E's oracle: any of these next to a 4xx/5xx is a contradiction.
 SUCCESS_WORDS_RE = re.compile(r"\b(ok|OK|healthy|success|succeeded|fine|good|ready)\b")
 
-# The settle window, in seconds, and the poll interval. See the header for the
-# two false accusations that produced it.
+# The settle window, in seconds, and the poll interval. See the header for the two false accusations that produced it.
 SETTLE_SECONDS = 15
 
 
@@ -720,10 +718,7 @@ def g_subject(root: pathlib.Path, tmpdir: pathlib.Path, body_file: pathlib.Path)
     port = root / ".ci" / "rediacc_ci" / "setup" / "machine.py"
 
     def make(tag: str) -> pathlib.Path:
-        # `check_g` derives the port path as `runsh.parent.parent/rediacc_ci/
-        # setup/machine.py`, so the copy has to sit in that shape rather than
-        # anywhere convenient. The `runsh` it is handed must NOT define setup(),
-        # which an empty file satisfies.
+        # `check_g` derives the port path as `runsh.parent.parent/rediacc_ci/ setup/machine.py`, so the copy has to sit in that shape rather than anywhere convenient. The `runsh` it is handed must NOT define setup(), which an empty file satisfies.
         base = tmpdir / tag
         (base / "rediacc_ci" / "setup").mkdir(parents=True, exist_ok=True)
         (base / "legacy").mkdir(parents=True, exist_ok=True)
@@ -801,9 +796,7 @@ def main(argv: list[str] | None = None) -> int:
     control_fails = 0
     red, nc = report.colour["RED"], report.colour["NC"]
 
-    # B-scope controls: the settle poll must ignore a NEIGHBOUR and still catch
-    # a real one. The unscoped form compared whole snapshots, so any of the ~300
-    # gates sharing this tree touching an unrelated file kept the equality false
+    # B-scope controls: the settle poll must ignore a NEIGHBOUR and still catch a real one. The unscoped form compared whole snapshots, so any of the ~300 gates sharing this tree touching an unrelated file kept the equality false
     # for the whole window. B then blamed `setup --check` for a path that had
     # settled in one second.
     b_before = "?? a.txt"
@@ -829,15 +822,11 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = pathlib.Path(tmp)
 
-        # C-control: a random slot must be rejected. The mutation lands on
-        # rediacc_ci.core.ports, which is where the digest actually lives.
+        # C-control: a random slot must be rejected. The mutation lands on rediacc_ci.core.ports, which is where the digest actually lives.
         broken_root = tmpdir / "broken-root"
         (broken_root / ".ci").mkdir(parents=True)
         with contextlib.suppress(OSError):
-            # A copy that cannot be made leaves `ports.py` absent, which the
-            # VACUOUS branch below reports. Swallowing here and reporting there
-            # is the twin's shape: `cp -r` failing and the mutation not applying
-            # are the same finding to a reader.
+            # A copy that cannot be made leaves `ports.py` absent, which the VACUOUS branch below reports. Swallowing here and reporting there is the twin's shape: `cp -r` failing and the mutation not applying are the same finding to a reader.
             shutil.copytree(root / ".ci" / "rediacc_ci", broken_root / ".ci" / "rediacc_ci")
         ports_py = broken_root / ".ci" / "rediacc_ci" / "core" / "ports.py"
         if ports_py.is_file():
@@ -928,16 +917,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             control_fails = 1
 
-        # G-controls: two plants, because presence and ORDER are different
-        # defects and a check that only notices absence would pass the one that
-        # actually shipped later.
-        # THE CONTROLS FOLLOW THE SUBJECT. `check_g` reads the bash `setup()` while
-        # it exists and `machine.run_setup` afterwards, so a control that always
-        # plants into the bash goes VACUOUS at the cutover -- observed exactly
-        # once, as `CONTROL IS VACUOUS: G(order)`, on a tree where the assertion
-        # itself was passing against the Python. `g_subject` returns the file the
-        # assertion will really read, the path to hand `check_g`, and the anchor
-        # line the ORDER plant inserts after.
+        # G-controls: two plants, because presence and ORDER are different defects and a check that only notices absence would pass the one that actually shipped later. THE CONTROLS FOLLOW THE SUBJECT. `check_g` reads the bash `setup()` while it exists and `machine.run_setup` afterwards, so a control that always plants into the bash goes VACUOUS at the cutover -- observed exactly
+        # once, as `CONTROL IS VACUOUS: G(order)`, on a tree where the assertion itself was passing against the Python. `g_subject` returns the file the assertion will really read, the path to hand `check_g`, and the anchor line the ORDER plant inserts after.
         legacy, g_arg, docker_anchor, late_line = g_subject(root, tmpdir, setup_body_file)
         run_noinit = g_arg("noinit")
         run_noinit.write_text(

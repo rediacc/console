@@ -34,10 +34,7 @@ import pathlib
 import re
 import sys
 
-# `ok`/`FAIL`, the bracketed verdict, then the label. The suffix ` (exit N)` is
-# printed by four of the nine assertion helpers and by none of the other five, so it
-# is stripped rather than captured: a label must key the same whichever helper
-# asserted it.
+# `ok`/`FAIL`, the bracketed verdict, then the label. The suffix ` (exit N)` is printed by four of the nine assertion helpers and by none of the other five, so it is stripped rather than captured: a label must key the same whichever helper asserted it.
 LINE_RE = re.compile(r"^(ok|FAIL)\s+\[([^\]]*)\]\s+(.*?)\s*$")
 EXIT_SUFFIX_RE = re.compile(r"\s+\(exit\s+[^)]*\)$")
 
@@ -91,8 +88,7 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 2
     left, right = _side(argv[0]), _side(argv[1])
-    # ZERO IS A FAILURE ON EITHER SIDE. An empty extraction compares equal to another
-    # empty extraction, and that green would mean the extractor did not see a run.
+    # ZERO IS A FAILURE ON EITHER SIDE. An empty extraction compares equal to another empty extraction, and that green would mean the extractor did not see a run.
     if not left or not right:
         print(
             "REFUSING: %s yielded %d label(s) and %s yielded %d. An empty side makes "

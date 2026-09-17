@@ -52,9 +52,7 @@ TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "fetch-review-threads.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "fetch_review_threads.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# A recording fake `gh`. It answers from FAKE_GH_SCRIPT, a JSON list consumed in
-# call order, and it RECORDS EVERY ARGV before deciding anything -- so a case
-# that produced no call log fails loudly rather than passing quietly.
+# A recording fake `gh`. It answers from FAKE_GH_SCRIPT, a JSON list consumed in call order, and it RECORDS EVERY ARGV before deciding anything -- so a case that produced no call log fails loudly rather than passing quietly.
 FAKE_GH = """#!/usr/bin/python3
 import json
 import os
@@ -186,9 +184,7 @@ def _sides(
     return old
 
 
-# ---------------------------------------------------------------------------
-# Controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 
 def test_the_fake_gh_is_the_gh() -> None:
@@ -222,9 +218,7 @@ def test_the_fake_gh_records_and_answers_in_order() -> None:
         assert len(log.read_text(encoding="utf-8").splitlines()) == 3
 
 
-# ---------------------------------------------------------------------------
-# Usage
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Usage ---------------------------------------------------------------------------
 
 
 def test_the_three_required_flags() -> None:
@@ -253,16 +247,13 @@ def test_the_pr_number_must_be_a_number() -> None:
         assert calls == [], value
         assert written is None
         if value == "":
-            # An EMPTY value is caught by the usage test first, because
-            # `parse_args` stores nothing distinguishable from an absent flag.
+            # An EMPTY value is caught by the usage test first, because `parse_args` stores nothing distinguishable from an absent flag.
             assert b"usage: fetch-review-threads.sh" in err
         else:
             assert b"--pr must be a number, got '%s'" % value.encode() in err, err
 
 
-# ---------------------------------------------------------------------------
-# The happy path, and what the request actually is
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, and what the request actually is ---------------------------------------------------------------------------
 
 
 def test_a_single_page_of_threads() -> None:
@@ -342,9 +333,7 @@ def test_the_page_limit_stops_a_runaway() -> None:
     assert written is None
 
 
-# ---------------------------------------------------------------------------
-# Failure, and the shapes it arrives in
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure, and the shapes it arrives in ---------------------------------------------------------------------------
 
 
 def test_a_graphql_error_object_is_not_an_empty_thread_set() -> None:
@@ -402,9 +391,7 @@ def test_a_body_that_exits_zero_but_is_not_usable_json() -> None:
     assert b"gh failed after 3 attempts (last exit 0)." in err, err
 
 
-# ---------------------------------------------------------------------------
-# Linked submodule PRs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Linked submodule PRs ---------------------------------------------------------------------------
 
 LINKED_BODY = """Some description.
 
@@ -508,9 +495,7 @@ def test_a_mistyped_body_path_is_silent() -> None:
     assert b"nope.md" not in err, "and it never mentions the path it could not read"
 
 
-# ---------------------------------------------------------------------------
-# The retry loop
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The retry loop ---------------------------------------------------------------------------
 
 
 def test_slow_a_failing_fetch_retries_three_times_and_replays_its_stderr() -> None:
@@ -543,9 +528,7 @@ def test_a_transient_failure_recovers_on_the_second_attempt() -> None:
     assert [n["id"] for n in json.loads(written)] == ["T_1"]
 
 
-# ---------------------------------------------------------------------------
-# The preserved hazard
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The preserved hazard ---------------------------------------------------------------------------
 
 
 def test_a_broken_accumulator_does_not_end_the_run() -> None:
@@ -583,9 +566,7 @@ def test_a_broken_accumulator_does_not_end_the_run() -> None:
     assert b"Cannot iterate over string" in err, "jq's own diagnostic reaches stderr"
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, driven directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, driven directly ---------------------------------------------------------------------------
 
 
 def test_page_args_omits_the_cursor_on_the_first_page() -> None:

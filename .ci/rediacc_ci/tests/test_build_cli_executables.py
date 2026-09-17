@@ -81,9 +81,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real, deterministic, and genuinely reached. Anything absent from this tuple is
-# ABSENT from the scratch PATH -- including `shasum`, whose absence is what makes
-# the `sha256sum` arm the one taken, and `node`, which is supplied as a fake.
+# Real, deterministic, and genuinely reached. Anything absent from this tuple is ABSENT from the scratch PATH -- including `shasum`, whose absence is what makes the `sha256sum` arm the one taken, and `node`, which is supplied as a fake.
 PATH_MINIMUM = ("dirname", "mkdir", "cp", "chmod", "sed", "cat", "wc", "sha256sum", "jq")
 
 RECORD = """{
@@ -367,9 +365,7 @@ def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
 NATIVE = ("--platform", "linux", "--arch", "x64")
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_is_sealed(tmp_path) -> None:
@@ -398,9 +394,7 @@ def test_the_fakes_really_record_and_never_touch_stdout(tmp_path) -> None:
     assert "FAKEBIN prepare-cli-assets.sh" in old_t[1]
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
 
 
 def test_help_prints_usage_on_stdout_and_exits_zero(tmp_path) -> None:
@@ -447,9 +441,7 @@ def test_help_wins_wherever_it_appears(tmp_path) -> None:
     _agree(old_t, new_t, "late-help")
 
 
-# ---------------------------------------------------------------------------
-# Auto-detection: four uname answers, two of them refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Auto-detection: four uname answers, two of them refusals ---------------------------------------------------------------------------
 
 
 def test_auto_detects_linux_x64(tmp_path) -> None:
@@ -518,9 +510,7 @@ def test_explicit_flags_skip_uname_entirely_until_the_smoke_guard(tmp_path) -> N
     _agree(old_t, new_t, "explicit-dry-run")
 
 
-# ---------------------------------------------------------------------------
-# DEFECT 1: a missing `node` is a silent exit 1
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- DEFECT 1: a missing `node` is a silent exit 1 ---------------------------------------------------------------------------
 
 
 def test_a_missing_node_is_a_silent_exit_one(tmp_path) -> None:
@@ -542,9 +532,7 @@ def test_the_dry_run_still_needs_node_because_the_lookup_is_above_it(tmp_path) -
     _agree(old_t, new_t, "dry-run-no-node")
 
 
-# ---------------------------------------------------------------------------
-# The happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
 def test_a_native_linux_build_runs_every_step_in_order(tmp_path) -> None:
@@ -669,9 +657,7 @@ def test_the_checksum_is_written_beside_the_binary_with_a_bare_name(tmp_path) ->
     _agree(old_t, new_t, "checksum")
 
 
-# ---------------------------------------------------------------------------
-# DEFECT 2 and DEFECT 3: two undeclared tools, two different endings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- DEFECT 2 and DEFECT 3: two undeclared tools, two different endings ---------------------------------------------------------------------------
 
 
 def test_a_missing_strip_dies_with_bashs_own_message_and_127(tmp_path) -> None:
@@ -700,9 +686,7 @@ def test_no_checksum_tool_is_a_warning_and_the_build_still_passes(tmp_path) -> N
     _agree(old_t, new_t, "no-checksum-tool")
 
 
-# ---------------------------------------------------------------------------
-# The version seam
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The version seam ---------------------------------------------------------------------------
 
 
 def test_a_release_build_without_a_version_refuses(tmp_path) -> None:
@@ -826,9 +810,7 @@ def test_the_injected_version_reaches_the_bundler_environment(tmp_path) -> None:
         assert seen == "4.5.6 4.5.6 4.5.6\n", "%s: %r" % (side, seen)
 
 
-# ---------------------------------------------------------------------------
-# The required-file gates and status propagation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The required-file gates and status propagation ---------------------------------------------------------------------------
 
 
 def test_a_bundler_that_writes_nothing_is_caught_by_require_file(tmp_path) -> None:
@@ -880,9 +862,7 @@ def test_a_failing_injector_propagates_its_status(tmp_path) -> None:
     _agree(old_t, new_t, "inject-rc")
 
 
-# ---------------------------------------------------------------------------
-# The smoke tests
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The smoke tests ---------------------------------------------------------------------------
 
 
 def test_a_failing_version_smoke_test_reports_its_code(tmp_path) -> None:
@@ -1053,9 +1033,7 @@ def test_an_absent_renet_list_is_not_a_corruption(tmp_path) -> None:
     _agree(old_t, new_t, "no-renet-section")
 
 
-# ---------------------------------------------------------------------------
-# DEFECT 5, and the cross-build guard that hides it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- DEFECT 5, and the cross-build guard that hides it ---------------------------------------------------------------------------
 
 
 def test_an_unvalidated_platform_builds_a_nonsense_name(tmp_path) -> None:
@@ -1108,9 +1086,7 @@ def test_an_unknown_detect_os_never_matches_and_smoke_tests_are_skipped(tmp_path
     _agree(old_t, new_t, "detect-os-unknown")
 
 
-# ---------------------------------------------------------------------------
-# The proof the differential can fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The proof the differential can fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:
@@ -1131,8 +1107,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     assert old_t[0].stderr == new_t[0].stderr, "the plant must be invisible on stderr"
     assert new_t[1] != old_t[1], "the call log must catch it"
 
-    # 2. Strip skipped: an artifact and a call-log difference, no stream change
-    #    other than the one log line.
+    # 2. Strip skipped: an artifact and a call-log difference, no stream change other than the one log line.
     root = fixture(
         tmp_path / "b",
         port_source=source.replace('if platform_name == "linux":', "if False:"),
@@ -1158,8 +1133,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     assert old_t[0].returncode == 1
     assert new_t[0].returncode == 0, "the plant must actually change the verdict"
 
-    # 4. The `&&` short-circuit turned into eager evaluation: same verdict, same
-    #    streams, one extra `uname` in the log.
+    # 4. The `&&` short-circuit turned into eager evaluation: same verdict, same streams, one extra `uname` in the log.
     root = fixture(
         tmp_path / "d",
         port_source=source.replace(
@@ -1175,9 +1149,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     assert new_t[1].count("FAKEBIN uname") == 4
 
 
-# ---------------------------------------------------------------------------
-# Unit-level: the helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Unit-level: the helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_binary_name_appends_exe_only_for_win() -> None:

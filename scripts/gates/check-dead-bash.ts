@@ -177,8 +177,7 @@ function loadAllowlist(): Allowlist {
   const out: Allowlist = { globRoots: [], dispatchPrefixes: [], manualFiles: [] };
   if (!fs.existsSync(ALLOWLIST)) return out;
 
-  // Shared parser/validator — never a bespoke one. A private parser is how
-  // .actions-upgrade-blocklist stayed outside the BLOCKER convention for so long.
+  // Shared parser/validator — never a bespoke one. A private parser is how .actions-upgrade-blocklist stayed outside the BLOCKER convention for so long.
   const entries = parseBlockeredList(ALLOWLIST);
   const failures = verifyAllBlockers(entries, ALLOWLIST);
   if (failures.length > 0) {
@@ -232,17 +231,9 @@ function main(): void {
   }
   const corpus = [...texts.values()].join('\n');
 
-  // CONTROL for the TEXTUAL table above, and the reason it is in-process rather
-  // than in a gate test: this gate's npm entry and its manifest row are both in
-  // the root driver's merge queue, so a control that needs a new registration is
-  // a control that does not run yet. This one runs on every invocation and costs
-  // nothing.
+  // CONTROL for the TEXTUAL table above, and the reason it is in-process rather than in a gate test: this gate's npm entry and its manifest row are both in the root driver's merge queue, so a control that needs a new registration is a control that does not run yet. This one runs on every invocation and costs nothing.
   //
-  // It is SET-DERIVED, not a typed count (docs/ci-overhaul/08-driver-contract.md
-  // section 6): if the tree holds Python files at all, at least one of them must
-  // be in the corpus. Drop `py` from TEXTUAL and this fires immediately, instead
-  // of the tree quietly reporting every bash function whose only caller moved to
-  // Python as dead.
+  // It is SET-DERIVED, not a typed count (docs/ci-overhaul/08-driver-contract.md section 6): if the tree holds Python files at all, at least one of them must be in the corpus. Drop `py` from TEXTUAL and this fires immediately, instead of the tree quietly reporting every bash function whose only caller moved to Python as dead.
   const pyTracked = tracked.filter((f) => f.endsWith('.py'));
   if (pyTracked.length > 0 && !pyTracked.some((f) => texts.has(f))) {
     console.error(

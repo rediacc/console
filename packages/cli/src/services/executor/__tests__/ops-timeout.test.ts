@@ -33,9 +33,7 @@ describe('ops-executor timeout kills the process tree', () => {
     dir = mkdtempSync(join(tmpdir(), 'ops-timeout-'));
     gcPidFile = join(dir, 'grandchild.pid');
     fakeRenet = join(dir, 'fake-renet');
-    // Fake renet: ignore SIGTERM (wedged), spawn a grandchild in the SAME
-    // process group (default, not detached) that also ignores SIGTERM and
-    // hangs, record its pid, then hang too. Only a group-wide SIGKILL ends it.
+    // Fake renet: ignore SIGTERM (wedged), spawn a grandchild in the SAME process group (default, not detached) that also ignores SIGTERM and hangs, record its pid, then hang too. Only a group-wide SIGKILL ends it.
     writeFileSync(
       fakeRenet,
       `#!/usr/bin/env node
@@ -70,8 +68,7 @@ setInterval(() => {}, 1e9);
     // The rejection must come only AFTER the kill sequence, not immediately.
     expect(Date.now() - started).toBeGreaterThanOrEqual(500);
 
-    // Read the grandchild pid the fake renet recorded, and prove it is dead —
-    // the exact thing the old test never checked.
+    // Read the grandchild pid the fake renet recorded, and prove it is dead — the exact thing the old test never checked.
     const { readFileSync } = await import('node:fs');
     const gcPid = Number.parseInt(readFileSync(gcPidFile, 'utf8').trim(), 10);
     expect(Number.isInteger(gcPid)).toBe(true);

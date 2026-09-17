@@ -71,9 +71,7 @@ const GREEN = '\x1b[0;32m';
 const YELLOW = '\x1b[0;33m';
 const NC = '\x1b[0m';
 
-// ---------------------------------------------------------------------------
-// Source side: the `## ` headings a locale document declares
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Source side: the `## ` headings a locale document declares ---------------------------------------------------------------------------
 
 /** Frontmatter and fenced code are not prose; a `## ` inside either is not a heading. */
 function bodyOfMarkdown(text: string): string {
@@ -106,8 +104,7 @@ function sourceHeadings(text: string): Array<{ text: string; raw: string }> {
     if (!m) continue;
     const raw = m[1] ?? '';
     // `{{t:...}}` is an inline-translation placeholder resolved at build time, so the
-    // rendered text is by design not the source text. Comparing them would report a
-    // failure for a feature working correctly.
+    // rendered text is by design not the source text. Comparing them would report a failure for a feature working correctly.
     if (raw.includes('{{')) continue;
     const plain = plainFromMarkdown(raw);
     if (plain.length === 0) continue;
@@ -116,9 +113,7 @@ function sourceHeadings(text: string): Array<{ text: string; raw: string }> {
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// Built side: the article body a reader is served
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Built side: the article body a reader is served ---------------------------------------------------------------------------
 
 const ARTICLE_OPEN = /<div\b[^>]*\bclass="[^"]*\barticle-content\b[^"]*"[^>]*>/;
 
@@ -142,8 +137,7 @@ function articleBody(html: string): string | null {
     if (depth === 0) return html.slice(start, m.index);
     i = tag.lastIndex;
   }
-  // Unbalanced markup: return what is left rather than nothing, so the failure is
-  // reported as a missing heading with real text rather than as an empty body.
+  // Unbalanced markup: return what is left rather than nothing, so the failure is reported as a missing heading with real text rather than as an empty body.
   return html.slice(start);
 }
 
@@ -256,9 +250,7 @@ function visibleText(html: string): string {
   );
 }
 
-// ---------------------------------------------------------------------------
-// The analysis, pure over its inputs so the control can drive it synthetically
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The analysis, pure over its inputs so the control can drive it synthetically ---------------------------------------------------------------------------
 
 interface Pair {
   locale: string;
@@ -324,10 +316,7 @@ function analyze(pairs: readonly Pair[]): Finding[] {
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// CONTROL. Prove the instrument can fire, and that it discriminates, before
-// trusting a green over the real tree.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- CONTROL. Prove the instrument can fire, and that it discriminates, before trusting a green over the real tree. ---------------------------------------------------------------------------
 
 function control(): void {
   const mk = (markdown: string, html: string | null): Pair => ({
@@ -354,16 +343,14 @@ function control(): void {
   if (red.length !== 1 || !red[0]?.missing.includes('Repository-Lebenszyklus')) {
     fail('a German heading absent from the rendered body was NOT reported');
   }
-  // 2. Discrimination: the matching case must be silent, or the gate is a tripwire
-  //    that fires on everything and would be disabled within a week.
+  // 2. Discrimination: the matching case must be silent, or the gate is a tripwire that fires on everything and would be disabled within a week.
   if (
     analyze([mk('## Repository-Lebenszyklus\n', wrap('<h2>Repository-Lebenszyklus</h2>'))])
       .length !== 0
   ) {
     fail('a correctly rendered heading was reported as missing');
   }
-  // 3. Scoping: the English TOC outside .article-content must not satisfy the
-  //    assertion. This is the one way this gate could be green while wrong.
+  // 3. Scoping: the English TOC outside .article-content must not satisfy the assertion. This is the one way this gate could be green while wrong.
   const scoped = analyze([
     mk(
       '## Repository-Lebenszyklus\n',
@@ -377,9 +364,7 @@ function control(): void {
   console.log('  control  ignores matching text outside .article-content');
 }
 
-// ---------------------------------------------------------------------------
-// Disk inputs
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Disk inputs ---------------------------------------------------------------------------
 
 function collectPairs(): Pair[] {
   const pairs: Pair[] = [];

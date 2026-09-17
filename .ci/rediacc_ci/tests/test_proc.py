@@ -38,9 +38,7 @@ from rediacc_ci.tests import differential as diff
 
 COMMON_SH = ".ci/scripts/lib/common.sh"
 
-# Short on purpose. Every case below waits for real wall clock, and a suite that
-# takes a minute is a suite people stop running. 0.4s is comfortably longer than
-# process startup on this host and comfortably shorter than a human's patience.
+# Short on purpose. Every case below waits for real wall clock, and a suite that takes a minute is a suite people stop running. 0.4s is comfortably longer than process startup on this host and comfortably shorter than a human's patience.
 FAST = 0.4
 
 
@@ -69,9 +67,7 @@ def bash_rc(script: str) -> int:
     return rc
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY: the things being compared against must actually be here
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY: the things being compared against must actually be here ---------------------------------------------------------------------------
 
 
 def test_gnu_timeout_is_present_for_the_differential():
@@ -94,9 +90,7 @@ def test_common_sh_defines_both_functions_being_replaced():
     assert "return 124" in body, "the 124 convention must still be in the original"
 
 
-# ---------------------------------------------------------------------------
-# The exit-code matrix: three implementations, same answers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exit-code matrix: three implementations, same answers ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -156,9 +150,7 @@ def test_a_missing_binary_is_127_and_not_an_exception():
     assert bash_rc("definitely-not-a-real-binary-9f3a") == 127
 
 
-# ---------------------------------------------------------------------------
-# The three defects the port does not reproduce
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three defects the port does not reproduce ---------------------------------------------------------------------------
 
 
 def test_neither_bash_timeout_enforces_its_deadline_and_this_one_does():
@@ -231,8 +223,7 @@ def test_the_bash_timeout_leaks_grandchildren_and_this_one_does_not(tmp_path):
     marker.unlink()
     proc.run_with_timeout(["bash", "-c", inner], 1)
     tracked = int(marker.read_text().strip())
-    # The group kill is asynchronous, so poll rather than assert instantly. A bare
-    # assertion here would be flaky in the one direction that matters least.
+    # The group kill is asynchronous, so poll rather than assert instantly. A bare assertion here would be flaky in the one direction that matters least.
     for _ in range(40):
         if not _alive(tracked):
             break
@@ -269,9 +260,7 @@ def test_the_bash_retry_discards_the_exit_code_and_this_one_keeps_it():
     assert result.stdout == ""
 
 
-# ---------------------------------------------------------------------------
-# The backoff schedule, compared against what bash would actually sleep
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The backoff schedule, compared against what bash would actually sleep ---------------------------------------------------------------------------
 
 
 def bash_schedule(attempts: int, delay: int) -> list[int]:
@@ -335,9 +324,7 @@ def test_the_backoff_is_exponential_base_two_with_no_jitter_and_no_cap():
     assert proc.backoff_delays(4, 3, factor=3.0) == [3.0, 9.0, 27.0]
 
 
-# ---------------------------------------------------------------------------
-# retry_with_backoff's own behaviour
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- retry_with_backoff's own behaviour ---------------------------------------------------------------------------
 
 
 def test_it_stops_at_the_first_success_and_sleeps_only_between_failures():
@@ -403,9 +390,7 @@ def test_zero_attempts_is_refused_rather_than_silently_doing_nothing():
         proc.backoff_delays(0)
 
 
-# ---------------------------------------------------------------------------
-# run()'s own contract
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- run()'s own contract ---------------------------------------------------------------------------
 
 
 def test_stdout_and_stderr_are_returned_separately():
@@ -513,9 +498,7 @@ def test_describe_does_not_say_killed_for_an_ordinary_failure():
     assert "KILLED" not in _described(1)
     assert "exited 1" in _described(1)
     assert "KILLED" not in _described(2)
-    # 160 is OUTSIDE the signal band: 128+32 is not a signal any child here
-    # sends, and treating the whole 128+ range as signals would swallow real
-    # exit codes from commands that legitimately return them.
+    # 160 is OUTSIDE the signal band: 128+32 is not a signal any child here sends, and treating the whole 128+ range as signals would swallow real exit codes from commands that legitimately return them.
     assert "KILLED" not in _described(160)
     assert "exited 160" in _described(160)
 

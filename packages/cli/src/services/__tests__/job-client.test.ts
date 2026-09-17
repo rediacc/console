@@ -44,8 +44,7 @@ describe('JobLogCursor', () => {
   it('does NOT count a trailing partial line', () => {
     const cursor = new JobLogCursor();
     cursor.consume('{"a":1}\n{"b":2}\n{"c":3');
-    // The third line has no newline yet: renet has not finished emitting it, so
-    // counting it would make us resume PAST a line we never actually received.
+    // The third line has no newline yet: renet has not finished emitting it, so counting it would make us resume PAST a line we never actually received.
     expect(cursor.sinceLine).toBe(2);
   });
 
@@ -58,8 +57,7 @@ describe('JobLogCursor', () => {
   });
 
   it('is unaffected by a multi-byte character split across chunks', () => {
-    // The UTF-8 for "é" is 0xC3 0xA9. Splitting it must not corrupt the count,
-    // which is why the cursor counts 0x0A BYTES rather than decoded characters.
+    // The UTF-8 for "é" is 0xC3 0xA9. Splitting it must not corrupt the count, which is why the cursor counts 0x0A BYTES rather than decoded characters.
     const line = Buffer.from('{"msg":"café"}\n', 'utf8');
     const cut = line.indexOf(0xc3) + 1;
 
@@ -139,8 +137,7 @@ describe('createEventLineReader spool-line ordinals', () => {
     expect(seen1).toEqual([1, 2]);
     expect(cursor.sinceLine).toBe(2);
 
-    // renet resumes at --since-line 2, re-sending line 3 in full. A fresh reader
-    // seeded from the cursor must number that resent line 3, not 1.
+    // renet resumes at --since-line 2, re-sending line 3 in full. A fresh reader seeded from the cursor must number that resent line 3, not 1.
     const seen2: (number | undefined)[] = [];
     const read2 = createEventLineReader((_event, line) => seen2.push(line), cursor.sinceLine);
     const chunk2 = '{"type":"log","msg":"3"}\n{"type":"log","msg":"4"}\n';
@@ -286,8 +283,7 @@ describe('parseJobStatus + jobStatusToExecuteResult', () => {
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.error).toBeUndefined();
-    // The operation duration is the JOB's own elapsed time, not how long the
-    // CLI happened to be watching it. For a detached job those differ.
+    // The operation duration is the JOB's own elapsed time, not how long the CLI happened to be watching it. For a detached job those differ.
     expect(result.operationDurationMs).toBe(2500);
     expect(result.durationMs).toBe(9999);
   });
@@ -327,8 +323,7 @@ describe('parseJobStatus + jobStatusToExecuteResult', () => {
   });
 
   it('a running job with no exit code still reports a non-zero failure', () => {
-    // Should not normally happen (we only read status after the tail ends), but
-    // reporting "success" for a job that never finished would be a lie.
+    // Should not normally happen (we only read status after the tail ends), but reporting "success" for a job that never finished would be a lie.
     const status = parseJobStatus(JSON.stringify({ ...base, state: 'running', exit_code: null }));
     const result = jobStatusToExecuteResult(status, 500);
 
@@ -396,9 +391,7 @@ describe('backgroundStartedHint', () => {
     expect(hint).toContain('Started job');
     expect(hint).toContain('keeps running in the background');
     expect(hint).toContain(JOB_ID);
-    // Positional job id, NOT --id. These assertions previously encoded the
-    // broken form, so the hint shipped `--id` and following it produced
-    // "error: unknown option '--id'" — the test pinned the bug in place.
+    // Positional job id, NOT --id. These assertions previously encoded the broken form, so the hint shipped `--id` and following it produced "error: unknown option '--id'" — the test pinned the bug in place.
     expect(hint).toContain(`rdc job logs ${JOB_ID} -m prod-1 --follow`);
     expect(hint).toContain(`rdc job status ${JOB_ID} -m prod-1`);
   });
@@ -413,9 +406,7 @@ describe('resumeHint', () => {
     expect(hint).toContain('NOT cancelled');
     expect(hint).toContain(JOB_ID);
 
-    // Every command it offers must be a real one. It now points at the
-    // first-class `rdc job` surface rather than telling the operator to shell
-    // into the machine and drive renet by hand.
+    // Every command it offers must be a real one. It now points at the first-class `rdc job` surface rather than telling the operator to shell into the machine and drive renet by hand.
     expect(hint).toContain(`rdc job logs ${JOB_ID} -m prod-1 --follow`);
     expect(hint).toContain(`rdc job status ${JOB_ID} -m prod-1`);
     expect(hint).toContain(`rdc job cancel ${JOB_ID} -m prod-1`);

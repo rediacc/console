@@ -28,19 +28,14 @@ from rediacc_ci import paths
 from rediacc_ci.quality import plant_proofs as pp
 from rediacc_ci.tests.gates import harness
 
-# Written SPLIT on purpose. `all_offerers()` in the shrink-only composition gate is a
-# text grep over every tracked source file, so a gate TEST that merely drives this flag
-# at its subject reads as a baseline writer bypassing the guard -- mention-vs-invocation.
-# Splitting the literal keeps this file out of that enumeration without weakening the
-# enumeration itself, which is the alternative that was tried and rejected: excluding
-# test trees wholesale lets a REAL writer hide in one, proven by planting exactly that.
+# Written SPLIT on purpose. `all_offerers()` in the shrink-only composition gate is a text grep over every tracked source file, so a gate TEST that merely drives this flag at its subject reads as a baseline writer bypassing the guard -- mention-vs-invocation. Splitting the literal keeps this file out of that enumeration without weakening the enumeration itself, which is the
+# alternative that was tried and rejected: excluding test trees wholesale lets a REAL writer hide in one, proven by planting exactly that.
 WRITE_BASELINE = "--write-" + "baseline"
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plant_proofs.py")
 BASH_SUBJECT = ".ci/scripts/test/gates/test-run-sh.sh"
 TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
-# A REAL subject that is currently UNPROVEN, so the mirror's baseline is not
-# empty. Without it every drain and trim case below asserted against a zero-row
+# A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row
 # baseline, which is the vacuous-fixture shape this whole gate is about; the
 # `if not obj[KEY]` guards caught it on the first run.
 DEBT_SUBJECT = ".ci/scripts/test/gates/test-ci-parity.sh"
@@ -155,8 +150,7 @@ def test_a_neighbouring_controls_proof_does_not_launder_this_plant(gate):
     gate.log_test("REGRESSION: three controls, one copied file, six lines apart")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        # Strip BOTH of control (b)'s proof lines. Control (c), further down the
-        # same file, still greps the SAME "$ctl/legacy.sh" for its own needle.
+        # Strip BOTH of control (b)'s proof lines. Control (c), further down the same file, still greps the SAME "$ctl/legacy.sh" for its own needle.
         _edit(root, BASH_SUBJECT, BASH_PROOF, "")
         _edit(root, BASH_SUBJECT, BASH_PROOF_AFTER, "")
         result = _run(root)

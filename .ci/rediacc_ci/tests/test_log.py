@@ -62,15 +62,10 @@ def _no_global_logger_leak():
     log._default = None
 
 
-# The library under differential test, and the exact calls made against it. One
-# constant so every case drives the SAME script and a case cannot silently test
-# a different message than the one it compares.
+# The library under differential test, and the exact calls made against it. One constant so every case drives the SAME script and a case cannot silently test a different message than the one it compares.
 COMMON_SH = ".ci/scripts/lib/common.sh"
 
-# `log_error a b` rather than `log_error "a b"` on purpose: the 2026-09-06
-# incident included `log_error` interpolating "$1" instead of "$*", which
-# silently dropped every argument after the first. A single-argument call cannot
-# see that, so the differential passes two.
+# `log_error a b` rather than `log_error "a b"` on purpose: the 2026-09-06 incident included `log_error` interpolating "$1" instead of "$*", which silently dropped every argument after the first. A single-argument call cannot see that, so the differential passes two.
 BASH_CALLS = (
     """
 source %s
@@ -98,9 +93,7 @@ def python_side(colour: bool) -> str:
     return buf.getvalue()
 
 
-# ---------------------------------------------------------------------------
-# The differential proper
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential proper ---------------------------------------------------------------------------
 
 
 def test_off_tty_bytes_are_identical():
@@ -291,9 +284,7 @@ def test_the_differential_harness_does_not_leak_the_callers_environment():
     assert out.strip() == "[unset][unset][unset]"
 
 
-# ---------------------------------------------------------------------------
-# The module's own behaviour, where a differential has nothing to compare to
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The module's own behaviour, where a differential has nothing to compare to ---------------------------------------------------------------------------
 
 
 def test_colour_allowed_needs_all_three_conditions():

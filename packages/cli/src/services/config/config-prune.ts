@@ -278,8 +278,7 @@ export async function analyzeConfigPrune(
   const wantArchives = !options.certsOnly && !options.refsOnly;
   const wantRefs = !options.certsOnly && !options.archivesOnly;
 
-  // Deep-clone so the analysis pass leaves the in-memory config untouched —
-  // the apply path re-runs the same logic via `configFileStorage.update`.
+  // Deep-clone so the analysis pass leaves the in-memory config untouched — the apply path re-runs the same logic via `configFileStorage.update`.
   const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
@@ -296,13 +295,10 @@ export async function analyzeConfigPrune(
     ? pruneDanglingRefs(clone)
     : { dropped: [] as DroppedRef[], warnings: [] as string[] };
 
-  // Reported whichever bucket filter is active: an orphan repo entry is worth
-  // surfacing even when the operator asked for a narrower run, because it is
-  // the one leftover that silently carries secrets.
+  // Reported whichever bucket filter is active: an orphan repo entry is worth surfacing even when the operator asked for a narrower run, because it is the one leftover that silently carries secrets.
   const orphanRepos = findOrphanRepos(clone);
   if (options.orphanRepos) removeOrphanRepos(clone, orphanRepos);
-  // Runs after removal so entries dropped above have their state records
-  // collected in the same pass rather than needing a second invocation.
+  // Runs after removal so entries dropped above have their state records collected in the same pass rather than needing a second invocation.
   const orphanStateRepos = pruneOrphanStateRepos(clone);
 
   return {
@@ -331,9 +327,7 @@ export function findOrphanRepos(cfg: RdcConfig): OrphanRepoEntry[] {
   const orphans: OrphanRepoEntry[] = [];
 
   for (const [name, repo] of Object.entries(repos)) {
-    // Placement is a union: a repo may be pinned to a machine OR to a
-    // datastore. Only an entry with neither is unplaced — treating a
-    // datastore-placed repo as an orphan would delete a live repo's secrets.
+    // Placement is a union: a repo may be pinned to a machine OR to a datastore. Only an entry with neither is unplaced — treating a datastore-placed repo as an orphan would delete a live repo's secrets.
     const placement = repo.placement;
     const placed =
       placement !== undefined &&
@@ -438,10 +432,7 @@ export async function applyConfigPrune(
   await configFileStorage.update(configName, (cfg) => {
     const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
-    // Prune archives FIRST so the cert-anchor pass below sees the post-prune
-    // resource set. If we built anchors from the pre-prune config, certs
-    // anchored to repositories about to be purged would survive the run as
-    // "live" and need a second invocation to be removed.
+    // Prune archives FIRST so the cert-anchor pass below sees the post-prune resource set. If we built anchors from the pre-prune config, certs anchored to repositories about to be purged would survive the run as "live" and need a second invocation to be removed.
     const arch = wantArchives
       ? mutateAndExtractArchives(cfg, graceDays, Boolean(options.purgeArchived))
       : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };

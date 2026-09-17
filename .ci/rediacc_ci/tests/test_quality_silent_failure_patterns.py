@@ -21,8 +21,7 @@ from rediacc_ci.tests import differential as diff
 
 STRICT = "#!/bin/bash\nset -euo pipefail\n"
 
-# The awk program from the twin, with the -v values substituted exactly as the
-# twin passes them. Nothing else is changed.
+# The awk program from the twin, with the -v values substituted exactly as the twin passes them. Nothing else is changed.
 AWK = r"""
 awk -v file="F" \
     -v pipe_head='(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)' \
@@ -89,8 +88,7 @@ def test_scanner_matches_awk(tmp_path: pathlib.Path, body: str) -> None:
     assert mod.scan_text(STRICT + body, "F") == expected
 
 
-# The file-level pre-filter is a SEPARATE test from the per-line tracker, and the
-# twin's own asymmetry between them is the reason.
+# The file-level pre-filter is a SEPARATE test from the per-line tracker, and the twin's own asymmetry between them is the reason.
 PREFILTER = [
     "set -euo pipefail",
     "set -eo pipefail",

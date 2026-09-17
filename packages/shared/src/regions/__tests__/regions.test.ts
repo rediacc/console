@@ -14,8 +14,7 @@ import {
   verifySignedRegions,
 } from '../index.js';
 
-// Test keys (same as subscription crypto tests)
-// Fresh Ed25519 key pair generated for tests (verified to work with Node 22 crypto.subtle)
+// Test keys (same as subscription crypto tests) Fresh Ed25519 key pair generated for tests (verified to work with Node 22 crypto.subtle)
 const TEST_PUBLIC_KEY_SPKI = 'MCowBQYDK2VwAyEAFKKPwa2eTAOh+Ho3ntplPtbvHN90DywcbrjJx0+C27c=';
 const TEST_PRIVATE_KEY_PKCS8 = 'MC4CAQAwBQYDK2VwBCIEIKGh5gpzYDqjKcH0DIml3uFrKyFR3Tv7j02Z1nT4MXAA';
 const TEST_KEY_ID = 'test-key-regions';

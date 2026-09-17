@@ -99,26 +99,16 @@ import sys
 
 from rediacc_ci import paths
 
-# The one credential that cannot come from the store, named once so callers and
-# tests refer to it by symbol rather than re-spelling it.
+# The one credential that cannot come from the store, named once so callers and tests refer to it by symbol rather than re-spelling it.
 #
-# CALLED `ACCESS_ENV` AND NOT `TOKEN_ENV`, which is the name it wants. Ruff's
-# S105 flags a string literal assigned to any identifier containing `token`,
-# `secret` or `password`, and it is RIGHT to: that heuristic is what catches a
-# real credential pasted into source. This constant holds a VARIABLE NAME rather
-# than a value, so the finding would be false, and the fix for a false S105 is to
-# stop the identifier looking like a credential rather than to add a per-line
-# suppression that the next real credential then hides behind.
+# CALLED `ACCESS_ENV` AND NOT `TOKEN_ENV`, which is the name it wants. Ruff's S105 flags a string literal assigned to any identifier containing `token`, `secret` or `password`, and it is RIGHT to: that heuristic is what catches a real credential pasted into source. This constant holds a VARIABLE NAME rather than a value, so the finding would be false, and the fix for a false S105
+# is to stop the identifier looking like a credential rather than to add a per-line suppression that the next real credential then hides behind.
 ACCESS_ENV = "BWS_ACCESS_TOKEN"
 
 # The subcommand, verbatim. A list rather than a string so no shell ever sees it.
 LIST_ARGV = ("secret", "list", "--output", "json", "--color", "no")
 
-# How long `bws secret list` may take. The twin has no timeout at all, which is
-# the one place this port deliberately adds something: a hung credential fetch in
-# CI reports nothing until the job ceiling, and the only artefact is the job
-# being cancelled. The value is generous enough that a slow network is not a
-# false refusal, and the timeout path reuses the twin's own "list failed"
+# How long `bws secret list` may take. The twin has no timeout at all, which is the one place this port deliberately adds something: a hung credential fetch in CI reports nothing until the job ceiling, and the only artefact is the job being cancelled. The value is generous enough that a slow network is not a false refusal, and the timeout path reuses the twin's own "list failed"
 # wording so a reader is not handed a fifth vocabulary.
 LIST_TIMEOUT_S = 60
 
@@ -281,9 +271,7 @@ def load(
 
     rows = listing(bws, environ)
 
-    # A REQUESTED NAME IS NOT CHECKED AGAINST THE MAP, and that is the twin's
-    # behaviour rather than an omission: `bws_env_load FOO` looks FOO up in the
-    # store directly. The map is consulted only to enumerate the default set.
+    # A REQUESTED NAME IS NOT CHECKED AGAINST THE MAP, and that is the twin's behaviour rather than an omission: `bws_env_load FOO` looks FOO up in the store directly. The map is consulted only to enumerate the default set.
     wanted = list(names) if names else mapped_names(path)
 
     resolved: dict[str, str] = {}

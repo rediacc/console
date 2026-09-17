@@ -43,8 +43,7 @@ def test_restates_matches_the_grep_pipeline(tmp_path: pathlib.Path, content: str
     assert mod.restates(target, "RUFF_VERSION", "9.9.9") is (code == 0)
 
 
-# A6's cases. Three of these are the exact false positives the twin's comments
-# record, with their dates and run ids.
+# A6's cases. Three of these are the exact false positives the twin's comments record, with their dates and run ids.
 A6_CASES = [
     "shellcheck -S warning foo.sh\n",  # a real invocation
     "# run shellcheck here\n",  # a comment

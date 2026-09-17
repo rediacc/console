@@ -40,15 +40,13 @@ HOOKS = hookcases.HOOKS
 # GitHub eventually cancels with no artefact at all.
 SUITE_TIMEOUT_S = 1800
 
-# `^  PASS ` -- the shape the wl_* selftests print.
+# `^ PASS ` -- the shape the wl_* selftests print.
 PASS_2SP = re.compile(r"^  PASS ", re.MULTILINE)
-# `  PASS: ` -- test-teammate-idle.py's shape, and the v5 harness's.
+# ` PASS: ` -- test-teammate-idle.py's shape, and the v5 harness's.
 PASS_COLON = re.compile(r"^\s*PASS: ", re.MULTILINE)
 # Leading-whitespace PASS, the resource modules' shape.
 PASS_LOOSE = re.compile(r"^\s*PASS\s", re.MULTILINE)
-# `  ok   ` -- test-report-inbox.sh's shape. Copying the v5 counter verbatim made it
-# count 0 and still report "ok ... 0 case(s) passed": a green that verified nothing,
-# which is the exact defect the zero-count refusal was added to close.
+# ` ok ` -- test-report-inbox.sh's shape. Copying the v5 counter verbatim made it count 0 and still report "ok ... 0 case(s) passed": a green that verified nothing, which is the exact defect the zero-count refusal was added to close.
 OK_WORD = re.compile(r"^\s*ok\s", re.MULTILINE)
 # A trailing summary line, which two modules print instead of per-case lines.
 SUMMARY_N = re.compile(r"^([0-9]+) control\(s\) passed$", re.MULTILINE)
@@ -63,9 +61,7 @@ def _count(pattern, text: str) -> int:
 
 # (relative path, argv tail, counter, floor, label template, unit)
 #
-# The FLOOR column is a minimum, re-measured when it drifts far below the real count:
-# wl_git was still floored at 18 when it had 63, so two thirds of its controls could
-# have vanished silently.
+# The FLOOR column is a minimum, re-measured when it drifts far below the real count: wl_git was still floored at 18 when it had 63, so two thirds of its controls could have vanished silently.
 COUNTED = [
     ("stop/wl_git.py", ["--selftest"], PASS_2SP, 55, "stop/wl_git.py --selftest", "control"),
     ("stop/wl_admit.py", ["--selftest"], PASS_2SP, 16, "stop/wl_admit.py --selftest", "control"),
@@ -101,25 +97,18 @@ COUNTED = [
     # belongs beside the others; it carries the leak plant (a secret-shaped argv token
     # must never reach a record) and the two silence controls.
     ("stop/wl_resprofile.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_resprofile.py", "control"),
-    # The forkless /proc tree sampler: spawns a known tree and asserts shape, symbolic
-    # wchan, and that a planted secret-shaped argv never reaches a sample.
+    # The forkless /proc tree sampler: spawns a known tree and asserts shape, symbolic wchan, and that a planted secret-shaped argv never reaches a sample.
     ("stop/wl_ressample.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_ressample.py", "control"),
-    # The structural deriver: E1/E4/E5/E6 fire-and-silence pairs, the D1 wall-only
-    # dilation control, the D2 no-duration-literal self-scan, and the admission floor.
+    # The structural deriver: E1/E4/E5/E6 fire-and-silence pairs, the D1 wall-only dilation control, the D2 no-duration-literal self-scan, and the admission floor.
     ("stop/wl_profile.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_profile.py", "control"),
 ]
 
-# ONE PASS EACH, on exit status, and that is deliberate rather than lazy. These print
-# in several different formats ("73 checks, 0 failures", "✓ ... 15 blocked, 13
-# allowed", "FAILURES: 0"), so counting their assertions here would couple this file
-# to that many output shapes and go quietly to zero the moment one reworded a line.
+# ONE PASS EACH, on exit status, and that is deliberate rather than lazy. These print in several different formats ("73 checks, 0 failures", "✓ ... 15 blocked, 13 allowed", "FAILURES: 0"), so counting their assertions here would couple this file to that many output shapes and go quietly to zero the moment one reworded a line.
 # The child owns its assertions; this asserts that the child RAN and SUCCEEDED.
 #
-# Empty output still fails: a suite that prints nothing has not demonstrated it did
-# anything, and exit 0 alone is what a stub returns.
+# Empty output still fails: a suite that prints nothing has not demonstrated it did anything, and exit 0 alone is what a stub returns.
 #
-# Each of these was committed, each passes, and each ran only when somebody invoked
-# it by hand until 2026-08-23.
+# Each of these was committed, each passes, and each ran only when somebody invoked it by hand until 2026-08-23.
 TAILED = [
     "context/test-context-bands.py",
     "../rediacc_hooks/guards/test-block_destructive_git_restore.py",
@@ -136,10 +125,7 @@ TAILED = [
 
 # The two bash sub-suites. The stop gate carries its own because its cases need
 # fixtures rather than the single-JSON-on-stdin shape every guard case uses; the
-# report-inbox suite covers the whole cross-session waiter/nudge mechanism and this
-# aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it.
-# relative | the npm key that also reaches it, or None when the harness is its only
-# route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
+# report-inbox suite covers the whole cross-session waiter/nudge mechanism and this aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it. relative | the npm key that also reaches it, or None when the harness is its only route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
 BASH_SUITES = [
     ("stop/test-worklist-v5.sh", "check:ci-hook-worklist-suite"),
     ("stop/test-report-inbox.sh", None),

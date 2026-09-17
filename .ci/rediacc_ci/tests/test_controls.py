@@ -58,9 +58,7 @@ def test_every_assertion_increments_the_count():
     assert c.count == 4
 
 
-# ---------------------------------------------------------------------------
-# The assertions return their outcome, which the copies do not
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The assertions return their outcome, which the copies do not ---------------------------------------------------------------------------
 
 
 def test_check_returns_the_outcome():
@@ -91,9 +89,7 @@ def test_falsy_says_what_it_wanted(capsys):
     assert "got 'surprise'" in err
 
 
-# ---------------------------------------------------------------------------
-# raises(): the error paths none of the five copies could express
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- raises(): the error paths none of the five copies could express ---------------------------------------------------------------------------
 
 
 def test_raises_passes_when_the_expected_exception_arrives():
@@ -137,9 +133,7 @@ def test_raises_passes_arguments_through():
     assert c.raises("args reach the callable", RuntimeError, needs_args, 1, b=2) is True
 
 
-# ---------------------------------------------------------------------------
-# The floor: the reason this class exists at all
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The floor: the reason this class exists at all ---------------------------------------------------------------------------
 
 
 def test_the_floor_refuses_a_suite_that_ran_too_few_controls():
@@ -186,10 +180,7 @@ def test_the_floor_counts_as_a_failure_in_the_summary(capsys):
 
 
 def test_a_negative_floor_is_a_programming_error():
-    # `match` is not decoration: PT011 refuses a bare ValueError because it
-    # matches any ValueError raised anywhere inside the block, including one
-    # raised by the test's own setup. Anchoring on the word the message must
-    # carry is what makes this assert the intended failure.
+    # `match` is not decoration: PT011 refuses a bare ValueError because it matches any ValueError raised anywhere inside the block, including one raised by the test's own setup. Anchoring on the word the message must carry is what makes this assert the intended failure.
     with pytest.raises(ValueError, match="floor must not be negative"):
         Controls("bad", floor=-1)
 
@@ -201,9 +192,7 @@ def test_a_zero_floor_is_allowed_but_has_to_be_typed():
     assert Controls("runtime built", floor=0).floor == 0
 
 
-# ---------------------------------------------------------------------------
-# The output contract the harness parses
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The output contract the harness parses ---------------------------------------------------------------------------
 
 
 def test_a_green_report_prints_the_legacy_line_on_stdout(capsys):
@@ -246,9 +235,7 @@ def test_quiet_is_the_default(capsys):
     assert capsys.readouterr().out == ""
 
 
-# ---------------------------------------------------------------------------
-# exit(): the last line of a migrated file
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- exit(): the last line of a migrated file ---------------------------------------------------------------------------
 
 
 def test_exit_is_zero_when_green():
@@ -275,9 +262,7 @@ def test_exit_is_one_when_only_the_floor_failed():
     assert caught.value.code == 1
 
 
-# ---------------------------------------------------------------------------
-# No global state, which is what the `class Tally` copies all had
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- No global state, which is what the `class Tally` copies all had ---------------------------------------------------------------------------
 
 
 def test_two_runners_do_not_share_state():
@@ -298,11 +283,9 @@ def test_a_runner_keeps_its_name():
 
 # ---- plant() / plant_re(): a mutant that does not mutate --------------------
 #
-# THE ASYMMETRY THIS MODULE'S HEADER NAMES APPLIES HARDEST HERE. `plant` exists
-# so a control cannot silently feed its gate the CLEAN fixture and report a pass
+# THE ASYMMETRY THIS MODULE'S HEADER NAMES APPLIES HARDEST HERE. `plant` exists so a control cannot silently feed its gate the CLEAN fixture and report a pass
 # for an assertion it never made. A `plant` that raised on everything would
-# satisfy every refusal case below, so each one is paired with the mutation it
-# must still perform.
+# satisfy every refusal case below, so each one is paired with the mutation it must still perform.
 
 
 def test_plant_performs_the_mutation_it_is_asked_for():
@@ -330,9 +313,7 @@ def test_plant_refuses_replacing_a_string_with_itself():
     with pytest.raises(VacuousPlantError) as exc:
         plant("max_turns=140 here", "max_turns=140", "max_turns=140")
     # ASSERT ON WHAT ONLY THIS BRANCH SAYS. `old == new` is also caught further
-    # down by the byte-identical check, so a looser assertion here (the word
-    # "identical", say) passes whether or not this refusal exists at all -- it
-    # re-asks a question the next branch already answers. Verified by planting:
+    # down by the byte-identical check, so a looser assertion here (the word "identical", say) passes whether or not this refusal exists at all -- it re-asks a question the next branch already answers. Verified by planting:
     # deleting the `old == new` arm leaves the suite green under the loose form
     # and reds it under this one.
     assert "with itself" in str(exc.value), "the typo case keeps its own diagnosis"

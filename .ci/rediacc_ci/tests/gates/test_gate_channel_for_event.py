@@ -56,8 +56,7 @@ def test_publishing_events_keep_their_channels(gate):
 
 
 def test_publishing_events_reject_wrong_channels(gate):
-    # Anti-vacuity for the two arms above: if these passed, the arms would be
-    # asserting nothing and every case in this file would be decoration.
+    # Anti-vacuity for the two arms above: if these passed, the arms would be asserting nothing and every case in this file would be decoration.
     gate.assert_eq(
         check(gate, "push", "")[0], "rejected", "push must not resolve to an empty channel"
     )
@@ -92,9 +91,7 @@ def test_schedule_must_not_upload(gate):
 
 
 def test_workflow_dispatch_must_not_upload(gate):
-    # THE NEW ARM. Without it these three all land in the `*)` warn-and-accept
-    # arm, and the rehearsal becomes a human-triggerable way to upload bytes
-    # that nothing asserts on.
+    # THE NEW ARM. Without it these three all land in the `*)` warn-and-accept arm, and the rehearsal becomes a human-triggerable way to upload bytes that nothing asserts on.
     gate.assert_eq(
         check(gate, "workflow_dispatch", "")[0], "ok", "the rehearsal's empty channel is correct"
     )
@@ -112,9 +109,7 @@ def test_workflow_dispatch_must_not_upload(gate):
 
 
 def test_the_dispatch_arm_is_explicit_not_the_fallthrough(gate):
-    # Distinguishes "rejected by its own arm" from "accepted by the catch-all".
-    # A pass on the empty case alone cannot tell those apart, because the
-    # catch-all accepts everything -- including the empty channel.
+    # Distinguishes "rejected by its own arm" from "accepted by the catch-all". A pass on the empty case alone cannot tell those apart, because the catch-all accepts everything -- including the empty channel.
     _, output = check(gate, "workflow_dispatch", "")
     gate.assert_not_contains(
         output,
@@ -125,9 +120,7 @@ def test_the_dispatch_arm_is_explicit_not_the_fallthrough(gate):
 
 
 def test_unknown_event_still_warns_and_accepts(gate):
-    # Documenting the deliberate fall-through: failing closed here would break
-    # CI the moment GitHub introduces an event. Pinned so that changing it is a
-    # decision rather than an accident.
+    # Documenting the deliberate fall-through: failing closed here would break CI the moment GitHub introduces an event. Pinned so that changing it is a decision rather than an accident.
     verdict, output = check(gate, "merge_group", "")
     gate.assert_eq(verdict, "ok", "an unknown event is accepted")
     gate.assert_contains(output, "Unknown event", "and says so out loud")
@@ -142,9 +135,7 @@ def test_missing_event_is_a_usage_error(gate):
 
 
 def test_ci_actually_dispatches(gate):
-    # Anti-vacuity against the real workflow: the new arm is dead code if ci.yml
-    # has no workflow_dispatch trigger, and this test would then be pinning
-    # behaviour nothing reaches.
+    # Anti-vacuity against the real workflow: the new arm is dead code if ci.yml has no workflow_dispatch trigger, and this test would then be pinning behaviour nothing reaches.
     body = CI_WORKFLOW.read_text(encoding="utf-8")
     gate.assert_contains(
         body,

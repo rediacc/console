@@ -48,8 +48,7 @@ TWIN = ROOT / ".ci" / "scripts" / "release" / "advance-contract-floor.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "advance_contract_floor.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The smallest import closure the port needs, copied rather than reached through
-# an absolute PYTHONPATH. `console_root()` resolves `__file__`, so a symlinked
+# The smallest import closure the port needs, copied rather than reached through an absolute PYTHONPATH. `console_root()` resolves `__file__`, so a symlinked
 # package would resolve back into the real checkout and the fixture would be a
 # fiction. Verified by `test_the_fixture_root_is_not_this_checkout`.
 PACKAGE_FILES = (
@@ -93,10 +92,7 @@ sys.exit(0)
 """
 
 # common.sh needs `dirname` and `uname` at source time; the twin uses `grep`,
-# `head`, `sort` and `tail` (`printf` is a builtin), and release-state-validator.sh
-# adds `tr` and `sed`. All of them must be reachable or the twin fails for a
-# reason that has nothing to do with the subject -- `tail` was missing on the
-# first run of this file and the twin died `line 61: tail: command not found`
+# `head`, `sort` and `tail` (`printf` is a builtin), and release-state-validator.sh adds `tr` and `sed`. All of them must be reachable or the twin fails for a reason that has nothing to do with the subject -- `tail` was missing on the first run of this file and the twin died `line 61: tail: command not found`
 # with rc=127, which is exactly the shape of a harness bug wearing a gate
 # failure's clothes.
 PATH_MINIMUM = ("dirname", "uname", "tr", "sed", "grep", "head", "sort", "tail")
@@ -180,9 +176,7 @@ def _run(
     runner = [BASH] if side == "old" else [sys.executable]
     proc = subprocess.run(
         [*runner, str(subject)],
-        # cwd is deliberately NOT the fixture: the twin `cd`s to the root it
-        # derives, and a port that relied on the caller's cwd would pass here
-        # only if the test handed it the answer.
+        # cwd is deliberately NOT the fixture: the twin `cd`s to the root it derives, and a port that relied on the caller's cwd would pass here only if the test handed it the answer.
         cwd=tmp_path,
         capture_output=True,
         text=True,

@@ -130,31 +130,20 @@ import time
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The library under test, repo-relative exactly as the twin spells it. Printed in
-# the step line and in the two refusal messages, so the reader is told which file
-# was not there rather than which variable was empty.
-# THE TWIN'S MESSAGES CARRY AN EM DASH, and this repository's authoring rule
-# forbids typing one into a source file. The character is therefore named by its
-# code point rather than typed, exactly the way `scripts/lib/shadow-gate.ts`
-# names ESC with `String.fromCharCode(27)` instead of embedding a raw control
-# byte. This is byte fidelity, not decoration: the differential compares finding
-# TEXT, so substituting a hyphen would make the port report a different finding
+# The library under test, repo-relative exactly as the twin spells it. Printed in the step line and in the two refusal messages, so the reader is told which file was not there rather than which variable was empty. THE TWIN'S MESSAGES CARRY AN EM DASH, and this repository's authoring rule forbids typing one into a source file. The character is therefore named by its code point
+# rather than typed, exactly the way `scripts/lib/shadow-gate.ts` names ESC with `String.fromCharCode(27)` instead of embedding a raw control byte. This is byte fidelity, not decoration: the differential compares finding TEXT, so substituting a hyphen would make the port report a different finding
 # from its twin on every line below that uses it.
 DASH = "\u2014"
 
 PROBE_LIB = ".ci/lib/account.sh"
 
-# The function the whole gate is about. Named once so a rename fails loudly in
-# the load probe rather than silently matching nothing.
+# The function the whole gate is about. Named once so a rename fails loudly in the load probe rather than silently matching nothing.
 PROBE_FN = "account_rustfs_alive"
 
-# The subshell's exit status for "the library loaded but the function is not
-# there". Three, not one, because one is what a healthy probe returns for a
-# closed port and the two must never be confused. See the port notes.
+# The subshell's exit status for "the library loaded but the function is not there". Three, not one, because one is what a healthy probe returns for a closed port and the two must never be confused. See the port notes.
 LOAD_FAILED_RC = 3
 
-# The readiness loop, in the twin's numbers: `for _ in $(seq 1 50)` with
-# `sleep 0.1` between attempts, i.e. up to five seconds for a local listener.
+# The readiness loop, in the twin's numbers: `for _ in $(seq 1 50)` with `sleep 0.1` between attempts, i.e. up to five seconds for a local listener.
 READY_ATTEMPTS = 50
 READY_DELAY = 0.1
 
@@ -255,8 +244,7 @@ def historical_capture(port: int) -> str:
         out = proc.stdout.decode("utf-8", "replace")
         rc = proc.returncode
     except OSError:
-        # No curl on PATH. bash would print nothing for the failed command and
-        # then run the fallback, so the captured value is exactly the fallback.
+        # No curl on PATH. bash would print nothing for the failed command and then run the fallback, so the captured value is exactly the fallback.
         out, rc = "", 1
     if rc != 0:
         out += "000\n"
@@ -306,31 +294,20 @@ def start_listener(port: int) -> subprocess.Popen:
 
 # PR_SET_PDEATHSIG: KILL THIS CHILD WHEN ITS PARENT DIES.
 #
-# Every caller already wraps start_listener in `try/finally: server.kill()`, and
-# that is enough for a normal exit. It is NOT enough when the PARENT is killed:
-# a SIGKILLed interpreter never reaches its finally, the listener survives, and
-# init adopts it. Measured on this box 2026-09-07: 131 orphaned
-# `python3 -m http.server` processes, the oldest 25 hours, parented to pid 1 --
-# left behind by pytest runs that were killed by `timeout` or by hand.
+# Every caller already wraps start_listener in `try/finally: server.kill()`, and that is enough for a normal exit. It is NOT enough when the PARENT is killed: a SIGKILLed interpreter never reaches its finally, the listener survives, and init adopts it. Measured on this box 2026-09-07: 131 orphaned `python3 -m http.server` processes, the oldest 25 hours, parented to pid 1 -- left
+# behind by pytest runs that were killed by `timeout` or by hand.
 #
-# It got worse the moment this suite went parallel: `check:ci-pytest` now runs
-# under `-n 8`, so a killed run strands up to eight workers' worth of listeners
-# instead of one process's worth.
+# It got worse the moment this suite went parallel: `check:ci-pytest` now runs under `-n 8`, so a killed run strands up to eight workers' worth of listeners instead of one process's worth.
 #
 # `preexec_fn` runs in the child between fork and exec. It is documented as
 # unsafe in a threaded parent, which is why it carries the noqa above rather
-# than a silent suppression: this helper is called from single-threaded gate and
-# test code, and the alternative (a wrapper process, or a reaper) costs more
-# than the two lines it saves. If this is ever called from a thread, replace it
+# than a silent suppression: this helper is called from single-threaded gate and test code, and the alternative (a wrapper process, or a reaper) costs more than the two lines it saves. If this is ever called from a thread, replace it
 # with a process-group kill rather than removing the protection.
 def _die_with_parent() -> None:
     """prctl(PR_SET_PDEATHSIG, SIGKILL). Best effort: Linux-only, never fatal."""
-    # Suppressed wholesale, deliberately: this runs between fork and exec, so a
-    # raise here would kill the spawn rather than the listener. A platform
-    # without libc or without prctl simply keeps the old behaviour.
+    # Suppressed wholesale, deliberately: this runs between fork and exec, so a raise here would kill the spawn rather than the listener. A platform without libc or without prctl simply keeps the old behaviour.
     with contextlib.suppress(Exception):
-        # 1 is PR_SET_PDEATHSIG. Named here rather than imported because Python
-        # has no binding for it and the number is part of the kernel ABI.
+        # 1 is PR_SET_PDEATHSIG. Named here rather than imported because Python has no binding for it and the number is part of the kernel ABI.
         ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGKILL)
 
 
@@ -362,8 +339,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("green from a run where the control could not fire.")
         return 1
 
-    # Fail loudly if the library cannot be loaded at all: a gate that cannot
-    # reach its subject must not report on it. Port 1 is closed, so a HEALTHY
+    # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY
     # probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
     if probe_rc(root, 1) == LOAD_FAILED_RC:
         log.error(
@@ -386,8 +362,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         log.info("closed port %d reads as dead" % dead_port)
 
-    # --- 2. THE CONTROL: a live port must read as alive ---------------------
-    # Without this, a probe that always returned false would satisfy assertion 1.
+    # --- 2. THE CONTROL: a live port must read as alive --------------------- Without this, a probe that always returned false would satisfy assertion 1.
     live_port = free_port()
     listener = start_listener(live_port)
     try:
@@ -406,17 +381,11 @@ def main(argv: list[str] | None = None) -> int:
             log.error("never say yes, which makes assertion 1 meaningless.")
             failures += 1
     finally:
-        # The twin's `trap cleanup EXIT`, which is `kill "$listener_pid" || true`.
-        # A finally block rather than atexit, so the listener dies even when the
-        # assertions above raise.
+        # The twin's `trap cleanup EXIT`, which is `kill "$listener_pid" || true`. A finally block rather than atexit, so the listener dies even when the assertions above raise.
         listener.kill()
         listener.wait()
 
-    # --- 3. PLANTED DEFECT: the old shape must still be detectable ----------
-    # Re-run the historical implementation against the same closed port. If it
-    # does NOT report alive, this gate is no longer testing the bug it was
-    # written for (curl changed its behaviour, or the port is not actually
-    # closed).
+    # --- 3. PLANTED DEFECT: the old shape must still be detectable ---------- Re-run the historical implementation against the same closed port. If it does NOT report alive, this gate is no longer testing the bug it was written for (curl changed its behaviour, or the port is not actually closed).
     old_code = historical_capture(dead_port)
     if old_code != "000":
         log.info("planted defect reproduces (old capture = '%s' on a closed port)" % old_code)
@@ -438,22 +407,12 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# THE FIXTURES CARRY `$CONSOLE_ROOT_DIR`, WHICH IS UNSET, ON PURPOSE. It is the
-# line at `.ci/lib/account.sh:19` that makes nounset abort the source, and it is
-# the reason the twin needs the `u` of `set +eu` as well as the `e`. A fixture
-# without it loads cleanly under strict flags, and the control asserting that
-# `set +eu` matters then passes for a reason that has nothing to do with the
-# flags. Measured: with the line removed, the strict form of probe_script exits 0
-# against a live port, i.e. it proves nothing.
+# THE FIXTURES CARRY `$CONSOLE_ROOT_DIR`, WHICH IS UNSET, ON PURPOSE. It is the line at `.ci/lib/account.sh:19` that makes nounset abort the source, and it is the reason the twin needs the `u` of `set +eu` as well as the `e`. A fixture without it loads cleanly under strict flags, and the control asserting that `set +eu` matters then passes for a reason that has nothing to do with
+# the flags. Measured: with the line removed, the strict form of probe_script exits 0 against a live port, i.e. it proves nothing.
 #
-# The fixture library bodies. Written as literals, never by substituting into a
-# copy of the real account.sh: a substitution silently yields an unmutated copy
-# the day the targeted line is reworded, and the control then passes against
-# source it never changed. That is the failure check-control-vacuity.sh exists
+# The fixture library bodies. Written as literals, never by substituting into a copy of the real account.sh: a substitution silently yields an unmutated copy the day the targeted line is reworded, and the control then passes against source it never changed. That is the failure check-control-vacuity.sh exists
 # for, and the twin builds its own controls the same way.
 FIXTURE_HEALTHY = """#!/bin/bash
 [[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
@@ -473,26 +432,19 @@ FIXTURE_DEFECTIVE = FIXTURE_HEALTHY.replace(
     "2>/dev/null || true)", "2>/dev/null || echo 000)"
 ).replace('[[ -n "$code" && "$code" != "000" ]]', '[[ "$code" != "000" ]]')
 
-# A probe that can never say yes. Assertion 1 passes against it, which is exactly
-# why assertion 2 exists.
+# A probe that can never say yes. Assertion 1 passes against it, which is exactly why assertion 2 exists.
 FIXTURE_ALWAYS_DEAD = FIXTURE_HEALTHY.replace('[[ -n "$code" && "$code" != "000" ]]', "false")
 
-# A library that loads and defines nothing. The load probe must see this, or
-# "not alive" would read as "correctly dead".
+# A library that loads and defines nothing. The load probe must see this, or "not alive" would read as "correctly dead".
 FIXTURE_NO_FUNCTION = """#!/bin/bash
 source "$CI_LIB_DIR/find-port.sh"
 ACCOUNT_DIR="$CONSOLE_ROOT_DIR/private/account"
 account_something_else() { return 0; }
 """
 
-# The sibling the FIXTURES source. Empty is enough: the point is that the source
-# succeeds, not what it defines.
+# The sibling the FIXTURES source. Empty is enough: the point is that the source succeeds, not what it defines.
 #
-# ARCHAEOLOGY, DELIBERATELY KEPT. The real `.ci/lib/find-port.sh` is DELETED
-# (W7P5-b) and the real account.sh no longer sources it. These fixtures are the
-# 2026-08-04 shape frozen as literals, exactly so that they do NOT track the
-# live file -- see the paragraph above on why substituting into a copy of the
-# real account.sh would silently yield an unmutated control. Removing the line
+# ARCHAEOLOGY, DELIBERATELY KEPT. The real `.ci/lib/find-port.sh` is DELETED (W7P5-b) and the real account.sh no longer sources it. These fixtures are the 2026-08-04 shape frozen as literals, exactly so that they do NOT track the live file -- see the paragraph above on why substituting into a copy of the real account.sh would silently yield an unmutated control. Removing the line
 # would re-key the fixtures against a shape the incident never had.
 FIXTURE_FIND_PORT = '#!/bin/bash\n: "${FIND_PORT_LOADED:=1}"\n'
 
@@ -501,10 +453,7 @@ def _fixture_root(tmp: pathlib.Path, body: str) -> pathlib.Path:
     """A throwaway tree carrying `.ci/lib/{account,find-port}.sh` and nothing else."""
     lib = tmp / ".ci" / "lib"
     lib.mkdir(parents=True, exist_ok=True)
-    # `.ci/scripts/quality` must EXIST, because CI_LIB_DIR is the twin's
-    # unresolved `<root>/.ci/scripts/quality/../../lib` and the kernel resolves
-    # `..` against real directories. Without it the source fails, every function
-    # is undefined, and "not alive" would read as "correctly dead".
+    # `.ci/scripts/quality` must EXIST, because CI_LIB_DIR is the twin's unresolved `<root>/.ci/scripts/quality/../../lib` and the kernel resolves `..` against real directories. Without it the source fails, every function is undefined, and "not alive" would read as "correctly dead".
     (tmp / ".ci" / "scripts" / "quality").mkdir(parents=True, exist_ok=True)
     (lib / "account.sh").write_text(body, encoding="utf-8")
     (lib / "find-port.sh").write_text(FIXTURE_FIND_PORT, encoding="utf-8")
@@ -527,8 +476,7 @@ def selftest() -> int:
     port_b = free_port()
     ctl.check("free_port returns a usable TCP port", 1 <= port_a <= 65535, True)
     ctl.truthy("free_port hands out a port the kernel chose", port_a != 0)
-    # Not an equality: the kernel may reuse the number. What must hold is that
-    # binding it again succeeds, i.e. the socket really was closed.
+    # Not an equality: the kernel may reuse the number. What must hold is that binding it again succeeds, i.e. the socket really was closed.
     probe = socket.socket()
     try:
         probe.bind(("127.0.0.1", port_b))
@@ -566,9 +514,7 @@ def selftest() -> int:
     ctl.truthy("probe_script exits 3 when the function is missing", "|| exit 3" in body)
     ctl.truthy("probe_script calls the probe with the port", '%s "4242"' % PROBE_FN in body)
 
-    # The unresolved CI_LIB_DIR spelling, asserted in BOTH directions: it must
-    # carry the twin's `../../lib` tail, and it must not be the tidy resolved
-    # form that would print different bytes for the same defect.
+    # The unresolved CI_LIB_DIR spelling, asserted in BOTH directions: it must carry the twin's `../../lib` tail, and it must not be the tidy resolved form that would print different bytes for the same defect.
     ctl.check(
         "CI_LIB_DIR keeps the twin's unresolved spelling",
         ci_lib_dir(pathlib.Path("/x")),
@@ -645,8 +591,7 @@ def selftest() -> int:
         ctl.check("PLANT: an always-dead probe reds the whole gate", run(root_dead), 1)
         ctl.check("PLANT: a library with no probe function reds the whole gate", run(root_nofn), 1)
 
-        # An ABSENT library is a failure, never a pass: "a probe library that
-        # vanished cannot be verified."
+        # An ABSENT library is a failure, never a pass: "a probe library that vanished cannot be verified."
         bare = pathlib.Path(tmp) / "bare"
         bare.mkdir()
         ctl.check("PLANT: a missing probe library reds rather than skipping", run(bare), 1)

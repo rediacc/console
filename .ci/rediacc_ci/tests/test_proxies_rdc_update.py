@@ -55,9 +55,7 @@ SCENARIOS = (
     "rollback",
 )
 
-# A stub SUBJECT with the real one's dispatch SHAPE: `        <name>) scenario_`
-# at EXACTLY eight spaces, which is what `:73`'s anchored grep reads. `%s` is
-# the stream each scenario writes its `PASS:` line to.
+# A stub SUBJECT with the real one's dispatch SHAPE: ` <name>) scenario_` at EXACTLY eight spaces, which is what `:73`'s anchored grep reads. `%s` is the stream each scenario writes its `PASS:` line to.
 _ARMS = "\n".join(f"        {name}) scenario_run {name} ;;" for name in SCENARIOS)
 STUB_SUBJECT = f"""#!/usr/bin/env bash
 set -uo pipefail
@@ -188,9 +186,7 @@ def _real_tree_env() -> dict[str, str]:
     }
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_selftest_is_byte_identical() -> None:
@@ -224,9 +220,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# Fixture cases
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture cases ---------------------------------------------------------------------------
 
 
 def test_the_stub_dispatch_is_read_and_the_partition_holds(tmp_path: pathlib.Path) -> None:
@@ -317,9 +311,7 @@ def test_pass_lines_on_stderr_are_not_counted_on_either_side(tmp_path: pathlib.P
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to go RED
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to go RED ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
@@ -344,9 +336,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     assert "sha256-mismatch] but" in new_b.stderr
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_parse_declared_is_anchored_at_eight_spaces() -> None:

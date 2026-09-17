@@ -125,25 +125,18 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The prefix that makes a `run` string a gates/ script.
-# THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and so they are here. The twin
+# The prefix that makes a `run` string a gates/ script. THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and so they are here. The twin
 # assigns `RED=$'\033[0;31m'` at check-gate-id-convention.sh:81-83 with no tty
-# test at all, so it writes escape bytes into a pipe as readily as into a
-# terminal. The first draft of this port printed the glyphs bare, and the W7 P4
-# cutover differential caught it: same exit code, same words, stdout 311 bytes
-# against the twin's 322. Eleven bytes of escape is not a cosmetic gap, it is
-# the differential failing, and a port that cannot be compared byte for byte
+# test at all, so it writes escape bytes into a pipe as readily as into a terminal. The first draft of this port printed the glyphs bare, and the W7 P4 cutover differential caught it: same exit code, same words, stdout 311 bytes against the twin's 322. Eleven bytes of escape is not a cosmetic gap, it is the differential failing, and a port that cannot be compared byte for byte
 # cannot be cut over. Matching the twin exactly is the requirement; TTY-gating
-# is a separate change for both sides at once, not something to introduce on
-# one side during a move.
+# is a separate change for both sides at once, not something to introduce on one side during a move.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 GATES = ".ci/scripts/test/gates/test-"
 
-# The alias form the 2026-08-08 entry used: `npm run [--silent] <key>`, anchored
-# at both ends so a longer command line is not mistaken for a bare alias.
+# The alias form the 2026-08-08 entry used: `npm run [--silent] <key>`, anchored at both ends so a longer command line is not mistaken for a bare alias.
 ALIAS_RE = re.compile(r"npm run (?:--silent )?([A-Za-z0-9:._-]+)$")
 
 # The three inputs, repo-relative.
@@ -209,23 +202,12 @@ def evaluate(lock_path: str, pkg_path: str, gates_dir: str) -> tuple[list[str], 
 
     subjects = [(gid, run) for gid, run in entries if resolves_to_gate_script(run, scripts)]
 
-    # THE FLOOR IS CORPUS-DERIVED, per driver-contract section 6: "a floor must be
-    # set-based or corpus-derived, never a hand-typed count". The old floor was
-    # the literal 40, and 40 is the number that let a 373-of-420 read look
-    # healthy.
+    # THE FLOOR IS CORPUS-DERIVED, per driver-contract section 6: "a floor must be set-based or corpus-derived, never a hand-typed count". The old floor was the literal 40, and 40 is the number that let a 373-of-420 read look healthy.
     #
-    # The corpus is the gate scripts ON DISK, deliberately not `git ls-files`.
-    # Section 5b of the contract records why: ls-files reads the INDEX, and this
-    # program keeps work uncommitted, so a newly written gate script is invisible
-    # to the index while being perfectly real to run-all.sh, which globs the
-    # directory exactly like this.
+    # The corpus is the gate scripts ON DISK, deliberately not `git ls-files`. Section 5b of the contract records why: ls-files reads the INDEX, and this program keeps work uncommitted, so a newly written gate script is invisible to the index while being perfectly real to run-all.sh, which globs the directory exactly like this.
     #
-    # The direction is the safe one. A NEW script not yet registered lifts the
-    # floor and reds this gate, which is a true finding (check:ci-gate-manifest
-    # asserts the same set equality). A COLLAPSED reader drops `subjects` below
-    # the floor and reds, which is the failure that went unseen for a month: at
-    # 135 subjects against 147 scripts, this floor would have fired on the old
-    # regex the day it was written.
+    # The direction is the safe one. A NEW script not yet registered lifts the floor and reds this gate, which is a true finding (check:ci-gate-manifest asserts the same set equality). A COLLAPSED reader drops `subjects` below the floor and reds, which is the failure that went unseen for a month: at 135 subjects against 147 scripts, this floor would have fired on the old regex the
+    # day it was written.
     on_disk = sorted(glob.glob(os.path.join(gates_dir, "test-*.sh")))
     if not on_disk:
         out.append(
@@ -244,11 +226,7 @@ def evaluate(lock_path: str, pkg_path: str, gates_dir: str) -> tuple[list[str], 
 
     for gid, run in subjects:
         if not gid.startswith("gate-test:"):
-            # The sibling count is DERIVED, never typed. It read "57 siblings"
-            # when this gate was written and "147" would be right today, which is
-            # exactly how a number in a message goes stale and starts misleading
-            # the reader it exists to persuade. Driver contract section 6, applied
-            # to prose.
+            # The sibling count is DERIVED, never typed. It read "57 siblings" when this gate was written and "147" would be right today, which is exactly how a number in a message goes stale and starts misleading the reader it exists to persuade. Driver contract section 6, applied to prose.
             conforming = sum(1 for i, _ in subjects if i.startswith("gate-test:"))
             out.append(
                 "CONVENTION: '%s' runs a gates/ script but is not registered as "
@@ -266,8 +244,7 @@ def evaluate(lock_path: str, pkg_path: str, gates_dir: str) -> tuple[list[str], 
     return out, scope
 
 
-# The planted entry CONTROL 1 appends. Kept as data so the shape the control
-# plants and the shape the gate forbids are written down once, together.
+# The planted entry CONTROL 1 appends. Kept as data so the shape the control plants and the shape the gate forbids are written down once, together.
 PLANTED_ID = "check:ci-planted-defect"
 PLANTED_ENTRY = {
     "id": PLANTED_ID,
@@ -338,9 +315,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # ---- CONTROL 2: truncate the lock and require the FLOOR to fire -----
         #
-        # This is the control the old version did not have, and its absence is
-        # why a reader that saw 373 of 420 entries reported success for a month.
-        # A short read must be a RED, not a quieter green.
+        # This is the control the old version did not have, and its absence is why a reader that saw 373 of 420 entries reported success for a month. A short read must be a RED, not a quieter green.
         short = json.loads(lock.read_text(encoding="utf-8"))[:5]
         (control_dir / "short.json").write_text(json.dumps(short), encoding="utf-8")
 
@@ -361,8 +336,7 @@ def main(argv: list[str] | None = None) -> int:
             "%s✗%s gate registration does not follow the gates/ convention:" % (RED, NC),
             file=sys.stderr,
         )
-        # `printf '  %s\n' "$REAL_OUT"` is ONE format cycle over a quoted
-        # multi-line value, so only the first line carries the indent.
+        # `printf ' %s\n' "$REAL_OUT"` is ONE format cycle over a quoted multi-line value, so only the first line carries the indent.
         print("  %s" % "\n".join(real_out), file=sys.stderr)
         print(file=sys.stderr)
         print(
@@ -397,9 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def _write(where: pathlib.Path, entries: list[dict], scripts: dict) -> tuple[str, str]:

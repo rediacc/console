@@ -251,18 +251,10 @@ from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
 # The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port
-# notes for why this is not rewritten as a glob walk.
-# `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so
-# these matched nothing at depth 1 and the corpus silently skipped six tracked
-# shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the
-# twin's spelling at `check-pipefail-grep-q.sh`, since the shadow ledger compares
-# the two verdicts and a corpus difference would read as a behavioural divergence.
+# notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the twin's spelling at `check-pipefail-grep-q.sh`, since the shadow ledger compares the two
+# verdicts and a corpus difference would read as a behavioural divergence.
 #
-# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings,
-# both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason
-# `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and
-# `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was
-# invisible only because nothing looked there. `.ci/media/**` came in with them and
+# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and
 # is clean; it is listed so the next shell script written there is covered rather
 # than discovered by the sweep after next.
 PATHSPECS = (
@@ -274,11 +266,9 @@ PATHSPECS = (
     ":(glob).ci/media/**/*.sh",
 )
 
-# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test
-# cannot see that. These repo-relative prefixes are treated as pipefail-bearing
+# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test cannot see that. These repo-relative prefixes are treated as pipefail-bearing
 # whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. One
-# prefix, because one site in the whole repository needs it: building a source-graph
-# analyser for `.ci/lib/devbox.sh:1082` would be the wrong size of answer.
+# prefix, because one site in the whole repository needs it: building a source-graph analyser for `.ci/lib/devbox.sh:1082` would be the wrong size of answer.
 INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)
 
 # `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually
@@ -301,85 +291,44 @@ _BLANK_DQUOTE = (re.compile(r'"[^"]*"'), '""')
 # POSIX [[:space:]], written out.
 _SPACE = r"[ \t\n\v\f\r]"
 
-# The 200-byte pad and 1500 lines of the mechanism fixture: ~300 KB, well past the
-# 64 KB pipe buffer, so the producer BLOCKS and grep -q's early exit kills it.
-# Under the buffer nothing races and the control would silently prove nothing --
-# which is exactly how the first attempt at a large-file control in
-# check-ci-watch-recipe.sh came out vacuous.
+# The 200-byte pad and 1500 lines of the mechanism fixture: ~300 KB, well past the 64 KB pipe buffer, so the producer BLOCKS and grep -q's early exit kills it. Under the buffer nothing races and the control would silently prove nothing -- which is exactly how the first attempt at a large-file control in check-ci-watch-recipe.sh came out vacuous.
 MECH_PAD_WIDTH = 200
 MECH_LINES = 1500
 
-# ASSEMBLED AT RUNTIME so this file's own text never carries the racing shape
-# contiguously. See the twin's note, carried in the module docstring.
+# ASSEMBLED AT RUNTIME so this file's own text never carries the racing shape contiguously. See the twin's note, carried in the module docstring.
 _GQ = "grep -q"
 
 
-# PRODUCERS WHOSE OUTPUT SCALES WITH THEIR INPUT, which is the criterion this
-# gate has stated since it was written -- "a function that reads a file, filters
-# a corpus, enumerates a tree". Until 2026-09-16 only the FUNCTION half of that
-# sentence was implemented, so a scaling producer that happened to be a command
-# rather than a local function was invisible.
+# PRODUCERS WHOSE OUTPUT SCALES WITH THEIR INPUT, which is the criterion this gate has stated since it was written -- "a function that reads a file, filters a corpus, enumerates a tree". Until 2026-09-16 only the FUNCTION half of that sentence was implemented, so a scaling producer that happened to be a command rather than a local function was invisible.
 #
 # THAT HOLE WAS LIVE, not theoretical. `check-control-vacuity.sh:81-83` is
 #
-#     grep -vE '<comments>' "$1" | grep -vE '<prefix-sed>' | grep -qE '<subst>'
+# grep -vE '<comments>' "$1" | grep -vE '<prefix-sed>' | grep -qE '<subst>'
 #
 # and it lost the race in 2 of 20 measured runs under suite load, returning 141
 # for a file that MATCHED. The effect was not a flaky test: the gate moved that
-# file from `checked` to `exempt` and silently stopped checking one of its own
-# controls while still printing a tick. The twin/port differential is the only
-# reason it ever surfaced.
+# file from `checked` to `exempt` and silently stopped checking one of its own controls while still printing a tick. The twin/port differential is the only reason it ever surfaced.
 #
-# `printf`/`echo` JOINED THIS LIST ON 2026-09-16, when the deferral the docstring
-# used to carry was closed by measurement: both builtins report MISSED 40/40 at
-# 300 KB and the knee is between 32 KB and 48 KB. They are here for the same reason
-# as the commands -- their output scales with what is interpolated into them, which
-# is routinely a captured command's whole stdout -- not because "printf" is
-# dangerous.
+# `printf`/`echo` JOINED THIS LIST ON 2026-09-16, when the deferral the docstring used to carry was closed by measurement: both builtins report MISSED 40/40 at 300 KB and the knee is between 32 KB and 48 KB. They are here for the same reason as the commands -- their output scales with what is interpolated into them, which is routinely a captured command's whole stdout -- not
+# because "printf" is dangerous.
 #
-# `tee`/`docker` JOINED ON 2026-09-16 TOO, and they came from the SUBMODULE. The
-# work that gave private/renet its own copy of this detector had to measure which
-# producers renet needed, and the same two names turned out to be missing HERE:
+# `tee`/`docker` JOINED ON 2026-09-16 TOO, and they came from the SUBMODULE. The work that gave private/renet its own copy of this detector had to measure which producers renet needed, and the same two names turned out to be missing HERE:
 #
-#   tee    -- a PURE PASS-THROUGH. Its output scales exactly with its input, and
+# tee -- a PURE PASS-THROUGH. Its output scales exactly with its input, and
 #             it is the stage `grep -q` SIGPIPEs. Zero sites in console today; it
-#             is in the list because the next `cmd | tee log | grep -q` written
-#             here should be caught rather than measured afterwards, and because
-#             renet's copy must stay a superset of this one. Its renet site
-#             (`.ci/scripts/quality/i18n.sh`) lost the race 5/5 at 300 KB AND
-#             truncated the tee'd log to 32 bytes -- the very log its failure
-#             branch cats.
+# is in the list because the next `cmd | tee log | grep -q` written here should be caught rather than measured afterwards, and because renet's copy must stay a superset of this one. Its renet site (`.ci/scripts/quality/i18n.sh`) lost the race 5/5 at 300 KB AND truncated the tee'd log to 32 bytes -- the very log its failure branch cats.
 #
-#   docker -- `docker ps --format ...` / `docker version -f ...` output scales
+# docker -- `docker ps --format ...` / `docker version -f ...` output scales
 #             with the daemon's state, not with a constant. THREE live console
-#             sites, all of the same shape and all under `.ci/lib/`'s INHERITED
-#             pipefail (neither file sets it itself), so all three were invisible
-#             twice over -- once for the missing producer name and once for the
-#             per-file test:
-#               .ci/lib/account.sh:796   teardown of `account-server`
-#               .ci/lib/service.sh:156   teardown of four rediacc-service-* containers
-#               .ci/lib/service.sh:183   `service status` reporting running/not
-#             Losing the race SKIPS a container teardown, or reports a running
-#             container as absent. A fourth site,
-#             `.ci/scripts/private/concurrent-fork-isolation-test.sh:266`, is the
-#             known FALSE-POSITIVE direction -- it lives inside an
-#             `_ssh "sudo bash -c '...'"` body whose remote shell sets no pipefail
-#             (its neighbour at :278 says exactly that in a comment) -- and was
-#             converted anyway, for the same reason test-install-methods.sh:1129
-#             was: an allowlist entry would be a suppression, and the conversion is
-#             defensively correct the day that remote body gains `-o pipefail`.
-#             TWO MORE SITES CARRY THE IDENTICAL SHAPE AND ARE NOT THE CLASS:
-#             `.ci/scripts/infra/ci-stop.sh:44` and
-#             `.ci/scripts/infra/ci-stop-elite.sh:35` are byte-for-byte the same
+# sites, all of the same shape and all under `.ci/lib/`'s INHERITED pipefail (neither file sets it itself), so all three were invisible twice over -- once for the missing producer name and once for the per-file test: .ci/lib/account.sh:796 teardown of `account-server` .ci/lib/service.sh:156 teardown of four rediacc-service-* containers .ci/lib/service.sh:183 `service status`
+# reporting running/not Losing the race SKIPS a container teardown, or reports a running container as absent. A fourth site, `.ci/scripts/private/concurrent-fork-isolation-test.sh:266`, is the known FALSE-POSITIVE direction -- it lives inside an `_ssh "sudo bash -c '...'"` body whose remote shell sets no pipefail (its neighbour at :278 says exactly that in a comment) -- and was
+# converted anyway, for the same reason test-install-methods.sh:1129 was: an allowlist entry would be a suppression, and the conversion is defensively correct the day that remote body gains `-o pipefail`. TWO MORE SITES CARRY THE IDENTICAL SHAPE AND ARE NOT THE CLASS: `.ci/scripts/infra/ci-stop.sh:44` and `.ci/scripts/infra/ci-stop-elite.sh:35` are byte-for-byte the same
 #             `docker ps -a --format ... | grep -q "^${container}$"`, but both set
-#             `set -e` ONLY (line 8 of each) and both are EXECUTED as subprocesses,
-#             never sourced -- so no sourcer's pipefail reaches them and the
-#             pipeline reports grep's status. Checked 2026-09-16 and left alone
+# `set -e` ONLY (line 8 of each) and both are EXECUTED as subprocesses, never sourced -- so no sourcer's pipefail reaches them and the pipeline reports grep's status. Checked 2026-09-16 and left alone
 #             deliberately; the gate is silent on them by its own rule, and this
-#             note exists so the next sweep does not re-derive the answer.
+# note exists so the next sweep does not re-derive the answer.
 #
-# ORDER IS THE TWIN'S ORDER (plain ASCII sort), because the twin interpolates this
-# list into a `sort -u` and the two implementations are compared byte for byte.
+# ORDER IS THE TWIN'S ORDER (plain ASCII sort), because the twin interpolates this list into a `sort -u` and the two implementations are compared byte for byte.
 SCALING_PRODUCERS = (
     "awk",
     "cat",
@@ -495,9 +444,7 @@ def offenders_in(text: str, rel: str | None = None) -> list[str]:
     joined = logical_lines(text)
     for name in names:
         # `grep -nE "\b${fn}\b[^|]*\|[[:space:]]*grep -q"` -- the producer, then
-        # a pipe, then grep -q, in CODE. `[^|]*` keeps the producer in the stage
-        # IMMEDIATELY before the pipe, so `printf x | grep -q` is not dragged in
-        # by a `grep` that appears earlier in the same line.
+        # a pipe, then grep -q, in CODE. `[^|]*` keeps the producer in the stage IMMEDIATELY before the pipe, so `printf x | grep -q` is not dragged in by a `grep` that appears earlier in the same line.
         pattern = re.compile(r"\b%s\b[^|]*\|%s*%s" % (re.escape(name), _SPACE, re.escape(_GQ)))
         for number, line in joined:
             if pattern.search(line):
@@ -589,10 +536,7 @@ def mechanism_builtin_output(tmp: pathlib.Path) -> str:
     )
     big = tmp / "big.txt"
     if not big.exists():
-        # `main()` always runs the external fixture first, so the twin can simply
-        # reuse `$TMP/big.txt`. A caller that drives this function ALONE (pytest
-        # does) would otherwise measure an empty payload and report MATCHED --
-        # a vacuous green for the one control that must not have one.
+        # `main()` always runs the external fixture first, so the twin can simply reuse `$TMP/big.txt`. A caller that drives this function ALONE (pytest does) would otherwise measure an empty payload and report MATCHED -- a vacuous green for the one control that must not have one.
         _write_big(big)
     completed = subprocess.run(
         ["bash", str(mech), str(big)],
@@ -657,8 +601,7 @@ def main(argv: list[str] | None = None) -> int:
                 "means nothing here." % mech_out
             )
 
-        # THE SECOND MECHANISM CONTROL, AND IT IS NOT A DUPLICATE OF THE FIRST.
-        # See the docstring: a builtin does not die of SIGPIPE, it takes EPIPE.
+        # THE SECOND MECHANISM CONTROL, AND IT IS NOT A DUPLICATE OF THE FIRST. See the docstring: a builtin does not die of SIGPIPE, it takes EPIPE.
         mech_builtin_out = mechanism_builtin_output(tmp)
         if mech_builtin_out == "MISSED":
             report.ok(
@@ -686,11 +629,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             report.fail("GATE IS OVER-BROAD: the sanctioned fix was flagged")
 
-        # THE BUILTIN HALF, ADDED 2026-09-16. These four controls used to be ONE
-        # control asserting the OPPOSITE -- "a bounded producer (printf, not a
-        # local function) is not flagged" -- which is why they are spelled out
-        # rather than folded into the command-producer pair below: the inversion is
-        # the change, and a reader diffing this file should see it stated.
+        # THE BUILTIN HALF, ADDED 2026-09-16. These four controls used to be ONE control asserting the OPPOSITE -- "a bounded producer (printf, not a local function) is not flagged" -- which is why they are spelled out rather than folded into the command-producer pair below: the inversion is the change, and a reader diffing this file should see it stated.
         builtin_printf = 'set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ
         if offenders_in(builtin_printf):
             report.ok("control: a BUILTIN producer (printf) piped into grep -q is detected")
@@ -715,10 +654,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             report.fail("GATE IS OVER-BROAD: the sanctioned fix for an echo producer was flagged")
 
-        # INHERITED PIPEFAIL, both directions. The SAME bytes are classified twice,
-        # once under a repo-relative path inside INHERITS_PIPEFAIL_PREFIXES and once
-        # outside it, so the control cannot pass by accident of the file's own
-        # content: the content is identical and only the path differs.
+        # INHERITED PIPEFAIL, both directions. The SAME bytes are classified twice, once under a repo-relative path inside INHERITS_PIPEFAIL_PREFIXES and once outside it, so the control cannot pass by accident of the file's own content: the content is identical and only the path differs.
         inherited = (
             'lib_detect() { git -C "$1" status --porcelain; }\n'
             'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
@@ -737,17 +673,14 @@ def main(argv: list[str] | None = None) -> int:
                 "GATE IS OVER-BROAD: a file that never sets pipefail was flagged on its path alone"
             )
 
-        # THE TWO CASES THE 2026-09-16 WIDENING ADDED. Each had a live offender in
-        # this repo and neither could be seen before, so each gets a control that
-        # fails if the widening is ever reverted or regressed.
+        # THE TWO CASES THE 2026-09-16 WIDENING ADDED. Each had a live offender in this repo and neither could be seen before, so each gets a control that fails if the widening is ever reverted or regressed.
         cmdprod = 'set -o pipefail\nif grep -vE "^x" "$1" | %s needle; then :; fi\n' % _GQ
         if offenders_in(cmdprod):
             report.ok("control: a scaling COMMAND producer piped into grep -q is detected")
         else:
             report.fail("CONTROL DID NOT FIRE: a command producer raced and went undetected")
 
-        # check-control-vacuity.sh:81-83 in miniature: no single LINE holds both
-        # the producer and grep -q, which is why a per-line regex never saw it.
+        # check-control-vacuity.sh:81-83 in miniature: no single LINE holds both the producer and grep -q, which is why a per-line regex never saw it.
         multiline = 'set -o pipefail\ngrep -vE "^x" "$1" |\n    %sE needle\n' % _GQ
         if offenders_in(multiline):
             report.ok("control: a pipeline SPANNING LINES is detected")
@@ -758,8 +691,7 @@ def main(argv: list[str] | None = None) -> int:
         # for the same reason as the pair above: a widening whose revert is silent
         # is a widening that will be reverted. `docker` had THREE live offenders in
         # this repo, all under `.ci/lib/`'s inherited pipefail; `tee` had none here
-        # and one in private/renet, whose copy of this gate must stay a SUPERSET of
-        # this list, so losing `tee` here would also un-pin it there.
+        # and one in private/renet, whose copy of this gate must stay a SUPERSET of this list, so losing `tee` here would also un-pin it there.
         teeprod = 'set -o pipefail\nif cmd 2>&1 | tee "$LOG" | %s ok; then :; fi\n' % _GQ
         if offenders_in(teeprod):
             report.ok("control: a `tee` pass-through piped into grep -q is detected")
@@ -867,11 +799,7 @@ def selftest() -> int:
     does not cover: two functions on one line, a line number that survives
     quoting, and the empty corpus.
     """
-    # FLOOR 26, raised from 18 when the 2026-09-16 builtin widening added five
-    # controls (a printf pair, an echo pair, and the inherited-pipefail pair, less
-    # the one inverted mirror it replaced). The floor is the only thing that catches
-    # controls that stopped EXECUTING, so it tracks the real count rather than
-    # sitting comfortably below it.
+    # FLOOR 26, raised from 18 when the 2026-09-16 builtin widening added five controls (a printf pair, an echo pair, and the inherited-pipefail pair, less the one inverted mirror it replaced). The floor is the only thing that catches controls that stopped EXECUTING, so it tracks the real count rather than sitting comfortably below it.
     ctl = Controls("pipefail-grep-q", floor=26, verbose=True)
 
     bad = 'set -o pipefail\nbody() { cat "$1"; }\nif body "$1" | %s x; then :; fi\n' % _GQ
@@ -885,8 +813,7 @@ def selftest() -> int:
         ),
         [],
     )
-    # INVERTED 2026-09-16. This used to read "MIRROR: a bounded builtin producer is
-    # not flagged" and assert []. The builtins are in SCALING_PRODUCERS now, so the
+    # INVERTED 2026-09-16. This used to read "MIRROR: a bounded builtin producer is not flagged" and assert []. The builtins are in SCALING_PRODUCERS now, so the
     # old assertion is the exact opposite of the shipped rule; keeping it would have
     # made the port and the twin disagree at the first run.
     ctl.check(
@@ -910,9 +837,7 @@ def selftest() -> int:
         [],
     )
 
-    # INHERITED PIPEFAIL: identical bytes, classified by PATH alone. `.ci/lib/`
-    # files set no pipefail of their own and get it from every sourcer, which is
-    # how `.ci/lib/devbox.sh:1082` stayed invisible.
+    # INHERITED PIPEFAIL: identical bytes, classified by PATH alone. `.ci/lib/` files set no pipefail of their own and get it from every sourcer, which is how `.ci/lib/devbox.sh:1082` stayed invisible.
     _inherited = (
         'lib_detect() { git -C "$1" status --porcelain; }\n'
         'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
@@ -927,8 +852,7 @@ def selftest() -> int:
         offenders_in(_inherited, "scripts/dev/inherited.sh"),
         [],
     )
-    # THE 2026-09-16 `tee`/`docker` WIDENING, driven here as well as in main() so a
-    # revert reds the selftest too rather than only the live run.
+    # THE 2026-09-16 `tee`/`docker` WIDENING, driven here as well as in main() so a revert reds the selftest too rather than only the live run.
     ctl.check(
         "CONTROL: a `tee` pass-through producer is detected",
         len(offenders_in('set -o pipefail\nif cmd 2>&1 | tee "$LOG" | %s ok; then :; fi\n' % _GQ)),
@@ -1005,8 +929,7 @@ def selftest() -> int:
         ["abe", "zed"],
     )
 
-    # A line naming two local functions is reported twice, once per name. Pinned
-    # because it looks like a duplicate-suppression bug and is the twin's shape.
+    # A line naming two local functions is reported twice, once per name. Pinned because it looks like a duplicate-suppression bug and is the twin's shape.
     two = "set -o pipefail\nabe() { :; }\nzed() { :; }\nif abe zed | %s x; then :; fi\n" % _GQ
     ctl.check("a line naming TWO local functions is reported twice", len(offenders_in(two)), 2)
 

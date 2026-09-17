@@ -26,8 +26,7 @@ from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/scripts/quality/check-peer-deps.sh"
 
-# One invalid line on stdout, one on stderr, and a clean tree. The stderr case is
-# the one that matters: the twin's `2>&1` is the only reason it is seen at all.
+# One invalid line on stdout, one on stderr, and a clean tree. The stderr case is the one that matters: the twin's `2>&1` is the only reason it is seen at all.
 SHIM_STDOUT = "printf '%s\\n' 'console@0.0.0-dev /repo' '+-- zod@3.25.76 invalid: \"^4.4.3\"'"
 SHIM_STDERR = "printf '%s\\n' 'console@0.0.0-dev /repo'\necho 'npm error invalid: x' >&2"
 SHIM_CLEAN = "printf '%s\\n' 'console@0.0.0-dev /repo' '`-- zod@4.5.4'"
@@ -103,10 +102,7 @@ def test_missing_npm_is_cannot_run_not_a_pass(tmp_path: pathlib.Path) -> None:
     """
     root = build(tmp_path, SHIM_CLEAN)
     (root / "bin/npm").unlink()
-    # A PATH that still resolves `bash` and `python3` but holds NO npm. The
-    # obvious spelling -- PATH set to the empty shim directory -- takes `bash`
-    # away from subprocess too, and the case then fails for a reason that has
-    # nothing to do with the gate.
+    # A PATH that still resolves `bash` and `python3` but holds NO npm. The obvious spelling -- PATH set to the empty shim directory -- takes `bash` away from subprocess too, and the case then fails for a reason that has nothing to do with the gate.
     env = diff.env_for(
         PATH="/usr/bin:/bin",
         REDIACC_CI_ROOT=str(root),

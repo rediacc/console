@@ -123,9 +123,7 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
 
 CASES = [
     (
-        # THE NEGATIVE HALF. The baseline alone references only paths that
-        # classify `full`, so the gate must be silent. Without it, a port that
-        # called everything a violation would pass every red case below.
+        # THE NEGATIVE HALF. The baseline alone references only paths that classify `full`, so the gate must be silent. Without it, a port that called everything a violation would pass every red case below.
         "a tree whose reachable paths all force full is silent",
         {},
         True,
@@ -155,8 +153,7 @@ CASES = [
         1,
     ),
     (
-        # DOCUMENTATION IS NOT A DEPENDENCY. This is the 2026-08-06 false positive
-        # that would have forced full CI on every scripts/dev edit forever.
+        # DOCUMENTATION IS NOT A DEPENDENCY. This is the 2026-08-06 false positive that would have forced full CI on every scripts/dev edit forever.
         "a log_error mention of a narrowable path is not a violation",
         {
             ".ci/scripts/deploy/publish.sh": (
@@ -229,8 +226,7 @@ def test_the_single_quote_lead_is_dead_under_gnu_grep():
     assert "'" not in gate._LEAD, "restoring the quote changes which paths are judged"
     probe = "script: return await require('./scripts/hidden.sh')"
     assert gate.ROOT_COMMAND.search(probe) is None
-    # The same invocation with a SPACE lead is seen, which is what makes the point
-    # above a blind spot rather than a total failure of the extractor.
+    # The same invocation with a SPACE lead is seen, which is what makes the point above a blind spot rather than a total failure of the extractor.
     assert gate.ROOT_COMMAND.search("bash scripts/hidden.sh") is not None
 
 

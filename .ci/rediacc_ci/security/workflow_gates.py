@@ -138,9 +138,7 @@ from rediacc_ci import paths
 if typing.TYPE_CHECKING:  # pragma: no cover - typing only
     from types import ModuleType
 
-# ---------------------------------------------------------------------------
-# The bash preamble (check-workflow-gates.sh:55-135)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The bash preamble (check-workflow-gates.sh:55-135) ---------------------------------------------------------------------------
 
 
 def _env(name: str, default: str) -> str:
@@ -207,8 +205,7 @@ def _ensure_yaml(palette: _Palette) -> ModuleType | None:
             continue
         if proc.returncode != 0:
             continue
-        # A `--user` install lands in a site directory this interpreter resolved
-        # before the install ran. The twin gets this for free by starting a new
+        # A `--user` install lands in a site directory this interpreter resolved before the install ran. The twin gets this for free by starting a new
         # `python3` for every check; in-process the caches have to be dropped by
         # hand or the import below finds nothing that was just written.
         with contextlib.suppress(AttributeError, OSError):  # defensive
@@ -224,26 +221,18 @@ def _ensure_yaml(palette: _Palette) -> ModuleType | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# CHECK 1 -- job-level if: needs always()  (check-workflow-gates.sh:140-200)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 1 -- job-level if: needs always() (check-workflow-gates.sh:140-200) ---------------------------------------------------------------------------
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 6-20 ---------------------
-# CHECK 1 -- job-level if: needs always()
-#   Audit JOB-LEVEL if: blocks that reference needs.*.result. Prevents the
-#   transitive-skip propagation bug (finding J): a downstream job whose if:
+# --- carried verbatim from check-workflow-gates.sh, lines 6-20 --------------------- CHECK 1 -- job-level if: needs always() Audit JOB-LEVEL if: blocks that reference needs.*.result. Prevents the transitive-skip propagation bug (finding J): a downstream job whose if:
 #   references needs.X.result == 'success' without an always() / !cancelled() /
-#   !failure() prefix will silently skip whenever any upstream in X's transitive
-#   needs: chain skipped, even if X itself concluded as success.
+# !failure() prefix will silently skip whenever any upstream in X's transitive needs: chain skipped, even if X itself concluded as success.
 #
-#   Only job-level if: blocks are audited. Step-level if: runs inside an
-#   already-running job, so the transitive-skip concern doesn't apply.
+# Only job-level if: blocks are audited. Step-level if: runs inside an already-running job, so the transitive-skip concern doesn't apply.
 #
-#   Tolerated overrides (any one is enough to force evaluation):
-#     always()      -- canonical GHA idiom
+# Tolerated overrides (any one is enough to force evaluation): always() -- canonical GHA idiom
 #     !cancelled()  -- common variant; matches success+failure+skipped
 #     failure()     -- runs only on failure; implicitly overrides
-#     success()     -- evaluates unconditionally (implicit default, but listing it here keeps us permissive)
+# success() -- evaluates unconditionally (implicit default, but listing it here keeps us permissive)
 
 OVERRIDE_RE = re.compile(r"(always\(\)|!\s*cancelled\(\)|failure\(\)|success\(\))")
 NEEDS_RESULT_RE = re.compile(r"needs\.[A-Za-z0-9_-]+\.result")
@@ -309,27 +298,16 @@ def check1(yaml: ModuleType, workflows_dir: str) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CHECK 2 -- reusable-workflow call contract  (check-workflow-gates.sh:217-484)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 2 -- reusable-workflow call contract (check-workflow-gates.sh:217-484) ---------------------------------------------------------------------------
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 22-34 ---------------------
-# CHECK 2 -- reusable-workflow call contract
-#   Inside a reusable workflow, `secrets.FOO` for a secret that is NOT declared
-#   under on.workflow_call.secrets evaluates to the EMPTY STRING. No warning, no
-#   failure -- the deploy just ships a blank credential. That is exactly how
+# --- carried verbatim from check-workflow-gates.sh, lines 22-34 --------------------- CHECK 2 -- reusable-workflow call contract Inside a reusable workflow, `secrets.FOO` for a secret that is NOT declared under on.workflow_call.secrets evaluates to the EMPTY STRING. No warning, no failure -- the deploy just ships a blank credential. That is exactly how
 #   OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} came to be read by cd-deploy-account.yml
 #   while being declared by nobody, so every deployed account Worker ran with
 #   OBS_OTLP_CREDENTIALS="" and shipped no telemetry. Nothing caught it
-#   because an empty secret is indistinguishable from a working one at the YAML
-#   layer. So assert the contract in both directions:
-#     a) a reusable workflow may not read a secret it does not declare
-#     b) a caller must pass every required secret/input the callee declares
-#     c) a caller may not pass a secret/input the callee never declares (dead
-#        wiring: it looks like the value flows, and it does not)
+# because an empty secret is indistinguishable from a working one at the YAML layer. So assert the contract in both directions: a) a reusable workflow may not read a secret it does not declare b) a caller must pass every required secret/input the callee declares c) a caller may not pass a secret/input the callee never declares (dead wiring: it looks like the value flows, and it
+# does not)
 
-# `secrets.X`, but not when it is part of a path or filename -- otherwise
-# "set-account-worker-secrets.sh" reads as a reference to a secret named `sh`.
+# `secrets.X`, but not when it is part of a path or filename -- otherwise "set-account-worker-secrets.sh" reads as a reference to a secret named `sh`.
 USE_RE = re.compile(r"(?<![\w./-])secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 
 # Always available inside a workflow; never declared under workflow_call.
@@ -337,22 +315,12 @@ IMPLICIT = {"GITHUB_TOKEN"}
 
 # A LIST, converted to a set below, deliberately: `{...}` with its last member
 # deleted is `{}`, which is an empty DICT, and the set arithmetic in arm (a3)
-# then dies with a TypeError while `in` and `sorted()` degrade to silently
-# matching nothing. Draining this list to empty is the declared endgame (W8 P1b),
-# so the empty form has to be the safe one. Carried verbatim from the twin
-# (`:302-319`), INCLUDING its emptiness: the last entry was drained 2026-09-08.
+# then dies with a TypeError while `in` and `sorted()` degrade to silently matching nothing. Draining this list to empty is the declared endgame (W8 P1b), so the empty form has to be the safe one. Carried verbatim from the twin (`:302-319`), INCLUDING its emptiness: the last entry was drained 2026-09-08.
 _DECLARED_UNUSED_OK: list[tuple[str, str]] = [
-    # DRAINED 2026-09-08, and the premise this entry rested on was FALSE.
-    # It said the consumer "fetches this from Bitwarden now, so the passed value IS
+    # DRAINED 2026-09-08, and the premise this entry rested on was FALSE. It said the consumer "fetches this from Bitwarden now, so the passed value IS
     # unused". Measured: the fetch step is guarded on `github.repository ==
-    # 'rediacc/console'`, and in a REUSABLE workflow `github.repository` is the
-    # CALLER's repo -- so for rediacc/account and rediacc/renet that step never ran
-    # and the token was EMPTY. The passed secret was unread not because their half of
-    # the migration had landed but because it had never been written, and deleting the
-    # declaration would have made a live outage permanent.
-    # `claude-review-reusable.yml` now reads
-    # `env.BWS_... || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, which restores the
-    # read for both callers, and that is what makes this exemption genuinely removable.
+    # 'rediacc/console'`, and in a REUSABLE workflow `github.repository` is the CALLER's repo -- so for rediacc/account and rediacc/renet that step never ran and the token was EMPTY. The passed secret was unread not because their half of the migration had landed but because it had never been written, and deleting the declaration would have made a live outage permanent.
+    # `claude-review-reusable.yml` now reads `env.BWS_... || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, which restores the read for both callers, and that is what makes this exemption genuinely removable.
 ]
 
 
@@ -422,20 +390,14 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
             for name in sorted(used - declared)
         )
 
-    # --- carried verbatim from check-workflow-gates.sh, lines 294-306 ---------------------
-    # (a2) a reusable workflow may not DECLARE a secret nothing in it reads.
+    # --- carried verbatim from check-workflow-gates.sh, lines 294-306 --------------------- (a2) a reusable workflow may not DECLARE a secret nothing in it reads.
     #
-    # THE ARM THAT WAS MISSING, and its absence is measurable: 57 such declarations had
-    # accumulated by 2026-09-06, left behind when consumers moved to Bitwarden, and were
+    # THE ARM THAT WAS MISSING, and its absence is measurable: 57 such declarations had accumulated by 2026-09-06, left behind when consumers moved to Bitwarden, and were
     # removed in one sweep. (a) catches a read with no declaration; nothing caught a
-    # declaration with no read, so dead scaffolding grew quietly on the one surface
-    # where a stale secret name is most misleading -- a caller reads the declaration
-    # and passes a value that goes nowhere.
+    # declaration with no read, so dead scaffolding grew quietly on the one surface where a stale secret name is most misleading -- a caller reads the declaration and passes a value that goes nowhere.
     # A LIST, converted below, deliberately: `{...}` with its last member deleted is
     # `{}`, which is an empty DICT, and the set arithmetic in arm (a3) then dies with
-    # a TypeError while `in` and `sorted()` above degrade to silently matching
-    # nothing. Draining this list to empty is the declared endgame (W8 P1b), so the
-    # empty form has to be the safe one. Found by planting exactly that drain.
+    # a TypeError while `in` and `sorted()` above degrade to silently matching nothing. Draining this list to empty is the declared endgame (W8 P1b), so the empty form has to be the safe one. Found by planting exactly that drain.
     declared_unused_ok = set(_DECLARED_UNUSED_OK)
     if len(declared_unused_ok) != len(_DECLARED_UNUSED_OK):
         print("DECLARED_UNUSED_OK contains a duplicate entry", file=sys.stderr, flush=True)
@@ -454,17 +416,11 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
                 "a caller passing it sends a value nowhere; delete the declaration" % (fname, name)
             )
 
-    # --- carried verbatim from check-workflow-gates.sh, lines 337-347 ---------------------
-    # An exemption naming a declaration that is gone, or one that IS read, excuses
-    # nothing and would sit forever looking like coverage.
+    # --- carried verbatim from check-workflow-gates.sh, lines 337-347 --------------------- An exemption naming a declaration that is gone, or one that IS read, excuses nothing and would sit forever looking like coverage.
     #
     # SCOPED TO THE REAL TREE, and that scoping is not a nicety. The exemptions name
     # files in .github/workflows; a CHECK 1/CHECK 3 fixture tree contains two or
-    # three synthetic YAMLs and none of them. Sweeping there reported every
-    # exemption as dangling, which made this script exit 1 on EVERY fixture tree and
-    # turned two unrelated gate tests red for a file their fixtures were never meant
-    # to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run
-    # 34014201256. A liveness probe that cannot see the thing it probes for must
+    # three synthetic YAMLs and none of them. Sweeping there reported every exemption as dangling, which made this script exit 1 on EVERY fixture tree and turned two unrelated gate tests red for a file their fixtures were never meant to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run 34014201256. A liveness probe that cannot see the thing it probes for must
     # stay silent, not condemn it.
     if real_tree:
         for fname, name in sorted(declared_unused_ok):
@@ -484,21 +440,12 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
                     "DECLARED_UNUSED_OK: %s now READS %s; drop the exemption" % (fname, name)
                 )
 
-    # --- carried verbatim from check-workflow-gates.sh, lines 361-374 ---------------------
-    # (a3) every DECLARED_UNUSED_OK exemption must be PINNED ALIVE by a real entry in
-    # .github/external-callers.yml, and every pair that registry pins alive must be
-    # named by the exemption list. Set equality, both directions.
+    # --- carried verbatim from check-workflow-gates.sh, lines 361-374 --------------------- (a3) every DECLARED_UNUSED_OK exemption must be PINNED ALIVE by a real entry in .github/external-callers.yml, and every pair that registry pins alive must be named by the exemption list. Set equality, both directions.
     #
-    # WHY: the only legitimate reason to keep a declaration nothing reads is that a
-    # caller in ANOTHER repository still passes it, so deleting the declaration
-    # breaks their next run rather than this PR. Until now that justification lived
-    # in a COMMENT above the set. A comment cannot go stale loudly: retire the
-    # external caller and the exemption stays, looking like coverage, protecting a
-    # declaration nothing on earth passes any more.
+    # WHY: the only legitimate reason to keep a declaration nothing reads is that a caller in ANOTHER repository still passes it, so deleting the declaration breaks their next run rather than this PR. Until now that justification lived in a COMMENT above the set. A comment cannot go stale loudly: retire the external caller and the exemption stays, looking like coverage, protecting
+    # a declaration nothing on earth passes any more.
     #
-    # Scoped exactly like the liveness sweep above, and for the same reason: a
-    # CHECK 1/2/3 fixture tree has no registry, and an arm that cannot see the thing
-    # it probes for must stay silent rather than condemn it.
+    # Scoped exactly like the liveness sweep above, and for the same reason: a CHECK 1/2/3 fixture tree has no registry, and an arm that cannot see the thing it probes for must stay silent rather than condemn it.
     if real_tree and registry_file:
         reg_offenders: list[str] = []
         registry: object = None
@@ -570,11 +517,9 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
     for fname, doc in docs.items():
         # The isinstance guard was an UNRECORDED DIVERGENCE until 2026-09-10: the twin
         # had only `(doc or {})`, which covers an empty file and not a workflow whose
-        # YAML parses to a scalar or a list, so the twin died with `AttributeError:
-        # 'str' object has no attribute 'get'` where the port passed. Found while
+        # YAML parses to a scalar or a list, so the twin died with `AttributeError: 'str' object has no attribute 'get'` where the port passed. Found while
         # testing CHECK 6's guard; the twin now carries the same guard
-        # (check-workflow-gates.sh, CHECK 2's (b)/(c) loop) and
-        # `test_check2_a_workflow_that_is_not_a_mapping` pins the pair.
+        # (check-workflow-gates.sh, CHECK 2's (b)/(c) loop) and `test_check2_a_workflow_that_is_not_a_mapping` pins the pair.
         jobs = (doc or {}).get("jobs") or {} if isinstance(doc, dict) else {}
         if not isinstance(jobs, dict):
             continue
@@ -627,34 +572,19 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CHECK 3 -- ubuntu-slim timeouts  (check-workflow-gates.sh:501-592)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 3 -- ubuntu-slim timeouts (check-workflow-gates.sh:501-592) ---------------------------------------------------------------------------
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 36-42 ---------------------
-# CHECK 3 -- ubuntu-slim jobs declare a timeout under the platform cap
-#   ubuntu-slim has a HARD 15-minute job cap. Exceeding it marks the job
-#   CANCELLED with no failed step, which reads as neither pass nor fail: it
-#   poisons CI Complete and leaves the watchdog nothing to classify.
-#   quality-security hit this twice in three runs. Requiring an explicit
+# --- carried verbatim from check-workflow-gates.sh, lines 36-42 --------------------- CHECK 3 -- ubuntu-slim jobs declare a timeout under the platform cap ubuntu-slim has a HARD 15-minute job cap. Exceeding it marks the job CANCELLED with no failed step, which reads as neither pass nor fail: it poisons CI Complete and leaves the watchdog nothing to classify. quality-security hit
+# this twice in three runs. Requiring an explicit
 #   timeout-minutes <= 14 turns that silent kill into an ordinary timeout
-#   failure naming the step that hung.
+# failure naming the step that hung.
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 502-515 ---------------------
-# ubuntu-slim is a 1-vCPU runner with a HARD 15-minute job cap enforced by the
-# platform, not by us. When a job hits it the run does not fail -- the job is
-# marked CANCELLED with no failed step, which poisons CI Complete and gives the
-# watchdog nothing to classify. quality-security hit this twice in three runs
-# during the 0722-1 wave before it was moved to ubuntu-latest.
+# --- carried verbatim from check-workflow-gates.sh, lines 502-515 --------------------- ubuntu-slim is a 1-vCPU runner with a HARD 15-minute job cap enforced by the platform, not by us. When a job hits it the run does not fail -- the job is marked CANCELLED with no failed step, which poisons CI Complete and gives the watchdog nothing to classify. quality-security hit this twice in
+# three runs during the 0722-1 wave before it was moved to ubuntu-latest.
 #
-# So every slim job must declare its own timeout BELOW the cap. Then a hang
-# fails as a timeout, in the job that owns it, with a message naming the step.
-# 12 rather than 15 leaves room for the runner's own setup/teardown, which is
-# outside the steps but inside the cap.
+# So every slim job must declare its own timeout BELOW the cap. Then a hang fails as a timeout, in the job that owns it, with a message naming the step. 12 rather than 15 leaves room for the runner's own setup/teardown, which is outside the steps but inside the cap.
 #
-# A job that legitimately needs longer does not get a bigger number here: it
-# gets ubuntu-latest. That is the whole point -- the number is not a dial, it is
-# an assertion that this job fits on this runner.
+# A job that legitimately needs longer does not get a bigger number here: it gets ubuntu-latest. That is the whole point -- the number is not a dial, it is an assertion that this job fits on this runner.
 
 SLIM = "ubuntu-slim"
 
@@ -692,13 +622,10 @@ def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverag
                 continue
 
             checked += 1
-            # --- carried verbatim from check-workflow-gates.sh, lines 555-561 ---------------------
-            # Named `declared`, not `timeout`: check-commands.sh scans this file as
-            # bash and has no heredoc scoping, so a Python line reading
+            # --- carried verbatim from check-workflow-gates.sh, lines 555-561 --------------------- Named `declared`, not `timeout`: check-commands.sh scans this file as bash and has no heredoc scoping, so a Python line reading
             # `timeout = ...` is indistinguishable from the bash command invocation
             # `timeout = ...` actually is. That gate is RIGHT about bash and must not
-            # be taught to skip heredoc bodies -- a `ssh host <<'EOF' ... timeout 5`
-            # body is exactly the remote-minimal-environment case it exists to
+            # be taught to skip heredoc bodies -- a `ssh host <<'EOF' ... timeout 5` body is exactly the remote-minimal-environment case it exists to
             # catch. Avoiding the collision is the fix; widening the gate is not.
             declared = job.get("timeout-minutes")
             if declared is None:
@@ -736,35 +663,19 @@ def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverag
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CHECK 4 -- external-caller contracts  (check-workflow-gates.sh:626-847)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 4 -- external-caller contracts (check-workflow-gates.sh:626-847) ---------------------------------------------------------------------------
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 44-51 ---------------------
-# CHECK 4 -- external-caller contracts (.github/external-callers.yml)
-#   CHECK 2 scans .github/workflows only, so it cannot see callers in OTHER
-#   repositories -- and those are the only callers that can actually break,
-#   because a same-repo caller moves with its callee in one commit while a
-#   cross-repo one resolves `@main` at run time. `.github/external-callers.yml`
+# --- carried verbatim from check-workflow-gates.sh, lines 44-51 --------------------- CHECK 4 -- external-caller contracts (.github/external-callers.yml) CHECK 2 scans .github/workflows only, so it cannot see callers in OTHER repositories -- and those are the only callers that can actually break, because a same-repo caller moves with its callee in one commit while a cross-repo one
+# resolves `@main` at run time. `.github/external-callers.yml`
 #   declares them; this runs CHECK 2's contract against each declaration,
-#   re-checks the declaration against the caller's real file when the submodule
-#   is checked out, and fails on any external caller that is not registered.
+# re-checks the declaration against the caller's real file when the submodule is checked out, and fails on any external caller that is not registered.
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 607-620 ---------------------
-# CHECK 2 above scans WORKFLOWS_DIR only, so it is structurally blind to callers
-# that live in OTHER repositories -- which are the only callers that can suffer
-# the breakage it exists to prevent. A same-repo caller moves with its callee in
+# --- carried verbatim from check-workflow-gates.sh, lines 607-620 --------------------- CHECK 2 above scans WORKFLOWS_DIR only, so it is structurally blind to callers that live in OTHER repositories -- which are the only callers that can suffer the breakage it exists to prevent. A same-repo caller moves with its callee in
 # one commit; a cross-repo caller resolves `@main` at run time, so a callee edit
-# merged here breaks the other repo's next run, an hour later, in a log nobody
-# on this PR is reading.
+# merged here breaks the other repo's next run, an hour later, in a log nobody on this PR is reading.
 #
-# .github/external-callers.yml declares them. CHECK 4 runs CHECK 2's three-way
-# contract against each declaration, verifies the declaration still matches the
-# caller's real file when the submodule is checked out, and refuses to let an
-# undeclared external caller exist.
-# EXTERNAL_CALLERS_ROOT / EXTERNAL_CALLERS_FILE are resolved near the top of the
-# file, because CHECK 2's arm (a3) needs the same registry and must resolve it
-# the same way rather than growing a second copy of the rule.
+# .github/external-callers.yml declares them. CHECK 4 runs CHECK 2's three-way contract against each declaration, verifies the declaration still matches the caller's real file when the submodule is checked out, and refuses to let an undeclared external caller exist. EXTERNAL_CALLERS_ROOT / EXTERNAL_CALLERS_FILE are resolved near the top of the file, because CHECK 2's arm (a3) needs
+# the same registry and must resolve it the same way rather than growing a second copy of the rule.
 
 REQUIRED_FIELDS = ("caller", "repo", "pinned_at", "calls", "passes_inputs", "passes_secrets")
 CONSOLE_PREFIX = "rediacc/console/"
@@ -945,12 +856,8 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
                 % (caller, CONSOLE_PREFIX, entry["calls"])
             )
 
-    # --- carried verbatim from check-workflow-gates.sh, lines 797-801 ---------------------
-    # --- (c) completeness: every external caller on disk must be registered
-    # A blind leg is reported only when there is nothing else to say. A concrete
-    # offender IS evidence the check ran, and burying it under "this check is blind"
-    # was how the first version of CHECK 4 reported a stale registry entry as a
-    # missing submodule.
+    # --- carried verbatim from check-workflow-gates.sh, lines 797-801 --------------------- --- (c) completeness: every external caller on disk must be registered A blind leg is reported only when there is nothing else to say. A concrete offender IS evidence the check ran, and burying it under "this check is blind" was how the first version of CHECK 4 reported a stale registry
+    # entry as a missing submodule.
     blind: list[str] = []
     trees = sorted(glob.glob(os.path.join(scan_root, "private", "*", ".github", "workflows")))
     if not trees:
@@ -1004,30 +911,18 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CHECK 5 -- Bitwarden jobs check out the map  (check-workflow-gates.sh:886-955)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 5 -- Bitwarden jobs check out the map (check-workflow-gates.sh:886-955) ---------------------------------------------------------------------------
 #
 # --- carried verbatim from check-workflow-gates.sh, lines 864-883 ---------------------
 # =============================================================================
 # CHECK 5: a job that fetches from Bitwarden must CHECK OUT the map it resolves with.
 #
-# ./.github/actions/bws-secrets translates NAMES to UUIDs out of
-# .ci/config/bws-secret-map.json before it calls sm-action, because sm-action
-# addresses secrets by UUID only and 197 raw UUIDs across 63 job blocks would be
-# unreviewable. So the map is a RUNTIME input to the composite, not documentation.
+# ./.github/actions/bws-secrets translates NAMES to UUIDs out of .ci/config/bws-secret-map.json before it calls sm-action, because sm-action addresses secrets by UUID only and 197 raw UUIDs across 63 job blocks would be unreviewable. So the map is a RUNTIME input to the composite, not documentation.
 #
-# A sparse checkout that stops at `.github/actions` therefore produces a job that
-# looks deliberately scoped and fails with "bws-secret-map.json not found at ..." --
-# and it fails at the fetch step, in whatever job first needs a secret, which on the
-# CD path is a production deploy. Found on 2026-09-02 in TWO jobs at once
-# (backfill-release-sentinel `backfill`, cd-deploy-account `deploy`), both of which
-# grew their `uses:` line long after their cone was written. Nothing connected the
-# two edits, which is exactly what this check is for.
+# A sparse checkout that stops at `.github/actions` therefore produces a job that looks deliberately scoped and fails with "bws-secret-map.json not found at ..." -- and it fails at the fetch step, in whatever job first needs a secret, which on the CD path is a production deploy. Found on 2026-09-02 in TWO jobs at once (backfill-release-sentinel `backfill`, cd-deploy-account
+# `deploy`), both of which grew their `uses:` line long after their cone was written. Nothing connected the two edits, which is exactly what this check is for.
 #
-# The rule is deliberately narrow: it fires only when a sparse checkout EXISTS. A
-# full checkout has everything, and demanding a `.ci/config` line there would be
-# noise that teaches people to ignore the message.
+# The rule is deliberately narrow: it fires only when a sparse checkout EXISTS. A full checkout has everything, and demanding a `.ci/config` line there would be noise that teaches people to ignore the message.
 # =============================================================================
 
 MAP_DIR = ".ci/config"
@@ -1074,16 +969,10 @@ def check5(yaml: ModuleType, root_dir: str) -> int:
                 if MAP_DIR not in cone
             )
 
-    # --- carried verbatim from check-workflow-gates.sh, lines 931-939 ---------------------
-    # ANTI-VACUITY. This check can only fire on a job that BOTH fetches from Bitwarden
-    # and narrows its checkout, which is a small set by construction. If that set empties
-    # -- the composite is renamed, the cones are widened, the glob breaks -- the check
-    # passes for a reason indistinguishable from correctness, so say which it was.
+    # --- carried verbatim from check-workflow-gates.sh, lines 931-939 --------------------- ANTI-VACUITY. This check can only fire on a job that BOTH fetches from Bitwarden and narrows its checkout, which is a small set by construction. If that set empties -- the composite is renamed, the cones are widened, the glob breaks -- the check passes for a reason indistinguishable from
+    # correctness, so say which it was.
     if checked == 0:
-        # And it FAILS, rather than announcing the vacuity and exiting 0 as it did
-        # until 2026-09-09. "This is the vacuous case, not a pass" followed by a green
-        # success line is a gate that has stopped meaning its own name: 10 jobs are in
-        # this set today, so an empty one is a broken matcher, never a clean tree.
+        # And it FAILS, rather than announcing the vacuity and exiting 0 as it did until 2026-09-09. "This is the vacuous case, not a pass" followed by a green success line is a gate that has stopped meaning its own name: 10 jobs are in this set today, so an empty one is a broken matcher, never a clean tree.
         print(
             "error: no job both fetches from Bitwarden and narrows its checkout, so "
             "CHECK 5 asserted nothing. Ten jobs were in this set on 2026-09-09; an "
@@ -1102,68 +991,38 @@ def check5(yaml: ModuleType, root_dir: str) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# CHECK 6 -- nothing optional before the monitor  (check-workflow-gates.sh:1012-1098)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CHECK 6 -- nothing optional before the monitor (check-workflow-gates.sh:1012-1098) ---------------------------------------------------------------------------
 #
 # --- carried verbatim from check-workflow-gates.sh, lines 965-1009 ---------------------
 # =============================================================================
 # CHECK 6: nothing optional may run in front of the watchdog's monitor step.
 #
-# The watchdog is the thing that watches every other CI run. Its job therefore
-# has an ordering property nothing else in this repo has: a step that can fail
-# and that the monitor does not need is not merely noisy there, it silently
-# disables the guard. On 2026-09-03 the shadow-secret compare -- a temporary
-# migration scaffold that nothing consumes -- sat at step 7 of 7 ahead of the
-# monitor, hit a real mismatch on ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, and exited
-# 1. Run 33704079162 reported "failure" having monitored NOTHING, and the only
-# symptom was a red watchdog, which reads exactly like the watchdog working.
+# The watchdog is the thing that watches every other CI run. Its job therefore has an ordering property nothing else in this repo has: a step that can fail and that the monitor does not need is not merely noisy there, it silently disables the guard. On 2026-09-03 the shadow-secret compare -- a temporary migration scaffold that nothing consumes -- sat at step 7 of 7 ahead of the
+# monitor, hit a real mismatch on ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, and exited 1. Run 33704079162 reported "failure" having monitored NOTHING, and the only symptom was a red watchdog, which reads exactly like the watchdog working.
 #
-# The rule: a step BEFORE "Monitor jobs and cancel on failure" must either be one
-# the monitor actually needs (the PREREQS allowlist, short on purpose) or be unable
-# to cost the watch at all.
+# The rule: a step BEFORE "Monitor jobs and cancel on failure" must either be one the monitor actually needs (the PREREQS allowlist, short on purpose) or be unable to cost the watch at all.
 #
-# "Unable to cost the watch" is not a name, it is two properties, and both are
-# required because each alone leaves a door open:
+# "Unable to cost the watch" is not a name, it is two properties, and both are required because each alone leaves a door open:
 #
-#   continue-on-error: true  -- the step cannot FAIL the job, so the 2026-09-03
-#                               shape (exit 1 at step 7 of 7, monitor never runs)
-#                               is structurally impossible rather than promised.
+# continue-on-error: true -- the step cannot FAIL the job, so the 2026-09-03 shape (exit 1 at step 7 of 7, monitor never runs) is structurally impossible rather than promised.
 #   timeout-minutes: <= 5    -- the step cannot HANG the job either. The monitor's
-#                               own deadline is 480s inside a 14-minute slim cap,
-#                               so a step that merely blocks kills the watch just
-#                               as dead as one that exits 1, and continue-on-error
-#                               says nothing about that.
+# own deadline is 480s inside a 14-minute slim cap, so a step that merely blocks kills the watch just as dead as one that exits 1, and continue-on-error says nothing about that.
 #
-# This is deliberately stricter than the name list it replaces: a name proves
-# somebody once thought about a step, these two prove the step cannot take the
-# watchdog down no matter what it does. PREREQS stays for the steps that must be
-# allowed to fail, because the monitor cannot run correctly without them.
+# This is deliberately stricter than the name list it replaces: a name proves somebody once thought about a step, these two prove the step cannot take the watchdog down no matter what it does. PREREQS stays for the steps that must be allowed to fail, because the monitor cannot run correctly without them.
 #
-# THE continue-on-error DOOR IS CURRENTLY CLOSED IN THIS REPO, and saying so here
-# matters more than the door itself. check-workflows.sh bans the keyword outright
-# ("Silently ignores step/job failures"), so no workflow can walk through it today
-# -- as this session found by trying: the watchdog's Bitwarden fetch was moved ahead
-# of the monitor with continue-on-error, this check accepted it on the property, and
-# the banned-patterns gate refused it four minutes into CI. The move was reverted.
+# THE continue-on-error DOOR IS CURRENTLY CLOSED IN THIS REPO, and saying so here matters more than the door itself. check-workflows.sh bans the keyword outright ("Silently ignores step/job failures"), so no workflow can walk through it today -- as this session found by trying: the watchdog's Bitwarden fetch was moved ahead of the monitor with continue-on-error, this check accepted
+# it on the property, and the banned-patterns gate refused it four minutes into CI. The move was reverted.
 #
-# The rule stays as written rather than being narrowed back to a name list, because
-# the property is the thing that is actually true and the other gate's ban is a
-# policy on top of it. If that ban is ever relaxed, this admits the case correctly
-# and its test already proves both answers. Until then, PREREQS is the only way in.
+# The rule stays as written rather than being narrowed back to a name list, because the property is the thing that is actually true and the other gate's ban is a policy on top of it. If that ban is ever relaxed, this admits the case correctly and its test already proves both answers. Until then, PREREQS is the only way in.
 # =============================================================================
 
 MONITOR = "Monitor jobs and cancel on failure"
-# Steps the monitor genuinely depends on: the checkout that puts its scripts on
-# disk, and the deterministic attempt cap, which must run first BECAUSE it writes
-# the env var the monitor reads.
+# Steps the monitor genuinely depends on: the checkout that puts its scripts on disk, and the deterministic attempt cap, which must run first BECAUSE it writes the env var the monitor reads.
 PREREQS = {
     "Attempt cap (deterministic backstop)",
     # Added 2026-09-09. The monitor's two classifier tiers read credentials this step
     # exports; without them it does not degrade gracefully, it hands the retry decision to
-    # an allowlist nobody reviewed -- which is the harm the workflow's own comment
-    # describes. That is the PREREQS contract: allowed to fail BECAUSE the monitor cannot
-    # run correctly without it.
+    # an allowlist nobody reviewed -- which is the harm the workflow's own comment describes. That is the PREREQS contract: allowed to fail BECAUSE the monitor cannot run correctly without it.
     "Fetch secrets from Bitwarden",
 }
 MAX_TIMEOUT_MINUTES = 5
@@ -1230,14 +1089,8 @@ def check6(yaml: ModuleType, root_dir: str) -> int:
         print("error: %s is missing; CHECK 6 cannot report" % workflow, file=sys.stderr, flush=True)
         return 1
 
-    # FIXED 2026-09-10. THREE of the five ways the monitor anchor can go missing used
-    # to end in a traceback rather than in this check's own message: an EMPTY document
-    # and a NON-MAPPING document both reached `doc.get("jobs")` and raised
-    # `AttributeError`, and a SYNTAX ERROR raised `yaml.YAMLError` out of safe_load.
-    # Bash printed "move the step after the monitor" on top of each, telling the
-    # operator to reorder a step in a file that has no steps. All three are still
-    # failures -- the anti-vacuity rule below cannot be satisfied by a file that did
-    # not parse -- but each now names its cause.
+    # FIXED 2026-09-10. THREE of the five ways the monitor anchor can go missing used to end in a traceback rather than in this check's own message: an EMPTY document and a NON-MAPPING document both reached `doc.get("jobs")` and raised `AttributeError`, and a SYNTAX ERROR raised `yaml.YAMLError` out of safe_load. Bash printed "move the step after the monitor" on top of each,
+    # telling the operator to reorder a step in a file that has no steps. All three are still failures -- the anti-vacuity rule below cannot be satisfied by a file that did not parse -- but each now names its cause.
     try:
         doc = yaml.safe_load(workflow.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
@@ -1307,10 +1160,7 @@ def check6(yaml: ModuleType, root_dir: str) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# The orchestrator (check-workflow-gates.sh:55-135, 202-212, 486-496, 594-604,
-# 849-862, 957-964, 1100-1108)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The orchestrator (check-workflow-gates.sh:55-135, 202-212, 486-496, 594-604, 849-862, 957-964, 1100-1108) ---------------------------------------------------------------------------
 
 
 def _guarded(fn: typing.Callable[[], int]) -> int:

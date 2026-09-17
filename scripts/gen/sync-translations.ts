@@ -229,8 +229,7 @@ function syncLocaleDir(config: LocaleConfig): { added: number; removed: number }
       .readdirSync(dir)
       .filter((f) => f !== `${SOURCE_LANG}.json` && !f.startsWith('.') && f.endsWith('.json'))
       .map((f) => f.replace('.json', ''));
-    // VACUITY FLOOR: syncing into zero target languages reports "added: 0, removed: 0",
-    // which is exactly what a correct, already-synced tree reports. The two must differ.
+    // VACUITY FLOOR: syncing into zero target languages reports "added: 0, removed: 0", which is exactly what a correct, already-synced tree reports. The two must differ.
     const MIN_TARGET_LANGS = 1;
     if (languages.length < MIN_TARGET_LANGS) {
       throw new Error(

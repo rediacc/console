@@ -76,8 +76,7 @@ from rediacc_ci import paths
 
 REPORT_AWK = paths.from_root(".ci", "scripts", "ci", "profiler", "report.awk")
 
-# 1 MiB is a hard platform limit and the failure mode is an unhelpful upload
-# error, so the panel is trimmed well short of it.
+# 1 MiB is a hard platform limit and the failure mode is an unhelpful upload error, so the panel is trimmed well short of it.
 DEFAULT_MAX_PANEL_BYTES = "900000"
 
 MISSING_REASON = "the sampler did not start, or wrote nothing before the job ended"
@@ -98,8 +97,7 @@ def _read_lines(path: pathlib.Path) -> list[str]:
     """`while IFS= read -r line; do ... done <file`, unterminated tail and all."""
     text = path.read_text(encoding="utf-8", errors="surrogateescape")
     records = text.split("\n")
-    # The final element is "" for a newline-terminated file and the unterminated
-    # remainder otherwise. `read` fails on that remainder, so the twin drops it.
+    # The final element is "" for a newline-terminated file and the unterminated remainder otherwise. `read` fails on that remainder, so the twin drops it.
     return records[:-1]
 
 
@@ -154,8 +152,7 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its argume
         return 2
 
     sample = pathlib.Path(sample_file)
-    # `[ ! -s "$SAMPLE_FILE" ]`: absent OR empty. A missing profile and a zero
-    # profile look identical in a log and mean opposite things.
+    # `[ ! -s "$SAMPLE_FILE" ]`: absent OR empty. A missing profile and a zero profile look identical in a log and mean opposite things.
     if not (sample.is_file() and sample.stat().st_size > 0):
         _append(
             summary,
@@ -204,8 +201,7 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its argume
             "job=%s" % _env("GITHUB_JOB"),
         ]
         # Passing `-v declared_s=` would set it to the empty string, which
-        # report.awk reads as "unset" and replaces with its default anyway --
-        # but relying on that would make the defaults live in two places.
+        # report.awk reads as "unset" and replaces with its default anyway -- but relying on that would make the defaults live in two places.
         declared_s = _env("PROFILER_DECLARED_S")
         if declared_s != "":
             awk_args += ["-v", "declared_s=%s" % declared_s]
@@ -249,24 +245,18 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its argume
             handle.flush()
         sys.stdout.flush()
 
-        # Exactly ONE notice per job. report.awk writes the row only when it
-        # produced a verdict, so a run it refused to advise on emits no
-        # annotation at all rather than an unusable one.
+        # Exactly ONE notice per job. report.awk writes the row only when it produced a verdict, so a run it refused to advise on emits no annotation at all rather than an unusable one.
         if machine.is_file() and machine.stat().st_size > 0:
             advisory = ""
             for line in body.decode("utf-8", errors="surrogateescape").split("\n"):
                 if line.startswith("**Advisory:** "):
                     advisory = line[len("**Advisory:** ") :]
                     break
-            # The advisory is read back out of the panel, and the panel can have
-            # been trimmed above. Say so rather than emitting a notice that opens
+            # The advisory is read back out of the panel, and the panel can have been trimmed above. Say so rather than emitting a notice that opens
             # with nothing; the row after it is the part a machine reads either way.
             if advisory == "":
                 advisory = "(advisory text unavailable: the panel was trimmed)"
-            # `$(head -n 1 "$MACHINE")`, which is NOT `read`: head prints an
-            # unterminated final line, and command substitution then strips only
-            # trailing newlines. Using `_read_lines` here would drop exactly the
-            # row report.awk writes when its last `print` is the only one.
+            # `$(head -n 1 "$MACHINE")`, which is NOT `read`: head prints an unterminated final line, and command substitution then strips only trailing newlines. Using `_read_lines` here would drop exactly the row report.awk writes when its last `print` is the only one.
             row = machine.read_text(encoding="utf-8", errors="surrogateescape").split("\n")[0]
             print(
                 "::notice title=Runner sizing (profiler)::%s | %s"

@@ -140,8 +140,7 @@ cases = [
 sys.exit(0 if all(emit(**k) == w for k, w in cases) else 1)
 """
 
-# The mutation the --run control plants, by CONSTRUCTION rather than by sed over
-# the live source.
+# The mutation the --run control plants, by CONSTRUCTION rather than by sed over the live source.
 MUTATE_PY = """
 import io, sys
 src, dst = sys.argv[1], sys.argv[2]
@@ -214,9 +213,7 @@ def test_missing_ref_is_no_ref_not_silence(gate, tmp_path):
 
 def test_control_default_flipped_is_caught(gate, tmp_path):
     gate.log_test("CONTROL: flip the default and the first assertion must go red")
-    # Built by CONSTRUCTION -- a copied module plus an APPENDED override. A
-    # pattern substitution could silently no-op if the signature were reworded,
-    # and the control would then pass against unmutated source.
+    # Built by CONSTRUCTION -- a copied module plus an APPENDED override. A pattern substitution could silently no-op if the signature were reworded, and the control would then pass against unmutated source.
     require_subjects(gate)
     moddir = tmp_path / "mutant"
     moddir.mkdir(parents=True)
@@ -255,11 +252,9 @@ def test_trace_names_its_source(gate):
 
 def test_every_caller_handles_the_no_pr_state(gate):
     gate.log_test("EVERY ci_rollup caller must handle no-pr, not let it propagate")
-    # ci_rollup returns a STATE, and a caller that ignores it hands `info` -- a
-    # plain string, not the payload dict -- to code expecting a rollup.
+    # ci_rollup returns a STATE, and a caller that ignores it hands `info` -- a plain string, not the payload dict -- to code expecting a rollup.
     #
-    # Enumerated, never hardcoded, and from BOTH tracked and untracked files: a
-    # caller added but not yet committed is exactly when this slips in.
+    # Enumerated, never hardcoded, and from BOTH tracked and untracked files: a caller added but not yet committed is exactly when this slips in.
     git = harness.require_tool("git", "install git")
     root = paths.repo_root()
     listed: set[str] = set()
@@ -295,8 +290,7 @@ def test_every_caller_handles_the_no_pr_state(gate):
             continue
         callers.append(rel)
 
-    # Anti-vacuity: a scan that found no callers proves nothing. ci-trace.py is a
-    # caller by construction, so zero means the enumeration broke.
+    # Anti-vacuity: a scan that found no callers proves nothing. ci-trace.py is a caller by construction, so zero means the enumeration broke.
     if not callers:
         gate.log_fail("found ZERO ci_rollup callers -- the enumeration broke, not the code")
 
@@ -311,10 +305,7 @@ def test_every_caller_handles_the_no_pr_state(gate):
 
 def test_control_a_blind_caller_is_detected(gate, tmp_path):
     gate.log_test("CONTROL: a caller that ignores the state must be caught")
-    # By construction: a fresh file that calls ci_rollup and never mentions
-    # no-pr. WRITTEN TO tmp_path, NOT THE REAL TREE -- the twin records that an
-    # earlier version wrote under .ci/scripts/quality/ and that
-    # check-pool-writer-safety was right to reject it.
+    # By construction: a fresh file that calls ci_rollup and never mentions no-pr. WRITTEN TO tmp_path, NOT THE REAL TREE -- the twin records that an earlier version wrote under .ci/scripts/quality/ and that check-pool-writer-safety was right to reject it.
     victim = tmp_path / "_probe_caller.py"
     victim.write_text(
         'state, info = wl_ci.ci_rollup(root, ref)\nprint(info["verdict"])\n', encoding="utf-8"
@@ -324,10 +315,7 @@ def test_control_a_blind_caller_is_detected(gate, tmp_path):
     if not hit:
         gate.log_fail("CONTROL DID NOT FIRE: a blind caller read as compliant")
 
-    # The untracked half of the enumeration, asserted at the source rather than
-    # by writing into the tree. `$0` in the twin is the file making the claim, so
-    # it is THIS file here. This proves the enumeration ASKS for untracked files,
-    # not that it received any.
+    # The untracked half of the enumeration, asserted at the source rather than by writing into the tree. `$0` in the twin is the file making the claim, so it is THIS file here. This proves the enumeration ASKS for untracked files, not that it received any.
     own = pathlib.Path(__file__).read_text(encoding="utf-8")
     if '"--others", "--exclude-standard"' not in own:
         gate.log_fail(
@@ -339,10 +327,7 @@ def test_control_a_blind_caller_is_detected(gate, tmp_path):
 
 def test_green_draft_names_the_finish_sequence(gate):
     gate.log_test("GREEN on a still-draft PR must name the finish sequence")
-    # Green is not the finish line: the PR still has to be flipped ready,
-    # reviewed, and its threads resolved. Driven through the REAL _emit in four
-    # directions rather than grepping the source for the string, because a nudge
-    # that never renders is the failure here.
+    # Green is not the finish line: the PR still has to be flipped ready, reviewed, and its threads resolved. Driven through the REAL _emit in four directions rather than grepping the source for the string, because a nudge that never renders is the failure here.
     require_subjects(gate)
     result = harness.run([sys.executable, "-c", NUDGE_PY, str(TRACE)])
     if result.rc != 0:
@@ -372,11 +357,7 @@ def run_shim_dir(tmp_path: pathlib.Path) -> pathlib.Path:
 
 def test_dispatched_run_is_traced_by_id(gate, tmp_path):
     gate.log_test("--run reads a dispatched run, which a branch rollup CANNOT see")
-    # WHY THIS EXISTS, measured 2026-08-26 on Release run 32968110599 (head
-    # 1c006e53). A branch's statusCheckRollup does NOT contain a
-    # workflow_dispatch run's check runs, so `--wait --ref main` printed GREEN
-    # and exited 0 while the release was mid-flight, twice, and /pr-merge step 5
-    # instructed exactly that.
+    # WHY THIS EXISTS, measured 2026-08-26 on Release run 32968110599 (head 1c006e53). A branch's statusCheckRollup does NOT contain a workflow_dispatch run's check runs, so `--wait --ref main` printed GREEN and exited 0 while the release was mid-flight, twice, and /pr-merge step 5 instructed exactly that.
     #
     # The four exit codes below are the whole contract. `in_progress -> 2` is the
     # one that was broken; `unreadable -> 2` matters just as much, because a run
@@ -397,9 +378,7 @@ def test_dispatched_run_is_traced_by_id(gate, tmp_path):
 
 def test_control_run_reader_can_fail(gate, tmp_path):
     gate.log_test("CONTROL: a --run reader that ignores status must be detectable")
-    # Built BY CONSTRUCTION, not by sed over the live source: copy ci-trace,
-    # replace the status test so `in_progress` falls through to the green path,
-    # and require the in-flight case to stop being reported as in-flight.
+    # Built BY CONSTRUCTION, not by sed over the live source: copy ci-trace, replace the status test so `in_progress` falls through to the green path, and require the in-flight case to stop being reported as in-flight.
     require_subjects(gate)
     shim = run_shim_dir(tmp_path)
     mutant = tmp_path / "ci-trace-mut.py"
@@ -410,11 +389,7 @@ def test_control_run_reader_can_fail(gate, tmp_path):
         )
     result = harness.run([sys.executable, str(mutant), "--run", "inflight"], env=with_path(shim))
     # The assertion is `!= 2`, not `== 0`, and the difference is the control
-    # being honest. Deleting the status test does NOT make the in-flight run
-    # green: it falls through to the terminal branch, where conclusion is null,
-    # which is not in (success, skipped), so it reports RED (1). Either way the
-    # run has stopped being reported as in-flight, which is the property under
-    # test.
+    # being honest. Deleting the status test does NOT make the in-flight run green: it falls through to the terminal branch, where conclusion is null, which is not in (success, skipped), so it reports RED (1). Either way the run has stopped being reported as in-flight, which is the property under test.
     if result.rc == 2:
         gate.log_fail(
             "CONTROL DID NOT FIRE: the mutated reader still reported the in-flight run as "
@@ -428,9 +403,7 @@ def test_control_run_reader_can_fail(gate, tmp_path):
 
 def test_ci_nonblocking_contexts_selftest(gate):
     gate.log_test("ci-trace.py's own CI_NONBLOCKING_CONTEXTS fixture controls")
-    # Review-found live on PR #579: --run reads a run's jobs endpoint DIRECTLY,
-    # a completely separate path from wl_ci.ci_classify's GraphQL contexts, so
-    # the fix landed on the branch-tracing path and never touched this one.
+    # Review-found live on PR #579: --run reads a run's jobs endpoint DIRECTLY, a completely separate path from wl_ci.ci_classify's GraphQL contexts, so the fix landed on the branch-tracing path and never touched this one.
     require_subjects(gate)
     result = harness.run([sys.executable, str(TRACE), "--selftest"])
     if result.rc != 0:

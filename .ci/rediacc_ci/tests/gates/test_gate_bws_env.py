@@ -42,10 +42,7 @@ BOTH = json.dumps(
 
 MAP = '{ "project": "p", "secrets": { "ALPHA_TOKEN": { "id": "1" }, "BETA_TOKEN": { "id": "2" } } }'
 
-# The bootstrap credential's variable name, held in a constant rather than
-# written at each use. Not style: ruff's S105/S107 flag a literal assigned to
-# anything whose NAME contains `token`, and this fixture value is a five-word
-# string in a public repo. Naming the variable for what it is keeps the rule on
+# The bootstrap credential's variable name, held in a constant rather than written at each use. Not style: ruff's S105/S107 flag a literal assigned to anything whose NAME contains `token`, and this fixture value is a five-word string in a public repo. Naming the variable for what it is keeps the rule on
 # for every real case instead of switching it off with a per-line suppression.
 BOOTSTRAP_CREDENTIAL_ENV = "BWS_ACCESS_TOKEN"
 FIXTURE_CREDENTIAL = "fixture-value-never-real"
@@ -87,8 +84,7 @@ def run_load(gate, directory, *names: str, no_token: bool = False) -> str:
     }
     argv = ["bash", "-c", script, "bws-env-port", str(HELPER), *names]
     if no_token:
-        # A REPLACED environment, not an overlay: the operator's own shell may
-        # legitimately export BWS_ACCESS_TOKEN, and inheriting it would make this
+        # A REPLACED environment, not an overlay: the operator's own shell may legitimately export BWS_ACCESS_TOKEN, and inheriting it would make this
         # case silently assert the opposite of what it says.
         merged = dict(os.environ)
         merged.pop(BOOTSTRAP_CREDENTIAL_ENV, None)
@@ -115,8 +111,7 @@ def test_named_subset(gate, tmp_path):
 
 
 def test_empty_value_is_absent(gate, tmp_path):
-    # The whole point: sm-action exports "" without complaint and zod strips an
-    # unknown key, so a blank ships a broken feature that still returns 200.
+    # The whole point: sm-action exports "" without complaint and zod strips an unknown key, so a blank ships a broken feature that still returns 200.
     fixture(
         tmp_path,
         json.dumps([{"key": "ALPHA_TOKEN", "value": ""}, {"key": "BETA_TOKEN", "value": "b"}]),

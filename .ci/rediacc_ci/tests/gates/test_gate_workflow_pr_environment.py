@@ -68,8 +68,7 @@ def test_scalar_form_is_caught(gate):
 
 def test_real_environments_pass(gate):
     gate.log_test("CONTROL: the three forms production actually uses")
-    # If the rule rejected these it would block every deploy, which is a worse
-    # failure than the one it fixes.
+    # If the rule rejected these it would block every deploy, which is a worse failure than the one it fixes.
     with harness.temp_dir() as d:
         workflow_rule.write_job(d / "a.yml", "environment:", "  name: edge")
         workflow_rule.write_job(d / "b.yml", "environment:", "  name: ${{ inputs.target }}")

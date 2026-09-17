@@ -49,16 +49,11 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-submodule-deletions.sh"
 ORDER = 6
 
-# Without the "did anything get deleted" test every submodule in .gitmodules is
-# reported, with `wc -l` counting the empty string as one line -- so a clean
-# checkout is announced as having one of its files staged for deletion, and the
-# loudest arm ("this is EVERY tracked file") fires on a submodule where nothing
-# was touched at all.
+# Without the "did anything get deleted" test every submodule in .gitmodules is reported, with `wc -l` counting the empty string as one line -- so a clean checkout is announced as having one of its files staged for deletion, and the loudest arm ("this is EVERY tracked file") fires on a submodule where nothing was touched at all.
 DEFECT = ('if dels == "":\n            continue', "if False:\n            continue")
 
 # `(^|[;&|[:space:]])git[[:space:]]+(-C[[:space:]]+\\S+[[:space:]]+)?commit\\b`
-# -- only interesting just before a commit is created. The optional `-C <path>`
-# arm is what lets a submodule commit typed from the parent match.
+# -- only interesting just before a commit is created. The optional `-C <path>` arm is what lets a submodule commit typed from the parent match.
 COMMIT = hookio.rx(r"(^|[;&|{S}])git[{S}]+(-C[{S}]+\S+[{S}]+)?commit\b")
 
 
@@ -82,11 +77,7 @@ def _fixture_git(cwd, *args):
     )
 
 
-# The four states one .gitmodules entry can be in, in one tree:
-#   sub      every tracked file staged for deletion -- the loudest arm
-#   partial  one of three, so the loud arm must NOT fire
-#   clean    a real submodule with nothing staged, skipped by the `-n` test
-#   gone     a path with no checkout at all, skipped by the `-e` test
+# The four states one .gitmodules entry can be in, in one tree: sub every tracked file staged for deletion -- the loudest arm partial one of three, so the loud arm must NOT fire clean a real submodule with nothing staged, skipped by the `-n` test gone a path with no checkout at all, skipped by the `-e` test
 _SUBMODULES = (
     ("sub", ["sub/a.txt", "sub/b.txt"], ["sub/a.txt", "sub/b.txt"]),
     ("partial", ["partial/a.txt", "partial/b.txt", "partial/c.txt"], ["partial/a.txt"]),
@@ -141,19 +132,14 @@ def _submodule_tree(path):
 
 FIXTURES = {"submodule-deletions": _submodule_tree}
 
-# GIT_WORK_TREE and NOT CLAUDE_PROJECT_DIR: this guard never reads that
-# variable. It resolves its own root with `git rev-parse --show-toplevel` from
-# whatever directory the harness invoked it in, so the environment is the only
-# place a controlled world can be handed to it.
+# GIT_WORK_TREE and NOT CLAUDE_PROJECT_DIR: this guard never reads that variable. It resolves its own root with `git rev-parse --show-toplevel` from whatever directory the harness invoked it in, so the environment is the only place a controlled world can be handed to it.
 ENVS = [("submodules", {"GIT_WORK_TREE": "{FIXTURE:submodule-deletions}"}, {})]
 
 EDGE_CASES = [
     ("the plain commit", "git commit -m x"),
     ("a submodule commit typed from the parent", "git -C private/renet commit -m x"),
     ("a commit in a later clause", "git add -A && git commit -m x"),
-    # The finding in the module docstring, pinned. Unlike warn-stale-index.sh
-    # this guard does not route through lib/command-scan.sh, so prose reaches
-    # the scan.
+    # The finding in the module docstring, pinned. Unlike warn-stale-index.sh this guard does not route through lib/command-scan.sh, so prose reaches the scan.
     ("quoted prose reaches the scan", "echo 'git commit -m x'"),
     ("commit is a whole word", "git commitment"),
     ("a different git verb", "git status"),
@@ -164,8 +150,7 @@ EDGE_CASES = [
 def run(ev):
     cmd = ev.raw("tool_input", "command")
 
-    # `echo "$CMD" | grep -qE ...` -- echo, so the subject carries a newline and
-    # an empty command is one empty record rather than none.
+    # `echo "$CMD" | grep -qE ...` -- echo, so the subject carries a newline and an empty command is one empty record rather than none.
     if not hookio.grep_q_line(COMMIT, cmd):
         return hookio.ALLOW
 
@@ -185,17 +170,14 @@ def run(ev):
             continue
         if not os.path.exists("%s/%s/.git" % (root, sub)):
             continue
-        # --cached: what is STAGED for the submodule's next commit, which is exactly
-        # what the parent's status cannot show you.
+        # --cached: what is STAGED for the submodule's next commit, which is exactly what the parent's status cannot show you.
         dels = hookio.git_out(
             ["-C", sub, "diff", "--cached", "--name-only", "--diff-filter=D"], cwd=root
         )
         if dels == "":
             continue
         listing = hookio.git_out(["-C", sub, "ls-tree", "-r", "HEAD", "--name-only"], cwd=root)
-        # `| wc -l` counts NEWLINES, so an empty listing is 0 and a listing of
-        # n entries is n. That is not the same as counting split records, which
-        # would answer 1 for the empty string.
+        # `| wc -l` counts NEWLINES, so an empty listing is 0 and a listing of n entries is n. That is not the same as counting split records, which would answer 1 for the empty string.
         tracked = hookio._printf_line(listing).count("\n") if listing != "" else 0
         ndel = hookio._printf_line(dels).count("\n")
         indented = hookio._command_substitution(

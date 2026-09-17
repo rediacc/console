@@ -47,13 +47,10 @@ from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("ENV_NAMES_ROOT") or Path(__file__).resolve().parents[3])
 WORKFLOWS = ROOT / ".github" / "workflows"
-# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this
-# gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity.
+# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity.
 MIN_WORKFLOWS = int(os.environ.get("ENV_NAMES_MIN", "20"))
 
-# The expressions that vary per PR or per branch. `inputs.*`, `matrix.*` and `vars.*`
-# are deliberately absent: those are bounded by a choice list, a matrix or repo config,
-# and the three live environment names in this repo are built from exactly those.
+# The expressions that vary per PR or per branch. `inputs.*`, `matrix.*` and `vars.*` are deliberately absent: those are bounded by a choice list, a matrix or repo config, and the three live environment names in this repo are built from exactly those.
 UNBOUNDED = re.compile(
     r"github\.event\.number"
     r"|github\.event\.pull_request"
@@ -158,8 +155,7 @@ def selftest() -> int:
     )
     check("env_name ignores a job with no environment", env_name(None) is None)
 
-    # THE HAND PARSER, both YAML forms and a negative. It replaced PyYAML, so
-    # nothing else proves it reads a workflow correctly.
+    # THE HAND PARSER, both YAML forms and a negative. It replaced PyYAML, so nothing else proves it reads a workflow correctly.
     block = "jobs:\n  a:\n    environment:\n      name: edge\n      url: https://x\n  b:\n    steps: []\n"
     check(
         "parser reads the mapping form",

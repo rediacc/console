@@ -78,35 +78,21 @@ const POLICY_FILES = Object.freeze([
   '.e2e-coverage-allowlist',
   '.embed-assets-upgrade-blocklist',
   '.go-deps-upgrade-blocklist',
-  // W4-D1, CLOSED 2026-09-08. This name landed in the directory on 2026-09-07 with
-  // check:ci-language-policy and was NOT added here, so 16 dotfiles on disk faced 15
-  // names for a day with nothing red: its gate reached it through a hardcoded literal
-  // instead of policyPath(), and a reader that bypasses the seam does not need the list
-  // to know the file exists, which is exactly why a stale list is invisible. Both halves
-  // are fixed: the literal became policy_path() in W4 P4a, and check:ci-policy-inventory
-  // now asserts three-way set equality between this list, the Python one and the
-  // directory, so the same drift cannot recur silently.
+  // W4-D1, CLOSED 2026-09-08. This name landed in the directory on 2026-09-07 with check:ci-language-policy and was NOT added here, so 16 dotfiles on disk faced 15 names for a day with nothing red: its gate reached it through a hardcoded literal instead of policyPath(), and a reader that bypasses the seam does not need the list to know the file exists, which is exactly why a stale
+  // list is invisible. Both halves are fixed: the literal became policy_path() in W4 P4a, and check:ci-policy-inventory now asserts three-way set equality between this list, the Python one and the directory, so the same drift cannot recur silently.
   '.language-policy-allowlist',
   '.plan-housekeeping-allowlist',
   '.profiler-coverage-allowlist',
   '.runner-advice-allowlist',
   '.unverified-download-allowlist',
-  // D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both are
-  // deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a list of
+  // D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both are deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a list of
   // exempted entries, so a name-per-line dotfile could not hold it; it is policy by the
-  // README's four-part predicate all the same, because every number in it is a claim
-  // about the world that a change to .claude/settings.json can stop being true.
+  // README's four-part predicate all the same, because every number in it is a claim about the world that a change to .claude/settings.json can stop being true.
   'hook-exec-baseline.json',
-  // D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at
-  // 183 read sites, with no registry and no schema before this. A typo'd name reads as
-  // UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
+  // D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at 183 read sites, with no registry and no schema before this. A typo'd name reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
   'worklist-env-registry.json',
   '.w7p5a-real-run-blocklist',
-  // T-SCHED W7P5-a Section 4, 2026-09-15. Blocks only a `ledger`-status path's
-  // REAL-RUN leg, distinct from `.w7p5a-real-run-blocklist` (which blocks a whole
-  // path's port): the existing gate treats any allowlist entry whose path has
-  // graduated to "ledger" as STALE, so a genuinely-ledgered, real-run-blocked path
-  // needs its own file rather than sharing one with the whole-port blocklist.
+  // T-SCHED W7P5-a Section 4, 2026-09-15. Blocks only a `ledger`-status path's REAL-RUN leg, distinct from `.w7p5a-real-run-blocklist` (which blocks a whole path's port): the existing gate treats any allowlist entry whose path has graduated to "ledger" as STALE, so a genuinely-ledgered, real-run-blocked path needs its own file rather than sharing one with the whole-port blocklist.
   '.w7p5a-real-run-leg-blocklist',
 ] as const);
 
@@ -141,9 +127,7 @@ export function policyPath(name: string, root: string = REPO_ROOT): string {
         ` move list in .ci/policy/README.md, in the same change.`
     );
   }
-  // Unconditional join: path.join(root, '', name) is path.join(root, name), so a
-  // POLICY_DIR of '' still resolves to the repository root without a branch that
-  // the compiler can prove dead against the literal above.
+  // Unconditional join: path.join(root, '', name) is path.join(root, name), so a POLICY_DIR of '' still resolves to the repository root without a branch that the compiler can prove dead against the literal above.
   return path.join(root, POLICY_DIR, name);
 }
 
@@ -152,27 +136,15 @@ function allPolicyPaths(root: string = REPO_ROOT): string[] {
   return POLICY_FILES.map((n) => policyPath(n, root));
 }
 
-// ---------------------------------------------------------------------------
-// CLI, for callers that are not TypeScript.
+// --------------------------------------------------------------------------- CLI, for callers that are not TypeScript.
 //
-// `.ci/scripts/test/gates/test-policy-path.sh` drives this rather than
-// generating an import snippet, and the phase-2 movers -- shell and Python gates
-// that must not each re-derive where a policy file lives -- get the same answer
-// here that the TS gates get from policyPath() above.
+// `.ci/scripts/test/gates/test-policy-path.sh` drives this rather than generating an import snippet, and the phase-2 movers -- shell and Python gates that must not each re-derive where a policy file lives -- get the same answer here that the TS gates get from policyPath() above.
 //
-// It is also what keeps the module's EXPORT surface honest: only policyPath and
-// isPolicyFileName are imported by other TypeScript, so only those two are
-// exported. The name list, the directory and the all-paths helper are reachable
-// through this CLI instead of being exports nothing imports, which is the shape
-// `lint:unused` refuses and rightly.
+// It is also what keeps the module's EXPORT surface honest: only policyPath and isPolicyFileName are imported by other TypeScript, so only those two are exported. The name list, the directory and the all-paths helper are reachable through this CLI instead of being exports nothing imports, which is the shape `lint:unused` refuses and rightly.
 //
-//   --path <name> [--root <dir>]  -> one absolute path
-//   --list                        -> every known name, one per line
-//   --dir                         -> POLICY_DIR (an empty line means the root)
-//   --is <name>                   -> "true" or "false"
+// --path <name> [--root <dir>] -> one absolute path --list -> every known name, one per line --dir -> POLICY_DIR (an empty line means the root) --is <name> -> "true" or "false"
 //
-// Guarded so importing the module never runs it.
-// ---------------------------------------------------------------------------
+// Guarded so importing the module never runs it. ---------------------------------------------------------------------------
 
 function cliMain(argv: string[]): number {
   const mode = argv[0] ?? '';
@@ -210,8 +182,7 @@ function cliMain(argv: string[]): number {
   );
 }
 
-// process.argv[1] is this file's path only when it was EXECUTED. An import
-// leaves it pointing at the importer, so the comparison is false.
+// process.argv[1] is this file's path only when it was EXECUTED. An import leaves it pointing at the importer, so the comparison is false.
 const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
 if (invokedPath === fileURLToPath(import.meta.url)) {
   try {

@@ -85,8 +85,7 @@ from rediacc_ci.controls import Controls
 # stripped again when a finding is printed, which is what GNU grep does.
 SCAN_DIRS = (".github/workflows/", ".github/actions/")
 
-# The literal the whole gate is about. One spelling, used as both the needle and
-# the message, because two spellings is how one of them stops being exercised.
+# The literal the whole gate is about. One spelling, used as both the needle and the message, because two spellings is how one of them stops being exercised.
 NEEDLE = "permission-administration"
 
 
@@ -103,16 +102,11 @@ def scan(root: pathlib.Path) -> tuple[list[str], int]:
     for scan_dir in SCAN_DIRS:
         base = root / scan_dir
         if not base.is_dir():
-            # `2>/dev/null` in the twin: a missing directory is silent. It is not
-            # silent in the COUNT, which is what makes the silence detectable.
+            # `2>/dev/null` in the twin: a missing directory is silent. It is not silent in the COUNT, which is what makes the silence detectable.
             continue
         prefix = scan_dir.rstrip("/")
         for dirpath, dirnames, filenames in paths.walk_tree(base):
-            # Sorted, and sorted in place so the walk itself is deterministic.
-            # `paths.walk_tree` mutates this same list rather than replacing it,
-            # so sorting it here still steers the walk exactly as it did under
-            # `os.walk`. `follow_symlinks` stays False there, which is `grep -r`
-            # (not -R) semantics.
+            # Sorted, and sorted in place so the walk itself is deterministic. `paths.walk_tree` mutates this same list rather than replacing it, so sorting it here still steers the walk exactly as it did under `os.walk`. `follow_symlinks` stays False there, which is `grep -r` (not -R) semantics.
             dirnames.sort()
             for name in sorted(filenames):
                 path = pathlib.Path(dirpath) / name
@@ -149,8 +143,7 @@ def main(argv: list[str] | None = None) -> int:
 
     hits, files_read = scan(root)
 
-    # ANTI-VACUITY, before any verdict. Zero inputs is a FAILURE, never a pass:
-    # a gate that read nothing cannot have found nothing.
+    # ANTI-VACUITY, before any verdict. Zero inputs is a FAILURE, never a pass: a gate that read nothing cannot have found nothing.
     if files_read == 0:
         log.error(
             "app-admin-perm: read 0 file(s) under %s -- this gate scanned nothing, so its "
@@ -160,10 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if hits:
-        # stdout, because it is grep's own output in the twin and a gate's stdout
-        # is DATA. The three log_error lines below land on stderr, as they do
-        # there, and the first of them says "above" precisely because of that
-        # split.
+        # stdout, because it is grep's own output in the twin and a gate's stdout is DATA. The three log_error lines below land on stderr, as they do there, and the first of them says "above" precisely because of that split.
         for line in hits:
             print(line)
         log.error("Found permission-administration request above.")
@@ -192,8 +182,7 @@ def selftest() -> int:
     and the cheaper answer is to not build controls that way.
     """
     # floor=14 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot
-    # fail. See rediacc_ci.controls for the five drifted copies that taught it.
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.
     ctl = Controls("app-admin-perm", floor=14, verbose=True)
     saved_cwd = os.getcwd()
     saved_env = dict(os.environ)
@@ -223,8 +212,7 @@ def selftest() -> int:
 
     ctl.check("CONTROL: a clean workflow tree passes", run(both_dirs), 0)
 
-    # THE PLANT, in each of the two scanned trees. Both must fire, or half the
-    # gate's stated scope is decoration.
+    # THE PLANT, in each of the two scanned trees. Both must fire, or half the gate's stated scope is decoration.
     planted_workflow = dict(both_dirs)
     planted_workflow[".github/workflows/ci.yml"] = clean_workflow + request
     ctl.check("PLANT: a request in a workflow is found", run(planted_workflow), 1)
@@ -241,8 +229,7 @@ def selftest() -> int:
     commented[".github/workflows/ci.yml"] = clean_workflow + "#   permission-administration: read\n"
     ctl.check("PLANT: a COMMENTED-OUT request still fires", run(commented), 1)
 
-    # The mirrors. A gate that fires on everything is as useless as one that
-    # never fires, and this is the direction a reviewer waves through.
+    # The mirrors. A gate that fires on everything is as useless as one that never fires, and this is the direction a reviewer waves through.
     neighbour = dict(both_dirs)
     neighbour[".github/workflows/ci.yml"] = clean_workflow + "          permission-contents: read\n"
     ctl.check("MIRROR: a DIFFERENT permission input does not fire", run(neighbour), 0)

@@ -38,9 +38,7 @@ from rediacc_ci import log
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
 
-# `timeout(1)` is spelled out rather than imported from `rediacc_ci.proc` at
-# module scope for one reason: `proc` is about wrapping a CHILD in the coreutils
-# timeout binary, and everything here that needs a deadline gets it from
+# `timeout(1)` is spelled out rather than imported from `rediacc_ci.proc` at module scope for one reason: `proc` is about wrapping a CHILD in the coreutils timeout binary, and everything here that needs a deadline gets it from
 # `subprocess.run(timeout=...)`, which needs no binary at all and therefore has
 # no macOS gap. The bash spells the same deadline `timeout 30 docker info`
 # (.ci/lib/setup.sh:576); the number is carried, the mechanism is not.
@@ -82,12 +80,9 @@ class Ctx:
     root: pathlib.Path
     env: dict[str, str] = field(default_factory=lambda: dict(os.environ))
     stdin_tty: bool = False
-    # BUILT IN `__post_init__` WHEN ABSENT, so the type is not Optional past
-    # construction and no call site needs an assert to satisfy a type checker.
+    # BUILT IN `__post_init__` WHEN ABSENT, so the type is not Optional past construction and no call site needs an assert to satisfy a type checker.
     logger: log.Logger = None  # type: ignore[assignment]
-    # ANSWERS EVERY PROMPT WITHOUT ASKING, and `None` means "there is nobody to
-    # ask". Held as data rather than as a method override so a fixture can say
-    # "the operator would have said yes" without subclassing anything.
+    # ANSWERS EVERY PROMPT WITHOUT ASKING, and `None` means "there is nobody to ask". Held as data rather than as a method override so a fixture can say "the operator would have said yes" without subclassing anything.
     answer: bool | None = None
 
     def __post_init__(self) -> None:
@@ -120,12 +115,8 @@ class Ctx:
         the call fails, which is the only moment it matters.
         """
         # `stdin=` AND `input=` TOGETHER IS A ValueError, not a preference:
-        # `subprocess.run` refuses the pair outright ("stdin and input arguments
-        # may not both be used"). Found by running this driver rather than by
-        # reading it, which is the whole reason the differential exists. The two
-        # cases are therefore built separately: no input means stdin is CLOSED,
-        # which is what makes every `[[ -t 0 ]]` branch in the bash take its
-        # non-interactive arm here too.
+        # `subprocess.run` refuses the pair outright ("stdin and input arguments may not both be used"). Found by running this driver rather than by reading it, which is the whole reason the differential exists. The two cases are therefore built separately: no input means stdin is CLOSED, which is what makes every `[[ -t 0 ]]` branch in the bash take its non-interactive arm here
+        # too.
         common = {
             "cwd": str(self.root),
             "env": self.env,
@@ -140,30 +131,20 @@ class Ctx:
             else:
                 proc = subprocess.run(argv, input=stdin_text, check=False, **common)
         except subprocess.TimeoutExpired:
-            # 124, because that is what `timeout(1)` returns and what the bash
-            # this replaces would have propagated.
+            # 124, because that is what `timeout(1)` returns and what the bash this replaces would have propagated.
             return Result(124, "", "timed out after %ss: %s" % (timeout, " ".join(argv)))
         except OSError as exc:
-            # 127, `command not found`. A missing binary must not raise out of a
-            # probe: "is it there" is the question the probe was asked.
+            # 127, `command not found`. A missing binary must not raise out of a probe: "is it there" is the question the probe was asked.
             return Result(127, "", str(exc))
         return Result(proc.returncode, proc.stdout or "", proc.stderr or "")
 
     # -- output ------------------------------------------------------------
     #
-    # log_* GOES TO STDERR AND PLAIN `print` GOES TO STDOUT, and the split is
-    # load-bearing rather than stylistic. `.ci/lib/setup.sh:21-23` states it:
-    # "refuses rather than hanging on a non-TTY, printing the command it would
-    # have run as PLAIN stdout so it can be pasted (log_* prefixes every line
+    # log_* GOES TO STDERR AND PLAIN `print` GOES TO STDOUT, and the split is load-bearing rather than stylistic. `.ci/lib/setup.sh:21-23` states it: "refuses rather than hanging on a non-TTY, printing the command it would have run as PLAIN stdout so it can be pasted (log_* prefixes every line
     # with a coloured marker, which breaks a paste)". Carried exactly.
 
-    # EVERY LEVEL GOES THROUGH `emit`, INCLUDING THE THREE THAT HAVE A NAMED
-    # METHOD. `Logger.warn` would trip ruff's G010 ("logging statement uses
-    # warn instead of warning"), a flake8-logging-format rule written about the
-    # STDLIB logging module -- and `rediacc_ci.log.Logger` is not one: it has no
-    # levels, no handlers and no `warning`. Routing all four through the one
-    # primitive keeps the four call sites symmetrical instead of making one of
-    # them the odd one out for a reason that is not about this code.
+    # EVERY LEVEL GOES THROUGH `emit`, INCLUDING THE THREE THAT HAVE A NAMED METHOD. `Logger.warn` would trip ruff's G010 ("logging statement uses warn instead of warning"), a flake8-logging-format rule written about the STDLIB logging module -- and `rediacc_ci.log.Logger` is not one: it has no levels, no handlers and no `warning`. Routing all four through the one primitive keeps
+    # the four call sites symmetrical instead of making one of them the odd one out for a reason that is not about this code.
     def info(self, message: str) -> None:
         self.logger.emit("info", message)
 
@@ -192,8 +173,7 @@ class Ctx:
         if self.answer is not None:
             return self.answer
         if not self.stdin_tty:
-            # Never block. A prompt with nobody to answer it is the hang this
-            # whole package's non-TTY branches exist to avoid.
+            # Never block. A prompt with nobody to answer it is the hang this whole package's non-TTY branches exist to avoid.
             return False
         try:
             response = input("%s (y/N): " % message)

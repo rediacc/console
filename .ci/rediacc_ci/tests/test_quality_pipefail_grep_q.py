@@ -76,9 +76,7 @@ def build(tmp_path: pathlib.Path, offenders: int) -> pathlib.Path:
     (root / ".ci" / "scripts" / "probe" / "a.sh").write_text(
         offender_file(offenders), encoding="utf-8"
     )
-    # A REAL GIT REPOSITORY, because the corpus is `git ls-files` and an
-    # unversioned tree makes the gate scan ZERO files -- which is its own
-    # anti-vacuity refusal, not the case under test.
+    # A REAL GIT REPOSITORY, because the corpus is `git ls-files` and an unversioned tree makes the gate scan ZERO files -- which is its own anti-vacuity refusal, not the case under test.
     env = diff.env_for()
     for args in (
         ["init", "-q", "-b", "main"],
@@ -109,8 +107,7 @@ def test_port_and_twin_agree_byte_for_byte(tmp_path: pathlib.Path, count: int) -
     assert new_out == old_out
     assert new_err == old_err
     assert "%d racing pipeline(s)" % count in old_err
-    # THE MECHANISM CONTROL MUST HAVE FIRED on both sides, or the rest of this
-    # comparison is two gates agreeing about a myth.
+    # THE MECHANISM CONTROL MUST HAVE FIRED on both sides, or the rest of this comparison is two gates agreeing about a myth.
     assert "SIGPIPE under pipefail really does flip" in old_out
     assert "SIGPIPE under pipefail really does flip" in new_out
 
@@ -139,9 +136,7 @@ def test_the_scanned_count_is_printed_and_non_trivial(tmp_path: pathlib.Path) ->
     assert scanned > 1
 
 
-# ---------------------------------------------------------------------------
-# The decision functions, driven directly. Both directions for every rule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
 _SEED = 'set -o pipefail\nbody() { cat "$1"; }\n'
 
@@ -155,11 +150,7 @@ _SEED = 'set -o pipefail\nbody() { cat "$1"; }\n'
             0,
             id="the-sanctioned-fix",
         ),
-        # INVERTED 2026-09-16. This case asserted 0 while it was called
-        # "a-bounded-builtin-producer", which was the gate's rule until `printf`
-        # and `echo` joined SCALING_PRODUCERS. Both builtins report MISSED 40/40 on
-        # a 300 KB payload on this host, so the bounded exemption was not a safety
-        # claim that survived measurement.
+        # INVERTED 2026-09-16. This case asserted 0 while it was called "a-bounded-builtin-producer", which was the gate's rule until `printf` and `echo` joined SCALING_PRODUCERS. Both builtins report MISSED 40/40 on a 300 KB payload on this host, so the bounded exemption was not a safety claim that survived measurement.
         pytest.param(
             'set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % GQ,
             1,
@@ -293,7 +284,5 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     assert gate.selftest() == 0
     out = capsys.readouterr().out
     assert "control(s) passed" in out
-    # RATCHETED 26 -> 28 on 2026-09-16 when `tee` and `docker` joined
-    # SCALING_PRODUCERS and each got its own selftest control. A floor that is not
-    # raised with the controls it counts stops pinning the ones added after it.
+    # RATCHETED 26 -> 28 on 2026-09-16 when `tee` and `docker` joined SCALING_PRODUCERS and each got its own selftest control. A floor that is not raised with the controls it counts stops pinning the ones added after it.
     assert int(out.strip().split("\n")[-1].split()[0]) >= 28

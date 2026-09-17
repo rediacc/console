@@ -130,8 +130,7 @@ export function judge(world: World): Verdict {
     for (const p of resolveClause(clause, '.', world)) reached.add(p);
   }
 
-  // A base config is covered by the projects that extend it: tsc reads it on every one of
-  // their runs, so a type error introduced there surfaces immediately.
+  // A base config is covered by the projects that extend it: tsc reads it on every one of their runs, so a type error introduced there surfaces immediately.
   const extendedByAProject = new Set<string>();
   for (const cfg of world.discovered) {
     const target = world.extendsTarget(cfg);
@@ -145,27 +144,19 @@ export function judge(world: World): Verdict {
     else uncovered.push(cfg);
   }
 
-  // A chain naming a tsconfig that is not on disk is rot in the other direction: the
-  // clause runs, tsc errors, and nobody reads which of the nine projects it was.
+  // A chain naming a tsconfig that is not on disk is rot in the other direction: the clause runs, tsc errors, and nobody reads which of the nine projects it was.
   const known = new Set(world.discovered);
   const dangling = [...reached].filter((p) => !known.has(p) && !p.startsWith('private/'));
 
-  // THE SECOND HALF, and the one the 185 untypechecked packages/cli test files needed:
-  // a project being RUN says nothing about which files it matches. `packages/provisioning`
+  // THE SECOND HALF, and the one the 185 untypechecked packages/cli test files needed: a project being RUN says nothing about which files it matches. `packages/provisioning`
   // was run and carried `exclude: ["src/**/*.test.ts"]`; every config here is run and 13
-  // tool configs (vitest.config.ts, playwright.*.config.ts) sat beside `include` patterns
-  // that reached past them. So ask each project what it actually compiles.
+  // tool configs (vitest.config.ts, playwright.*.config.ts) sat beside `include` patterns that reached past them. So ask each project what it actually compiles.
   //
-  // ONLY the projects the chain actually RUNS, never the whole `covered` list. A base
-  // excused by extension is not run, and the root tsconfig.json declares no `include`, so
-  // tsc reports it as matching every .ts in the repository. Counting that set made this
-  // very check answer "all compiled" for a planted orphan -- the gate reporting a success
-  // it had not verified, which is the failure it exists to prevent. Found by planting.
+  // ONLY the projects the chain actually RUNS, never the whole `covered` list. A base excused by extension is not run, and the root tsconfig.json declares no `include`, so tsc reports it as matching every .ts in the repository. Counting that set made this very check answer "all compiled" for a planted orphan -- the gate reporting a success it had not verified, which is the failure
+  // it exists to prevent. Found by planting.
   const compiled = new Set<string>();
   for (const cfg of reached) for (const f of world.projectFiles(cfg)) compiled.add(f);
-  // `.d.ts` files are excluded by construction: a declaration file has no independent
-  // compilation, it is pulled in by whoever needs it, so "no project INCLUDES it" is its
-  // normal state rather than a gap (packages/locales/index.d.ts is exactly this).
+  // `.d.ts` files are excluded by construction: a declaration file has no independent compilation, it is pulled in by whoever needs it, so "no project INCLUDES it" is its normal state rather than a gap (packages/locales/index.d.ts is exactly this).
   const uncoveredFiles = world.trackedSources.filter((f) => !compiled.has(f));
 
   return { uncovered, dangling, covered, uncoveredFiles, coveredFileCount: compiled.size };
@@ -295,8 +286,7 @@ CONTROLS.push(
   },
   {
     name: "a BASE config's file set does not count as compilation",
-    // The root tsconfig.json declares no `include`, so tsc reports it as matching every
-    // .ts in the repo. Counting a base made the real gate green over a planted orphan.
+    // The root tsconfig.json declares no `include`, so tsc reports it as matching every .ts in the repo. Counting a base made the real gate green over a planted orphan.
     world: fakeWorld({
       discovered: ['tsconfig.json', 'packages/cli/tsconfig.json'],
       rootTypecheck: 'tsc -b packages/cli',
@@ -308,9 +298,7 @@ CONTROLS.push(
   },
   {
     name: 'a chain clause naming a tsconfig that does not exist is reported',
-    // The absent path is BUILT at runtime rather than written as a literal:
-    // gate-test:gate-paths-exist scans source for path constants whose workspace root is
-    // missing, and a control whose whole point is a non-existent path trips it.
+    // The absent path is BUILT at runtime rather than written as a literal: gate-test:gate-paths-exist scans source for path constants whose workspace root is missing, and a control whose whole point is a non-existent path trips it.
     world: fakeWorld({
       discovered: ['packages/cli/tsconfig.json'],
       rootTypecheck: `tsc -b packages/cli && tsc --noEmit -p ${ABSENT_CONFIG}`,
@@ -363,11 +351,7 @@ function realWorld(): World {
       return norm(path.join(path.dirname(tsconfig), ext));
     },
     projectFiles(tsconfig) {
-      // `--showConfig` RESOLVES include/exclude/files and prints the result without
-      // compiling: 7s for all thirteen projects, against ~2 minutes for the `--listFiles`
-      // of a real typecheck. It reports what each project MATCHES, which is the question
-      // -- a file reached only transitively is compiled today and orphaned the moment its
-      // one importer stops importing it.
+      // `--showConfig` RESOLVES include/exclude/files and prints the result without compiling: 7s for all thirteen projects, against ~2 minutes for the `--listFiles` of a real typecheck. It reports what each project MATCHES, which is the question -- a file reached only transitively is compiled today and orphaned the moment its one importer stops importing it.
       let out: string;
       try {
         out = execFileSync('npx', ['tsc', '--showConfig', '-p', tsconfig], {
@@ -416,8 +400,7 @@ function main(): void {
 
   const world = realWorld();
 
-  // FLOORS. Either of these means the scan is broken, and a broken scan reports a
-  // confident green having checked nothing -- the exact failure this gate exists for.
+  // FLOORS. Either of these means the scan is broken, and a broken scan reports a confident green having checked nothing -- the exact failure this gate exists for.
   if (world.discovered.length === 0) {
     console.error('\x1b[31m✗\x1b[0m git ls-files found no tsconfig at all; the scan is broken');
     process.exit(1);

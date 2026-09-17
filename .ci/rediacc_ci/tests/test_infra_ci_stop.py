@@ -38,31 +38,15 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-stop.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop.py"
 
-# The recording `docker`. Written as Python, not bash: ruling 7 puts new
-# instruments in Python, and an untracked fixture is not an excuse to write the
-# one shape the ruling names.
+# The recording `docker`. Written as Python, not bash: ruling 7 puts new instruments in Python, and an untracked fixture is not an excuse to write the one shape the ruling names.
 #
-# EVERY KNOB IS BAKED INTO ITS TEXT rather than passed through the environment. The
-# first draft passed five (DOCKER_LOG, FIXTURE_ROOT, COMPOSE_RC, PS_NAMES, VERB_RC)
-# and this comment used to justify the change by claiming they would red
-# `check_env_manifest.py` once the file was tracked. THAT CLAIM WAS WRONG, and the
-# check that refuted it is worth more than the change it was meant to justify:
-# driven against `rediacc_ci.quality.env_manifest.names_from_py`, the old draft
-# reads ZERO names, because those `os.environ` calls lived inside this very string
-# literal and that reader PARSES rather than greps (env_manifest.py:34). Text inside
-# a string is not a read, in either direction -- the same reason the plan's A6
-# triage found seventeen false findings that were all Python prose.
+# EVERY KNOB IS BAKED INTO ITS TEXT rather than passed through the environment. The first draft passed five (DOCKER_LOG, FIXTURE_ROOT, COMPOSE_RC, PS_NAMES, VERB_RC) and this comment used to justify the change by claiming they would red `check_env_manifest.py` once the file was tracked. THAT CLAIM WAS WRONG, and the check that refuted it is worth more than the change it was meant
+# to justify: driven against `rediacc_ci.quality.env_manifest.names_from_py`, the old draft reads ZERO names, because those `os.environ` calls lived inside this very string literal and that reader PARSES rather than greps (env_manifest.py:34). Text inside a string is not a read, in either direction -- the same reason the plan's A6 triage found seventeen false findings that were all
+# Python prose.
 #
-# So this is a simplification, not a fix: the fake is generated per case anyway, so
-# its configuration belongs in its text, where a reader can see it without tracing
-# an environment two processes deep. Recorded at length because the wrong reason is
-# the kind a future author would re-derive and act on.
+# So this is a simplification, not a fix: the fake is generated per case anyway, so its configuration belongs in its text, where a reader can see it without tracing an environment two processes deep. Recorded at length because the wrong reason is the kind a future author would re-derive and act on.
 #
-# ONE NEARBY FACT IS TRUE AND SEPARATE: `check_env_manifest.py`'s corpus is
-# `git ls-files` with no `--others` (deliberately -- env_manifest.py:15), so a real
-# `os.environ` read planted in THIS file fires nothing while the file is untracked.
-# Verified by planting one. That is a property of the gate's corpus, not of this
-# fixture, and it applies to every new file in the tree.
+# ONE NEARBY FACT IS TRUE AND SEPARATE: `check_env_manifest.py`'s corpus is `git ls-files` with no `--others` (deliberately -- env_manifest.py:15), so a real `os.environ` read planted in THIS file fires nothing while the file is untracked. Verified by planting one. That is a property of the gate's corpus, not of this fixture, and it applies to every new file in the tree.
 FAKE_DOCKER = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -131,9 +115,7 @@ def _bin_with_fake_docker(
     return binder
 
 
-# The tools BOTH subjects need with docker taken away. Named rather than derived:
-# a restricted PATH built by copying "everything except docker" is a PATH nobody can
-# state, and the first tool it forgot would look like a divergence in the subject.
+# The tools BOTH subjects need with docker taken away. Named rather than derived: a restricted PATH built by copying "everything except docker" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject.
 NEEDED = ("bash", "sh", "python3", "dirname", "grep", "rm", "cat", "env", "uname")
 
 
@@ -181,8 +163,7 @@ def _run(
     log.write_text("", encoding="utf-8")
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    # PATH is REPLACED, not prepended. On a host that has a real docker a prepend
-    # would still pass while occasionally talking to the machine's daemon.
+    # PATH is REPLACED, not prepended. On a host that has a real docker a prepend would still pass while occasionally talking to the machine's daemon.
     if docker:
         binder = _bin_with_fake_docker(
             root.parent / ("fxbin-%s" % subject.name),

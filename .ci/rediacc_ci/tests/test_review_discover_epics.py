@@ -48,10 +48,7 @@ TWIN = ROOT / ".ci" / "scripts" / "review" / "discover-epics.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "review" / "discover_epics.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Deliberately tiny and REPLACING, not extending, for the reason
-# `rediacc_ci.tests.differential.BASE_ENV` gives: a differential that inherits
-# the developer's environment passes or fails depending on whether PR_HEAD_REF
-# or GITHUB_OUTPUT happen to be exported, and both are exported in CI.
+# Deliberately tiny and REPLACING, not extending, for the reason `rediacc_ci.tests.differential.BASE_ENV` gives: a differential that inherits the developer's environment passes or fails depending on whether PR_HEAD_REF or GITHUB_OUTPUT happen to be exported, and both are exported in CI.
 BASE_ENV = {
     "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
     "HOME": os.environ.get("HOME", "/tmp"),
@@ -83,13 +80,8 @@ def _snapshot(repo: pathlib.Path, branch: str, text: str) -> None:
     (repo / "agent" / "pr" / f"{branch.replace('/', '-')}.md").write_text(text, encoding="utf-8")
 
 
-# What both subjects genuinely need on PATH before they reach `require_cmd
-# jq`. Sourcing common.sh alone costs `dirname` (line 17 of the twin) and
-# `uname` (common.sh's CI_OS/CI_ARCH assignments at source time), so an empty
-# PATH breaks the twin with "dirname: command not found" -- a control that
-# fires for the wrong reason, which is not a control. Confirmed by driving it:
-# the first attempt at this case asserted the jq refusal and got the dirname
-# error instead.
+# What both subjects genuinely need on PATH before they reach `require_cmd jq`. Sourcing common.sh alone costs `dirname` (line 17 of the twin) and `uname` (common.sh's CI_OS/CI_ARCH assignments at source time), so an empty PATH breaks the twin with "dirname: command not found" -- a control that fires for the wrong reason, which is not a control. Confirmed by driving it: the first
+# attempt at this case asserted the jq refusal and got the dirname error instead.
 PATH_MINIMUM = ("dirname", "uname", "git", "grep", "sed", "cat", "wc", "tr", "mkdir", "rm")
 
 
@@ -110,10 +102,7 @@ def _path_without_jq(tmp_path: pathlib.Path) -> str:
 def _run(
     subject: pathlib.Path, cwd: pathlib.Path, env: dict[str, str]
 ) -> subprocess.CompletedProcess[str]:
-    # RESOLVED FROM THE TEST PROCESS'S OWN PATH, not the child's. The
-    # missing-jq case hands the child an EMPTY PATH on purpose, and a bare
-    # "bash" would then fail to spawn at all -- a FileNotFoundError that reads
-    # like a broken harness rather than the refusal under test.
+    # RESOLVED FROM THE TEST PROCESS'S OWN PATH, not the child's. The missing-jq case hands the child an EMPTY PATH on purpose, and a bare "bash" would then fail to spawn at all -- a FileNotFoundError that reads like a broken harness rather than the refusal under test.
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     return subprocess.run(
         [*runner, str(subject)],

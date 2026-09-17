@@ -64,8 +64,7 @@ booleans, because that is what `submodules: true`, `fetch-depth: 0` and
 import pathlib
 import re
 
-# YAML 1.1 boolean words, which is what PyYAML's safe_load resolves and therefore
-# what every existing consumer in this tree already sees. YAML 1.2 dropped
+# YAML 1.1 boolean words, which is what PyYAML's safe_load resolves and therefore what every existing consumer in this tree already sees. YAML 1.2 dropped
 # yes/no/on/off; matching 1.1 is a compatibility decision, not an oversight.
 _TRUE = frozenset(["true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON"])
 _FALSE = frozenset(["false", "False", "FALSE", "no", "No", "NO", "off", "Off", "OFF"])
@@ -76,13 +75,10 @@ _OCT_RE = re.compile(r"^[-+]?0o?[0-7_]+$")
 _HEX_RE = re.compile(r"^[-+]?0x[0-9a-fA-F_]+$")
 _FLOAT_RE = re.compile(r"^[-+]?(\.[0-9]+|[0-9][0-9_]*(\.[0-9_]*)?)([eE][-+]?[0-9]+)?$")
 
-# A block scalar header: the style, an optional chomping indicator, an optional
-# explicit indentation indicator, in either order.
+# A block scalar header: the style, an optional chomping indicator, an optional explicit indentation indicator, in either order.
 _BLOCK_HEADER_RE = re.compile(r"^([|>])([+-]?)([0-9]?)([0-9]?)([+-]?)\s*(#.*)?$")
 
-# Constructs this parser refuses rather than guesses at. Each would produce a
-# plausible-looking wrong answer, which is the failure mode the whole module
-# exists to remove.
+# Constructs this parser refuses rather than guesses at. Each would produce a plausible-looking wrong answer, which is the failure mode the whole module exists to remove.
 _ANCHOR_RE = re.compile(r"^[&*][A-Za-z0-9_-]")
 
 
@@ -103,9 +99,7 @@ def _error(kind, line_no: int, text: str, why: str):
     return kind("line %d: %s\n    %s" % (line_no, why, text.rstrip()))
 
 
-# ---------------------------------------------------------------------------
-# Scalars
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Scalars ---------------------------------------------------------------------------
 
 
 def resolve_scalar(text: str) -> object:
@@ -269,8 +263,7 @@ def _flow_mapping(text: str, index: int, line_no: int):
         if index >= len(text) or text[index] != ":":
             raise _error(WorkflowParseError, line_no, text, "flow mapping key with no value")
         value, index = _flow_node(text, index + 1, line_no)
-        # Keys are strings. See the module docstring: PyYAML resolves them and
-        # turns `on` into True.
+        # Keys are strings. See the module docstring: PyYAML resolves them and turns `on` into True.
         out[str(key) if key is not None else ""] = value
         while index < len(text) and text[index] in " \t":
             index += 1
@@ -306,12 +299,9 @@ def _flow_scalar(text: str, index: int, line_no: int, stop: str = ""):
     return resolve_scalar(text[index:end]), end
 
 
-# ---------------------------------------------------------------------------
-# The block parser
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The block parser ---------------------------------------------------------------------------
 
-# `key:` / `key: value`, with the key optionally quoted. The key may not contain a
-# colon unless quoted, which is the rule the corpus follows.
+# `key:` / `key: value`, with the key optionally quoted. The key may not contain a colon unless quoted, which is the rule the corpus follows.
 _KEY_RE = re.compile(r"^(?P<key>\"[^\"]*\"|'[^']*'|[^:#\s][^:]*?)\s*:(?:\s+(?P<rest>.*))?$")
 
 
@@ -401,13 +391,9 @@ def _block_scalar(reader: _Reader, header: str, parent_indent: int) -> str:
     if chomp == "-":
         return text
     if chomp == "+":
-        # KEEP: every trailing newline survives. Counted from the lines that were
-        # popped above rather than guessed, so a two-blank-line ending stays two.
+        # KEEP: every trailing newline survives. Counted from the lines that were popped above rather than guessed, so a two-blank-line ending stays two.
         #
-        # THE LAST ELEMENT OF `text.split("\n")` IS NOT A LINE. A document ending
-        # in a newline splits to a final empty string, and counting it as a blank
-        # line adds one newline that PyYAML does not produce. Measured against
-        # PyYAML 6.0.3: `a: |+\n  x\n\n` is `x\n\n`, not `x\n\n\n`.
+        # THE LAST ELEMENT OF `text.split("\n")` IS NOT A LINE. A document ending in a newline splits to a final empty string, and counting it as a blank line adds one newline that PyYAML does not produce. Measured against PyYAML 6.0.3: `a: |+\n x\n\n` is `x\n\n`, not `x\n\n\n`.
         last_is_artifact = reader.index >= len(reader.lines) and reader.lines[-1] == ""
         trailing = 0
         probe = start + len(collected)
@@ -445,12 +431,8 @@ def _fold(lines: list[str]) -> str:
         if not out:
             out.append(line)
         elif pending:
-            # RULE 3, and it is the one that took a second measurement. A break
-            # NEXT TO a more-indented line is not folded at all, so it survives IN
-            # ADDITION to the blank lines: `a`, ``, `  b` is `a\n\n  b`, while the
-            # same pair with `b` at the normal indent is `a\nb`. Found against
-            # .github/actions/app-token/action.yml, whose `description` lays a
-            # permission table out under a paragraph exactly this way.
+            # RULE 3, and it is the one that took a second measurement. A break NEXT TO a more-indented line is not folded at all, so it survives IN ADDITION to the blank lines: `a`, ``, ` b` is `a\n\n b`, while the same pair with `b` at the normal indent is `a\nb`. Found against .github/actions/app-token/action.yml, whose `description` lays a permission table out under a paragraph
+            # exactly this way.
             keep = pending + 1 if (more_indented or previous_more_indented) else pending
             out.append("\n" * keep)
             out.append(line)
@@ -492,22 +474,16 @@ def _parse_sequence(reader: _Reader, indent: int) -> list:
             out.append(_parse_node(reader, indent + 1))
             continue
         body = rest.strip()
-        # A PLAIN SCALAR ITEM -- `- ubuntu-24.04`, `- test-linux-x64` -- is the
-        # commonest shape in these files (every `needs:` and every matrix
-        # dimension) and is NOT a mapping. Routing it through the mapping path
-        # produces "expected `key:`" on a line that is perfectly valid, which is
-        # exactly what this parser did until the differential against PyYAML ran
-        # over the real corpus and failed on ct-tests.yml:228.
+        # A PLAIN SCALAR ITEM -- `- ubuntu-24.04`, `- test-linux-x64` -- is the commonest shape in these files (every `needs:` and every matrix dimension) and is NOT a mapping. Routing it through the mapping path produces "expected `key:`" on a line that is perfectly valid, which is exactly what this parser did until the differential against PyYAML ran over the real corpus and
+        # failed on ct-tests.yml:228.
         if not (body.startswith("- ") or body == "-" or _KEY_RE.match(body)):
             line_no = reader.line_no
             reader.index += 1
             out.append(_parse_inline(body, line_no))
             continue
-        # REWRITE THE DASH AS SPACES and re-read the line as ordinary content.
-        # `- name: x` followed by `  run: y` is a mapping whose first key happens
+        # REWRITE THE DASH AS SPACES and re-read the line as ordinary content. `- name: x` followed by ` run: y` is a mapping whose first key happens
         # to share a line with the dash; blanking the dash makes that literally
-        # true and removes the need for a second, subtly different mapping parser.
-        # It also handles a nested sequence (`- - a`) for free.
+        # true and removes the need for a second, subtly different mapping parser. It also handles a nested sequence (`- - a`) for free.
         item_indent = dash + 1 + (len(rest) - len(rest.lstrip(" ")))
         reader.lines[reader.index] = " " * item_indent + rest.lstrip(" ")
         out.append(_parse_node(reader, item_indent))
@@ -544,10 +520,7 @@ def _parse_mapping(reader: _Reader, indent: int) -> dict:
                 out[key] = _block_scalar(reader, rest.strip(), indent)
                 continue
             reader.index += 1
-            # A SEQUENCE MAY SIT AT THE KEY'S OWN INDENT. YAML allows
-            # `needs:\n- a\n- b` with the dashes level with `needs`, and a
-            # parser that only looks deeper reads that as a null value and then
-            # loses the whole list in silence.
+            # A SEQUENCE MAY SIT AT THE KEY'S OWN INDENT. YAML allows `needs:\n- a\n- b` with the dashes level with `needs`, and a parser that only looks deeper reads that as a null value and then loses the whole list in silence.
             nested = reader.peek()
             if nested and nested[0] == indent and (nested[1].startswith("- ") or nested[1] == "-"):
                 out[key] = _parse_sequence(reader, indent)
@@ -648,9 +621,7 @@ def load(path: pathlib.Path | str):
         raise type(exc)("%s: %s" % (target, exc)) from exc
 
 
-# ---------------------------------------------------------------------------
-# The projection every consumer actually wants
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The projection every consumer actually wants ---------------------------------------------------------------------------
 
 
 class Step:
@@ -683,8 +654,7 @@ class Job:
         self.runs_on = self.raw.get("runs-on")
         self.timeout_minutes = self.raw.get("timeout-minutes")
         needs = self.raw.get("needs")
-        # `needs:` is a string for one dependency and a list for several. Every
-        # consumer that forgets that iterates the CHARACTERS of the string.
+        # `needs:` is a string for one dependency and a list for several. Every consumer that forgets that iterates the CHARACTERS of the string.
         self.needs = [needs] if isinstance(needs, str) else list(needs or [])
 
     def __repr__(self) -> str:
@@ -722,22 +692,12 @@ class Workflow:
         return "Workflow(%r, %d job(s))" % (self.path.name, len(self.jobs))
 
 
-# ---------------------------------------------------------------------------
-# Lane capabilities: the one consumer that exists in TypeScript today
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Lane capabilities: the one consumer that exists in TypeScript today ---------------------------------------------------------------------------
 #
-# `scripts/ci-runner/lanes.ts:61 laneCapabilities()` answers "what has each CI
-# job already installed", so a gate can be placed in the cheapest lane that
-# satisfies it. It is a hand-written LINE SCANNER, for the dependency reason
-# quoted in this module's docstring, and it is the only TypeScript parser of
-# these files.
+# `scripts/ci-runner/lanes.ts:61 laneCapabilities()` answers "what has each CI job already installed", so a gate can be placed in the cheapest lane that satisfies it. It is a hand-written LINE SCANNER, for the dependency reason quoted in this module's docstring, and it is the only TypeScript parser of these files.
 #
-# WHAT IS REPRODUCED HERE IS ITS ANSWER, NOT ITS METHOD. This computes the same
-# six fields from the structural parse above, and `test_workflows.py` runs the
-# real `lanes.ts` through `npx tsx` and compares the two JSON documents over
-# every workflow file. Two implementations reaching the same answer by different
-# routes is a stronger statement than one transcribed from the other: a shared
-# mistake in a regex cannot survive it.
+# WHAT IS REPRODUCED HERE IS ITS ANSWER, NOT ITS METHOD. This computes the same six fields from the structural parse above, and `test_workflows.py` runs the real `lanes.ts` through `npx tsx` and compares the two JSON documents over every workflow file. Two implementations reaching the same answer by different routes is a stronger statement than one transcribed from the other: a
+# shared mistake in a regex cannot survive it.
 
 _SUBMODULE_TRUE = frozenset(["true", "recursive", True])
 _TARGETED_SUBMODULE_RE = re.compile(
@@ -831,9 +791,7 @@ def lane_capabilities(workflow: "Workflow") -> list[LaneCapabilities]:
                     caps.tools.append("ruff")
                 if _PYYAML_RE.search(line) and "python-yaml" not in caps.tools:
                     caps.tools.append("python-yaml")
-                # SUPPRESSED ONCE '*' IS PRESENT, matching lanes.ts:111-114: a job
-                # that took every submodule already has this one, and listing it
-                # again would make an exact-match need look unsatisfiable.
+                # SUPPRESSED ONCE '*' IS PRESENT, matching lanes.ts:111-114: a job that took every submodule already has this one, and listing it again would make an exact-match need look unsatisfiable.
                 if "*" in caps.submodules:
                     continue
                 for found in _TARGETED_SUBMODULE_RE.findall(line):

@@ -65,9 +65,7 @@ TWIN = ROOT / ".ci" / "scripts" / "deploy" / "write-release-sentinel.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "write_release_sentinel.py"
 MODULE = "rediacc_ci.deploy.write_release_sentinel"
 
-# The recording fake. Dispatches on the first two argv words, exactly as the
-# `write_once_guard` differential's fake does, so each subcommand is scripted
-# independently. `s3 cp -` is the WRITE (stdin captured to uploaded.json) and
+# The recording fake. Dispatches on the first two argv words, exactly as the `write_once_guard` differential's fake does, so each subcommand is scripted independently. `s3 cp -` is the WRITE (stdin captured to uploaded.json) and
 # `s3 cp s3://... -` is the READBACK; telling them apart by which side of the
 # pair is `-` is what the real CLI does too.
 FAKE_AWS = r"""#!/bin/bash
@@ -191,9 +189,7 @@ def assert_same(old: Run, new: Run) -> None:
 HAPPY = ["--version", "1.0.5", "--channel", "edge", "--commit-sha", "abc123def"]
 
 
-# ---------------------------------------------------------------------------
-# The happy path, and the artifact it produces
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, and the artifact it produces ---------------------------------------------------------------------------
 
 
 def test_a_sealed_release_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
@@ -218,8 +214,7 @@ def test_the_uploaded_payload_is_exactly_the_twins_bytes(tmp_path: pathlib.Path)
         '"product":"cli","released_at":"<ts>","artifacts_produced":["cli"]}'
     )
     assert _normalise_payload(new.payload) == _normalise_payload(old.payload)
-    # No trailing newline: `jq -nc` emits one and `$(...)` / `.rstrip` strip it,
-    # and `printf '%s'` adds none back.
+    # No trailing newline: `jq -nc` emits one and `$(...)` / `.rstrip` strip it, and `printf '%s'` adds none back.
     assert not old.payload.endswith("\n")
     assert not new.payload.endswith("\n")
 
@@ -274,9 +269,7 @@ def test_releases_bucket_is_honoured(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The refusals that keep a corrupt release out of R2
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusals that keep a corrupt release out of R2 ---------------------------------------------------------------------------
 
 
 def test_an_empty_prefix_is_refused_rather_than_sealed(tmp_path: pathlib.Path) -> None:
@@ -352,9 +345,7 @@ def test_a_readback_naming_a_different_version_fails_loud(tmp_path: pathlib.Path
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Usage errors: exit 2, every one
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Usage errors: exit 2, every one ---------------------------------------------------------------------------
 
 
 def test_an_unknown_flag_is_exit_2(tmp_path: pathlib.Path) -> None:
@@ -454,9 +445,7 @@ def test_a_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     assert new[2] == old[2]
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_parse_flags_accepts_any_order_and_lets_the_last_win() -> None:
@@ -509,9 +498,7 @@ def test_released_at_now_matches_the_date_format_the_twin_uses() -> None:
     assert got[:14] == from_date[:14], "same century, year, month and day-hour prefix"
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this suite red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this suite red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

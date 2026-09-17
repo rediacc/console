@@ -43,16 +43,12 @@ import subprocess
 import sys
 
 # Vacuity floor. This repo wires dozens of hook commands; a handful means the
-# parse broke, and every check below would be over an empty set -- which reads
-# exactly like "every hook resolves".
+# parse broke, and every check below would be over an empty set -- which reads exactly like "every hook resolves".
 MIN_COMMANDS = 10
 
 SETTINGS = ".claude/settings.json"
 
-# A command line may be a bare script path or a wrapper such as
-# `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"`. Pull out anything that looks
-# like a repo-relative hook path rather than trying to tokenise a shell string
-# (shlex chokes on the real content: one command contains a bare backslash).
+# A command line may be a bare script path or a wrapper such as `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"`. Pull out anything that looks like a repo-relative hook path rather than trying to tokenise a shell string (shlex chokes on the real content: one command contains a bare backslash).
 PATH_RE = re.compile(r"(?:\$CLAUDE_PROJECT_DIR/)?(\.claude/[A-Za-z0-9_./-]+\.(?:sh|py|cjs|js|ts))")
 
 
@@ -116,8 +112,7 @@ def verdicts(root, refs):
     return out
 
 
-# The one hook whose POSITION is part of its contract, and the blocks it has to
-# lead. Everything else in settings.json may sit in any order.
+# The one hook whose POSITION is part of its contract, and the blocks it has to lead. Everything else in settings.json may sit in any order.
 FIRST_GUARD = "require-jq.sh"
 
 
@@ -204,27 +199,15 @@ def controls(root):
     """Prove the detector fires in BOTH directions before any real read."""
     if not verdicts(root, [".claude/hooks/__a_hook_that_does_not_exist__.sh"]):
         return "planted a nonexistent hook path and the detector stayed silent"
-    # A .sh, deliberately: the control must not collide with the .py mode check
-    # below. Using a Python hook here made mutating ANY python hook trip the
-    # control instead of the finding, which refuses a verdict correctly but
-    # tests nothing.
-    # A GUARD THAT STILL EXISTS AS A .sh, RE-KEYED 2026-09-07. This was
-    # `block-admin-merge.sh`, which the W5 cutover moved to `.claude/oracles/`,
-    # and the `is_file()` guard then made this control SKIP SILENTLY: the gate
-    # stayed green while the case that proves a real hook is not reported broken
-    # stopped running at all. `block-pathspecless-git-commit.sh` is the one
-    # pre-bash guard with no Python port, so it is a .sh that is still wired.
+    # A .sh, deliberately: the control must not collide with the .py mode check below. Using a Python hook here made mutating ANY python hook trip the control instead of the finding, which refuses a verdict correctly but tests nothing. A GUARD THAT STILL EXISTS AS A .sh, RE-KEYED 2026-09-07. This was `block-admin-merge.sh`, which the W5 cutover moved to `.claude/oracles/`, and the
+    # `is_file()` guard then made this control SKIP SILENTLY: the gate stayed green while the case that proves a real hook is not reported broken stopped running at all. `block-pathspecless-git-commit.sh` is the one pre-bash guard with no Python port, so it is a .sh that is still wired.
     real = ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh"
     if not (root / real).is_file():
         return f"the control's subject {real} is gone; re-key it rather than skipping"
     if verdicts(root, [real]):
         return f"a real, present, executable hook ({real}) was reported as broken"
 
-    # The ordering predicate, driven in BOTH directions off in-memory fixtures.
-    # In memory, deliberately: these must not touch the real settings.json, and
-    # they must not be routed through main(), whose MIN_COMMANDS vacuity floor
-    # would reject a two-command fixture as a broken parse. first_guard_verdicts
-    # is pure, so it can be handed a settings-shaped dict directly.
+    # The ordering predicate, driven in BOTH directions off in-memory fixtures. In memory, deliberately: these must not touch the real settings.json, and they must not be routed through main(), whose MIN_COMMANDS vacuity floor would reject a two-command fixture as a broken parse. first_guard_verdicts is pure, so it can be handed a settings-shaped dict directly.
     def _fixture(order):
         chain = {"hooks": [{"type": "command", "command": c} for c in order]}
         return {

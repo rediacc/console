@@ -29,17 +29,12 @@ from rediacc_ci import paths
 from rediacc_ci.core import env, secrets
 from rediacc_ci.tests import differential as diff
 
-# A value shaped like the real thing: base64, long, no English in it. Short
-# fixture strings ("s3cret") hide bugs, because they collide with ordinary text
-# and because a redactor that only ever sees them is never asked to deal with a
-# value that contains another value.
+# A value shaped like the real thing: base64, long, no English in it. Short fixture strings ("s3cret") hide bugs, because they collide with ordinary text and because a redactor that only ever sees them is never asked to deal with a value that contains another value.
 FAKE_KEY = "MC4CAQAwBQYDK2VwBCIEIH1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 FAKE_OPAQUE = "0.deadbeef-1111-2222-3333-444455556666.aaaaBBBBccccDDDD:eeeeFFFF"
 
 
-# ---------------------------------------------------------------------------
-# redact -- the default path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- redact -- the default path ---------------------------------------------------------------------------
 
 
 def test_redact_masks_every_occurrence_and_keeps_the_rest() -> None:
@@ -130,9 +125,7 @@ def test_redact_env_masks_only_the_secret_named_variables() -> None:
     assert "http://localhost:4800" in out
 
 
-# ---------------------------------------------------------------------------
-# looks_secret -- against corpora, not against a table
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- looks_secret -- against corpora, not against a table ---------------------------------------------------------------------------
 
 
 def _rdc_sh_rulings() -> tuple[set[str], set[str]]:
@@ -210,14 +203,10 @@ def test_looks_secret_splits_the_bitwarden_corpus_in_both_directions() -> None:
 @pytest.mark.parametrize(
     ("name", "expected"),
     [
-        # The rows a SUBSTRING matcher gets wrong and a segment matcher does
-        # not. These two are the whole reason `looks_secret` splits on "_":
-        # "SIG" sits inside DESIGN and "KEY" inside KEYBOARD, and without them
-        # a planted substring-matching defect passed this entire suite.
+        # The rows a SUBSTRING matcher gets wrong and a segment matcher does not. These two are the whole reason `looks_secret` splits on "_": "SIG" sits inside DESIGN and "KEY" inside KEYBOARD, and without them a planted substring-matching defect passed this entire suite.
         ("DESIGN_DOC_URL", False),
         ("KEYBOARD_LAYOUT", False),
-        # WEBAUTHN_RP_ID is here for a different rule: it ends in `_ID`, the
-        # identifier half that .ci/config/bws-token-expiry.json rules public.
+        # WEBAUTHN_RP_ID is here for a different rule: it ends in `_ID`, the identifier half that .ci/config/bws-token-expiry.json rules public.
         ("WEBAUTHN_RP_ID", False),
         ("ACCOUNT_ED25519_PUBLIC_KEY", False),  # contains "KEY"
         ("CLOUDFLARE_R2_ACCESS_KEY_ID", False),  # the identifier half of a pair
@@ -238,9 +227,7 @@ def test_looks_secret_on_the_shapes_a_substring_matcher_gets_wrong(
     assert secrets.looks_secret(name) is expected
 
 
-# ---------------------------------------------------------------------------
-# presence and report -- saying something without saying it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- presence and report -- saying something without saying it ---------------------------------------------------------------------------
 
 
 def test_presence_is_present_for_a_value_and_absent_for_nothing() -> None:
@@ -281,9 +268,7 @@ def test_missing_returns_the_actionable_names_only() -> None:
     assert secrets.missing(source, ["A", "B", "C", "D"]) == ["B", "C", "D"]
 
 
-# ---------------------------------------------------------------------------
-# fingerprint
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- fingerprint ---------------------------------------------------------------------------
 
 
 def test_fingerprint_is_stable_distinguishing_and_never_the_value() -> None:
@@ -319,14 +304,11 @@ def test_fingerprint_matches_the_shell_sha256_it_has_to_interoperate_with() -> N
     )
     assert rc == 0, err
     assert secrets.fingerprint(value) == out.strip()
-    # And the control: an independent Python computation of the SAME thing, so a
-    # sha256sum that started printing a filename would not silently agree.
+    # And the control: an independent Python computation of the SAME thing, so a sha256sum that started printing a filename would not silently agree.
     assert out.strip() == hashlib.sha256(value.encode()).hexdigest()[:16]
 
 
-# ---------------------------------------------------------------------------
-# the argv dispatch -- names only, never values
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the argv dispatch -- names only, never values ---------------------------------------------------------------------------
 
 
 def _module(script: str, environ=None):
@@ -404,9 +386,7 @@ def test_the_verbs_refuse_rather_than_guess() -> None:
     assert "at least one NAME" in err
 
 
-# ---------------------------------------------------------------------------
-# the two modules together, which is how they will actually be used
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the two modules together, which is how they will actually be used ---------------------------------------------------------------------------
 
 
 def test_an_env_file_can_be_reported_on_without_any_value_escaping(tmp_path) -> None:

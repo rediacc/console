@@ -58,15 +58,9 @@ ROOT = paths.repo_root()
 BP_SRC = ROOT / ".ci" / "breakpoint"
 CANONICAL_VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "blocker-validator.sh"
 
-# The scripts allowed to reach for console's tree, and the reason. Each calls a
-# console-only service helper behind an `[[ -x ]]` existence test, so a repo
-# without that tree takes an explicit branch instead of dying obscurely.
+# The scripts allowed to reach for console's tree, and the reason. Each calls a console-only service helper behind an `[[ -x ]]` existence test, so a repo without that tree takes an explicit branch instead of dying obscurely.
 #
-# An EXACT set, not a prefix or a count: a new hardcoded reference is red until it
-# is listed here with a justification. Widening it is a decision, which is the
-# point. `workflow/breakpoint.yml` joined on 2026-09-03 and LEFT AGAIN on
-# 2026-09-04, which is the outcome this rule is for -- the set narrows rather
-# than widening, and that only happens if it is asserted exactly.
+# An EXACT set, not a prefix or a count: a new hardcoded reference is red until it is listed here with a justification. Widening it is a decision, which is the point. `workflow/breakpoint.yml` joined on 2026-09-03 and LEFT AGAIN on 2026-09-04, which is the outcome this rule is for -- the set narrows rather than widening, and that only happens if it is asserted exactly.
 ALLOWED_CONSOLE_HOOKS = (
     "scripts/pull-service-images.sh",
     "scripts/start-origin.sh",
@@ -75,10 +69,7 @@ ALLOWED_CONSOLE_HOOKS = (
 
 FILE_SUFFIXES = (".sh", ".yml", ".yaml")
 
-# A whole-line comment, in the twin's `grep -Ev '^[0-9]+:[[:space:]]*#'` sense.
-# Comments matter here: most of breakpoint's references to console are prose
-# explaining what was deleted and why, and a scan that cannot tell prose from
-# code would force the docs to be stripped.
+# A whole-line comment, in the twin's `grep -Ev '^[0-9]+:[[:space:]]*#'` sense. Comments matter here: most of breakpoint's references to console are prose explaining what was deleted and why, and a scan that cannot tell prose from code would force the docs to be stripped.
 COMMENT_RE = re.compile(r"^[ \t]*#")
 
 # `readonly NAME=(` ... `)` at column 1, the twin's awk program.
@@ -88,8 +79,7 @@ QUOTED_RE = re.compile(r'"([^"]*)"')
 CANON_ARRAY = "LOW_EFFORT_BLOCKER_PATTERNS"
 VENDORED_ARRAY = "BREAKPOINT_LOW_EFFORT_BLOCKERS"
 
-# Floors on each read. Both are documented as INSUFFICIENT on their own by the
-# twin, which is why the second independent read exists beside them.
+# Floors on each read. Both are documented as INSUFFICIENT on their own by the twin, which is why the second independent read exists beside them.
 CANON_FLOOR = 30
 VENDORED_FLOOR = 20
 
@@ -218,11 +208,7 @@ def check_subset(canon_path: pathlib.Path, bp: pathlib.Path, extract=extract_arr
         log.append("  vendored-only phrase: '%s' (absent from two independent reads)" % phrase)
         missing += 1
 
-    # THE VENDORED FLOOR HAS THE SAME WEAKNESS AS THE CANONICAL ONE, in the more
-    # dangerous direction. A canonical read that drops a phrase produces a false
-    # RED, which is loud. A VENDORED read that drops one produces a false GREEN:
-    # fewer phrases are checked, `missing` stays 0, and the pass line reports
-    # "all N ... exist" with an N nobody compares against the truth.
+    # THE VENDORED FLOOR HAS THE SAME WEAKNESS AS THE CANONICAL ONE, in the more dangerous direction. A canonical read that drops a phrase produces a false RED, which is loud. A VENDORED read that drops one produces a false GREEN: fewer phrases are checked, `missing` stays 0, and the pass line reports "all N ... exist" with an N nobody compares against the truth.
     count2 = len(extract(bp / "lib" / "breakpoint-blocker.sh", VENDORED_ARRAY))
     if count != count2:
         return fail(
@@ -256,17 +242,11 @@ def test_console_script_tree_is_optional(gate):
         )
         gate.log_pass("no new script reaches into console's .ci/scripts/ tree")
 
-        # ...and in each of them the reference is guarded by an existence test, so
-        # a repo without those console scripts takes an explicit branch rather
-        # than dying obscurely.
+        # ...and in each of them the reference is guarded by an existence test, so a repo without those console scripts takes an explicit branch rather than dying obscurely.
         #
-        # BOTH IDIOMS COUNT, and that is a fix rather than a relaxation. The check
-        # used to demand the literal inline form, which only one of the three
+        # BOTH IDIOMS COUNT, and that is a fix rather than a relaxation. The check used to demand the literal inline form, which only one of the three
         # scripts happens to use; the other two assign the path to a variable
-        # first and test `[[ -x "$VAR" ]]`, which is the same guard. The old check
-        # therefore reported a guard as MISSING when it was present -- and nobody
-        # noticed, because the exact-set assertion above fails first and log_fail
-        # exits, so the loop had only ever run against one script.
+        # first and test `[[ -x "$VAR" ]]`, which is the same guard. The old check therefore reported a guard as MISSING when it was present -- and nobody noticed, because the exact-set assertion above fails first and log_fail exits, so the loop had only ever run against one script.
         for rel in ALLOWED_CONSOLE_HOOKS:
             body = (bp / rel).read_text(encoding="utf-8", errors="replace")
             guarded = '-x "$REPO_ROOT/.ci/scripts/' in body
@@ -296,9 +276,7 @@ def test_no_nonportable_common_helpers(gate):
         gate.assert_eq(hits, [], "console's non-portable common.sh helpers must not be used")
         gate.log_pass("no get_repo_root / r2_count_objects / require_submodule in code")
 
-        # Both directions: the omission has to be DOCUMENTED, not accidental, or
-        # the next person re-adds them from common.sh without knowing why they
-        # are gone.
+        # Both directions: the omission has to be DOCUMENTED, not accidental, or the next person re-adds them from common.sh without knowing why they are gone.
         gate.assert_contains(
             (bp / "lib" / "breakpoint-common.sh").read_text(encoding="utf-8"),
             "DELIBERATELY NOT COPIED",
@@ -501,13 +479,8 @@ def test_drift_gate_runs_standalone(gate):
             "check-breakpoint-drift.sh self-verifies standalone (no .ci/scripts, no .git)"
         )
 
-        # ...and it must FAIL when the manifest is gone. Deleting MANIFEST.sha256
-        # is the cheapest possible way to make a diverged vendored copy "pass", so
-        # "nothing to compare against" has to be a hard error, not a quiet
-        # success. This lives here rather than in the anti-vacuity meta-gate
-        # because that harness's fixture does not copy `.ci/breakpoint/` at all:
-        # registered there, it could only ever observe a "No such file" crash and
-        # score it as a pass.
+        # ...and it must FAIL when the manifest is gone. Deleting MANIFEST.sha256 is the cheapest possible way to make a diverged vendored copy "pass", so "nothing to compare against" has to be a hard error, not a quiet success. This lives here rather than in the anti-vacuity meta-gate because that harness's fixture does not copy `.ci/breakpoint/` at all: registered there, it could
+        # only ever observe a "No such file" crash and score it as a pass.
         (bp / "MANIFEST.sha256").unlink(missing_ok=True)
         after = harness.run([bash, str(drift)], env=env, env_replace=True, timeout=600)
         if after.rc == 0:
@@ -527,10 +500,7 @@ def test_vendored_blocker_list_is_a_subset(gate):
     with harness.temp_dir() as tmp:
         bp = make_isolated(tmp)
         if not CANONICAL_VALIDATOR.is_file():
-            # Downstream: there is no canonical file to compare against, and that
-            # is the normal state there. Skipping is correct -- but it must be
-            # SAID, or a silently-skipped subset check looks identical to a
-            # passing one.
+            # Downstream: there is no canonical file to compare against, and that is the normal state there. Skipping is correct -- but it must be SAID, or a silently-skipped subset check looks identical to a passing one.
             gate.log_pass(
                 "SKIPPED (no %s here): subset check is console-only"
                 % paths.relative_to_root(CANONICAL_VALIDATOR)
@@ -616,9 +586,7 @@ def test_subset_check_survives_a_flaky_second_read(gate):
                     return [p for p in full if p != "skipped"]
             return full
 
-        # THE PLANT MUST BE ABLE TO BITE. If the canonical list stopped carrying
-        # 'skipped', or the vendored one did, the truncation would remove nothing
-        # observable and this control would pass against an un-plantable subject.
+        # THE PLANT MUST BE ABLE TO BITE. If the canonical list stopped carrying 'skipped', or the vendored one did, the truncation would remove nothing observable and this control would pass against an un-plantable subject.
         canon_phrases = extract_array(CANONICAL_VALIDATOR, CANON_ARRAY)
         vendored_phrases = extract_array(bp / "lib" / "breakpoint-blocker.sh", VENDORED_ARRAY)
         if "skipped" not in canon_phrases or "skipped" not in vendored_phrases:

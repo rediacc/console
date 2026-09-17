@@ -47,11 +47,9 @@ TWIN = ROOT / ".ci" / "scripts" / "housekeeping" / "cleanup-pr-environments.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "housekeeping" / "cleanup_pr_environments.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# THE DELETE BRANCH KEYS OFF argv[-1], NOT THE FIRST NON-FLAG TOKEN. Written the
-# obvious way first, the fake read `DELETE` itself as the path (it does not start
+# THE DELETE BRANCH KEYS OFF argv[-1], NOT THE FIRST NON-FLAG TOKEN. Written the obvious way first, the fake read `DELETE` itself as the path (it does not start
 # with `-`), so FAKE_GH_DELETE_FAILS never matched and a "failed deletion" case
-# silently exercised the success path. The control did not fire, and the control
-# was the thing that was wrong.
+# silently exercised the success path. The control did not fire, and the control was the thing that was wrong.
 FAKE_GH = """#!/usr/bin/python3
 import os
 import sys
@@ -90,9 +88,7 @@ if names:
 sys.exit(int(os.environ.get("FAKE_GH_LIST_RC", "0")))
 """
 
-# What both subjects need on PATH besides the fake gh: `dirname`/`uname` from
-# sourcing common.sh, `tr` from its parse_args, and `grep`/`sort`, which ARE the
-# twin's environment filter. Found by driving it, the sibling's way.
+# What both subjects need on PATH besides the fake gh: `dirname`/`uname` from sourcing common.sh, `tr` from its parse_args, and `grep`/`sort`, which ARE the twin's environment filter. Found by driving it, the sibling's way.
 PATH_MINIMUM = ("dirname", "uname", "tr", "grep", "sort")
 
 

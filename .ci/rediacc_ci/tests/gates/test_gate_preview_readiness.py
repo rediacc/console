@@ -61,8 +61,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         if self.path.endswith("/server-info"):
             type(self).count += 1
             n = type(self).count
-            # flap: good on 1 of every 3 probes, so the streak never reaches 2.
-            # late: cold for the first 3 probes, then steady.
+            # flap: good on 1 of every 3 probes, so the streak never reaches 2. late: cold for the first 3 probes, then steady.
             if self.mode == "steady":
                 good = True
             elif self.mode == "flap":

@@ -95,9 +95,7 @@ sys.exit(0)
 """
 
 # common.sh needs `dirname` and `uname` at source time; the twin itself uses
-# `dirname`, `tr` and `sed` (in `one_line`) and `grep` in every probe. All five
-# must be reachable from the stub PATH or the twin fails for a reason that has
-# nothing to do with the subject.
+# `dirname`, `tr` and `sed` (in `one_line`) and `grep` in every probe. All five must be reachable from the stub PATH or the twin fails for a reason that has nothing to do with the subject.
 PATH_MINIMUM = ("dirname", "uname", "tr", "sed", "grep")
 
 

@@ -41,19 +41,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
 
-# Sourced in the order `.ci/legacy/run-legacy.sh:41-49` sources them, minus the
-# ones it pulls in transitively. Kept as data so the preamble is one string in
-# one place and a reader can see the whole environment a bridged call runs in.
+# Sourced in the order `.ci/legacy/run-legacy.sh:41-49` sources them, minus the ones it pulls in transitively. Kept as data so the preamble is one string in one place and a reader can see the whole environment a bridged call runs in.
 PRELUDE = (
     "set -euo pipefail",
     'source "$ROOT_DIR/.ci/legacy/run-legacy.sh"',
     'source "$ROOT_DIR/.ci/lib/devbox.sh"',
 )
 
-# The names `setup()` and `setup_check()` read out of `.ci/config/constants.sh`.
-# EXPORTED BY NAME rather than by dumping the whole environment: constants.sh
-# defines around sixty readonly names and a dump would make this seam a place
-# any of them could be reached from, which is how a seam stops being one.
+# The names `setup()` and `setup_check()` read out of `.ci/config/constants.sh`. EXPORTED BY NAME rather than by dumping the whole environment: constants.sh defines around sixty readonly names and a dump would make this seam a place any of them could be reached from, which is how a seam stops being one.
 CONSTANT_NAMES = (
     "NODE_VERSION_MIN",
     "NODE_VERSION_REQUIRED",

@@ -85,14 +85,8 @@ export function laneCapabilities(workflowText: string): Map<string, LaneCapabili
       continue;
     }
     if (job === null) continue;
-    // PROSE IS NOT A CAPABILITY, and this module nearly shipped believing it was. The
-    // first version matched `PyYAML` and `setup-go` anywhere in the job, and
-    // quality-code MENTIONS both in comments ("ruff was pinned twice, PyYAML four
-    // times", "actions/setup-go adds that directory itself") while installing neither.
-    // It would therefore have placed a yaml-needing gate in a job with no PyYAML --
-    // the exact silent mis-placement this file exists to prevent, committed by the
-    // file itself. Caught by checking the derived table against the workflow instead
-    // of trusting it.
+    // PROSE IS NOT A CAPABILITY, and this module nearly shipped believing it was. The first version matched `PyYAML` and `setup-go` anywhere in the job, and quality-code MENTIONS both in comments ("ruff was pinned twice, PyYAML four times", "actions/setup-go adds that directory itself") while installing neither. It would therefore have placed a yaml-needing gate in a job with no
+    // PyYAML -- the exact silent mis-placement this file exists to prevent, committed by the file itself. Caught by checking the derived table against the workflow instead of trusting it.
     if (/^\s*#/.test(raw)) continue;
 
     const runsOn = /^\s{4}runs-on:\s*(\S+)\s*$/.exec(raw);
@@ -102,9 +96,7 @@ export function laneCapabilities(workflowText: string): Map<string, LaneCapabili
     if (timeout) job.timeoutMinutes = Number(timeout[1]);
 
     // `submodules: true` on a checkout takes every submodule; a targeted
-    // `git submodule update --init <path>` takes exactly one. Both are real, and
-    // conflating them is how a gate needing renet lands in the job that only takes
-    // account (quality-i18n does exactly that).
+    // `git submodule update --init <path>` takes exactly one. Both are real, and conflating them is how a gate needing renet lands in the job that only takes account (quality-i18n does exactly that).
     if (/^\s+submodules:\s*(true|'true'|"true"|recursive)\s*$/.test(raw)) job.submodules = ['*'];
     const targeted = /git submodule update --init(?:\s+--depth\s+\d+)?\s+(private\/[\w-]+)/.exec(
       raw
@@ -522,17 +514,9 @@ export function shardPlan(
         reasonFor.set(root, list);
       }
     }
-    // STEP-SHARING (T-SCHED B2 D1). Several ids can ride ONE emitted workflow step
-    // (`check:lint`, `check:lint:cli`, ... all inside `ci-quality.yml`'s single `Lint`
-    // step) -- the ids are one `run:` block in one shell, so a shard boundary between
-    // them is unrealisable: gate-bind attaches exactly one conjunct per STEP, never per
-    // id. Union them before `needs`, so a needs edge landing on a step-sharing id still
-    // walks to the right unit. A shared-step unit's heavy peak is ONE, the same
-    // treatment `concurrentHeavy` below already gives a mutex-only unit and for the
-    // same reason: today they genuinely run together in one process, one runner,
-    // never concurrently with themselves. `mergedByNeeds` (below) only marks a unit
-    // that also carries a needs edge, so a pure step-shared unit is untouched by the
-    // `overloaded` refusal without a separate exemption.
+    // STEP-SHARING (T-SCHED B2 D1). Several ids can ride ONE emitted workflow step (`check:lint`, `check:lint:cli`, ... all inside `ci-quality.yml`'s single `Lint` step) -- the ids are one `run:` block in one shell, so a shard boundary between them is unrealisable: gate-bind attaches exactly one conjunct per STEP, never per id. Union them before `needs`, so a needs edge landing on
+    // a step-sharing id still walks to the right unit. A shared-step unit's heavy peak is ONE, the same treatment `concurrentHeavy` below already gives a mutex-only unit and for the same reason: today they genuinely run together in one process, one runner, never concurrently with themselves. `mergedByNeeds` (below) only marks a unit that also carries a needs edge, so a pure
+    // step-shared unit is untouched by the `overloaded` refusal without a separate exemption.
     const stepGroups = new Map<string, string[]>();
     for (const e of entries) {
       if (e.ci.kind !== 'step' || !e.ci.step) continue;
@@ -550,11 +534,7 @@ export function shardPlan(
       }
     }
     let needsEdges = 0;
-    // MEMBERS, NOT ROOTS. Recording `merge.find(e.id)` here was wrong and my own
-    // anti-silencer control caught it: union-find roots MOVE as later unions land, so a
-    // root captured mid-loop can name a set that no longer exists by the end, and the
-    // needs-merged unit then slips past the refusal below. Resolve the roots once,
-    // after every union is in.
+    // MEMBERS, NOT ROOTS. Recording `merge.find(e.id)` here was wrong and my own anti-silencer control caught it: union-find roots MOVE as later unions land, so a root captured mid-loop can name a set that no longer exists by the end, and the needs-merged unit then slips past the refusal below. Resolve the roots once, after every union is in.
     const needsMembers: string[] = [];
     for (const e of entries) {
       for (const need of e.needs ?? []) {
@@ -602,19 +582,12 @@ export function shardPlan(
       };
     }
 
-    // A MUTEX GROUP'S MEMBERS NEVER COEXIST, so two heavies inside one are not two
-    // heavies at once. `gate-spec.ts:44` defines mutex as "no two gates sharing a group
-    // overlap", and `heavy` bounds CONCURRENT heap (`--heavy-limit`) -- so a unit whose
-    // only reason for being indivisible is a mutex group has a peak of ONE heavy however
-    // many it holds, and refusing it would be refusing arithmetic.
+    // A MUTEX GROUP'S MEMBERS NEVER COEXIST, so two heavies inside one are not two heavies at once. `gate-spec.ts:44` defines mutex as "no two gates sharing a group overlap", and `heavy` bounds CONCURRENT heap (`--heavy-limit`) -- so a unit whose only reason for being indivisible is a mutex group has a peak of ONE heavy however many it holds, and refusing it would be refusing
+    // arithmetic.
     //
-    // MEASURED 2026-09-09: this is not hypothetical. `quality-go`'s `account-vitest`
-    // group holds `check:ci-account-server` and `check:ci-account-scope-audit`, both
-    // heavy, and the first version of this refusal made that lane unshardable at EVERY
-    // shard count. The two never run together, so nothing was ever at risk.
+    // MEASURED 2026-09-09: this is not hypothetical. `quality-go`'s `account-vitest` group holds `check:ci-account-server` and `check:ci-account-scope-audit`, both heavy, and the first version of this refusal made that lane unshardable at EVERY shard count. The two never run together, so nothing was ever at risk.
     //
-    // A unit merged by `needs` is the opposite case and still refuses: co-location
-    // without exclusion means both really are resident.
+    // A unit merged by `needs` is the opposite case and still refuses: co-location without exclusion means both really are resident.
     const overloaded = unitList.find((u) => u.heavy > 1 && mergedByNeeds.has(u.key));
     if (overloaded) {
       return {
@@ -637,10 +610,7 @@ export function shardPlan(
       };
     }
 
-    // BALANCE. Longest-processing-time first: the achievable floor is the
-    // heaviest single unit, so it has to be placed while every shard is still
-    // empty. `slow` breaks a weight tie because a slow gate is the one whose
-    // real cost the weight is least likely to describe.
+    // BALANCE. Longest-processing-time first: the achievable floor is the heaviest single unit, so it has to be placed while every shard is still empty. `slow` breaks a weight tie because a slow gate is the one whose real cost the weight is least likely to describe.
     const ordered = [...unitList].sort((a, b) => {
       if (b.weight !== a.weight) return b.weight - a.weight;
       if (b.slow !== a.slow) return b.slow - a.slow;
@@ -652,12 +622,8 @@ export function shardPlan(
     const binWeight = new Array<number>(want).fill(0);
     const binHeavy = new Array<number>(want).fill(0);
     for (const unit of ordered) {
-      // PEAK, NOT RAW COUNT. A mutex- or step-merged unit's `heavy` field is a sum
-      // over ids that never run at once (one mutex group, one `run:` block), so
-      // packing and the shard's own receipt must use `concurrentHeavy(unit)` here,
-      // the same peak the refusal above is computed against -- using the raw sum
-      // would both refuse a bin for a unit that only ever holds one heavy process
-      // and report a shard's `heavy` count higher than what can ever be resident.
+      // PEAK, NOT RAW COUNT. A mutex- or step-merged unit's `heavy` field is a sum over ids that never run at once (one mutex group, one `run:` block), so packing and the shard's own receipt must use `concurrentHeavy(unit)` here, the same peak the refusal above is computed against -- using the raw sum would both refuse a bin for a unit that only ever holds one heavy process and
+      // report a shard's `heavy` count higher than what can ever be resident.
       const peak = concurrentHeavy(unit);
       let pick = -1;
       for (let i = 0; i < want; i += 1) {
@@ -701,10 +667,7 @@ export function shardPlan(
       });
     }
 
-    // THE ACCEPTANCE, RE-ASSERTED BY THE PLANNER ITSELF. These three cannot
-    // fire given the arithmetic above, and they are here anyway: the day the
-    // packer changes, the caller finds out from a refusal rather than from a
-    // lane that quietly stopped running eleven gates.
+    // THE ACCEPTANCE, RE-ASSERTED BY THE PLANNER ITSELF. These three cannot fire given the arithmetic above, and they are here anyway: the day the packer changes, the caller finds out from a refusal rather than from a lane that quietly stopped running eleven gates.
     const seen = new Set<string>();
     for (const shard of shardList) {
       if (shard.ids.length === 0) {

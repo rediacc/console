@@ -51,8 +51,7 @@ TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-account-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_account_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# A complete stable EU deploy: the seventeen values the twin refuses to go
-# without on that channel, plus the three control variables and the bucket.
+# A complete stable EU deploy: the seventeen values the twin refuses to go without on that channel, plus the three control variables and the bucket.
 FIXTURE_ENV = {
     "WORKER_NAME": "rediacc-account-eu",
     "TARGET": "stable",
@@ -119,8 +118,7 @@ if rc:
 sys.stdout.write("Finished processing secrets JSON file.\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides, and `uname` / `dirname` are what
-# `common.sh` needs at source time. Nothing else is on the scratch PATH.
+# `jq` is a real prerequisite of BOTH sides, and `uname` / `dirname` are what `common.sh` needs at source time. Nothing else is on the scratch PATH.
 PATH_MINIMUM = ("jq", "uname", "dirname")
 
 
@@ -326,9 +324,7 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
 def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathlib.Path) -> None:
     """DECISION 4, the negative half. `regions.json` gives us and asia
     `r2Jurisdiction: null`, which the deploy matrix passes as the empty string."""
-    # A `**dict` rather than keyword arguments: ruff's S106 reads a keyword whose
-    # NAME looks like a credential as a hardcoded password, and every fan-in name
-    # in this file looks exactly like one.
+    # A `**dict` rather than keyword arguments: ruff's S106 reads a keyword whose NAME looks like a credential as a hardcoded password, and every fan-in name in this file looks exactly like one.
     us = {
         "SUFFIX": "US",
         "R2_JURISDICTION": "",

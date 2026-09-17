@@ -182,12 +182,8 @@ function probeAsset(
         if (statesVersion(out, pin)) {
           return { component, asset, pin, verdict: 'match', detail: `ran \`${flag}\`` };
         }
-        // A MISMATCH needs evidence of a DIFFERENT version, never merely the
-        // absence of ours. The CSI sidecars are the case that taught this: they
-        // are built without version ldflags, answer `--version` with
-        // `<binary> unknown`, and carry no version token at all. Calling that a
-        // mismatch would red-flag a perfectly good asset, and a gate that cries
-        // wolf on healthy input gets disabled, which is worse than not having it.
+        // A MISMATCH needs evidence of a DIFFERENT version, never merely the absence of ours. The CSI sidecars are the case that taught this: they are built without version ldflags, answer `--version` with `<binary> unknown`, and carry no version token at all. Calling that a mismatch would red-flag a perfectly good asset, and a gate that cries wolf on healthy input gets disabled,
+        // which is worse than not having it.
         if (VERSION_TOKEN.test(out)) {
           return {
             component,
@@ -207,10 +203,7 @@ function probeAsset(
 
   // Cross-architecture: read the binary's own string table, in process.
   //
-  // Deliberately NOT `strings(1)`: that is an undeclared external binary (knip
-  // flags it), it is absent from minimal images, and its absence would silently
-  // downgrade every cross-arch asset to "unprobed" -- a check quietly getting
-  // weaker, which is the failure this whole gate is about.
+  // Deliberately NOT `strings(1)`: that is an undeclared external binary (knip flags it), it is absent from minimal images, and its absence would silently downgrade every cross-arch asset to "unprobed" -- a check quietly getting weaker, which is the failure this whole gate is about.
   try {
     const buf = fs.readFileSync(bin);
     if (bufferCarriesVersion(buf, pin)) {
@@ -247,11 +240,7 @@ function probeAsset(
  */
 function runControls(): string[] {
   const failures: string[] = [];
-  // The pin lives in the CASE, not in a second array indexed by position. It was
-  // written as two parallel arrays and they drifted immediately: the zot case
-  // was checked against the pin 1.75.0, so the control that proves a v-prefixed
-  // binary matches an unprefixed pin was really asserting that 2.1.2 equals
-  // 1.75.0, and it failed. A control that cannot pass is as useless as one that
+  // The pin lives in the CASE, not in a second array indexed by position. It was written as two parallel arrays and they drifted immediately: the zot case was checked against the pin 1.75.0, so the control that proves a v-prefixed binary matches an unprefixed pin was really asserting that 2.1.2 equals 1.75.0, and it failed. A control that cannot pass is as useless as one that
   // cannot fail, and positional pairing is what let a reader see nothing wrong.
   const cases: Array<{ output: string; pin: string; expected: boolean; label: string }> = [
     {
@@ -286,8 +275,7 @@ function runControls(): string[] {
     }
   }
 
-  // The strict cross-arch form must reject a longer version that merely shares
-  // a prefix, or it would certify 3.5.01 as 3.5.0.
+  // The strict cross-arch form must reject a longer version that merely shares a prefix, or it would certify 3.5.01 as 3.5.0.
   if (stringsCarryVersion(['3.5.01'], '3.5.0')) {
     failures.push('control: a prefix-sharing version was accepted by the string-table check');
   }

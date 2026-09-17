@@ -142,8 +142,7 @@ function omissionsSection(root: string): string {
     const doc = readFileSync(join(root, OMISSIONS_DOC), 'utf8');
     const i = doc.indexOf(OMISSIONS_HEADING);
     if (i === -1) return '';
-    // To the next top-level heading, so a mention elsewhere in the file does
-    // NOT count as a documented omission.
+    // To the next top-level heading, so a mention elsewhere in the file does NOT count as a documented omission.
     const rest = doc.slice(i + OMISSIONS_HEADING.length);
     const end = rest.indexOf('\n## ');
     return end === -1 ? rest : rest.slice(0, end);
@@ -172,13 +171,8 @@ function unreachable(root: string, pkgs: Pkg[]): Pkg[] {
   }
   // A package no CI surface names and no omission documents MUST be reported.
   //
-  // The directory is JOINED rather than written as one literal, and that is not
-  // cosmetic: `test-gate-paths-exist.sh` reads a literal `packages/<name>` string
-  // as a claim that the path is real, and reports it as a dead path constant.
-  // This one must NOT exist -- a control that points at a real package proves
-  // nothing -- so the two gates would deadlock over it. Runtime-built paths are
-  // out of that gate's scope by design (its own `test_detector_ignores_runtime_
-  // and_glob_paths` case), which is the honest category for a synthetic fixture.
+  // The directory is JOINED rather than written as one literal, and that is not cosmetic: `test-gate-paths-exist.sh` reads a literal `packages/<name>` string as a claim that the path is real, and reports it as a dead path constant. This one must NOT exist -- a control that points at a real package proves nothing -- so the two gates would deadlock over it. Runtime-built paths are
+  // out of that gate's scope by design (its own `test_detector_ignores_runtime_ and_glob_paths` case), which is the honest category for a synthetic fixture.
   const ghostDir = ['packages', '__ghost__'].join('/');
   const ghost: Pkg = { name: '@rediacc/__no_such_package__', dir: ghostDir, scripts: ['test'] };
   if (unreachable(ROOT, [ghost]).length !== 1) {
@@ -187,8 +181,7 @@ function unreachable(root: string, pkgs: Pkg[]): Pkg[] {
       '  nor documented as an omission was NOT reported, so a green run means nothing.'
     );
   }
-  // And a package that IS documented must NOT be reported, or the gate would
-  // fail forever and get deleted rather than obeyed.
+  // And a package that IS documented must NOT be reported, or the gate would fail forever and get deleted rather than obeyed.
   const documented: Pkg = { name: '@rediacc/json', dir: 'packages/json', scripts: ['test'] };
   if (unreachable(ROOT, [documented]).length !== 0) {
     refuse(

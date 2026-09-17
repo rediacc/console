@@ -166,8 +166,7 @@ export function judge(
       );
     const c: Classification = classify(partition, file);
     if (c.rule === null) {
-      // Only the INDEPENDENT half can be unclassified: the incoming half was enumerated by
-      // asking the rules, so a miss there is not a finding, it is arithmetic.
+      // Only the INDEPENDENT half can be unclassified: the incoming half was enumerated by asking the rules, so a miss there is not a finding, it is arithmetic.
       if (scope.includes(file)) unclassified.push(file);
       continue;
     }
@@ -240,8 +239,7 @@ function selftest(): boolean {
   };
   const yes = (): boolean => true;
 
-  // Clause 1, both directions. This is the one that cannot be seen to fire on the real
-  // tree, because the real tree has been at zero unclassified since the day it was written.
+  // Clause 1, both directions. This is the one that cannot be seen to fire on the real tree, because the real tree has been at zero unclassified since the day it was written.
   check(
     'an unclassified file in scope is a finding',
     judge(fixture, ['scripts/stray.ts'], [], yes).unclassified.length === 1
@@ -301,8 +299,7 @@ function selftest(): boolean {
     )
   );
 
-  // The real partition must load and be structurally valid, or every clause above is
-  // exercised only against a fixture.
+  // The real partition must load and be structurally valid, or every clause above is exercised only against a fixture.
   let live: DomainPartition | null = null;
   try {
     live = loadPartition(path.join(ROOT, 'scripts', 'data', 'domains.json'));

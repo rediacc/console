@@ -41,9 +41,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-classifier-chain.sh"
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 PROMPT = paths.from_root(".ci", "prompts", "ci-failure-classifier.md")
 
-# The harness. Mocks github/core/context AND global.fetch, runs the real monitor
-# once, and prints the fetch trace so the ORDER of providers is observable rather
-# than inferred.
+# The harness. Mocks github/core/context AND global.fetch, runs the real monitor once, and prints the fetch trace so the ORDER of providers is observable rather than inferred.
 HARNESS_CJS = r"""
 const monitor = require(process.argv[2]);
 const cfMode = process.argv[3];      // ok | http402 | offcontract | absent
@@ -145,8 +143,7 @@ monitor({ github, context, core })
 
 # Stand-in credential values. Named constants rather than literals at the
 # assignment site: ruff's S105 reads `env["..._TOKEN"] = "t"` as a hardcoded
-# secret, which it is not -- global.fetch is mocked and no request leaves the
-# process. Naming them also says which knob each case is turning.
+# secret, which it is not -- global.fetch is mocked and no request leaves the process. Naming them also says which knob each case is turning.
 CF_PRESENT = "t"
 CF_ACCOUNT_PRESENT = "a"
 CLAUDE_PRESENT = "oauth-tok"
@@ -163,8 +160,7 @@ CHAIN_ENV = {
 
 def subject(gate):
     # The four lines this used to hold were byte-identical in three watchdog gate tests;
-    # they live in `harness` now. See harness.watchdog_subject for why this one is
-    # extractable where an assertion message is not.
+    # they live in `harness` now. See harness.watchdog_subject for why this one is extractable where an assertion message is not.
     return harness.watchdog_subject(gate, WATCHDOG)
 
 
@@ -369,9 +365,7 @@ def test_declining_tier_reports_why_not_just_the_status(gate, tmp_path):
         "a declining tier 2 reports the provider's own explanation, not just 400",
     )
 
-    # The control. The assertions above pass trivially if the body is echoed from
-    # somewhere other than the error path, and they pass VACUOUSLY if errorBody()
-    # silently falls back. Pin that neither happened.
+    # The control. The assertions above pass trivially if the body is echoed from somewhere other than the error path, and they pass VACUOUSLY if errorBody() silently falls back. Pin that neither happened.
     gate.assert_not_contains(
         out,
         "(body unreadable)",

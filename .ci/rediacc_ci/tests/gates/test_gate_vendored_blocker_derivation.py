@@ -50,16 +50,13 @@ def test_the_gate_is_reachable_as_a_program(gate):
     result = harness.run([str(GATE)], cwd=paths.repo_root())
     gate.assert_exit_code(0, result.rc, "the gate passes on this tree")
     gate.assert_contains(result.out, "  PASS  ", "with its own controls run first, on stdout")
-    # THE VERDICT IS ON STDERR AND THE CONTROL TALLY IS ON STDOUT, which is not a
-    # slip: `rediacc_ci.log` writes every level to ONE stream (stderr by default,
-    # `log.py:221-235`) while `Checker` prints its PASS lines with a bare `print`.
+    # THE VERDICT IS ON STDERR AND THE CONTROL TALLY IS ON STDOUT, which is not a slip: `rediacc_ci.log` writes every level to ONE stream (stderr by default, `log.py:221-235`) while `Checker` prints its PASS lines with a bare `print`.
     # Asserting the two separately is what makes that split visible; asserting
     # `out + err` would pass just as happily if the verdict vanished.
     gate.assert_contains(
         result.err, "divergence(s) all attributed", "and it says what it derived, on stderr"
     )
-    # THE SHAPE, NOT THE VERDICT. A success line that said only "OK" could not
-    # show a reader that the corpus collapsed to two cases.
+    # THE SHAPE, NOT THE VERDICT. A success line that said only "OK" could not show a reader that the corpus collapsed to two cases.
     gate.assert_contains(result.err, "20 corpus case(s)", "naming the corpus size it read")
     gate.assert_contains(result.err, "0 vendored substrings", "and the claim it is built on")
     gate.log_pass("the gate is reachable, green, and prints the numbers behind the verdict")
@@ -111,8 +108,7 @@ def test_a_deleted_manifest_is_not_a_free_pass(gate):
         gate.assert_contains(
             result.err, "never be the way past a gate", "and it says so in those words"
         )
-        # CONTROL: the same tree WITH a correct manifest passes, so the case above
-        # is measuring the missing manifest and not the copied fixture.
+        # CONTROL: the same tree WITH a correct manifest passes, so the case above is measuring the missing manifest and not the copied fixture.
         digest = hashlib.sha256((target / ".ci/breakpoint/lib/breakpoint-blocker.sh").read_bytes())
         (target / ".ci/breakpoint/MANIFEST.sha256").write_text(
             "%s  lib/breakpoint-blocker.sh\n" % digest.hexdigest(), encoding="utf-8"
@@ -138,8 +134,7 @@ def test_the_gate_does_not_write_to_the_vendored_directory(gate):
     )
     # AND THROUGH GIT, which is a different oracle: the digest above would agree
     # with itself if the gate had rewritten the file identically in both reads,
-    # and it cannot see a file the gate created and deleted between them either.
-    # `git status` is the claim a reviewer would make.
+    # and it cannot see a file the gate created and deleted between them either. `git status` is the claim a reviewer would make.
     dirty = subprocess.run(
         ["git", "status", "--porcelain", "--", ".ci/breakpoint"],
         cwd=str(paths.repo_root()),

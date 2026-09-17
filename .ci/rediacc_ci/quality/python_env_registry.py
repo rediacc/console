@@ -135,19 +135,13 @@ import sys
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
 
-# The baseline, relative to the repository root. NOT reached through
-# `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this
-# file is deliberately not policy (see the docstring).
+# The baseline, relative to the repository root. NOT reached through `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this file is deliberately not policy (see the docstring).
 BASELINE_REL = ".ci/config/python-env-registry.json"
 KEY = "modules"
 
 # The call shapes that READ the environment.
 #
-# `pop` and `setdefault` are DELIBERATELY ABSENT, and the exclusion is worth 7
-# entries on this tree. Neither is a dependency on a value: `os.environ.pop(k,
-# None)` DISCARDS it (every occurrence here is a test harness clearing the
-# environment before driving a gate) and `setdefault` WRITES. Counting them
-# would put `branch.py:*k` in the registry on the strength of a line whose whole
+# `pop` and `setdefault` are DELIBERATELY ABSENT, and the exclusion is worth 7 entries on this tree. Neither is a dependency on a value: `os.environ.pop(k, None)` DISCARDS it (every occurrence here is a test harness clearing the environment before driving a gate) and `setdefault` WRITES. Counting them would put `branch.py:*k` in the registry on the strength of a line whose whole
 # purpose is to unset four GITHUB_* variables.
 GET_FUNCS = frozenset({"get", "getenv"})
 
@@ -172,9 +166,7 @@ class RefusalError(Exception):
     """The gate cannot reach a verdict. Exit 1, never a silent pass."""
 
 
-# ---------------------------------------------------------------------------
-# derivation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- derivation ---------------------------------------------------------------------------
 
 
 def module_constants(tree: ast.Module) -> dict[str, str]:
@@ -272,19 +264,10 @@ def env_key_nodes(tree: ast.Module):
             attr = getattr(func, "attr", None) or getattr(func, "id", None)
             if attr not in GET_FUNCS or not node.args:
                 continue
-            # `getenv` is admitted BARE or off `os`. `os.getenv(NAME)` is an
-            # ast.Attribute whose receiver is `os`, NOT `os.environ`, and the
-            # first draft of this function required an environ receiver on every
-            # Attribute call, so it saw no `os.getenv` at all.
+            # `getenv` is admitted BARE or off `os`. `os.getenv(NAME)` is an ast.Attribute whose receiver is `os`, NOT `os.environ`, and the first draft of this function required an environ receiver on every Attribute call, so it saw no `os.getenv` at all.
             #
-            # SAY THE UNCOMFORTABLE PART: this arm has ZERO live subjects today.
-            # `git ls-files -- '*.py' | xargs grep -c 'os\.getenv'` finds it in
-            # no tracked module but this one, so removing the arm would not move
-            # the registry by a single pair. It stays because the FIRST
-            # `os.getenv` anybody writes would otherwise be invisible, and an
-            # undeclared input that the registry cannot see is the one failure
-            # this file exists to prevent. Only a fixture reaches it, which is
-            # exactly why it needed a control rather than a reading.
+            # SAY THE UNCOMFORTABLE PART: this arm has ZERO live subjects today. `git ls-files -- '*.py' | xargs grep -c 'os\.getenv'` finds it in no tracked module but this one, so removing the arm would not move the registry by a single pair. It stays because the FIRST `os.getenv` anybody writes would otherwise be invisible, and an undeclared input that the registry cannot see is
+            # the one failure this file exists to prevent. Only a fixture reaches it, which is exactly why it needed a control rather than a reading.
             if attr == "getenv":
                 if not isinstance(func, ast.Attribute) or ast.unparse(func.value) == "os":
                     yield node.args[0]
@@ -400,9 +383,7 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
     return derived, len(rels)
 
 
-# ---------------------------------------------------------------------------
-# the baseline, and the set arithmetic that is the whole gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the baseline, and the set arithmetic that is the whole gate ---------------------------------------------------------------------------
 
 
 def pairs_of(modules: dict[str, list[str]]) -> set[str]:
@@ -505,9 +486,7 @@ def run(root=None):
     return findings, stats
 
 
-# ---------------------------------------------------------------------------
-# --write-baseline, where shrink-only is actually enforced
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --write-baseline, where shrink-only is actually enforced ---------------------------------------------------------------------------
 
 
 def baseline_additions(old, new):
@@ -594,21 +573,13 @@ def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
         return 1
     body = {"note": NOTE, KEY: {rel: derived[rel] for rel in sorted(derived)}}
     text = json.dumps(body, indent=2) + "\n"
-    # THE COMPOSITION ASSERTION, in the code rather than in anyone's memory: a
-    # shrink-only baseline guarantees the total cannot grow and guarantees
-    # NOTHING about composition. The bytes are re-parsed and the sets diffed
-    # BEFORE anything is written, because the first draft wrote the file and
-    # THEN refused -- which left a refused reseed on disk and made the very next
-    # `--first-seed` report "446 before" against an empty predecessor.
+    # THE COMPOSITION ASSERTION, in the code rather than in anyone's memory: a shrink-only baseline guarantees the total cannot grow and guarantees NOTHING about composition. The bytes are re-parsed and the sets diffed BEFORE anything is written, because the first draft wrote the file and THEN refused -- which left a refused reseed on disk and made the very next `--first-seed`
+    # report "446 before" against an empty predecessor.
     landed = pairs_of(json.loads(text)[KEY])
     if landed != want:
         log.error("the serialised registry does not round-trip to the derived set")
         return 1
-    # ON A FIRST SEED THERE IS NO `have` TO DIFF AGAINST, so this arm is
-    # deliberately skipped rather than made to pass by widening `allowed`: with
-    # no previous set every pair is an addition, and calling that a surprise
-    # would make --first-seed impossible. --first-seed is itself the refusal
-    # that guards this case, which is why it has to be typed.
+    # ON A FIRST SEED THERE IS NO `have` TO DIFF AGAINST, so this arm is deliberately skipped rather than made to pass by widening `allowed`: with no previous set every pair is an addition, and calling that a surprise would make --first-seed impossible. --first-seed is itself the refusal that guards this case, which is why it has to be typed.
     surprise = sorted((landed - have) - set(allowed)) if previous is not None else []
     if surprise:
         log.error(
@@ -641,9 +612,7 @@ def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# entry
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- entry ---------------------------------------------------------------------------
 
 
 def main(argv=None) -> int:
@@ -655,11 +624,9 @@ def main(argv=None) -> int:
         for i, arg in enumerate(argv):
             if arg != "--allow-new":
                 continue
-            # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with
-            # nothing after it, or with the next token being another flag, is a
+            # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with nothing after it, or with the next token being another flag, is a
             # typed permission that names nothing; silently dropping it would
-            # turn an intended registration into a blanket reseed the very next
-            # refusal then blames on the author.
+            # turn an intended registration into a blanket reseed the very next refusal then blames on the author.
             if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
                 log.error("--allow-new needs a <module>:<NAME> argument after it")
                 return 1
@@ -697,16 +664,10 @@ def main(argv=None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 #
-# BOTH DIRECTIONS AND BOTH TAMPERS. A gate with only positive controls will
-# happily flag the whole tree, and a shrink-only baseline with only the NEW
-# direction can be trimmed to green. The four cases named in the docstring each
-# have a control below, and each of the four is planted rather than asserted:
-# `plant()` raises if a mutation would not have changed the fixture, so a
-# control cannot pass against clean input.
+# BOTH DIRECTIONS AND BOTH TAMPERS. A gate with only positive controls will happily flag the whole tree, and a shrink-only baseline with only the NEW direction can be trimmed to green. The four cases named in the docstring each have a control below, and each of the four is planted rather than asserted: `plant()` raises if a mutation would not have changed the fixture, so a control
+# cannot pass against clean input.
 
 _SRC = """import os
 
@@ -778,10 +739,7 @@ def _quiet(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs), buf.getvalue()
     finally:
-        # `reset()` with no arguments rebuilds exactly the logger `default()`
-        # would have built. Restoring `previous.stream` instead would pin
-        # sys.stderr as it is RIGHT NOW, and the whole point of the `stream`
-        # property one module over is that it resolves late.
+        # `reset()` with no arguments rebuilds exactly the logger `default()` would have built. Restoring `previous.stream` instead would pin sys.stderr as it is RIGHT NOW, and the whole point of the `stream` property one module over is that it resolves late.
         log.reset()
 
 
@@ -849,9 +807,7 @@ def selftest() -> bool:
             "*key" in derive(root)[0]["src.py"],
         )
 
-    # ---- THE ARM THAT USUALLY GOES MISSING, direction 1 -------------------
-    # An entry REMOVED while the read is still there must red. A baseline that
-    # can be trimmed to escape the gate is not a baseline.
+    # ---- THE ARM THAT USUALLY GOES MISSING, direction 1 ------------------- An entry REMOVED while the read is still there must red. A baseline that can be trimmed to escape the gate is not a baseline.
     with tempfile.TemporaryDirectory() as tmp:
         trimmed = copy.deepcopy(_CLEAN_MODULES)
         trimmed["src.py"] = [n for n in trimmed["src.py"] if n != "FIXTURE_A"]
@@ -868,8 +824,7 @@ def selftest() -> bool:
             any("trimming the baseline is not a way past" in f for f in findings),
         )
 
-    # Removing the WHOLE module's entry is the same tamper at a coarser grain,
-    # and it is the one a `del` on a JSON key produces.
+    # Removing the WHOLE module's entry is the same tamper at a coarser grain, and it is the one a `del` on a JSON key produces.
     with tempfile.TemporaryDirectory() as tmp:
         gutted = {k: v for k, v in _CLEAN_MODULES.items() if k != "src.py"}
         root = _fixture(tmp, modules=gutted)
@@ -887,9 +842,7 @@ def selftest() -> bool:
             len(findings) == 6,
         )
 
-    # ---- THE ARM THAT USUALLY GOES MISSING, direction 2 -------------------
-    # An entry ADDED for a violation that does not exist must red. Nothing may
-    # be banked in advance.
+    # ---- THE ARM THAT USUALLY GOES MISSING, direction 2 ------------------- An entry ADDED for a violation that does not exist must red. Nothing may be banked in advance.
     with tempfile.TemporaryDirectory() as tmp:
         banked = copy.deepcopy(_CLEAN_MODULES)
         banked["src.py"] = sorted([*banked["src.py"], "FIXTURE_NEVER_READ"])
@@ -1001,9 +954,7 @@ def selftest() -> bool:
             "WRITE: and the refusal names the pair and the typed form",
             "+ src.py:FIXTURE_BRAND_NEW" in said and "--allow-new src.py:FIXTURE_BRAND_NEW" in said,
         )
-        # THE REFUSAL MUST NOT HAVE WRITTEN. The first draft serialised, wrote,
-        # and only then diffed the sets, so a refused reseed sat on disk and the
-        # next --first-seed reported "446 before" against an empty predecessor.
+        # THE REFUSAL MUST NOT HAVE WRITTEN. The first draft serialised, wrote, and only then diffed the sets, so a refused reseed sat on disk and the next --first-seed reported "446 before" against an empty predecessor.
         check(
             "WRITE: the refusal left the file UNTOUCHED -- the new read still reds",
             any(f.startswith("NEW src.py:FIXTURE_BRAND_NEW") for f in findings_after_refusal),
@@ -1057,8 +1008,7 @@ def selftest() -> bool:
 
     # THE FINISH-LINE CLAUSE, and it is written for the terminal state on
     # purpose. An empty registry over a tree with no reads is legal and PASSES;
-    # `n > 0` here would red the day the debt reached zero and report a success
-    # as a broken parser, which is a shape this estate has shipped twice.
+    # `n > 0` here would red the day the debt reached zero and report a success as a broken parser, which is a shape this estate has shipped twice.
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp, src="X = 1\n", consts="Y = 2\n", modules={})
         findings, stats = run(root)

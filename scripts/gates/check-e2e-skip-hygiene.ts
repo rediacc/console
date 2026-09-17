@@ -35,19 +35,14 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { envRoot } from '../lib/repo-root.js';
 
-// ANCHORED ON THIS FILE, not on the caller's working directory. This read
-// `process.env.E2E_HYGIENE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
-// did not see: its pattern only matched cwd as the FIRST argument of
-// path.resolve/join, so the commonest shape of its own rule passed. The
-// seam is preserved -- E2E_HYGIENE_ROOT still overrides -- but the default is
-// derived from this file's location.
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.E2E_HYGIENE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- E2E_HYGIENE_ROOT still overrides -- but the default is derived
+// from this file's location.
 const ROOT = envRoot('E2E_HYGIENE_ROOT');
 const E2E = join(ROOT, 'packages/e2e-tests');
 const TESTS_DIR = join(E2E, 'tests');
 const BASE_CONFIG = join(E2E, 'playwright.config.ts');
 
-// Subdirs that intentionally run in the base worker config (none today).
-// Add here with a reason if a non-topology subdir is ever introduced.
+// Subdirs that intentionally run in the base worker config (none today). Add here with a reason if a non-topology subdir is ever introduced.
 const BASE_ALLOWED = new Set<string>();
 
 function hasTestFiles(dir: string): boolean {

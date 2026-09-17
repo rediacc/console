@@ -137,24 +137,20 @@ import tempfile
 
 from rediacc_ci.controls import Controls
 
-# The twin's escape sequences, verbatim and unconditional. See the port notes for
-# why these are not `rediacc_ci.log`'s.
+# The twin's escape sequences, verbatim and unconditional. See the port notes for why these are not `rediacc_ci.log`'s.
 RED = "\033[31m"
 GREEN = "\033[32m"
 YEL = "\033[33m"
 OFF = "\033[0m"
 
-# The pathspecs `git grep` is given, in the twin's order. Passed through to
-# `git ls-files` unchanged so git, not this file, decides what is in scope.
+# The pathspecs `git grep` is given, in the twin's order. Passed through to `git ls-files` unchanged so git, not this file, decides what is in scope.
 PATHSPECS = ("*.sh", "*.yml", "*.yaml", "*.json", "*.md", "*.ts")
 
-# `(?<![\w./-])\./[\w./-]+\.sh` with `\w` spelled out. The lookbehind is the whole
-# accuracy of the gate: without it, `../x.sh` yields `./x.sh`, a different file.
+# `(?<![\w./-])\./[\w./-]+\.sh` with `\w` spelled out. The lookbehind is the whole accuracy of the gate: without it, `../x.sh` yields `./x.sh`, a different file.
 WORD = r"A-Za-z0-9_"
 REF_RE = re.compile(r"(?<![%s./-])\./[%s./-]+\.sh" % (WORD, WORD))
 
-# A matched LINE whose content is a comment. Three lead-ins, matching the twin's
-# `case` arms: shell, C-style, and a block-comment continuation.
+# A matched LINE whose content is a comment. Three lead-ins, matching the twin's `case` arms: shell, C-style, and a block-comment continuation.
 COMMENT_LEADS = ("#", "//", "*")
 
 # The mode a tracked, invoked script must carry.
@@ -211,11 +207,7 @@ def resolve(src: str, ref: str) -> str:
     so a `sub/../x.sh` would be judged under that spelling on both sides, and
     normalising here would silently start judging a different path than the twin.
     """
-    # `dirname` on a bare filename is `.` in the shell and `""` in Python. That
-    # one-character difference produced `/victim.sh` for every root-level
-    # reference, which is an absolute path and matches nothing in the index, so
-    # the gate would have reported a clean tree for exactly the files the
-    # 2026-08-20 incident was about. Caught by this file's own control.
+    # `dirname` on a bare filename is `.` in the shell and `""` in Python. That one-character difference produced `/victim.sh` for every root-level reference, which is an absolute path and matches nothing in the index, so the gate would have reported a clean tree for exactly the files the 2026-08-20 incident was about. Caught by this file's own control.
     joined = "%s/%s" % (os.path.dirname(src) or ".", ref.removeprefix("./"))
     return joined.removeprefix("./")
 
@@ -242,8 +234,7 @@ def enumerate_hits(root: str) -> list[tuple[str, int, str]]:
             # is a different gate's subject.
             continue
         if b"\0" in data:
-            # `git grep` reports `Binary file X matches` instead of lines, which
-            # carries no line number and therefore contributes no reference.
+            # `git grep` reports `Binary file X matches` instead of lines, which carries no line number and therefore contributes no reference.
             continue
         for number, line in enumerate(data.decode("utf-8", "replace").split("\n"), start=1):
             if REF_RE.search(line):
@@ -339,8 +330,7 @@ def main(argv: list[str] | None = None) -> int:
         except OSError:
             return refuse(["could not build the control fixture"])
 
-        # A parent-relative reference must NOT be mistaken for one relative to the
-        # referencing file. Counted with the twin's own anchor, `^sub/decoy.sh`.
+        # A parent-relative reference must NOT be mistaken for one relative to the referencing file. Counted with the twin's own anchor, `^sub/decoy.sh`.
         found = scan_repo(control_dir)
         parent_hits = sum(1 for line in found if line.startswith("sub/decoy.sh"))
         if parent_hits != 0:
@@ -419,8 +409,7 @@ def selftest() -> int:
             'bash ./helper.sh "$@"',
             ".ci/scripts/quality/helper.sh",
         ),
-        # THE ANCHOR. Without the lookbehind this yields `./decoy.sh` and resolves
-        # to sub/decoy.sh, which is a DIFFERENT FILE.
+        # THE ANCHOR. Without the lookbehind this yields `./decoy.sh` and resolves to sub/decoy.sh, which is a DIFFERENT FILE.
         (
             "a parent reference is NOT a local reference",
             "sub/parentref.yml",
@@ -450,9 +439,7 @@ def selftest() -> int:
     for label, text, want in comments:
         ctl.check("comment: %s" % label, is_comment_line(text), want)
 
-    # THE PARENT-REFERENCE CONTROL, as a SET comparison rather than a boolean,
-    # because that is the shape whose first version could not fail: the correct
-    # and the broken behaviour must produce DIFFERENT sets, so both are named.
+    # THE PARENT-REFERENCE CONTROL, as a SET comparison rather than a boolean, because that is the shape whose first version could not fail: the correct and the broken behaviour must produce DIFFERENT sets, so both are named.
     hits = [
         ("caller.yml", 1, "run: ./victim.sh"),
         ("sub/parentref.yml", 1, "run: ../decoy.sh"),
@@ -468,8 +455,7 @@ def selftest() -> int:
         False,
     )
 
-    # THE REFUSAL IS 2, NOT 1. A port that collapsed them would make an unrunnable
-    # gate read as a failing tree.
+    # THE REFUSAL IS 2, NOT 1. A port that collapsed them would make an unrunnable gate read as a failing tree.
     ctl.check("refuse() returns the twin's status", EXIT_REFUSE, 2)
     ctl.check("the executable mode is the git one", EXECUTABLE_MODE, "100755")
 

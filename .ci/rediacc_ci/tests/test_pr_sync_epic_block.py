@@ -304,10 +304,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
         mutant_path = pathlib.Path(td) / "mutant.py"
         mutant_path.write_text(mutated, encoding="utf-8")
 
-        # The rebuilt body is only ever WRITTEN to a file passed to `gh pr
-        # edit` in the non-dry-run path (never printed), and that file is
-        # deleted by the caller's own `trap EXIT` before this test could look
-        # at it -- the fake `gh` copies it out first.
+        # The rebuilt body is only ever WRITTEN to a file passed to `gh pr edit` in the non-dry-run path (never printed), and that file is deleted by the caller's own `trap EXIT` before this test could look at it -- the fake `gh` copies it out first.
         old_capture = pathlib.Path(td) / "old-body.txt"
         new_capture = pathlib.Path(td) / "new-body.txt"
         old_gh_env = {"FAKE_GH_BODY": body, "FAKE_GH_BODY_CAPTURE": str(old_capture)}

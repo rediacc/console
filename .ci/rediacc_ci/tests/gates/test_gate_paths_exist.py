@@ -68,43 +68,32 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-gate-paths-exist.sh"
 
-# Every case walks the real tree and two of them plant a file inside
-# `.ci/scripts/`. See the module docstring.
+# Every case walks the real tree and two of them plant a file inside `.ci/scripts/`. See the module docstring.
 REAL_TREE_TWIN = True
 
 ROOT = paths.repo_root()
 
 # Where the two control cases plant their synthetic scan targets.
 #
-# NOT `scripts/`, and not a temp dir either. The controls have to sit inside a
-# directory the scan actually walks, or the detector never sees them and the
-# control silently stops firing -- so a temp dir outside the repo is not an
+# NOT `scripts/`, and not a temp dir either. The controls have to sit inside a directory the scan actually walks, or the detector never sees them and the control silently stops firing -- so a temp dir outside the repo is not an
 # option. But `scripts/` is ALSO linted (`eslint packages scripts private/account`,
-# and knip's project glob `scripts/**/*.ts`), and a file that appears and vanishes
-# mid-run raced a concurrent `npm run check:lint` into `ENOENT`, exit 2. That was
+# and knip's project glob `scripts/**/*.ts`), and a file that appears and vanishes mid-run raced a concurrent `npm run check:lint` into `ENOENT`, exit 2. That was
 # never a lint failure; it was this gate polluting a linted tree. `.ci/scripts`
 # satisfies both halves, measured rather than assumed by the twin on 2026-07-31.
 FIXTURE_DIR = ROOT / ".ci" / "scripts"
 
-# The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix
-# rather than tidiness. They used to be fixed names in the twin, so two concurrent
-# invocations planted the same two paths and each cleanup deleted the OTHER run's
+# The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix rather than tidiness. They used to be fixed names in the twin, so two concurrent invocations planted the same two paths and each cleanup deleted the OTHER run's
 # fixture; on 2026-08-05 that surfaced as a false "detector broken".
 #
 # The dotfile prefix is load-bearing (it is what keeps eslint, biome and knip off
-# these files) and the `.ts` suffix is what the scan globs for, so the pid goes
-# between them. FIXTURE_NAME_PREFIX is the shape both fixtures share ACROSS pids
-# and across the two LANGUAGES: the twin's fixtures are visible to this scan and
-# this port's are visible to the twin's, so both sides scope themselves with it
-# rather than assuming they are alone in the tree.
+# these files) and the `.ts` suffix is what the scan globs for, so the pid goes between them. FIXTURE_NAME_PREFIX is the shape both fixtures share ACROSS pids and across the two LANGUAGES: the twin's fixtures are visible to this scan and this port's are visible to the twin's, so both sides scope themselves with it rather than assuming they are alone in the tree.
 FIXTURE_PID_SUFFIX = str(os.getpid())
 FIXTURE_NAME_PREFIX = ".gate-paths-exist-"
 
 # Rendered, never written whole. See the self-scanning paragraph in the docstring.
 MISSING_WORKSPACE = "definitely-not-a-workspace"
 FIXTURE_BODY = 'const p = "packages/%s/src/index.ts";\n' % MISSING_WORKSPACE
-# `DELETED_IN_513` is spliced in for the same reason: written whole, the comment
-# line below would be a live unresolvable literal in this file's own bytes.
+# `DELETED_IN_513` is spliced in for the same reason: written whole, the comment line below would be a live unresolvable literal in this file's own bytes.
 DELETED_IN_513 = "web/src/App.tsx"
 NOISE_BODY = (
     "const a = `packages/${name}/src/index.ts`;\n"
@@ -112,8 +101,7 @@ NOISE_BODY = (
     "// packages/%s was deleted in #513\n" % DELETED_IN_513
 )
 
-# Directory prefixes that are generated, vendored, or gitignored. A literal whose
-# path traverses one of these is skipped in Tier B.
+# Directory prefixes that are generated, vendored, or gitignored. A literal whose path traverses one of these is skipped in Tier B.
 EPHEMERAL_SEGMENTS = re.compile(
     r"/(dist|build|bin|out|coverage|node_modules|\.astro|\.backups|\.cache)(/|$)"
 )
@@ -125,11 +113,9 @@ SOURCE_EXTENSIONS = re.compile(
 
 # The three clauses of the twin's awk program, one regex each.
 #
-# `PATH_RE` is the awk `match(s, /(packages|private)\/[A-Za-z0-9._+-]+(\/[A-Za-z0-9._+-]+)*\/?/)`.
-# POSIX awk matches leftmost-LONGEST and Python matches leftmost-greedy-with-
+# `PATH_RE` is the awk `match(s, /(packages|private)\/[A-Za-z0-9._+-]+(\/[A-Za-z0-9._+-]+)*\/?/)`. POSIX awk matches leftmost-LONGEST and Python matches leftmost-greedy-with-
 # backtracking; for this pattern the two coincide, because the alternation has no
-# shared prefix and the character class excludes `/`, so there is nothing for
-# backtracking to give back.
+# shared prefix and the character class excludes `/`, so there is nothing for backtracking to give back.
 PATH_RE = re.compile(r"(?:packages|private)/[A-Za-z0-9._+-]+(?:/[A-Za-z0-9._+-]+)*/?")
 COMMENT_RE = re.compile(r"^\s*(//|#|\*|/\*)")
 QUOTE_SPLIT_RE = re.compile("[\"'`]")
@@ -137,17 +123,11 @@ QUOTE_SPLIT_RE = re.compile("[\"'`]")
 # are `]`, `*`, `?`, `{`, `}`, `$`, `[`.
 METACHARACTERS = "]*?{}$["
 
-# The scan must be WHOLE before an empty result means anything. Every assertion
-# here reads an empty finding list as "no dead paths", so a scan that silently
-# walked a fraction of the tree hands back a clean bill of health from an
-# instrument that barely ran.
+# The scan must be WHOLE before an empty result means anything. Every assertion here reads an empty finding list as "no dead paths", so a scan that silently walked a fraction of the tree hands back a clean bill of health from an instrument that barely ran.
 #
-# THIS IS NOT HYPOTHETICAL. Inside a full 168-gate `npm run ci` on 2026-08-05 the
-# twin finished in 90.6s against 210-231s whenever it was healthy, and its own
+# THIS IS NOT HYPOTHETICAL. Inside a full 168-gate `npm run ci` on 2026-08-05 the twin finished in 90.6s against 210-231s whenever it was healthy, and its own
 # planted-defect control came back EMPTY. The signal was never a co-running gate;
-# it was DURATION, the walk terminating around 40% of the way through under the
-# pressure a full fleet applies. The floor converts that silent truncation into a
-# loud refusal.
+# it was DURATION, the walk terminating around 40% of the way through under the pressure a full fleet applies. The floor converts that silent truncation into a loud refusal.
 SCAN_FLOOR = int(os.environ.get("GATE_PATHS_SCAN_FLOOR", "150"))
 
 
@@ -205,10 +185,7 @@ def extract_literals(rel_path: str) -> list[tuple[str, int, str]]:
     try:
         text = (ROOT / rel_path).read_text(encoding="utf-8", errors="replace")
     except OSError:
-        # A scan target can VANISH mid-run: a concurrent invocation of this same
-        # detector plants and removes fixtures inside the scanned tree. The twin's
-        # awk retries file by file for the same reason. An unreadable neighbour is
-        # not this gate's finding.
+        # A scan target can VANISH mid-run: a concurrent invocation of this same detector plants and removes fixtures inside the scanned tree. The twin's awk retries file by file for the same reason. An unreadable neighbour is not this gate's finding.
         return []
     is_py = rel_path.endswith(".py")
     out: list[tuple[str, int, str]] = []
@@ -357,17 +334,10 @@ def test_detector_fires_on_a_deleted_workspace(gate):
     workspace that has never existed must be reported, otherwise this gate is
     exactly the vacuous check it was written to prevent."""
     with planted_fixture("fixture", FIXTURE_BODY) as planted:
-        # Guard the CONTROL too, and for the sharper reason: this is the case that
-        # actually failed under load in the twin. Without the floor its failure
-        # message was "not in ''", which reads as "the detector is broken" when the
-        # truth was "the walk never reached the fixture".
+        # Guard the CONTROL too, and for the sharper reason: this is the case that actually failed under load in the twin. Without the floor its failure message was "not in ''", which reads as "the detector is broken" when the truth was "the walk never reached the fixture".
         assert_scan_is_whole(gate)
         dead = collect_dead_paths()
-        # Scoped to OUR fixture by name. A concurrent invocation plants the same
-        # dead path under its own pid, and an unscoped assertion would pass off
-        # that one -- a control that can be satisfied by somebody else's fixture is
-        # not a control. Anchored on the full fixture basename: a suffix match also
-        # catches this pid's noise fixture, whose name ends the same way.
+        # Scoped to OUR fixture by name. A concurrent invocation plants the same dead path under its own pid, and an unscoped assertion would pass off that one -- a control that can be satisfied by somebody else's fixture is not a control. Anchored on the full fixture basename: a suffix match also catches this pid's noise fixture, whose name ends the same way.
         own = "\n".join(line for line in dead if planted in line)
         gate.assert_contains(
             own,
@@ -397,10 +367,7 @@ def test_detector_ignores_runtime_and_glob_paths(gate):
 def test_no_dead_path_constants(gate):
     """The real-tree verdict: every hardcoded workspace path still resolves."""
     assert_scan_is_whole(gate)
-    # A CONCURRENT invocation of the twin plants its own control fixture, which is
-    # a deliberate dead path and would read here as a real finding. Filtering by
-    # the fixture filename shape is precise: nothing but this detector and its twin
-    # writes a `.gate-paths-exist-*` file into the scanned tree.
+    # A CONCURRENT invocation of the twin plants its own control fixture, which is a deliberate dead path and would read here as a real finding. Filtering by the fixture filename shape is precise: nothing but this detector and its twin writes a `.gate-paths-exist-*` file into the scanned tree.
     dead = [line for line in collect_dead_paths() if FIXTURE_NAME_PREFIX not in line]
     if dead:
         for line in dead:
@@ -463,10 +430,7 @@ def test_scripts_tsconfig_covers_both_tooling_trees(gate):
             "loaded checks nothing: %s" % (result.err.strip() or result.out.strip())
         )
     listed = result.out
-    # CONTROL: an unresolvable or empty include would also produce a quiet pass
-    # below if we only checked for absence, so assert the list is non-trivial
-    # first. Anchored at the repo root: an unanchored "/scripts/" also matches
-    # packages/www/scripts/, which allowJs pulls in.
+    # CONTROL: an unresolvable or empty include would also produce a quiet pass below if we only checked for absence, so assert the list is non-trivial first. Anchored at the repo root: an unanchored "/scripts/" also matches packages/www/scripts/, which allowJs pulls in.
     prefix = os.fspath(ROOT)
     lines = listed.splitlines()
     n_scripts = len([x for x in lines if x.startswith(prefix + "/scripts/") and x.endswith(".ts")])
@@ -481,8 +445,7 @@ def test_scripts_tsconfig_covers_both_tooling_trees(gate):
             "scripts/tsconfig.json resolves NO file under .ci/scripts/; that tree has no "
             "other tsconfig, so it is now unchecked by anything"
         )
-    # And name one known file per tree, so a glob narrowed to a subdirectory still
-    # fails even while the counts stay healthy.
+    # And name one known file per tree, so a glob narrowed to a subdirectory still fails even while the counts stay healthy.
     gate.assert_contains(
         listed,
         "/scripts/gates/check-cli-docs.ts",

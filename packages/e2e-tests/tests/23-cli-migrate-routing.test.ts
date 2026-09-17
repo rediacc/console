@@ -5,16 +5,11 @@ import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
 
-// Suite 23 (`E2E Workers`, CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM
-// `repo migrate` routing family is CLI logic — config placement rewrite +
-// `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9).
-// This suite drives the real `rdc` binary via CliRunner and cross-checks the
-// CLI's claims against the bridge (SSH → renet) so the CLI asserts are
+// Suite 23 (`E2E Workers`, CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM `repo migrate` routing family is CLI logic — config placement rewrite + `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9). This suite drives the real `rdc` binary via CliRunner and cross-checks the CLI's claims against the bridge (SSH → renet) so the CLI asserts are
 // falsifiable, not self-referential.
 //
 // NOT YET ON CI: the ct-tests.yml ubuntu leg does not set CLI_SUITE=1 yet. Before
-// enabling it, the exact create/datastore argv + the machine-registration/SSH
-// wiring in beforeAll must be transcribed from the wave round-log transcript and
+// enabling it, the exact create/datastore argv + the machine-registration/SSH wiring in beforeAll must be transcribed from the wave round-log transcript and
 // validated on a local two-worker fleet (plan phase 5; README "Deliberately not
 // in CI"). The scenario SHAPE and the falsifiable asserts below are final; the
 // argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI source.
@@ -28,16 +23,11 @@ const M1 = 'machine-11';
 const M2 = 'machine-12';
 const M1_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
 const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
-// SSH into the ops VMs: same key the bridge harness's outer hop uses
-// (RENET_DATA_DIR/staging/.ssh/id_rsa), overridable for a non-default layout.
+// SSH into the ops VMs: same key the bridge harness's outer hop uses (RENET_DATA_DIR/staging/.ssh/id_rsa), overridable for a non-default layout.
 const SSH_KEY =
   process.env.E2E_SSH_KEY ??
   `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.rediacc`}/staging/.ssh/id_rsa`;
-// The ops VMs are cloud-inited with the INVOKING user (the whole bridge
-// harness connects as process.env.USER — see BridgeTestRunner/
-// InfrastructureManager), and the staged key authenticates that user, not
-// root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured
-// authentication methods failed") before anything else can run.
+// The ops VMs are cloud-inited with the INVOKING user (the whole bridge harness connects as process.env.USER — see BridgeTestRunner/ InfrastructureManager), and the staged key authenticates that user, not root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured authentication methods failed") before anything else can run.
 const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 
 const APP = 'e2ecli-app';
@@ -66,11 +56,7 @@ test.describe
     let w1: BridgeTestRunner;
     let w2: BridgeTestRunner;
 
-    // Placement the config claims for a repo, read from rdc's OWN config file —
-    // the exact artifact migrate mutates. TRANSCRIPT-CONFIRMED live: `repo
-    // list` requires -m (it queries a machine, merging live state), so the
-    // file read is both the only bare surface and the honest one for a pure
-    // config-placement assert.
+    // Placement the config claims for a repo, read from rdc's OWN config file — the exact artifact migrate mutates. TRANSCRIPT-CONFIRMED live: `repo list` requires -m (it queries a machine, merging live state), so the file read is both the only bare surface and the honest one for a pure config-placement assert.
     const readCliConfig = async (): Promise<CliConfigFile> =>
       JSON.parse(
         await readFile(path.join(os.homedir(), '.config', 'rediacc', 'e2e-cli.json'), 'utf8')
@@ -85,16 +71,12 @@ test.describe
       return fam.tags?.[fam.grand ?? 'latest']?.repositoryGuid;
     };
 
-    // GUIDs remembered at create time, so the residue check still works if a
-    // config entry is ever archived away.
+    // GUIDs remembered at create time, so the residue check still works if a config entry is ever archived away.
     const guids: Record<string, string | undefined> = {};
 
     // Bridge-side cross-check: does renet on <runner> report the repo present?
     // The CLI claims placement; the bridge is ground truth (07 §9).
-    // TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw
-    // repository_list carries the GUID as the repo's name, never the config
-    // name — and with --debug the listing rides the logrus stream (stderr),
-    // so both channels are grepped.
+    // TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw repository_list carries the GUID as the repo's name, never the config name — and with --debug the listing rides the logrus stream (stderr), so both channels are grepped.
     const repoPresentOnBridge = async (
       runner: BridgeTestRunner,
       name: string
@@ -111,17 +93,13 @@ test.describe
       await cli.run(['repo', 'delete', name, '-y']).catch(() => undefined);
     };
 
-    // Shape of `config reconcile -o json` (the ReconcileReport the command
-    // prints — see packages/cli/src/commands/config.ts runReconcileInner).
+    // Shape of `config reconcile -o json` (the ReconcileReport the command prints — see packages/cli/src/commands/config.ts runReconcileInner).
     interface ReconcileJson {
       conflicts: { kind: 'placement' | 'duplicate'; repository: string; message: string }[];
       placementsAccepted: { repository: string; from: string; to: string }[];
     }
 
-    // Run `config reconcile` with `-o json` and hand back the parsed report.
-    // Asserting on the conflicts ARRAY is the honest surface: the old regex
-    // (`.not.toMatch(/duplicat|conflict/)`) false-matched the JSON field name
-    // "conflicts" even when the array was empty.
+    // Run `config reconcile` with `-o json` and hand back the parsed report. Asserting on the conflicts ARRAY is the honest surface: the old regex (`.not.toMatch(/duplicat|conflict/)`) false-matched the JSON field name "conflicts" even when the array was empty.
     //
     // `-o json` wraps the payload in the standard CLI envelope
     // ({ success, command, data, errors, warnings, metrics } — output.ts
@@ -142,13 +120,8 @@ test.describe
       w1 = BridgeTestRunner.forWorker(1);
       w2 = BridgeTestRunner.forWorker(2);
 
-      // Isolated e2e-cli config (NEVER the default) + register both machines.
-      // Recreated from SCRATCH each run: the config records the fleet's host
-      // keys, and a config that outlives an ops down/up carries the PREVIOUS
-      // fleet's keys — every connection then fails host-key verification
-      // (found live: preflight red while the bridge probes were green).
-      // TRANSCRIPT-CONFIRM: SSH key/user + whether a datastore attach step is
-      // needed before repo create in the config-v3 model.
+      // Isolated e2e-cli config (NEVER the default) + register both machines. Recreated from SCRATCH each run: the config records the fleet's host keys, and a config that outlives an ops down/up carries the PREVIOUS fleet's keys — every connection then fails host-key verification (found live: preflight red while the bridge probes were green). TRANSCRIPT-CONFIRM: SSH key/user +
+      // whether a datastore attach step is needed before repo create in the config-v3 model.
       await CliRunner.resetConfig();
       await cli.initConfig(SSH_KEY);
       await cli.addMachine(M1, M1_IP, SSH_USER);
@@ -176,9 +149,7 @@ test.describe
     });
 
     test('2. create e2ecli-app on machine-11, bring it up, seed a marker', async () => {
-      // TRANSCRIPT-CONFIRMED live: create takes EXACTLY ONE placement flag —
-      // -m for a docker repo on the default datastore (this suite), or
-      // --datastore for a named one. Passing both is a validation error.
+      // TRANSCRIPT-CONFIRMED live: create takes EXACTLY ONE placement flag — -m for a docker repo on the default datastore (this suite), or --datastore for a named one. Passing both is a validation error.
       const create = await cli.run(['repo', 'create', APP, '-m', M1, '--size', '1G']);
       expect(create.code, `repo create: ${create.stderr}`).toBe(0);
       guids[APP] = await guidOf(APP);
@@ -226,16 +197,14 @@ test.describe
     });
 
     test('7. `config reconcile` reports the keep-source duplicate WITHOUT silently picking a side', async () => {
-      // Unfiltered, the scanner sees the declared copy (machine-12) PLUS the
-      // stray (machine-11): a "duplicate" conflict, and nothing accepted.
+      // Unfiltered, the scanner sees the declared copy (machine-12) PLUS the stray (machine-11): a "duplicate" conflict, and nothing accepted.
       const full = await reconcileJson();
       expect(full.conflicts).toContainEqual(
         expect.objectContaining({ kind: 'duplicate', repository: APP2 })
       );
       expect(full.placementsAccepted).toEqual([]);
 
-      // A --machine filtered scan sees only machine-11's copy — the partial
-      // evidence surfaces as a "placement" conflict, still never a rewrite.
+      // A --machine filtered scan sees only machine-11's copy — the partial evidence surfaces as a "placement" conflict, still never a rewrite.
       const filtered = await reconcileJson('--machine', M1);
       expect(filtered.conflicts).toContainEqual(
         expect.objectContaining({ kind: 'placement', repository: APP2 })
@@ -246,16 +215,9 @@ test.describe
     });
 
     test('8. `--accept-observed` refuses the ambiguous duplicate, then resolves a real single-machine drift', async () => {
-      // TRANSCRIPT-CONFIRMED live: --accept-observed must run UNFILTERED (no
-      // --machine). A partial scan cannot prove a placement is observed on
-      // exactly one machine, so the product refuses the combination (exit 2)
-      // rather than guess the rewrite direction.
+      // TRANSCRIPT-CONFIRMED live: --accept-observed must run UNFILTERED (no --machine). A partial scan cannot prove a placement is observed on exactly one machine, so the product refuses the combination (exit 2) rather than guess the rewrite direction.
       //
-      // Phase 1 — ambiguity is never rewritten. With the keep-source copy on
-      // BOTH machines, --accept-observed keeps reporting the duplicate and
-      // leaves the declaration alone (spec/04 §4.3: ambiguity errors, never
-      // guesses). Only the "declared X, observed on exactly one different Y"
-      // drift class carries an acceptance.
+      // Phase 1 — ambiguity is never rewritten. With the keep-source copy on BOTH machines, --accept-observed keeps reporting the duplicate and leaves the declaration alone (spec/04 §4.3: ambiguity errors, never guesses). Only the "declared X, observed on exactly one different Y" drift class carries an acceptance.
       const ambiguous = await reconcileJson('--accept-observed');
       expect(ambiguous.placementsAccepted).toEqual([]);
       expect(ambiguous.conflicts).toContainEqual(
@@ -263,10 +225,7 @@ test.describe
       );
       expect(await placementOf(APP2)).toBe(M2);
 
-      // Phase 2 — manufacture that unambiguous drift: remove the DECLARED
-      // machine's copy (machine-12) OUT-OF-BAND via the bridge, as an
-      // interrupted migrate or manual renet surgery would (the CLI's config is
-      // not told). Only machine-11's copy survives.
+      // Phase 2 — manufacture that unambiguous drift: remove the DECLARED machine's copy (machine-12) OUT-OF-BAND via the bridge, as an interrupted migrate or manual renet surgery would (the CLI's config is not told). Only machine-11's copy survives.
       const guid = (await guidOf(APP2)) ?? guids[APP2];
       expect(guid, 'no GUID recorded for the drift setup').toBeTruthy();
       const del = await w2.executeViaBridge(
@@ -276,8 +235,7 @@ test.describe
       expect(await repoPresentOnBridge(w2, APP2)).toBe(false);
       expect(await repoPresentOnBridge(w1, APP2)).toBe(true);
 
-      // Phase 3 — the accept: the declaration is rewritten to the single
-      // observed machine, visible in the report AND in the config file itself.
+      // Phase 3 — the accept: the declaration is rewritten to the single observed machine, visible in the report AND in the config file itself.
       const accepted = await reconcileJson('--accept-observed');
       expect(accepted.placementsAccepted).toContainEqual({
         repository: APP2,

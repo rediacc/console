@@ -44,8 +44,7 @@ function getDaemonBackedExecutor(): Executor {
   return daemonBackedExecutor;
 }
 
-// The factory is the entry point to the executor layer, so callers get the
-// seam's types from here too rather than reaching into an implementation.
+// The factory is the entry point to the executor layer, so callers get the seam's types from here too rather than reaching into an implementation.
 export type { ExecuteResult, Executor, RenetEvent } from './types.js';
 
 /**

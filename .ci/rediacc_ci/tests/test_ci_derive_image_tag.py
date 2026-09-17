@@ -204,9 +204,7 @@ def assert_identical(old, new, files) -> None:
             assert files["new_" + key[4:]] == value, "%s diverged" % key[4:]
 
 
-# ---------------------------------------------------------------------------
-# Explicit --version
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Explicit --version ---------------------------------------------------------------------------
 
 
 def test_an_explicit_version_wins_over_everything(tmp_path: pathlib.Path) -> None:
@@ -252,9 +250,7 @@ def test_a_missing_version_argument_is_bashs_diagnostic_at_line_34(
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Tag builds
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Tag builds ---------------------------------------------------------------------------
 
 
 def test_a_tag_build_uses_the_ref_name(tmp_path: pathlib.Path) -> None:
@@ -309,9 +305,7 @@ def test_a_tag_build_with_an_empty_ref_name_reaches_the_format_check(
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Branch builds: the git-tag ladder
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Branch builds: the git-tag ladder ---------------------------------------------------------------------------
 
 
 def test_the_branch_arm_picks_the_highest_version_not_the_highest_string(
@@ -404,9 +398,7 @@ def test_a_missing_git_derives_latest_and_exits_zero(tmp_path: pathlib.Path) -> 
     """
     bindir = tmp_path / "nogit"
     bindir.mkdir()
-    # `head` and `sed` are in the twin's tag pipeline and only GIT's stderr is
-    # redirected there, so dropping them too would put a second, unrelated
-    # `command not found` on stderr and test the wrong absence.
+    # `head` and `sed` are in the twin's tag pipeline and only GIT's stderr is redirected there, so dropping them too would put a second, unrelated `command not found` on stderr and test the wrong absence.
     for tool in ("bash", "python3", "uname", "dirname", "cat", "sed", "head", "date"):
         found = shutil.which(tool)
         if found:
@@ -427,9 +419,7 @@ def test_only_the_first_leading_v_is_stripped(tmp_path: pathlib.Path) -> None:
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Validation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Validation ---------------------------------------------------------------------------
 
 
 def test_an_invalid_tag_format_is_two_error_lines_and_exit_1(
@@ -483,9 +473,7 @@ def test_dots_hyphens_and_underscores_are_all_accepted(tmp_path: pathlib.Path) -
         assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Output modes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Output modes ---------------------------------------------------------------------------
 
 
 def test_github_output_mode_appends_one_line(tmp_path: pathlib.Path) -> None:
@@ -552,9 +540,7 @@ def test_the_output_files_are_appended_to_not_truncated(tmp_path: pathlib.Path) 
     assert_identical(old, new, files)
 
 
-# ---------------------------------------------------------------------------
-# Argument handling
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
 def test_an_unknown_option_is_refused(tmp_path: pathlib.Path) -> None:
@@ -620,8 +606,7 @@ def test_the_help_text_is_the_twins_help_text_verbatim() -> None:
             "help line not found verbatim in the twin: %r" % rendered
         )
 
-    # The liveness half of DEFECT A: the claim is only worth carrying while the
-    # twin really does mention package.json in its prose and never read it.
+    # The liveness half of DEFECT A: the claim is only worth carrying while the twin really does mention package.json in its prose and never read it.
     assert "package.json" in text, "the docstring's DEFECT A is stale"
     executable = "\n".join(
         line for line in text.split("\n") if not line.lstrip().startswith(("#", "echo ", "log_"))
@@ -643,9 +628,7 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Streams and colour
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Streams and colour ---------------------------------------------------------------------------
 
 
 def test_the_tag_is_on_stdout_and_every_log_line_on_stderr(

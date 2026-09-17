@@ -55,10 +55,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "ci" / "detect_pointer_bump.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real binaries. `git` is the subject, `jq` reads the event payload, `sed` turns
-# a submodule URL into a slug.
-# `grep` and `awk` are the twin's, not the port's: the port reimplements both
-# (see its docstring) and the twin shells out to them, so they have to be here
+# Real binaries. `git` is the subject, `jq` reads the event payload, `sed` turns a submodule URL into a slug. `grep` and `awk` are the twin's, not the port's: the port reimplements both (see its docstring) and the twin shells out to them, so they have to be here
 # for the comparison to be between two working programs.
 PATH_MINIMUM = (
     "git",
@@ -82,11 +79,7 @@ NEW_POINTER = "2222222222222222222222222222222222222222"
 
 # A MODEL of the three `gh api` calls this script makes.
 #
-# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration.
-# `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER
-# before a `--finding-re` is consulted, and this script reports ONLY through
-# `log_info`, which is `✓ `. Without a distinctly prefixed line from the fake,
-# every ledger row would read VACUOUS_BOTH_EMPTY however the regex was written.
+# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is consulted, and this script reports ONLY through `log_info`, which is `✓ `. Without a distinctly prefixed line from the fake, every ledger row would read VACUOUS_BOTH_EMPTY however the regex was written.
 FAKE_GH = r'''#!/usr/bin/python3
 """Recording fake for `gh api`. See the test module docstring."""
 import os
@@ -264,8 +257,7 @@ def fixture(
     repo.base = _commit(root, "base", (root_commit,))
 
     if empty_commit:
-        # A commit whose tree is IDENTICAL to its parent's: `diff-tree --raw`
-        # prints nothing at all for it.
+        # A commit whose tree is IDENTICAL to its parent's: `diff-tree --raw` prints nothing at all for it.
         repo.tip = _commit(root, "empty", (repo.base,))
     else:
         _git(root, "update-index", "--add", "--cacheinfo", f"160000,{NEW_POINTER},{SUBMODULE_PATH}")
@@ -281,11 +273,7 @@ def fixture(
             (root / "other.md").write_text("main moved\n", encoding="utf-8")
             _git(root, "add", "--", "other.md")
         repo.main = _commit(root, "main", (repo.base,))
-        # The merge's TREE is the tip's tree plus whatever main added, which is
-        # what `actions/checkout`'s synthetic merge holds. Built directly rather
-        # than with `read-tree -m`, because a three-way merge needs a clean
-        # index this fixture never has and the RESULT is the only thing the
-        # script looks at.
+        # The merge's TREE is the tip's tree plus whatever main added, which is what `actions/checkout`'s synthetic merge holds. Built directly rather than with `read-tree -m`, because a three-way merge needs a clean index this fixture never has and the RESULT is the only thing the script looks at.
         _git(root, "read-tree", repo.tip)
         if main_moves:
             (root / "other.md").write_text("main moved\n", encoding="utf-8")
@@ -363,16 +351,9 @@ def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
     return repo, old, new
 
 
-# THE ONE DIVERGENCE THIS FILE NORMALISES, and it is a bash DIAGNOSTIC rather
-# than either program's own message: bash prefixes its own errors with
-# `<script path>: line <n>: `, where the line number is a fact about the bash
-# file. The port prints `detect-pointer-bump.sh: ` and then the same words.
+# THE ONE DIVERGENCE THIS FILE NORMALISES, and it is a bash DIAGNOSTIC rather than either program's own message: bash prefixes its own errors with `<script path>: line <n>: `, where the line number is a fact about the bash file. The port prints `detect-pointer-bump.sh: ` and then the same words.
 #
-# THE PATTERN IS DELIBERATELY TIGHT: only a leader ending in
-# `detect-pointer-bump.sh`, optionally followed by ` line <digits>`, and the
-# rest of the line is kept and compared.
-# `test_the_bash_diagnostic_normaliser_keeps_the_message` asserts both
-# directions.
+# THE PATTERN IS DELIBERATELY TIGHT: only a leader ending in `detect-pointer-bump.sh`, optionally followed by ` line <digits>`, and the rest of the line is kept and compared. `test_the_bash_diagnostic_normaliser_keeps_the_message` asserts both directions.
 BASH_DIAG = re.compile(r"^\S*detect-pointer-bump\.sh: (?:line \d+: )?(?P<rest>.*)$", re.MULTILINE)
 
 
@@ -416,9 +397,7 @@ def _reason(proc) -> str:
     return ""
 
 
-# ---------------------------------------------------------------------------
-# The fast path, which has never once fired in production
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fast path, which has never once fired in production ---------------------------------------------------------------------------
 
 
 def test_the_fast_path_fires_when_every_step_of_the_proof_holds(tmp_path) -> None:
@@ -517,9 +496,7 @@ def test_no_step_summary_variable_means_no_summary_and_no_error(tmp_path) -> Non
     assert proc.returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# Every fail-safe reason, each one its own sentence
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Every fail-safe reason, each one its own sentence ---------------------------------------------------------------------------
 
 
 def test_a_push_event_never_reaches_git_at_all(tmp_path) -> None:
@@ -674,9 +651,7 @@ def test_a_compare_call_that_fails_is_refused(tmp_path) -> None:
     assert _reason(proc) == "pointer_bump_only=false -- compare failed for %s" % SUBMODULE_SLUG
 
 
-# ---------------------------------------------------------------------------
-# The three named defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three named defects ---------------------------------------------------------------------------
 
 
 def test_defect_a_the_head_guard_cannot_fire_on_a_pull_request(tmp_path) -> None:
@@ -722,8 +697,7 @@ def test_defect_b_step_three_diffs_against_the_merge_commit(tmp_path) -> None:
 
     proc, calls = old
     assert _reason(proc) == ("pointer_bump_only=false -- net diff vs baseline is not gitlink-only")
-    # It got PAST the check-runs lookup, which is what makes this step 3's fault
-    # rather than the walk's.
+    # It got PAST the check-runs lookup, which is what makes this step 3's fault rather than the walk's.
     assert [c for c in _calls(calls) if "/check-runs" in c]
 
 
@@ -774,9 +748,7 @@ def test_defect_c_control_a_gitmodules_naming_another_path_does_reach_the_guard(
     )
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_has_non_gitlink_follows_the_two_greps(tmp_path) -> None:
@@ -788,9 +760,7 @@ def test_has_non_gitlink_follows_the_two_greps(tmp_path) -> None:
     assert port.has_non_gitlink(blob) is True
     assert port.has_non_gitlink(gitlink + "\n" + blob) is True
     assert port.has_non_gitlink(gitlink + "\n" + gitlink) is False
-    # THE `-r` CASE THE TWIN'S COMMENT NAMES: without it a nested gitlink change
-    # reports as its parent tree, which is NOT the gitlink prefix and therefore
-    # reads as a real change.
+    # THE `-r` CASE THE TWIN'S COMMENT NAMES: without it a nested gitlink change reports as its parent tree, which is NOT the gitlink prefix and therefore reads as a real change.
     assert port.has_non_gitlink(":040000 040000 aaa bbb M\tprivate") is True
 
 

@@ -121,10 +121,7 @@ NPM_PKGS = (
 
 GO_PKG_PATH = "private/renet"
 
-# `sed -n '2,35p' "$0" | sed 's/^# \?//'`, verbatim, shell-source leak included.
-# See port note 2. Do not tidy this: `test_help_text_constant_still_matches_the_twin`
-# re-derives it from the twin and a "cleaner" version would fail that test, which
-# is the point -- the leak is the twin's behaviour and this is its port.
+# `sed -n '2,35p' "$0" | sed 's/^# \?//'`, verbatim, shell-source leak included. See port note 2. Do not tidy this: `test_help_text_constant_still_matches_the_twin` re-derives it from the twin and a "cleaner" version would fail that test, which is the point -- the leak is the twin's behaviour and this is its port.
 HELP_TEXT = (
     "dependency-inventory.sh - Enumerate every dependency across the four analyzed\n"
     "Rediacc packages (www, cli, account, renet) for the NIS2/CRA\n"
@@ -248,8 +245,7 @@ def jq_argjson_banner() -> str:
         )
     except (OSError, subprocess.SubprocessError):
         return JQ_ARGJSON_FALLBACK
-    # An EMPTY stderr would mean this jq did not refuse the argument at all, so
-    # the probe proved nothing and the fallback is the honest answer.
+    # An EMPTY stderr would mean this jq did not refuse the argument at all, so the probe proved nothing and the fallback is the honest answer.
     return proc.stderr or JQ_ARGJSON_FALLBACK
 
 
@@ -257,9 +253,7 @@ def jq_argjson_banner() -> str:
 JQ_OPEN_ERROR = "jq: error: Could not open file %s: No such file or directory\n"
 
 
-# ---------------------------------------------------------------------------
-# jq transcriptions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- jq transcriptions ---------------------------------------------------------------------------
 
 
 def walk_tree(node: dict, chain: tuple[str, ...]) -> Iterable[dict]:
@@ -468,9 +462,7 @@ def align_tsv(rows: list[list[str]]) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# the two builders
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the two builders ---------------------------------------------------------------------------
 
 
 def _npm_ls(cwd: str, extra: list[str]) -> str:
@@ -485,9 +477,7 @@ def _npm_ls(cwd: str, extra: list[str]) -> str:
             check=False,
         )
     except OSError:
-        # `npm` not on PATH: bash's command-not-found writes its own line to
-        # stderr, which the twin has redirected to /dev/null, and `|| true`
-        # keeps going with an empty tree.
+        # `npm` not on PATH: bash's command-not-found writes its own line to stderr, which the twin has redirected to /dev/null, and `|| true` keeps going with an empty tree.
         return ""
     return proc.stdout
 
@@ -533,8 +523,7 @@ def build_npm_package(
         log.error("%s: npm ls produced invalid JSON" % name)
         raise Failure
 
-    # `jq empty` on empty input EXITS 0, so an empty prod tree takes the valid
-    # branch and `jq -c '<keyset>'` then produces no output -- the empty string
+    # `jq empty` on empty input EXITS 0, so an empty prod tree takes the valid branch and `jq -c '<keyset>'` then produces no output -- the empty string
     # that kills the next jq. `_NOVALUE` is what carries that distinction; a
     # plain `None` would collapse it into the `tree_prod == "null"` case, which
     # is valid and yields `{}`.
@@ -660,11 +649,7 @@ def _echo_probe(stderr_text: str) -> None:
     body = "".join("    %s\n" % line for line in lines)
     if not trailing_newline:
         # GNU sed PRESERVES a missing final newline; it does not add one.
-        # Measured, because the reflex is the opposite:
-        #     $ printf 'a\nb' | sed 's/^/    /' | xxd
-        #     2020 2020 610a 2020 2020 62          .a.    b
-        # A `go` probe whose stderr ends mid-line is the only way to reach it,
-        # and `test_a_go_probe_whose_stderr_lacks_a_final_newline` drives it.
+        # Measured, because the reflex is the opposite: $ printf 'a\nb' | sed 's/^/ /' | xxd 2020 2020 610a 2020 2020 62 .a. b A `go` probe whose stderr ends mid-line is the only way to reach it, and `test_a_go_probe_whose_stderr_lacks_a_final_newline` drives it.
         body = body[:-1]
     sys.stderr.write(body)
     sys.stderr.flush()
@@ -702,8 +687,7 @@ def build_go_package(repo_root: str, work_dir: str) -> dict:
         raise Failure
     edges = out.rstrip("\n")
 
-    # A module with dependencies always has edges. Zero means the probe returned
-    # nothing usable, which is not the same as a module with no dependencies.
+    # A module with dependencies always has edges. Zero means the probe returned nothing usable, which is not the same as a module with no dependencies.
     if not "".join(edges.split()):
         log.error(
             "go mod graph returned no edges in %s; refusing to emit an empty dependency graph"
@@ -756,9 +740,7 @@ def _slurp(text: str) -> list[dict] | None:
     return out
 
 
-# ---------------------------------------------------------------------------
-# rendering
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- rendering ---------------------------------------------------------------------------
 
 
 def render_table(doc: dict) -> str:
@@ -867,9 +849,7 @@ def build_summary(packages: list[dict], generated: str, max_chains: int) -> dict
     }
 
 
-# ---------------------------------------------------------------------------
-# the orchestrator
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the orchestrator ---------------------------------------------------------------------------
 
 
 def parse_args(argv: list[str]) -> tuple[str, str, int]:
@@ -947,8 +927,7 @@ def main(argv: list[str]) -> int:
             for name, relpath, mode in NPM_PKGS:
                 log.step("Analyzing %s (%s)" % (name, relpath))
                 package = build_npm_package(repo_root, name, relpath, mode, max_chains)
-                # None means `$WORK/pkg_N.json` was written EMPTY and `jq -s`
-                # slurped nothing from it. Skipping is what reproduces the
+                # None means `$WORK/pkg_N.json` was written EMPTY and `jq -s` slurped nothing from it. Skipping is what reproduces the
                 # twin's silent drop; see build_npm_package's docstring.
                 if package is not None:
                     packages.append(package)

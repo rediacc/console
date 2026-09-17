@@ -3,8 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// getSSHHome is called at module load time via getSSHConfigPath, so we must
-// mock the platform module before importing sshConfig.
+// getSSHHome is called at module load time via getSSHConfigPath, so we must mock the platform module before importing sshConfig.
 const mockGetSSHHome = vi.fn<() => string>();
 
 vi.mock('../../utils/platform.js', async () => {
@@ -76,8 +75,7 @@ describe('addMachineSSHConfigEntry', () => {
   });
 
   it('returns the file it wrote, resolved through getSSHHome', () => {
-    // Under WSL getSSHHome() is the WINDOWS home, not $HOME, so callers must
-    // report this return value rather than assuming ~/.ssh/config_rediacc.
+    // Under WSL getSSHHome() is the WINDOWS home, not $HOME, so callers must report this return value rather than assuming ~/.ssh/config_rediacc.
     const winHome = join(tmpdir(), `sshconfig-winhome-${Math.random().toString(36).slice(2)}`);
     mkdirSync(winHome, { recursive: true });
     mockGetSSHHome.mockReturnValue(winHome);

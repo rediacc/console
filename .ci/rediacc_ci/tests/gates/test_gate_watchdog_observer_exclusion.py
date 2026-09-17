@@ -30,8 +30,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-observer-exclusion.sh"
 
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
-# The names an observer check can carry. Each is a check that lands in the same
-# check suite as the CI jobs and is NOT one of them.
+# The names an observer check can carry. Each is a check that lands in the same check suite as the CI jobs and is NOT one of them.
 REQUIRED = ("Watchdog", "CI Complete", "Review Complete")
 
 EXCLUSIONS_RE = re.compile(r"WATCHDOG_EXCLUDE_PATTERNS: '(.*)'")

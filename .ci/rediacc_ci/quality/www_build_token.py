@@ -78,25 +78,19 @@ from rediacc_ci.controls import Controls
 # re-passes the same alternation to grep on every call.
 SITE_RE = re.compile(r"build-www\.sh|npm run build:www|npm run build -w @rediacc/www")
 
-# The two filters, both carried. See the module docstring for why the first one
-# cannot match and is kept anyway.
+# The two filters, both carried. See the module docstring for why the first one cannot match and is kept anyway.
 DEAD_COMMENT_FILTER = re.compile(r"^\s*#")
 COMMENTED_SITE_FILTER = re.compile(r":[0-9]+: *#")
 
-# A call site is covered when GITHUB_TOKEN appears in the 25 lines after it -- the
-# env block belongs to that step, and no step in this repo is longer than that
-# between `run:` and the end of its `env:`.
+# A call site is covered when GITHUB_TOKEN appears in the 25 lines after it -- the env block belongs to that step, and no step in this repo is longer than that between `run:` and the end of its `env:`.
 #
-# COVER_MARKER, not COVER_MARKER: ruff's S105 reads any constant whose NAME
-# contains "token" as a hardcoded credential. This one is a YAML key the gate
+# COVER_MARKER, not COVER_MARKER: ruff's S105 reads any constant whose NAME contains "token" as a hardcoded credential. This one is a YAML key the gate
 # greps for, and the repo's lint gate refuses a per-line noqa on principle, so
 # the name moves rather than the rule.
 COVER_WINDOW = 25
 COVER_MARKER = "GITHUB_TOKEN:"
 
-# FLOOR. Three call sites exist today. See the module docstring: this is a
-# hand-typed count, which contract section 6 rules against, and it is carried
-# unchanged because changing it would change the verdict.
+# FLOOR. Three call sites exist today. See the module docstring: this is a hand-typed count, which contract section 6 rules against, and it is carried unchanged because changing it would change the verdict.
 MIN_SITES = 3
 
 DEFAULT_WORKFLOWS = ".github/workflows"
@@ -120,8 +114,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             # grep skips what it cannot read and says so on stderr; it does not
-            # abort the scan. Matching that is deliberate -- one unreadable file
-            # must not turn a coverage report into no report at all.
+            # abort the scan. Matching that is deliberate -- one unreadable file must not turn a coverage report into no report at all.
             continue
         for index, line in enumerate(text.split("\n"), start=1):
             if not SITE_RE.search(line):
@@ -192,11 +185,7 @@ def run_controls() -> int:
             encoding="utf-8",
         )
 
-        # THE FIXTURES MUST ACTUALLY DIFFER in the property under test. Without
-        # this the control is satisfied by two identical files, or by a write
-        # that silently did not land -- and a no-op plant looks exactly like a
-        # passing control. check:ci-control-vacuity exists because that has
-        # happened here before.
+        # THE FIXTURES MUST ACTUALLY DIFFER in the property under test. Without this the control is satisfied by two identical files, or by a write that silently did not land -- and a no-op plant looks exactly like a passing control. check:ci-control-vacuity exists because that has happened here before.
         if COVER_MARKER not in good.read_text(encoding="utf-8"):
             print(
                 "CONTROL COULD NOT PLANT: good.yml has no token, so the pair proves nothing",
@@ -233,10 +222,7 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    # The twin `cd`s to the repo root and then treats `$1` as given, so a
-    # relative argument is root-relative and an absolute one is itself. `/` in
-    # pathlib does exactly that, which is the one place the two agree by
-    # coincidence rather than by design, so it is written down.
+    # The twin `cd`s to the repo root and then treats `$1` as given, so a relative argument is root-relative and an absolute one is itself. `/` in pathlib does exactly that, which is the one place the two agree by coincidence rather than by design, so it is written down.
     workflows = root / (args[0] if args else DEFAULT_WORKFLOWS)
 
     if run_controls() != 0:
@@ -305,8 +291,7 @@ def selftest() -> int:
         ctl.check("CONTROL: three covered sites are found", total, 3)
         ctl.check("CONTROL: three covered sites report nothing missing", bad, 0)
 
-        # THE PLANT: one of the three loses its token. Exactly the shape that
-        # shipped three times.
+        # THE PLANT: one of the three loses its token. Exactly the shape that shipped three times.
         planted = workflow("planted")
         write(planted, "a.yml", with_token)
         write(planted, "b.yml", without)
@@ -317,10 +302,7 @@ def selftest() -> int:
 
         # THE MIRROR the reviewer waves through: the gate must not fire when the
         # token is present. Proven above by bad == 0, and again here on the
-        # WINDOW EDGE, which is where an off-by-one would show and nowhere else.
-        # The run line is line 4 and `sed -n "4,29p"` is INCLUSIVE at both ends,
-        # so line 29 is the last covered line. 23 filler lines put `env:` on 28
-        # and the token on 29 -- exactly on the boundary. Written as arithmetic
+        # WINDOW EDGE, which is where an off-by-one would show and nowhere else. The run line is line 4 and `sed -n "4,29p"` is INCLUSIVE at both ends, so line 29 is the last covered line. 23 filler lines put `env:` on 28 and the token on 29 -- exactly on the boundary. Written as arithmetic
         # from COVER_WINDOW rather than as the literal 23 so that changing the
         # window moves the fixture with it instead of silently un-testing the edge.
         edge = workflow("edge")
@@ -336,9 +318,7 @@ def selftest() -> int:
         _m, _t, bad = audit(edge)
         ctl.check("WINDOW: a token exactly at the last covered line still covers", bad, 0)
 
-        # One line further out: the token now sits on line 30, one past the end
-        # of the window, and must NOT count. Edge and mirror differ by exactly
-        # one filler line, which is the only difference that proves the boundary.
+        # One line further out: the token now sits on line 30, one past the end of the window, and must NOT count. Edge and mirror differ by exactly one filler line, which is the only difference that proves the boundary.
         far = workflow("far")
         filler = "\n".join("        # pad %d" % i for i in range(1, COVER_WINDOW))
         write(
@@ -359,9 +339,7 @@ def selftest() -> int:
         _m, total, _b = audit(commented)
         ctl.check("FILTER: a commented call site is not counted", total, 0)
 
-        # THE FLOOR. Two sites is below MIN_SITES, so the gate must refuse even
-        # though every site it did find is covered -- a green there would assert
-        # nothing about the third.
+        # THE FLOOR. Two sites is below MIN_SITES, so the gate must refuse even though every site it did find is covered -- a green there would assert nothing about the third.
         short = workflow("short")
         write(short, "a.yml", with_token)
         write(short, "b.yml", with_token)

@@ -52,9 +52,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-naming.sh"
 DERIVE = paths.from_root(".ci", "breakpoint", "scripts", "derive-descriptor.sh")
 CONF = paths.from_root(".ci", "breakpoint", "breakpoint.conf")
 
-# The zone every expectation below is written against. ASSERTED rather than read, so a
-# conf change that moves the zone shows up HERE, where the hostname expectations live,
-# instead of as a mystery DNS failure at session start.
+# The zone every expectation below is written against. ASSERTED rather than read, so a conf change that moves the zone shows up HERE, where the hostname expectations live, instead of as a mystery DNS failure at session start.
 EXPECTED_ZONE = "rediacc.io"
 
 LISTED_LABELS = ("rdc-ci", "rdc-dev", "rdc-demo")
@@ -116,9 +114,7 @@ def test_exact_hostname_and_url(gate):
         ).out.rstrip("\n")
         gate.assert_eq(url, "https://rdc-dev-42.%s" % EXPECTED_ZONE, "url grammar")
 
-        # First-level label BY NECESSITY: Universal SSL covers the apex and ONE level,
-        # so a middle label would silently need paid Advanced Certificate Manager.
-        # Counting dots is how that stays true.
+        # First-level label BY NECESSITY: Universal SSL covers the apex and ONE level, so a middle label would silently need paid Advanced Certificate Manager. Counting dots is how that stays true.
         gate.assert_eq(
             host.count("."),
             2,
@@ -136,8 +132,7 @@ def test_missing_run_id_refuses_and_invents_nothing(gate):
         if run.rc == 0:
             gate.log_fail("missing run id must be a hard failure, got exit 0 with stdout %r" % out)
         gate.assert_eq(out, "", "a refusal must put NOTHING on stdout")
-        # `breakpoint-rdc-ci-` with an empty component is the specific shape that would
-        # match no sweep regex and orphan its objects forever.
+        # `breakpoint-rdc-ci-` with an empty component is the specific shape that would match no sweep regex and orphan its objects forever.
         gate.assert_not_contains(out, "--", "an empty component must never be emitted")
         gate.assert_not_contains(out, "breakpoint-", "no partial name may leak to stdout")
         gate.assert_contains(run.err, "GITHUB_RUN_ID", "the refusal must name the missing variable")
@@ -171,8 +166,7 @@ def test_unlisted_label_rejected(gate):
             run.err, "BREAKPOINT_TUNNEL_LABELS", "the refusal must point at the closed set"
         )
 
-        # CONTROL: the listed labels are all accepted, so the check above is a real
-        # filter and not a script that rejects everything.
+        # CONTROL: the listed labels are all accepted, so the check above is a real filter and not a script that rejects everything.
         for label in LISTED_LABELS:
             run = derive(gate, tmp, "--field", "name", "--label", label, "--run-id", "99")
             gate.assert_exit_code(0, run.rc, "listed label %r must be accepted" % label)

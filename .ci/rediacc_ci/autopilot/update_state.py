@@ -145,7 +145,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
             time.sleep(attempt * 3)
     log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
     if stderr != "":
-        # `sed 's/^/    /' "$err" >&2`.
+        # `sed 's/^/ /' "$err" >&2`.
         for line in stderr.rstrip("\n").split("\n"):
             print("    %s" % line, file=sys.stderr)
         sys.stderr.flush()
@@ -270,8 +270,7 @@ def _write(
 ) -> int:
     ruled_out = os.path.join(work, "ruled-out.txt")
     decisions = os.path.join(work, "decisions.txt")
-    # `: >"$work/ruled-out.txt"`: both files exist and are EMPTY before jq runs,
-    # so the renderer's `--*-file` inputs are always present.
+    # `: >"$work/ruled-out.txt"`: both files exist and are EMPTY before jq runs, so the renderer's `--*-file` inputs are always present.
     for path in (ruled_out, decisions):
         with open(path, "wb"):
             pass
@@ -294,13 +293,11 @@ def _write(
             check=False,
         )
     if render.returncode != 0:
-        # `set -e` on the renderer's status. The half-written body.md goes with
-        # the work directory, exactly as the twin's EXIT trap takes it.
+        # `set -e` on the renderer's status. The half-written body.md goes with the work directory, exactly as the twin's EXIT trap takes it.
         return render.returncode
 
     if args.get("ARG_DRY_RUN", "false") == "true":
-        # `cat "$work/body.md"` -- BYTES, because the body carries model-authored
-        # text that need not be valid UTF-8.
+        # `cat "$work/body.md"` -- BYTES, because the body carries model-authored text that need not be valid UTF-8.
         with open(body_md, "rb") as handle:
             sys.stdout.buffer.write(handle.read())
         sys.stdout.flush()
@@ -318,8 +315,7 @@ def _write(
         ["api", "--method", method, endpoint, "-F", "body=@%s" % body_md],
     )
     if not ok:
-        # `set -e` on gh_retry's non-zero status: the success line below is never
-        # reached, and the round is recorded nowhere.
+        # `set -e` on gh_retry's non-zero status: the success line below is never reached, and the round is recorded nowhere.
         return 1
     log.info(
         "state comment %s to %s (round %s/%s, state %s)"

@@ -86,9 +86,7 @@ def _put(directory: pathlib.Path, url: str, ext: str, text: str) -> None:
     (directory / ("%s.%s" % (slug_for(url), ext))).write_text(text, encoding="utf-8")
 
 
-# ---------------------------------------------------------------------------
-# The happy path, and the proof that it is not vacuous
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, and the proof that it is not vacuous ---------------------------------------------------------------------------
 
 
 def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
@@ -99,8 +97,7 @@ def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None
         assert "  %s health: OK (security headers verified)" % domain in old.out
     # 7 fixed fetches (2 marketing bodies, 3 fingerprints, 2 R2 bodies) plus two
     # per region. There is NO footer fetch and NO latest.json fetch here; the
-    # edge twin has both, and a port that copied them in would be caught by this
-    # number alone.
+    # edge twin has both, and a port that copied them in would be caught by this number alone.
     assert old.log.count("curl ") == 7 + 2 * len(region_domains("domain")), old.log
     assert "latest.json" not in old.log
     assert "footer" not in old.out
@@ -120,9 +117,7 @@ def test_the_region_field_is_domain_not_edgedomain(tmp_path: pathlib.Path) -> No
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The channel-bake assertions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The channel-bake assertions ---------------------------------------------------------------------------
 
 
 def test_install_sh_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
@@ -180,9 +175,7 @@ def test_r2_ps1_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Worker fingerprints
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Worker fingerprints ---------------------------------------------------------------------------
 
 
 def test_redirect_table_fingerprint(tmp_path: pathlib.Path) -> None:
@@ -216,9 +209,7 @@ def test_asset_path_guard_fingerprint(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# FINDING 4: `set -e` on a top-level command substitution
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- FINDING 4: `set -e` on a top-level command substitution ---------------------------------------------------------------------------
 
 
 def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path) -> None:
@@ -258,9 +249,7 @@ def test_a_transport_failure_on_a_fingerprint_probe_exits_7(tmp_path: pathlib.Pa
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# No retry, which is the other structural difference
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- No retry, which is the other structural difference ---------------------------------------------------------------------------
 
 
 def test_a_single_bad_sample_fails_here_though_it_would_retry_on_edge(
@@ -280,9 +269,7 @@ def test_a_single_bad_sample_fails_here_though_it_would_retry_on_edge(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Region health: WARN only
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Region health: WARN only ---------------------------------------------------------------------------
 
 
 def test_a_slow_region_warns_and_the_run_still_passes(tmp_path: pathlib.Path) -> None:
@@ -353,9 +340,7 @@ def test_every_region_is_still_probed_after_one_warns(tmp_path: pathlib.Path) ->
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# FINDING 1 again: the vacuity hole is in this twin too
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- FINDING 1 again: the vacuity hole is in this twin too ---------------------------------------------------------------------------
 
 
 def test_a_missing_regions_json_warns_about_nothing_and_passes(
@@ -385,9 +370,7 @@ def test_the_same_tree_with_regions_json_present_does_check_them(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Preconditions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Preconditions ---------------------------------------------------------------------------
 
 
 def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
@@ -426,9 +409,7 @@ def test_the_script_takes_no_environment_input(tmp_path: pathlib.Path) -> None:
     assert_same(noisy_old, noisy_new)
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this suite red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this suite red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

@@ -25,8 +25,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// Derived from the shared list rather than copied: a hardcoded copy went stale and
-// silently skipped et/it/ko/pt, so those translations could never be stamped.
+// Derived from the shared list rather than copied: a hardcoded copy went stale and silently skipped et/it/ko/pt, so those translations could never be stamped.
 const SUPPORTED_LANGUAGES = ALL_LANGUAGES.filter((lang) => lang !== 'en');
 const COLLECTIONS = ['docs', 'blog'];
 const WWW_ROOT = path.join(REPO_ROOT, 'packages/www');

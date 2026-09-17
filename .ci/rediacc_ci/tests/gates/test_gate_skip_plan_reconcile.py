@@ -58,8 +58,7 @@ RUN_ID = "30307775327"
 
 INSTALL_PREFIX = "Validate Install Methods"
 
-# Run 30307775327's payload: a success leaf for every planned key, the eleven
-# structural skips observed live, and unplanned extras the reconciler must ignore.
+# Run 30307775327's payload: a success leaf for every planned key, the eleven structural skips observed live, and unplanned extras the reconciler must ignore.
 HEALTHY_SUCCESS = [
     "Initialize",
     "Tests + Infra / Unit",
@@ -322,18 +321,13 @@ def test_planned_run_but_cancelled_is_named(gate, tmp_path):
         "and it is named, with the key and the leaf",
     )
 
-    # CONTROL, and it is the whole point: the SAME fixture with the SAME job left at
-    # success says nothing, so the assertion above is not passing against a reconciler
-    # that warns about everything.
+    # CONTROL, and it is the whole point: the SAME fixture with the SAME job left at success says nothing, so the assertion above is not passing against a reconciler that warns about everything.
     world.reconcile(world.plan_path, world.jobs_path)
     gate.assert_not_contains(
         world.out, "planned-run-but-cancelled", "the untouched fixture warns about no cancellation"
     )
 
-    # AND THE TWO CONCLUSIONS MUST STAY APART. Asserted through the EXIT CODES rather
-    # than a second absence check, because that is the difference that matters and an
-    # absence proves only that one string is missing: a skip is a hard failure (1), a
-    # cancellation is a warning (0).
+    # AND THE TWO CONCLUSIONS MUST STAY APART. Asserted through the EXIT CODES rather than a second absence check, because that is the difference that matters and an absence proves only that one string is missing: a skip is a hard failure (1), a cancellation is a warning (0).
     jobs = healthy_jobs()
     find(jobs, "Tests + Infra / Unit")["conclusion"] = "skipped"
     skipped = world.write_jobs("jobs-unit-skipped-here.json", jobs)
@@ -362,8 +356,7 @@ def test_healthy_eleven_must_not_fire(gate, tmp_path):
     gate.assert_not_contains(world.err, "planned-run-but-skipped", "no skip is flagged")
     gate.assert_not_contains(world.out, "::warning::", "and none is even warned about")
 
-    # CONTROL: the reconciler CAN fire on this very fixture, and when it does it blames
-    # only the planted key, never the structural skips.
+    # CONTROL: the reconciler CAN fire on this very fixture, and when it does it blames only the planted key, never the structural skips.
     jobs = healthy_jobs()
     find(jobs, "Tests + Infra / E2E Ceph")["conclusion"] = "skipped"
     ceph = world.write_jobs("jobs-ceph-skipped.json", jobs)
@@ -599,8 +592,7 @@ def test_flat_job_never_blames_a_lookalike_caller(gate, tmp_path):
         "never misattributed to the lookalike 'Tests + Infra' caller",
     )
 
-    # CONTROL, and without it this case would pass just as well if caller derivation
-    # were deleted outright.
+    # CONTROL, and without it this case would pass just as well if caller derivation were deleted outright.
     jobs = [j for j in healthy_jobs() if not j["name"].startswith("OPS Tests / ")]
     jobs.append({"name": "OPS Tests", "conclusion": "skipped"})
     ops = world.write_jobs("jobs-ops-caller-skipped.json", jobs)
@@ -853,9 +845,7 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
         "while the seventeen full_suite really gates stay excused",
     )
 
-    # And pointer_bump_only DOES cover it, on the identical payload. Two conditions, two
-    # different key sets, same jobs: the table discriminates rather than handing out one
-    # blanket exemption.
+    # And pointer_bump_only DOES cover it, on the identical payload. Two conditions, two different key sets, same jobs: the table discriminates rather than handing out one blanket exemption.
     pb_plan = world.annotate(
         world.plan_path,
         "plan-pb2.json",
@@ -923,15 +913,13 @@ def test_exemption_needs_a_real_boolean(gate, tmp_path):
         world.err, "planned-run-but-skipped: 'unit'", "exactly as if nothing were recorded"
     )
 
-    # An omitted condition is likewise inactive, which is what the writer produces when
-    # the environment variable is unset.
+    # An omitted condition is likewise inactive, which is what the writer produces when the environment variable is unset.
     omitted = world.annotate(world.plan_path, "plan-omitted.json", {})
     gate.assert_eq(
         world.reconcile(omitted, pb_jobs), 1, "an omitted condition grants nothing either"
     )
 
-    # CONTROL: the real booleans, same fixture, silent. Without this the two assertions
-    # above would pass just as well if exemptions were dead code.
+    # CONTROL: the real booleans, same fixture, silent. Without this the two assertions above would pass just as well if exemptions were dead code.
     pb_plan = world.annotate(
         world.plan_path,
         "plan-pointer-bump.json",
@@ -968,8 +956,7 @@ def test_annotation_must_agree_with_the_conditions(gate, tmp_path):
         "named as a claim mismatch, not silently ignored",
     )
 
-    # Drift in the other direction: conditions say the key is exempt, the annotation is
-    # missing. That is a stale writer, and it must be as loud.
+    # Drift in the other direction: conditions say the key is exempt, the annotation is missing. That is a stale writer, and it must be as loud.
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", pointer_bump_jobs())
     pb_plan_path = world.annotate(
         world.plan_path,
@@ -1044,8 +1031,7 @@ def test_strict_mode_is_the_module_default(gate, tmp_path):
     gate.assert_contains(lenient, "true|", "while the gate, which opts in, passes the same input")
     gate.assert_contains(lenient, "exempt=18", "having excused all eighteen keys")
 
-    # CONTROL: the flag is not a blanket mute. On the healthy fixture, where no condition
-    # is active, both modes agree and both pass.
+    # CONTROL: the flag is not a blanket mute. On the healthy fixture, where no condition is active, both modes agree and both pass.
     gate.assert_contains(
         world.reconcile_module(world.plan_path, world.jobs_path, False),
         "true||exempt=0",
@@ -1181,8 +1167,7 @@ process.stdout.write(out.join("\\n"));
     )
     gate.assert_contains(verdicts, "real:no-throw", "and the real tables pass")
 
-    # Behavioural counterpart to the table: the key sets are the ones the workflow
-    # evidence supports, asserted by size so a silent widening shows.
+    # Behavioural counterpart to the table: the key sets are the ones the workflow evidence supports, asserted by size so a silent widening shows.
     sizes = node_eval(
         """
 const r = require(process.argv[1]);

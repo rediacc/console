@@ -121,8 +121,7 @@ def run_block(gate, tmp_path, expected: str, reported: str, *, mutate: bool = Fa
     block = extract_block(gate)
     if mutate:
         hits = block.count(MUTATION_FROM)
-        # THE CONTROL ON THE CONTROL. A mutation that matches nothing plants the
-        # FIXED comparison and then asserts it lets a mismatch through.
+        # THE CONTROL ON THE CONTROL. A mutation that matches nothing plants the FIXED comparison and then asserts it lets a mismatch through.
         if hits == 0:
             gate.log_fail(
                 "the planted mutation target %r no longer appears in the extracted block, "

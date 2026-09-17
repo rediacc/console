@@ -76,10 +76,7 @@ def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
         SUBJECT.shell_fn(gate, "version_fence_probe"),
         SUBJECT.shell_fn(gate, "extract_fenced_version"),
         SUBJECT.shell_fn(gate, "run_container_version_test"),
-        # A stand-in for `docker run`: runs the REAL fenced probe the install
-        # functions paste into their container scripts, so the probe itself is
-        # under test and not just the host-side comparison. $1 is what the
-        # "installed binary" prints, $2 is surrounding install-transcript noise.
+        # A stand-in for `docker run`: runs the REAL fenced probe the install functions paste into their container scripts, so the probe itself is under test and not just the host-side comparison. $1 is what the "installed binary" prints, $2 is surrounding install-transcript noise.
         (
             "fake_container() {\n"
             '    local reported="$1" noise="${2:-}"\n'
@@ -175,9 +172,7 @@ def test_transcript_noise_cannot_satisfy_the_check(gate, tmp_path):
         "the installer's own version line must NOT satisfy the check",
     )
 
-    # And the control: an unfenced whole-transcript grep -- what a naive fix
-    # would have done -- DOES accept it. Without this, the fence would be
-    # decorative and nobody would know.
+    # And the control: an unfenced whole-transcript grep -- what a naive fix would have done -- DOES accept it. Without this, the fence would be decorative and nobody would know.
     raw = bash(gate, tmp_path, 'fake_container "$2" "$3" 2>&1', "1.2.16", noise)
     naive = "0" if "1.2.17" in raw.combined else "1"
     gate.assert_eq(
@@ -220,11 +215,7 @@ def test_every_container_method_routes_through_the_fence(gate):
         )
         gate.assert_contains(body, "version_fence_probe", "%s must fence its version output" % fn)
 
-    # Discrimination check: the assertion above must be capable of NOT matching.
-    # test_docker_pull_and_run verifies its version without a container fence
-    # (it captures `docker run --rm <image> --version` directly), so it must not
-    # contain either token -- if it did, the loop above would be matching
-    # something present in every function and asserting nothing.
+    # Discrimination check: the assertion above must be capable of NOT matching. test_docker_pull_and_run verifies its version without a container fence (it captures `docker run --rm <image> --version` directly), so it must not contain either token -- if it did, the loop above would be matching something present in every function and asserting nothing.
     body = SUBJECT.shell_fn(gate, "test_docker_pull_and_run")
     gate.assert_not_contains(
         body,

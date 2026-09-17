@@ -66,8 +66,7 @@ TREE_FILES = (
 )
 
 # `dirname`/`uname`/`tr` are what `common.sh` needs at source time; `rm` is the
-# real one, on purpose. If a port ever stopped shelling out AND stopped deleting,
-# only the filesystem snapshot would notice, which is why it exists.
+# real one, on purpose. If a port ever stopped shelling out AND stopped deleting, only the filesystem snapshot would notice, which is why it exists.
 PATH_MINIMUM = ("dirname", "uname", "tr", "rm")
 
 FAKE_NPM = """#!{python}
@@ -236,9 +235,7 @@ def _assert_agree(old3, new3, label: str) -> None:
     assert new_fs == old_fs, f"{label}: surviving tree diverged:\nold: {old_fs}\nnew: {new_fs}"
 
 
-# ---------------------------------------------------------------------------
-# The happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
 def test_the_default_run_wipes_builds_and_verifies(tmp_path: pathlib.Path) -> None:
@@ -279,9 +276,7 @@ def test_debug_1_is_not_debug_true(tmp_path: pathlib.Path) -> None:
     _assert_agree(old3, new3, "DEBUG=1")
 
 
-# ---------------------------------------------------------------------------
-# The vacuity, and the failure
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The vacuity, and the failure ---------------------------------------------------------------------------
 
 
 def test_a_build_that_emits_nothing_warns_and_exits_zero(tmp_path: pathlib.Path) -> None:
@@ -314,9 +309,7 @@ def test_a_failing_build_stops_before_the_verification(tmp_path: pathlib.Path) -
     _assert_agree(old3, new3, "build-fails")
 
 
-# ---------------------------------------------------------------------------
-# The glob and the `rm -rf`
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The glob and the `rm -rf` ---------------------------------------------------------------------------
 
 
 def test_no_tsbuildinfo_files_is_a_silent_no_op(tmp_path: pathlib.Path) -> None:
@@ -400,9 +393,7 @@ def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
     _assert_agree(old3, new3, "dist-is-a-symlink")
 
 
-# ---------------------------------------------------------------------------
-# Arguments, which the twin has none of
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Arguments, which the twin has none of ---------------------------------------------------------------------------
 
 
 def test_arguments_are_ignored_including_help(tmp_path: pathlib.Path) -> None:
@@ -414,9 +405,7 @@ def test_arguments_are_ignored_including_help(tmp_path: pathlib.Path) -> None:
     _assert_agree(old3, new3, "--help")
 
 
-# ---------------------------------------------------------------------------
-# The pure helper, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helper, exercised directly ---------------------------------------------------------------------------
 
 
 def test_clean_targets_lists_dist_first_and_always(tmp_path: pathlib.Path) -> None:

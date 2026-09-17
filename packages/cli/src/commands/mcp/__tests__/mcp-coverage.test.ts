@@ -73,10 +73,7 @@ function walkLeafPaths(): string[] {
         sub.name() !== 'help' &&
         !(sub as (typeof cli.commands)[number] & { _hidden?: boolean })._hidden
     );
-    // ★ An ACTIONABLE PARENT is runnable and therefore must be classified too. `repo replicate
-    // <ref>` has subcommands AND its own action (spec/03 §5.4 keeps its bare create form). A
-    // leaves-only walk cannot see it, which is how it carried an `mcp` block that produced no
-    // tool at all: the gate was satisfied by a declaration that did nothing.
+    // ★ An ACTIONABLE PARENT is runnable and therefore must be classified too. `repo replicate <ref>` has subcommands AND its own action (spec/03 §5.4 keeps its bare create form). A leaves-only walk cannot see it, which is how it carried an `mcp` block that produced no tool at all: the gate was satisfied by a declaration that did nothing.
     const runnable =
       visible.length === 0 ||
       typeof (cmd as (typeof cli.commands)[number] & { _actionHandler?: unknown })
@@ -126,8 +123,7 @@ describe('MCP tool coverage', () => {
   });
 
   it('exclusion list has no stale entries', () => {
-    // Validate against the real Commander tree (the registry only declares
-    // top-level domains, not every subcommand).
+    // Validate against the real Commander tree (the registry only declares top-level domains, not every subcommand).
     const actualPaths = new Set<string>();
     function walk(cmd: (typeof cli.commands)[number], prefix: string): void {
       const path = prefix ? `${prefix} ${cmd.name()}` : cmd.name();

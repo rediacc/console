@@ -100,15 +100,10 @@ TS_READER = "ts:scripts/lib/blocker-validator.ts::parseBlockeredList"
 BASH_REASON_READER = "bash:.ci/scripts/lib/blocker-validator.sh::validate_blocker_quality"
 TS_REASON_READER = "ts:scripts/lib/blocker-validator.ts::validateBlockerQuality"
 
-# The file name the reason cases are validated "in". A constant rather than a
-# real path because it is only ever interpolated into the message, and pinning
-# it keeps the recorded messages independent of where the corpus lives.
+# The file name the reason cases are validated "in". A constant rather than a real path because it is only ever interpolated into the message, and pinning it keeps the recorded messages independent of where the corpus lives.
 REASON_FILE = ".deps-upgrade-blocklist"
 
-# The real lists frozen into the corpus. Every root-level suppression list plus
-# the two under .ci/config, which are the ones that go through the shared
-# parsers with a `#` comment character. Selection, not invention: the CONTENT of
-# each is whatever the tree holds.
+# The real lists frozen into the corpus. Every root-level suppression list plus the two under .ci/config, which are the ones that go through the shared parsers with a `#` comment character. Selection, not invention: the CONTENT of each is whatever the tree holds.
 SOURCES: tuple[str, ...] = (
     ".actions-upgrade-blocklist",
     ".audit-allowlist",
@@ -138,15 +133,9 @@ def _slug(source: str) -> str:
 SLUGS: list[str] = [_slug(s) for s in SOURCES]
 
 
-# ---------------------------------------------------------------------------
-# The drivers. One process per reader for the WHOLE corpus, not one per file:
-# `npx tsx` costs ~0.4s of startup and seventeen of them is a slow suite for no
-# extra coverage.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The drivers. One process per reader for the WHOLE corpus, not one per file: `npx tsx` costs ~0.4s of startup and seventeen of them is a slow suite for no extra coverage. ---------------------------------------------------------------------------
 
-# The multi-document envelope both drivers emit. Asserted absent from every
-# payload by `test_driver_envelope_cannot_collide_with_payload`, so the split is
-# not merely assumed to be unambiguous.
+# The multi-document envelope both drivers emit. Asserted absent from every payload by `test_driver_envelope_cannot_collide_with_payload`, so the split is not merely assumed to be unambiguous.
 DOC_BEGIN = "<<<DOC "
 DOC_END = "<<<END"
 
@@ -174,8 +163,7 @@ for (const f of process.argv.slice(2)) {
 }
 """
 
-# Reads TAB-separated `<case-id>\t<reason>` lines and prints
-# `<case-id>\t<ok|reject>\t<sha256 of the message>`. The `::error::` prefix that
+# Reads TAB-separated `<case-id>\t<reason>` lines and prints `<case-id>\t<ok|reject>\t<sha256 of the message>`. The `::error::` prefix that
 # `ci_error` adds under CI=true is stripped from line 1 so the digest is over the
 # same bytes the TypeScript reader returns.
 BASH_REASONS_DRIVER = r"""
@@ -303,9 +291,7 @@ def _ts_records(files: list[str]) -> dict[str, str] | None:
     return None if out is None else _split_documents(out)
 
 
-# ---------------------------------------------------------------------------
-# Golden files: a provenance header, then raw reader bytes.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Golden files: a provenance header, then raw reader bytes. ---------------------------------------------------------------------------
 
 
 def _read_golden(path: pathlib.Path) -> tuple[dict[str, str], str]:
@@ -351,9 +337,7 @@ def _agree(label: str, left: str, right: str) -> None:
     assert left == right, "%s: byte mismatch" % label
 
 
-# ---------------------------------------------------------------------------
-# Reason cases -- derived from the corpus and from the readers' own tables
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Reason cases -- derived from the corpus and from the readers' own tables ---------------------------------------------------------------------------
 
 
 def _reason_cases() -> list[tuple[str, str]]:
@@ -378,13 +362,8 @@ def _reason_cases() -> list[tuple[str, str]]:
         cases.append(("defer-%03d" % index, "%s not needed by this change" % reason[:20]))
     for index, phrase in enumerate(allowlist.LOW_EFFORT_PHRASES):
         cases.append(("phrase-%03d" % index, phrase))
-        # THE NORMALIZATION ITSELF, which nothing else here exercises. Measured:
-        # deleting the trailing-punctuation strip from `normalize_reason` left
-        # all 53 cases green, because every real reason is far above the length
-        # floor and the step is invisible on a reason that passes. Wrapping each
-        # banned phrase in whitespace, upper-casing it and adding a full stop
-        # makes all three steps load-bearing: drop any one and the phrase stops
-        # matching the table, so the verdict's KIND changes and the digest moves.
+        # THE NORMALIZATION ITSELF, which nothing else here exercises. Measured: deleting the trailing-punctuation strip from `normalize_reason` left all 53 cases green, because every real reason is far above the length floor and the step is invisible on a reason that passes. Wrapping each banned phrase in whitespace, upper-casing it and adding a full stop makes all three steps
+        # load-bearing: drop any one and the phrase stops matching the table, so the verdict's KIND changes and the digest moves.
         cases.append(("norm-%03d" % index, "  %s.  " % phrase.upper()))
     return cases
 
@@ -412,9 +391,7 @@ def _cases_tsv(cases: list[tuple[str, str]]) -> str:
     return "".join("%s\t%s\n" % (case_id, reason) for case_id, reason in cases)
 
 
-# ---------------------------------------------------------------------------
-# 1. The frozen goldens. These need neither bash nor node and always run.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. The frozen goldens. These need neither bash nor node and always run. ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("slug", SLUGS)
@@ -427,8 +404,7 @@ def test_bash_pairs_golden_matches_the_python_pairs_projection(slug):
     )
     mine = allowlist.render_pairs(allowlist.parse_text(corpus))
     if not payload and not mine:
-        # A legitimately entry-free list. Proved zero, not assumed zero: the
-        # entry-line control below derives the count from the corpus text.
+        # A legitimately entry-free list. Proved zero, not assumed zero: the entry-line control below derives the count from the corpus text.
         return
     _agree("bash-pairs/%s" % slug, payload, mine)
 
@@ -520,10 +496,7 @@ def test_driver_envelope_cannot_collide_with_payload():
         assert DOC_END not in corpus
 
 
-# ---------------------------------------------------------------------------
-# 2. The perturbation controls. Every comparison above must FAIL when the
-#    input moves, and the real bash reader must follow the mutation.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. The perturbation controls. Every comparison above must FAIL when the input moves, and the real bash reader must follow the mutation. ---------------------------------------------------------------------------
 
 
 def _slugs_with_rows() -> list[str]:
@@ -582,11 +555,7 @@ def test_perturbing_one_reason_breaks_the_ts_records_golden(tmp_path):
     for slug in slugs:
         corpus = _corpus_text(slug)
         lines = corpus.split("\n")
-        # THE REASON THAT IS ACTUALLY IN FORCE, not the first "BLOCKER:" string
-        # in the file. `.audit-prod-allowlist` opens with prose that mentions the
-        # convention above a blank line, so mutating the first match changed
-        # nothing and the control passed while proving nothing -- caught by the
-        # control itself on its first run. Scan UP from the first reasoned entry.
+        # THE REASON THAT IS ACTUALLY IN FORCE, not the first "BLOCKER:" string in the file. `.audit-prod-allowlist` opens with prose that mentions the convention above a blank line, so mutating the first match changed nothing and the control passed while proving nothing -- caught by the control itself on its first run. Scan UP from the first reasoned entry.
         first = next(e for e in allowlist.parse_text(corpus) if e.blocker)
         index = next(i for i in range(first.line - 1, -1, -1) if "BLOCKER:" in lines[i])
         lines[index] = lines[index].replace("BLOCKER:", "BLOCKER: PERTURBED", 1)
@@ -606,9 +575,7 @@ def test_both_empty_is_refused_as_a_comparison():
     _agree("control", "x\n", "x\n")
 
 
-# ---------------------------------------------------------------------------
-# 3. The live differential -- drift in the readers, which a golden cannot see.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. The live differential -- drift in the readers, which a golden cannot see. ---------------------------------------------------------------------------
 
 
 def _live_source(source: str) -> pathlib.Path | None:
@@ -683,9 +650,7 @@ def test_typescript_reader_and_python_agree_on_the_live_lists():
     assert compared > 0, "every live list is empty; the differential proved nothing"
 
 
-# ---------------------------------------------------------------------------
-# 4. The BLOCKER reason contract, three ways.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. The BLOCKER reason contract, three ways. ---------------------------------------------------------------------------
 
 
 def test_reason_verdicts_golden_matches_python():
@@ -723,9 +688,7 @@ def test_bash_reason_validator_agrees_with_python_on_every_case(tmp_path):
     """
     cases = [case for case in _reason_cases() if case[1] != "-n"]
     assert cases
-    # tmp_path, not `.ci/cache/`: a run killed mid-test leaves nothing behind in
-    # the working tree. Observed once this session, when a 120s harness timeout
-    # killed the suite and the PID-keyed TSV survived in the repository.
+    # tmp_path, not `.ci/cache/`: a run killed mid-test leaves nothing behind in the working tree. Observed once this session, when a 120s harness timeout killed the suite and the PID-keyed TSV survived in the repository.
     tsv = tmp_path / "reasons.tsv"
     tsv.write_text(_cases_tsv(cases), encoding="utf-8")
     code, out, err = _run_bash(BASH_REASONS_DRIVER, [str(tsv), REASON_FILE])
@@ -779,9 +742,7 @@ def test_the_bash_echo_builtin_defect_is_gone_and_stays_gone(tmp_path):
     assert "(2 chars, minimum 30)" in printed, printed
     assert "(0 chars, minimum 30)" not in printed, printed
 
-    # THE CONTROL, so this is not a test that would pass with the differential
-    # broken: reproduce the OLD normalization and show it still yields zero, i.e.
-    # the divergence is genuinely absent rather than merely unmeasured.
+    # THE CONTROL, so this is not a test that would pass with the differential broken: reproduce the OLD normalization and show it still yields zero, i.e. the divergence is genuinely absent rather than merely unmeasured.
     old_normalization = _run_bash(
         'n=$(echo "-n" | tr "[:upper:]" "[:lower:]" | '
         "sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/[.!?,;:]*$//')\n"
@@ -846,9 +807,7 @@ def test_every_banned_phrase_is_actually_banned():
     )
 
 
-# ---------------------------------------------------------------------------
-# 5. Absence, and cwd. The two traps the readers walk into.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. Absence, and cwd. The two traps the readers walk into. ---------------------------------------------------------------------------
 
 
 def test_a_missing_list_is_an_error_here_and_silence_in_both_readers(tmp_path):
@@ -941,21 +900,12 @@ def _record() -> int:
     for directory in (CORPUS_DIR, BASH_PAIRS_DIR, TS_RECORDS_DIR, REASONS_DIR):
         directory.mkdir(parents=True, exist_ok=True)
 
-    # THROUGH `_live_source`, NOT `root / source`, and this is a FIX rather than a
-    # tidy-up. `SOURCES` names each list at its historical repo-root path, and
-    # `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above
+    # THROUGH `_live_source`, NOT `root / source`, and this is a FIX rather than a tidy-up. `SOURCES` names each list at its historical repo-root path, and `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above
     # already resolves by basename through `git ls-files` and kept working; only
-    # this recorder was left on the hardcoded path, so `--record` died on its first
-    # file with `FileNotFoundError` on `.ci/policy/.actions-upgrade-blocklist`, and every golden
-    # became unrefreshable. That is not a cosmetic outage: eight corpora were
-    # legitimately refreshed afterwards and their `corpus-sha256` headers could not
-    # follow, which is what `test_ts_records_golden_matches_the_python_records_projection`
-    # was reporting.
+    # this recorder was left on the hardcoded path, so `--record` died on its first file with `FileNotFoundError` on `.ci/policy/.actions-upgrade-blocklist`, and every golden became unrefreshable. That is not a cosmetic outage: eight corpora were legitimately refreshed afterwards and their `corpus-sha256` headers could not follow, which is what
+    # `test_ts_records_golden_matches_the_python_records_projection` was reporting.
     #
-    # `SOURCES` is deliberately NOT path-qualified to fix this. `_slug` derives every
-    # golden's FILENAME from the source string, so adding `.ci/policy/` would rename
-    # all seventeen goldens -- a re-baseline of the whole suite wearing the costume
-    # of a one-line fix.
+    # `SOURCES` is deliberately NOT path-qualified to fix this. `_slug` derives every golden's FILENAME from the source string, so adding `.ci/policy/` would rename all seventeen goldens -- a re-baseline of the whole suite wearing the costume of a one-line fix.
     frozen: list[str] = []
     missing: list[str] = []
     for source in SOURCES:
@@ -967,9 +917,7 @@ def _record() -> int:
         shutil.copyfile(live, target)
         frozen.append(str(target))
     if missing:
-        # LOUD, AND WITHOUT WRITING ANYTHING. A partial re-record would leave the
-        # corpus half old and half new with no marker saying which, and `None` handed
-        # to `copyfile` raises a TypeError that names neither the list nor the move.
+        # LOUD, AND WITHOUT WRITING ANYTHING. A partial re-record would leave the corpus half old and half new with no marker saying which, and `None` handed to `copyfile` raises a TypeError that names neither the list nor the move.
         print(
             "cannot record: %d corpus source(s) are not tracked anywhere under any\n"
             "  basename, so `git ls-files` cannot find where they moved to:\n    %s\n"
@@ -1045,10 +993,7 @@ def _record() -> int:
         verdicts,
     )
 
-    # RECORDED FROM THE TYPESCRIPT READER, not from `allowlist.validate_reason`.
-    # A golden written by the implementation under test proves that the
-    # implementation agrees with itself, which is the shape of vacuity this
-    # whole suite exists to avoid.
+    # RECORDED FROM THE TYPESCRIPT READER, not from `allowlist.validate_reason`. A golden written by the implementation under test proves that the implementation agrees with itself, which is the shape of vacuity this whole suite exists to avoid.
     tsv.write_text(_cases_tsv(cases), encoding="utf-8")
     try:
         messages = _run_tsx(TS_MESSAGES_DRIVER, [str(tsv), REASON_FILE])

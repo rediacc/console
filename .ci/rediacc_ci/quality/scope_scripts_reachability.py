@@ -176,9 +176,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# "Directories whose code runs in gated jobs. Deliberately NOT
-# .ci/scripts/quality or .ci/scripts/test: those are the quality lanes, which are
-# unscopeable."
+# "Directories whose code runs in gated jobs. Deliberately NOT .ci/scripts/quality or .ci/scripts/test: those are the quality lanes, which are unscopeable."
 GATED_DIRS = (
     ".github/workflows",
     ".ci/scripts/build",
@@ -188,9 +186,7 @@ GATED_DIRS = (
     ".ci/scripts/housekeeping",
 )
 
-# `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing
-# it forces full on its own. It is scanned because what it DISPATCHES to must
-# still be full. The legacy body is here for the reason in the module docstring.
+# `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The legacy body is here for the reason in the module docstring.
 GATED_FILES = ("run.sh", ".ci/legacy/run-legacy.sh")
 
 # Where the gate lives, as the CI invocation spells it. Used ONLY to reproduce
@@ -206,26 +202,15 @@ OUTPUT_STATEMENT = re.compile(r"\b(log_error|log_warn|log_info|log_debug|echo|pr
 
 # Stage 3: COMMAND POSITION.
 #
-# `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED
-# RATHER THAN ASSUMED. The twin's lead alternation is
+# `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED RATHER THAN ASSUMED. The twin's lead alternation is
 # `(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)`, written to admit a command that
-# starts after an opening single quote. GNU grep 3.12, which is what
-# `/usr/bin/grep` is on this host and therefore what the twin actually runs, does
-# NOT read `\x27` as a hex escape in an ERE: it treats `\x` as an escaped ordinary
-# `x`, so the alternative matches the literal three characters `x27`. Probed
-# 2026-09-06 on a two-line file containing `a'b` and `ax27b`:
-# `/usr/bin/grep -oE '\x27'` printed `x27`.
+# starts after an opening single quote. GNU grep 3.12, which is what `/usr/bin/grep` is on this host and therefore what the twin actually runs, does NOT read `\x27` as a hex escape in an ERE: it treats `\x` as an escaped ordinary `x`, so the alternative matches the literal three characters `x27`. Probed 2026-09-06 on a two-line file containing `a'b` and `ax27b`: `/usr/bin/grep -oE
+# '\x27'` printed `x27`.
 #
-# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in
-# `.github/workflows` are invoked as
-# `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment,
-# label-guide-comment, report-nightly-status, validate-pr and watchdog-monitor --
-# and the twin does not see any of them: its `.ci` scan counts 226 references from
-# that directory where a grep with a working single-quote alternative counts 231.
-# So an invocation whose only lead character is `'` is invisible to this gate.
+# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, report-nightly-status, validate-pr and watchdog-monitor -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
+# working single-quote alternative counts 231. So an invocation whose only lead character is `'` is invisible to this gate.
 #
-# Reproduced, not repaired: invariant 5 forbids editing the twin in the change
-# that ports it, and the differential rules on behaviour. Reported as a defect.
+# Reproduced, not repaired: invariant 5 forbids editing the twin in the change that ports it, and the differential rules on behaviour. Reported as a defect.
 _LEAD = r"(^|[ \t\v\f\r]|\"|x27|\$\(|`|&&|\|\||;)[ \t\v\f\r]*"
 _PREFIX = r"((bash|sh|source|node|python3)[ \t\v\f\r]+|npx[ \t\v\f\r]+tsx[ \t\v\f\r]+|"
 ROOT_COMMAND = re.compile(_LEAD + _PREFIX + r"\./|\"?\$[A-Za-z_]+/)?scripts/[A-Za-z0-9_./-]+")
@@ -308,10 +293,7 @@ def _refs(lines, line_re, command_re, path_re) -> list[str]:
         if OUTPUT_STATEMENT.search(line):
             continue
         for hit in command_re.findall(line):
-            # `findall` returns the group tuple when the pattern has groups, so
-            # the match text is taken from finditer instead. Kept as a named step
-            # rather than an inline comprehension because getting this wrong is
-            # silent: a tuple stringifies without raising.
+            # `findall` returns the group tuple when the pattern has groups, so the match text is taken from finditer instead. Kept as a named step rather than an inline comprehension because getting this wrong is silent: a tuple stringifies without raising.
             del hit
         for match in command_re.finditer(line):
             for path in path_re.findall(match.group(0)):
@@ -567,8 +549,7 @@ def main(argv: list[str] | None = None) -> int:
             check_path(ref, directory)
 
     if dispatch_scanned < DISPATCH_FLOOR:
-        # THE DEFECT. See dispatch_floor_refusal and the module docstring: the
-        # explanation the twin wrote for this branch is unreachable.
+        # THE DEFECT. See dispatch_floor_refusal and the module docstring: the explanation the twin wrote for this branch is unreachable.
         return dispatch_floor_refusal()
 
     if ci_scanned < CI_SCAN_FLOOR:
@@ -663,8 +644,7 @@ def selftest() -> int:
             "drill",
             ["scripts/drills/a.sh", "scripts/drills/b.sh", "scripts/drills/c.sh"],
         ),
-        # THE MIS-ATTRIBUTION THE BLOCK SCAN PRODUCED: worktree's target must not
-        # land under drill, and drill's must not land under worktree.
+        # THE MIS-ATTRIBUTION THE BLOCK SCAN PRODUCED: worktree's target must not land under drill, and drill's must not land under worktree.
         ("a neighbouring arm's target is not attributed", "worktree", ["scripts/dev/worktree.sh"]),
         ("an unknown subcommand attributes nothing", "nosuchverb", []),
     ]
@@ -688,8 +668,7 @@ def selftest() -> int:
     ctl.check("the .ci scan floor is 20", CI_SCAN_FLOOR, 20)
     ctl.check("the dispatch floor is 1", DISPATCH_FLOOR, 1)
     ctl.check("six gated directories are scanned", len(GATED_DIRS), 6)
-    # THE LEGACY BODY MUST STAY IN THE LIST. Removing it took this half to zero
-    # references on 2026-09-06 and the gate stayed green.
+    # THE LEGACY BODY MUST STAY IN THE LIST. Removing it took this half to zero references on 2026-09-06 and the gate stayed green.
     ctl.check("the legacy router body is scanned", ".ci/legacy/run-legacy.sh" in GATED_FILES, True)
 
     return 0 if ctl.report() else 1

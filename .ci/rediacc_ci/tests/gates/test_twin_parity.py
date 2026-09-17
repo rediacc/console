@@ -54,10 +54,7 @@ from rediacc_ci.tests.gates import harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 
-# A ported module is one whose name starts `test_gate_` AND that declares a
-# `BASH_TWIN`. Both halves matter: the prefix keeps this file and the harness's own
-# controls out of the set, and the attribute is what makes membership a DECLARATION
-# rather than a guess about a filename.
+# A ported module is one whose name starts `test_gate_` AND that declares a `BASH_TWIN`. Both halves matter: the prefix keeps this file and the harness's own controls out of the set, and the attribute is what makes membership a DECLARATION rather than a guess about a filename.
 MODULE_GLOB = "test_gate_*.py"
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
@@ -70,13 +67,8 @@ PASS_LINE_RE = re.compile(r"^PASS:", re.MULTILINE)
 # driver gives up. A port may raise its own with `TWIN_TIMEOUT = <seconds>`
 # beside its `BASH_TWIN`.
 #
-# WHY THIS IS DECLARABLE RATHER THAN ONE NUMBER. It was one number, 600, and
-# that silently made a whole class of twin UNPORTABLE: `test-claude-hooks.sh`
-# runs 2 229 offline cases in 13m31s, so the driver would raise
-# `TimeoutExpired` before either side reached a verdict, and the port would look
-# like a defect in the port. A fifth batch would then select that subject,
-# discover the same wall, and drop it again -- which is how a real constraint
-# becomes folklore. The subject declares what it costs instead.
+# WHY THIS IS DECLARABLE RATHER THAN ONE NUMBER. It was one number, 600, and that silently made a whole class of twin UNPORTABLE: `test-claude-hooks.sh` runs 2 229 offline cases in 13m31s, so the driver would raise `TimeoutExpired` before either side reached a verdict, and the port would look like a defect in the port. A fifth batch would then select that subject, discover the same
+# wall, and drop it again -- which is how a real constraint becomes folklore. The subject declares what it costs instead.
 #
 # CAPPED, because a declared timeout is also a way to hang the suite forever.
 # `check:ci-pytest` is the slowest gate in the estate already; anything past the
@@ -85,8 +77,7 @@ DEFAULT_TWIN_TIMEOUT = 600
 MAX_TWIN_TIMEOUT = 1800
 
 
-# The attribute a port sets to say "yes, my twin touches the real tree, and I
-# have arranged to be serialised against everything else that does".
+# The attribute a port sets to say "yes, my twin touches the real tree, and I have arranged to be serialised against everything else that does".
 REAL_TREE_ATTR = "REAL_TREE_TWIN"
 
 
@@ -105,9 +96,7 @@ def ported_modules() -> list[tuple[str, pathlib.Path, str, int]]:
     return found
 
 
-# Kept beside the tuple list because `group_for` reads DECLARATIONS off the
-# imported module, not off its path -- a name in a file is a guess, an attribute
-# on the module is a statement.
+# Kept beside the tuple list because `group_for` reads DECLARATIONS off the imported module, not off its path -- a name in a file is a guess, an attribute on the module is a statement.
 MODULE_OBJECTS: dict[str, object] = {}
 
 
@@ -334,8 +323,7 @@ def test_a_changed_hash_forces_a_re_drive_and_an_unchanged_one_does_not(gate, tm
     gate.assert_eq(may_reuse("s", "", "", led), False, "an unreadable side is never reusable")
     gate.ok("control: an empty digest cannot satisfy the key")
 
-    # LAST ROW WINS. An append-only ledger keeps Monday's agreement after
-    # Tuesday's divergence, and "has it ever agreed" is the wrong question.
+    # LAST ROW WINS. An append-only ledger keeps Monday's agreement after Tuesday's divergence, and "has it ever agreed" is the wrong question.
     led.unlink()
     row()
     row(agreed=False)
@@ -344,12 +332,8 @@ def test_a_changed_hash_forces_a_re_drive_and_an_unchanged_one_does_not(gate, tm
     )
     gate.ok("control: a recorded disagreement revokes an earlier agreement")
 
-    # A CORRUPT LINE means the ledger cannot answer, not that it answers yes.
-    # THE GOOD ROW ABOVE IT IS THE POINT, and its absence made this control
-    # vacuous on the first attempt: with only a corrupt line in the file, a rule
-    # that skipped the line still found nothing and still refused, so the control
-    # passed against the mutant. A truncated write lands AFTER earlier rows, and
-    # skipping it hands back a stale agreement -- which is the failure.
+    # A CORRUPT LINE means the ledger cannot answer, not that it answers yes. THE GOOD ROW ABOVE IT IS THE POINT, and its absence made this control vacuous on the first attempt: with only a corrupt line in the file, a rule that skipped the line still found nothing and still refused, so the control passed against the mutant. A truncated write lands AFTER earlier rows, and skipping
+    # it hands back a stale agreement -- which is the failure.
     led.unlink()
     row()
     led.write_text(
@@ -431,16 +415,14 @@ def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, 
     gate.assert_eq(third["agreed"], False, "a disagreement is recorded as one")
     gate.ok("control: the port side is tracked independently")
 
-    # UNREADABLE SIDE. A deleted twin must degrade to "cannot key this" rather
-    # than to a crash inside a test that is measuring something else.
+    # UNREADABLE SIDE. A deleted twin must degrade to "cannot key this" rather than to a crash inside a test that is measuring something else.
     twin.unlink()
     record_parity("subject", twin_rel, port, agreed=True)
     fourth = json.loads(ledger.read_text(encoding="utf-8").splitlines()[3])
     gate.assert_eq(fourth["twin_sha"], "", "a missing file keys to empty, not an exception")
     gate.ok("control: an absent side does not raise")
 
-    # UNWRITABLE LEDGER, driven for real: /proc rejects the mkdir. If the
-    # swallow is ever removed this line raises and the test says so.
+    # UNWRITABLE LEDGER, driven for real: /proc rejects the mkdir. If the swallow is ever removed this line raises and the test says so.
     monkeypatch.setattr(paths, "from_root", pathlib.Path("/proc/1").joinpath)
     record_parity("subject", twin_rel, port, agreed=True)
     gate.ok("control: a ledger that cannot be written is swallowed, not raised")
@@ -474,9 +456,7 @@ def test_the_real_tree_opt_in_still_discriminates(gate):
     )
     gate.ok("clean: declared, and it lands in the real-tree group")
 
-    # THE ONE THAT MAKES THE OPT-IN MEAN SOMETHING. An XDIST_GROUP of its own
-    # wins in `group_for`, so the module is NOT serialised against the battery
-    # even though it claims to be. A one-condition check would admit this.
+    # THE ONE THAT MAKES THE OPT-IN MEAN SOMETHING. An XDIST_GROUP of its own wins in `group_for`, so the module is NOT serialised against the battery even though it claims to be. A one-condition check would admit this.
     why = real_tree_admission(
         _Stub(BASH_TWIN=writer, REAL_TREE_TWIN=True, XDIST_GROUP="something-else"), writer, unsafe
     )
@@ -495,9 +475,7 @@ def test_the_real_tree_opt_in_still_discriminates(gate):
 def test_no_ported_twin_is_a_real_tree_writer_or_scanner(gate):
     """A twin driven from here must be fixture-isolated. See `real_tree_tests`."""
     unsafe = real_tree_tests()
-    # ANTI-VACUITY, and it is the whole check: an empty set would make the loop
-    # below pass for every module forever. Both sources going quiet at once is
-    # exactly the state this refusal must not be satisfied by.
+    # ANTI-VACUITY, and it is the whole check: an empty set would make the loop below pass for every module forever. Both sources going quiet at once is exactly the state this refusal must not be satisfied by.
     if not unsafe:
         gate.log_fail(
             "neither gates.lock.json nor run-all.sh's *_FALLBACK arrays name a single "
@@ -526,14 +504,8 @@ def test_no_ported_twin_is_a_real_tree_writer_or_scanner(gate):
     )
 
 
-# NOT `*.observations.jsonl`, AND THE SUFFIX IS THE WHOLE REASON. That glob is
-# enumerated by `scripts/lib/shadow-gate.ts`, which reads every file matching it as
-# a SHADOW PAIR ledger and expects a `tree` field on every row. This file is a
-# parity ledger, not a shadow pair -- there is no `twin-parity` gate pair to
-# assert -- so occupying the glob made the standing shadow sweep report
-# `RED twin-parity` on a file that is working exactly as intended. Measured
-# 2026-09-08: `shadow-gate.ts --pair twin-parity --assert` died at :1085 with
-# `TypeError: Cannot read properties of undefined (reading 'clean')`.
+# NOT `*.observations.jsonl`, AND THE SUFFIX IS THE WHOLE REASON. That glob is enumerated by `scripts/lib/shadow-gate.ts`, which reads every file matching it as a SHADOW PAIR ledger and expects a `tree` field on every row. This file is a parity ledger, not a shadow pair -- there is no `twin-parity` gate pair to assert -- so occupying the glob made the standing shadow sweep report
+# `RED twin-parity` on a file that is working exactly as intended. Measured 2026-09-08: `shadow-gate.ts --pair twin-parity --assert` died at :1085 with `TypeError: Cannot read properties of undefined (reading 'clean')`.
 #
 # The SHAPE still mirrors those files deliberately, so a future skip has a
 # precedent to follow. Sharing a directory is fine; answering someone else's glob
@@ -575,8 +547,7 @@ def last_agreement(name: str, ledger: pathlib.Path | None = None) -> dict | None
             except ValueError:
                 # A CORRUPT LINE IS NOT A LICENCE TO SKIP. Skipping it and reading
                 # on would let a truncated write hand back an older agreement; the
-                # conservative reading is that this ledger cannot be trusted to
-                # answer, so nothing is reused.
+                # conservative reading is that this ledger cannot be trusted to answer, so nothing is reused.
                 return None
             if isinstance(row, dict) and row.get("subject") == name:
                 found = row
@@ -661,14 +632,11 @@ def record_parity(name: str, twin: str, module_path: pathlib.Path, agreed: bool)
 def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeout):
     twin_path = paths.from_root(*twin.split("/"))
 
-    # THE LEDGER IS READ BEFORE ANYTHING IS DRIVEN. Reused or not, the decision
-    # is PRINTED, because a gate that quietly stops doing most of its work is the
-    # "green that hides how much ran" this estate exists to refuse.
+    # THE LEDGER IS READ BEFORE ANYTHING IS DRIVEN. Reused or not, the decision is PRINTED, because a gate that quietly stops doing most of its work is the "green that hides how much ran" this estate exists to refuse.
     #
     # NOT `pytest.skip()`, DELIBERATELY. `check_pytest.py`'s verdict refuses a run
     # where `passed != collected`, so a skipped case would red the gate it is
-    # meant to speed up. The case passes on the strength of the recorded
-    # agreement and says so.
+    # meant to speed up. The case passes on the strength of the recorded agreement and says so.
     twin_sha, port_sha = _digest(twin_path), _digest(module_path)
     if may_reuse(name, twin_sha, port_sha):
         gate.log_pass(
@@ -678,12 +646,8 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
         )
         return
     # A TIMEOUT IS A VERDICT HERE, NOT AN ERROR. `subprocess.run(timeout=)`
-    # raises, and an escaping `TimeoutExpired` arrives as a traceback in the
-    # parity driver rather than as a statement about the subject -- so the first
-    # thing a reader learns is that the harness broke, not that the twin is too
-    # slow to be driven this way. Caught on BOTH sides, because a port that
-    # hangs and a twin that is merely long are different findings and the
-    # message has to say which.
+    # raises, and an escaping `TimeoutExpired` arrives as a traceback in the parity driver rather than as a statement about the subject -- so the first thing a reader learns is that the harness broke, not that the twin is too slow to be driven this way. Caught on BOTH sides, because a port that hangs and a twin that is merely long are different findings and the message has to say
+    # which.
     try:
         twin_run = harness.run(["bash", str(twin_path)], timeout=twin_timeout)
     except subprocess.TimeoutExpired:

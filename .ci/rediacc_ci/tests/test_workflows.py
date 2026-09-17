@@ -56,22 +56,15 @@ DATA = pathlib.Path(__file__).resolve().parent / "data"
 FIXTURE = DATA / "lanes-fixture.yml"
 GOLDEN = DATA / "lanes-fixture.golden.json"
 
-# The corpus, DERIVED rather than typed. Three prefixes because those are the
-# three that existing gates read: `check_actions_allowlist.py:64` names all of
-# them, and a parser that handled only `.github/workflows` would be a narrower
-# replacement than the thing it replaces.
+# The corpus, DERIVED rather than typed. Three prefixes because those are the three that existing gates read: `check_actions_allowlist.py:64` names all of them, and a parser that handled only `.github/workflows` would be a narrower replacement than the thing it replaces.
 CORPUS_PATHSPECS = (
     ".github/workflows/*.yml",
     ".github/actions/*/action.yml",
     ".ci/breakpoint/workflow/*.yml",
 )
 
-# yaml.safe_load, then normalise PyYAML's booleanised KEYS back to strings. See
-# the module docstring of rediacc_ci.workflows: `on:` becomes the key True there,
-# and `check_secret_reachability.py:151` carries a workaround for exactly that.
-# The normalisation is applied to PyYAML's side only, so the divergence is
-# converted deliberately rather than hidden -- and it is asserted directly by
-# `test_pyyaml_turns_the_on_key_into_a_boolean` below.
+# yaml.safe_load, then normalise PyYAML's booleanised KEYS back to strings. See the module docstring of rediacc_ci.workflows: `on:` becomes the key True there, and `check_secret_reachability.py:151` carries a workaround for exactly that. The normalisation is applied to PyYAML's side only, so the divergence is converted deliberately rather than hidden -- and it is asserted directly
+# by `test_pyyaml_turns_the_on_key_into_a_boolean` below.
 _PYYAML_SNIPPET = """
 import json, sys, yaml
 
@@ -126,9 +119,7 @@ def roundtrip(value):
     return json.loads(json.dumps(value, default=str, sort_keys=True))
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY: both sides of both differentials must actually be present
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY: both sides of both differentials must actually be present ---------------------------------------------------------------------------
 
 
 def test_pyyaml_is_reachable_through_the_system_interpreter():
@@ -174,15 +165,12 @@ def test_the_corpus_is_derived_and_covers_every_tracked_workflow():
     on_disk = set((root / ".github" / "workflows").glob("*.yml"))
     assert on_disk <= set(files), "a workflow on disk is missing from the enumeration"
     assert all(p.is_file() for p in files)
-    # Corpus-derived: every workflow declares at least one job, so the job count
-    # cannot honestly be below the file count.
+    # Corpus-derived: every workflow declares at least one job, so the job count cannot honestly be below the file count.
     jobs = sum(len(workflows.load_workflow(p).jobs) for p in files if "workflows/" in str(p))
     assert jobs >= len(on_disk)
 
 
-# ---------------------------------------------------------------------------
-# Differential 1: PyYAML, whole documents, whole corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Differential 1: PyYAML, whole documents, whole corpus ---------------------------------------------------------------------------
 
 
 def test_every_tracked_workflow_parses_identically_to_pyyaml():
@@ -257,9 +245,7 @@ def test_pyyaml_turns_the_on_key_into_a_boolean():
     ).triggers
 
 
-# ---------------------------------------------------------------------------
-# Differential 2: lanes.ts, over a committed fixture with a committed golden
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Differential 2: lanes.ts, over a committed fixture with a committed golden ---------------------------------------------------------------------------
 
 
 def run_lanes_ts(path: pathlib.Path):
@@ -277,9 +263,7 @@ def run_lanes_ts(path: pathlib.Path):
         "console.log(JSON.stringify([...laneCapabilities("
         "fs.readFileSync(process.argv[2], 'utf-8')).values()]));\n" % diff.repo()
     )
-    # PID-KEYED: `.ci/cache/` is shared by every session working in this tree,
-    # and a fixed name would let two concurrent suites truncate each other's
-    # entry point mid-run.
+    # PID-KEYED: `.ci/cache/` is shared by every session working in this tree, and a fixed name would let two concurrent suites truncate each other's entry point mid-run.
     entry = (
         pathlib.Path(diff.repo()) / ".ci" / "cache" / ("lanes-differential-%d.mts" % os.getpid())
     )
@@ -403,9 +387,7 @@ def test_satisfies_reproduces_the_lane_placement_rules():
     assert mine["with-go"].satisfies(["ruff"]) is False
 
 
-# ---------------------------------------------------------------------------
-# The parser's own edges, where a differential over this corpus proves nothing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The parser's own edges, where a differential over this corpus proves nothing ---------------------------------------------------------------------------
 
 
 def test_yaml_1_1_scalar_resolution_matches_what_the_gates_already_see():
@@ -503,9 +485,7 @@ def test_a_parse_error_names_the_file_as_well_as_the_line(tmp_path):
         workflows.load(bad)
 
 
-# ---------------------------------------------------------------------------
-# The projection eight gates write by hand today
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The projection eight gates write by hand today ---------------------------------------------------------------------------
 
 
 def test_the_workflow_projection_reaches_jobs_and_steps_in_file_order():

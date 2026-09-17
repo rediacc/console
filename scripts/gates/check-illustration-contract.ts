@@ -135,15 +135,13 @@ function selftest(): number {
   let bad = 0;
   for (const c of CONTROLS) {
     const { problems } = judgeSvg('control.svg', c.svg);
-    // Bound to a local first: TS narrows `c.expect` on the ternary but not INSIDE the
-    // closure, where it is still `string | null`. `tsc` catches that and biome does not.
+    // Bound to a local first: TS narrows `c.expect` on the ternary but not INSIDE the closure, where it is still `string | null`. `tsc` catches that and biome does not.
     const needle = c.expect;
     const ok = needle === null ? problems.length === 0 : problems.some((p) => p.includes(needle));
     if (!ok) bad++;
     process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
   }
-  // The last control also asserts the COUNT, since "reports the first problem and stops"
-  // would satisfy every case above.
+  // The last control also asserts the COUNT, since "reports the first problem and stops" would satisfy every case above.
   const all = judgeSvg('control.svg', '<svg width="800"><text>x</text><rect fill="#abc"/></svg>');
   if (all.problems.length !== 3) {
     process.stdout.write(

@@ -244,14 +244,10 @@ DEFAULT_ALLOWLIST_REL = policy_rel(".plan-housekeeping-allowlist")
 # Floor. Measured 2026-09-03: 70 tracked plans. Well under it on purpose.
 DEFAULT_MIN_PLANS = 30
 
-# The header window every status regex in this repo reads
-# (`wl_checks.PLAN_HEADER_LINES`).
+# The header window every status regex in this repo reads (`wl_checks.PLAN_HEADER_LINES`).
 HEADER_LINES = 10
 
-# A BLOCKER reason shorter than this is not substantive. The twin's own number,
-# and note it is NOT the 30 that `blocker-validator.sh` uses: this gate parses
-# its allowlist itself, with a stricter bar, because an entry here suppresses a
-# clock rather than a finding.
+# A BLOCKER reason shorter than this is not substantive. The twin's own number, and note it is NOT the 30 that `blocker-validator.sh` uses: this gate parses its allowlist itself, with a stricter bar, because an entry here suppresses a clock rather than a finding.
 MIN_REASON_LENGTH = 40
 
 # The escapes, and the CI test that empties them. `common.sh` is not sourced by
@@ -262,8 +258,7 @@ _GREEN = "\033[0;32m"
 _YEL = "\033[0;33m"
 _NC = "\033[0m"
 
-# The sentinel `age_days` prints for a date it cannot read. Callers must not
-# treat it as an age.
+# The sentinel `age_days` prints for a date it cannot read. Callers must not treat it as an age.
 UNPARSEABLE = -1
 
 
@@ -273,9 +268,7 @@ def _colours() -> tuple[str, str, str, str]:
     return _RED, _GREEN, _YEL, _NC
 
 
-# ---------------------------------------------------------------------------
-# The three extractors the controls drive
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three extractors the controls drive ---------------------------------------------------------------------------
 
 
 def age_days(value: str, now: dt.datetime | None = None) -> int:
@@ -298,18 +291,10 @@ _BLOB_RE = re.compile(r"^Full-Text-Blob:[ \t]*([0-9a-f]{40})[ \t]*$")
 
 # W12 P3.3. THE RECORD-STATUS VOCABULARY IS CONFIG, NOT A LITERAL HERE.
 #
-# It used to be `re.compile(r"^Status:[ \t]*(compacted|parked)[ \t]*$")`, and the
-# bash twin carried the same alternation in a sed program, and the twin test
-# carried a third copy of that sed verbatim. Three copies of one vocabulary:
-# adding a state means finding all three, and missing one makes a plan a RECORD
-# in one reader and an OFFENDER in the other, which is precisely the disagreement
-# `record_status`'s own docstring warns about one screen below.
+# It used to be `re.compile(r"^Status:[ \t]*(compacted|parked)[ \t]*$")`, and the bash twin carried the same alternation in a sed program, and the twin test carried a third copy of that sed verbatim. Three copies of one vocabulary: adding a state means finding all three, and missing one makes a plan a RECORD in one reader and an OFFENDER in the other, which is precisely the
+# disagreement `record_status`'s own docstring warns about one screen below.
 #
-# THE CONFIG IS A MIRROR, NOT THE ORIGIN. `wl_planrec.RECORD_STATES`
-# (`.claude/hooks/stop/wl_planrec.py:155`) is canonical, and
-# `.ci/scripts/quality/check_plan_record.py` imports it by name. This gate cannot:
-# it must stay runnable in a checkout with no `.claude/`, which is the whole
-# reason it reads a config file. So the mirror is compared against the origin in
+# THE CONFIG IS A MIRROR, NOT THE ORIGIN. `wl_planrec.RECORD_STATES` (`.claude/hooks/stop/wl_planrec.py:155`) is canonical, and `.ci/scripts/quality/check_plan_record.py` imports it by name. This gate cannot: it must stay runnable in a checkout with no `.claude/`, which is the whole reason it reads a config file. So the mirror is compared against the origin in
 # BOTH directions by `test_quality_plan_housekeeping.py`; a mirror nobody
 # compares is just a fourth copy.
 DEFAULT_RECORD_STATES = ("compacted", "parked")
@@ -350,8 +335,7 @@ def _status_re(states: tuple[str, ...]) -> re.Pattern[str]:
     return _STATUS_RE_CACHE[states]
 
 
-# The DISPLAY status, scanned over the WHOLE file on purpose: some plans put
-# their header low, and this value is only ever printed.
+# The DISPLAY status, scanned over the WHOLE file on purpose: some plans put their header low, and this value is only ever printed.
 _DISPLAY_STATUS_RE = re.compile(
     r"^[ \t]*(?:\*\*)?Status[ \t]*[:=][ \t]*(?:\*\*)?([A-Za-z][A-Za-z-]*)"
 )
@@ -419,9 +403,7 @@ def blob_is_real(blob: str, root: os.PathLike[str] | str | None = None) -> bool:
     return result.stdout.strip() == "blob"
 
 
-# ---------------------------------------------------------------------------
-# The allowlist, which has its OWN parser in this gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The allowlist, which has its OWN parser in this gate ---------------------------------------------------------------------------
 
 
 def parse_allowlist(text: str) -> tuple[dict[str, str], list[str]]:
@@ -473,9 +455,7 @@ def _allowlist_lines(text: str) -> list[str]:
     return lines
 
 
-# ---------------------------------------------------------------------------
-# The inline controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The inline controls ---------------------------------------------------------------------------
 
 
 def inline_controls(delete_days: int) -> list[str]:
@@ -520,9 +500,7 @@ def inline_controls(delete_days: int) -> list[str]:
         )
         if record_blob(ctl) != self_blob:
             failures.append("control: record_blob did not read the blob out of a record header")
-        # blob_is_real reads the repository it is POINTED AT, so both directions
-        # are driven inside the scratch one. The twin uses subshells rather than
-        # a cd/cd-back pair, because an early exit between them would otherwise
+        # blob_is_real reads the repository it is POINTED AT, so both directions are driven inside the scratch one. The twin uses subshells rather than a cd/cd-back pair, because an early exit between them would otherwise
         # leave the whole gate judging the wrong tree; passing the root as an
         # argument removes the hazard rather than working around it.
         if not blob_is_real(self_blob, root=ctldir):
@@ -538,9 +516,7 @@ def inline_controls(delete_days: int) -> list[str]:
         if record_blob(ctl):
             failures.append("control: record_blob invented a blob for a record that carries none")
 
-        # A 41-hex value must be REFUSED, not silently truncated to 40. The
-        # strict gate rejects it, and a reader that accepted it would exempt a
-        # plan CI reds.
+        # A 41-hex value must be REFUSED, not silently truncated to 40. The strict gate rejects it, and a reader that accepted it would exempt a plan CI reds.
         ctl.write_text(
             "# t\nStatus: compacted\nFull-Text-Blob: %sf\n" % self_blob, encoding="utf-8"
         )
@@ -580,9 +556,7 @@ CONTROL_LINE_COMPACTION = (
 )
 
 
-# ---------------------------------------------------------------------------
-# The gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gate ---------------------------------------------------------------------------
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -614,16 +588,10 @@ def main(argv: list[str] | None = None) -> int:
         delete_days = int(settings["delete_days"])
         plan_glob = str(settings["plan_glob"])
     except (OSError, ValueError, KeyError, TypeError):
-        # The twin runs three separate `python3 -c` calls and `|| exit 2` on
-        # each, so a config missing any one key is a SETUP error rather than a
-        # verdict. One read here, same exit code.
+        # The twin runs three separate `python3 -c` calls and `|| exit 2` on each, so a config missing any one key is a SETUP error rather than a verdict. One read here, same exit code.
         return 2
 
-    # W12 P3.3. A MISSING OR EMPTY VOCABULARY IS A SETUP ERROR, not a quiet
-    # "nothing is a record". Without it no plan is a compaction record, every
-    # one of the 31 records loses its exemption at once, and the gate reds on a
-    # tree defect that is really a config that lost a key. Same exit code and
-    # same sentence as the twin, which refuses at `[[ -n "$RECORD_STATES_ALT" ]]`.
+    # W12 P3.3. A MISSING OR EMPTY VOCABULARY IS A SETUP ERROR, not a quiet "nothing is a record". Without it no plan is a compaction record, every one of the 31 records loses its exemption at once, and the gate reds on a tree defect that is really a config that lost a key. Same exit code and same sentence as the twin, which refuses at `[[ -n "$RECORD_STATES_ALT" ]]`.
     states = record_states(config)
     if not states:
         print(
@@ -669,9 +637,7 @@ def main(argv: list[str] | None = None) -> int:
         graft_shas = set(grafts_file.read_text(encoding="utf-8", errors="replace").split())
         for plan in plans:
             last = gitx.git(["log", "-1", "--format=%H", "--", plan], root=root).stdout.strip()
-            # A plan whose last commit is a graft boundary reports the
-            # boundary's date. A plan with NO commit at all is the same failure,
-            # louder.
+            # A plan whose last commit is a graft boundary reports the boundary's date. A plan with NO commit at all is the same failure, louder.
             if not last or last in graft_shas:
                 grafted.append(plan)
 
@@ -858,18 +824,10 @@ def main(argv: list[str] | None = None) -> int:
     return rc
 
 
-# NO EM DASH REACHES THIS FILE'S OUTPUT, and the first cut of the port assumed
-# one did. The twin writes `-- the entry suppresses nothing` with two ASCII
-# hyphens, not U+2014, and a `_EM_DASH` constant carried over from the sibling
-# ports turned that one message into a MISMATCH_FINDINGS the differential caught
-# on its third recorded tree. Named here rather than silently corrected: the two
-# characters are indistinguishable in a code review and identical in meaning to
-# a reader, which is exactly why only a byte comparison finds them.
+# NO EM DASH REACHES THIS FILE'S OUTPUT, and the first cut of the port assumed one did. The twin writes `-- the entry suppresses nothing` with two ASCII hyphens, not U+2014, and a `_EM_DASH` constant carried over from the sibling ports turned that one message into a MISMATCH_FINDINGS the differential caught on its third recorded tree. Named here rather than silently corrected: the
+# two characters are indistinguishable in a code review and identical in meaning to a reader, which is exactly why only a byte comparison finds them.
 
-# The remedy block, a heredoc in the twin. NOTHING HERE ASKS FOR A DELETION, and
-# that is the W12 change: the operator's standing rule is that nothing is
-# deleted, and a gate demanding an act nobody may perform is a gate whose only
-# exit is a suppression.
+# The remedy block, a heredoc in the twin. NOTHING HERE ASKS FOR A DELETION, and that is the W12 change: the operator's standing rule is that nothing is deleted, and a gate demanding an act nobody may perform is a gate whose only exit is a suppression.
 _REMEDY = """
   Fix, in order of preference. NOTHING HERE ASKS YOU TO DELETE A PLAN: the
   operator's standing rule is that nothing is deleted, and a gate demanding an
@@ -940,9 +898,7 @@ def _line_count(path: pathlib.Path) -> int:
         return 0
 
 
-# ---------------------------------------------------------------------------
-# The selftest, an ADDITION on top of the inline controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The selftest, an ADDITION on top of the inline controls ---------------------------------------------------------------------------
 
 _GOOD_REASON = (
     "this plan is the standing reference for the release rotation and must outlive the window"
@@ -972,24 +928,13 @@ def selftest() -> int:
         5,
     )
 
-    # `ignore_cleanup_errors` BECAUSE THE FAILURE IS JANITORIAL, NOT A VERDICT.
-    # This block runs `git init` and real commits inside the temp tree, and on a
-    # loaded runner the directory can still be gaining files when
-    # `TemporaryDirectory.__exit__` walks it, so `shutil.rmtree` raises
-    # `OSError: [Errno 39] Directory not empty` and the selftest reports a
-    # FAILURE that says nothing about any control. Observed once in CI, job
-    # 104604932125.
+    # `ignore_cleanup_errors` BECAUSE THE FAILURE IS JANITORIAL, NOT A VERDICT. This block runs `git init` and real commits inside the temp tree, and on a loaded runner the directory can still be gaining files when `TemporaryDirectory.__exit__` walks it, so `shutil.rmtree` raises `OSError: [Errno 39] Directory not empty` and the selftest reports a FAILURE that says nothing about
+    # any control. Observed once in CI, job 104604932125.
     #
-    # SAFE HERE IN A WAY IT WOULD NOT BE ELSEWHERE, which is the reason this is
-    # fixed on a single observation while the control-vacuity flake next door is
-    # not: every `ctl.check` in this block has already RUN and been recorded by
-    # the time `__exit__` is reached. Tolerating undeleted scratch cannot hide a
-    # failing assertion -- it can only stop leftover bytes in /tmp from being
+    # SAFE HERE IN A WAY IT WOULD NOT BE ELSEWHERE, which is the reason this is fixed on a single observation while the control-vacuity flake next door is not: every `ctl.check` in this block has already RUN and been recorded by the time `__exit__` is reached. Tolerating undeleted scratch cannot hide a failing assertion -- it can only stop leftover bytes in /tmp from being
     # reported as one. Nothing is suppressed; the verdict is unchanged.
     #
-    # The writer was NOT identified (no process is leaked -- every call here is a
-    # synchronous `subprocess.run`), so this tolerates the debris rather than
-    # claiming to have removed its cause.
+    # The writer was NOT identified (no process is leaked -- every call here is a synchronous `subprocess.run`), so this tolerates the debris rather than claiming to have removed its cause.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         base = pathlib.Path(tmp)
         record = base / "r.md"
@@ -1037,8 +982,7 @@ def selftest() -> int:
         ctl.truthy("ALLOW: a one-field line is malformed", any("malformed" in p for p in problems))
 
         # A TAB-ONLY LINE IS NOT BLANK to the twin, because `${line// /}` strips
-        # spaces and not tabs. It therefore reaches the entry branch and is
-        # reported as malformed. Reproduced rather than tidied.
+        # spaces and not tabs. It therefore reaches the entry branch and is reported as malformed. Reproduced rather than tidied.
         _exempt, problems = parse_allowlist("# BLOCKER: %s\n\t\n" % _GOOD_REASON)
         ctl.truthy(
             "ALLOW: a TAB-only line is malformed, not blank",
@@ -1058,11 +1002,7 @@ def selftest() -> int:
             (tree / "agent").mkdir(parents=True, exist_ok=True)
             (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
             (tree / ".ci" / "config" / "plan-lifecycle.json").write_text(
-                # `record_states` IS NOT OPTIONAL HERE. main() refuses a config
-                # without it (return 2), which is the right refusal and is why
-                # this fixture must carry it: a fixture missing the key does not
-                # test the gate, it tests the refusal, and every case below then
-                # reports 2 where it wanted 0 or 1.
+                # `record_states` IS NOT OPTIONAL HERE. main() refuses a config without it (return 2), which is the right refusal and is why this fixture must carry it: a fixture missing the key does not test the gate, it tests the refusal, and every case below then reports 2 where it wanted 0 or 1.
                 '{"plan_glob": "agent/PLAN-*.md", "warn_days": 26, "delete_days": 33,'
                 ' "record_states": ["compacted", "parked"]}\n',
                 encoding="utf-8",
@@ -1224,9 +1164,7 @@ def selftest() -> int:
         )
         ctl.check("PARKED: parking buys a smaller file, never an exemption", run(parked), 1)
 
-        # THE EXEMPTION THAT ACTUALLY WORKS, driven with a REAL blob minted in
-        # the fixture's own repository. Without this the compaction branch could
-        # be dead code that only ever produced offenders.
+        # THE EXEMPTION THAT ACTUALLY WORKS, driven with a REAL blob minted in the fixture's own repository. Without this the compaction branch could be dead code that only ever produced offenders.
         compacted = build(
             "compacted",
             {

@@ -271,8 +271,7 @@ function rollToNextMatch(ctx: ScanContext, start: number): { off: number; hits: 
   let off = start;
   for (;;) {
     // a and b are the true sums for the window at `off`; both stay
-    // non-negative by construction and well inside the exact-integer range
-    // of a double. M is 2^16, so `& (M - 1)` is `% M` on these values.
+    // non-negative by construction and well inside the exact-integer range of a double. M is 2^16, so `& (M - 1)` is `% M` on these values.
     const low = a & (M - 1);
     const hits = seen[low] === 0 ? 0 : confirmAtWindow(ctx, off, low, b, runLen >= blockSize);
     if (hits > 0) return { off, hits };

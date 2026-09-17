@@ -93,9 +93,7 @@ def _bash_major(version: str) -> int:
     return int(out) if out else 0
 
 
-# ---------------------------------------------------------------------------
-# get_major, against the real pipeline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- get_major, against the real pipeline ---------------------------------------------------------------------------
 
 
 def test_get_major_agrees_with_the_pipeline_on_every_shape() -> None:
@@ -119,9 +117,7 @@ def test_get_major_orders_a_major_bump_above_a_minor_one() -> None:
     assert not go_deps.get_major("v1.9.9") > go_deps.get_major("v1.2.3")
 
 
-# ---------------------------------------------------------------------------
-# The bash read, against the real read
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The bash read, against the real read ---------------------------------------------------------------------------
 
 
 def test_read_fields_agrees_with_bash_read() -> None:
@@ -143,9 +139,7 @@ def test_the_sentinel_remainder_survives_into_the_report() -> None:
     assert fields[3] == "a  b   c"
 
 
-# ---------------------------------------------------------------------------
-# The JSON slurp, against the real jq
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The JSON slurp, against the real jq ---------------------------------------------------------------------------
 
 STREAM = (
     '{"Path":"main","Version":"v0.1.0","Main":true}\n'
@@ -179,9 +173,7 @@ def test_slurp_and_projection_agree_with_jq() -> None:
         env={"STREAM": STREAM, "PATH": "/usr/bin:/bin"},
     )
     assert code == 0, err
-    # jq renders the trailing empty Time as a trailing space, and so does the
-    # projection above. Compared as-is rather than stripped: that space reaches
-    # `read`, where it decides whether `uptime` is empty.
+    # jq renders the trailing empty Time as a trailing space, and so does the projection above. Compared as-is rather than stripped: that space reaches `read`, where it decides whether `uptime` is empty.
     assert _python_records(STREAM) == out.split("\n")[:-1]
 
 
@@ -206,9 +198,7 @@ def test_slurp_raises_on_garbage_rather_than_returning_empty() -> None:
         raise AssertionError(bad)
 
 
-# ---------------------------------------------------------------------------
-# The date parser and the module discovery
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The date parser and the module discovery ---------------------------------------------------------------------------
 
 
 def test_parse_date_is_gnu_date() -> None:
@@ -235,42 +225,29 @@ def test_go_dirs_on_a_tree_with_no_private_directory(tmp_path: pathlib.Path) -> 
     assert go_deps.go_dirs(tmp_path) == []
 
 
-# ---------------------------------------------------------------------------
-# The advisory shape
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The advisory shape ---------------------------------------------------------------------------
 
 
 def test_emit_advisory_header_is_id_then_name_in_parens(capsys, monkeypatch) -> None:
-    # RESET INSIDE THE TEST, not in the autouse fixture. `capsys` installs its
-    # replacement streams AFTER fixture setup, so a logger bound during setup
-    # writes to pytest's outer capture and `capsys.readouterr().err` comes back
-    # empty -- a test that reads as "the gate printed nothing" when the gate
-    # printed exactly the right thing somewhere else.
+    # RESET INSIDE THE TEST, not in the autouse fixture. `capsys` installs its replacement streams AFTER fixture setup, so a logger bound during setup writes to pytest's outer capture and `capsys.readouterr().err` comes back empty -- a test that reads as "the gate printed nothing" when the gate printed exactly the right thing somewhere else.
     #
     # BOTH RENDERINGS ARE PINNED, and the environment is SET rather than
     # inherited. `ci_error` is `::error::` on STDOUT when CI=true and
-    # `log_error` on STDERR otherwise (go_deps.py:222-232) -- "THE PREFIX IS THE
-    # ENVIRONMENT'S DECISION, NOT THE GATE'S". This test used to assert
-    # `captured.err` unconditionally, which is true only off CI: it passed on
-    # every developer machine and failed in run 34970782616, the first in this
-    # wave to let quality-security finish, with the header sitting in `out`.
-    # Asserting one rendering while the code documents two is how a gate gets
-    # exercised in only half the world it runs in.
+    # `log_error` on STDERR otherwise (go_deps.py:222-232) -- "THE PREFIX IS THE ENVIRONMENT'S DECISION, NOT THE GATE'S". This test used to assert `captured.err` unconditionally, which is true only off CI: it passed on every developer machine and failed in run 34970782616, the first in this wave to let quality-security finish, with the header sitting in `out`. Asserting one
+    # rendering while the code documents two is how a gate gets exercised in only half the world it runs in.
     monkeypatch.delenv("CI", raising=False)
     log.reset()
     go_deps.emit_advisory("error", "github.com/a/b", "go-deps-blocklist entry", "do the thing")
     captured = capsys.readouterr()
     assert "github.com/a/b (go-deps-blocklist entry)" in captured.err
-    # The hints go to STDOUT while the header goes to STDERR. That split is
-    # emit-advisory.sh's, and it is what the shadow comparator sees.
+    # The hints go to STDOUT while the header goes to STDERR. That split is emit-advisory.sh's, and it is what the shadow comparator sees.
     assert captured.out == "  Fix: do the thing\n"
 
     monkeypatch.setenv("CI", "true")
     log.reset()
     go_deps.emit_advisory("error", "github.com/a/b", "go-deps-blocklist entry", "do the thing")
     captured = capsys.readouterr()
-    # Under CI the annotation and the hint share STDOUT, because a GitHub
-    # workflow command is only read there.
+    # Under CI the annotation and the hint share STDOUT, because a GitHub workflow command is only read there.
     assert captured.out == (
         "::error::github.com/a/b (go-deps-blocklist entry)\n  Fix: do the thing\n"
     )

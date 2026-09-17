@@ -216,9 +216,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The corpus and the artifacts pointers resolve against. Every one is a seam so
-# the controls can drive the whole gate against fixtures instead of the real
-# tree. The environment variable names are the twin's.
+# The corpus and the artifacts pointers resolve against. Every one is a seam so the controls can drive the whole gate against fixtures instead of the real tree. The environment variable names are the twin's.
 SEAMS = {
     "TRAP_CORPUS": ("docs", "agent-reference", "TRAPS.md"),
     "TRAP_MANIFEST": ("scripts", "ci-runner", "manifest.ts"),
@@ -230,8 +228,7 @@ SEAMS = {
 }
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not
-# derived and for the two occasions an unratcheted floor disarmed F1's control.
-# Must equal `.ci/scripts/quality/check-trap-registry.sh` line 118.
+# derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal `.ci/scripts/quality/check-trap-registry.sh` line 118.
 TRAP_FLOOR_DEFAULT = 88
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
@@ -408,8 +405,7 @@ class Registry:
                 continue
             kind = "fires" if re.search(r"check_inject[ \t]+fires", joined) else "silent"
             needle = ""
-            # awk: match(line, /"[^"]*"[^"]*$/) then the first quoted run inside
-            # that tail. The LAST quoted argument on the line.
+            # awk: match(line, /"[^"]*"[^"]*$/) then the first quoted run inside that tail. The LAST quoted argument on the line.
             tail_match = re.search(r'"[^"]*"[^"]*$', joined)
             if tail_match:
                 inner = re.search(r'"[^"]*"', tail_match.group(0))
@@ -638,8 +634,7 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
                     % (where, entry.trap_id, ptr)
                 )
 
-    # F1 POPULATION FLOOR, last so a truncated corpus reports its content
-    # problems too.
+    # F1 POPULATION FLOOR, last so a truncated corpus reports its content problems too.
     if shape.entries < floor:
         err(
             "the corpus holds %d entries, below the floor of %d. Either the parser "
@@ -754,16 +749,12 @@ def run_controls(control_dir: pathlib.Path) -> bool:
     tree: a gate whose controls are broken cannot report anything about
     anything.
     """
-    # NO `registry` ARGUMENT. F6 builds its OWN registry out of the fixtures
-    # below and never consults the real one: a control that read the real
-    # manifest would go red the day someone renamed a gate, which is a finding
-    # about the tree wearing the costume of a broken control.
+    # NO `registry` ARGUMENT. F6 builds its OWN registry out of the fixtures below and never consults the real one: a control that read the real manifest would go red the day someone renamed a gate, which is a finding about the tree wearing the costume of a broken control.
     tally = Controls6()
     files = control_dir / "files"
     (files / "sub").mkdir(parents=True, exist_ok=True)
 
-    # A live pointer target for the positive controls: named by a fake manifest,
-    # so it is live at hop 1.
+    # A live pointer target for the positive controls: named by a fake manifest, so it is live at hop 1.
     (files / "sub" / "ctl-guard.sh").write_text("#!/bin/bash\necho real\n", encoding="utf-8")
     (files / "sub" / "ctl-orphan.sh").write_text("x\n", encoding="utf-8")
     (control_dir / "manifest.ts").write_text(CONTROL_MANIFEST, encoding="utf-8")
@@ -1046,8 +1037,7 @@ def main(argv: list[str] | None = None) -> int:
     registry = Registry(resolve_seams(root))
     floor = int(os.environ.get("TRAP_FLOOR", "") or TRAP_FLOOR_DEFAULT)
 
-    # `--scan-only` runs the scan WITHOUT the controls. Nothing in package.json
-    # or CI uses it, deliberately.
+    # `--scan-only` runs the scan WITHOUT the controls. Nothing in package.json or CI uses it, deliberately.
     if args[:1] != ["--scan-only"]:
         with tempfile.TemporaryDirectory() as tmp:
             if not run_controls(pathlib.Path(tmp)):
@@ -1056,21 +1046,14 @@ def main(argv: list[str] | None = None) -> int:
     shape = Shape()
     count = scan(registry, floor, shape)
 
-    # A DEFECT IN THE TWIN, PRESERVED RATHER THAN REPAIRED, and it is worth
-    # naming precisely because the comment next to it explains the OPPOSITE
-    # intent. `scan` in bash ends with `[ "$errors" -eq 0 ]`, so what `main`
+    # A DEFECT IN THE TWIN, PRESERVED RATHER THAN REPAIRED, and it is worth naming precisely because the comment next to it explains the OPPOSITE intent. `scan` in bash ends with `[ "$errors" -eq 0 ]`, so what `main`
     # captures in `found=$?` is a BOOLEAN, not the finding count -- deliberately,
     # because "a shell return is taken mod 256, so exactly 256 findings would
     # return 0 and read as a clean scan". But `main` then prints that boolean as
-    # `"$found trap-registry finding(s)"`, so the summary line says "1
-    # finding(s)" no matter how many there are. The findings themselves are all
+    # `"$found trap-registry finding(s)"`, so the summary line says "1 finding(s)" no matter how many there are. The findings themselves are all
     # printed above it, so nothing is hidden; the count is simply wrong.
     #
-    # A port that printed the real count would be NON-EQUIVALENT to the gate CI
-    # runs, and the shadow ledger would attest to a summary line the twin never
-    # emits. Measured: the first recording of this pair reported
-    # MISMATCH_FINDINGS on four of five fixture trees for exactly this line.
-    # Fixing it belongs in a change that touches BOTH files.
+    # A port that printed the real count would be NON-EQUIVALENT to the gate CI runs, and the shadow ledger would attest to a summary line the twin never emits. Measured: the first recording of this pair reported MISMATCH_FINDINGS on four of five fixture trees for exactly this line. Fixing it belongs in a change that touches BOTH files.
     found = 1 if count > 0 else 0
     if found > 0:
         log.error(
@@ -1079,8 +1062,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # Print the SHAPE, not just the verdict: a reader can notice when a number
-    # collapses, and "OK" tells nobody that the corpus stopped being parsed.
+    # Print the SHAPE, not just the verdict: a reader can notice when a number collapses, and "OK" tells nobody that the corpus stopped being parsed.
     log.info(
         "trap registry OK: %d entries (floor %d), %d JUDGMENT-ONLY, %d carrying residue, "
         "%d live pointers (%d gate, %d hook, %d file)"

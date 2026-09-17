@@ -105,14 +105,10 @@ from dataclasses import dataclass, field
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
-# The one root override, spelled the way `rediacc_ci.paths` spells it, so a
-# harness that wants every gate pointed at a fixture sets ONE variable rather
-# than learning this gate's private name.
+# The one root override, spelled the way `rediacc_ci.paths` spells it, so a harness that wants every gate pointed at a fixture sets ONE variable rather than learning this gate's private name.
 ROOT_ENV = "REDIACC_CI_ROOT"
 
-# The files whose text REGISTERS something. Named individually and required to
-# exist: a wiring file that moves is a route that silently empties, and a route
-# that silently empties turns live gates into findings.
+# The files whose text REGISTERS something. Named individually and required to exist: a wiring file that moves is a route that silently empties, and a route that silently empties turns live gates into findings.
 WIRING_FILES = (
     "package.json",
     "pyproject.toml",
@@ -122,25 +118,16 @@ WIRING_FILES = (
 )
 WIRING_DIRS = (".github/workflows/",)
 
-# Prose. A plan, a brief, a design doc and a status report all name Python paths
-# by the hundred and execute none of them. `.ci/shadow/` is excluded here and
-# handled as its own route SO THAT THE ROUTE CAN EXPIRE: a ledger entry is a
-# permanent record of a comparison that happened once, so admitting it as an
-# ordinary mention would keep a deleted twin's port alive forever.
+# Prose. A plan, a brief, a design doc and a status report all name Python paths by the hundred and execute none of them. `.ci/shadow/` is excluded here and handled as its own route SO THAT THE ROUTE CAN EXPIRE: a ledger entry is a permanent record of a comparison that happened once, so admitting it as an ordinary mention would keep a deleted twin's port alive forever.
 PROSE_PREFIXES = ("agent/", "docs/", ".ci/shadow/")
 PROSE_SUFFIXES = (".md", ".txt")
 
-# Roots a dotted module name is resolved against, in the order the running
-# programs really use them. `.ci` and `.claude` are on sys.path via
+# Roots a dotted module name is resolved against, in the order the running programs really use them. `.ci` and `.claude` are on sys.path via
 # `pyproject.toml`'s `pythonpath` and via `_cipath`; the repository root and
 # `scripts/` are how the flat script directories reach their neighbours.
 IMPORT_ROOTS = (".ci", ".claude", "", "scripts")
 
-# GLOB DISCOVERY, declared by name with the site that does it, exactly as
-# `.ci/policy/.dead-bash-allowlist` declares `glob:` for shell. Never inferred:
-# `HERE.glob("*.py")` filtered by a prefix tuple is not something a static reader
-# can be trusted to recognise, and guessing wrong in the permissive direction
-# would admit a whole directory.
+# GLOB DISCOVERY, declared by name with the site that does it, exactly as `.ci/policy/.dead-bash-allowlist` declares `glob:` for shell. Never inferred: `HERE.glob("*.py")` filtered by a prefix tuple is not something a static reader can be trusted to recognise, and guessing wrong in the permissive direction would admit a whole directory.
 GLOB_ROOTS = {
     ".claude/rediacc_hooks/guards/": (
         ("block_", "warn_", "require_"),
@@ -152,31 +139,16 @@ GLOB_ROOTS = {
     ),
 }
 
-# EXEMPT BY NAME, WITH THE REASON, AND PRINTED ON EVERY RUN. The `manual:` class
-# of `.ci/policy/.dead-bash-allowlist`, in code rather than in a policy file
-# because a seventeenth file in `.ci/policy/` has to be added to two POLICY_FILES
-# lists and a README section in the same commit (see check:ci-policy-inventory),
-# and one entry does not earn that.
+# EXEMPT BY NAME, WITH THE REASON, AND PRINTED ON EVERY RUN. The `manual:` class of `.ci/policy/.dead-bash-allowlist`, in code rather than in a policy file because a seventeenth file in `.ci/policy/` has to be added to two POLICY_FILES lists and a README section in the same commit (see check:ci-policy-inventory), and one entry does not earn that.
 #
 # THE EXEMPTION IS ITSELF CHECKED, in both directions, which is what stops it
 # from becoming the quiet kind. A named file that no longer exists is a finding,
-# and so is a named file that has ACQUIRED a real route: at that moment the
-# exemption stopped being true and the next reader would take it on trust.
-# EMPTY SINCE 2026-09-09, and the emptiness is this mechanism WORKING rather than an
-# absence of exemptions to make. The sole entry named `.claude/rediacc_hooks/run_tests.py`,
-# and W8 P6's `.ci/config/python-env-registry.json` began listing that module the same day
-# because it reads the environment. An inventory listing is a deliberate admission route
-# here, not an accident of the matcher -- the `mentioned` route's own docstring names
-# `scripts/data/hook-inventory-baseline.json` as what keeps 44 live guards admitted -- so
-# the file acquired a real route and the exemption stopped being true. The gate said
-# exactly that, in the direction that is easy to leave unchecked, and this is that
-# assertion being obeyed rather than argued with.
+# and so is a named file that has ACQUIRED a real route: at that moment the exemption stopped being true and the next reader would take it on trust. EMPTY SINCE 2026-09-09, and the emptiness is this mechanism WORKING rather than an absence of exemptions to make. The sole entry named `.claude/rediacc_hooks/run_tests.py`, and W8 P6's `.ci/config/python-env-registry.json` began
+# listing that module the same day because it reads the environment. An inventory listing is a deliberate admission route here, not an accident of the matcher -- the `mentioned` route's own docstring names `scripts/data/hook-inventory-baseline.json` as what keeps 44 live guards admitted -- so the file acquired a real route and the exemption stopped being true. The gate said exactly
+# that, in the direction that is easy to leave unchecked, and this is that assertion being obeyed rather than argued with.
 #
-# THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the
-# exemption was unconditional, while the registry lists this module only for as long as it
-# reads an environment variable. If that stops being true the file goes DEAD again with no
-# exemption standing, and the answer then is to re-add an entry here with a fresh reason,
-# not to assume the old one still applies.
+# THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
+# still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
     ".ci/rediacc_ci/proxies/cli_manifest.py": (
         "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
@@ -254,9 +226,7 @@ def tracked_files(root: pathlib.Path) -> list[str]:
         check=False,
     )
     if out.returncode != 0:
-        # A fixture root is not a checkout. Walk it instead, and skip the same
-        # directories git would have skipped for us. `.git` and `node_modules`
-        # are `paths.walk_tree`'s standing prune (along with `.claude/worktrees`,
+        # A fixture root is not a checkout. Walk it instead, and skip the same directories git would have skipped for us. `.git` and `node_modules` are `paths.walk_tree`'s standing prune (along with `.claude/worktrees`,
         # a peer's sibling checkout that git also hides); `__pycache__` is this
         # gate's own, because a `.pyc` is not a Python source file to audit.
         found = []
@@ -374,8 +344,7 @@ def shadow_admissions(
             "%d shadow ledger(s) under .ci/shadow/ yielded ZERO records; the shadow "
             "route is empty for a parsing reason, not a real one" % len(ledgers)
         )
-    # A port whose twin is alive in one record and gone in another is ADMITTED:
-    # one live twin is enough to keep the pre-cutover window open.
+    # A port whose twin is alive in one record and gone in another is ADMITTED: one live twin is enough to keep the pre-cutover window open.
     for port in list(expired):
         if port in admitted:
             del expired[port]
@@ -499,8 +468,7 @@ def scan(
             "registration route is empty and every gate entry point would read as dead"
         )
 
-    # READ AS BYTES AND FILTER BEFORE DECODING. The referrer corpus is 93 MiB,
-    # two thirds of it generated site search indexes and PNGs that cannot name a
+    # READ AS BYTES AND FILTER BEFORE DECODING. The referrer corpus is 93 MiB, two thirds of it generated site search indexes and PNGs that cannot name a
     # Python file; decoding all of it costs 3.4s against 1.1s for this. A file
     # with no `.py` byte sequence in it contributes nothing to any route, so
     # skipping it changes no verdict, which a control pins.
@@ -559,21 +527,13 @@ def scan(
 
     # -- closure -------------------------------------------------------------
     #
-    # ROUTES ARE ATTRIBUTED IN PRIORITY ORDER, and the order is not cosmetic: the
-    # shape line is what a reader uses to notice a route quietly carrying the
-    # whole tree, so a file that is BOTH imported and mentioned must be counted
-    # once, under the stronger claim. Imports are therefore exhausted from the
-    # current frontier before any mention is admitted, and the two alternate to a
-    # fixed point.
+    # ROUTES ARE ATTRIBUTED IN PRIORITY ORDER, and the order is not cosmetic: the shape line is what a reader uses to notice a route quietly carrying the whole tree, so a file that is BOTH imported and mentioned must be counted once, under the stronger claim. Imports are therefore exhausted from the current frontier before any mention is admitted, and the two alternate to a fixed
+    # point.
     imports = {rel: import_targets(texts.get(rel, ""), rel, pyset) for rel in corpus}
     mentions = {rel: mentioned_paths(texts.get(rel, ""), index) for rel in texts}
 
-    # A GATE'S OWN EXEMPTION TABLE IS NOT A REFERENCE, and this cost a red the
-    # first time the entry point was driven. `MANUAL_ENTRY_POINTS` spells each
-    # exempt path in full, this module is itself reached, so every exempt file
-    # picked up a `mentioned` route from the very table that exempts it and was
-    # then reported as a STALE exemption. Suppressing the self-reference is what
-    # keeps the two-direction check on the table honest.
+    # A GATE'S OWN EXEMPTION TABLE IS NOT A REFERENCE, and this cost a red the first time the entry point was driven. `MANUAL_ENTRY_POINTS` spells each exempt path in full, this module is itself reached, so every exempt file picked up a `mentioned` route from the very table that exempts it and was then reported as a STALE exemption. Suppressing the self-reference is what keeps the
+    # two-direction check on the table honest.
     self_rel = os.path.relpath(os.path.abspath(__file__), root)
     if not self_rel.startswith("..") and self_rel in mentions:
         mentions[self_rel] = mentions[self_rel] - set(manual)
@@ -589,8 +549,7 @@ def scan(
     close_imports(list(routes))
     while True:
         # Every non-Python referrer is a live source of mentions; a Python file
-        # is one only once something reaches it, which is what stops two dead
-        # modules from vouching for each other.
+        # is one only once something reaches it, which is what stops two dead modules from vouching for each other.
         added: list[str] = []
         for rel in referrers + list(routes):
             for hit in mentions.get(rel, ()):
@@ -669,9 +628,7 @@ def scan(
     )
 
 
-# --------------------------------------------------------------------------
-# controls
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- controls --------------------------------------------------------------------------
 
 _FIXTURE_PYPROJECT = """
 [tool.pytest.ini_options]
@@ -679,9 +636,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 """
 
-# The regex this module's mention scanner replaced. Kept HERE, in the controls,
-# because the speed-up is only safe while the two spellings agree, and a comment
-# claiming they agree is not a control.
+# The regex this module's mention scanner replaced. Kept HERE, in the controls, because the speed-up is only safe while the two spellings agree, and a comment claiming they agree is not a control.
 _REFERENCE_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.py")
 
 
@@ -972,12 +927,9 @@ def selftest(verbose: bool = False) -> int:
                 _reference_mentions(probe, index),
             )
 
-        # THE ONE PLACE THE TWO SPELLINGS DELIBERATELY DISAGREE, asserted rather
-        # than glossed. The regex admits `check_orphan.py` out of
+        # THE ONE PLACE THE TWO SPELLINGS DELIBERATELY DISAGREE, asserted rather than glossed. The regex admits `check_orphan.py` out of
         # `check_orphan.pyc` because `[\w-]\.py` does not care what follows;
-        # the literal scanner requires a non-word character after `.py`. The
-        # narrower answer is the right one and this control pins the direction,
-        # so a future "simplification" back to the regex has to argue with it.
+        # the literal scanner requires a non-word character after `.py`. The narrower answer is the right one and this control pins the direction, so a future "simplification" back to the regex has to argue with it.
         divergent = "rm check_orphan.pyc and worklist.python"
         c.check("the literal scanner refuses `.pyc`", mentioned_paths(divergent, index), set())
         c.check(
@@ -1000,9 +952,7 @@ def selftest(verbose: bool = False) -> int:
         )
         c.check("the docstring's refusal count matches the code", stated, raises)
 
-        # -- the real constants are not decoration -------------------------------
-        # THROUGH THE SEAM, not `parents[3]`: `rediacc_ci.paths` exists because a
-        # depth constant resolves to the WRONG tree in silence when a file moves.
+        # -- the real constants are not decoration ------------------------------- THROUGH THE SEAM, not `parents[3]`: `rediacc_ci.paths` exists because a depth constant resolves to the WRONG tree in silence when a file moves.
         here = paths.repo_root()
         for groot in GLOB_ROOTS:
             c.truthy(
@@ -1020,8 +970,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     verbose = "--verbose" in argv
 
-    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls
-    # run only when asked is a gate whose controls do not run in CI.
+    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls run only when asked is a gate whose controls do not run in CI.
     rc = selftest(verbose)
     if rc != 0:
         print(
@@ -1041,8 +990,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # PRINTED EVERY RUN, never only on failure. A suppression a reader cannot see
-    # is how a gate stops meaning what its name says.
+    # PRINTED EVERY RUN, never only on failure. A suppression a reader cannot see is how a gate stops meaning what its name says.
     for name, reason in sorted(report.manual.items()):
         log.warn("EXEMPT BY NAME  %s\n      %s" % (name, reason))
 

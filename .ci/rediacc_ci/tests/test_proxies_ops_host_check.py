@@ -180,9 +180,7 @@ def _real_tree_env() -> dict[str, str]:
     return env
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_selftest_is_byte_identical() -> None:
@@ -215,9 +213,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# Fixture cases
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture cases ---------------------------------------------------------------------------
 
 
 def test_a_well_formed_report_satisfies_the_contract(tmp_path: pathlib.Path) -> None:
@@ -247,7 +243,7 @@ def test_a_malformed_report_names_every_violation(tmp_path: pathlib.Path) -> Non
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert '  - .platform is "windows" but this host is "linux"\n' in old.stderr
-    # The three that follow share the SAME bullet: no `  - ` prefix on them.
+    # The three that follow share the SAME bullet: no ` - ` prefix on them.
     assert "\n.backend is missing or empty\n" in old.stderr
     assert '\nchecks[0] (a) has unknown status "okish"\n' in old.stderr
     assert "\nchecks[2] has no name\n" in old.stderr
@@ -281,14 +277,9 @@ def test_a_missing_jq_is_77_not_a_verdict(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# THE HOLE THAT WAS: a jq error folded into "no findings". FIXED 2026-09-10.
+# --------------------------------------------------------------------------- THE HOLE THAT WAS: a jq error folded into "no findings". FIXED 2026-09-10.
 #
-# Every case here reaches the validator through `RENET_BINARY`, which is the
-# ONE override-reachable path to a malformed report: the subject is a Go binary
-# whose `Checks []HostCheckResult` cannot emit anything else. Both directions
-# are covered -- two that MUST fire, one that must NOT.
-# ---------------------------------------------------------------------------
+# Every case here reaches the validator through `RENET_BINARY`, which is the ONE override-reachable path to a malformed report: the subject is a Go binary whose `Checks []HostCheckResult` cannot emit anything else. Both directions are covered -- two that MUST fire, one that must NOT. ---------------------------------------------------------------------------
 
 
 def test_a_checks_array_of_non_objects_is_now_a_named_refusal(tmp_path: pathlib.Path) -> None:
@@ -314,8 +305,7 @@ def test_a_checks_array_of_non_objects_is_now_a_named_refusal(tmp_path: pathlib.
         old.stderr
     )
     # The tally still collapses VISIBLY beside the refusal; it was the only
-    # trace before the fix and it is kept, because printing the shape is not
-    # the same as asserting it.
+    # trace before the fix and it is kept, because printing the shape is not the same as asserting it.
     assert "3 probe(s) reported --  ok,  warn,  fail on this host" in old.stdout
     assert old.stderr.count('Cannot index number with string "status"') == 3
     assert_same(old, new)
@@ -374,9 +364,7 @@ def test_a_non_object_document_emits_jqs_own_diagnostics(tmp_path: pathlib.Path)
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The ONE named divergence, pinned as still real rather than silently fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The ONE named divergence, pinned as still real rather than silently fixed ---------------------------------------------------------------------------
 
 
 def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Path) -> None:
@@ -392,9 +380,7 @@ def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Pat
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert new.returncode == 1
-    # The twin: bash's own arithmetic diagnostic, carrying its path and line.
-    # Asked of the running bash rather than spelled: 5.3 says "arithmetic syntax
-    # error" where 5.2 says "syntax error", and CI runs 5.2.
+    # The twin: bash's own arithmetic diagnostic, carrying its path and line. Asked of the running bash rather than spelled: 5.3 says "arithmetic syntax error" where 5.2 says "syntax error", and CI runs 5.2.
     assert bash_dialect.arith_syntax_error() in old.stderr
     assert 'is "linux\nlinux" but this host is "linux"' in old.stderr
     # The port: one document or nothing.
@@ -402,9 +388,7 @@ def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Pat
     assert bash_dialect.arith_syntax_error() not in new.stderr
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to go RED
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to go RED ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
@@ -436,9 +420,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     assert new_b.returncode == 0, "the planted port certifies it, which is the blindness"
 
 
-# ---------------------------------------------------------------------------
-# The pure validator, driven directly in BOTH directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure validator, driven directly in BOTH directions ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(("want", "body"), [(w, b) for w, _, b in ops_host_check.SELFTEST_CASES])

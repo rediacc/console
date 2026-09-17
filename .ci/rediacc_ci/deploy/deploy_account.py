@@ -82,44 +82,29 @@ SELF = "deploy-account.sh"
 MISSING_REGION = "ARG_REGION: --region is required (eu, us)"
 
 # `TARGET="${ARG_TARGET:-production}"` (:22) and the one value that branches
-# (:25). ANY OTHER VALUE IS PRODUCTION: there is no validation in the twin, so
-# `--target edg` deploys the production config for the region without comment.
+# (:25). ANY OTHER VALUE IS PRODUCTION: there is no validation in the twin, so `--target edg` deploys the production config for the region without comment.
 DEFAULT_TARGET = "production"
 EDGE_TARGET = "edge"
 
-# `$REPO_ROOT/workers/account` (:20), relative to the repo root `common.sh`'s
-# own location resolves to. NOT cwd: the twin can be invoked from anywhere.
+# `$REPO_ROOT/workers/account` (:20), relative to the repo root `common.sh`'s own location resolves to. NOT cwd: the twin can be invoked from anywhere.
 WORKER_SUBDIR = ("workers", "account")
 
-# The sed program at :50, byte for byte. A BRE, and both `.*` are GREEDY, which
-# is what `THE_LAST_QUOTE_WINS` below is about.
+# The sed program at :50, byte for byte. A BRE, and both `.*` are GREEDY, which is what `THE_LAST_QUOTE_WINS` below is about.
 SED_PROGRAM = r's/.*= *"\(.*\)"/\1/'
 
-# The string grep looks for (:50). A SUBSTRING, not a key: `# database_name` and
-# `preview_database_name` both match.
+# The string grep looks for (:50). A SUBSTRING, not a key: `# database_name` and `preview_database_name` both match.
 DB_NAME_NEEDLE = "database_name"
 
-# THE TWO DEFECTS THE grep/head/sed PIPELINE HAS, named as constants so the
-# differential can assert them by name instead of restating the sentences, and
-# so nobody "fixes" them in the port. Both driven against the real twin on
+# THE TWO DEFECTS THE grep/head/sed PIPELINE HAS, named as constants so the differential can assert them by name instead of restating the sentences, and so nobody "fixes" them in the port. Both driven against the real twin on
 # 2026-09-13 in a fixture tree; both are reproduced here, not repaired, because
 # repairing a twin is a cutover decision and this file is not the cutover.
 #
-#   1. A COMMENT BECOMES THE DATABASE NAME. A config whose first
-#      `database_name` occurrence is a comment (`# database_name is chosen per
-#      environment`) fails the sed pattern, so sed passes the line through
-#      unchanged, `[[ -z "$DB_NAME" ]]` is false, and the run prints
-#      "Applying migrations to # database_name is chosen per environment..."
-#      and calls
-#      `wrangler d1 migrations apply '# database_name is chosen per environment'`.
-#      The guard at :51-54 exists for exactly this case and cannot see it,
-#      because the pipeline's output is only empty when grep matched NOTHING.
+# 1. A COMMENT BECOMES THE DATABASE NAME. A config whose first `database_name` occurrence is a comment (`# database_name is chosen per environment`) fails the sed pattern, so sed passes the line through unchanged, `[[ -z "$DB_NAME" ]]` is false, and the run prints "Applying migrations to # database_name is chosen per environment..." and calls `wrangler d1 migrations apply '#
+# database_name is chosen per environment'`. The guard at :51-54 exists for exactly this case and cannot see it, because the pipeline's output is only empty when grep matched NOTHING.
 #   2. THE LAST QUOTE WINS. `database_name = "account-db-eu" # was "old-db"`
-#      yields the eleven-word string `account-db-eu" # was "old-db`, because
-#      `\(.*\)` runs to the final `"` on the line.
+# yields the eleven-word string `account-db-eu" # was "old-db`, because `\(.*\)` runs to the final `"` on the line.
 #
-# Blast radius today is zero: all seven `workers/account/wrangler.*.toml` files
-# carry exactly one `database_name` line each, in the canonical shape.
+# Blast radius today is zero: all seven `workers/account/wrangler.*.toml` files carry exactly one `database_name` line each, in the canonical shape.
 A_COMMENT_BECOMES_THE_DATABASE_NAME = True
 THE_LAST_QUOTE_WINS = True
 
@@ -187,8 +172,7 @@ def database_name(config: str) -> str:
     grep = subprocess.Popen(["grep", DB_NAME_NEEDLE, config], stdout=subprocess.PIPE)
     head = subprocess.Popen(["head", "-1"], stdin=grep.stdout, stdout=subprocess.PIPE)
     if grep.stdout is not None:
-        # The parent must drop its copy or `head` exiting early never reaches
-        # `grep` as a SIGPIPE, which is the twin's behaviour on a long file.
+        # The parent must drop its copy or `head` exiting early never reaches `grep` as a SIGPIPE, which is the twin's behaviour on a long file.
         grep.stdout.close()
     sed = subprocess.Popen(["sed", SED_PROGRAM], stdin=head.stdout, stdout=subprocess.PIPE)
     if head.stdout is not None:

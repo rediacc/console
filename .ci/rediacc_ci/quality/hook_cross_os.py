@@ -92,8 +92,7 @@ from rediacc_ci.controls import Checker, controls_first, plant
 
 SCAN_ROOT = (".claude", "rediacc_hooks")
 
-# Execs whose flags or output differ between the BSD and GNU builds. Kept as
-# two separate sets rather than one, because they are two different arguments
+# Execs whose flags or output differ between the BSD and GNU builds. Kept as two separate sets rather than one, because they are two different arguments
 # for being here and a reader deciding whether to add a name needs to know which
 # one they are making.
 PROC_TOOLS = frozenset({"ps", "pgrep", "pkill", "top"})
@@ -171,8 +170,7 @@ class Finding:
         return "%s:%d %s %s" % (self.rel, self.line, self.kind, self.detail)
 
 
-# THE DECLARATION. One scope today, which is the true state of the tree and not
-# a starting point somebody meant to grow.
+# THE DECLARATION. One scope today, which is the true state of the tree and not a starting point somebody meant to grow.
 SCOPES = (
     Scope(
         name="proc-table",
@@ -301,8 +299,7 @@ def check_seams(root, scopes):
         if not scope.env:
             out.append("scope %s declares no environment override" % scope.name)
             continue
-        # The env name must appear in at least one file the scope covers. A
-        # declaration naming a variable no code reads is a seam on paper.
+        # The env name must appear in at least one file the scope covers. A declaration naming a variable no code reads is a seam on paper.
         seen = False
         for rel in scope.files:
             path = root / rel
@@ -393,8 +390,7 @@ def main(argv=None):
         log.error("  %s" % problem)
     if bad:
         return 1
-    # THE SCOPE TABLE IS PRINTED EVERY RUN, not only on failure. An exemption
-    # nobody sees is an exemption nobody drains.
+    # THE SCOPE TABLE IS PRINTED EVERY RUN, not only on failure. An exemption nobody sees is an exemption nobody drains.
     for scope in SCOPES:
         log.info(
             "  seam %-18s %-24s %d file(s), classes %s"
@@ -415,9 +411,7 @@ def main(argv=None):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
 
 _CLEAN_SEAM = '''"""A seam module."""
 import os
@@ -433,8 +427,7 @@ def read(pid):
     return pathlib.Path("/proc/%d/comm" % pid).read_text()
 '''
 
-# A guard with NO platform-sensitive operation, and the strings that would fool a
-# grep: `pgrep` and `/proc/` appear as a regex the guard matches against somebody
+# A guard with NO platform-sensitive operation, and the strings that would fool a grep: `pgrep` and `/proc/` appear as a regex the guard matches against somebody
 # else's command line, which is exactly the shape `block_self_matching_pgrep.py`
 # has in the real tree.
 _CLEAN_GUARD = '''"""An ordinary guard."""
@@ -458,10 +451,7 @@ def _fixture(tmp, guard_source=_CLEAN_GUARD, seam_source=_CLEAN_SEAM):
     (pkg / "tests").mkdir(parents=True, exist_ok=True)
     (pkg / "proc.py").write_text(seam_source, encoding="utf-8")
     (pkg / "guards.py").write_text(guard_source, encoding="utf-8")
-    # The fixture's test file MENTIONS the override name, because the real one
-    # does and because the gate checks for it. The first draft omitted it and the
-    # "no seam problem" control failed, correctly: a test scope that never forces
-    # the seam is not proving the two backends agree about anything.
+    # The fixture's test file MENTIONS the override name, because the real one does and because the gate checks for it. The first draft omitted it and the "no seam problem" control failed, correctly: a test scope that never forces the seam is not proving the two backends agree about anything.
     (pkg / "tests" / "test_proc.py").write_text(
         "import os\nimport subprocess\n\n\ndef test_x():\n"
         '    os.environ["REDIACC_PROC_BACKEND"] = "ps"\n'
@@ -550,8 +540,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # THE OTHER DIRECTION. Emptying the seam module leaves a scope claiming
-        # nothing, which must red rather than pass for "no findings".
+        # THE OTHER DIRECTION. Emptying the seam module leaves a scope claiming nothing, which must red rather than pass for "no findings".
         root = _fixture(tmp, seam_source='"""Nothing here."""\nX = 1\n')
         _, unclaimed, dead, seam_problems, _ = run(root, scopes)
         check("PLANT: a scope that claims nothing is reported DEAD", dead == ["proc-table"])
@@ -598,8 +587,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER, and this is the case that separates this gate from a
-        # grep. The needle appears twice in the clean guard already, inside a
+        # ANTI-SILENCER, and this is the case that separates this gate from a grep. The needle appears twice in the clean guard already, inside a
         # regex; adding a third mention in a COMMENT must still be clean.
         quiet = plant(
             _CLEAN_GUARD,

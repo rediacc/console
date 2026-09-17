@@ -49,8 +49,7 @@ NC = "\033[0m"
 THRESHOLD = 0.90
 
 # Every path checked. /tmp is where the real incident happened; TMPDIR is
-# checked too because some runners point it elsewhere and pytest/tempfile
-# both honour it ahead of the hardcoded /tmp.
+# checked too because some runners point it elsewhere and pytest/tempfile both honour it ahead of the hardcoded /tmp.
 CHECK_PATHS = ["/tmp"]
 if os.environ.get("TMPDIR") and os.environ["TMPDIR"] not in CHECK_PATHS:
     CHECK_PATHS.append(os.environ["TMPDIR"])
@@ -84,8 +83,7 @@ def controls() -> None:
     """Control-first: the threshold logic is exercised on FAKE vfs tuples, not
     real filesystem state, so the control proves the math rather than the
     ambient health of whatever machine runs this."""
-    # A tmpfs one inode away from total exhaustion -- this is the actual shape
-    # of the real incident (1,048,574 / 1,048,576 used).
+    # A tmpfs one inode away from total exhaustion -- this is the actual shape of the real incident (1,048,574 / 1,048,576 used).
     exhausted = Vfs(f_files=1_048_576, f_ffree=2)
     if usage_ratio(exhausted) < THRESHOLD:
         print(

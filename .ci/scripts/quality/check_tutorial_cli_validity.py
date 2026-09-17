@@ -130,13 +130,8 @@ def check(tree, scripts):
                 findings.append((path.name, cmd, "no such command '%s'" % path_words[0]))
                 continue
 
-            # NAME THE RIGHT PROBLEM. A removed SUBCOMMAND otherwise surfaces as
-            # a flag complaint: `rdc backup sync push --to x` resolves `backup`,
-            # stops at the missing `sync`, and then reports "`backup` takes no
-            # --to", which sends the reader to the flag instead of the verb that
-            # no longer exists. A node that has subcommands and takes no
-            # positional arguments cannot be receiving one, so an unconsumed word
-            # there is a bad subcommand, not an argument.
+            # NAME THE RIGHT PROBLEM. A removed SUBCOMMAND otherwise surfaces as a flag complaint: `rdc backup sync push --to x` resolves `backup`, stops at the missing `sync`, and then reports "`backup` takes no --to", which sends the reader to the flag instead of the verb that no longer exists. A node that has subcommands and takes no positional arguments cannot be receiving one,
+            # so an unconsumed word there is a bad subcommand, not an argument.
             if (
                 consumed < len(path_words)
                 and (node.get("subcommands") or [])
@@ -200,10 +195,7 @@ def run_controls(tree):
         if not found:
             failures.append("an invented command was not flagged")
 
-        # The message must name the VERB, not a flag. `backup sync push` was a
-        # real command until this wave deleted it, and the first version of this
-        # gate reported it as "`backup` takes no --to" -- true, useless, and
-        # pointing at the wrong file to edit.
+        # The message must name the VERB, not a flag. `backup sync push` was a real command until this wave deleted it, and the first version of this gate reported it as "`backup` takes no --to" -- true, useless, and pointing at the wrong file to edit.
         found, _ = check(tree, planted('run_cmd "rdc backup sync push my-app --to my-storage"'))
         if not found:
             failures.append("a removed subcommand was not flagged")

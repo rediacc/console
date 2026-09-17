@@ -56,8 +56,7 @@ function findUnwired(
   for (const key of Object.keys(packageJsonScripts)) {
     if (!/^check:test[:-]/.test(key)) continue;
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // The key appears either as the entry's own id ('check:test:x') or inside its
-    // `run: 'npm run check:test:x'` string -- both are legitimate registrations.
+    // The key appears either as the entry's own id ('check:test:x') or inside its `run: 'npm run check:test:x'` string -- both are legitimate registrations.
     const mentionRe = new RegExp(`['"]${escaped}['"]`);
     const mentionIdx = manifestSource.search(mentionRe);
     const inManifest = mentionIdx !== -1;

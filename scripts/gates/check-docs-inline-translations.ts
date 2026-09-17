@@ -326,8 +326,7 @@ function validateCrossMdConsistency(errors: string[]): void {
       const langKeys = version.keys;
       const langKeyLocations = version.keyLocations;
 
-      // Skip if the non-English version has no keys at all (likely a stub document)
-      // Consistency is only checked when both versions actively use translation keys
+      // Skip if the non-English version has no keys at all (likely a stub document) Consistency is only checked when both versions actively use translation keys
       if (langKeys.length === 0) continue;
 
       // CHECK 2: Key count must match
@@ -354,8 +353,7 @@ function validateCrossMdConsistency(errors: string[]): void {
         }
       }
 
-      // CHECK 4: Line number alignment - each key must appear on the same line(s)
-      // Build a map of key -> set of line numbers for this language
+      // CHECK 4: Line number alignment - each key must appear on the same line(s) Build a map of key -> set of line numbers for this language
       const langKeyLines = new Map<string, Set<number>>();
       for (const loc of langKeyLocations) {
         if (!langKeyLines.has(loc.key)) {

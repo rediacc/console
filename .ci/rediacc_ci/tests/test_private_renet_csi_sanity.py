@@ -59,14 +59,9 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_csi_sanity.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-csi-sanity.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_csi_sanity.py")
 
-# One recording fake serves every tool but `go`. It records the variable `go`
-# is meant to receive as well, which is how the test proves the assignment is
-# PER-COMMAND: every tool except `go` must report it unset.
+# One recording fake serves every tool but `go`. It records the variable `go` is meant to receive as well, which is how the test proves the assignment is PER-COMMAND: every tool except `go` must report it unset.
 #
-# ITS STATUS IS KEYED ON THE FIRST ARGUMENT, not on the tool name alone, because
-# `apt-get` is invoked TWICE with different subcommands and the two failures
-# have OPPOSITE consequences in the twin (see the `apt-get` section of
-# `renet_csi_sanity.py`). A single per-tool status could not tell them apart.
+# ITS STATUS IS KEYED ON THE FIRST ARGUMENT, not on the tool name alone, because `apt-get` is invoked TWICE with different subcommands and the two failures have OPPOSITE consequences in the twin (see the `apt-get` section of `renet_csi_sanity.py`). A single per-tool status could not tell them apart.
 FAKE_TOOL = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -83,9 +78,7 @@ sys.stderr.flush()
 sys.exit(RC.get(sys.argv[1] if sys.argv[1:] else "", RC.get("", 0)))
 """
 
-# The `go` fake. Its output is BYTES read from a file rather than text baked
-# into the source, so a case can drive a transcript that is not valid UTF-8
-# without the fake itself failing to encode it.
+# The `go` fake. Its output is BYTES read from a file rather than text baked into the source, so a case can drive a transcript that is not valid UTF-8 without the fake itself failing to encode it.
 FAKE_GO = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -103,16 +96,10 @@ sys.stderr.buffer.flush()
 sys.exit(RC)
 """
 
-# The seven externals, in the order the twin reaches them. `cryptsetup` is only
-# ever PROBED, never invoked, which is itself worth pinning: a port that ran it
-# would show up in the call log.
+# The seven externals, in the order the twin reaches them. `cryptsetup` is only ever PROBED, never invoked, which is itself worth pinning: a port that ran it would show up in the call log.
 TOOLS = ("apt-get", "umount", "truncate", "mkfs.btrfs", "mkdir", "mount", "cryptsetup")
 
-# Everything both subjects need once PATH is rebuilt from scratch, minus the
-# externals above. Named rather than derived: a PATH built by copying
-# "everything except go" is a PATH nobody can state, and the first tool it
-# forgot would look like a divergence in the subject rather than a hole in the
-# harness. `mkdir` is deliberately NOT here: it is one of the seven fakes.
+# Everything both subjects need once PATH is rebuilt from scratch, minus the externals above. Named rather than derived: a PATH built by copying "everything except go" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness. `mkdir` is deliberately NOT here: it is one of the seven fakes.
 NEEDED = ("bash", "sh", "python3", "uname", "dirname", "cat", "grep", "sed", "rm", "env", "ls")
 
 # A transcript in which the suite really ran and really passed.
@@ -251,8 +238,7 @@ def _run(
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

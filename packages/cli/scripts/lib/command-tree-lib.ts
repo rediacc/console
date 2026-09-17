@@ -205,8 +205,7 @@ export function extractContractPositional(
   arg: Argument,
   resolver: DescriptionResolver
 ): WalkedPositional {
-  // Commander declares `description: string` on Argument (always a string, empty
-  // when undescribed), so no cast and no `?? ''` fallback are needed.
+  // Commander declares `description: string` on Argument (always a string, empty when undescribed), so no cast and no `?? ''` fallback are needed.
   const description = arg.description;
   return {
     name: arg.name(),
@@ -243,10 +242,7 @@ export const GLOBAL_OPTION_LONGS = new Set([
  * Pruned in P4: `login`/`logout` (now `subscription login`/`logout`), and
  * `trace`/`cancel`/`retry`, none of which are commands.
  */
-// `run` and `executor-daemon` are real commands held out of the generated
-// contract (and therefore MCP/docs/planes): `run` is the debug escape hatch,
-// `executor-daemon` is the hidden internal control surface of the
-// auto-spawned executor daemon.
+// `run` and `executor-daemon` are real commands held out of the generated contract (and therefore MCP/docs/planes): `run` is the debug escape hatch, `executor-daemon` is the hidden internal control surface of the auto-spawned executor daemon.
 export const EXCLUDED_TOP_LEVEL = new Set(['run', 'executor-daemon']);
 
 export function walkCommand(cmd: Command, resolver: DescriptionResolver): CommandNode | null {

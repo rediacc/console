@@ -51,9 +51,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-gate-header.sh"
 
 MOD = paths.from_root("scripts", "lib", "gate-header.ts")
 
-# The floor the twin spells `((ASSERTED < 13))`. Not a count of what the probe has
-# today -- that is read back from the run -- only a refusal of a probe that has lost
-# most of its cases.
+# The floor the twin spells `((ASSERTED < 13))`. Not a count of what the probe has today -- that is read back from the run -- only a refusal of a probe that has lost most of its cases.
 MIN_VERDICTS = 13
 
 PROBE_TS = r"""import {

@@ -47,14 +47,11 @@ BASH_TWIN = ".ci/scripts/test/gates/test-renet-deadcode.sh"
 
 DEADCODE_SH = paths.from_root("private", "renet", ".ci", "scripts", "quality", "deadcode.sh")
 
-# The two canonical names the twin uses. A `<pkgpath>.<Func>` and a
-# `<pkgpath>.<Type>.<Method>`, because the stale-entry guard keys on the whole
-# string and a method name is the shape most likely to be mangled by a naive split.
+# The two canonical names the twin uses. A `<pkgpath>.<Func>` and a `<pkgpath>.<Type>.<Method>`, because the stale-entry guard keys on the whole string and a method name is the shape most likely to be mangled by a naive split.
 FUNC_A = "github.com/rediacc/renet/pkg/example.DeadFunc"
 FUNC_B = "github.com/rediacc/renet/pkg/example.Type.DeadMethod"
 
-# Substantive BLOCKER reasons, both over the module's own BLOCKER_MIN_LENGTH of 30
-# and neither matching a LOW_EFFORT_BLOCKER_PATTERNS entry.
+# Substantive BLOCKER reasons, both over the module's own BLOCKER_MIN_LENGTH of 30 and neither matching a LOW_EFFORT_BLOCKER_PATTERNS entry.
 REASON_A = (
     "reachable only under GOOS=darwin syscall fallback; deleting breaks the cross-platform build"
 )
@@ -157,9 +154,7 @@ def test_fails_on_stale_entry(gate, tmp_path):
     gate.log_test("an allowlisted name that is no longer dead must fail, not pass quietly")
     dead = dead_tsv(tmp_path, FUNC_A)
     allow = tmp_path / "allow-stale"
-    # FUNC_B is allowlisted and is NOT in the dead list, so it has been deleted,
-    # renamed or made reachable. A blank line between the two blocks, because a
-    # BLOCKER line covers the entries after it until the next blank line.
+    # FUNC_B is allowlisted and is NOT in the dead list, so it has been deleted, renamed or made reachable. A blank line between the two blocks, because a BLOCKER line covers the entries after it until the next blank line.
     allow.write_text(
         "# BLOCKER: %s\n%s\n\n# BLOCKER: %s\n%s\n" % (REASON_A, FUNC_A, REASON_B, FUNC_B),
         encoding="utf-8",

@@ -60,8 +60,7 @@ export function formatTimestampAsIs(
 ): string {
   if (!timestamp) return '-';
 
-  // Extract date/time components directly from the ISO string
-  // Expected formats: "2024-01-15T14:30:45.123Z" or "2024-01-15T14:30:45" or "2024-01-15 14:30:45"
+  // Extract date/time components directly from the ISO string Expected formats: "2024-01-15T14:30:45.123Z" or "2024-01-15T14:30:45" or "2024-01-15 14:30:45"
 
   // For timestamps in "YYYY-MM-DD HH:mm:ss.fff" or "YYYY-MM-DD HH:mm:ss" format
   const match = /(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/.exec(timestamp);

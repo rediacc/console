@@ -83,10 +83,7 @@ def test_this_module_solely_owns_the_moved_function(gate):
 
 def test_the_ownership_assertion_can_fail(gate):
     gate.log_test("CONTROL: every way the ownership assertion could go quiet")
-    # A second definition put back into an origin (which is what a badly resolved
-    # merge against the pre-cutover file would produce), a name nothing defines
-    # anywhere (the vacuity the old byte-identity helper was built around), and an
-    # origin file that is not there to be read.
+    # A second definition put back into an origin (which is what a badly resolved merge against the pre-cutover file would produce), a name nothing defines anywhere (the vacuity the old byte-identity helper was built around), and an origin file that is not there to be read.
     with harness.temp_dir() as d:
         media_verify.media_assert_ownership_control(gate, d, "cuda.sh", FUNCTION)
 
@@ -94,10 +91,7 @@ def test_the_ownership_assertion_can_fail(gate):
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
     gate.log_test("CONTROL FOR EVERY BEHAVIOUR CASE BELOW, and why the module seam exists")
     # The four exits are asserted by their MESSAGES; this re-runs the no-CUDA exit
-    # against a copy of cuda.sh whose message has been changed, and requires the
-    # change to show up. If it did not, those four assertions would be reading
-    # something other than the module under test, and their green would mean
-    # nothing.
+    # against a copy of cuda.sh whose message has been changed, and requires the change to show up. If it did not, those four assertions would be reading something other than the module under test, and their green would mean nothing.
     with harness.temp_dir() as d:
         mutant = d / "mutant"
         mutant.mkdir()

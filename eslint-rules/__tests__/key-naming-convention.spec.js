@@ -32,8 +32,7 @@ export default async ({ jsonRuleTester, runCases }) => {
       invalid: [
         {
           code: '{"some_key": "v"}',
-          // `data` must name EVERY placeholder in the message: RuleTester
-          // hydrates it and compares the whole string, so a partial `data`
+          // `data` must name EVERY placeholder in the message: RuleTester hydrates it and compares the whole string, so a partial `data`
           // fails with an unhydrated `{{path}}` still in the expectation.
           errors: [
             {
@@ -43,8 +42,7 @@ export default async ({ jsonRuleTester, runCases }) => {
           ],
         },
         {
-          // A key legal under the default becomes illegal once the format is
-          // switched, which is the direction a planted violation cannot show.
+          // A key legal under the default becomes illegal once the format is switched, which is the direction a planted violation cannot show.
           code: '{"someKey": "v"}',
           options: [{ keyFormat: 'kebab-case' }],
           errors: [
@@ -61,8 +59,7 @@ export default async ({ jsonRuleTester, runCases }) => {
           errors: [{ messageId: 'tooDeep', data: { path: 'a.b.c', max: '2' } }],
         },
         {
-          // The nested key is reported with its full path, so a reader can find
-          // it in a large file.
+          // The nested key is reported with its full path, so a reader can find it in a large file.
           code: '{"outer": {"bad_inner": "v"}}',
           errors: [
             {

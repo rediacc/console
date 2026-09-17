@@ -102,19 +102,13 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.core import toolchain
 
-# `-i 4` four-space indent, `-ci` indent switch cases, `-d` diff mode (show what
-# would change, exit non-zero if changes are needed). The twin keeps these in
-# one space-separated `SHFMT_OPTS` string and word-splits it at four call sites,
-# each carrying a `BLOCKER:` comment saying the splitting is intentional.
+# `-i 4` four-space indent, `-ci` indent switch cases, `-d` diff mode (show what would change, exit non-zero if changes are needed). The twin keeps these in one space-separated `SHFMT_OPTS` string and word-splits it at four call sites, each carrying a `BLOCKER:` comment saying the splitting is intentional.
 SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
-# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the
-# four scopes. The floor is well under that so it catches a broken enumeration,
-# not today's file count.
+# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes. The floor is well under that so it catches a broken enumeration, not today's file count.
 DEFAULT_MIN_FILES = "200"
 
-# The three roots the floor counts, in the twin's argv order (order is
-# irrelevant to a count and is kept so the two reads match on inspection).
+# The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")
 
 # The two optional scopes at the end of main, in the twin's `for dir in` order.
@@ -156,9 +150,7 @@ def log_info(message: str) -> None:
     print("info: %s" % message)
 
 
-# ---------------------------------------------------------------------------
-# Enumeration
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Enumeration ---------------------------------------------------------------------------
 
 
 def shell_files(root: pathlib.Path) -> list[str]:
@@ -188,9 +180,7 @@ def shell_files(root: pathlib.Path) -> list[str]:
             if not name.endswith(".sh"):
                 continue
             path = pathlib.Path(dirpath) / name
-            # `find -P -type f`: a symlinked file is NOT type f, and os.walk's
-            # `filenames` does not make that distinction on its own -- it lists
-            # a symlink-to-file exactly like a real file.
+            # `find -P -type f`: a symlinked file is NOT type f, and os.walk's `filenames` does not make that distinction on its own -- it lists a symlink-to-file exactly like a real file.
             if not path.is_symlink() and path.is_file():
                 found.append(str(path))
     return sorted(found)
@@ -218,9 +208,7 @@ def floor_count() -> int:
     return total
 
 
-# ---------------------------------------------------------------------------
-# Running the tool
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Running the tool ---------------------------------------------------------------------------
 
 
 def run_shfmt(binary: str, targets: list[str]) -> int:
@@ -231,8 +219,7 @@ def run_shfmt(binary: str, targets: list[str]) -> int:
     instead of being reordered into stdout by a buffer of ours.
     """
     if not targets:
-        # `find` with no match runs the `-exec ... +` command ZERO times and
-        # exits 0. Passing an empty list to shfmt would make it read STDIN.
+        # `find` with no match runs the `-exec ... +` command ZERO times and exits 0. Passing an empty list to shfmt would make it read STDIN.
         return 0
     sys.stdout.flush()
     sys.stderr.flush()
@@ -252,22 +239,18 @@ def check_scope(binary: str, relative: str) -> int:
     return 1 if run_shfmt(binary, shell_files(pathlib.Path(relative))) != 0 else 0
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- main ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
     """`main` (:39-115). argv is accepted and ignored, as `main "$@"` does."""
     del argv
-    # `cd "$ROOT_DIR"` (:40). Every scope below is named relatively and the
-    # relative spelling reaches shfmt's diff headers, so this is observable.
+    # `cd "$ROOT_DIR"` (:40). Every scope below is named relatively and the relative spelling reaches shfmt's diff headers, so this is observable.
     os.chdir(paths.repo_root())
 
     log_info("Checking shell script formatting")
 
-    # ACQUIRE AT THE PIN, not merely "present". `toolchain_acquire`'s own
-    # messages go to stderr as it produces them, before the block below.
+    # ACQUIRE AT THE PIN, not merely "present". `toolchain_acquire`'s own messages go to stderr as it produces them, before the block below.
     binary, messages = toolchain.acquire("shfmt")
     for line in messages:
         print(line, file=sys.stderr)
@@ -279,15 +262,13 @@ def main(argv: list[str]) -> int:
             "./run.sh devbox exec -- .ci/scripts/security/shfmt.sh"
         )
         # 77 = CANNOT_RUN, the convention check-python-lint.sh:170 established.
-        # The ci-runner classifies it as BLOCKED: counted, named, recorded in the
-        # push receipt and warned about, but never a claim about the code.
+        # The ci-runner classifies it as BLOCKED: counted, named, recorded in the push receipt and warned about, but never a claim about the code.
         return 77
 
     sys.stdout.flush()
     subprocess.run([binary, "--version"], check=False)
 
-    # VACUITY FLOOR. Every scope below is an enumeration, and an enumeration that
-    # matches nothing lints nothing and exits 0.
+    # VACUITY FLOOR. Every scope below is an enumeration, and an enumeration that matches nothing lints nothing and exits 0.
     minimum = os.environ.get("SHFMT_MIN_FILES", "") or DEFAULT_MIN_FILES
     seen = floor_count()
     if seen < int(minimum):
@@ -300,26 +281,19 @@ def main(argv: list[str]) -> int:
     if rc != 0:
         return rc
 
-    # Claude hooks carry live PR policy, so policy-critical shell gets formatted
-    # too. DELIBERATELY NARROWER THAN shellcheck.sh: that gate reports
-    # CORRECTNESS defects and is worth surfacing everywhere, this one reports
-    # FORMATTING, and widening it would demand reformatting 11 files nobody is
-    # otherwise touching. Widen only alongside a decision to reformat them.
+    # Claude hooks carry live PR policy, so policy-critical shell gets formatted too. DELIBERATELY NARROWER THAN shellcheck.sh: that gate reports CORRECTNESS defects and is worth surfacing everywhere, this one reports FORMATTING, and widening it would demand reformatting 11 files nobody is otherwise touching. Widen only alongside a decision to reformat them.
     log_info("Checking .claude/**/*.sh")
     rc = check_scope(binary, ".claude")
     if rc != 0:
         return rc
 
     log_info("Checking ./run.sh")
-    # NO find HERE, so this one returns shfmt's OWN exit code. See `check_scope`.
-    # `./run.sh` VERBATIM, leading dot-slash included: shfmt echoes the argument
-    # it was given into `diff ./run.sh.orig ./run.sh`.
+    # NO find HERE, so this one returns shfmt's OWN exit code. See `check_scope`. `./run.sh` VERBATIM, leading dot-slash included: shfmt echoes the argument it was given into `diff ./run.sh.orig ./run.sh`.
     rc = run_shfmt(binary, ["./run.sh"])
     if rc != 0:
         return rc
 
-    # The top-level scripts/*.sh files are intentionally excluded: they predate
-    # the formatter. New helper scripts go in scripts/dev/ or scripts/docker/.
+    # The top-level scripts/*.sh files are intentionally excluded: they predate the formatter. New helper scripts go in scripts/dev/ or scripts/docker/.
     for relative in OPTIONAL_SCOPES:
         if not pathlib.Path(relative).is_dir():
             continue

@@ -59,10 +59,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-media-portable.sh"
 
 MODULE = media_verify.MEDIA_DIR / "portable.sh"
 
-# The digest of the four bytes "abc\n", which is what every arm below hashes. Written
-# out rather than computed, because computing the expected value with the tool under
-# test is the classic way a hash assertion agrees with itself no matter what it is
-# measuring.
+# The digest of the four bytes "abc\n", which is what every arm below hashes. Written out rather than computed, because computing the expected value with the tool under test is the classic way a hash assertion agrees with itself no matter what it is measuring.
 ABC_SHA256 = "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
 
 # The twin's eleven-branch alternation, branch for branch and in the same order.
@@ -71,9 +68,7 @@ UNSEAMED = re.compile(
     r"|\bsed\b(\s+-[A-Za-z.]+)*\s+-i|\breadlink\b\s+-[A-Za-z]*f|\bdate\b\s+-[A-Za-z]*d"
 )
 
-# `^[^:]+:[0-9]+:\s*#` in the twin, applied to `<file>:<line>: <text>`. Here the file
-# and line are not in the string at all, so the same claim is simply "the line, once
-# stripped, starts with a #".
+# `^[^:]+:[0-9]+:\s*#` in the twin, applied to `<file>:<line>: <text>`. Here the file and line are not in the string at all, so the same claim is simply "the line, once stripped, starts with a #".
 COMMENT = re.compile(r"^\s*#")
 
 
@@ -228,8 +223,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
     with harness.temp_dir() as d:
         (d / "f").write_text("abc\n", encoding="utf-8")
         # cut and bash are real; everything the seams reach for is either the scripted
-        # fake or deliberately absent. nproc, sha256sum and GNU stat are all gone from
-        # this PATH, which is the whole arrangement.
+        # fake or deliberately absent. nproc, sha256sum and GNU stat are all gone from this PATH, which is the whole arrangement.
         with harness.fake_bin("+bash +cut +cat +chmod") as fake:
             stage_bsd_host(fake.dir)
 
@@ -395,8 +389,7 @@ def test_the_unseamed_scan_can_fail(gate):
             gate.assertions += 1
             planted.unlink()
 
-        # A COMMENT MUST NOT BE A FINDING, or the seam module's own explanations become
-        # unwritable and the next reader loses the reason each seam exists.
+        # A COMMENT MUST NOT BE A FINDING, or the seam module's own explanations become unwritable and the next reader loses the reason each seam exists.
         commented = media / "commented.sh"
         commented.write_text(
             "# this comment mentions nproc and sha256sum and stat -c %Y\n", encoding="utf-8"
@@ -409,14 +402,9 @@ def test_the_unseamed_scan_can_fail(gate):
         gate.assertions += 1
         commented.unlink()
 
-        # THE OTHER DIRECTION, and the one an added pattern breaks. Every spelling below
-        # is POSIX and works on both platforms, and three of them sit one character away
+        # THE OTHER DIRECTION, and the one an added pattern breaks. Every spelling below is POSIX and works on both platforms, and three of them sit one character away
         # from a pattern above: `date -u` next to `date -d`, `sed -n` next to `sed -i`,
-        # `readlink` bare next to `readlink -f`. A regex widened carelessly starts
-        # refusing these, the folder goes red for code that is already correct, and the
-        # next person's fix is to delete the scan. `.ci/media/tutorials.sh` really does
-        # call `date -u +%Y...` and `.ci/media/teaser.sh` really does call `sed -n`, so
-        # this is not hypothetical.
+        # `readlink` bare next to `readlink -f`. A regex widened carelessly starts refusing these, the folder goes red for code that is already correct, and the next person's fix is to delete the scan. `.ci/media/tutorials.sh` really does call `date -u +%Y...` and `.ci/media/teaser.sh` really does call `sed -n`, so this is not hypothetical.
         for near in (
             'stamp="$(date -u +%Y%m%dT%H%M%SZ)"',
             'now="$(date +%s)"',

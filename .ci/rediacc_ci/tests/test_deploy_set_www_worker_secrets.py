@@ -82,8 +82,7 @@ if rc:
 sys.stdout.write("Finished processing secrets JSON file.\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides, and `uname` / `dirname` are what
-# `common.sh` needs at source time. Nothing else is on the scratch PATH.
+# `jq` is a real prerequisite of BOTH sides, and `uname` / `dirname` are what `common.sh` needs at source time. Nothing else is on the scratch PATH.
 PATH_MINIMUM = ("jq", "uname", "dirname")
 
 

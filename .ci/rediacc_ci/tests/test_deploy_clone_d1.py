@@ -57,8 +57,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 BASE_ENV = {"CLOUDFLARE_API_TOKEN": "tok-fixture", "CLOUDFLARE_ACCOUNT_ID": "acct-fixture"}
 
-# The real binaries. `mktemp` matters twice over: both sides call it, and its
-# output shape is what the mask below is written against.
+# The real binaries. `mktemp` matters twice over: both sides call it, and its output shape is what the mask below is written against.
 PATH_MINIMUM = (
     "grep",
     "sed",
@@ -78,13 +77,8 @@ PATH_MINIMUM = (
 
 # A MODEL of `wrangler d1`, not wrangler.
 #
-# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration.
-# `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER
-# before a `--finding-re` is ever consulted, and this script reports almost
-# entirely through `log_step`/`log_info`, which are exactly those two glyphs. A
-# finding regex over the message text could therefore never match anything and
-# every ledger row would read VACUOUS_BOTH_EMPTY. `call: ` is a shape no logger
-# in this tree emits.
+# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`, which are exactly those two glyphs. A finding regex over the message text could therefore never match anything and every
+# ledger row would read VACUOUS_BOTH_EMPTY. `call: ` is a shape no logger in this tree emits.
 FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx wrangler d1`. See the test module docstring."""
 import json
@@ -184,10 +178,7 @@ sys.exit(127)
 
 # A RECORDING, INSTANT `sleep`. The twin's retry waits 10 real seconds between
 # attempts and so does the port, because both exec the same program; replacing
-# it here does two things at once. It keeps this suite from spending 40 seconds
-# asleep, and -- the reason it is a RECORDING stub rather than `true` -- it makes
-# the wait OBSERVABLE, so the differential proves the retry slept rather than
-# inferring it from a wall-clock gap it cannot see.
+# it here does two things at once. It keeps this suite from spending 40 seconds asleep, and -- the reason it is a RECORDING stub rather than `true` -- it makes the wait OBSERVABLE, so the differential proves the retry slept rather than inferring it from a wall-clock gap it cannot see.
 FAKE_SLEEP = r"""#!/usr/bin/python3
 import os
 import sys
@@ -197,9 +188,7 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
 sys.exit(0)
 """
 
-# A MODEL of `sqlite3` that records and does nothing. The sanitize path cannot
-# reach the second call (DEFECT A), so this exists to prove the FIRST call
-# happens and that the run dies where the missing file is, not earlier.
+# A MODEL of `sqlite3` that records and does nothing. The sanitize path cannot reach the second call (DEFECT A), so this exists to prove the FIRST call happens and that the run dies where the missing file is, not earlier.
 FAKE_SQLITE3 = r"""#!/usr/bin/python3
 import os
 import sys
@@ -271,8 +260,7 @@ def _run(
     counter = root / f"{side}-calls.log.export-attempts"
     if counter.exists():
         counter.unlink()
-    # A PER-SIDE TMPDIR, so `mktemp -d` cannot hand the two sides the same
-    # directory and let one see the other's leftovers.
+    # A PER-SIDE TMPDIR, so `mktemp -d` cannot hand the two sides the same directory and let one see the other's leftovers.
     tmpdir = root / f"{side}-tmp"
     tmpdir.mkdir(exist_ok=True)
 
@@ -315,26 +303,14 @@ def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
     return root, old, new
 
 
-# `mktemp -d`'s own shape: ten alphanumerics after `/tmp/tmp.`, stopping at the
-# word boundary. `test_the_mktemp_mask_hides_only_the_random_suffix` asserts
-# both halves of the claim rather than leaving it as a comment.
+# `mktemp -d`'s own shape: ten alphanumerics after `/tmp/tmp.`, stopping at the word boundary. `test_the_mktemp_mask_hides_only_the_random_suffix` asserts both halves of the claim rather than leaving it as a comment.
 MKTEMP_DIR = re.compile(r"/[A-Za-z0-9_./-]*/tmp\.[A-Za-z0-9]{10}\b")
 
 
-# THE ONE DIVERGENCE THIS FILE NORMALISES, and it is a bash DIAGNOSTIC rather
-# than either program's own message: a `< file` redirection that cannot be
-# opened is reported by bash as `<script path>: line <n>: <path>: <reason>`,
-# where the line number is a fact about the bash file and nothing else. The port
-# prints `clone-d1.sh: <path>: <reason>`. Both name the same path and the same
-# reason on the same stream with the same exit status, which is what the
-# comparison is about.
+# THE ONE DIVERGENCE THIS FILE NORMALISES, and it is a bash DIAGNOSTIC rather than either program's own message: a `< file` redirection that cannot be opened is reported by bash as `<script path>: line <n>: <path>: <reason>`, where the line number is a fact about the bash file and nothing else. The port prints `clone-d1.sh: <path>: <reason>`. Both name the same path and the same
+# reason on the same stream with the same exit status, which is what the comparison is about.
 #
-# THE PATTERN IS DELIBERATELY TIGHT: it matches only a leader ending in
-# `clone-d1.sh` optionally followed by ` line <digits>`, and it keeps the path
-# and the reason. A different path, a different reason, or a message from
-# anything else is untouched, which
-# `test_the_bash_diagnostic_normaliser_keeps_the_path_and_the_reason` asserts in
-# both directions.
+# THE PATTERN IS DELIBERATELY TIGHT: it matches only a leader ending in `clone-d1.sh` optionally followed by ` line <digits>`, and it keeps the path and the reason. A different path, a different reason, or a message from anything else is untouched, which `test_the_bash_diagnostic_normaliser_keeps_the_path_and_the_reason` asserts in both directions.
 BASH_DIAG = re.compile(r"^\S*clone-d1\.sh: (?:line \d+: )?(?P<rest>.*)$", re.MULTILINE)
 
 
@@ -377,9 +353,7 @@ def _verbs(log: str) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# The happy path, the order, and the artifact
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, the order, and the artifact ---------------------------------------------------------------------------
 
 
 def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
@@ -465,9 +439,7 @@ def test_the_generated_import_sql_is_byte_identical(tmp_path) -> None:
     assert old_sql.count("DROP TABLE IF EXISTS") == 2
 
 
-# ---------------------------------------------------------------------------
-# Argument handling
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
 def test_a_missing_source_or_target_is_the_usage_line_and_exit_1(tmp_path) -> None:
@@ -533,9 +505,7 @@ def test_the_wrangler_config_flag_is_word_split_into_two_arguments(tmp_path) -> 
     assert "--config" not in _calls(old2[1])[1]
 
 
-# ---------------------------------------------------------------------------
-# The export retry, which is the twin's only tolerance for a flaky R2
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The export retry, which is the twin's only tolerance for a flaky R2 ---------------------------------------------------------------------------
 
 
 def test_a_transient_export_failure_is_retried_and_the_second_attempt_wins(
@@ -582,9 +552,7 @@ def test_three_failures_exhaust_the_retries_and_exit_with_wranglers_status(
     )
 
 
-# ---------------------------------------------------------------------------
-# Failure propagation on the two unguarded wrangler calls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure propagation on the two unguarded wrangler calls ---------------------------------------------------------------------------
 
 
 def test_a_failing_import_ends_the_run_with_wranglers_status(tmp_path) -> None:
@@ -611,9 +579,7 @@ def test_real_fk_violations_are_reported_and_exit_1(tmp_path) -> None:
     assert '"table": "sessions"' in proc.stdout
 
 
-# ---------------------------------------------------------------------------
-# The four named defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four named defects ---------------------------------------------------------------------------
 
 
 def test_defect_a_the_sanitize_path_cannot_work_because_its_sql_file_is_gone(
@@ -735,9 +701,7 @@ def test_defect_d_the_blocker_comments_name_a_value_the_script_never_builds() ->
     )
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_bash_arithmetic_gt_zero_follows_bash_rather_than_int() -> None:
@@ -757,8 +721,7 @@ def test_bash_arithmetic_gt_zero_follows_bash_rather_than_int() -> None:
     assert port.bash_arithmetic_gt_zero("1a") is False, "a bad number, not a variable"
     assert port.bash_arithmetic_gt_zero("1 2") is False, "a syntax error, not a variable"
 
-    # THE FATAL ROWS: a bare word is a variable reference, and an unset one
-    # under `set -u` ends the script.
+    # THE FATAL ROWS: a bare word is a variable reference, and an unset one under `set -u` ends the script.
     for fatal in ("null", "a b", "a-b"):
         with pytest.raises(port.BashUnboundError) as caught:
             port.bash_arithmetic_gt_zero(fatal)

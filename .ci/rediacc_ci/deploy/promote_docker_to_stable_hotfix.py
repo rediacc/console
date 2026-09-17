@@ -67,26 +67,21 @@ import sys
 
 from rediacc_ci.core import common
 
-# `for image in renet rdc` (twin :29). ORDER MATTERS to the call log, which is
-# how this port is proved equivalent, and to which images survive a mid-run
-# docker failure.
+# `for image in renet rdc` (twin :29). ORDER MATTERS to the call log, which is how this port is proved equivalent, and to which images survive a mid-run docker failure.
 LOOP_IMAGES = ("renet", "rdc")
 
-# The on-prem image, handled after the loop (twin :36-40). Named separately
-# because the twin names it separately, for the `elite/` reason in its header.
+# The on-prem image, handled after the loop (twin :36-40). Named separately because the twin names it separately, for the `elite/` reason in its header.
 STANDALONE_IMAGE = "server"
 
 # `ghcr.io/rediacc/${image}` (twin :31-33). A literal, because the registry and
-# the org are the twin's and a port that derived either from an env var would be
-# answering a question the twin does not ask.
+# the org are the twin's and a port that derived either from an env var would be answering a question the twin does not ask.
 REGISTRY_NAMESPACE = "ghcr.io/rediacc"
 
 # The two tags, in the direction of promotion.
 SOURCE_TAG = "edge"
 TARGET_TAG = "stable"
 
-# The defect named in the module docstring, as a constant so a test can assert
-# it by name instead of restating the sentence.
+# The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
 NO_POST_PROMOTION_VERIFICATION = True
 
 
@@ -185,8 +180,7 @@ def main(argv: list[str]) -> int:
     except BashExitError as exc:
         return exc.code
 
-    # UNCONDITIONAL ONLY IN THE SENSE THAT NOTHING VERIFIES IT: every call above
-    # had to exit 0 to reach here, and none of them checked that the tag moved.
+    # UNCONDITIONAL ONLY IN THE SENSE THAT NOTHING VERIFIES IT: every call above had to exit 0 to reach here, and none of them checked that the tag moved.
     print("Docker promoted to stable")
     return 0
 

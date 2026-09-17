@@ -46,25 +46,15 @@ TWIN = ROOT / ".ci" / "scripts" / "quality" / "typecheck-workers.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "quality" / "typecheck_workers.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The tail every `npm ci`/`npm install` call carries, spelled once. Built from
-# the port's own tuple rather than retyped, so a port that reordered or dropped
-# a flag would still be caught by `test_npm_argv_...` below (which compares that
-# tuple against the literal list) instead of silently agreeing with itself here.
+# The tail every `npm ci`/`npm install` call carries, spelled once. Built from the port's own tuple rather than retyped, so a port that reordered or dropped a flag would still be caught by `test_npm_argv_...` below (which compares that tuple against the literal list) instead of silently agreeing with itself here.
 NPM_NET_TAIL = " ".join(port.NPM_NET)
 
-# The real binaries both sides reach through PATH. `find` and `sort` are the
-# discovery pipeline, `dirname` is the twin's per-iteration call.
+# The real binaries both sides reach through PATH. `find` and `sort` are the discovery pipeline, `dirname` is the twin's per-iteration call.
 PATH_MINIMUM = ("find", "sort", "dirname", "cat", "env")
 
-# A recording fake shared by `npm` and `npx`: it appends its own argv to the
-# call log under a distinct `call: ` prefix and then either succeeds quietly or
-# fails with the status the fixture asked for.
+# A recording fake shared by `npm` and `npx`: it appends its own argv to the call log under a distinct `call: ` prefix and then either succeeds quietly or fails with the status the fixture asked for.
 #
-# THE PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts`
-# classifies a line starting with `→ ` or `✓ ` as CHATTER before any
-# `--finding-re` is consulted, so a script that reports through log-step lines
-# can never produce a finding by message text alone. `call: ` is a shape no
-# logger emits, and the ledger scopes its `--finding-re` to it.
+# THE PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies a line starting with `→ ` or `✓ ` as CHATTER before any `--finding-re` is consulted, so a script that reports through log-step lines can never produce a finding by message text alone. `call: ` is a shape no logger emits, and the ledger scopes its `--finding-re` to it.
 FAKE_TOOL = r'''#!/usr/bin/python3
 """Recording fake for `npm`/`npx`. See the test module docstring."""
 import os
@@ -165,8 +155,7 @@ def _run(
         argv = [sys.executable, str(PORT_FILE), *args]
     proc = subprocess.run(
         argv,
-        # DELIBERATELY NOT THE FIXTURE ROOT: both sides must chdir there
-        # themselves, and a side that did not would discover nothing.
+        # DELIBERATELY NOT THE FIXTURE ROOT: both sides must chdir there themselves, and a side that did not would discover nothing.
         cwd=str(root.parent),
         capture_output=True,
         text=True,
@@ -210,9 +199,7 @@ def _calls(log: str) -> list[str]:
     return [line[len("call: ") :] for line in log.splitlines() if line.startswith("call: ")]
 
 
-# ---------------------------------------------------------------------------
-# The three documented modes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three documented modes ---------------------------------------------------------------------------
 
 
 def test_default_run_installs_then_typechecks_every_worker_in_order(tmp_path) -> None:
@@ -221,9 +208,7 @@ def test_default_run_installs_then_typechecks_every_worker_in_order(tmp_path) ->
 
     proc, calls = old
     assert proc.returncode == 0, proc.stderr
-    # PRINT THE SHAPE. Two workers, each contributing one install and one tsc,
-    # interleaved per worker rather than batched, and `alpha` before `beta`
-    # because `sort` says so.
+    # PRINT THE SHAPE. Two workers, each contributing one install and one tsc, interleaved per worker rather than batched, and `alpha` before `beta` because `sort` says so.
     assert _calls(calls) == [
         f"npm ci --prefix workers/alpha --ignore-scripts {NPM_NET_TAIL}",
         "npx tsc --noEmit -p workers/alpha/tsconfig.json",
@@ -266,9 +251,7 @@ def test_install_stops_before_typechecking_and_says_so(tmp_path) -> None:
     assert proc.stdout.splitlines()[-1] == "typecheck-workers: 2 worker project(s) have their deps"
 
 
-# ---------------------------------------------------------------------------
-# The anti-vacuity floor, which is the only refusal this script has
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The anti-vacuity floor, which is the only refusal this script has ---------------------------------------------------------------------------
 
 
 def test_zero_discovery_is_a_two_line_refusal_on_stderr_and_exit_1(tmp_path) -> None:
@@ -308,9 +291,7 @@ def test_the_refusal_precedes_list_so_list_can_never_print_an_empty_set(tmp_path
     assert proc.stdout == ""
 
 
-# ---------------------------------------------------------------------------
-# Failure propagation: both unguarded commands, and the work NOT done after
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure propagation: both unguarded commands, and the work NOT done after ---------------------------------------------------------------------------
 
 
 def test_a_failing_npm_ci_ends_the_run_with_npms_own_status(tmp_path) -> None:
@@ -346,9 +327,7 @@ def test_a_failing_npm_under_install_only_still_stops_the_run(tmp_path) -> None:
     assert "have their deps" not in proc.stdout
 
 
-# ---------------------------------------------------------------------------
-# The three named defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three named defects ---------------------------------------------------------------------------
 
 
 def test_defect_a_an_unknown_argument_is_silently_a_full_run(tmp_path) -> None:
@@ -394,10 +373,7 @@ def test_defect_b_a_partial_find_failure_is_a_smaller_green_run(tmp_path) -> Non
     blocked = root / "workers" / "beta"
     blocked.chmod(0o000)
     try:
-        # THE CONTROL FIRST: prove the mode really does block THIS uid before
-        # reading anything into the run's output. Running as root would make the
-        # whole case vacuous, and a chmod that did nothing would look exactly
-        # like a gate that correctly found one worker.
+        # THE CONTROL FIRST: prove the mode really does block THIS uid before reading anything into the run's output. Running as root would make the whole case vacuous, and a chmod that did nothing would look exactly like a gate that correctly found one worker.
         probe = subprocess.run(
             ["find", "workers", "-maxdepth", "2", "-name", "tsconfig.json", "-type", "f"],
             cwd=str(root),
@@ -443,9 +419,7 @@ def test_defect_c_a_present_but_empty_node_modules_is_never_refreshed(tmp_path) 
     assert "installing workers/beta" in proc.stdout
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_read_configs_follows_bash_rather_than_python() -> None:

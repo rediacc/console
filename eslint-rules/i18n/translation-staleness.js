@@ -161,9 +161,7 @@ export const translationStaleness = {
 
         // Compare each key's current hash with stored hash
         for (const [key, { value, node: valueNode }] of Object.entries(keyValues)) {
-          // For web package, keys in hashes are prefixed with namespace
-          // For CLI package, they're flat (single file)
-          // Check both formats for compatibility
+          // For web package, keys in hashes are prefixed with namespace For CLI package, they're flat (single file) Check both formats for compatibility
           const fullKey = namespace === 'cli' ? key : `${namespace}.${key}`;
           const currentHash = crc32(value);
 

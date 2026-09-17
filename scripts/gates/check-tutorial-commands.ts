@@ -82,12 +82,8 @@ function walk(node: unknown, file: string, out: Violation[], counter: { total: n
         counter.total += 1;
         const parsed = parseRdcCommand(command);
         if (parsed.ok || parsed.reason === 'not-rdc') continue;
-        // `reason` is set on every `ok: false` return in parseRdcCommand
-        // (packages/www/scripts/lib/cli-reference-catalog.js: not-rdc,
-        // unknown-global-option, unknown-command, unknown-option), but the
-        // inferred union does not tie it to `ok`, so the guard above cannot
-        // narrow it. Asserted rather than defaulted: a `?? 'unknown'` here
-        // would invent a reason if a future return path ever forgot one.
+        // `reason` is set on every `ok: false` return in parseRdcCommand (packages/www/scripts/lib/cli-reference-catalog.js: not-rdc, unknown-global-option, unknown-command, unknown-option), but the inferred union does not tie it to `ok`, so the guard above cannot narrow it. Asserted rather than defaulted: a `?? 'unknown'` here would invent a reason if a future return path ever
+        // forgot one.
         out.push({ file, command, reason: parsed.reason as string, flag: parsed.flag });
       }
       continue;
@@ -101,9 +97,7 @@ function main(): void {
     .filter((f) => f.endsWith('.json'))
     .sort();
 
-  // Anti-vacuity: an empty scan set must fail loudly rather than print a
-  // checkmark. A gate that passes because it found nothing to check is the
-  // exact failure this file was written to end.
+  // Anti-vacuity: an empty scan set must fail loudly rather than print a checkmark. A gate that passes because it found nothing to check is the exact failure this file was written to end.
   if (files.length === 0) {
     console.error(`[31m✗[0m No storyboards found in ${path.relative(ROOT, STORYBOARD_DIR)}`);
     console.error('  The directory moved or emptied — this gate would be checking nothing.');
@@ -124,8 +118,7 @@ function main(): void {
   console.log('(card.command display labels are deliberately NOT validated.)');
   console.log('');
 
-  // Second anti-vacuity guard: storyboards exist but expose no runnable command,
-  // which means the field names changed and the walker is silently missing them.
+  // Second anti-vacuity guard: storyboards exist but expose no runnable command, which means the field names changed and the walker is silently missing them.
   if (counter.total === 0) {
     console.error(`[31m✗[0m Found 0 runnable commands across ${files.length} storyboard(s).`);
     console.error('  Expected card.commandFull / teardownCommand. The schema likely changed.');

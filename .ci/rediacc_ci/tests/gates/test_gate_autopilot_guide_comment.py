@@ -112,8 +112,7 @@ class Guide:
             "node",
             "install Node 22 (the lane's setup-workspace step does this in CI)",
         )
-        # The twin's load-time loop: every input must be readable, because this
-        # test verifies the guide AGAINST its sources and cannot run without them.
+        # The twin's load-time loop: every input must be readable, because this test verifies the guide AGAINST its sources and cannot run without them.
         for path in REQUIRED_INPUTS:
             if not path.is_file():
                 gate.log_fail(
@@ -217,10 +216,7 @@ def test_updates_when_the_body_differs(gate, tmp_path):
 
 
 def test_identical_body_performs_no_write_at_all(gate, tmp_path):
-    # THE LOAD-BEARING CASE, and the one PR #555 proved for the label guide: a PR
-    # gets a CI run per push, so a poster that wrote unconditionally would bury
-    # the conversation. Asserted as an EXACT trace: "no create" alone would be
-    # satisfied by a module that called updateComment on every single run.
+    # THE LOAD-BEARING CASE, and the one PR #555 proved for the label guide: a PR gets a CI run per push, so a poster that wrote unconditionally would bury the conversation. Asserted as an EXACT trace: "no create" alone would be satisfied by a module that called updateComment on every single run.
     guide = Guide(gate, tmp_path)
     current = [{"id": 77, "user": BOT, "body": "@@RENDER@@"}]
     gate.assert_eq(
@@ -231,8 +227,7 @@ def test_identical_body_performs_no_write_at_all(gate, tmp_path):
 
 
 def test_a_non_bot_marker_comment_cannot_suppress_the_guide(gate, tmp_path):
-    # Otherwise anyone who can comment could silence the guide forever by posting
-    # an empty comment carrying the marker.
+    # Otherwise anyone who can comment could silence the guide forever by posting an empty comment carrying the marker.
     guide = Guide(gate, tmp_path)
     gate.assert_eq(
         guide.trace_of([{"id": 9, "user": HUMAN, "body": MARKER}]),
@@ -285,9 +280,7 @@ def test_all_three_arming_paths_are_documented(gate, tmp_path):
 
 
 def test_every_variable_is_documented_and_real(gate, tmp_path):
-    # The pinning that replaces "rendered from a source of truth". A variable
-    # renamed in autopilot.yml and not here would leave the guide instructing
-    # people to set something that does nothing.
+    # The pinning that replaces "rendered from a source of truth". A variable renamed in autopilot.yml and not here would leave the guide instructing people to set something that does nothing.
     guide = Guide(gate, tmp_path)
     body = guide.rendered_body()
     workflow = AUTOPILOT_WF.read_text(encoding="utf-8")
@@ -333,9 +326,7 @@ def test_stop_switches_are_documented_with_their_scopes(gate, tmp_path):
     gate.assert_contains(body, "autopilot-blocked", "the loop latch")
     gate.assert_contains(body, "LATCHES", "and that it needs a human to clear")
     gate.assert_contains(body, "AUTOPILOT_ENABLED", "the repo-wide switch")
-    # THE PRECISE CLAIM. Removing the arming label does NOT stop a campaign: the
-    # gate's arming chain accepts an open campaign with no label present. A guide
-    # that said otherwise would send someone to remove a label and walk away.
+    # THE PRECISE CLAIM. Removing the arming label does NOT stop a campaign: the gate's arming chain accepts an open campaign with no label present. A guide that said otherwise would send someone to remove a label and walk away.
     gate.assert_contains(body, "only the label path", "removing the label is scoped honestly")
     if 'ARMED_BY="campaign"' not in gate_sh:
         gate.log_fail(
@@ -367,9 +358,7 @@ def test_the_loop_and_its_bounds_match_the_gate(gate, tmp_path):
     if "stuck-signature" not in gate_sh:
         gate.log_fail("autopilot-gate.sh has no stuck-signature bound")
 
-    # The NUMBERS, each read back out of its own source. A pattern that matches
-    # nothing is a REFUSAL and not an empty comparison, which is what the twin's
-    # `[ -n "$cap" ]` guard buys.
+    # The NUMBERS, each read back out of its own source. A pattern that matches nothing is a REFUSAL and not an empty comparison, which is what the twin's `[ -n "$cap" ]` guard buys.
     cap_match = CAP_RE.search(gate_sh)
     if not cap_match or not cap_match.group(1):
         gate.log_fail("could not read the default round cap out of autopilot-gate.sh")
@@ -394,9 +383,7 @@ def test_the_loop_and_its_bounds_match_the_gate(gate, tmp_path):
 
 
 def test_the_guide_is_shorter_than_the_label_guide(gate, tmp_path):
-    # An operator requirement, and a real one: this comment sits on every PR
-    # under a guide that is already long. A reference manual nobody reads is
-    # worse than the discoverability problem it was meant to fix.
+    # An operator requirement, and a real one: this comment sits on every PR under a guide that is already long. A reference manual nobody reads is worse than the discoverability problem it was meant to fix.
     guide = Guide(gate, tmp_path)
     mine = len(guide.rendered_body().encode("utf-8"))
     theirs_run = harness.run(
@@ -431,9 +418,7 @@ def test_the_guide_is_shorter_than_the_label_guide(gate, tmp_path):
 
 
 def test_the_trailer_is_present_and_readable(gate, tmp_path):
-    # The footer is LOAD-BEARING: it is the only line telling a reader that
-    # hand-edits are overwritten and which file to change instead. Both halves
-    # are asserted, because each fails differently.
+    # The footer is LOAD-BEARING: it is the only line telling a reader that hand-edits are overwritten and which file to change instead. Both halves are asserted, because each fails differently.
     body = Guide(gate, tmp_path).rendered_body()
     gate.assert_contains(
         body, "edits here are overwritten", "the trailer says hand-edits do not survive"
@@ -457,8 +442,7 @@ def test_marker_is_the_first_bytes_and_unique(gate, tmp_path):
     hits = len([line for line in body.splitlines() if MARKER in line])
     if hits != 1:
         gate.log_fail("the marker appears on %d lines; a quoted copy would match the finder" % hits)
-    # And it must not collide with the label guide's, or the two posters would
-    # fight over one comment forever.
+    # And it must not collide with the label guide's, or the two posters would fight over one comment forever.
     collision = harness.run(
         [
             guide.node,
@@ -478,9 +462,7 @@ def test_marker_is_the_first_bytes_and_unique(gate, tmp_path):
 
 
 def test_ci_yml_wires_the_step_in_the_existing_grant(gate, tmp_path):
-    # The module is inert unless ci.yml calls it. It rides the label-guide job
-    # deliberately: that job already holds `pull-requests: write` and the
-    # `.ci/scripts` sparse checkout.
+    # The module is inert unless ci.yml calls it. It rides the label-guide job deliberately: that job already holds `pull-requests: write` and the `.ci/scripts` sparse checkout.
     Guide(gate, tmp_path)
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
     gate.assert_contains(workflow, "autopilot-guide-comment.cjs", "ci.yml calls this module")

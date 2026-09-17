@@ -33,8 +33,7 @@ US = "\x1f"
 
 # US and not tab, for the reason recorded at `rediacc_ci.core.advisory`'s SEP:
 # `IFS=$'\t' read` collapses consecutive tabs and eats an empty field, which on
-# this differential's first run shifted `fix` into `name` on the bash side only
-# and looked exactly like a port defect.
+# this differential's first run shifted `fix` into `name` on the bash side only and looked exactly like a port defect.
 BASH_DRIVER = textwrap.dedent(
     """
     _drive() {
@@ -97,9 +96,7 @@ CASES = [
             ("emit", "error", "lodash", "", "", ""),
         ],
     ),
-    # BACKSLASHES. `log_error` is `echo -e`, so these are INTERPRETED, and a port
-    # that formatted them as data would silently disagree on any Windows path or
-    # regex an advisory happens to name.
+    # BACKSLASHES. `log_error` is `echo -e`, so these are INTERPRETED, and a port that formatted them as data would silently disagree on any Windows path or regex an advisory happens to name.
     (
         "backslash-escapes",
         {},
@@ -112,9 +109,7 @@ CASES = [
         {},
         [("meta", "range", "x", ">= 2.0.0 < 2.4.1"), ("emit", "warn", "x", "pkg", "")],
     ),
-    # `\c` SUPPRESSES THE REST OF THE LINE INCLUDING ITS NEWLINE. Measured on
-    # the real builtin: `echo -e 'a\cb'` writes `a` with no trailing `$`. A port
-    # that always appended a newline would differ by one byte here and nowhere
+    # `\c` SUPPRESSES THE REST OF THE LINE INCLUDING ITS NEWLINE. Measured on the real builtin: `echo -e 'a\cb'` writes `a` with no trailing `$`. A port that always appended a newline would differ by one byte here and nowhere
     # else, which is the hardest kind of difference to find later.
     (
         "backslash-c-eats-the-newline",

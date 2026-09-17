@@ -105,9 +105,7 @@ def assert_same(
     assert new.stderr == old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The happy path, on the real tree and on an unmutated fixture
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, on the real tree and on an unmutated fixture ---------------------------------------------------------------------------
 
 
 def test_real_tree_agrees_byte_for_byte() -> None:
@@ -125,14 +123,11 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     old, new = run_both(fixture)
     assert old.returncode == 0
     assert_same(old, new)
-    # The fixture must be a faithful stand-in, or every mutation below is
-    # measuring the fixture rather than the mutation.
+    # The fixture must be a faithful stand-in, or every mutation below is measuring the fixture rather than the mutation.
     assert old.stdout == _run(TWIN, ROOT).stdout
 
 
-# ---------------------------------------------------------------------------
-# The four log_fail branches, each reached by a real mutation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The four log_fail branches, each reached by a real mutation ---------------------------------------------------------------------------
 
 
 def test_a_guard_that_scrubs_is_caught_in_case_one(tmp_path: pathlib.Path) -> None:
@@ -220,9 +215,7 @@ def test_a_dry_run_that_still_calls_aws_is_caught_in_case_four(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The sed extraction, which is the port's other moving part
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The sed extraction, which is the port's other moving part ---------------------------------------------------------------------------
 
 
 def test_a_missing_guard_function_is_rc_127_on_both_sides(tmp_path: pathlib.Path) -> None:
@@ -274,9 +267,7 @@ def test_extract_guard_matches_the_real_sed() -> None:
     assert expected != "", "the anchor moved; this comparison would be vacuous"
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this suite red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this suite red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

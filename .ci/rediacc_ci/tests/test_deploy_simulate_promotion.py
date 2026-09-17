@@ -60,16 +60,8 @@ if typing.TYPE_CHECKING:
 #
 # AND THE GROUP DID NOT DO THAT, measured 2026-09-15. The claim above is what the
 # group was believed to buy; what `--dist loadgroup` actually buys is that tests
-# SHARING A GROUP NAME land on one worker. A different module with a DIFFERENT
-# name is therefore not merely unprotected, it is actively placed on another
-# worker -- the opposite of the invariant the line above asserts.
-# `test_deploy_promote_r2_to_stable_hotfix.py` drives the same `/tmp/config` (its
-# own docstring lists it as a fixed twin path) under the group name
-# `deploy-promote-fixed-tmp`, so the two modules were scheduled CONCURRENTLY by
-# construction. The failure that exposed it is the one this module's own comment
-# at `FIXED_TMP_LOCK` predicts word for word: `/tmp/config` vanishing between the
-# download that wrote it and the upload that reads it, surfacing as
-# `HeadObject 404` and `exit diverged: 1 vs 0`. Serial in isolation: 50/50 pass.
+# SHARING A GROUP NAME land on one worker. A different module with a DIFFERENT name is therefore not merely unprotected, it is actively placed on another worker -- the opposite of the invariant the line above asserts. `test_deploy_promote_r2_to_stable_hotfix.py` drives the same `/tmp/config` (its own docstring lists it as a fixed twin path) under the group name
+# `deploy-promote-fixed-tmp`, so the two modules were scheduled CONCURRENTLY by construction. The failure that exposed it is the one this module's own comment at `FIXED_TMP_LOCK` predicts word for word: `/tmp/config` vanishing between the download that wrote it and the upload that reads it, surfacing as `HeadObject 404` and `exit diverged: 1 vs 0`. Serial in isolation: 50/50 pass.
 # Under `-n <jobs> --dist loadgroup`: 4-5 fail, and NOT THE SAME 4-5 twice.
 #
 # ONE NAME ACROSS BOTH MODULES is the fix, because the name IS the mutex.
@@ -94,12 +86,7 @@ BASE_ENV = {
 
 # The bucket fixture, one object per format plus two that earn their place:
 #
-#   * `apt/pr-123/dists/with space/InRelease` carries a SPACE, which is what the
-#     awk field-rejoin has to survive and what a naive `cut -d' ' -f4` would
-#     split into two bogus keys.
-#   * `rpm/pr-123/rediacc.repo` and `archlinux/pr-123/rediacc.conf` are the two
-#     files the sed-fix step rewrites, and both carry the source channel in a
-#     URL so the rewrite is visible in the uploaded bytes.
+# * `apt/pr-123/dists/with space/InRelease` carries a SPACE, which is what the awk field-rejoin has to survive and what a naive `cut -d' ' -f4` would split into two bogus keys. * `rpm/pr-123/rediacc.repo` and `archlinux/pr-123/rediacc.conf` are the two files the sed-fix step rewrites, and both carry the source channel in a URL so the rewrite is visible in the uploaded bytes.
 DEFAULT_BUCKET = {
     "apt/pr-123/rdc.deb": "deb bytes\n",
     "apt/pr-123/dists/Release": "release body\n",
@@ -116,13 +103,9 @@ DEFAULT_BUCKET = {
 
 # A MODEL of the AWS CLI, not the AWS CLI. `aws` IS NOT INSTALLED IN THIS
 # SANDBOX, so nothing here is checked against the real tool; the differential's
-# evidence is independent of that, because both implementations go through the
-# SAME fake and the argv, the streams and the exit codes are real evidence about
-# the two callers.
+# evidence is independent of that, because both implementations go through the SAME fake and the argv, the streams and the exit codes are real evidence about the two callers.
 #
-# `FAKE_AWS_LS_EMPTY_EXITS` is the knob fact 3 needs: real `aws s3 ls` builds
-# disagree about whether an empty prefix is an error, and the twin's floor is
-# reachable only under the build that says it is not.
+# `FAKE_AWS_LS_EMPTY_EXITS` is the knob fact 3 needs: real `aws s3 ls` builds disagree about whether an empty prefix is an error, and the twin's floor is reachable only under the build that says it is not.
 FAKE_AWS = r'''#!/usr/bin/python3
 """Recording fake for `aws`. See the test module docstring."""
 import os
@@ -234,8 +217,7 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# `sleep` RECORDS AND RETURNS IMMEDIATELY. See the module docstring: this is what
-# turns the retry schedule into evidence rather than into a slow test.
+# `sleep` RECORDS AND RETURNS IMMEDIATELY. See the module docstring: this is what turns the retry schedule into evidence rather than into a slow test.
 FAKE_SLEEP = """#!/usr/bin/python3
 import os
 import sys
@@ -245,8 +227,7 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
 sys.exit(0)
 """
 
-# `awk`, `xargs`, `mktemp`, `sed` and `bash` are all reached by the twin, and
-# `jq` by cf-purge-urls.sh.
+# `awk`, `xargs`, `mktemp`, `sed` and `bash` are all reached by the twin, and `jq` by cf-purge-urls.sh.
 PATH_MINIMUM = (
     "awk",
     "xargs",
@@ -265,23 +246,12 @@ PATH_MINIMUM = (
 )
 
 
-# A CROSS-PROCESS LOCK, AND IT IS NOT BELT-AND-BRACES: IT REPAIRS A MEASURED
-# FLAKE. `xdist_group` serialises these cases within ONE pytest invocation, and
-# that is all it can do. `/tmp/config` is a MACHINE-WIDE path, so a SECOND
-# pytest running the same suite in the same tree deletes the file this one is
-# mid-way through using.
+# A CROSS-PROCESS LOCK, AND IT IS NOT BELT-AND-BRACES: IT REPAIRS A MEASURED FLAKE. `xdist_group` serialises these cases within ONE pytest invocation, and that is all it can do. `/tmp/config` is a MACHINE-WIDE path, so a SECOND pytest running the same suite in the same tree deletes the file this one is mid-way through using.
 #
-# Measured 2026-09-13, not theorised: a direct run of this file went red on
-# three cases while another session's `check_pytest.py -n 8 --dist loadgroup`
-# was live in the same checkout (`ps` confirmed pid 267264). The visible symptom
-# was `fatal error: An error occurred (404) when calling HeadObject` from the
-# archlinux upload, i.e. `/tmp/config` vanishing between the download that wrote
-# it and the upload that reads it. The same three cases passed twice in a row
-# once that run finished.
+# Measured 2026-09-13, not theorised: a direct run of this file went red on three cases while another session's `check_pytest.py -n 8 --dist loadgroup` was live in the same checkout (`ps` confirmed pid 267264). The visible symptom was `fatal error: An error occurred (404) when calling HeadObject` from the archlinux upload, i.e. `/tmp/config` vanishing between the download that
+# wrote it and the upload that reads it. The same three cases passed twice in a row once that run finished.
 #
-# `flock` turns that corruption into a WAIT. It cannot be avoided by giving the
-# cases a private path, because the path is the TWIN'S and a port that changed
-# it would not be a port.
+# `flock` turns that corruption into a WAIT. It cannot be avoided by giving the cases a private path, because the path is the TWIN'S and a port that changed it would not be a port.
 FIXED_TMP_LOCK = "/tmp/rediacc-simulate-promotion-differential.lock"
 
 
@@ -380,9 +350,7 @@ def _run(
         argv = [BASH, str(root / ".ci" / "scripts" / "deploy" / TWIN.name)]
     else:
         argv = [sys.executable, str(PORT_FILE)]
-    # THE LOCK SPANS THE CHILD AND THE SNAPSHOT, not just the cleanup: the file
-    # the run LEAVES at `/tmp/config` is evidence, and reading it after
-    # releasing would read whatever the next process wrote.
+    # THE LOCK SPANS THE CHILD AND THE SNAPSHOT, not just the cleanup: the file the run LEAVES at `/tmp/config` is evidence, and reading it after releasing would read whatever the next process wrote.
     with _fixed_tmp_guard():
         proc = subprocess.run(
             argv,
@@ -468,9 +436,7 @@ def _purged(log: str) -> list[str]:
     return []
 
 
-# ---------------------------------------------------------------------------
-# The happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
 def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
@@ -480,10 +446,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
     proc, calls = old
     assert proc.returncode == 0, proc.stderr
 
-    # PRINT THE SHAPE: three `aws configure set`, four `s3 ls`, nine
-    # copy-objects (one per fixture key), two sed-fix downloads, two sed-fix
-    # uploads, one purge. A collapse in any of those numbers is what a
-    # "they both said Promotion simulated" comparison would miss.
+    # PRINT THE SHAPE: three `aws configure set`, four `s3 ls`, nine copy-objects (one per fixture key), two sed-fix downloads, two sed-fix uploads, one purge. A collapse in any of those numbers is what a "they both said Promotion simulated" comparison would miss.
     listing = _calls(calls)
     assert len([c for c in listing if c.startswith("aws configure set")]) == 3
     assert len([c for c in listing if c.startswith("aws s3 ls")]) == 4
@@ -603,9 +566,7 @@ def test_github_env_receives_the_promoted_channel_when_it_is_set(tmp_path) -> No
     assert old2[0].returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# The five named facts
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The five named facts ---------------------------------------------------------------------------
 
 
 def test_fact_the_access_key_message_names_a_different_variable(tmp_path) -> None:
@@ -673,9 +634,7 @@ def test_fact_the_sed_fix_scratch_path_is_fixed(tmp_path) -> None:
     root = fixture(tmp_path)
     old = _run(root, "old")
     assert old[0].returncode == 0, old[0].stderr
-    # THE SNAPSHOT, taken inside the same lock the run held. Reading
-    # `/tmp/config` here instead would read whatever the next process wrote,
-    # which is the exact race the guard exists for.
+    # THE SNAPSHOT, taken inside the same lock the run held. Reading `/tmp/config` here instead would read whatever the next process wrote, which is the exact race the guard exists for.
     left_by_bash = (root / "old-scratch-left-behind").read_text(encoding="utf-8")
 
     new = _run(root, "new")
@@ -697,10 +656,7 @@ def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
     old_proc, old_calls = _run(root, "old", drop_env=("CLOUDFLARE_ZONE_ID",))
     new_proc, new_calls = _run(root, "new", drop_env=("CLOUDFLARE_ZONE_ID",))
 
-    # NOT `_agree`: this is the second named divergence, and it is the whole
-    # point of the case. bash prefixes its own path and line number, the port
-    # prefixes the script's name, and everything else about the two runs is
-    # identical, which is asserted line by line below rather than waved at.
+    # NOT `_agree`: this is the second named divergence, and it is the whole point of the case. bash prefixes its own path and line number, the port prefixes the script's name, and everything else about the two runs is identical, which is asserted line by line below rather than waved at.
     assert old_proc.returncode == 1
     assert new_proc.returncode == 1
     assert old_proc.stdout == new_proc.stdout
@@ -720,9 +676,7 @@ def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
         assert "curl" not in calls
 
 
-# ---------------------------------------------------------------------------
-# Refusals, retries and failures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, retries and failures ---------------------------------------------------------------------------
 
 
 def test_a_missing_channel_refuses_before_anything_runs(tmp_path) -> None:
@@ -869,9 +823,7 @@ def test_a_failing_aws_configure_stops_before_anything_is_listed(tmp_path) -> No
     assert "AccessDenied" in proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
@@ -932,9 +884,7 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_directory_list_is_the_twins_and_excludes_cli() -> None:

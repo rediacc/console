@@ -119,9 +119,7 @@ async function handleGc(options: {
     const reachable = reachableCommits(repos);
     const present = await machineObjects(options.machine, repos);
 
-    // Candidates: immutable commits, present on the machine, unreachable from any
-    // ref, and not currently mounted (a mounted object is in use). Working forks
-    // are never immutable, so they are excluded by construction.
+    // Candidates: immutable commits, present on the machine, unreachable from any ref, and not currently mounted (a mounted object is in use). Working forks are never immutable, so they are excluded by construction.
     const candidates = repos.filter((r) => {
       const guid = r.config.repositoryGuid;
       const obj = present.get(guid);
@@ -146,8 +144,7 @@ async function handleGc(options: {
       const result = await getExecutor().execute({
         functionName: 'repository_delete',
         machineName: options.machine,
-        // #74: the candidate's OWN recorded datastore, not the machine default —
-        // gc deletes objects it found by enumerating those same mounts above.
+        // #74: the candidate's OWN recorded datastore, not the machine default — gc deletes objects it found by enumerating those same mounts above.
         datastore: await recordedDatastoreMount(c.name),
         params: { repository: guid },
         debug: options.debug,
@@ -230,8 +227,7 @@ export function registerRepoMaintenanceCommands(repo: Command, admin: Command): 
       return handleGc(options);
     });
 
-  // repo admin fsck --machine <m>: a machine-scoped scan of config refs against the
-  // commits actually present. No repo to derive from, so -m stays (§5.4).
+  // repo admin fsck --machine <m>: a machine-scoped scan of config refs against the commits actually present. No repo to derive from, so -m stays (§5.4).
   admin
     .command('fsck')
     .summary(t('commands.repo.admin.fsck.descriptionShort'))

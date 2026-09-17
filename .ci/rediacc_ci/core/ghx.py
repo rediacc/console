@@ -122,40 +122,27 @@ import time
 
 from rediacc_ci import proc
 
-# Every one of these closes a way `gh` can decide to wait for a human, page its
-# output, or colour it. The pager pair matters twice over: `gh` honours GH_PAGER
-# and falls back to PAGER, and a pager on a non-tty is how a call that "hung in
-# CI" actually spent its fifteen minutes.
+# Every one of these closes a way `gh` can decide to wait for a human, page its output, or colour it. The pager pair matters twice over: `gh` honours GH_PAGER and falls back to PAGER, and a pager on a non-tty is how a call that "hung in CI" actually spent its fifteen minutes.
 NONINTERACTIVE = {
     "GH_PROMPT_DISABLED": "1",
     "GH_NO_UPDATE_NOTIFIER": "1",
     "GH_PAGER": "cat",
     "PAGER": "cat",
-    # Colour in a captured stream is escape bytes inside a value a caller then
-    # compares. `differential.escape_bytes` exists because this repo has been
-    # bitten by exactly that.
+    # Colour in a captured stream is escape bytes inside a value a caller then compares. `differential.escape_bytes` exists because this repo has been bitten by exactly that.
     "NO_COLOR": "1",
     "CLICOLOR": "0",
 }
 
-# The observed `gh` timeouts in this tree are 20 seconds (`block-admin-merge.sh:64`,
-# the only site that bounds it at all). Everything else is unbounded. 30 here so no
-# existing behaviour gets tighter by being ported, and nothing is unbounded.
+# The observed `gh` timeouts in this tree are 20 seconds (`block-admin-merge.sh:64`, the only site that bounds it at all). Everything else is unbounded. 30 here so no existing behaviour gets tighter by being ported, and nothing is unbounded.
 DEFAULT_TIMEOUT = 30.0
 
-# `gh`'s own exit code for "you are not authenticated". MEASURED 2026-09-06:
-# `gh pr list --repo rediacc/console --state open --json number` with an empty
-# GH_CONFIG_DIR and no token exits 4. Not 1. A call site that branches on 1
-# therefore misclassifies the single most common failure, and one that branches
-# on "non-zero" cannot tell it from a genuine finding.
+# `gh`'s own exit code for "you are not authenticated". MEASURED 2026-09-06: `gh pr list --repo rediacc/console --state open --json number` with an empty GH_CONFIG_DIR and no token exits 4. Not 1. A call site that branches on 1 therefore misclassifies the single most common failure, and one that branches on "non-zero" cannot tell it from a genuine finding.
 AUTH_FAILED_RC = 4
 
 # 127 from `proc.run` means the binary could not be spawned at all.
 NOT_INSTALLED_RC = proc.SPAWN_FAILED_RC
 
-# The classification vocabulary. Strings rather than an Enum because these are
-# printed into messages and compared in tests, and an Enum's repr is noise in
-# both places.
+# The classification vocabulary. Strings rather than an Enum because these are printed into messages and compared in tests, and an Enum's repr is noise in both places.
 FAILURE_NOT_INSTALLED = "not-installed"
 FAILURE_UNAUTHENTICATED = "unauthenticated"
 FAILURE_RATE_LIMITED = "rate-limited"
@@ -166,14 +153,9 @@ AUTH_AUTHENTICATED = "authenticated"
 AUTH_UNAUTHENTICATED = "unauthenticated"
 AUTH_UNKNOWN = "unknown"
 
-# Matched case-insensitively against STDERR. Every string here was produced by a
-# real `gh` on this host on 2026-09-06 except the two HTTP ones, which are what
-# `gh api` prints when the token is present but rejected.
+# Matched case-insensitively against STDERR. Every string here was produced by a real `gh` on this host on 2026-09-06 except the two HTTP ones, which are what `gh api` prints when the token is present but rejected.
 #
-# THE MARKERS ARE A REFINEMENT, NEVER THE VERDICT. The verdict is the exit code:
-# anything non-zero is a failure whatever the stderr says. A marker only chooses
-# WHICH failure, so a `gh` release that rewords its messages degrades this to
-# FAILURE_FAILED and never to "success".
+# THE MARKERS ARE A REFINEMENT, NEVER THE VERDICT. The verdict is the exit code: anything non-zero is a failure whatever the stderr says. A marker only chooses WHICH failure, so a `gh` release that rewords its messages degrades this to FAILURE_FAILED and never to "success".
 _UNAUTHENTICATED_MARKERS = (
     "gh auth login",
     "not logged into any github host",
@@ -188,8 +170,7 @@ _RATE_LIMIT_MARKERS = (
     "secondary rate limit",
 )
 
-# A branch name this repo will accept: MMDD-N, no suffix. The guard at
-# .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:204 pins the
+# A branch name this repo will accept: MMDD-N, no suffix. The guard at .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:204 pins the
 # same shape with `^[0-9]{4}-[0-9]+$`.
 _DAY_RE = re.compile(r"^[0-9]{4}$")
 
@@ -256,11 +237,7 @@ def _classify(returncode: int, stderr: str, *, timed_out: bool) -> str:
     if returncode == NOT_INSTALLED_RC:
         return FAILURE_NOT_INSTALLED
     lowered = stderr.lower()
-    # RATE LIMIT IS TESTED BEFORE AUTH, and the order is load bearing. GitHub's
-    # rate-limit body for an unauthenticated caller says "rate limit exceeded"
-    # AND suggests authenticating, so an auth-first test would classify a
-    # retryable condition as a credential problem and send the reader to rotate
-    # a token that is fine.
+    # RATE LIMIT IS TESTED BEFORE AUTH, and the order is load bearing. GitHub's rate-limit body for an unauthenticated caller says "rate limit exceeded" AND suggests authenticating, so an auth-first test would classify a retryable condition as a credential problem and send the reader to rotate a token that is fine.
     if any(marker in lowered for marker in _RATE_LIMIT_MARKERS):
         return FAILURE_RATE_LIMITED
     if returncode == AUTH_FAILED_RC or any(m in lowered for m in _UNAUTHENTICATED_MARKERS):
@@ -297,8 +274,7 @@ class GhResult:
     ) -> None:
         self.argv = list(argv)
         self.returncode = returncode
-        # NAMED `stdout_raw`, not `_stdout`. A single leading underscore says
-        # "private", which invites a reader to use it anyway once they decide
+        # NAMED `stdout_raw`, not `_stdout`. A single leading underscore says "private", which invites a reader to use it anyway once they decide
         # they know better; `stdout_raw` says what it is -- the bytes, unchecked
         # -- so a call site that uses it reads as a deliberate choice.
         self.stdout_raw = stdout
@@ -611,10 +587,7 @@ def branch_indexes(
         if not ref.startswith(prefix):
             continue
         tail = ref[len(prefix) :]
-        # EXACT, not a prefix match. `0826-1-fixup` is not index 1 and must not
-        # be read as one: the repo's own convention forbids the suffix, so a ref
-        # carrying one is somebody else's mistake and cannot be allowed to
-        # collapse onto a legitimate name.
+        # EXACT, not a prefix match. `0826-1-fixup` is not index 1 and must not be read as one: the repo's own convention forbids the suffix, so a ref carrying one is somebody else's mistake and cannot be allowed to collapse onto a legitimate name.
         if tail.isdigit():
             out.add(int(tail))
     return out
@@ -660,10 +633,7 @@ def secret_names(
     result = gh(args, repo=repo, env=env, attempts=attempts, sleep=sleep)
     names = []
     for line in result.lines():
-        # `gh secret list` is TAB separated: NAME, updated-at, and for an org
-        # also the visibility. Split on whitespace and a name is still the first
-        # field, so this survives the column set changing between gh releases --
-        # which it has.
+        # `gh secret list` is TAB separated: NAME, updated-at, and for an org also the visibility. Split on whitespace and a name is still the first field, so this survives the column set changing between gh releases -- which it has.
         first = line.split()[0] if line.split() else ""
         if first:
             names.append(first)
@@ -698,9 +668,7 @@ def secret_value(name: str) -> str:
     )
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface a shell caller uses instead of a pipeline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface a shell caller uses instead of a pipeline ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:

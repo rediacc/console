@@ -63,8 +63,7 @@ ORDER = 13
 FG_MAX = 20
 BG_MAX = 120
 
-# Correction 1, undone: reading the FIRST sleep instead of the largest is
-# exactly what let the sanctioned watch through on the accident of arm order.
+# Correction 1, undone: reading the FIRST sleep instead of the largest is exactly what let the sanctioned watch through on the accident of arm order.
 DEFECT = ("ordered[-1]", "ordered[0]")
 
 FG_MESSAGE = (
@@ -84,8 +83,7 @@ EDGE_CASES = [
     ("a foreground sleep at the cap is allowed", "sleep 20"),
     # Correction 1: the largest wins, not the first.
     ("the maximum wins, not the first", "sleep 20; sleep 90"),
-    # Correction 2: the background cap is higher, which is what makes the
-    # attempt-stable watch expressible at all.
+    # Correction 2: the background cap is higher, which is what makes the attempt-stable watch expressible at all.
     (
         "the same command in the background is under the higher cap",
         {"tool_input": {"command": "sleep 20; sleep 90", "run_in_background": True}},
@@ -100,16 +98,10 @@ EDGE_CASES = [
     ("a tab between sleep and its argument is not matched", "sleep\t45"),
 ]
 
-# NO DECLARED DIVERGENCES, and the one that used to be here is worth recording as
-# an absence. It was `sleep 08`: not valid octal, so the twin wrote a bash
-# arithmetic error naming its own file and line number and then evaluated FALSE,
-# permitting the command. The port agreed on the decision and said nothing, so the
-# stderr difference was declared rather than faked -- emitting a path and a line
-# number belonging to the file being replaced is a fabrication, not a
-# transliteration.
+# NO DECLARED DIVERGENCES, and the one that used to be here is worth recording as an absence. It was `sleep 08`: not valid octal, so the twin wrote a bash arithmetic error naming its own file and line number and then evaluated FALSE, permitting the command. The port agreed on the decision and said nothing, so the stderr difference was declared rather than faked -- emitting a path
+# and a line number belonging to the file being replaced is a fabrication, not a transliteration.
 #
-# The twin was fixed on 2026-09-06 to force base ten. It no longer errors, both
-# sides now allow `08` silently, and the divergence dissolved rather than being
+# The twin was fixed on 2026-09-06 to force base ten. It no longer errors, both sides now allow `08` silently, and the divergence dissolved rather than being
 # waived. An empty list is the honest state; the harness still asserts it, so a new
 # divergence cannot arrive unannounced.
 KNOWN_DIVERGENCES = []
@@ -137,12 +129,8 @@ def run(ev):
 
     # The MAXIMUM sleep in the command, not the first one.
     #
-    # PORT NOTE ON THE PIPELINE. `grep -oE 'sleep +[0-9]+'` uses a literal
-    # SPACE and not `[[:space:]]`, so `sleep\t45` is not a sleep as far as this
-    # guard is concerned. The second grep then keeps only the digits, and
-    # `sort -n | tail -1` picks the largest -- GNU sort falls back to a
-    # byte-wise comparison for equal keys, which is why the key below carries
-    # the record itself as its tiebreaker.
+    # PORT NOTE ON THE PIPELINE. `grep -oE 'sleep +[0-9]+'` uses a literal SPACE and not `[[:space:]]`, so `sleep\t45` is not a sleep as far as this guard is concerned. The second grep then keeps only the digits, and `sort -n | tail -1` picks the largest -- GNU sort falls back to a byte-wise comparison for equal keys, which is why the key below carries the record itself as its
+    # tiebreaker.
     spans = hookio.grep_o(r"sleep +[0-9]+", cmd)
     digits = hookio.grep_o(r"[0-9]+", hookio._grep_out(spans))
     ordered = sorted(digits, key=lambda record: (_numeric(record), record))

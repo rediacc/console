@@ -74,16 +74,13 @@ import tempfile
 from rediacc_ci import log
 from rediacc_ci.core import bash_dialect
 
-# `.ci/config/constants.sh:193-195`, verbatim. ONE entry, and the docstring
-# above says why that is not a mistake.
+# `.ci/config/constants.sh:193-195`, verbatim. ONE entry, and the docstring above says why that is not a mistake.
 VERSION_FILES_JSON = ("packages/cli/package.json",)
 
-# `get_current_version` (:108-110) reads `.version` out of THIS file, which is
-# not in the list above and is therefore never written.
+# `get_current_version` (:108-110) reads `.version` out of THIS file, which is not in the list above and is therefore never written.
 CURRENT_VERSION_FILE = "package.json"
 
-# `validate_semver` (:113-119). Strict X.Y.Z: no `v`, no prerelease, no build
-# metadata. This is what stops `0.0.1-rc.1` reaching a manifest.
+# `validate_semver` (:113-119). Strict X.Y.Z: no `v`, no prerelease, no build metadata. This is what stops `0.0.1-rc.1` reaching a manifest.
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
 # `$((...))` integer literals, bash's three bases (:126, :133, :140).
@@ -413,8 +410,7 @@ def require_sources(root: pathlib.Path) -> None:
             raise MissingSourceError(path, line)
     pins = root / ".devcontainer" / "toolchain.env"
     if not os.access(pins, os.R_OK):
-        # `.ci/config/constants.sh:31-32`, verbatim, then `return 1` which
-        # `set -e` turns into the caller's exit 1.
+        # `.ci/config/constants.sh:31-32`, verbatim, then `return 1` which `set -e` turns into the caller's exit 1.
         print("constants.sh: gate toolchain pins missing: %s" % pins, file=sys.stderr)
         raise SystemExit(1)
 
@@ -494,8 +490,7 @@ def main(argv: list[str]) -> int:
         pathlib.Path(opts.output_file).write_text(new_version + "\n", encoding="utf-8")
         log.info("Wrote version to %s" % opts.output_file)
 
-    # THE LAST LINE ON STDOUT IS THE INTERFACE (:235). Every other message this
-    # script writes goes to stderr precisely so this one can be captured.
+    # THE LAST LINE ON STDOUT IS THE INTERFACE (:235). Every other message this script writes goes to stderr precisely so this one can be captured.
     print(new_version)
     return 0
 

@@ -95,8 +95,7 @@ REQUIRED_VARS = ("PR_NUMBER", "GH_TOKEN", "GITHUB_REPOSITORY")
 # the cursor stopped advancing; fail closed rather than spin forever."
 MAX_PAGES = 50
 
-# `_gh_probe` in `.ci/scripts/lib/common.sh`: three attempts, sleeping
-# attempt * 3 seconds between them.
+# `_gh_probe` in `.ci/scripts/lib/common.sh`: three attempts, sleeping attempt * 3 seconds between them.
 GH_ATTEMPTS = 3
 GH_SLEEP_FACTOR = 3
 
@@ -164,12 +163,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
                     pass
                 else:
                     # `out="$(gh "$@" ...)"` in `_gh_probe`: COMMAND SUBSTITUTION
-                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the
-                    # stripped value with `printf '%s'`. That matters because
-                    # `check-review-comments.sh` compares the result against the
-                    # literal `"[]"`, and an unstripped `"[]\n"` takes the other
-                    # branch. Found by the differential, on a specimen with no
-                    # inline comments.
+                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the stripped value with `printf '%s'`. That matters because `check-review-comments.sh` compares the result against the literal `"[]"`, and an unstripped `"[]\n"` takes the other branch. Found by the differential, on a specimen with no inline comments.
                     return proc.stdout.rstrip("\n")
         if attempt < GH_ATTEMPTS:
             log.warn(
@@ -298,8 +292,7 @@ def main(argv: list[str] | None = None) -> int:
             log.error("Cannot determine whether review threads are resolved. Failing closed.")
             return 1
         payload = json.loads(body)
-        # "A GraphQL error response is valid JSON and exits 0, so catch it per
-        # page rather than only on the last one."
+        # "A GraphQL error response is valid JSON and exits 0, so catch it per page rather than only on the last one."
         if payload.get("errors"):
             first = payload["errors"][0] if payload["errors"] else {}
             log.error("GraphQL query failed: %s" % (first.get("message") or "Unknown error"))
@@ -434,8 +427,7 @@ def selftest() -> int:
     threads = [
         {"isResolved": False, "isOutdated": False, "path": "a.ts", "line": 3},
         {"isResolved": True, "isOutdated": False, "path": "b.ts", "line": 4},
-        # AN OUTDATED THREAD IS EXCLUDED even when unresolved: it points at a line
-        # that no longer exists.
+        # AN OUTDATED THREAD IS EXCLUDED even when unresolved: it points at a line that no longer exists.
         {"isResolved": False, "isOutdated": True, "path": "c.ts", "line": 5},
     ]
     unresolved_cases = [
@@ -469,8 +461,7 @@ def selftest() -> int:
     for label, data, want in review_cases:
         ctl.check("reviews: %s" % label, len(changes_requested(data)), want)
 
-    # GROUP ORDER IS LOGIN ORDER, because jq's group_by sorts by key. A port using
-    # insertion order would print the same reviewers differently.
+    # GROUP ORDER IS LOGIN ORDER, because jq's group_by sorts by key. A port using insertion order would print the same reviewers differently.
     mixed = [
         {
             "user": {"login": "zoe"},
@@ -516,13 +507,9 @@ def selftest() -> int:
 
     # THE RETRY LADDER, driven without waiting. It must try three times and then
     # return None rather than an empty body: "a gh failure produced an empty review
-    # list, so CHANGES_REQUESTED came out 0 and the gate reported that nobody had
-    # requested changes."
+    # list, so CHANGES_REQUESTED came out 0 and the gate reported that nobody had requested changes."
     #
-    # A NONEXISTENT BINARY, not a failing `gh` invocation, so the control does not
-    # depend on `gh` being installed and does not print the real tool's usage text
-    # into a selftest. The logger is pointed at a buffer for the same reason: the
-    # ladder's own warn and error lines are the thing under test, not output.
+    # A NONEXISTENT BINARY, not a failing `gh` invocation, so the control does not depend on `gh` being installed and does not print the real tool's usage text into a selftest. The logger is pointed at a buffer for the same reason: the ladder's own warn and error lines are the thing under test, not output.
     waits: list[float] = []
     buffered = io.StringIO()
     log.reset(stream=buffered, colour=False)

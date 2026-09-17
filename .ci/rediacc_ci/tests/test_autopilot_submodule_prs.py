@@ -223,8 +223,7 @@ def test_no_submodules_is_a_quiet_zero() -> None:
     assert exit_code == 0
     assert calls == []
     assert b"the round named no submodules; nothing to open or link" in stderr
-    # And it exits 0 even with the stage flag OFF, because nothing would be
-    # written either way. That ordering is the twin's, and it is deliberate.
+    # And it exits 0 even with the stage flag OFF, because nothing would be written either way. That ordering is the twin's, and it is deliberate.
     exit_code, _, _, calls, _ = _sides(
         "none-flag-off", verdict=verdict_json(), env={"AUTOPILOT_ALLOW_PUSH": ""}
     )
@@ -506,8 +505,7 @@ def test_the_fake_gh_is_the_gh() -> None:
 def test_pure_helpers_are_exercised_directly() -> None:
     assert sp.submodule_repo("private/renet") == "renet"
     assert sp.submodule_repo("private/nope") is None
-    # An EMPTY body still yields one line, which is where the leading blank line
-    # in a fresh block comes from.
+    # An EMPTY body still yields one line, which is where the leading blank line in a fresh block comes from.
     assert sp.strip_block("") == "\n"
     assert sp.strip_block("a\nb") == "a\nb\n"
     assert sp.strip_block("a\n%s\nx\n%s\nb" % (sp.BEGIN, sp.END)) == "a\nb\n"

@@ -73,8 +73,7 @@ def test_the_guard_table_exercises_both_directions() -> None:
     assert any(e == "" for e in extracted), "every case extracts; the table has no negatives"
 
 
-# The wrapper the extracted branch runs inside, verbatim, with the same five
-# pinned variables. `%s` is the branch.
+# The wrapper the extracted branch runs inside, verbatim, with the same five pinned variables. `%s` is the branch.
 _GUARD_RUN = """
 review_count=3 MAX_REVIEWS_PER_PR=3 currency_ok=false currency_detail=x head_sha=y last_sha=z \
     bash -c '

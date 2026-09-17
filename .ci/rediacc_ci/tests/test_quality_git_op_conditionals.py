@@ -26,13 +26,10 @@ import pytest
 from rediacc_ci.quality import git_op_conditionals as goc
 from rediacc_ci.tests import differential as diff
 
-# The twin's own `bad.sh` heredoc, pulled from the port rather than retyped: a
-# retyped copy is a second thing to keep in step, and the point of these cases is
-# that they are the SAME bytes the gate runs its inline controls on.
+# The twin's own `bad.sh` heredoc, pulled from the port rather than retyped: a retyped copy is a second thing to keep in step, and the point of these cases is that they are the SAME bytes the gate runs its inline controls on.
 _CONTROL_BAD = next(text for name, text, _fire, _msg in goc._CONTROLS if name == "bad.sh")
 
-# Every shape the extraction patterns have to survive. The comment on each line
-# is the property it is there for.
+# Every shape the extraction patterns have to survive. The comment on each line is the property it is there for.
 LINES = [
     "BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)",  # the 2026-08-28 defect
     'BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD)',  # the -C shape
@@ -240,18 +237,11 @@ def test_selftest_is_green() -> None:
     assert goc.selftest() == 0
 
 
-# ---------------------------------------------------------------------------
-# THE PYTHON HALF.
+# --------------------------------------------------------------------------- THE PYTHON HALF.
 #
-# Same philosophy as above: run the TWIN'S ACTUAL BYTES, not a retyped copy. The
-# awk program and `scan_python_file` are sliced out of the shell script at test
-# time and executed, so a divergence between the two implementations fails here
-# rather than being discovered when the differential ledger is next recorded.
+# Same philosophy as above: run the TWIN'S ACTUAL BYTES, not a retyped copy. The awk program and `scan_python_file` are sliced out of the shell script at test time and executed, so a divergence between the two implementations fails here rather than being discovered when the differential ledger is next recorded.
 #
-# THIS IS NOT PARANOIA. Writing the mirror produced exactly one such divergence
-# on 2026-09-08 and it was invisible on this tree: the awk emitted
-# `B\t\t<lineno>` for the bare shape, tab is IFS whitespace, bash `read` collapsed
-# the empty field, and the twin printed `bare-statement-line-` with NO NUMBER
+# THIS IS NOT PARANOIA. Writing the mirror produced exactly one such divergence on 2026-09-08 and it was invisible on this tree: the awk emitted `B\t\t<lineno>` for the bare shape, tab is IFS whitespace, bash `read` collapsed the empty field, and the twin printed `bare-statement-line-` with NO NUMBER
 # while the port printed `bare-statement-line-2`. Neither side has a bare finding
 # on the real tree, so both were "equal" and green.
 

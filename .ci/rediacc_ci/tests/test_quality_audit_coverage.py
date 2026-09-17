@@ -24,13 +24,9 @@ import pytest
 from rediacc_ci.quality import audit_coverage as ac
 from rediacc_ci.tests import differential as diff
 
-# ---------------------------------------------------------------------------
-# Phase 5, stage 1: grep -oE "'cli\.[a-z._]+[a-z_]'" | sort -u
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Phase 5, stage 1: grep -oE "'cli\.[a-z._]+[a-z_]'" | sort -u ---------------------------------------------------------------------------
 
-# Every shape the schema file can present, plus the ones that look like they
-# should be event types and are not. The comment on each line is the property it
-# is there for.
+# Every shape the schema file can present, plus the ones that look like they should be event types and are not. The comment on each line is the property it is there for.
 SCHEMA_CASES = [
     "'cli.repo.up',",  # the ordinary one
     "  'cli.repo.up',\n  'cli.repo.down',",  # two on two lines
@@ -67,9 +63,7 @@ def test_union_types_matches_grep_pipeline(tmp_path: pathlib.Path, text: str) ->
     assert ac.union_types(text) == sorted(set(from_bash))
 
 
-# ---------------------------------------------------------------------------
-# Phase 5, stage 2: the functionName pipeline, including the inert stage
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Phase 5, stage 2: the functionName pipeline, including the inert stage ---------------------------------------------------------------------------
 
 FUNCTION_LINE_CASES = [
     "functionName: 'repository_up',",  # the ordinary one
@@ -128,8 +122,7 @@ def test_the_audit_service_exclusion_is_inert(tmp_path: pathlib.Path) -> None:
     (services / "audit.ts").write_text("functionName: 'machine_reboot'\n", encoding="utf-8")
     assert ac.emitted_function_names(tmp_path / "src") == ["machine_reboot"]
 
-    # ITS MIRROR: a __tests__ directory really IS excluded, so the two exclusions
-    # are not both broken -- only the one that was written as a text filter.
+    # ITS MIRROR: a __tests__ directory really IS excluded, so the two exclusions are not both broken -- only the one that was written as a text filter.
     tests = tmp_path / "src" / "commands" / "__tests__"
     tests.mkdir(parents=True)
     (tests / "y.test.ts").write_text("functionName: 'datastore_prune'\n", encoding="utf-8")
@@ -152,12 +145,9 @@ def test_phase_four_does_not_exclude_tests_while_phase_five_does(tmp_path: pathl
     assert ac.emitted_function_names(tmp_path / "src") == []
 
 
-# ---------------------------------------------------------------------------
-# The functionName -> event type mapping
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The functionName -> event type mapping ---------------------------------------------------------------------------
 
-# The twin's `case`, arm for arm, so the ORDER of the arms is under test and not
-# just the individual answers.
+# The twin's `case`, arm for arm, so the ORDER of the arms is under test and not just the individual answers.
 _CASE = r"""
 fn="$1"
 case "$fn" in
@@ -202,9 +192,7 @@ def test_event_type_mapping_matches_case(tmp_path: pathlib.Path, fn: str) -> Non
     assert ac.function_name_to_event_type(fn) == out.strip()
 
 
-# ---------------------------------------------------------------------------
-# The BRE substring test in phases 2 and 3
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The BRE substring test in phases 2 and 3 ---------------------------------------------------------------------------
 
 AUDIT_CALL_CASES = [
     "auditService.recordOperation({});",  # the call
@@ -235,9 +223,7 @@ def test_audit_call_substring_matches_grep_q(tmp_path: pathlib.Path, text: str) 
     assert (ac.AUDIT_CALL in text) == (out.strip() == "0")
 
 
-# ---------------------------------------------------------------------------
-# The gate as a whole
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gate as a whole ---------------------------------------------------------------------------
 
 
 def test_selftest_is_green() -> None:

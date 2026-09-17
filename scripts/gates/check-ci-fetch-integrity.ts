@@ -57,11 +57,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
-// `.py` ALONGSIDE `.sh`, because W7 P4 is moving these scripts one at a time and
-// the scan must not shrink as it goes. Scoped by `.sh` alone this gate covered a
-// gate right up to its cutover and then silently stopped, and W7 P5 deletion
-// would eventually have left the scope matching almost nothing while still
-// reporting a clean run.
+// `.py` ALONGSIDE `.sh`, because W7 P4 is moving these scripts one at a time and the scan must not shrink as it goes. Scoped by `.sh` alone this gate covered a gate right up to its cutover and then silently stopped, and W7 P5 deletion would eventually have left the scope matching almost nothing while still reporting a clean run.
 const SCOPE = [/^\.github\/workflows\/.*\.ya?ml$/, /^\.ci\/scripts\/.*\.(?:sh|py)$/];
 
 const PIPE_TO_SHELL = /(curl|wget)[^|\n]*\|\s*(sudo\s+)?(ba)?sh\b/;
@@ -115,8 +111,7 @@ export function scan(raw: string): Finding[] {
 // ── Control: both directions, including the two REAL historical defects ────
 {
   const cases: [string, string, number][] = [
-    // The two defects that were found by hand on 2026-09-02. If this gate cannot
-    // see these, it has no reason to exist.
+    // The two defects that were found by hand on 2026-09-02. If this gate cannot see these, it has no reason to exist.
     [
       'REAL cd-stage.yml nfpm',
       'curl -sSL https://github.com/goreleaser/nfpm/releases/download/v2.43.1/nfpm.tar.gz | sudo tar -xz -C /usr/local/bin nfpm',

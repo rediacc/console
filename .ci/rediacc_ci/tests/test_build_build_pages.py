@@ -78,9 +78,7 @@ MUTABLE = ("packages", "workers", "dist", "out", "true", "pages")
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
 
 
-# ---------------------------------------------------------------------------
-# Fixture
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture ---------------------------------------------------------------------------
 
 
 def fixture(
@@ -182,9 +180,7 @@ def scratch_bin(root: pathlib.Path, *, drop: tuple[str, ...] = ()) -> str:
     return str(stub)
 
 
-# ---------------------------------------------------------------------------
-# Driving
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Driving ---------------------------------------------------------------------------
 
 
 def _state(root: pathlib.Path) -> dict[str, str]:
@@ -287,9 +283,7 @@ def _agree(old_t, new_t, label: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_holds_only_the_five_named_tools(tmp_path) -> None:
@@ -323,9 +317,7 @@ def test_the_recorder_really_runs_the_real_binary(tmp_path) -> None:
     assert log.read_text(encoding="utf-8").startswith("CALL mkdir\t-p\t")
 
 
-# ---------------------------------------------------------------------------
-# The success path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The success path ---------------------------------------------------------------------------
 
 
 def test_a_complete_assembly_prints_eleven_lines_and_exits_zero(tmp_path) -> None:
@@ -379,9 +371,7 @@ def test_the_equals_form_of_the_flag_is_the_same_as_the_spaced_form(tmp_path) ->
     _agree(old_t, new_t, "equals-form")
 
 
-# ---------------------------------------------------------------------------
-# The two refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two refusals ---------------------------------------------------------------------------
 
 
 def test_a_missing_www_build_refuses_with_two_lines(tmp_path) -> None:
@@ -407,9 +397,7 @@ def test_a_missing_json_build_refuses_with_two_lines(tmp_path) -> None:
     _agree(old_t, new_t, "no-json")
 
 
-# ---------------------------------------------------------------------------
-# The defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects ---------------------------------------------------------------------------
 
 
 def test_defect_1_the_default_output_deletes_the_manifest_it_then_looks_for(
@@ -526,9 +514,7 @@ def test_defect_6_a_missing_worker_directory_fails_after_the_package_is_built(
     _agree(old_t, new_t, "no-worker-dir")
 
 
-# ---------------------------------------------------------------------------
-# The `cd`, and a missing tool
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The `cd`, and a missing tool ---------------------------------------------------------------------------
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
@@ -611,9 +597,7 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
     assert sorted(found.stdout.split()) == sorted([TWIN_REL, PORT_REL, self_rel]), found.stdout
 
 
-# ---------------------------------------------------------------------------
-# The control: this differential can actually fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:

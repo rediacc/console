@@ -92,12 +92,10 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "autopilot_push.py"
 BASH = shutil.which("bash") or "/bin/bash"
 REAL_GIT = shutil.which("git") or "/usr/bin/git"
 
-# `<sandbox>/tmp/tmp.AbCdEfGhIj` (bash mktemp) and `<sandbox>/tmp/tmpab12cd34`
-# (Python). Applied AFTER the sandbox path itself has been folded.
+# `<sandbox>/tmp/tmp.AbCdEfGhIj` (bash mktemp) and `<sandbox>/tmp/tmpab12cd34` (Python). Applied AFTER the sandbox path itself has been folded.
 WORKDIR_RE = re.compile(rb"<sandbox>/tmp/tmp\.?[A-Za-z0-9_]+")
 
-# `diff -u` stamps each header line with the file's mtime, which is wall clock
-# and therefore always different between the two runs. Only the TIMESTAMP is
+# `diff -u` stamps each header line with the file's mtime, which is wall clock and therefore always different between the two runs. Only the TIMESTAMP is
 # folded; the +/- lines that carry the actual evidence are compared in full.
 MTIME_RE = re.compile(rb"\t\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+ [+-]\d{4}")
 
@@ -105,8 +103,7 @@ FIXED_DATE = "2026-01-01T00:00:00+00:00"
 BOT_NAME = "Autopilot Operator"
 BOT_EMAIL = "operator@example.invalid"
 
-# The recording, sandbox-guarded `git`. See the module docstring: this is a
-# CONTROL, not a convenience, and two tests plant against it.
+# The recording, sandbox-guarded `git`. See the module docstring: this is a CONTROL, not a convenience, and two tests plant against it.
 FAKE_GIT = """#!/usr/bin/python3
 import os
 import subprocess
@@ -235,10 +232,7 @@ def build(
         if sub_remote:
             bare = sandbox / "renet.git"
             # `--initial-branch=main` matters: a bare repo whose HEAD names a
-            # branch that does not exist clones as EMPTY, and an "orphan" built
-            # in that clone would be a ROOT commit -- which would make the
-            # adoption cases pass through the unrelated-history arm instead of
-            # the one they are aimed at.
+            # branch that does not exist clones as EMPTY, and an "orphan" built in that clone would be a ROOT commit -- which would make the adoption cases pass through the unrelated-history arm instead of the one they are aimed at.
             _git(sandbox, "init", "-q", "--bare", "--initial-branch=main", str(bare))
             _git(sub, "remote", "add", "origin", str(bare))
             _git(sub, "push", "-q", "origin", "main")
@@ -299,9 +293,7 @@ def _run(subject: pathlib.Path, sandbox: pathlib.Path, argv: list[str], env_extr
         # A leaked real `gh` would fail auth rather than write anything.
         "GH_TOKEN": "not-a-real-token",
         "GH_CONFIG_DIR": str(sandbox / "gh-config"),
-        # Both mktemp implementations honour TMPDIR, so the work
-        # directory lands inside the sandbox rather than in the shared
-        # /tmp -- and the shim's own guard therefore covers it too.
+        # Both mktemp implementations honour TMPDIR, so the work directory lands inside the sandbox rather than in the shared /tmp -- and the shim's own guard therefore covers it too.
         "TMPDIR": str(tmpdir),
     }
     env.update(env_extra)
@@ -317,12 +309,8 @@ def _run(subject: pathlib.Path, sandbox: pathlib.Path, argv: list[str], env_extr
     marker = str(sandbox).encode()
 
     def scrub(raw: bytes) -> bytes:
-        # The sandbox path first, then the per-run work directory. `mktemp -d`
-        # and `tempfile.mkdtemp` pick different random suffixes, and the twin
-        # prints that path in the `commit -F` argv -- so a comparison that did
-        # not fold it would diverge on every case for a reason that says nothing
-        # about the port. TMPDIR is pinned INSIDE the sandbox so the fold cannot
-        # accidentally swallow anything else.
+        # The sandbox path first, then the per-run work directory. `mktemp -d` and `tempfile.mkdtemp` pick different random suffixes, and the twin prints that path in the `commit -F` argv -- so a comparison that did not fold it would diverge on every case for a reason that says nothing about the port. TMPDIR is pinned INSIDE the sandbox so the fold cannot accidentally swallow
+        # anything else.
         folded = WORKDIR_RE.sub(b"<work>", raw.replace(marker, b"<sandbox>"))
         return MTIME_RE.sub(b"\t<mtime>", folded)
 
@@ -377,9 +365,7 @@ def base_argv(console: pathlib.Path, *extra: str) -> list[str]:
     ]
 
 
-# ---------------------------------------------------------------------------
-# CONTROLS. These come first because everything below is worthless without them.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CONTROLS. These come first because everything below is worthless without them. ---------------------------------------------------------------------------
 
 
 def test_the_fakes_win_the_path_lookup() -> None:
@@ -455,9 +441,7 @@ def test_the_shim_refuses_a_remote_outside_the_sandbox() -> None:
         assert b"would leave the sandbox" in proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# The refusals before anything is read
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The refusals before anything is read ---------------------------------------------------------------------------
 
 
 def _plain(sandbox: pathlib.Path) -> pathlib.Path:
@@ -617,9 +601,7 @@ def test_a_detached_head_is_refused_as_the_literal_head() -> None:
     assert b"branch-forbidden: the autopilot never pushes 'HEAD'" in stderr
 
 
-# ---------------------------------------------------------------------------
-# The validator, and the three outcomes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The validator, and the three outcomes ---------------------------------------------------------------------------
 
 
 def test_a_rejected_handoff_stages_nothing() -> None:
@@ -774,9 +756,7 @@ def test_an_unwritable_verdict_out_stops_the_round() -> None:
         assert not any(call.split("\t")[0] in ("add", "commit", "push") for call in git_calls)
 
 
-# ---------------------------------------------------------------------------
-# The console staging path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The console staging path ---------------------------------------------------------------------------
 
 
 def test_the_happy_path_commits_and_pushes_one_explicit_sha() -> None:
@@ -871,9 +851,7 @@ def test_a_console_push_failure_is_the_scripts_last_word() -> None:
 
     def scenario(sandbox):
         console = build(sandbox, remote=False)
-        # A remote INSIDE the sandbox (so the shim allows the attempt) that is
-        # not a repository (so real git refuses it). Pointing it outside would
-        # test the shim instead of the script.
+        # A remote INSIDE the sandbox (so the shim allows the attempt) that is not a repository (so real git refuses it). Pointing it outside would test the shim instead of the script.
         _git(console, "remote", "add", "origin", str(sandbox / "gone.git"))
         (console / "src.txt").write_text("x\n", encoding="utf-8")
         handoff(console, files=["src.txt"], commit_message="m")
@@ -891,9 +869,7 @@ def test_a_console_push_failure_is_the_scripts_last_word() -> None:
     assert any(call.startswith("push\t") for call in git_calls)
 
 
-# ---------------------------------------------------------------------------
-# Submodules: phase 1, phase 2 and the ordering that makes the split worth it
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Submodules: phase 1, phase 2 and the ordering that makes the split worth it ---------------------------------------------------------------------------
 
 
 def _sub_scenario(sandbox: pathlib.Path) -> pathlib.Path:
@@ -1069,9 +1045,7 @@ def test_a_submodule_push_that_is_not_a_non_fast_forward_refuses_to_guess() -> N
     assert not any(call.startswith("push\t") for call in git_calls), "console was pushed anyway"
 
 
-# ---------------------------------------------------------------------------
-# The orphan adoption, which is the most dangerous code in the file
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The orphan adoption, which is the most dangerous code in the file ---------------------------------------------------------------------------
 
 
 def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: bool):
@@ -1084,8 +1058,7 @@ def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: 
     console = build(sandbox, submodule=True)
     bare = sandbox / "renet.git"
     if with_main:
-        # A continuation of the submodule's own history: cloned from the remote,
-        # so it shares main's merge-base.
+        # A continuation of the submodule's own history: cloned from the remote, so it shares main's merge-base.
         work = sandbox / "orphan-work"
         _git(sandbox, "clone", "-q", str(bare), str(work))
         assert (work / "main.go").exists(), "the clone came up empty; the orphan would be a root"
@@ -1097,8 +1070,7 @@ def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: 
         _git(work, "add", "--", "main.go")
         _git(work, "commit", "-q", "-m", "orphan round")
     else:
-        # An UNRELATED history: a fresh repository, so its root commit shares no
-        # merge-base with the submodule's main at all.
+        # An UNRELATED history: a fresh repository, so its root commit shares no merge-base with the submodule's main at all.
         work = sandbox / "unrelated"
         _init(work, "work", email=email, name="Whoever")
         (work / "other.go").write_text("package other\n", encoding="utf-8")
@@ -1155,8 +1127,7 @@ def test_an_unresolvable_main_refuses_rather_than_adopting_on_identity_alone() -
 
     def scenario(sandbox):
         console = _orphan(sandbox, email=BOT_EMAIL, with_main=True, conflicting=False)
-        # BOTH copies have to go: the remote-tracking ref the submodule already
-        # holds, and the branch on the remote that a fetch would restore it from.
+        # BOTH copies have to go: the remote-tracking ref the submodule already holds, and the branch on the remote that a fetch would restore it from.
         _git(sandbox / "renet.git", "update-ref", "-d", "refs/heads/main")
         _git(console / "private" / "renet", "update-ref", "-d", "refs/remotes/origin/main")
         return console
@@ -1224,30 +1195,24 @@ def test_a_provable_orphan_is_adopted_and_the_console_check_is_re_run() -> None:
     assert stderr.count(b"gitlink verified: private/renet -> ") == 2, (
         "the console validation was not re-run after the SHA moved"
     )
-    # The two gitlink lines must name DIFFERENT shas: the second is the adopted
-    # commit, and a port that skipped the re-stage would print the first twice.
+    # The two gitlink lines must name DIFFERENT shas: the second is the adopted commit, and a port that skipped the re-stage would print the first twice.
     lines = [line for line in stderr.split(b"\n") if b"gitlink verified" in line]
     assert lines[0] != lines[1], "the pointer was not re-staged after the adoption"
     assert len(stdout.decode().strip().split("\n")[-1]) == 40
-    # Three pushes: the submodule attempt that was rejected, the adopted commit,
-    # and console LAST -- so the pointer console publishes names a commit that
-    # already exists on the remote.
+    # Three pushes: the submodule attempt that was rejected, the adopted commit, and console LAST -- so the pointer console publishes names a commit that already exists on the remote.
     pushes = [call for call in git_calls if "push" in call.split("\t")]
     assert len(pushes) == 3, pushes
     assert pushes[2].startswith("push\torigin\t"), pushes[2]
 
 
-# ---------------------------------------------------------------------------
-# The unreachable arms, named rather than skipped
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The unreachable arms, named rather than skipped ---------------------------------------------------------------------------
 
 
 def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
     """Five refusals in the twin cannot be entered from the CLI. The honest
     differential is to drive the gate that stops each one and assert BOTH sides
     stop there, which is what this does."""
-    # 1. submodules[] with the stage flag OFF: the VALIDATOR refuses, so the
-    #    write-site's belt-and-braces copy is never reached.
+    # 1. submodules[] with the stage flag OFF: the VALIDATOR refuses, so the write-site's belt-and-braces copy is never reached.
     code, _, stderr, _, _ = _sides(
         "unreachable-subs-flag", _sub_scenario, base_argv, env={"AUTOPILOT_ALLOW_SUBMODULES": ""}
     )
@@ -1257,8 +1222,7 @@ def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
         "the write-site refusal became reachable; give it its own case"
     )
 
-    # 2. an absent submodule: the parent reports the path NOT dirty, so the
-    #    validator refuses before `submodule-missing` or the toplevel check.
+    # 2. an absent submodule: the parent reports the path NOT dirty, so the validator refuses before `submodule-missing` or the toplevel check.
     def gone(sandbox):
         console = _sub_scenario(sandbox)
         shutil.rmtree(console / "private" / "renet" / ".git")
@@ -1270,8 +1234,7 @@ def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
     assert b"submodule-missing:" not in stderr
     assert b"submodule-not-initialized:" not in stderr
 
-    # 3. a forbidden branch inside the submodule loop: the top-level check has
-    #    already refused the same three names.
+    # 3. a forbidden branch inside the submodule loop: the top-level check has already refused the same three names.
     def on_main(sandbox):
         console = build(sandbox, submodule=True, branch="main")
         (console / "private" / "renet" / "main.go").write_text("package main\n//e\n", "utf-8")
@@ -1300,8 +1263,7 @@ def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
     assert b"branch-forbidden: the autopilot never pushes 'main'" in stderr
     assert b"submodule-branch-forbidden" not in stderr
 
-    # 4. outcome-unknown: the schema pins the enum, so a fourth value never
-    #    reaches the verdict at all.
+    # 4. outcome-unknown: the schema pins the enum, so a fourth value never reaches the verdict at all.
     def bad_outcome(sandbox):
         console = build(sandbox)
         handoff(console, outcome="sideways")

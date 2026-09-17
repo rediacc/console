@@ -189,8 +189,7 @@ function childrenOf(def: DefLike): ChildRef[] | undefined {
 
 function walkSchema(node: unknown, path: string[], ctx: WalkContext, stack: unknown[]): void {
   if (path.length > 0 && markResolved(path, ctx)) return;
-  // Cycle guard for recursive (z.lazy) schemas: an uncovered cycle can never
-  // enumerate finitely — surface the cycle point itself as the uncovered leaf.
+  // Cycle guard for recursive (z.lazy) schemas: an uncovered cycle can never enumerate finitely — surface the cycle point itself as the uncovered leaf.
   if (stack.includes(node)) {
     ctx.uncovered.add(buildPointer(path));
     return;

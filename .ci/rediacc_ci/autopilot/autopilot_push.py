@@ -139,10 +139,7 @@ ALLOW_PUSH_ENV = "AUTOPILOT_ALLOW_PUSH"
 ALLOW_SUBMODULES_ENV = "AUTOPILOT_ALLOW_SUBMODULES"
 ALLOW_VALUE = "true"
 
-# Branch names the autopilot never pushes, whatever the caller says. Checked
-# UNCONDITIONALLY: renet/account/elite have no rulesets, so this is their only
-# guard, and even a harness bug upstream must not be able to aim this script at
-# a default branch.
+# Branch names the autopilot never pushes, whatever the caller says. Checked UNCONDITIONALLY: renet/account/elite have no rulesets, so this is their only guard, and even a harness bug upstream must not be able to aim this script at a default branch.
 FORBIDDEN_BRANCHES = ("main", "master", "HEAD")
 
 # `grep -qiE` on the push stderr: the shapes git uses for a non-fast-forward.
@@ -361,8 +358,7 @@ class Push:
         if proc.returncode != 0:
             raise _Exit(proc.returncode)
 
-        # `$(git rev-parse HEAD)` inside an argument: `set -e` does not reach
-        # into it, so an empty answer is passed on and the validator refuses it.
+        # `$(git rev-parse HEAD)` inside an argument: `set -e` does not reach into it, so an empty answer is passed on and the validator refuses it.
         _, base_head = _capture(["git", "rev-parse", "HEAD"])
 
         with open(self.w("verdict.json"), "wb") as handle:
@@ -387,16 +383,9 @@ class Push:
             log.error("handoff rejected; escalating (nothing staged, nothing pushed)")
             raise _Exit(1)
 
-        # Published BEFORE any outcome branching, so the workflow's
-        # post-boundary steps see the same validated object on every accepted
-        # round -- push, escalate and no-change alike.
+        # Published BEFORE any outcome branching, so the workflow's post-boundary steps see the same validated object on every accepted round -- push, escalate and no-change alike.
         if self.verdict_out:
-            # `cat "$workdir/verdict.json" >"$VERDICT_OUT"`, and it is a PLAIN
-            # OPEN-AND-WRITE rather than `shutil.copyfile` on purpose:
-            # `copyfile` raises `SpecialFileError` on a fifo, so
-            # `--verdict-out /dev/stdout` -- which is what a workflow step does
-            # when it wants the verdict in the log -- would have died where the
-            # twin happily writes. Found by driving exactly that argument.
+            # `cat "$workdir/verdict.json" >"$VERDICT_OUT"`, and it is a PLAIN OPEN-AND-WRITE rather than `shutil.copyfile` on purpose: `copyfile` raises `SpecialFileError` on a fifo, so `--verdict-out /dev/stdout` -- which is what a workflow step does when it wants the verdict in the log -- would have died where the twin happily writes. Found by driving exactly that argument.
             #
             # A target that cannot be opened is bash's own redirection error and
             # exit 1; the code is reproduced, the message is Python's, because
@@ -418,8 +407,7 @@ class Push:
             pass
         raw_count = _jq_capture_or_exit(SUB_COUNT_PROGRAM, self.w("verdict.json"))
         if not COUNT_RE.match(raw_count):
-            # See the module docstring: unreachable through the validator, and
-            # a refusal rather than the twin's arithmetic-error walk-on.
+            # See the module docstring: unreachable through the validator, and a refusal rather than the twin's arithmetic-error walk-on.
             log.error(
                 "verdict-count-unusable: the validated verdict's submodules[] length is "
                 "'%s', not a non-negative integer; refusing to stage anything" % raw_count
@@ -428,10 +416,7 @@ class Push:
         sub_count = int(raw_count)
 
         if sub_count > 0 and not self.sub_allowed:
-            # BELT AND BRACES: the validator already refused submodules[] when
-            # the flag is off. This is the same refusal at the WRITE SITE,
-            # because the two are separated by a process boundary and the one
-            # that stages bytes should not depend on the other having run.
+            # BELT AND BRACES: the validator already refused submodules[] when the flag is off. This is the same refusal at the WRITE SITE, because the two are separated by a process boundary and the one that stages bytes should not depend on the other having run.
             log.error(
                 "stage-flag-disabled: %s is not 'true'; refusing %d submodule change(s) "
                 "(fail closed)" % (ALLOW_SUBMODULES_ENV, sub_count)
@@ -445,14 +430,8 @@ class Push:
         sub = _jq_capture_or_exit(".submodules[%d].path" % index, self.w("verdict.json"))
         subdir = os.path.join(self.root, sub)
 
-        # BELT AND BRACES, AND CURRENTLY UNREACHABLE -- said plainly so nobody
-        # mistakes it for a live control or deletes it as dead code. Both routes
-        # to an absent submodule are stopped earlier: an uninitialized one makes
-        # the parent report NOTHING dirty at that path (path-not-dirty), and a
-        # broken `gitdir:` pointer makes the parent's own `git status` fatal, so
-        # the run dies at the status capture. Measured on git 2.43, both
-        # directions. It stays because the outcome it prevents (submodule content
-        # committed into console as ordinary files) is severe.
+        # BELT AND BRACES, AND CURRENTLY UNREACHABLE -- said plainly so nobody mistakes it for a live control or deletes it as dead code. Both routes to an absent submodule are stopped earlier: an uninitialized one makes the parent report NOTHING dirty at that path (path-not-dirty), and a broken `gitdir:` pointer makes the parent's own `git status` fatal, so the run dies at the
+        # status capture. Measured on git 2.43, both directions. It stays because the outcome it prevents (submodule content committed into console as ordinary files) is severe.
         if not os.path.isdir(subdir):
             log.error("submodule-missing: '%s' is not a directory in this checkout" % sub)
             raise _Exit(1)
@@ -465,12 +444,9 @@ class Push:
             )
             raise _Exit(1)
 
-        # THE BASE IS CURRENT HEAD, NOT origin/main. Section 5's anti-rollback
-        # rule is ancestry: only a descendant of the pointer the parent recorded
-        # may ever be committed. Branching at the recorded pointer makes that
+        # THE BASE IS CURRENT HEAD, NOT origin/main. Section 5's anti-rollback rule is ancestry: only a descendant of the pointer the parent recorded may ever be committed. Branching at the recorded pointer makes that
         # true by construction; branching at origin/main would silently rebase
-        # the round's work onto a different base, which is precisely the "stale
-        # checkout" case the design says must commit nothing.
+        # the round's work onto a different base, which is precisely the "stale checkout" case the design says must commit nothing.
         sub_branch = _capture_or_exit(["git", "-C", subdir, "rev-parse", "--abbrev-ref", "HEAD"])
         if self.branch in FORBIDDEN_BRANCHES:
             log.error(
@@ -491,8 +467,7 @@ class Push:
                 ]
             )
             if proc.returncode == 0:
-                # Checking it out would move HEAD across a tree the model has
-                # already edited. Refuse rather than guess which side wins.
+                # Checking it out would move HEAD across a tree the model has already edited. Refuse rather than guess which side wins.
                 log.error(
                     "submodule-branch-exists: '%s' already has a local '%s' but HEAD is on "
                     "'%s'; refusing to move HEAD across the round's edits"
@@ -504,9 +479,7 @@ class Push:
                 raise _Exit(proc.returncode)
         sub_base = _capture_or_exit(["git", "-C", subdir, "rev-parse", "HEAD"])
 
-        # Stage exactly the declared files, one path at a time, then prove the
-        # staged set equals the declared set -- the identical check the console
-        # boundary applies, because a pathspec that expands is the same bug here.
+        # Stage exactly the declared files, one path at a time, then prove the staged set equals the declared set -- the identical check the console boundary applies, because a pathspec that expands is the same bug here.
         _jq_to_file(
             ["-r", ".submodules[%d].files[]" % index, self.w("verdict.json")],
             self.w("sub-files.txt"),
@@ -514,8 +487,7 @@ class Push:
         for entry in read_lines(self.w("sub-files.txt")):
             if not entry:
                 continue
-            # A path git has never heard of AND that is not on disk is one
-            # `git add` would die on with a bare `fatal: pathspec`. Naming the
+            # A path git has never heard of AND that is not on disk is one `git add` would die on with a bare `fatal: pathspec`. Naming the
             # class here keeps a mistyped path diagnosable. A DELETED file is
             # still known to git, so this does not reject a legitimate removal.
             known = (
@@ -545,8 +517,7 @@ class Push:
             )
             raise _Exit(1)
 
-        # THE PATHS ARE REWRITTEN PARENT-RELATIVE. Without the prefixes the
-        # tripwire would see `pkg/x.go`, match no module prefix, and treat every
+        # THE PATHS ARE REWRITTEN PARENT-RELATIVE. Without the prefixes the tripwire would see `pkg/x.go`, match no module prefix, and treat every
         # byte as out of scope; with them it sees `private/renet/pkg/x.go` and
         # the same scope map that governs a console fix governs this one.
         with open(self.w("sub-staged.diff"), "wb") as handle:
@@ -572,8 +543,7 @@ class Push:
             )
             raise _Exit(1)
 
-        # `-F` from a file: no shell interpolation of model text, here or on the
-        # console commit below.
+        # `-F` from a file: no shell interpolation of model text, here or on the console commit below.
         _jq_to_file(
             ["-r", ".submodules[%d].message" % index, self.w("verdict.json")], self.w("sub-msg.txt")
         )
@@ -637,9 +607,7 @@ class Push:
             if proc.returncode != 0:
                 raise _Exit(proc.returncode)
 
-        # Staged-set equality: what git staged must be byte-for-byte the
-        # declared list. Any divergence (a pathspec that expanded, an index
-        # surprise) aborts.
+        # Staged-set equality: what git staged must be byte-for-byte the declared list. Any divergence (a pathspec that expanded, an index surprise) aborts.
         _staged_names_sorted(self.w("staged.txt"))
         if not _diff_u(self.w("declared.txt"), self.w("staged.txt")):
             log.error(
@@ -648,16 +616,10 @@ class Push:
             )
             raise _Exit(1)
 
-        # THE POINTER ADVANCE, VERIFIED IN THE INDEX rather than trusted.
-        # `git add` on a submodule path stages whatever the submodule's HEAD
-        # happens to be, so this proves the console commit about to be minted
-        # names exactly the SHA this round produced, at mode 160000 -- a
-        # gitlink, not a directory of files someone flattened into the parent.
+        # THE POINTER ADVANCE, VERIFIED IN THE INDEX rather than trusted. `git add` on a submodule path stages whatever the submodule's HEAD happens to be, so this proves the console commit about to be minted names exactly the SHA this round produced, at mode 160000 -- a gitlink, not a directory of files someone flattened into the parent.
         for sub, sub_sha, _base in self.sub_shas():
             _, entry = _capture(["git", "ls-files", "-s", "--", sub])
-            # A VACUOUS `git ls-files` -- the submodule not staged at all -- is
-            # already fatal two lines down: staged_mode is empty, the 160000
-            # test fails, and the error prints "<absent>". The floor is that
+            # A VACUOUS `git ls-files` -- the submodule not staged at all -- is already fatal two lines down: staged_mode is empty, the 160000 test fails, and the error prints "<absent>". The floor is that
             # test; naming it here so a reader (and check:ci-enumeration-vacuity)
             # can see the empty case is handled.
             fields = entry.split()
@@ -726,11 +688,7 @@ class Push:
             )
             raise _Exit(1)
         main_ref = "%s/main" % self.remote
-        # BOTH CHECKS ARE REQUIRED, so an unresolvable main is a REFUSAL, not a
-        # skip. The identity check alone is the weaker guard (a committer email
-        # is forgeable by anyone who can push), and the checkout mechanics that
-        # leave main unfetched here are exactly the ones nobody exercises --
-        # failing closed is the only reading under which "both required" is true.
+        # BOTH CHECKS ARE REQUIRED, so an unresolvable main is a REFUSAL, not a skip. The identity check alone is the weaker guard (a committer email is forgeable by anyone who can push), and the checkout mechanics that leave main unfetched here are exactly the ones nobody exercises -- failing closed is the only reading under which "both required" is true.
         if not self._ref_exists(subdir, main_ref):
             _run(
                 [
@@ -764,8 +722,7 @@ class Push:
             "submodule '%s': the remote tip %s is an autopilot orphan; rebuilding this "
             "round's commit on top of it" % (sub, tip)
         )
-        # The message is looked up BY PATH rather than by a positional index two
-        # separate loops would have to keep in agreement.
+        # The message is looked up BY PATH rather than by a positional index two separate loops would have to keep in agreement.
         _jq_to_file(
             ["-r", "--arg", "p", sub, ADOPT_MESSAGE_PROGRAM, self.w("verdict.json")],
             self.w("adopt-msg.txt"),
@@ -866,10 +823,7 @@ class Push:
                     )
                     raise _Exit(1)
                 self.adopt_or_refuse(sub, subdir, sub_sha, sub_base_recorded)
-                # THE ADOPTED SHA REPLACES THE ONE PHASE 1 MINTED, and phase 4
-                # re-stages the gitlink to match. A separate name rather than
-                # rebinding the loop variable, which reads the same and does not
-                # invite a reader to wonder which value the next line sees.
+                # THE ADOPTED SHA REPLACES THE ONE PHASE 1 MINTED, and phase 4 re-stages the gitlink to match. A separate name rather than rebinding the loop variable, which reads the same and does not invite a reader to wonder which value the next line sees.
                 pushed_sha = self.adopted_sha
                 adoption_happened = True
             pushed.append("%s %s %s\n" % (sub, pushed_sha, sub_base_recorded))
@@ -901,9 +855,7 @@ def main(argv: list[str]) -> int:
         return exc.code
     os.chdir(root)
 
-    # STAGE FLAG, FAIL CLOSED: absent means off, and only the exact string
-    # `true` arms the push. A dry run needs no flag because it never writes the
-    # remote.
+    # STAGE FLAG, FAIL CLOSED: absent means off, and only the exact string `true` arms the push. A dry run needs no flag because it never writes the remote.
     if not dry_run and os.environ.get(ALLOW_PUSH_ENV, "") != ALLOW_VALUE:
         log.error(
             "stage-flag-disabled: %s is not 'true'; refusing to push (fail closed)" % ALLOW_PUSH_ENV
@@ -928,10 +880,7 @@ def main(argv: list[str]) -> int:
 
 
 def _drive(push: Push) -> int:
-    # HARDCODED BRANCH CHECKS. The current branch must be exactly the one the
-    # caller named, and main/master are refused UNCONDITIONALLY: even a harness
-    # bug upstream must not be able to aim this script at a default branch
-    # (renet/account/elite have no rulesets, so this is their only guard).
+    # HARDCODED BRANCH CHECKS. The current branch must be exactly the one the caller named, and main/master are refused UNCONDITIONALLY: even a harness bug upstream must not be able to aim this script at a default branch (renet/account/elite have no rulesets, so this is their only guard).
     actual_branch = _capture_or_exit(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     if actual_branch != push.branch:
         log.error(
@@ -945,9 +894,7 @@ def _drive(push: Push) -> int:
 
     outcome = push.validate()
     if outcome in ("escalate", "no-change"):
-        # Nothing staged, nothing committed, nothing pushed -- and NOT an error.
-        # A no-change round with a dirty tree never reaches here: the validator
-        # already refused it as undeclared-dirty.
+        # Nothing staged, nothing committed, nothing pushed -- and NOT an error. A no-change round with a dirty tree never reaches here: the validator already refused it as undeclared-dirty.
         log.info(
             "outcome-%s: validated round, nothing staged and nothing pushed; the "
             "post-boundary steps own the follow-up" % outcome
@@ -968,10 +915,7 @@ def _drive(push: Push) -> int:
 
     adoption_happened = push.push_submodules()
 
-    # PHASE 4: an adoption moved a submodule SHA, so the gitlink console staged
-    # in phase 2 now names a commit that is no longer the branch tip. Re-stage
-    # and re-run the SAME validation rather than patching the index and trusting
-    # it.
+    # PHASE 4: an adoption moved a submodule SHA, so the gitlink console staged in phase 2 now names a commit that is no longer the branch tip. Re-stage and re-run the SAME validation rather than patching the index and trusting it.
     if adoption_happened:
         log.warn(
             "an orphan was adopted; re-staging the pointers and re-running the console validation"
@@ -995,8 +939,7 @@ def _drive(push: Push) -> int:
         print(sha, flush=True)
         return 0
 
-    # PUSH BY EXPLICIT SHA, never a bare branch name: the ref that leaves this
-    # machine is exactly the commit minted above.
+    # PUSH BY EXPLICIT SHA, never a bare branch name: the ref that leaves this machine is exactly the commit minted above.
     proc = _run(["git", "push", push.remote, "%s:refs/heads/%s" % (sha, push.branch)])
     if proc.returncode != 0:
         raise _Exit(proc.returncode)

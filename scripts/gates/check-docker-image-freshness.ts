@@ -1,11 +1,7 @@
 #!/usr/bin/env tsx
-// ---- gate ----
-// step: Docker image freshness
+// ---- gate ---- step: Docker image freshness
 // env-DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
-// needs: node
-// selftest: true
-// lane: quality-content
-// ---- end gate ----
+// needs: node selftest: true lane: quality-content ---- end gate ----
 
 import { spawnSync } from 'node:child_process';
 /**
@@ -58,12 +54,8 @@ import process from 'node:process';
 function gitVisible(paths: string[]): string[] {
   if (paths.length === 0) return paths;
 
-  // Submodule paths are EXCLUDED FROM THE QUESTION, not answered by it. `git check-ignore`
-  // exits 128 with "fatal: Pathspec is in submodule" the moment one appears in its input,
-  // and the first version of this function treated 128 as a hard error and returned every
-  // path unfiltered. It silently did nothing while the gate still passed locally, which is
-  // the exact false-green shape this gate family exists to prevent. Submodule content IS
-  // checked out in CI, so it is visible by definition and never needs the check.
+  // Submodule paths are EXCLUDED FROM THE QUESTION, not answered by it. `git check-ignore` exits 128 with "fatal: Pathspec is in submodule" the moment one appears in its input, and the first version of this function treated 128 as a hard error and returned every path unfiltered. It silently did nothing while the gate still passed locally, which is the exact false-green shape this
+  // gate family exists to prevent. Submodule content IS checked out in CI, so it is visible by definition and never needs the check.
   const submodules = readGitmodulePaths();
   const inSubmodule = (rel: string) => submodules.some((s) => rel === s || rel.startsWith(`${s}/`));
 
@@ -242,11 +234,7 @@ function dockerHubRepo(image: string): string | null {
   return bare.includes('/') ? bare : `library/${bare}`;
 }
 
-// No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument
-// this used to take was never read, and this config's policy is to delete an unused parameter
-// rather than underscore it.
-// Memoised for the same reason there is no repo parameter: login is account-wide, so the
-// per-image call site was paying one extra login round-trip PER IMAGE for a value that
+// No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument this used to take was never read, and this config's policy is to delete an unused parameter rather than underscore it. Memoised for the same reason there is no repo parameter: login is account-wide, so the per-image call site was paying one extra login round-trip PER IMAGE for a value that
 // cannot differ between them. Anonymous runs never noticed; a credentialled CI run did.
 let hubTokenOnce: Promise<string | null> | undefined;
 function hubToken(): Promise<string | null> {
@@ -276,10 +264,7 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
 
   // A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
   //
-  // Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows
-  // it masked), every one of the five images failed to list, and the same gate had listed
-  // them anonymously in earlier runs of this branch. So the token was being rejected and
-  // sending it unconditionally turned a working anonymous path into a total failure.
+  // Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows it masked), every one of the five images failed to list, and the same gate had listed them anonymously in earlier runs of this branch. So the token was being rejected and sending it unconditionally turned a working anonymous path into a total failure.
   //
   // A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a
   // 401 or 403 the request is retried without it; anything else, 429 included, stays a
@@ -332,10 +317,7 @@ function selftest(): number {
   check('a DIFFERENT shape is not comparable', !isNewer('3.9-slim', '3.13-alpine'));
   check('an older version is not newer', !isNewer('24.04', '22.04'));
 
-  // --- the soak clock: rebuild age is not release age -----------------------
-  // Measured against library/python on 2026-08-25: a rebuild wave re-stamped
-  // every supported minor within the same minute, which under the old filter
-  // hid all of them and made a 3.9-slim pin read as current.
+  // --- the soak clock: rebuild age is not release age ----------------------- Measured against library/python on 2026-08-25: a rebuild wave re-stamped every supported minor within the same minute, which under the old filter hid all of them and made a 3.9-slim pin read as current.
   const HOUR = 3600_000;
   const DAY = 24 * HOUR;
   const NOW = 1_000 * DAY;
@@ -390,8 +372,7 @@ function selftest(): number {
   // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
   for (const c of sharedSelftestCases()) check(c.name, c.ok);
 
-  // THE SEED PATH, and its control. A grow path that admits anything is not a grow path,
-  // it is the absence of a gate.
+  // THE SEED PATH, and its control. A grow path that admits anything is not a grow path, it is the absence of a gate.
   const seedFilter = (additions: string[], seed?: string): string[] =>
     additions.filter((a) => a !== seed);
   check('a seeded entry is admitted', seedFilter(['a:1  img'], 'a:1  img').length === 0);
@@ -434,15 +415,10 @@ async function main(): Promise<void> {
   const stale: string[] = [];
   // BASELINE IDENTITY, kept separate from the DISPLAY string above it. `stale[i]`
   // embeds `file:line` for a human to find the pin; `staleKeys[i]` (same index,
-  // same order) is `image:tag` alone, which `seen` already proves is globally
-  // unique. A baseline keyed on the display string re-keys itself on any
-  // Dockerfile edit that shifts the FROM line -- a comment added above it, an
-  // unrelated stage inserted earlier in the file -- reporting the SAME
-  // unresolved debt as simultaneously "newly stale" (new key, not in the old
-  // baseline) and "no longer stale" (old key, missing from the new run). Same
+  // same order) is `image:tag` alone, which `seen` already proves is globally unique. A baseline keyed on the display string re-keys itself on any Dockerfile edit that shifts the FROM line -- a comment added above it, an unrelated stage inserted earlier in the file -- reporting the SAME unresolved debt as simultaneously "newly stale" (new key, not in the old baseline) and "no
+  // longer stale" (old key, missing from the new run). Same
   // shape as the CSS-selector re-keying trap this repo already paid for once;
-  // this baseline's key must not depend on anything that can move independent
-  // of the finding itself.
+  // this baseline's key must not depend on anything that can move independent of the finding itself.
   const staleKeys: string[] = [];
   const unknown: string[] = [];
   let checked = 0;
@@ -477,32 +453,20 @@ async function main(): Promise<void> {
     console.error('DOCKERHUB_USERNAME + DOCKERHUB_PASSWORD) so this cannot go vacuous in CI.');
     process.exit(1);
   }
-  // SHRINK-ONLY BASELINE, the same shape the other debt gates here use. Adding this gate
-  // must not turn `npm run ci` red on staleness that predates it, and bumping a base
-  // image across a major (ubuntu 24.04 -> 26.10, python 3.9 -> 3.14) is a decision with
-  // real blast radius, not a side effect of installing a watchdog. So today's debt is
-  // frozen and NEW staleness fails immediately. Drain with --write-baseline as pins move.
+  // SHRINK-ONLY BASELINE, the same shape the other debt gates here use. Adding this gate must not turn `npm run ci` red on staleness that predates it, and bumping a base image across a major (ubuntu 24.04 -> 26.10, python 3.9 -> 3.14) is a decision with real blast radius, not a side effect of installing a watchdog. So today's debt is frozen and NEW staleness fails immediately.
+  // Drain with --write-baseline as pins move.
   const keyed = staleKeys;
   if (process.argv.includes('--write-baseline')) {
-    // COMPOSITION. "Drain with --write-baseline as pins move" was an unconditional
-    // reseed, so a drain could retire two pins that had been bumped and quietly enshrine
-    // a third that had just gone stale, while printing a smaller number. A newly stale
-    // pin is the exact finding this gate exists to raise, so absorbing one silently
-    // inverts its purpose.
+    // COMPOSITION. "Drain with --write-baseline as pins move" was an unconditional reseed, so a drain could retire two pins that had been bumped and quietly enshrine a third that had just gone stale, while printing a smaller number. A newly stale pin is the exact finding this gate exists to raise, so absorbing one silently inverts its purpose.
     const sorted = keyed.slice().sort();
     const had = existsSync(BASELINE);
     const previous: string[] = had ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
     // THE ONE LEGITIMATE GROW PATH: a pin deliberately held BACK.
     //
-    // Shrink-only is right for debt that should be paid down, and wrong for a pin that
-    // must not move. Measured on 2026-08-24: renet's CSI sidecar stage tracked upstream Go
-    // to 1.27, and under 1.27 the upstream sidecars' own VENDORED grpc stops compiling
-    // (`undefined: http2.TrailerPrefix`). The only fix available to us is to stay on 1.26,
-    // and with no grow path that decision could not be recorded at all -- so the gate would
-    // demand a bump that breaks the build, every run, forever.
+    // Shrink-only is right for debt that should be paid down, and wrong for a pin that must not move. Measured on 2026-08-24: renet's CSI sidecar stage tracked upstream Go to 1.27, and under 1.27 the upstream sidecars' own VENDORED grpc stops compiling (`undefined: http2.TrailerPrefix`). The only fix available to us is to stay on 1.26, and with no grow path that decision could not
+    // be recorded at all -- so the gate would demand a bump that breaks the build, every run, forever.
     //
-    // `--seed-image <entry>` names the exact entry being admitted, so admitting one cannot
-    // smuggle in a second: anything else that went stale in the same run is still refused.
+    // `--seed-image <entry>` names the exact entry being admitted, so admitting one cannot smuggle in a second: anything else that went stale in the same run is still refused.
     const seedIdx = process.argv.indexOf('--seed-image');
     const seedImage = seedIdx > -1 ? process.argv[seedIdx + 1] : undefined;
     const additions = had ? baselineAdditions(previous, sorted) : [];
@@ -547,8 +511,7 @@ async function main(): Promise<void> {
   }
   const base: string[] = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
   const known = new Set(base);
-  // Filtered by INDEX against staleKeys, not re-derived from the display string:
-  // `stale[i]` and `staleKeys[i]` are the same pin, one for a human, one for identity.
+  // Filtered by INDEX against staleKeys, not re-derived from the display string: `stale[i]` and `staleKeys[i]` are the same pin, one for a human, one for identity.
   const fresh = stale.filter((_, i) => !known.has(staleKeys[i]));
   const fixed = base.filter((b) => !keyed.includes(b));
 

@@ -57,11 +57,7 @@ import { policyPath } from '../lib/policy-paths.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..', '..');
 
-// Every root is overridable via an E2E_COV_* env var so the gate-fixture test
-// (.ci/scripts/test/gates/test-e2e-coverage.sh) can point the exact production
-// code at a controlled fixture tree — the "prove the instrument" discipline.
-// Unset, they resolve to the real repo paths, so production behaviour is
-// identical whether or not the overrides exist.
+// Every root is overridable via an E2E_COV_* env var so the gate-fixture test (.ci/scripts/test/gates/test-e2e-coverage.sh) can point the exact production code at a controlled fixture tree — the "prove the instrument" discipline. Unset, they resolve to the real repo paths, so production behaviour is identical whether or not the overrides exist.
 const E2E_DIR = process.env.E2E_COV_E2E_DIR ?? path.join(REPO_ROOT, 'packages/e2e-tests');
 const FUNCTIONS_FILE =
   process.env.E2E_COV_FUNCTIONS_FILE ??
@@ -369,19 +365,12 @@ function extractRenetFunctions(): string[] {
 const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
   CI: '1',
   FULL_INTEGRATION: '1',
-  // Suite 24 (cluster licensing). Set by the `Run E2E Tests (K8s Multinode)`
-  // step in ct-tests.yml, which starts an account server for it.
+  // Suite 24 (cluster licensing). Set by the `Run E2E Tests (K8s Multinode)` step in ct-tests.yml, which starts an account server for it.
   //
-  // WHAT THIS FLAG DOES NOT CLAIM. That step also passes
-  // `--grep-invert "licensing on the fleet"`, so suite 24's VM tier is excluded
+  // WHAT THIS FLAG DOES NOT CLAIM. That step also passes `--grep-invert "licensing on the fleet"`, so suite 24's VM tier is excluded
   // from the run while its ACCOUNT tier executes. Config expansion resolves
-  // FILES, not test titles, so this list cannot express that split: it counts
-  // the whole file as live. That over-count is inert TODAY and was checked
-  // rather than assumed: the only bridge method suite 24 calls is
-  // `executeViaBridge`, which dispatches no renet verb and appears in the method
-  // map for none, so the file confers no verb coverage in either tier. If the VM
-  // tier ever grows a `w1.<verb>Method(` call, that call would start counting as
-  // covered by a run that never executes it, and this entry must be revisited.
+  // FILES, not test titles, so this list cannot express that split: it counts the whole file as live. That over-count is inert TODAY and was checked rather than assumed: the only bridge method suite 24 calls is `executeViaBridge`, which dispatches no renet verb and appears in the method map for none, so the file confers no verb coverage in either tier. If the VM tier ever grows a
+  // `w1.<verb>Method(` call, that call would start counting as covered by a run that never executes it, and this entry must be revisited.
   CLUSTER_LICENSING_SUITE: '1',
 };
 
@@ -427,18 +416,10 @@ async function main(): Promise<void> {
 
   // Read live-test contents once, WITH COMMENTS STRIPPED.
   //
-  // A comment cannot exercise anything. Counting one as coverage is not a
-  // near-miss, it is the opposite of what this gate is for, and it happened:
-  // a storage test asserted that a RETIREMENT MESSAGE names its replacement,
-  // and the verb literal inside that assertion plus the comment explaining it
-  // made `backup_restore` look exercised. The gate then demanded its allowlist
-  // entry be deleted as a debt paid, which would have recorded coverage that
-  // does not exist in the very file that tracks coverage that does not exist.
+  // A comment cannot exercise anything. Counting one as coverage is not a near-miss, it is the opposite of what this gate is for, and it happened: a storage test asserted that a RETIREMENT MESSAGE names its replacement, and the verb literal inside that assertion plus the comment explaining it made `backup_restore` look exercised. The gate then demanded its allowlist entry be
+  // deleted as a debt paid, which would have recorded coverage that does not exist in the very file that tracks coverage that does not exist.
   //
-  // STRING LITERALS ARE DELIBERATELY KEPT. A test that really drives a verb
-  // usually names it in a string -- `exec('rdc backup restore ...')` -- so
-  // excluding strings would blind the gate to genuine coverage. Comments are
-  // the part that can never be evidence.
+  // STRING LITERALS ARE DELIBERATELY KEPT. A test that really drives a verb usually names it in a string -- `exec('rdc backup restore ...')` -- so excluding strings would blind the gate to genuine coverage. Comments are the part that can never be evidence.
   const liveTestText = new Map<string, string>();
   for (const f of liveFiles) liveTestText.set(f, stripComments(fs.readFileSync(f, 'utf-8')));
   const anyLiveTest = (needle: string): boolean => {
@@ -452,15 +433,8 @@ async function main(): Promise<void> {
     ? globSync('*.ts', { cwd: HELPERS_DIR, absolute: true })
     : [];
 
-  // A helper file confers coverage ONLY when a live test actually reaches it —
-  // i.e. a live test calls one of the helper's own methods (`.helperMethod(`).
-  // This is the single level of indirection the tree needs: suite 17 drives
-  // `runner.repositoryCommit(...)`, a RepositoryHelpers method that shells out
-  // `renet repository commit` (a space-form dispatch, not a `function:` literal),
-  // so that helper's space-forms are genuine live coverage. A helper NO live
-  // test touches confers nothing (fail closed). BridgeTestRunner.ts is NOT a
-  // helper and is never in this set — counting its re-export delegations is
-  // exactly the dead-coverage this gate exists to reject.
+  // A helper file confers coverage ONLY when a live test actually reaches it — i.e. a live test calls one of the helper's own methods (`.helperMethod(`). This is the single level of indirection the tree needs: suite 17 drives `runner.repositoryCommit(...)`, a RepositoryHelpers method that shells out `renet repository commit` (a space-form dispatch, not a `function:` literal), so
+  // that helper's space-forms are genuine live coverage. A helper NO live test touches confers nothing (fail closed). BridgeTestRunner.ts is NOT a helper and is never in this set — counting its re-export delegations is exactly the dead-coverage this gate exists to reject.
   const liveHelperText = new Map<string, string>();
   for (const f of helperFiles) {
     const text = stripComments(fs.readFileSync(f, 'utf-8'));
@@ -476,8 +450,7 @@ async function main(): Promise<void> {
     for (const text of liveHelperText.values()) if (text.includes(needle)) return true;
     return false;
   };
-  // A verb-METHOD (declared in methods/*.ts) is called-live when `.methodName(`
-  // appears in a live test, or one hop out in a live helper.
+  // A verb-METHOD (declared in methods/*.ts) is called-live when `.methodName(` appears in a live test, or one hop out in a live helper.
   const methodCalledLive = (methodName: string): boolean => anyLiveTest(`.${methodName}(`);
   const methodCalledViaHelper = (methodName: string): boolean => {
     for (const text of liveHelperText.values()) if (text.includes(`.${methodName}(`)) return true;

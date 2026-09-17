@@ -76,10 +76,7 @@ import time
 import wl_core as C
 import wl_judge
 
-# Families are deliberately broad. They decide only whether to SPEND a model
-# call, never whether an admission exists. Measured over 39,228 real turn-final
-# messages: A 0.45%, B 0.20%, C 0.42%, union 1.06%. The strict conjunction
-# (A or C) and B drops that to 0.01% and takes five of the seven real admissions
+# Families are deliberately broad. They decide only whether to SPEND a model call, never whether an admission exists. Measured over 39,228 real turn-final messages: A 0.45%, B 0.20%, C 0.42%, union 1.06%. The strict conjunction (A or C) and B drops that to 0.01% and takes five of the seven real admissions
 # with it, both clobbers included, which is why the union is the design.
 FAMILIES = {
     "damage-verb": re.compile(
@@ -267,9 +264,7 @@ def apply_admission_verdict(ad, text):
         return "none", "", "residue=%r" % residue
     quote = ad.get("quote") or ""
     if not quote.strip() or _norm(quote) not in _norm(text):
-        # A composed quote is a hallucinated admission. Refusing it is the same
-        # move reggate makes on a hallucinated existing_gate: the model may
-        # summarise, it may not invent the evidence.
+        # A composed quote is a hallucinated admission. Refusing it is the same move reggate makes on a hallucinated existing_gate: the model may summarise, it may not invent the evidence.
         return "none", "", "quote is not verbatim in the message"
     item = (
         "prevention for an admitted mistake (%s residue): %s\n"
@@ -318,9 +313,7 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
             extra={"verdict": "track", "item": new_id, "detail": detail},
         )
     else:
-        # Banked so the same turn is never re-judged, and recorded so the
-        # negative stays auditable. A verdict nobody can review later is how a
-        # detector quietly stops detecting.
+        # Banked so the same turn is never re-judged, and recorded so the negative stays auditable. A verdict nobody can review later is how a detector quietly stops detecting.
         settled[sig] = kind
         record_hits(worklist, session_id, hits, sig, extra={"verdict": kind, "detail": detail})
     save_settled(worklist, session_id, settled)
@@ -329,42 +322,20 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
 
 # ---- THE PENDING-ASK GATE ---------------------------------------------------
 #
-# WHAT IT COSTS TODAY, measured as a sequence rather than argued: a session
-# announces in prose that it is going to ask the operator something, stops, the
-# operator spends a turn saying "ask", and only THEN does
-# .claude/hooks/pre-ask/block-settled-questions.sh refuse the question as
-# already settled. The removable cost is the OPERATOR'S TURN, and a Stop hook
-# that blocks is the only place that reaches it: every other hook in the chain
-# runs after the turn has already been yielded.
+# WHAT IT COSTS TODAY, measured as a sequence rather than argued: a session announces in prose that it is going to ask the operator something, stops, the operator spends a turn saying "ask", and only THEN does .claude/hooks/pre-ask/block-settled-questions.sh refuse the question as already settled. The removable cost is the OPERATOR'S TURN, and a Stop hook that blocks is the only
+# place that reaches it: every other hook in the chain runs after the turn has already been yielded.
 #
-# IT LIVES HERE, NOT IN wl_checks, for a size reason that is not cosmetic.
-# wl_checks is ~5,000 lines and is the file every stop-gate change has to be
+# IT LIVES HERE, NOT IN wl_checks, for a size reason that is not cosmetic. wl_checks is ~5,000 lines and is the file every stop-gate change has to be
 # read against; a detector with its own regex family and its own state
-# signature belongs beside its sibling in this module, and wl_checks gains one
-# call site and one violation key.
+# signature belongs beside its sibling in this module, and wl_checks gains one call site and one violation key.
 #
-# THREE CONDITIONS, ALL OF THEM, and each one is there to kill a specific false
-# positive:
+# THREE CONDITIONS, ALL OF THEM, and each one is there to kill a specific false positive:
 #
-#   1. an ask ANNOUNCEMENT in the CLOSING span of the message. Not "question
-#      shape" -- `should I` alone is far too broad, this repo writes ABOUT these
-#      phrases constantly, and the closing span is where an announcement lives
-#      (a mid-message aside about a question is narration, not a hand-off).
-#   2. AskUserQuestion was NOT called since the operator last spoke. If the
-#      session already asked, there is nothing to convert.
-#   3. no `[?]` deferral of mine appeared this turn. Parking the question WITH a
-#      DEFAULT is one of the three exits, so a session that took it must not
-#      then be accused of not taking it.
+# 1. an ask ANNOUNCEMENT in the CLOSING span of the message. Not "question shape" -- `should I` alone is far too broad, this repo writes ABOUT these phrases constantly, and the closing span is where an announcement lives (a mid-message aside about a question is narration, not a hand-off). 2. AskUserQuestion was NOT called since the operator last spoke. If the session already asked,
+# there is nothing to convert. 3. no `[?]` deferral of mine appeared this turn. Parking the question WITH a DEFAULT is one of the three exits, so a session that took it must not then be accused of not taking it.
 #
-# UNLIKE THE ADMISSION DETECTOR ABOVE, THIS ONE BLOCKS -- and the difference is
-# principled rather than inconsistent. wl_admit's own header explains why a
-# phantom regret must never block: "a session blocked by a phantom regret learns
-# to phrase things evasively", and evasive REPORTING costs more than a missed
-# detection. Nothing here depends on candour. The trigger is an announcement of
-# a hand-off, its every exit is completable by the session alone in the same
-# turn, and the cost of a miss is the operator's turn -- the exact resource the
-# gate exists to protect. So it blocks, in the ALWAYS tier, because a paused
-# stop still yields the turn and yielding the turn IS the defect.
+# UNLIKE THE ADMISSION DETECTOR ABOVE, THIS ONE BLOCKS -- and the difference is principled rather than inconsistent. wl_admit's own header explains why a phantom regret must never block: "a session blocked by a phantom regret learns to phrase things evasively", and evasive REPORTING costs more than a missed detection. Nothing here depends on candour. The trigger is an announcement
+# of a hand-off, its every exit is completable by the session alone in the same turn, and the cost of a miss is the operator's turn -- the exact resource the gate exists to protect. So it blocks, in the ALWAYS tier, because a paused stop still yields the turn and yielding the turn IS the defect.
 
 #: The ANNOUNCEMENT family. Every alternative is a session HANDING SOMETHING
 #: OVER, not a session asking a question of the code, of a file, or of itself.
@@ -374,32 +345,15 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
 ASK_ANNOUNCEMENT_RE = re.compile(
     r"\b(?:one|two|three|four|five|six|a|\d+)\s+questions?\s+for\s+you\b"
     r"|\bquestions?\s+for\s+you\s*[:.\u2014-]"
-    # THE SAME CLASS AS "your call" BELOW, swept 2026-08-31 after that one
-    # false-fired twice live: a copula ("are"/"is"/"were"/"was") immediately
-    # before "decision(s)" makes it a settled-fact statement of whose call
-    # something already is ("these are decisions that are genuinely yours,
-    # not mine to make"), not an announcement. A genuine standalone use
-    # ("Two decisions that are genuinely yours:") is unaffected.
+    # THE SAME CLASS AS "your call" BELOW, swept 2026-08-31 after that one false-fired twice live: a copula ("are"/"is"/"were"/"was") immediately before "decision(s)" makes it a settled-fact statement of whose call something already is ("these are decisions that are genuinely yours, not mine to make"), not an announcement. A genuine standalone use ("Two decisions that are genuinely
+    # yours:") is unaffected.
     r"|(?<!are\s)(?<!\bis\s)(?<!were\s)(?<!was\s)\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
-    # NOT preceded by "say/says/said to": citing an EXISTING documented
-    # instruction ("the docs already say to let me know if the build
-    # breaks") is reported speech about a convention, not the session live
-    # asking the operator to tell it something now.
+    # NOT preceded by "say/says/said to": citing an EXISTING documented instruction ("the docs already say to let me know if the build breaks") is reported speech about a convention, not the session live asking the operator to tell it something now.
     r"|(?<!say to )(?<!says to )(?<!said to )\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
-    # NOT preceded by "is"/"was": "merging is your call, not something I
-    # should do autonomously" and "PR #579 ... merge is your call" both fired
-    # here, twice in one session, and neither is an unasked question -- both
-    # are a settled-fact CLOSE ("this is whose decision it already is"), the
-    # copula makes it declarative rather than a lead-in to a solicitation. A
-    # genuine standalone announcement ("Your call on which branch to use.")
-    # is unaffected, and a phrasing that also poses an actual question still
-    # fires via the separate closing-`?` rule below.
+    # NOT preceded by "is"/"was": "merging is your call, not something I should do autonomously" and "PR #579 ... merge is your call" both fired here, twice in one session, and neither is an unasked question -- both are a settled-fact CLOSE ("this is whose decision it already is"), the copula makes it declarative rather than a lead-in to a solicitation. A genuine standalone
+    # announcement ("Your call on which branch to use.") is unaffected, and a phrasing that also poses an actual question still fires via the separate closing-`?` rule below.
     r"|(?<!\bis\s)(?<!\bwas\s)\byour\s+call\b"
-    # NOT preceded by a negation: "you do not want me to push there without
-    # asking" and "the standing rule says you never want me to merge without
-    # being asked" both cite an EXISTING constraint as the reason for past
-    # behavior, not a live offer. "Do you want me to...?" is unaffected (no
-    # negation precedes it, and it also ends in `?`).
+    # NOT preceded by a negation: "you do not want me to push there without asking" and "the standing rule says you never want me to merge without being asked" both cite an EXISTING constraint as the reason for past behavior, not a live offer. "Do you want me to...?" is unaffected (no negation precedes it, and it also ends in `?`).
     r"|(?<!not\s)(?<!n't\s)(?<!never\s)\bwant\s+me\s+to\b",
     re.IGNORECASE,
 )
@@ -593,12 +547,8 @@ def pending_ask(last_msg, tool_names, deferred_this_turn):
     return bool(line), line
 
 
-# ---- THE REFUSAL LEDGER, read side ------------------------------------------
-# .claude/hooks/pre-ask/block-settled-questions.sh appends one line per refusal.
-# Nothing read it, which made the ledger a write-only file and left the operator
-# exactly where test-hooks.sh says they were: "a false positive is invisible by
-# construction: the operator never learns what was not asked." This is the
-# minimum that changes that -- a count and a path, ADVISORY, never a violation.
+# ---- THE REFUSAL LEDGER, read side ------------------------------------------ .claude/hooks/pre-ask/block-settled-questions.sh appends one line per refusal. Nothing read it, which made the ledger a write-only file and left the operator exactly where test-hooks.sh says they were: "a false positive is invisible by construction: the operator never learns what was not asked." This is
+# the minimum that changes that -- a count and a path, ADVISORY, never a violation.
 
 
 def ask_refusal_path(worklist):
@@ -639,13 +589,8 @@ def ask_refusals(worklist, session_id):
 # evasive phrasing a cautious session would naturally reach for, and that is the
 # class the whole model call exists to catch.
 #
-# This CANNOT be stubbed. A stub that answers "yes" proves nothing about whether
-# the classifier can tell case 1 from case 7. That is why it is a separate gate
-# run against the real model, not part of the per-stop path.
-# Empirically-derived floor. Five positives: two correct in every measured
-# run, three borderline and flaky at roughly two thirds each, so ~0.75 is the
-# expected value and 0.60 leaves room for noise while still catching a real
-# collapse. Raise it only with a measurement, never on a hunch.
+# This CANNOT be stubbed. A stub that answers "yes" proves nothing about whether the classifier can tell case 1 from case 7. That is why it is a separate gate run against the real model, not part of the per-stop path. Empirically-derived floor. Five positives: two correct in every measured run, three borderline and flaky at roughly two thirds each, so ~0.75 is the expected value
+# and 0.60 leaves room for noise while still catching a real collapse. Raise it only with a measurement, never on a hunch.
 RECALL_FLOOR = 0.60
 
 CORPUS = [
@@ -927,8 +872,7 @@ def _selftest():
         # Tier R must land even with no verdict at all.
         wrote = record_hits(wl, "abcdefgh", prefilter(real), turn_sig(real))
         line = admit_log_path(wl, "abcdefgh").read_text(encoding="utf-8").strip()
-        # Parenthesised deliberately: `a and b or c` parses as `(a and b) or c`,
-        # so the sloppy form passes on `c` alone even when nothing was written.
+        # Parenthesised deliberately: `a and b or c` parses as `(a and b) or c`, so the sloppy form passes on `c` alone even when nothing was written.
         check(
             "Tier R records the hit with no model call",
             wrote and ("damage-verb" in line or "irreversible" in line),
@@ -942,8 +886,7 @@ def _selftest():
 
 if __name__ == "__main__":
     if "--corpus" in sys.argv:
-        # Real model calls. A gate, run when this module or ADMISSION_PROMPT
-        # changes, never on the per-stop path.
+        # Real model calls. A gate, run when this module or ADMISSION_PROMPT changes, never on the per-stop path.
         _n = None
         for _i, _a in enumerate(sys.argv):
             if _a == "--limit" and _i + 1 < len(sys.argv):

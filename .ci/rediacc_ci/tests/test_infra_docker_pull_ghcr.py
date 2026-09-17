@@ -88,15 +88,8 @@ sys.exit(0)
 
 # What the twin needs on PATH before `require_cmd docker` can even speak.
 #
-# `tr` IS ON THIS LIST BECAUSE THE CONTROL DID NOT FIRE WITHOUT IT, and the
-# reason had nothing to do with the subject. `parse_args` -> `to_upper` is
-# `echo "$1" | tr '[:lower:]' '[:upper:]'` (common.sh:302), a FORK PER FLAG, so
-# a curated PATH without `tr` makes the twin die at
-# `common.sh: line 302: tr: command not found` with status 127 -- before a
-# single validation runs. Measured: the missing-docker case reported
-# `twin: 127 / port: 1` and looked like a port that had lost `require_cmd`.
-# It is also a real latent property of common.sh worth knowing: any of the 53
-# `parse_args` callers dies at 127 on a host with no `tr`.
+# `tr` IS ON THIS LIST BECAUSE THE CONTROL DID NOT FIRE WITHOUT IT, and the reason had nothing to do with the subject. `parse_args` -> `to_upper` is `echo "$1" | tr '[:lower:]' '[:upper:]'` (common.sh:302), a FORK PER FLAG, so a curated PATH without `tr` makes the twin die at `common.sh: line 302: tr: command not found` with status 127 -- before a single validation runs. Measured:
+# the missing-docker case reported `twin: 127 / port: 1` and looked like a port that had lost `require_cmd`. It is also a real latent property of common.sh worth knowing: any of the 53 `parse_args` callers dies at 127 on a host with no `tr`.
 CURATED = ("dirname", "uname", "tr")
 
 
@@ -168,9 +161,7 @@ def _sides(name: str, argv: list[str], **extra: str):
     return old
 
 
-# ---------------------------------------------------------------------------
-# The controls, first: a fake that is not reached proves nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls, first: a fake that is not reached proves nothing. ---------------------------------------------------------------------------
 
 
 def test_the_fake_docker_is_the_docker() -> None:
@@ -206,9 +197,7 @@ def test_neither_twin_shares_a_ghcr_helper_because_common_sh_has_none() -> None:
         assert "docker login ghcr.io" in twin.read_text(encoding="utf-8"), twin
 
 
-# ---------------------------------------------------------------------------
-# The pure halves, driven directly.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure halves, driven directly. ---------------------------------------------------------------------------
 
 
 def test_resolve_prefers_the_flag_then_the_environment() -> None:
@@ -247,9 +236,7 @@ def test_latest_verdict_has_three_arms_and_only_one_of_them_warns() -> None:
     assert dpg.latest_verdict("registry.invalid/x:notlatest", {"CI": "1"}) == ([], [])
 
 
-# ---------------------------------------------------------------------------
-# The differential.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential. ---------------------------------------------------------------------------
 
 
 def test_no_image_is_the_usage_refusal_and_nothing_is_pulled() -> None:
@@ -409,8 +396,7 @@ def test_a_failing_logout_loses_the_success_line() -> None:
     assert exit_code == 1
     assert [c.split("\t")[1] for c in calls] == ["login", "pull", "logout"]
     assert b"Successfully pulled" not in stderr
-    # And its complaint is NOT suppressed here, which is the other half of the
-    # difference from the sibling script.
+    # And its complaint is NOT suppressed here, which is the other half of the difference from the sibling script.
     assert b"fixture: docker logout refused" in stderr
 
 
@@ -421,8 +407,7 @@ def test_dockers_own_stdout_reaches_the_caller_unwrapped() -> None:
         FAKE_DOCKER_STDOUT="Status: Downloaded newer image\n",
     )
     assert exit_code == 0
-    # Three docker calls, so the fixture line appears three times. The point is
-    # that neither side captures or re-emits it.
+    # Three docker calls, so the fixture line appears three times. The point is that neither side captures or re-emits it.
     assert stdout == b"Status: Downloaded newer image\n" * 3
 
 

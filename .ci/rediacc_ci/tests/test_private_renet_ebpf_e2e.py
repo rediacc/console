@@ -59,22 +59,16 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_ebpf_e2e.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-ebpf-e2e.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_ebpf_e2e.py")
 
-# U+2014, as an escape: this file lives under `.ci`, which
-# `check:ci-em-dash-surfaces` scans, and the twin's annotation contains the
-# character itself.
+# U+2014, as an escape: this file lives under `.ci`, which `check:ci-em-dash-surfaces` scans, and the twin's annotation contains the character itself.
 EM_DASH = "\u2014"
 ZERO_TESTS_ERROR = (
     "::error::ebpf_e2e executed zero tests (all skipped) %s "
     "root/bpffs/cgroup2 prerequisites not met on this runner" % EM_DASH
 )
 
-# The three recording fakes. Each is configured by its own TEXT rather than
-# through the environment: the subject advertises "No env vars", and a fixture
-# that added several would make any env-shaped divergence unattributable.
+# The three recording fakes. Each is configured by its own TEXT rather than through the environment: the subject advertises "No env vars", and a fixture that added several would make any env-shaped divergence unattributable.
 #
-# RAW BYTES ON BOTH STREAMS, each flushed immediately: one case drives `go`
-# output that is not valid UTF-8, and the flushes make the `2>&1` interleaving
-# deterministic where an unflushed pair would not be.
+# RAW BYTES ON BOTH STREAMS, each flushed immediately: one case drives `go` output that is not valid UTF-8, and the flushes make the `2>&1` interleaving deterministic where an unflushed pair would not be.
 FAKE_TOOL = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -92,9 +86,7 @@ sys.stderr.buffer.flush()
 sys.exit(RC)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. `stat` and
-# `mount` are DELIBERATELY ABSENT from this list: they are supplied as fakes,
-# and a real one leaking in would touch the host's mount table.
+# Everything both subjects need once PATH is rebuilt from scratch. `stat` and `mount` are DELIBERATELY ABSENT from this list: they are supplied as fakes, and a real one leaking in would touch the host's mount table.
 NEEDED = (
     "bash",
     "sh",
@@ -110,8 +102,7 @@ NEEDED = (
     "ls",
 )
 
-# A green `go test -tags ebpf_e2e` transcript, and one in which every test
-# skipped -- the second is the whole reason the loud-skip guard exists.
+# A green `go test -tags ebpf_e2e` transcript, and one in which every test skipped -- the second is the whole reason the loud-skip guard exists.
 EBPF_NAMES = ("TestEBPF_BindRewrite", "TestEBPF_ConnectIsolation")
 ALL_PASS = (
     "".join("=== RUN   %s\n--- PASS: %s (0.11s)\n" % (name, name) for name in EBPF_NAMES)
@@ -242,8 +233,7 @@ def _run(
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     runner = "bash" if subject.suffix == ".sh" else "python3"

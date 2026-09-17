@@ -144,8 +144,7 @@ def test_evaluate_matches_the_twin_on_unreadable_inputs(tmp_path: pathlib.Path) 
     for bad_lock, bad_pkg in ((str(broken), pkg), (lock, str(broken)), (str(obj), pkg)):
         got = gi.evaluate(bad_lock, bad_pkg, gates_dir)
         want = _twin_evaluate(bad_lock, bad_pkg, gates_dir)
-        # The exception TEXT differs between two json module versions only if
-        # they disagree, and they do not: both sides are the same interpreter.
+        # The exception TEXT differs between two json module versions only if they disagree, and they do not: both sides are the same interpreter.
         assert got == want, (bad_lock, bad_pkg)
         assert got[1] == []
 

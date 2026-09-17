@@ -149,10 +149,7 @@ export const isRootInstall = (line: string): boolean => {
   if (code.startsWith('#')) return false;
   if (!INSTALL_RE.test(code)) return false;
   if (/npm\s+(install|ci)[^|;&]*\s-g\b/.test(code)) return false;
-  // A cd counts as root-scoped ONLY when it lands ON the root, not inside it.
-  // `cd "$ROOT_DIR/workers/www"` merely CONTAINS the root variable and is a
-  // sub-project install -- the first version of this test matched the variable
-  // anywhere and produced two false positives on the real tree.
+  // A cd counts as root-scoped ONLY when it lands ON the root, not inside it. `cd "$ROOT_DIR/workers/www"` merely CONTAINS the root variable and is a sub-project install -- the first version of this test matched the variable anywhere and produced two false positives on the real tree.
   if (/\bcd\s/.test(code) && !ROOT_CD_RE.test(code)) return false;
   return true;
 };
@@ -192,8 +189,7 @@ const selftest = (): number => {
     'an unpaired root install is flagged',
     scanSource('x.sh', 'log "hi"\nnpm install\necho done\n').length === 1
   );
-  // The control: the same install, paired, must NOT be flagged. Without this,
-  // a gate that flags everything would also "pass" its defect test.
+  // The control: the same install, paired, must NOT be flagged. Without this, a gate that flags everything would also "pass" its defect test.
   check(
     'a paired root install is clean',
     scanSource('x.sh', 'npm install\nnpm run install:natives\n').length === 0
@@ -212,10 +208,7 @@ const selftest = (): number => {
       ['npm install', ...Array(40).fill('echo x'), 'npm run install:natives'].join('\n')
     ).length === 1
   );
-  // npm reached through a variable. The real tree spells it this way to pin
-  // npm@10, and a literal-only pattern was blind to it -- so the gate's only
-  // match in that file was a duplicate install, and it saw nothing once the
-  // duplicate was removed.
+  // npm reached through a variable. The real tree spells it this way to pin npm@10, and a literal-only pattern was blind to it -- so the gate's only match in that file was a duplicate install, and it saw nothing once the duplicate was removed.
   check(
     'an install through a $npm_cmd array is seen, and flagged when unpaired',
     scanSource('x.sh', '(cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)\n').length === 1
@@ -227,8 +220,7 @@ const selftest = (): number => {
       '(cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)\nnpm run install:natives\n'
     ).length === 0
   );
-  // CONTROL: the variable must NAME npm. Matching any `"$cmd" install` would
-  // sweep in terraform, apt, and every helper that takes an `install` verb.
+  // CONTROL: the variable must NAME npm. Matching any `"$cmd" install` would sweep in terraform, apt, and every helper that takes an `install` verb.
   check(
     'CONTROL: a variable that does not mention npm is NOT an install',
     scanSource('x.sh', '(cd "$LOCAL_ROOT_DIR" && "${tf_cmd[@]}" install)\n').length === 0
@@ -241,8 +233,7 @@ const selftest = (): number => {
     'a root-named cd IS in scope',
     scanSource('x.sh', '(cd "$LOCAL_ROOT_DIR" && npm install)\n').length === 1
   );
-  // The false positive the real tree exposed: a path UNDER the root is a
-  // sub-project, even though the line mentions ROOT_DIR.
+  // The false positive the real tree exposed: a path UNDER the root is a sub-project, even though the line mentions ROOT_DIR.
   check(
     'a subdirectory of the root is out of scope',
     scanSource('x.sh', '(cd "$ROOT_DIR/workers/www" && npm install)\n').length === 0
@@ -270,8 +261,7 @@ const selftest = (): number => {
 const main = (): number => {
   if (process.argv.slice(2).includes('--selftest')) return selftest();
 
-  // The premise. If ignore-scripts is gone, this gate is guarding nothing and
-  // must say so rather than pass quietly.
+  // The premise. If ignore-scripts is gone, this gate is guarding nothing and must say so rather than pass quietly.
   let npmrc = '';
   try {
     npmrc = fs.readFileSync(path.join(REPO, '.npmrc'), 'utf8');

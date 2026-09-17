@@ -155,8 +155,7 @@ class World:
         fake.write_text(FAKE_GH, encoding="utf-8")
         fake.chmod(0o755)
         self.calls.write_text("", encoding="utf-8")
-        # A commit with no associated PR. Not an error: most commits in a range
-        # resolve to one PR, some to none.
+        # A commit with no associated PR. Not an error: most commits in a range resolve to one PR, some to none.
         (self.root / "fixtures" / "pulls-default.json").write_text("[]\n", encoding="utf-8")
         self._git("init", "-q", "-b", "main")
         self._git("config", "user.email", "gate-test@example.invalid")
@@ -231,9 +230,7 @@ class World:
 
 
 def test_bump_labels_are_declared(gate):
-    # Anti-drift with the declaration file: the labels this script matches on
-    # must exist in .github/labels.yml, or the inventory gates cannot keep them
-    # alive.
+    # Anti-drift with the declaration file: the labels this script matches on must exist in .github/labels.yml, or the inventory gates cannot keep them alive.
     if not UNDER_TEST.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(UNDER_TEST))
     if not LABELS_FILE.is_file():
@@ -281,9 +278,7 @@ def test_major_beats_minor_in_either_order(gate, tmp_path):
     world.run_detect()
     gate.assert_eq(world.out, "major", "major outranks minor when it is nearest HEAD")
 
-    # SAME range, priorities swapped between the two commits. The scan walks
-    # newest-first, so this is the case a short-circuit could get wrong: it must
-    # not stop at the first bump label it meets.
+    # SAME range, priorities swapped between the two commits. The scan walks newest-first, so this is the case a short-circuit could get wrong: it must not stop at the first bump label it meets.
     world.setup()
     first = world.commit("released work")
     world.tag("v1.0.0", first)
@@ -299,9 +294,7 @@ def test_major_beats_minor_in_either_order(gate, tmp_path):
 
 
 def test_label_on_a_non_head_commit_still_escalates(gate, tmp_path):
-    # THE UNION PROPERTY, and the reason the range exists rather than HEAD alone.
-    # CI auto-cancels superseded pushes, so the commit that finally releases need
-    # not belong to the PR that carried the label.
+    # THE UNION PROPERTY, and the reason the range exists rather than HEAD alone. CI auto-cancels superseded pushes, so the commit that finally releases need not belong to the PR that carried the label.
     world = World(gate, tmp_path)
     first = world.commit("released work")
     world.tag("v1.0.0", first)
@@ -330,8 +323,7 @@ def test_commits_before_the_tag_are_out_of_range(gate, tmp_path):
     world.pulls_for(breaking, merged_pr(99, "bump-major"))
     world.pulls_for(today, merged_pr(100, ""))
 
-    # v1.0.0 IS the breaking change's release. Its label was consumed then, and
-    # re-reading it now would ship a second major for the same work.
+    # v1.0.0 IS the breaking change's release. Its label was consumed then, and re-reading it now would ship a second major for the same work.
     world.tag("v1.0.0", breaking)
     world.run_detect()
     gate.assert_eq(
@@ -342,9 +334,7 @@ def test_commits_before_the_tag_are_out_of_range(gate, tmp_path):
     world.assert_api_was_reached("out-of-range case")
     gate.assert_not_contains(world.err, "PR #99", "the out-of-range PR is never even queried")
 
-    # CONTROL: identical fixtures, tag moved back exactly one commit so PR #99
-    # falls INSIDE the range. If this does not flip to major, the range is not
-    # being read and the assertion above is vacuous.
+    # CONTROL: identical fixtures, tag moved back exactly one commit so PR #99 falls INSIDE the range. If this does not flip to major, the range is not being read and the assertion above is vacuous.
     world.retag("v1.0.0", older)
     world.clear_calls()
     world.run_detect()
@@ -379,8 +369,7 @@ def test_range_cap_is_real(gate, tmp_path):
 
 def test_no_tag_scans_head_alone(gate, tmp_path):
     world = World(gate, tmp_path)
-    # initialize.sh calls this BEFORE its own `git fetch --tags`, so a shallow
-    # checkout with no tags is a real state, not a hypothetical.
+    # initialize.sh calls this BEFORE its own `git fetch --tags`, so a shallow checkout with no tags is a real state, not a hypothetical.
     old = world.commit("an old breaking change")
     head = world.commit("todays work")
     world.pulls_for(old, merged_pr(99, "bump-major"))
@@ -427,8 +416,7 @@ def test_open_pr_label_is_ignored(gate, tmp_path):
     )
     world.assert_api_was_reached("open-PR case")
 
-    # CONTROL: the only difference is merged_at. If this does not flip, the
-    # merged filter is not what produced the patch above.
+    # CONTROL: the only difference is merged_at. If this does not flip, the merged filter is not what produced the patch above.
     world.pulls_for(head, merged_pr(100, "bump-major"))
     world.clear_calls()
     world.run_detect()
@@ -464,8 +452,7 @@ def test_missing_token_yields_patch_without_calling_the_api(gate, tmp_path):
 
 
 def test_commit_title_pr_number_is_never_used(gate, tmp_path):
-    # THE CLEAN BREAK. The old resolution path must be gone, asserted by
-    # BEHAVIOUR rather than by grepping for its absence.
+    # THE CLEAN BREAK. The old resolution path must be gone, asserted by BEHAVIOUR rather than by grepping for its absence.
     world = World(gate, tmp_path)
     first = world.commit("released work")
     world.tag("v1.0.0", first)
@@ -475,10 +462,7 @@ def test_commit_title_pr_number_is_never_used(gate, tmp_path):
 
     world.run_detect()
     gate.assert_eq(world.out, "minor", "the API's PR #100 is the answer, not the title's #999")
-    # SHAs MASKED FIRST. This asserted a bare "999" against a file that records
-    # whole gh command lines, including 40-hex commit SHAs, so it went red on CI
-    # run 32659064316 because that run's generated SHA happened to contain the
-    # digits. Roughly a 1-in-100 flake and nothing to do with PR numbers.
+    # SHAs MASKED FIRST. This asserted a bare "999" against a file that records whole gh command lines, including 40-hex commit SHAs, so it went red on CI run 32659064316 because that run's generated SHA happened to contain the digits. Roughly a 1-in-100 flake and nothing to do with PR numbers.
     calls = world.calls.read_text(encoding="utf-8")
     gate.assert_not_contains(
         re.sub(r"[0-9a-f]{40}", "<sha>", calls),

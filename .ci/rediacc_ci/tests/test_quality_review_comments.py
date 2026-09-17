@@ -121,8 +121,7 @@ CASES = [
         0,
     ),
     (
-        # THE LOW-EFFORT CATEGORY IS SEPARATE, with its own count and its own third
-        # line. Collapsing it into "unreplied" would change both printed counts.
+        # THE LOW-EFFORT CATEGORY IS SEPARATE, with its own count and its own third line. Collapsing it into "unreplied" would change both printed counts.
         "a low-effort inline reply is its own category",
         [
             inline_thread(1, "please rename this"),
@@ -133,8 +132,7 @@ CASES = [
     ),
     ("an unanswered top-level summary blocks even with no inline comments", [], [SUMMARY], 1),
     (
-        # CLAUSE (a) ON SURFACE 2. The pipeline's own marker landed 14 seconds after
-        # the summary on PR #551 and is long enough to clear every substance test.
+        # CLAUSE (a) ON SURFACE 2. The pipeline's own marker landed 14 seconds after the summary on PR #551 and is long enough to clear every substance test.
         "the reviewer's own later comment does not answer its own summary",
         [],
         [
@@ -150,8 +148,7 @@ CASES = [
         0,
     ),
     (
-        # BOOKKEEPING IS STATE, NOT A VERDICT. Blocking on it would block every PR
-        # the pipeline has ever touched.
+        # BOOKKEEPING IS STATE, NOT A VERDICT. Blocking on it would block every PR the pipeline has ever touched.
         "a bookkeeping marker comment is not a summary",
         [],
         [

@@ -69,20 +69,16 @@ R2_REAL = ".ci/media/tools/upload-r2.sh"
 # The image context moved with the wrapper, because they are one thing.
 TTS_CONTEXT = ".ci/media/tts"
 
-# THE FROZEN SURFACES. These two lists ARE the cross-repo contract. Adding an
-# entry is a widening and is fine. REMOVING or RENAMING one is a breaking change
-# that has to land in private/generative or private/growth in the same wave.
+# THE FROZEN SURFACES. These two lists ARE the cross-repo contract. Adding an entry is a widening and is fine. REMOVING or RENAMING one is a breaking change that has to land in private/generative or private/growth in the same wave.
 UPLOAD_FLAGS_FROZEN = "--defer-manifest --engine --field --file --key --kind --lang"
 TTS_ENV_FROZEN = (
     "RDC_GPU_LOCK_DIR RDC_GPU_LOCK_FILE RDC_HF_CACHE RDC_MODELS_VOLUME REDIACC_NO_DOCKER"
 )
 
-# ARGV WITH TEETH. An empty string and an argument holding spaces are the two
-# shapes a careless forward destroys, and both are shapes a real caller passes.
+# ARGV WITH TEETH. An empty string and an argument holding spaces are the two shapes a careless forward destroys, and both are shapes a real caller passes.
 SHIM_ARGV = ["--kind", "solutions", "--key", "a slug with spaces", "--lang", "", "--field", "mp4"]
 
-# Bash builtins only: read, printf, exit. The recorder must work with PATH
-# emptied, because a caller of these shims is entitled to any PATH at all.
+# Bash builtins only: read, printf, exit. The recorder must work with PATH emptied, because a caller of these shims is entitled to any PATH at all.
 RECORDER = """#!/bin/bash
 rec="$(dirname "${BASH_SOURCE[0]}")/../../../record"
 {
@@ -179,17 +175,14 @@ def test_the_relocation_landed_and_the_old_context_is_gone(gate):
             % TTS_CONTEXT
         )
 
-    # THE OLD CONTEXT MUST BE GONE, not merely unused. Two build contexts, one of
-    # them stale, is how a session spends an hour wondering why an edited
-    # Dockerfile changed nothing about the image.
+    # THE OLD CONTEXT MUST BE GONE, not merely unused. Two build contexts, one of them stale, is how a session spends an hour wondering why an edited Dockerfile changed nothing about the image.
     if (ROOT / ".ci" / "docker" / "tts").exists():
         gate.log_fail(
             ".ci/docker/tts still exists -- the relocated context at %s would be the "
             "second copy" % TTS_CONTEXT
         )
 
-    # And the wrapper must name the NEW context. This is the one line in it that a
-    # move silently invalidates.
+    # And the wrapper must name the NEW context. This is the one line in it that a move silently invalidates.
     if "$ROOT/%s" % TTS_CONTEXT not in (ROOT / TTS_REAL).read_text(encoding="utf-8"):
         gate.log_fail(
             "%s does not build %s -- the wrapper and its context have come apart"
@@ -204,8 +197,7 @@ def test_the_relocation_landed_and_the_old_context_is_gone(gate):
 def test_the_old_paths_are_exec_shims_and_nothing_more(gate):
     # A SHIM WITH LOGIC IS A SECOND IMPLEMENTATION. The contract these two paths
     # carry is already implemented once; anything here that inspects, rewrites or
-    # validates argv is a place for the two copies to disagree, and the
-    # disagreement would only show up in a repository this one cannot read.
+    # validates argv is a place for the two copies to disagree, and the disagreement would only show up in a repository this one cannot read.
     for relative in (TTS_SHIM, R2_SHIM):
         code = [
             line
@@ -235,10 +227,7 @@ def test_the_old_paths_are_exec_shims_and_nothing_more(gate):
 
 def shim_forwards_everything(gate, repo: pathlib.Path, shim: str) -> None:
     record = repo / "record"
-    # cd somewhere with no relationship to the sandbox: a shim that resolved its
-    # target relative to the CALLER's directory instead of its own would pass from
-    # the repo root and fail everywhere else, which is the failure mode a
-    # cross-repo caller hits first.
+    # cd somewhere with no relationship to the sandbox: a shim that resolved its target relative to the CALLER's directory instead of its own would pass from the repo root and fail everywhere else, which is the failure mode a cross-repo caller hits first.
     result = harness.run([str(repo / shim), *SHIM_ARGV], cwd="/", stdin="")
     gate.assert_exit_code(
         43, result.rc, "the shim must forward the target's exit status, not invent one"
@@ -284,11 +273,9 @@ def test_both_shims_forward_argv_cwd_stdin_and_status(gate, tmp_path):
 
 
 def test_the_forwarding_assertion_can_fail(gate, tmp_path):
-    # CONTROL, in the three ways a forward breaks. Each mutates the sandbox rather
-    # than the checkout, and each must be observed failing.
+    # CONTROL, in the three ways a forward breaks. Each mutates the sandbox rather than the checkout, and each must be observed failing.
 
-    # 1. The target is not there. This is what a relocation without a shim update
-    #    looks like, and it is the failure the cross-repo callers would hit.
+    # 1. The target is not there. This is what a relocation without a shim update looks like, and it is the failure the cross-repo callers would hit.
     repo = shim_sandbox(tmp_path / "gone", TTS_SHIM, TTS_REAL)
     (repo / TTS_REAL).unlink()
     result = harness.run([str(repo / TTS_SHIM), "one"], cwd="/", stdin="")
@@ -298,9 +285,7 @@ def test_the_forwarding_assertion_can_fail(gate, tmp_path):
             "what is being measured"
         )
 
-    # 2. The target is there but the shim mangles argv. A stray `shift` is the
-    #    classic version and it is silent: the call still runs, with the first flag
-    #    eaten.
+    # 2. The target is there but the shim mangles argv. A stray `shift` is the classic version and it is silent: the call still runs, with the first flag eaten.
     repo = shim_sandbox(tmp_path / "shift", TTS_SHIM, TTS_REAL)
     mutate_exec_line(gate, repo / TTS_SHIM, "shift")
     result = harness.run([str(repo / TTS_SHIM), *SHIM_ARGV], cwd="/", stdin="")
@@ -314,8 +299,7 @@ def test_the_forwarding_assertion_can_fail(gate, tmp_path):
         "measuring nothing",
     )
 
-    # 3. The exit status is swallowed. `"$ROOT/..." "$@"` without exec, followed by
-    #    a successful last command, is how a wrapper reports success for a failed run.
+    # 3. The exit status is swallowed. `"$ROOT/..." "$@"` without exec, followed by a successful last command, is how a wrapper reports success for a failed run.
     repo = shim_sandbox(tmp_path / "swallow", TTS_SHIM, TTS_REAL)
     mutate_exec_line(gate, repo / TTS_SHIM, "swallow")
     result = harness.run([str(repo / TTS_SHIM), "one"], cwd="/", stdin="")
@@ -332,8 +316,7 @@ def test_the_forwarding_assertion_can_fail(gate, tmp_path):
 
 def test_the_real_tts_chain_runs_with_docker_absent(gate):
     # REDIACC_NO_DOCKER=1 is the wrapper's own host escape hatch, documented in its
-    # header. It is what makes this drivable with docker absent, and it exercises
-    # the whole file down to the exec rather than a special test path.
+    # header. It is what makes this drivable with docker absent, and it exercises the whole file down to the exec rather than a special test path.
     with harness.fake_bin("+bash +dirname"):
         result = harness.run(
             [
@@ -360,9 +343,7 @@ def test_the_real_tts_chain_runs_with_docker_absent(gate):
 
 
 def test_the_real_r2_chain_reaches_the_relocated_body(gate):
-    # An invalid --kind is refused by the relocated script's own first validation,
-    # before any credential is read and long before aws is called. The message is
-    # that script's, so seeing it is proof the shim landed in the real body.
+    # An invalid --kind is refused by the relocated script's own first validation, before any credential is read and long before aws is called. The message is that script's, so seeing it is proof the shim landed in the real body.
     with harness.fake_bin("+bash +dirname +uname"):
         result = harness.run([str(ROOT / R2_SHIM), "--kind", "not-a-kind"], cwd="/")
     gate.assert_exit_code(1, result.rc, "an invalid --kind must be refused")
@@ -397,9 +378,7 @@ def test_the_cross_repo_surfaces_are_frozen(gate):
 
 
 def test_the_surface_freeze_can_fail(gate, tmp_path):
-    # CONTROL. A set comparison against a list somebody typed is exactly the shape
-    # that goes quiet: rename the flag AND the list in one edit and it stays green,
-    # which is correct, but drop the flag alone and it must not.
+    # CONTROL. A set comparison against a list somebody typed is exactly the shape that goes quiet: rename the flag AND the list in one edit and it stays green, which is correct, but drop the flag alone and it must not.
     mutants = tmp_path / "mut"
     mutants.mkdir(parents=True, exist_ok=True)
 
@@ -434,9 +413,7 @@ def test_the_surface_freeze_can_fail(gate, tmp_path):
             "freeze is measuring nothing"
         )
 
-    # AND THE OTHER DIRECTION: the extractors must not be blind to everything. An
-    # extractor that returned the empty string would satisfy neither assertion
-    # above and would fail the live test, but for the wrong reason.
+    # AND THE OTHER DIRECTION: the extractors must not be blind to everything. An extractor that returned the empty string would satisfy neither assertion above and would fail the live test, but for the wrong reason.
     if not upload_flags(ROOT / R2_REAL):
         gate.log_fail("the flag extractor found nothing at all")
     if not tts_env_names(ROOT / TTS_REAL):

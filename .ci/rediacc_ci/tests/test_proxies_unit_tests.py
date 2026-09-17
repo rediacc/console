@@ -130,19 +130,12 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
         "PATH": path if path is not None else os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(home),
         "npm_config_cache": str(home / ".npm"),
-        # NPM'S UPGRADE NOTICE IS ORDER-DEPENDENT, so it is switched off rather
-        # than filtered. npm prints "New major version of npm available!" at most
-        # once per interval and records that it has done so IN THE CACHE -- which
-        # both subjects share, because the line above deliberately points them at
-        # one fixture-local cache. So the twin runs first, gets the notice, and
-        # the port runs second and does not:
+        # NPM'S UPGRADE NOTICE IS ORDER-DEPENDENT, so it is switched off rather than filtered. npm prints "New major version of npm available!" at most once per interval and records that it has done so IN THE CACHE -- which both subjects share, because the line above deliberately points them at one fixture-local cache. So the twin runs first, gets the notice, and the port runs
+        # second and does not:
         #
-        #     - npm notice New major version of npm available! 11.17.0 -> 12.0.2
+        # - npm notice New major version of npm available! 11.17.0 -> 12.0.2
         #
-        # Five identical bytes of difference that belong to npm's release
-        # schedule, not to either implementation. It appeared the night npm 12
-        # shipped (CI job 104641293034) and would otherwise recur at every future
-        # npm release, on whichever subject happened to run first.
+        # Five identical bytes of difference that belong to npm's release schedule, not to either implementation. It appeared the night npm 12 shipped (CI job 104641293034) and would otherwise recur at every future npm release, on whichever subject happened to run first.
         "npm_config_update_notifier": "false",
         "LC_ALL": "C",
         "LANG": "C",
@@ -234,9 +227,7 @@ def _real_tree_env(no_color: bool = True) -> dict[str, str]:
     return env
 
 
-# ---------------------------------------------------------------------------
-# The real tree, once per registered gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree, once per registered gate ---------------------------------------------------------------------------
 
 
 def test_selftest_is_byte_identical() -> None:
@@ -290,9 +281,7 @@ def test_one_argument_is_also_the_usage_refusal(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Fixture cases
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture cases ---------------------------------------------------------------------------
 
 
 def test_a_green_suite_reports_its_counts(tmp_path: pathlib.Path) -> None:
@@ -356,9 +345,7 @@ def test_a_missing_npm_is_77_not_a_verdict(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# A SECOND, LIVE DEFECT: the summary regex cannot see a COLOURED vitest line
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A SECOND, LIVE DEFECT: the summary regex cannot see a COLOURED vitest line ---------------------------------------------------------------------------
 
 
 def test_the_summary_regex_cannot_see_a_coloured_vitest_line() -> None:
@@ -419,9 +406,7 @@ def test_the_escapes_really_sit_between_the_word_and_the_number() -> None:
     assert unit_tests.summary_count("      Tests  11 passed (11)") == "11"
 
 
-# ---------------------------------------------------------------------------
-# FIXED: the summary reader used to take the FAILED count on a mixed line
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- FIXED: the summary reader used to take the FAILED count on a mixed line ---------------------------------------------------------------------------
 
 
 def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
@@ -443,9 +428,7 @@ def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to go RED
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to go RED ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
@@ -472,9 +455,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     assert "PASS: 1 test(s) across 1 file(s)" in new_b.stdout
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_summary_count_reads_the_trailing_total_on_a_mixed_line() -> None:

@@ -102,10 +102,7 @@ from rediacc_ci.controls import Controls
 # Where the closure definitions live, relative to the repository root.
 GREENLIGHT_CJS = ".ci/scripts/ci/greenlight.cjs"
 
-# The twin's node extractor, byte for byte. Every closure's `paths` array,
-# de-duplicated through a Set and sorted, joined by newlines with no trailing
-# one -- which is why the reader below drops empty lines rather than trusting
-# the shape.
+# The twin's node extractor, byte for byte. Every closure's `paths` array, de-duplicated through a Set and sorted, joined by newlines with no trailing one -- which is why the reader below drops empty lines rather than trusting the shape.
 NODE_EXTRACTOR = """
           const { CLOSURES } = require(process.argv[1]);
           const out = new Set();
@@ -113,8 +110,7 @@ NODE_EXTRACTOR = """
           process.stdout.write([...out].sort().join("\\n"));
         """
 
-# The two environment seams the twin uses to point its own control at a fixture.
-# Kept by name so `--scan` behaves identically when driven the twin's way.
+# The two environment seams the twin uses to point its own control at a fixture. Kept by name so `--scan` behaves identically when driven the twin's way.
 ROOT_ENV_VAR = "GL_ROOT"
 PATHS_ENV_VAR = "GL_CLOSURE_PATHS"
 
@@ -144,9 +140,7 @@ def closure_paths(root: pathlib.Path) -> list[str]:
             check=False,
         )
     except OSError as exc:
-        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a
-        # traceback that reads as flake. The message is raised rather than
-        # printed so main() decides the stream.
+        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a traceback that reads as flake. The message is raised rather than printed so main() decides the stream.
         raise ScanError(
             "node is not on PATH, so the closure list could not be read from %s. "
             "Install Node 22 (the version every workflow pins) and re-run." % GREENLIGHT_CJS
@@ -295,13 +289,10 @@ def main(argv: list[str] | None = None) -> int:
             print(n)
         return code
 
-    # CONTROL FIRST. Every verdict below is meaningless if the instrument cannot
-    # tell a bad fixture from a good one, so the instrument is proven before the
-    # tree is judged rather than after.
+    # CONTROL FIRST. Every verdict below is meaningless if the instrument cannot tell a bad fixture from a good one, so the instrument is proven before the tree is judged rather than after.
     failure = control()
     if failure is not None:
-        # STDOUT for the control's own line, matching the twin: `control` echoes
-        # it and its caller only adds the banner.
+        # STDOUT for the control's own line, matching the twin: `control` echoes it and its caller only adds the banner.
         print(failure)
         log.error("instrument control failed; every verdict below would be meaningless")
         return 2
@@ -309,8 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         path_list = closure_paths(root)
     except ScanError as exc:
-        # UNMARKED AND UNINDENTED, so `scripts/lib/shadow-gate.ts` reads it as
-        # chatter and the compared finding set is unchanged. This is the one line
+        # UNMARKED AND UNINDENTED, so `scripts/lib/shadow-gate.ts` reads it as chatter and the compared finding set is unchanged. This is the one line
         # the port adds; see the port notes for the defect it names.
         print(str(exc), file=sys.stderr)
         path_list = []
@@ -333,16 +323,8 @@ def main(argv: list[str] | None = None) -> int:
         print("  shrinks what greenlight protects.", file=sys.stderr)
         return 1
 
-    # THE SHAPE, NOT JUST THE VERDICT: the count is printed so a reader notices
-    # when it collapses, and the residue paragraph names what is NOT covered.
-    # STDOUT, AND DELIBERATELY NOT `log.info`. The house logger writes to stderr,
-    # which would split ONE paragraph across TWO streams: the headline on stderr
-    # and its own indented continuation lines below on stdout. A reader piping
-    # stdout would see six dangling continuation lines under no heading. The twin
-    # echoes all seven to stdout, `battery_clean_tree` does the same for the same
-    # reason, and the control branch above already states the rule ("STDOUT for
-    # the control's own line, matching the twin"). The `\u2713` is written out
-    # rather than delegated because `log.info` is what prefixes it.
+    # THE SHAPE, NOT JUST THE VERDICT: the count is printed so a reader notices when it collapses, and the residue paragraph names what is NOT covered. STDOUT, AND DELIBERATELY NOT `log.info`. The house logger writes to stderr, which would split ONE paragraph across TWO streams: the headline on stderr and its own indented continuation lines below on stdout. A reader piping stdout
+    # would see six dangling continuation lines under no heading. The twin echoes all seven to stdout, `battery_clean_tree` does the same for the same reason, and the control branch above already states the rule ("STDOUT for the control's own line, matching the twin"). The `\u2713` is written out rather than delegated because `log.info` is what prefixes it.
     print("\u2713 greenlight closures: all %d declared path(s) exist and are tracked" % n)
     print("  (controls: a missing path and an untracked path each reported, a clean pair silent)")
     print("  Residue, stated because it is NOT covered: TRACKED is not IN HEAD. A path that is")
@@ -364,8 +346,7 @@ def selftest() -> int:
     """
     ctl = Controls("greenlight-closures", floor=20, verbose=True)
 
-    # The instrument's own control, run first for the same reason the gate runs
-    # it first: everything below is a claim about an instrument.
+    # The instrument's own control, run first for the same reason the gate runs it first: everything below is a claim about an instrument.
     ctl.check("CONTROL: the instrument's own control passes", control(), None)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -458,13 +439,10 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        # No greenlight.cjs in this fixture, so the closure list cannot be read.
-        # THAT MUST BE A FAILURE, not a clean tree with nothing to check.
+        # No greenlight.cjs in this fixture, so the closure list cannot be read. THAT MUST BE A FAILURE, not a clean tree with nothing to check.
         ctl.check("VACUITY: an unreadable closure source is refused", run(), 1)
 
-        # `--scan` with the twin's two environment seams, which is how the twin
-        # drives its own control. Kept working so a bash caller can be pointed at
-        # the port without changing its invocation.
+        # `--scan` with the twin's two environment seams, which is how the twin drives its own control. Kept working so a bash caller can be pointed at the port without changing its invocation.
         saved_root = os.environ.get(ROOT_ENV_VAR)
         saved_paths = os.environ.get(PATHS_ENV_VAR)
         os.environ[ROOT_ENV_VAR] = str(root)

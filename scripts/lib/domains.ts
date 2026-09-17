@@ -64,8 +64,7 @@ function compile(pattern: string): RegExp {
   for (let i = 0; i < pattern.length; i++) {
     const ch = pattern[i];
     if (ch === '*' && pattern[i + 1] === '*') {
-      // `**` at a segment boundary swallows the following slash too, so that
-      // `scripts/lib/**` matches `scripts/lib/a.ts` and not just `scripts/lib/`.
+      // `**` at a segment boundary swallows the following slash too, so that `scripts/lib/**` matches `scripts/lib/a.ts` and not just `scripts/lib/`.
       out += '.*';
       i++;
       if (pattern[i + 1] === '/') i++;

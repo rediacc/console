@@ -177,17 +177,13 @@ function main(): void {
     console.error('✗ no python files under .claude/hooks; refusing a verdict');
     process.exit(1);
   }
-  // ANTI-VACUITY: if nothing resolves a worklist at all, the matcher is broken
-  // rather than the tree being clean. Zero call sites must FAIL.
+  // ANTI-VACUITY: if nothing resolves a worklist at all, the matcher is broken rather than the tree being clean. Zero call sites must FAIL.
   const sites = files.reduce(
     (n, f) => n + (fs.readFileSync(f, 'utf-8').match(/worklist_for\s*\(/g) ?? []).length,
     0
   );
   // A NAMED FLOOR, not merely "> 0". Zero is the obvious collapse; the quiet one
-  // is a matcher that still finds three call sites after a rename silently took
-  // the other seventeen out of view. The floor is well under the real count
-  // (20 at the time of writing) so ordinary churn does not trip it, and any
-  // drop past it says VACUOUS rather than printing a tick.
+  // is a matcher that still finds three call sites after a rename silently took the other seventeen out of view. The floor is well under the real count (20 at the time of writing) so ordinary churn does not trip it, and any drop past it says VACUOUS rather than printing a tick.
   if (sites < MIN_CALL_SITES) {
     console.error(
       `✗ VACUOUS: found only ${sites} worklist_for() call site(s), below the floor of ` +

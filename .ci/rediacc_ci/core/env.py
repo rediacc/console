@@ -139,27 +139,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # `pathlib` is reached only by the PathLike annotations below
     import pathlib
 
-# A key, with the optional `export ` bash allows in front of it. Anchored at the
-# start of the LEFT-STRIPPED line, and the key class is bash's own
-# (`[A-Za-z_][A-Za-z0-9_]*`) rather than a looser one, because a looser pattern
+# A key, with the optional `export ` bash allows in front of it. Anchored at the start of the LEFT-STRIPPED line, and the key class is bash's own (`[A-Za-z_][A-Za-z0-9_]*`) rather than a looser one, because a looser pattern
 # would accept `2FA_CODE=` -- a line `source` refuses -- and hand back a name no
 # shell could ever hold.
 #
 # The `[ \t]+` after `export` is what makes `exported=1` a key called `exported`
-# instead of a key called `ed`. That is not hypothetical enough to leave to
-# chance: the obvious `^(export )?` with a lazy split does exactly that.
+# instead of a key called `ed`. That is not hypothetical enough to leave to chance: the obvious `^(export )?` with a lazy split does exactly that.
 _ASSIGNMENT = re.compile(r"^(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 
-# The bytes a UTF-8 BOM decodes to. A file written by a Windows editor carries
-# one, and without this the first key is named `<BOM>KEY` -- present in the
-# mapping, absent to every caller that asks for `KEY`, and invisible in a diff.
+# The bytes a UTF-8 BOM decodes to. A file written by a Windows editor carries one, and without this the first key is named `<BOM>KEY` -- present in the mapping, absent to every caller that asks for `KEY`, and invisible in a diff.
 _BOM = "\ufeff"
 
-# Inside double quotes bash makes a backslash special before exactly these four
-# characters and NOWHERE else, so `"a\nb"` is the six characters it looks like
-# and not a newline. Getting this wrong in the friendly direction (treating
-# `\n` as a newline, the way dotenv does) would change the meaning of values
-# that work today.
+# Inside double quotes bash makes a backslash special before exactly these four characters and NOWHERE else, so `"a\nb"` is the six characters it looks like and not a newline. Getting this wrong in the friendly direction (treating `\n` as a newline, the way dotenv does) would change the meaning of values that work today.
 _DOUBLE_QUOTE_ESCAPABLE = '$`"\\'
 
 
@@ -215,10 +206,7 @@ def read_pairs(
             return {}
         raise EnvFileError("env file does not exist: %s" % path) from None
     except OSError as err:
-        # PermissionError, IsADirectoryError, a dangling symlink target, a
-        # device that returns EIO. All of them mean the file is THERE and the
-        # answer is unavailable, which is the case that must never read as
-        # "no keys configured".
+        # PermissionError, IsADirectoryError, a dangling symlink target, a device that returns EIO. All of them mean the file is THERE and the answer is unavailable, which is the case that must never read as "no keys configured".
         raise EnvFileError("cannot read env file %s: %s" % (path, err)) from err
     return parse(text)
 
@@ -312,9 +300,7 @@ def keys(path: pathlib.Path | str, *, missing_ok: bool = True) -> list[str]:
     return list(read_pairs(path, missing_ok=missing_ok))
 
 
-# ---------------------------------------------------------------------------
-# the line classifier, shared by parse() and skipped() so they cannot disagree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the line classifier, shared by parse() and skipped() so they cannot disagree ---------------------------------------------------------------------------
 
 
 def _lines(text: str) -> list[tuple[int, str]]:
@@ -340,9 +326,7 @@ def _lines(text: str) -> list[tuple[int, str]]:
     """
     out = []
     for index, raw in enumerate(text.splitlines(), start=1):
-        # The BOM only ever sits on the first line, so the strip is conditional
-        # rather than applied to every line: a caller whose VALUE legitimately
-        # begins with U+FEFF keeps it.
+        # The BOM only ever sits on the first line, so the strip is conditional rather than applied to every line: a caller whose VALUE legitimately begins with U+FEFF keeps it.
         out.append((index, raw.lstrip(_BOM) if index == 1 else raw))
     return out
 
@@ -372,8 +356,7 @@ def _unquote(raw: str) -> str:
     value = raw.strip()
     if len(value) >= 2 and value[0] == value[-1]:
         if value[0] == "'":
-            # Single quotes in bash are absolute: no escape, not even for a
-            # backslash. There is no way to put a single quote inside them.
+            # Single quotes in bash are absolute: no escape, not even for a backslash. There is no way to put a single quote inside them.
             return value[1:-1]
         if value[0] == '"':
             return _unescape_double(value[1:-1])
@@ -394,9 +377,7 @@ def _unescape_double(body: str) -> str:
     return "".join(out)
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface a bash caller invokes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface a bash caller invokes ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -411,10 +392,7 @@ def main(argv: list[str]) -> int:
                 print(key)
             return 0
         if verb == "get":
-            # Exit 1 rather than printing an empty line, so `set -e` and a bare
-            # `if !` both see the absence. The rdc.sh pipeline it replaces
-            # printed nothing and returned 0, which is why rdc.sh:252 has to
-            # test the captured string separately.
+            # Exit 1 rather than printing an empty line, so `set -e` and a bare `if !` both see the absence. The rdc.sh pipeline it replaces printed nothing and returned 0, which is why rdc.sh:252 has to test the captured string separately.
             value = unredacted_value(rest[0], rest[1])
             if value is None:
                 return 1

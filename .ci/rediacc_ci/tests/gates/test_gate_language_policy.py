@@ -35,15 +35,8 @@ BASH_TWIN = ".ci/scripts/test/gates/test-language-policy.sh"
 # The seam-free case runs the subject against the real repository. See the docstring.
 REAL_TREE_TWIN = True
 
-# THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN.
-# `gate-test:shrink-only-composition` enumerates every tracked-or-untracked
-# `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one
-# to consume the composition guard. It excludes nothing by name, so a PORT that
-# quotes the flag becomes an "unguarded Python baseline writer" and reds that gate
-# tree-wide. Measured on 2026-09-09: writing the flag literally here put this file
-# on that gate's offender list within minutes of it being created. Splitting it
-# means the contiguous string never appears in this file's bytes, and
-# `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops
+# THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN. `gate-test:shrink-only-composition` enumerates every tracked-or-untracked `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one to consume the composition guard. It excludes nothing by name, so a PORT that quotes the flag becomes an "unguarded Python baseline writer" and reds that
+# gate tree-wide. Measured on 2026-09-09: writing the flag literally here put this file on that gate's offender list within minutes of it being created. Splitting it means the contiguous string never appears in this file's bytes, and `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops
 # being true. Batch 3's `label-references` port paid for this rule first; any port
 # of a self-scanning subject owes the same treatment.
 DRAIN_FLAG = "--write-" + "baseline"
@@ -52,9 +45,7 @@ ROOT = paths.repo_root()
 GATE = ROOT / ".ci" / "scripts" / "quality" / "check_language_policy.py"
 CANONICAL_VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "blocker-validator.sh"
 
-# A reason long enough and specific enough to satisfy the canonical validator
-# (30 characters after normalisation, no banned phrase). Held in one constant so
-# a case that means to test something ELSE cannot fail on the reason by accident.
+# A reason long enough and specific enough to satisfy the canonical validator (30 characters after normalisation, no banned phrase). Held in one constant so a case that means to test something ELSE cannot fail on the reason by accident.
 GOOD_REASON = (
     "vendored downstream and drift-locked, so a port here would fork code whose "
     "contract is being byte-identical"
@@ -406,9 +397,7 @@ def test_shim_entry_that_grew_is_refused(gate):
         clean = run_gate(d)
         gate.assert_exit_code(0, clean.rc, "CONTROL: a genuine one-line shim is exempt")
 
-        # Now grow it. The justification was "one-line shim" and that stopped
-        # being true without the file being deleted, which is the half a
-        # does-the-file-exist oracle would miss entirely.
+        # Now grow it. The justification was "one-line shim" and that stopped being true without the file being deleted, which is the half a does-the-file-exist oracle would miss entirely.
         (d / ".ci/scripts/one.sh").write_text(
             "#!/usr/bin/env bash\nset -euo pipefail\nfoo\nbar\n", encoding="utf-8"
         )
@@ -672,13 +661,8 @@ def test_this_port_is_not_a_shrink_only_offender(gate):
             "gate-test:shrink-only-composition will report it as an unguarded Python "
             "baseline writer. Keep it rendered through DRAIN_FLAG."
         )
-    # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for
-    # absence is satisfied by a typo, which would make every case above drive the
-    # subject with an argument it ignores. CHECKED AGAINST THE TWIN rather than
-    # against a literal written here: the twin is a `.sh` file, outside the
-    # offender corpus entirely, so it can carry the flag whole -- and comparing
-    # against a literal in THIS file would be a tautology or a second thing to
-    # keep rendered.
+    # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, which would make every case above drive the subject with an argument it ignores. CHECKED AGAINST THE TWIN rather than against a literal written here: the twin is a `.sh` file, outside the offender corpus entirely, so it can carry the flag whole -- and comparing against
+    # a literal in THIS file would be a tautology or a second thing to keep rendered.
     twin = (ROOT / BASH_TWIN).read_text(encoding="utf-8")
     if DRAIN_FLAG not in twin:
         gate.log_fail(

@@ -74,9 +74,7 @@ MIN_BUDGET_SECONDS = 180.0
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 APPS_GLOB = os.path.join(REPO, ".ci", "tutorials", "apps", "**", "docker-compose.y*ml")
-# Not a glob match: exactly one file, in-repo (not a submodule), with a
-# healthcheck a wait-loop script (ci-start-account.sh) depends on being
-# realistic about contention. See the module docstring's WHAT THIS CHECKS.
+# Not a glob match: exactly one file, in-repo (not a submodule), with a healthcheck a wait-loop script (ci-start-account.sh) depends on being realistic about contention. See the module docstring's WHAT THIS CHECKS.
 EXTRA_PATHS = [os.path.join(REPO, ".ci", "docker", "ci", "docker-compose.yml")]
 
 # Compose defaults, from the Compose spec. Used when a key is omitted.

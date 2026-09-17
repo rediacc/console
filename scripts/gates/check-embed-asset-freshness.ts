@@ -46,8 +46,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
-// Extracted so scripts/gates/check-suppression-liveness.ts can reuse the inventory
-// without importing this module (which runs main() at import time).
+// Extracted so scripts/gates/check-suppression-liveness.ts can reuse the inventory without importing this module (which runs main() at import time).
 import {
   EMBED_ASSET_SOURCES as SOURCES,
   type EmbedAssetSource as Source,
@@ -60,9 +59,7 @@ import { policyPath } from '../lib/policy-paths.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
-// Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate
-// test can prove the BLOCKER-reason validation fires without mutating the real,
-// tracked .embed-assets-upgrade-blocklist.
+// Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate test can prove the BLOCKER-reason validation fires without mutating the real, tracked .embed-assets-upgrade-blocklist.
 const BLOCKLIST =
   process.env.EMBED_BLOCKLIST_FILE || policyPath('.embed-assets-upgrade-blocklist', CONSOLE_ROOT);
 
@@ -186,10 +183,7 @@ async function latestFor(src: Source): Promise<Latest> {
         publishedAt: rel.published_at ? new Date(rel.published_at) : null,
       };
     } catch (err) {
-      // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on
-      // /releases/latest — fall back to the tags list and take the highest
-      // stable vX.Y.Z. Tags carry no publish date, so the freshness window can't
-      // apply (treated as old enough).
+      // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on /releases/latest — fall back to the tags list and take the highest stable vX.Y.Z. Tags carry no publish date, so the freshness window can't apply (treated as old enough).
       if (!/HTTP 404/.test((err as Error).message)) throw err;
       const tags = (await fetchJson(
         `https://api.github.com/repos/${src.repo}/tags?per_page=100`
@@ -204,11 +198,7 @@ async function latestFor(src: Source): Promise<Latest> {
 
       // Resolve the tag to its commit date so the soak applies here too.
       //
-      // A tag carries no publish time of its own, and this gate treats a null
-      // date as NOT deferred, so CRIU — which tags but never cuts GitHub
-      // releases — was the one component that got NO grace period at all: the
-      // moment upstream pushed a tag, the very next CI run went red. Every other
-      // component soaked for a day. One extra request buys uniform behaviour.
+      // A tag carries no publish time of its own, and this gate treats a null date as NOT deferred, so CRIU — which tags but never cuts GitHub releases — was the one component that got NO grace period at all: the moment upstream pushed a tag, the very next CI run went red. Every other component soaked for a day. One extra request buys uniform behaviour.
       const commit = (await fetchJson(
         `https://api.github.com/repos/${src.repo}/commits/${encodeURIComponent(`v${newest}`)}`
       )) as { commit?: { committer?: { date?: string } } };
@@ -223,9 +213,7 @@ async function latestFor(src: Source): Promise<Latest> {
   versions.sort((a, b) => (isNewer(a, b) ? 1 : -1));
   const newestRsync = versions[versions.length - 1];
 
-  // Same reasoning as the tag path above: the Samba index has no publish column
-  // we can trust, so take the tarball's Last-Modified header. rsync would
-  // otherwise be the second component with no soak.
+  // Same reasoning as the tag path above: the Samba index has no publish column we can trust, so take the tarball's Last-Modified header. rsync would otherwise be the second component with no soak.
   let rsyncPublished: Date | null = null;
   try {
     const head = await fetchHead(
@@ -237,8 +225,7 @@ async function latestFor(src: Source): Promise<Latest> {
       if (!Number.isNaN(parsed.getTime())) rsyncPublished = parsed;
     }
   } catch {
-    // Fall through with a null date: the gate's existing policy is that a
-    // dateless source still surfaces a stale pin rather than hiding it.
+    // Fall through with a null date: the gate's existing policy is that a dateless source still surfaces a stale pin rather than hiding it.
   }
   return { version: newestRsync, publishedAt: rsyncPublished };
 }
@@ -262,8 +249,7 @@ async function main(): Promise<void> {
   const dockerfile = fs.readFileSync(DOCKERFILE, 'utf-8');
   const { versions, conflicts } = parseDockerfileVersions(dockerfile);
   const { held, errors: blockerErrors } = loadBlocklist();
-  // Same soak as the npm-dep gate: a release that only just aged past the window
-  // is deferred to the next UTC day so a day's upgrades surface together.
+  // Same soak as the npm-dep gate: a release that only just aged past the window is deferred to the next UTC day so a day's upgrades surface together.
   const minReleaseAgeMs = getMinReleaseAgeMs();
   const nowMs = Date.now();
 
@@ -301,9 +287,7 @@ async function main(): Promise<void> {
       continue;
     }
     if (!isNewer(latest.version, pinned)) continue;
-    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the
-    // npm-dep gate we flag it, because a dateless source must still surface a
-    // stale pin. With a date, apply the shared soak.
+    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the npm-dep gate we flag it, because a dateless source must still surface a stale pin. With a date, apply the shared soak.
     if (
       latest.publishedAt !== null &&
       isWithinFreshnessWindow(latest.publishedAt.getTime(), nowMs, minReleaseAgeMs)
@@ -351,8 +335,7 @@ async function main(): Promise<void> {
   for (const f of stale) {
     console.error(`  ${f.display}: pinned ${f.pinned}  ->  upstream ${f.latest}`);
   }
-  // A prominent, copy-paste HOW-TO-FIX so a human or an AI agent can act without
-  // hunting: the exact upgrade command, then the follow-ups it can't do itself.
+  // A prominent, copy-paste HOW-TO-FIX so a human or an AI agent can act without hunting: the exact upgrade command, then the follow-ups it can't do itself.
   console.error('');
   console.error(`${YELLOW}TO FIX — bump the Dockerfile pins:${NC}`);
   console.error('    npm run check:ci-embed-asset-freshness -- --upgrade');
@@ -374,8 +357,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  // An unexpected error in the gate itself must not silently pass — but a network
-  // failure is already caught per-source above, so reaching here is a real bug.
+  // An unexpected error in the gate itself must not silently pass — but a network failure is already caught per-source above, so reaching here is a real bug.
   console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
   process.exit(1);
 });

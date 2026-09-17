@@ -53,9 +53,7 @@ REAL_WORKLIST = ROOT / ".claude" / "hooks" / "stop" / "worklist.py"
 ME_FULL = "abcd1234-5555-6666-7777-888899990000"
 ME = ME_FULL[:8]
 
-# The shape the real store prints, including the `worker:<bg-id>` ADVICE line
-# whose `<` terminates `grep -o`'s character class and yields a phantom bare
-# `worker:` token. That is the twin's behaviour and it is deliberately here.
+# The shape the real store prints, including the `worker:<bg-id>` ADVICE line whose `<` terminates `grep -o`'s character class and yields a phantom bare `worker:` token. That is the twin's behaviour and it is deliberately here.
 RICH_SLICE = """WORKLIST GUIDE (derived from the store, not from memory):
   - [>] #11112222 LEASE DEAD (quiet 104m) something ... LATEST: waiting
         NEXT: finish it and --tick %(me)s 11112222 '<evidence>', or re-lease: --lease %(me)s 11112222 +60 worker:<bg-id>
@@ -133,8 +131,7 @@ def _fixture(
         if with_state:
             state = mine / "STATE.md"
             state.write_text("# fixture state\n", encoding="utf-8")
-            # A FIXED mtime, so `stat -c %y | cut -d. -f1` is byte-stable
-            # across the two runs instead of drifting with the clock.
+            # A FIXED mtime, so `stat -c %y | cut -d. -f1` is byte-stable across the two runs instead of drifting with the clock.
             os.utime(state, (1_700_000_000, 1_700_000_000))
         for i in range(plan_count):
             (agent / ("PLAN-fixture-%d.md" % i)).write_text("plan\n", encoding="utf-8")
@@ -143,9 +140,7 @@ def _fixture(
 
     if with_git:
         subprocess.run(["git", "-C", str(root), "init", "-b", "fixturebranch", "-q"], check=True)
-        # THE SCRATCH-GIT GUARD, asserted rather than assumed: every git call in
-        # this file is `git -C <fixture>`, and this proves the -C landed where it
-        # was aimed and not in the checkout this test is running from.
+        # THE SCRATCH-GIT GUARD, asserted rather than assumed: every git call in this file is `git -C <fixture>`, and this proves the -C landed where it was aimed and not in the checkout this test is running from.
         top = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
             check=True,
@@ -369,11 +364,9 @@ def test_the_real_worklist_answers_the_same_three_verbs() -> None:
     brief uses must still be answered by the REAL tracked `worklist.py`, or the
     fixture would be standing in for something that no longer exists."""
     assert REAL_WORKLIST.is_file(), "the brief's worklist target is gone: %s" % REAL_WORKLIST
-    # WORKLIST_SESSION_ID IS DECLARED RATHER THAN THE PREFIX GUESSED. Driven:
-    # `worklist.py --list --open zzzzzzzz` under this session exits 1 with
+    # WORKLIST_SESSION_ID IS DECLARED RATHER THAN THE PREFIX GUESSED. Driven: `worklist.py --list --open zzzzzzzz` under this session exits 1 with
     # "identity mismatch: you passed <me>=zzzzzzzz but this session is ...",
-    # because reading as one identity while writing as another gives a session
-    # two inboxes. The brief itself never trips this -- it derives the prefix
+    # because reading as one identity while writing as another gives a session two inboxes. The brief itself never trips this -- it derives the prefix
     # from the very variable the store checks -- but a probe with a synthetic
     # prefix has to say so. Every verb here is READ-ONLY.
     env = dict(os.environ)
@@ -399,9 +392,7 @@ def test_the_real_worklist_answers_the_same_three_verbs() -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:

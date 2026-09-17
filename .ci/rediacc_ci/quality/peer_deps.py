@@ -83,9 +83,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The command, as one constant. The twin spells it `npm ls` in exactly one place
-# and so does this: two spellings of a subject is how one of them stops being
-# exercised.
+# The command, as one constant. The twin spells it `npm ls` in exactly one place and so does this: two spellings of a subject is how one of them stops being exercised.
 NPM = "npm"
 NPM_LS_ARGS = ["ls"]
 
@@ -131,9 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    # The twin `cd`s to the repo root before running npm, because `npm ls`
-    # resolves the workspace from the working directory and would otherwise
-    # describe whatever tree the caller happened to be standing in.
+    # The twin `cd`s to the repo root before running npm, because `npm ls` resolves the workspace from the working directory and would otherwise describe whatever tree the caller happened to be standing in.
     os.chdir(root)
 
     log.step("Checking for peer dependency conflicts...")
@@ -159,18 +155,14 @@ def main(argv: list[str] | None = None) -> int:
     hits = invalid_lines(output)
     if hits:
         log.error("Peer dependency conflicts detected")
-        # stdout, exactly as the twin: `echo ""` then the header then the hits.
-        # A gate's stdout is DATA and this is the data -- the offending lines,
-        # verbatim, so the reader can paste them into a resolution.
+        # stdout, exactly as the twin: `echo ""` then the header then the hits. A gate's stdout is DATA and this is the data -- the offending lines, verbatim, so the reader can paste them into a resolution.
         print()
         print("Invalid dependencies:")
         for line in hits:
             print(line)
         return 1
 
-    # PRINT THE SHAPE, NOT JUST THE VERDICT. The twin's green line is seven words
-    # and cannot tell a reader whether it saw a dependency tree or one line of
-    # noise. The counts are what makes a collapsed scan visible.
+    # PRINT THE SHAPE, NOT JUST THE VERDICT. The twin's green line is seven words and cannot tell a reader whether it saw a dependency tree or one line of noise. The counts are what makes a collapsed scan visible.
     log.info(
         "No peer dependency conflicts found (npm ls exit %d, %d line(s) scanned)"
         % (status, len(output.rstrip("\n").split("\n")))
@@ -197,8 +189,7 @@ def selftest() -> int:
     never does, and red is the direction a reviewer waves through.
     """
     # floor=13 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot
-    # fail. See rediacc_ci.controls for the five drifted copies that taught it.
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.
     ctl = Controls("peer-deps", floor=13, verbose=True)
     saved_cwd = os.getcwd()
     saved_env = dict(os.environ)
@@ -217,9 +208,7 @@ def selftest() -> int:
             if body is not None:
                 _shim(bin_dir, body)
             os.environ[paths.ROOT_ENV] = str(fake_root)
-            # PATH is REPLACED, not prepended: an empty bin dir must mean no npm
-            # anywhere, or the MISSING TOOL case silently finds the real one and
-            # scores a pass while proving the opposite.
+            # PATH is REPLACED, not prepended: an empty bin dir must mean no npm anywhere, or the MISSING TOOL case silently finds the real one and scores a pass while proving the opposite.
             os.environ["PATH"] = str(bin_dir)
             try:
                 return main([])
@@ -230,9 +219,7 @@ def selftest() -> int:
 
         # EVERY SHIM USES ONLY BASH BUILTINS (printf, echo). PATH is replaced
         # with the shim directory alone so the MISSING TOOL case is honest, and a
-        # shim that reached for `cat` would then die with 127 and no "invalid" in
-        # its output -- which reads as a CLEAN tree. That is not hypothetical: it
-        # is what the first run of this selftest did, and two plants scored 0.
+        # shim that reached for `cat` would then die with 127 and no "invalid" in its output -- which reads as a CLEAN tree. That is not hypothetical: it is what the first run of this selftest did, and two plants scored 0.
         clean_tree = "printf '%s\\n' 'console@0.0.0-dev /repo' '+-- tsx@4.20.6' '`-- zod@4.5.4'"
         ctl.check("CONTROL: a clean npm ls tree passes", run(clean_tree), 0)
 
@@ -243,9 +230,7 @@ def selftest() -> int:
         )
         ctl.check("PLANT: an invalid peer on stdout is a conflict", run(stdout_hit), 1)
 
-        # THE MIRROR THAT PROVES THE MERGE. npm writes its error lines to STDERR.
-        # A port that captured only stdout passes this tree, which is the exact
-        # blindness the twin's `2>&1` exists to prevent.
+        # THE MIRROR THAT PROVES THE MERGE. npm writes its error lines to STDERR. A port that captured only stdout passes this tree, which is the exact blindness the twin's `2>&1` exists to prevent.
         stderr_hit = (
             "printf '%s\\n' 'console@0.0.0-dev /repo'\n"
             "echo 'npm error invalid: zod@3.25.76 /repo/node_modules/zod' >&2"
@@ -285,8 +270,7 @@ def selftest() -> int:
             EXIT_CANNOT_RUN,
         )
 
-    # The pure helper, driven directly. `$( )` eats trailing newlines, so a
-    # trailing blank line must not become a scanned line.
+    # The pure helper, driven directly. `$( )` eats trailing newlines, so a trailing blank line must not become a scanned line.
     ctl.check("HELPER: a trailing blank line is not a hit", invalid_lines("clean\n\n"), [])
     ctl.check("HELPER: no output at all yields no hits", invalid_lines(""), [])
     ctl.check(

@@ -171,13 +171,8 @@ from rediacc_ci.core import age as agecheck
 from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_rel
 
-# The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It used to be
-# spelled out here, on the argument that the TypeScript seam is unreachable from
-# Python and a literal cannot half-land while there is one location at a time.
-# The first half of that stopped being true in W4 P4a: `rediacc_ci.policy_paths`
-# is the seam's Python twin, a pure join with the same three rules, and going
-# through it means an unknown name raises HERE instead of resolving to a path
-# that reads as an empty blocklist.
+# The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It used to be spelled out here, on the argument that the TypeScript seam is unreachable from Python and a literal cannot half-land while there is one location at a time. The first half of that stopped being true in W4 P4a: `rediacc_ci.policy_paths` is the seam's Python twin, a pure join with the same three rules, and
+# going through it means an unknown name raises HERE instead of resolving to a path that reads as an empty blocklist.
 BLOCKLIST_REL = policy_rel(".go-deps-upgrade-blocklist")
 
 # `age-check.sh`'s two knobs, with the same environment overrides and the same
@@ -195,23 +190,15 @@ RELEASE_AGE_TS = "scripts/lib/release-age.ts"
 # The wire format between the probe and the aggregation loop.
 PROBE_SENTINEL = "__PROBE_FAILED__"
 
-# `head -c 300` on the probe's stderr and `head -c 200` on jq's complaint. Both
-# are TRUNCATIONS, not summaries: a 4 KB Go error shows its first 300 bytes on
-# both sides, and dropping the truncation would make the port noisier than the
-# twin on exactly the tree where the gate fires.
+# `head -c 300` on the probe's stderr and `head -c 200` on jq's complaint. Both are TRUNCATIONS, not summaries: a 4 KB Go error shows its first 300 bytes on both sides, and dropping the truncation would make the port noisier than the twin on exactly the tree where the gate fires.
 PROBE_STDERR_BYTES = 300
 PARSE_ERROR_BYTES = 200
 
-# U+2014 appears in three of the twin's messages. Written as an escape rather
-# than as the character so this file stays ASCII: the repo's prose rules forbid
-# the literal, and the byte still has to reach the output because the message
-# text is what the differential compares.
+# U+2014 appears in three of the twin's messages. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the message text is what the differential compares.
 _EM_DASH = "\u2014"
 
 
-# ---------------------------------------------------------------------------
-# emit-advisory.sh, in the one shape this gate can produce
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- emit-advisory.sh, in the one shape this gate can produce ---------------------------------------------------------------------------
 
 
 def _in_ci() -> bool:
@@ -292,9 +279,7 @@ def check_entry_age(
     return v.failed
 
 
-# ---------------------------------------------------------------------------
-# release-age.sh, as a shim over the same TypeScript
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- release-age.sh, as a shim over the same TypeScript ---------------------------------------------------------------------------
 
 
 class ReleaseAge:
@@ -409,9 +394,7 @@ class ReleaseAge:
         return moment < eligible
 
 
-# ---------------------------------------------------------------------------
-# The probe
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The probe ---------------------------------------------------------------------------
 
 
 def get_major(version: str) -> int:
@@ -651,8 +634,7 @@ def main(argv: list[str] | None = None) -> int:
 
     dirs = go_dirs(root)
     if not dirs:
-        # THE VACUITY HOLE, REPRODUCED. See the PORT NOTES: this is the twin's
-        # verdict and changing it is the job of whoever retires the twin.
+        # THE VACUITY HOLE, REPRODUCED. See the PORT NOTES: this is the twin's verdict and changing it is the job of whoever retires the twin.
         log.info("No Go submodules found to check")
         return 0
 
@@ -712,9 +694,7 @@ def main(argv: list[str] | None = None) -> int:
         for line in all_toofresh:
             print(line)
 
-    # A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good
-    # path. Reporting "up-to-date" on the strength of a command that errored is
-    # the exact defect this guard replaces.
+    # A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect this guard replaces.
     if probe_failures:
         print()
         log.error("Go dependency probe FAILED %s this is not the same as 'up-to-date':" % _EM_DASH)
@@ -747,9 +727,7 @@ def _verify_one(entry: str, reason: str, file: str) -> list[str]:
     return [] if rejection is None else [rejection.message]
 
 
-# ---------------------------------------------------------------------------
-# The selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The selftest ---------------------------------------------------------------------------
 
 _GOOD_REASON = "upstream pins a breaking major; the migration needs its own PR and a rebuild"
 
@@ -822,15 +800,8 @@ def selftest() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
 
-        # THE DELEGATE IS COPIED INTO EVERY FIXTURE THAT NEEDS THE RULE, and the
-        # first cut of this selftest did not do it. `ReleaseAge` resolves
-        # `scripts/lib/release-age.ts` under the ROOT it is given, so a fixture
-        # without it fell through to the fail-closed branch and reported EVERY
-        # update as deferred. The "a 2020 release still reds" control then
-        # failed, which is the control doing its job: it named a fixture that
-        # could not exercise the rule rather than a rule that was wrong.
-        # `paths.CI_DIR.parent` and not `paths.repo_root()`: the latter reads
-        # $REDIACC_CI_ROOT, which the cases below are busy overriding.
+        # THE DELEGATE IS COPIED INTO EVERY FIXTURE THAT NEEDS THE RULE, and the first cut of this selftest did not do it. `ReleaseAge` resolves `scripts/lib/release-age.ts` under the ROOT it is given, so a fixture without it fell through to the fail-closed branch and reported EVERY update as deferred. The "a 2020 release still reds" control then failed, which is the control doing
+        # its job: it named a fixture that could not exercise the rule rather than a rule that was wrong. `paths.CI_DIR.parent` and not `paths.repo_root()`: the latter reads $REDIACC_CI_ROOT, which the cases below are busy overriding.
         real_root = paths.CI_DIR.parent
 
         def build(
@@ -951,10 +922,7 @@ def selftest() -> int:
         garbage = build("garbage", None, "{not json")
         ctl.check("VACUITY: unparseable go-list output is a FAILURE", run(garbage), 1)
 
-        # -- THE VACUITY HOLE THE TWIN CARRIES -----------------------------------
-        # PINNED, NOT ENDORSED. `private/` with no Go module exits 0 having
-        # probed nothing. This control exists so the day somebody closes the
-        # hole, it fails and names the twin's line as the reason it was here.
+        # -- THE VACUITY HOLE THE TWIN CARRIES ----------------------------------- PINNED, NOT ENDORSED. `private/` with no Go module exits 0 having probed nothing. This control exists so the day somebody closes the hole, it fails and names the twin's line as the reason it was here.
         no_modules = base / "no-modules"
         (no_modules / "private").mkdir(parents=True, exist_ok=True)
         ctl.check(
@@ -963,11 +931,7 @@ def selftest() -> int:
             0,
         )
 
-        # -- THE FRESHNESS DEFERRAL, END TO END THROUGH THE GATE -----------------
-        # A JUST-PUBLISHED update must be DEFERRED rather than demanded, and the
-        # mirror is the same module with an ancient publish date, which must
-        # still red. Two fixtures differing in exactly one field, so the control
-        # cannot pass because of something else.
+        # -- THE FRESHNESS DEFERRAL, END TO END THROUGH THE GATE ----------------- A JUST-PUBLISHED update must be DEFERRED rather than demanded, and the mirror is the same module with an ancient publish date, which must still red. Two fixtures differing in exactly one field, so the control cannot pass because of something else.
         now_stamp = dt.datetime.fromtimestamp(time.time(), dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         fresh = build(
             "fresh",
@@ -983,10 +947,7 @@ def selftest() -> int:
         )
         ctl.check("FRESHNESS MIRROR: the same update from 2020 still reds", run(stale), 1)
 
-        # AND THE FAIL-CLOSED DIRECTION, driven for real rather than reasoned
-        # about: the SAME 2020 fixture with the delegate absent must report the
-        # update as deferred, because an unreachable freshness rule must never
-        # turn into a false "must upgrade".
+        # AND THE FAIL-CLOSED DIRECTION, driven for real rather than reasoned about: the SAME 2020 fixture with the delegate absent must report the update as deferred, because an unreachable freshness rule must never turn into a false "must upgrade".
         blind = build(
             "blind",
             None,

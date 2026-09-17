@@ -66,8 +66,7 @@ PORT_REL = ".ci/rediacc_ci/security/actionlint.py"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
-# The minimum of the package a path-invoked port needs. Deliberately short: the
-# fixture must not become a second copy of the repository.
+# The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 COPIED = (
     TWIN_REL,
     ".ci/scripts/lib/common.sh",
@@ -89,10 +88,7 @@ jobs:
       - run: echo hello
 """
 
-# THE FAKE RECORDS BEFORE IT ANSWERS. `--version` is answered without a log line
-# because the twin probes it through a command substitution whose result decides
-# whether the PATH binary is used at all, and a probe is not a call the gate
-# makes on purpose.
+# THE FAKE RECORDS BEFORE IT ANSWERS. `--version` is answered without a log line because the twin probes it through a command substitution whose result decides whether the PATH binary is used at all, and a probe is not a call the gate makes on purpose.
 FAKE_ACTIONLINT = """#!/bin/bash
 if [[ "$1" == "--version" ]]; then
     cat "$FAKE_DATA/version"
@@ -103,11 +99,7 @@ printf 'FAKECALL actionlint %s\\n' "$*" >>"$FAKE_LOG"
 exit "$(cat "$FAKE_DATA/rc" 2>/dev/null || echo 0)"
 """
 
-# A curl that records its argv and then does whatever `$FAKE_DATA/curl.mode`
-# says. `fail` exits 22 SILENTLY: a real curl under `-fsSL` prints
-# `curl: (22) ...` of its own, and the two sides route curl's stderr
-# differently, so a talking fake would fail the differential for a reason that
-# is not the port's. That routing difference is itself a finding this wave
+# A curl that records its argv and then does whatever `$FAKE_DATA/curl.mode` says. `fail` exits 22 SILENTLY: a real curl under `-fsSL` prints `curl: (22) ...` of its own, and the two sides route curl's stderr differently, so a talking fake would fail the differential for a reason that is not the port's. That routing difference is itself a finding this wave
 # reports; see the module note in actionlint.py.
 FAKE_CURL = """#!/bin/bash
 printf 'FAKECALL curl %s\\n' "$*" >>"$FAKE_LOG"
@@ -147,8 +139,7 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
         _write(fx / ".github" / "workflows" / ("%s.yml" % name), CLEAN_WORKFLOW % name)
     # A TEMPLATE IS MANDATORY IN EVERY FIXTURE, and not as scenery: without one
     # the twin dies silently at `targets="$(collect_targets)"` before doing
-    # anything at all. See `test_an_empty_template_glob_kills_the_twin_silently`,
-    # which is the case that documents it.
+    # anything at all. See `test_an_empty_template_glob_kills_the_twin_silently`, which is the case that documents it.
     _write(fx / ".ci" / "breakpoint" / "workflow" / "breakpoint.yml", CLEAN_WORKFLOW % "bp")
 
     data = fx / "fake" / "data"
@@ -173,12 +164,9 @@ def _env(fx: pathlib.Path, side: str, log: pathlib.Path, **extra: str) -> dict[s
     env["PATH"] = "%s%s%s" % (fx / "fake" / "bin", os.pathsep, env["PATH"])
     env["FAKE_DATA"] = str(data_dir(fx))
     env["FAKE_LOG"] = str(log)
-    # RUNNER_TEMP, so the acquisition cache is per-side scratch and a download in
-    # one case cannot satisfy the next one. NOT `CI_TEMP`, which the twin's line
+    # RUNNER_TEMP, so the acquisition cache is per-side scratch and a download in one case cannot satisfy the next one. NOT `CI_TEMP`, which the twin's line
     # names and `common.sh:511` overwrites two lines earlier; setting CI_TEMP
-    # here would silently leave both sides pointed at the real /tmp cache and the
-    # download cases would never run. That is the defect, used as the test's own
-    # control.
+    # here would silently leave both sides pointed at the real /tmp cache and the download cases would never run. That is the defect, used as the test's own control.
     env["RUNNER_TEMP"] = str(fx / "cache" / side)
     if side == "new":
         env["PYTHONPATH"] = str(fx / ".ci")
@@ -198,8 +186,7 @@ def run_both(fx: pathlib.Path, *, path_has_tool: bool = True, **extra: str) -> t
         log.write_text("", encoding="utf-8")
         env = _env(fx, side, log, **extra)
         if not path_has_tool:
-            # Same scratch PATH, minus the fake actionlint. `curl` must stay,
-            # because the acquisition path is what this shape exists to reach.
+            # Same scratch PATH, minus the fake actionlint. `curl` must stay, because the acquisition path is what this shape exists to reach.
             hidden = fx / "fake" / "nobin"
             hidden.mkdir(parents=True, exist_ok=True)
             _write(hidden / "curl", FAKE_CURL, mode=0o755)
@@ -214,13 +201,8 @@ def run_both(fx: pathlib.Path, *, path_has_tool: bool = True, **extra: str) -> t
             timeout=180,
         )
 
-        # THE ONE MASK, and it is the harness's own doing rather than the port's:
-        # each side gets its OWN scratch tool cache (`<fx>/cache/old` against
-        # `<fx>/cache/new`) so that a download in one side cannot silently
-        # satisfy the other. Folding the two spellings together compares the
-        # cache path in every other respect -- the version directory, the file
-        # name, the URL -- and only stops the differential tripping on the
-        # isolation the test itself introduced.
+        # THE ONE MASK, and it is the harness's own doing rather than the port's: each side gets its OWN scratch tool cache (`<fx>/cache/old` against `<fx>/cache/new`) so that a download in one side cannot silently satisfy the other. Folding the two spellings together compares the cache path in every other respect -- the version directory, the file name, the URL -- and only stops
+        # the differential tripping on the isolation the test itself introduced.
         def _mask(text: str, side: str = side) -> str:
             masked = text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
             return differential.mask_toolchain_tmp(masked)
@@ -247,9 +229,7 @@ def assert_agree(fx: pathlib.Path, **kwargs: object) -> tuple:
     return old
 
 
-# ---------------------------------------------------------------------------
-# Real runs against this repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Real runs against this repository ---------------------------------------------------------------------------
 
 
 def _workflow_hashes() -> dict[str, str]:
@@ -398,9 +378,7 @@ def test_the_real_tree_argv_is_identical_including_order(tmp_path: pathlib.Path)
     assert logs[1] == logs[0]
 
 
-# ---------------------------------------------------------------------------
-# Fixture runs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture runs ---------------------------------------------------------------------------
 
 
 def test_clean_fixture_agrees(fixture: pathlib.Path) -> None:
@@ -416,9 +394,7 @@ def test_yaml_extension_is_collected_after_every_yml(fixture: pathlib.Path) -> N
     assert old[0] == 0
     assert new_log == old_log
     argv = old_log[0].split()
-    # The template pass is always last, so the `.yaml` file sits just before it
-    # and AFTER both `.yml` files -- which is exactly what "separate pass,
-    # concatenated" means and what one merged `sorted()` would destroy.
+    # The template pass is always last, so the `.yaml` file sits just before it and AFTER both `.yml` files -- which is exactly what "separate pass, concatenated" means and what one merged `sorted()` would destroy.
     assert argv[-1].endswith("/.ci/breakpoint/workflow/breakpoint.yml"), old_log[0]
     assert argv[-2].endswith("/.github/workflows/aaa.yaml"), old_log[0]
     assert [a.rsplit("/", 1)[-1] for a in argv[3:]] == [
@@ -636,9 +612,7 @@ def test_a_verified_download_is_extracted_and_run(fixture: pathlib.Path, tmp_pat
         assert os.access(str(landed), os.X_OK), "%s side did not extract an executable" % side
 
 
-# ---------------------------------------------------------------------------
-# Colour, and the one inherited divergence
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, and the one inherited divergence ---------------------------------------------------------------------------
 
 
 def test_no_colour_off_a_tty(fixture: pathlib.Path) -> None:
@@ -687,9 +661,7 @@ def test_ci_true_on_a_tty_is_the_one_inherited_divergence(fixture: pathlib.Path)
     assert plain.sub("", old) == plain.sub("", new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_path_version_deletes_every_v_not_just_a_leading_one(tmp_path: pathlib.Path) -> None:

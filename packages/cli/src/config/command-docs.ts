@@ -103,10 +103,7 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       descriptionKey: 'commands.repo.list.examples.byDatastore',
     },
   ],
-  // The storage examples are gone with the arm they demonstrated. An example is
-  // the most load-bearing documentation there is: the backup-restore tutorial
-  // ran `rdc repo push my-app --to my-storage` straight out of this list and
-  // failed 14 seconds into a CI job.
+  // The storage examples are gone with the arm they demonstrated. An example is the most load-bearing documentation there is: the backup-restore tutorial ran `rdc repo push my-app --to my-storage` straight out of this list and failed 14 seconds into a CI job.
   'repo push': [
     {
       command: 'rdc repo push shop --to-machine server-1',
@@ -517,10 +514,5 @@ export const COMMAND_OUTPUT_HINTS: Record<string, CommandOutputHintDef> = {
     primaryKey: 'pointer',
     columns: ['pointer', 'kind', 'redactAs', 'commit', 'encryptAtRest'],
   },
-  // SKIPPED (non-tabular / unstable output — deliberately no hint):
-  //   backup strategy list        — free-text `info` lines, not a table
-  //   repo admin template list    — padded `info` lines, not a table
-  //   vscode list                 — custom connection renderer, not `-o json`
-  //   datastore snapshot list     — prints raw renet JSON verbatim
-  //   cluster snapshot list       — prints the raw snapshot array verbatim
+  // SKIPPED (non-tabular / unstable output — deliberately no hint): backup strategy list — free-text `info` lines, not a table repo admin template list — padded `info` lines, not a table vscode list — custom connection renderer, not `-o json` datastore snapshot list — prints raw renet JSON verbatim cluster snapshot list — prints the raw snapshot array verbatim
 };

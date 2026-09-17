@@ -119,9 +119,7 @@ function resolveFamilyTag(
   parsedTag: string | undefined,
   view: PlacementView
 ): { family: RepoFamily; tag: string } {
-  // `in` guards, not `?.` — the PlacementView maps are typed non-undefined at
-  // the value (noUncheckedIndexedAccess is off), so a membership test is the
-  // codebase's lint-clean way to detect a missing key (as resolveStoredTag does).
+  // `in` guards, not `?.` — the PlacementView maps are typed non-undefined at the value (noUncheckedIndexedAccess is off), so a membership test is the codebase's lint-clean way to detect a missing key (as resolveStoredTag does).
   if (!(name in view.families)) {
     const known = Object.keys(view.families).sort();
     throw notFound(`repository "${name}" is not in this config.`, {
@@ -237,8 +235,7 @@ async function verifyBeforeExecuting(
         `but ${candidate} does not mount it. Run "rdc config reconcile", then retry.`
     );
   }
-  // Converge-to-absent verbs (#45/#95) treat a definite absence as "already
-  // done" on the machine arm — the caller skips the dispatch.
+  // Converge-to-absent verbs (#45/#95) treat a definite absence as "already done" on the machine arm — the caller skips the dispatch.
   if (options.absentOk) return { imageAbsent: true };
   throw stateMismatch(
     `config places ${name} on ${candidate}, ` +
@@ -266,8 +263,7 @@ export async function resolveMachine(
     assertPlaceMatches(name, place, candidate, cluster, view);
   }
 
-  // Step 5: verify before executing — state is a routing hint, not truth. The
-  // resolved tag's GUID is the image the candidate machine must know.
+  // Step 5: verify before executing — state is a routing hint, not truth. The resolved tag's GUID is the image the candidate machine must know.
   const repoGuid = view.families[name].tags[tag].repositoryGuid;
   const { imageAbsent } = await verifyBeforeExecuting(
     name,

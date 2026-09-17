@@ -43,9 +43,7 @@ TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 # twin uses spelled as a regex.
 FN_RE = re.compile(r"^verify_version\(\) \{.*?^\}", re.MULTILINE | re.DOTALL)
 
-# The EXACT pre-fix body, re-created. Not a mutation of the current one: a
-# mutation drifts with the subject, and the point of this control is that the
-# shape which shipped the incident really did admit both silent-pass classes.
+# The EXACT pre-fix body, re-created. Not a mutation of the current one: a mutation drifts with the subject, and the point of this control is that the shape which shipped the incident really did admit both silent-pass classes.
 OLD_BODY = """
 old_verify() {
     local output="$1" expected="$2"

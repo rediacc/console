@@ -160,47 +160,23 @@ function tokensAfterRdc(raw: string): string[] {
 
 const SOURCE_PATTERN = /\brdc\s+([a-z][\w-]*(?:\s+[a-z][\w-]*)*)/g;
 
-// ---------------------------------------------------------------------------
-// PYTHON: TWO SKIPS, AND ONE THAT WAS ASKED FOR AND MEASURED OUT
+// --------------------------------------------------------------------------- PYTHON: TWO SKIPS, AND ONE THAT WAS ASKED FOR AND MEASURED OUT
 //
-// A `#`-comment skip is not enough to scan Python. Measured 2026-09-08 with the
-// `.py` globs planted below, the residue was SIX findings in ONE file, and the
-// brief's expectation -- that they were commands quoted in DOCSTRINGS -- was
-// wrong for every one of them:
+// A `#`-comment skip is not enough to scan Python. Measured 2026-09-08 with the `.py` globs planted below, the residue was SIX findings in ONE file, and the brief's expectation -- that they were commands quoted in DOCSTRINGS -- was wrong for every one of them:
 //
-//   check_tutorial_cli_validity.py:134  a `#` comment          -> the `#` skips
-//   :191 :199 :207 (x2)                 planted fixtures       -> PY_CONTROL_DEF
-//   :221                                English prose in print -> PY_PROSE_BEFORE
+// check_tutorial_cli_validity.py:134 a `#` comment -> the `#` skips :191 :199 :207 (x2) planted fixtures -> PY_CONTROL_DEF :221 English prose in print -> PY_PROSE_BEFORE
 //
-// A DOCSTRING STATE MACHINE WAS BUILT HERE AND THEN REMOVED, which is worth the
-// paragraph because "it was in the plan" is not evidence. Driven over all 386
-// tracked `.ci/**/*.py` files, a triple-quote toggle changed the finding count by
-// ZERO. It hid three `rdc`-bearing lines and two of those sit in `test_*.py`
-// files that `COMMAND_PATH_IGNORE` already drops, so its whole live effect was
-// ONE line: this file's own module docstring at :13, naming
-// `rdc repo push my-app --to my-storage`, which resolves and reports nothing
-// either way. Against that it would have blinded the scanner to every docstring
-// in 386 prose-heavy files -- and a docstring naming a command that no longer
-// exists is doc rot this gate SHOULD report, not noise. A skip with no measured
-// effect that costs real coverage is carried code, so it is not carried.
+// A DOCSTRING STATE MACHINE WAS BUILT HERE AND THEN REMOVED, which is worth the paragraph because "it was in the plan" is not evidence. Driven over all 386 tracked `.ci/**/*.py` files, a triple-quote toggle changed the finding count by ZERO. It hid three `rdc`-bearing lines and two of those sit in `test_*.py` files that `COMMAND_PATH_IGNORE` already drops, so its whole live effect
+// was ONE line: this file's own module docstring at :13, naming `rdc repo push my-app --to my-storage`, which resolves and reports nothing either way. Against that it would have blinded the scanner to every docstring in 386 prose-heavy files -- and a docstring naming a command that no longer exists is doc rot this gate SHOULD report, not noise. A skip with no measured effect that
+// costs real coverage is carried code, so it is not carried.
 //
-// PY_CONTROL_DEF is the Python analogue of the `.ci/scripts/test/**` directory
-// exclusion other gates use: a ported gate carries its controls INSIDE the
-// module, so fixtures that must be deliberately wrong cannot be excluded by
-// path. The names are a measured convention, not a guess -- across those 386
-// files the top-level control entry points are `selftest` (114), `run_controls`
+// PY_CONTROL_DEF is the Python analogue of the `.ci/scripts/test/**` directory exclusion other gates use: a ported gate carries its controls INSIDE the module, so fixtures that must be deliberately wrong cannot be excluded by path. The names are a measured convention, not a guess -- across those 386 files the top-level control entry points are `selftest` (114), `run_controls`
 // (10), `controls` (7) and `control` (5).
 //
-// THE BODY IS BOUNDED BY INDENTATION, NOT BY END OF FILE, and that difference is
-// load-bearing rather than tidiness. `.ci/scripts/test/gates/test-gate-paths-exist.sh`
+// THE BODY IS BOUNDED BY INDENTATION, NOT BY END OF FILE, and that difference is load-bearing rather than tidiness. `.ci/scripts/test/gates/test-gate-paths-exist.sh`
 // grew the same skip as `in_self` and runs it to EOF; in this very file
-// `run_controls` is at line 174 and `main()` at 220, so a to-EOF skip would have
-// swallowed `main()` and taken :221 with it -- the prose finding would have
-// vanished into a green that merely looked like the fixtures had been handled.
-// A control that stops firing for an unrelated reason is the vacuity this repo
-// keeps paying for, so the body ends where Python says it ends: the first
-// non-blank line back at column 0.
-// ---------------------------------------------------------------------------
+// `run_controls` is at line 174 and `main()` at 220, so a to-EOF skip would have swallowed `main()` and taken :221 with it -- the prose finding would have vanished into a green that merely looked like the fixtures had been handled. A control that stops firing for an unrelated reason is the vacuity this repo keeps paying for, so the body ends where Python says it ends: the first
+// non-blank line back at column 0. ---------------------------------------------------------------------------
 
 /** Top-level control entry points, whose bodies are planted fixtures by design. */
 const PY_CONTROL_DEF = /^def (?:selftest|run_controls|controls?)\s*\(/;
@@ -215,8 +191,7 @@ export function pythonSkippedLines(content: string): Set<number> {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (inControl) {
-      // A blank line, or anything still indented, is body. Column 0 ends it --
-      // and that line still gets scanned normally, which is the whole point.
+      // A blank line, or anything still indented, is body. Column 0 ends it -- and that line still gets scanned normally, which is the whole point.
       if (line.trim() !== '' && !/^[ \t]/.test(line)) inControl = false;
       else {
         skip.add(i);
@@ -298,11 +273,8 @@ export function scanSourceText(
     // `#` IS PYTHON'S COMMENT MARKER, and its absence was the fourth instance of one
     // class found on 2026-09-08: a predicate that enumerated the TypeScript idiom and
     // stopped. This skip knew `//`, `*` and `/*`; the moment the caller's corpus reached
-    // `.ci/scripts/**/*.py` it reported seven errors from `check_tutorial_cli_validity.py`
-    // alone, every one a command quoted in a COMMENT explaining what that gate must
-    // report -- `rdc backup sync push --to x`, written down precisely because the
-    // subcommand does not exist. Safe for the other source languages this scanner reads:
-    // a line starting with `#` is not TypeScript or Go either.
+    // `.ci/scripts/**/*.py` it reported seven errors from `check_tutorial_cli_validity.py` alone, every one a command quoted in a COMMENT explaining what that gate must report -- `rdc backup sync push --to x`, written down precisely because the subcommand does not exist. Safe for the other source languages this scanner reads: a line starting with `#` is not TypeScript or Go
+    // either.
     if (
       trimmed.startsWith('//') ||
       trimmed.startsWith('#') ||
@@ -416,14 +388,9 @@ export function scanSourceOptions(
   for (let i = 0; i < lines.length; i++) {
     if (skip?.has(i)) continue;
     const trimmed = lines[i].trim();
-    // `#` WAS MISSING HERE WHILE ITS TWIN ABOVE HAD IT, which is the half-applied
-    // fix "sweep the class, not the instance" exists to catch. `scanSourceText`
+    // `#` WAS MISSING HERE WHILE ITS TWIN ABOVE HAD IT, which is the half-applied fix "sweep the class, not the instance" exists to catch. `scanSourceText`
     // learned Python's comment marker on 2026-09-08; this scanner did not, so a
-    // command in a `#` comment was silent as a PATH and still loud as an OPTION.
-    // Measured the same day: it was 1 of the 6 residual findings that had kept the
-    // `.py` globs from landing -- check_tutorial_cli_validity.py:134, the comment
-    // `rdc backup sync push --to x` written down precisely to explain what that
-    // gate must report. Unconditional, for the reason the twin gives: a line
+    // command in a `#` comment was silent as a PATH and still loud as an OPTION. Measured the same day: it was 1 of the 6 residual findings that had kept the `.py` globs from landing -- check_tutorial_cli_validity.py:134, the comment `rdc backup sync push --to x` written down precisely to explain what that gate must report. Unconditional, for the reason the twin gives: a line
     // starting with `#` is not TypeScript or Go either.
     if (
       trimmed.startsWith('//') ||
@@ -456,9 +423,7 @@ export function scanSourceOptions(
 
       const commandPath = tokens.slice(0, matchedLength).join(' ');
       for (const raw of tokens.slice(matchedLength)) {
-        // End-of-options: `rdc repo exec app -c web -- ls -la` hands everything
-        // after `--` to the REMOTE command, so those tokens are not this
-        // command's flags and must not be checked against its option list.
+        // End-of-options: `rdc repo exec app -c web -- ls -la` hands everything after `--` to the REMOTE command, so those tokens are not this command's flags and must not be checked against its option list.
         if (raw === '--') break;
         const token = raw.split('=')[0];
         if (!/^-{1,2}[A-Za-z][\w-]*$/.test(token)) continue;

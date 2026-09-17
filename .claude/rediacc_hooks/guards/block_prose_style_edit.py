@@ -84,17 +84,10 @@ CHAIN = "pre-edit"
 TWIN = None
 ORDER = 12
 
-# THE SCOPE TEST. Planting `False` makes the guard lint every file it is handed,
-# including the three exclusions that are decisions rather than oversights
-# (`packages/www`, `private/` submodules, `.sh`), and the EDGE_CASES below carry
-# one of each so the plant changes a real answer.
+# THE SCOPE TEST. Planting `False` makes the guard lint every file it is handed, including the three exclusions that are decisions rather than oversights (`packages/www`, `private/` submodules, `.sh`), and the EDGE_CASES below carry one of each so the plant changes a real answer.
 #
-# THE FIRST DEFECT DECLARED HERE WAS `if finding.fid in baseline:` -> `if False:`,
-# and `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: no
-# EDGE_CASE carried text that was actually in the baseline, so removing the
-# baseline consultation changed no answer. That is the control working. The
-# declaration was moved rather than the case set padded, because a defect nobody
-# can reach is not a defect this file's green depends on.
+# THE FIRST DEFECT DECLARED HERE WAS `if finding.fid in baseline:` -> `if False:`, and `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: no EDGE_CASE carried text that was actually in the baseline, so removing the baseline consultation changed no answer. That is the control working. The declaration was moved rather than the case set padded, because a defect
+# nobody can reach is not a defect this file's green depends on.
 DEFECT = ("if not _in_scope(engine, globals_, rel):", "if False:")
 
 UNEXAMINED = (
@@ -175,8 +168,7 @@ EDGE_CASES = [
             "tool_input": {"file_path": "private/renet/README.md", "content": "Did you run it?\n"},
         },
     ),
-    # EXTRACTION: the violation is inside a fence, an inline code span, a
-    # blockquote and a `bad:` exemplar. None of those is prose.
+    # EXTRACTION: the violation is inside a fence, an inline code span, a blockquote and a `bad:` exemplar. None of those is prose.
     (
         "a fenced block is not prose",
         {
@@ -354,9 +346,7 @@ def run(ev):
         engine = _engine(root)
         globals_, rules = engine.load_rules_file(root)
     except (ImportError, OSError, RuntimeError, ValueError) as exc:
-        # FAIL OPEN, AND SAY SO. See the header: a missing module is this hook's
-        # problem, not the session's, and an edit that passed unexamined must be
-        # reported as unexamined rather than as clean.
+        # FAIL OPEN, AND SAY SO. See the header: a missing module is this hook's problem, not the session's, and an edit that passed unexamined must be reported as unexamined rather than as clean.
         ev.warn(UNEXAMINED % exc)
         return hookio.ALLOW
 
@@ -368,9 +358,7 @@ def run(ev):
         )
         return hookio.ALLOW
 
-    # THE PAYLOAD'S OWN `cwd` FIRST. Claude Code sends it on every hook event, and
-    # it is the only value that describes where the TOOL CALL is happening rather
-    # than where this interpreter happens to have been started. `str(root)` is the
+    # THE PAYLOAD'S OWN `cwd` FIRST. Claude Code sends it on every hook event, and it is the only value that describes where the TOOL CALL is happening rather than where this interpreter happens to have been started. `str(root)` is the
     # fallback, never `os.getcwd()`; see `_relative` for the measurement.
     rel = _relative(
         root,

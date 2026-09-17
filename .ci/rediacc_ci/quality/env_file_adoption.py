@@ -87,9 +87,7 @@ ADOPTED = (
     "programs/backup-storage/start-local-plane.sh",
 )
 
-# The sites that may still run `set -a`, reason first. These are PRINTED every
-# run rather than being quietly skipped: an exemption nobody sees is how a gate
-# stops meaning what its name says.
+# The sites that may still run `set -a`, reason first. These are PRINTED every run rather than being quietly skipped: an exemption nobody sees is how a gate stops meaning what its name says.
 EXEMPT = (
     (
         ".ci/config/constants.sh",
@@ -119,18 +117,13 @@ EXEMPT = (
 )
 
 # A `set -a` COMMAND, not the string. It may open a line or follow a `;`, `&&`,
-# `|` or `(` -- .ci/legacy/run-legacy.sh:185 is the `$(set -a && source ...)` form
-# and an anchored pattern misses it entirely.
+# `|` or `(` -- .ci/legacy/run-legacy.sh:185 is the `$(set -a && source ...)` form and an anchored pattern misses it entirely.
 #
-# THE TRAILING BOUNDARY WAS `(?:\s|$)` AND THAT MISSED THE CANONICAL FORM.
-# Inherited verbatim from the bash predecessor, where it had the same hole. A
+# THE TRAILING BOUNDARY WAS `(?:\s|$)` AND THAT MISSED THE CANONICAL FORM. Inherited verbatim from the bash predecessor, where it had the same hole. A
 # one-liner spells it `set -a; source "$f"; set +a` -- the `;` binds directly to
-# the `-a` with no space -- so the single most likely spelling of the exact thing
-# this gate exists to prevent went unmatched, as did `set -a|`, `set -a&&` and
+# the `-a` with no space -- so the single most likely spelling of the exact thing this gate exists to prevent went unmatched, as did `set -a|`, `set -a&&` and
 # `(set -a; . f)`. Found 2026-09-09 by PLANTING a reversion on the real tree and
-# noticing that only CHECK B fired: CHECK A, the sweep, said nothing. The
-# selftest agreed with the bug, because all three of its fixtures used the
-# spellings the pattern already matched.
+# noticing that only CHECK B fired: CHECK A, the sweep, said nothing. The selftest agreed with the bug, because all three of its fixtures used the spellings the pattern already matched.
 #
 # So the boundary is now a lookahead over the shell separators as well as
 # whitespace and end-of-line. It stays a LOOKAHEAD so a `;` cannot be consumed
@@ -148,15 +141,9 @@ class RefusalError(Exception):
     """The instrument cannot see the tree, so it has no verdict to give."""
 
 
-# THE ONE PLACE A FINDING IS DECIDED. The controls call this, not the regex,
-# because a control that re-implements the predicate tests its own copy: in the
-# bash predecessor the comment filter lived only in the sweep for one revision,
-# and its selftest case 6 promptly disagreed with the sweep about a comment.
+# THE ONE PLACE A FINDING IS DECIDED. The controls call this, not the regex, because a control that re-implements the predicate tests its own copy: in the bash predecessor the comment filter lived only in the sweep for one revision, and its selftest case 6 promptly disagreed with the sweep about a comment.
 #
-# COMMENT LINES ARE NOT COMMANDS. Without the second filter the sweep condemns
-# the paragraph that EXPLAINS the rule -- the predecessor's own header was its
-# first offender -- and the fix a reader reaches for is to stop writing the
-# explanation down. Line numbers survive the filter.
+# COMMENT LINES ARE NOT COMMANDS. Without the second filter the sweep condemns the paragraph that EXPLAINS the rule -- the predecessor's own header was its first offender -- and the fix a reader reaches for is to stop writing the explanation down. Line numbers survive the filter.
 def sweep_hits(path):
     """Return [(lineno, text)] for every real `set -a` command in `path`."""
     try:
@@ -234,8 +221,7 @@ def check_sweep(root):
                 "%s:%d -- `set -a` executes the file and lets it overwrite the shell; "
                 "use env_file_load from %s" % (rel, lineno, SHIM_REL)
             )
-    # Liveness: an exemption for a file that no longer runs `set -a` excuses
-    # nothing and would sit forever looking like coverage. The list may only shrink.
+    # Liveness: an exemption for a file that no longer runs `set -a` excuses nothing and would sit forever looking like coverage. The list may only shrink.
     for rel in sorted(reasons):
         if not (root / rel).is_file():
             findings.append("EXEMPT names %s, which does not exist -- drop the entry" % rel)
@@ -270,8 +256,7 @@ def check_sites(root, fixture):
             )
             continue
         for lineno, body in lines:
-            # Point the site's OWN line at the fixture, and neutralise a trailing
-            # `|| return 1` that only makes sense inside a function.
+            # Point the site's OWN line at the fixture, and neutralise a trailing `|| return 1` that only makes sense inside a function.
             probe = re.sub(r'env_file_load "[^"]*"', 'env_file_load "%s"' % fixture, body)
             probe = re.sub(r"\|\| *return [0-9]+", "|| exit 1", probe)
             rc, out = _sh(
@@ -342,8 +327,7 @@ def selftest():
         )
 
         # 2. CONTROL for 1: a real `set -a; source` must give the OPPOSITE answer.
-        #    If it does not, the fixture is not discriminating and case 1 proves
-        #    nothing about precedence.
+        # If it does not, the fixture is not discriminating and case 1 proves nothing about precedence.
         c.check(
             "CONTROL: `set -a; source` on the same fixture gives the file the win",
             check_differential(fixture),
@@ -370,8 +354,7 @@ def selftest():
         # 5. the sweep matcher fires on every spelling that matters.
         #    The last four are the ones the inherited pattern MISSED: a `;`, `|`,
         #    `&&` or `)` binding straight onto the `-a`. `set -a; source "$f"` is
-        #    the canonical one-liner, so the sweep was blind to the likeliest
-        #    spelling of the thing it exists to catch.
+        # the canonical one-liner, so the sweep was blind to the likeliest spelling of the thing it exists to catch.
         spellings = {
             "a": "set -a\n",
             "b": "    set -a\n",
@@ -390,8 +373,7 @@ def selftest():
             [],
         )
 
-        # 6. CONTROL for 5: it must NOT fire on the word in prose or in a pattern.
-        #    .ci/scripts/test/test-rdc-sh-env.sh is the real file this protects.
+        # 6. CONTROL for 5: it must NOT fire on the word in prose or in a pattern. .ci/scripts/test/test-rdc-sh-env.sh is the real file this protects.
         (tmp / "prose.sh").write_text(
             "# 1a. No `set -a` command (comments do not count)\n"
             "# the $(set -a && source ...) form, named in a comment\n"
@@ -416,9 +398,7 @@ def selftest():
             refused = True
         c.truthy("VACUITY: a tree with zero shell files is a REFUSAL, not a pass", refused)
 
-        # 8. ANTI-SILENCER: an adopted site that reverted to `source` is caught.
-        #    Proven by PLANTING the reversion on a copy of the real tree, not by
-        #    asking the matcher about a string.
+        # 8. ANTI-SILENCER: an adopted site that reverted to `source` is caught. Proven by PLANTING the reversion on a copy of the real tree, not by asking the matcher about a string.
         planted = tmp / "planted"
         planted.mkdir()
         (planted / "programs" / "backup-storage").mkdir(parents=True)
@@ -462,8 +442,7 @@ def run(root=None):
 def main(argv=None):
     argv = list(argv or [])
     if "--selftest" in argv:
-        # `selftest()` returns TRUE when a control FAILED, which is the contract
-        # `controls_first` reads it under.
+        # `selftest()` returns TRUE when a control FAILED, which is the contract `controls_first` reads it under.
         return 1 if selftest() else 0
     rc = controls_first("env file adoption", selftest)
     if rc:

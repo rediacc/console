@@ -60,17 +60,10 @@ TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/build-linux-packages.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_linux_packages.py")
 DELEGATE_REL = pathlib.PurePosixPath(".ci/scripts/build/build-linux-pkg.sh")
 
-# The recording delegate. Stands in for the real build-linux-pkg.sh, which runs
-# nfpm and signs packages. `FAIL_ON` is a 1-based call index so a case can fail
-# the third of eight and the comparison can check that the remaining five never
-# happened.
+# The recording delegate. Stands in for the real build-linux-pkg.sh, which runs nfpm and signs packages. `FAIL_ON` is a 1-based call index so a case can fail the third of eight and the comparison can check that the remaining five never happened.
 #
-# It writes its argv as `call: ...` on STDOUT rather than through a log-step
-# helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any
-# line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted,
-# so a delegate that reported like `common.sh` would make every ledger row read
-# VACUOUS_BOTH_EMPTY. The `call: ` prefix is what the ledger's `--finding-re`
-# scopes to.
+# It writes its argv as `call: ...` on STDOUT rather than through a log-step helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a delegate that reported like `common.sh` would make every ledger row read VACUOUS_BOTH_EMPTY. The `call: ` prefix is what the ledger's
+# `--finding-re` scopes to.
 FAKE_DELEGATE = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -96,19 +89,13 @@ out.mkdir(parents=True, exist_ok=True)
 )
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather
-# than derived: a PATH built by copying "everything except X" is a PATH nobody
-# can state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except X" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = ("bash", "sh", "python3", "env", "uname", "dirname", "cat", "mkdir", "rm")
 
-# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the
-# shape the port reproduces with its own path. Masked ONLY in the two tests that
-# are about that divergence.
+# `<path>: line <n>: ` -- the prefix bash puts on its own diagnostics, and the shape the port reproduces with its own path. Masked ONLY in the two tests that are about that divergence.
 LINE_PREFIX = re.compile(r"^[^\n]*: line \d+: ", re.MULTILINE)
 
-# The eight (format, arch) pairs, in the twin's nesting order, as a reader can
-# check them against `build-linux-packages.sh:45-58` without running anything.
+# The eight (format, arch) pairs, in the twin's nesting order, as a reader can check them against `build-linux-packages.sh:45-58` without running anything.
 EXPECTED_MATRIX = [
     ("deb", "amd64"),
     ("deb", "arm64"),
@@ -214,8 +201,7 @@ def _run(
         "LC_ALL": "C",
         "LANG": "C",
         # The port imports `rediacc_ci`; the COPY under the fixture is what runs,
-        # so the package has to come from the real checkout. This is the only
-        # thing the fixture borrows from outside itself.
+        # so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     if next_version is not None:
@@ -475,8 +461,7 @@ def test_invocations_is_lazy_so_the_f_test_happens_per_pair(tmp_path):
         produced = []
         for index, argv in enumerate(build_linux_packages.invocations("1.0.0")):
             produced.append(argv[argv.index("--binary") + 1])
-            # After the fourth invocation (both debs, both rpms) the musl binary
-            # appears. A lazy generator must pick it up for the apk pair that
+            # After the fourth invocation (both debs, both rpms) the musl binary appears. A lazy generator must pick it up for the apk pair that
             # follows; an eager list cannot.
             if index == 3:
                 (cli / "rdc-linux-musl-x64").write_text("x", encoding="utf-8")

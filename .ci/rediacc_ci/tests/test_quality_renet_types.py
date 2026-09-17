@@ -35,8 +35,7 @@ _COMPARE = (
     """>/dev/null 2>&1; }; compare "$1" "$2" && echo same || echo differ"""
 )
 
-# Every shape the comparison has to survive, as (left, right, why). `None` means
-# the file is not created at all.
+# Every shape the comparison has to survive, as (left, right, why). `None` means the file is not created at all.
 COMPARE_CASES = [
     ("x\ny\n", "x\ny\n", "identical"),
     ("x\ny\n", "x\nz\n", "a changed line"),
@@ -65,8 +64,7 @@ def test_compare_matches_the_shell_helper(
         a.write_text(left, encoding="utf-8")
     if right is not None:
         b.write_text(right, encoding="utf-8")
-    # `bash_streams` takes no positional arguments, so `set --` supplies the
-    # helper's `$1` and `$2` inside the script rather than beside it.
+    # `bash_streams` takes no positional arguments, so `set --` supplies the helper's `$1` and `$2` inside the script rather than beside it.
     code, out, _err = diff.bash_streams(
         "set -- a.ts b.ts\n%s" % _COMPARE, cwd=str(tmp_path), timeout=30
     )

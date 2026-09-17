@@ -97,9 +97,7 @@ RELEASES_BASE_URL_DEFAULT = "https://releases.rediacc.com"
 TAP_SUBMODULE = "private/homebrew-tap"
 
 # `local required_files=(...)` (:101) and `local names=(...)` (:123). The two
-# lists are the same four platforms in the same order, and they are separate in
-# the twin because one names `.sha256` sidecars on R2 and the other names local
-# binaries. Kept separate here for the same reason.
+# lists are the same four platforms in the same order, and they are separate in the twin because one names `.sha256` sidecars on R2 and the other names local binaries. Kept separate here for the same reason.
 CHECKSUM_FILES = (
     "rdc-mac-arm64.sha256",
     "rdc-mac-x64.sha256",
@@ -108,8 +106,7 @@ CHECKSUM_FILES = (
 )
 BINARY_NAMES = ("rdc-mac-arm64", "rdc-mac-x64", "rdc-linux-arm64", "rdc-linux-x64")
 
-# The four files `update_formula` reads, in the order it reads them, paired with
-# the awk variable each one feeds.
+# The four files `update_formula` reads, in the order it reads them, paired with the awk variable each one feeds.
 FORMULA_SLOTS = (
     ("mac_arm64", "rdc-mac-arm64.sha256", "mac-arm64:  "),
     ("mac_x64", "rdc-mac-x64.sha256", "mac-x64:    "),
@@ -119,12 +116,8 @@ FORMULA_SLOTS = (
 
 # `.ci/scripts/release/update-homebrew-tap.sh:190-218`, verbatim.
 #
-# CARRIED AS DATA RATHER THAN RE-EXPRESSED. Four `sha256 "..."` lines live in one
-# file and the only thing telling them apart is which `on_macos do` / `on_linux
-# do` / `if Hardware::CPU.arm?` / `else` line was seen most recently. A Python
-# re-implementation would be a second copy of that reasoning, and the failure it
-# would produce is silent: a formula that installs the wrong binary on one
-# platform, which passes every syntax check there is.
+# CARRIED AS DATA RATHER THAN RE-EXPRESSED. Four `sha256 "..."` lines live in one file and the only thing telling them apart is which `on_macos do` / `on_linux do` / `if Hardware::CPU.arm?` / `else` line was seen most recently. A Python re-implementation would be a second copy of that reasoning, and the failure it would produce is silent: a formula that installs the wrong binary on
+# one platform, which passes every syntax check there is.
 FORMULA_AWK = r"""
     BEGIN {
         in_macos = 0
@@ -435,8 +428,7 @@ def update_formula(
     for var, filename, _label in FORMULA_SLOTS:
         value = extract_checksum(tmpdir / filename)
         if value is None:
-            # `set -e` on the failing command substitution: awk's own status,
-            # which is 2 for a file it cannot open.
+            # `set -e` on the failing command substitution: awk's own status, which is 2 for a file it cannot open.
             return 2
         shas[var] = value
 
@@ -468,9 +460,7 @@ def update_formula(
             check=False,
         ).returncode
     if rc != 0:
-        # `set -e` on the awk pipeline: the twin dies with the temp file still
-        # on disk and the formula untouched. Only the leak is repaired here,
-        # because a leaked temp file is not observable behaviour.
+        # `set -e` on the awk pipeline: the twin dies with the temp file still on disk and the formula untouched. Only the leak is repaired here, because a leaked temp file is not observable behaviour.
         pathlib.Path(tmpname).unlink(missing_ok=True)
         return rc
     shutil.move(tmpname, str(formula))
@@ -594,8 +584,7 @@ def require_sources(root: pathlib.Path) -> None:
             raise MissingSourceError(path, line)
     pins = root / ".devcontainer" / "toolchain.env"
     if not os.access(pins, os.R_OK):
-        # `.ci/config/constants.sh:31-32`, verbatim, then `return 1` which
-        # `set -e` turns into the caller's exit 1.
+        # `.ci/config/constants.sh:31-32`, verbatim, then `return 1` which `set -e` turns into the caller's exit 1.
         print("constants.sh: gate toolchain pins missing: %s" % pins, file=sys.stderr)
         raise SystemExit(1)
 
@@ -681,8 +670,7 @@ def _run(
     if rc != 0:
         return rc
 
-    # `--stage-only` WINS over `--push` (:303-309). Both flags together is not
-    # refused, it is silently resolved, and the port resolves it the same way.
+    # `--stage-only` WINS over `--push` (:303-309). Both flags together is not refused, it is silently resolved, and the port resolves it the same way.
     if opts.stage_only:
         rc = commit_and_push(tap_dir, opts.version, dry_run=opts.dry_run)
         if rc != 0:

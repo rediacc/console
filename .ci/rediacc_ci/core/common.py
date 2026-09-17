@@ -191,9 +191,7 @@ import sys
 
 from rediacc_ci import log, paths
 
-# QUIRK 1. `for p in "$@"` over an empty list is zero iterations, so the twin's
-# require_input returns 0 on nothing. Recorded as a constant rather than a
-# sentence so a test can assert against the twin's behaviour by name.
+# QUIRK 1. `for p in "$@"` over an empty list is zero iterations, so the twin's require_input returns 0 on nothing. Recorded as a constant rather than a sentence so a test can assert against the twin's behaviour by name.
 REQUIRE_INPUT_VACUOUS_IS_A_PASS = True
 
 # `if [[ "${CI:-false}" == "true" ]]` (common.sh:111). The literal, not a set.
@@ -209,11 +207,7 @@ TEMP_DIR_FALLBACK = "/tmp"
 # The prefix `parse_args` puts on every key (common.sh:332).
 ARG_PREFIX = "ARG_"
 
-# `case "$(uname -s)"` (common.sh:64-71), IN ORDER. bash `case` takes the first
-# matching arm, so the order is the contract and not a tidy alphabetisation.
-# Note what is NOT here: `Windows*`. `core.platform`'s SYSTEM_PREFIXES carries
-# it and this does not, so a `uname -s` of `Windows_NT` is `windows` there and
-# `unknown` here. That is the twin's table, reproduced.
+# `case "$(uname -s)"` (common.sh:64-71), IN ORDER. bash `case` takes the first matching arm, so the order is the contract and not a tidy alphabetisation. Note what is NOT here: `Windows*`. `core.platform`'s SYSTEM_PREFIXES carries it and this does not, so a `uname -s` of `Windows_NT` is `windows` there and `unknown` here. That is the twin's table, reproduced.
 OS_PREFIXES = (
     ("Linux", "linux"),
     ("Darwin", "macos"),
@@ -222,8 +216,7 @@ OS_PREFIXES = (
     ("MSYS", "windows"),
 )
 
-# `case "$arch"` (common.sh:101-105). Exact matches, not prefixes: the twin uses
-# bare words with no `*`, so `x86_64-pc-linux` is `unknown`.
+# `case "$arch"` (common.sh:101-105). Exact matches, not prefixes: the twin uses bare words with no `*`, so `x86_64-pc-linux` is `unknown`.
 ARCH_ALIASES = {
     "x86_64": "x64",
     "amd64": "x64",
@@ -255,9 +248,7 @@ class RefusalError(Exception):
             log.error(line)
 
 
-# ---------------------------------------------------------------------------
-# ENVIRONMENT DETECTION (common.sh:88-123)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ENVIRONMENT DETECTION (common.sh:88-123) ---------------------------------------------------------------------------
 
 
 def _env(env: dict[str, str] | None) -> dict[str, str]:
@@ -356,9 +347,7 @@ def get_temp_dir(env: dict[str, str] | None = None) -> str:
     return TEMP_DIR_FALLBACK
 
 
-# ---------------------------------------------------------------------------
-# VALIDATION HELPERS (common.sh:131-197)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- VALIDATION HELPERS (common.sh:131-197) ---------------------------------------------------------------------------
 
 
 def require_var(name: str, env: dict[str, str] | None = None) -> str:
@@ -466,9 +455,7 @@ def require_input(test_flag: str, lead: str, why: str, paths_: list[str | os.Pat
     return checked
 
 
-# ---------------------------------------------------------------------------
-# PATH HELPERS (common.sh:205-210)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- PATH HELPERS (common.sh:205-210) ---------------------------------------------------------------------------
 
 
 def repo_root() -> pathlib.Path:
@@ -488,9 +475,7 @@ def repo_root() -> pathlib.Path:
     return paths.repo_root()
 
 
-# ---------------------------------------------------------------------------
-# ARGUMENT PARSING (common.sh:301-353)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ARGUMENT PARSING (common.sh:301-353) ---------------------------------------------------------------------------
 
 
 def to_upper(text: str) -> str:
@@ -592,9 +577,7 @@ def _store(out: dict[str, str], key: str, value: str) -> None:
     out[key] = value
 
 
-# ---------------------------------------------------------------------------
-# SUBMODULE GUARDS (common.sh:488-502)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- SUBMODULE GUARDS (common.sh:488-502) ---------------------------------------------------------------------------
 
 # common.sh:500, verbatim. Quoted whole because it is what a caller greps for.
 SUBMODULE_SKIP_SUFFIX = "not available, skipping (this is a hard failure in CI)"
@@ -641,9 +624,7 @@ def require_submodule(
     return False
 
 
-# ---------------------------------------------------------------------------
-# INITIALIZATION (common.sh:509-514)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- INITIALIZATION (common.sh:509-514) ---------------------------------------------------------------------------
 
 
 def ci_env(env: dict[str, str] | None = None) -> dict[str, str]:
@@ -667,9 +648,7 @@ def ci_env(env: dict[str, str] | None = None) -> dict[str, str]:
     }
 
 
-# ---------------------------------------------------------------------------
-# CLI -- the surface the shadow differential drives
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CLI -- the surface the shadow differential drives ---------------------------------------------------------------------------
 
 USAGE = """common -- the refuse-early half of .ci/scripts/lib/common.sh.
 

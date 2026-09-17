@@ -152,8 +152,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The generated contract. The twin spells this path out in full and so does this
-# module: it is the ORACLE, and a helper that computed it would be one more place
+# The generated contract. The twin spells this path out in full and so does this module: it is the ORACLE, and a helper that computed it would be one more place
 # for the path to be wrong.
 FUNCTIONS_REL = "packages/shared/src/renet-contract/data/functions.generated.ts"
 
@@ -171,20 +170,14 @@ FORWARD_ARGV = ("npx", "tsx", "scripts/gates/check-e2e-coverage.ts")
 # twin uses bash `=~` on each line, which finds the FIRST match in the line, so
 # a line carrying two quoted names contributes only the first. Reproduced.
 # `[[:space:]]` UNDER `LC_ALL=C` IS EXACTLY THIS SET MINUS THE NEWLINE, and the
-# newline cannot occur inside a line either implementation looks at. Spelled out
-# rather than written as `\s`, because Python's `\s` on a `str` pattern also
-# matches U+00A0 and the other Unicode separators, which the C-locale POSIX class
-# does not: a non-breaking space between `function:` and its quoted verb would
-# then be a dispatch to the port and not to the twin.
+# newline cannot occur inside a line either implementation looks at. Spelled out rather than written as `\s`, because Python's `\s` on a `str` pattern also matches U+00A0 and the other Unicode separators, which the C-locale POSIX class does not: a non-breaking space between `function:` and its quoted verb would then be a dispatch to the port and not to the twin.
 _HSPACE = r"[ \t\r\f\v]"
 
 ARRAY_OPEN_RE = re.compile(r"RENET_BRIDGE_FUNCTIONS%s*=%s*\[" % (_HSPACE, _HSPACE))
 ARRAY_CLOSE_RE = re.compile(r"\]%s*as%s+const" % (_HSPACE, _HSPACE))
 ARRAY_ITEM_RE = re.compile(r"'([a-z0-9_]+)'")
 
-# Sweep 1: `function: 'name'`. The grep pattern, and then the greedy sed that
-# extracts from the matched line. Two expressions because the twin uses two, and
-# because they disagree on a line with more than one literal (see PORT NOTES).
+# Sweep 1: `function: 'name'`. The grep pattern, and then the greedy sed that extracts from the matched line. Two expressions because the twin uses two, and because they disagree on a line with more than one literal (see PORT NOTES).
 METHOD_GREP_RE = re.compile(r"function:%s*'[a-z0-9_]+'" % _HSPACE)
 METHOD_VERB_RE = re.compile(r".*function:%s*'([a-z0-9_]+)'" % _HSPACE)
 
@@ -195,10 +188,7 @@ RAW_VERB_RE = re.compile(r".*--function%s+([a-z0-9_]+)" % _HSPACE)
 # The comment prefixes the twin skips in sweep 2, as shell glob prefixes.
 COMMENT_PREFIXES = ("//", "*", "/*")
 
-# U+2014 is in the twin's finding text. Written as an escape rather than as the
-# character so this file stays ASCII: the repo's prose rules forbid the literal,
-# and the byte still has to reach the output because the finding text is exactly
-# what the differential compares.
+# U+2014 is in the twin's finding text. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the finding text is exactly what the differential compares.
 _EM_DASH = "\u2014"
 
 
@@ -332,8 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     functions_file = root / FUNCTIONS_REL
     e2e_dir = root / E2E_REL
 
-    # The twin prints the ABSOLUTE path in both of these, because it interpolates
-    # `$FUNCTIONS_FILE` and `$E2E_TESTS_DIR`, which it built from `$REPO_ROOT`.
+    # The twin prints the ABSOLUTE path in both of these, because it interpolates `$FUNCTIONS_FILE` and `$E2E_TESTS_DIR`, which it built from `$REPO_ROOT`.
     if not functions_file.is_file():
         log.error("Functions file not found: %s" % functions_file)
         return 1
@@ -347,10 +336,7 @@ def main(argv: list[str] | None = None) -> int:
 
     names = bridge_functions(functions_file.read_text(encoding="utf-8", errors="replace"))
 
-    # ZERO INPUTS IS A FAILURE, NEVER A PASS. An empty oracle would make every
-    # verb in the tree look dead, which is noisy rather than silent, but the
-    # twin still refuses here and names the regeneration command, because a
-    # parser that stopped matching is a broken instrument either way.
+    # ZERO INPUTS IS A FAILURE, NEVER A PASS. An empty oracle would make every verb in the tree look dead, which is noisy rather than silent, but the twin still refuses here and names the regeneration command, because a parser that stopped matching is a broken instrument either way.
     if not names:
         log.error(
             "No functions extracted from RENET_BRIDGE_FUNCTIONS %s parsing may be broken,"
@@ -363,8 +349,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # THE SHAPE, NOT JUST THE VERDICT. The count is printed on every run so a
-    # reader notices the day the oracle collapses from ninety to three.
+    # THE SHAPE, NOT JUST THE VERDICT. The count is printed on every run so a reader notices the day the oracle collapses from ninety to three.
     log.info("Found %d dispatchable verbs in RENET_BRIDGE_FUNCTIONS" % len(names))
 
     dispatchable = set(names)
@@ -525,10 +510,7 @@ def selftest() -> int:
                 target = tree / E2E_REL / rel
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(body, encoding="utf-8")
-            # A forward half that always agrees, so the reverse half is what the
-            # controls below are measuring. The stub is a real executable on a
-            # real PATH rather than a monkeypatch, because the twin resolves
-            # `npx` through PATH and a patched function would not prove that.
+            # A forward half that always agrees, so the reverse half is what the controls below are measuring. The stub is a real executable on a real PATH rather than a monkeypatch, because the twin resolves `npx` through PATH and a patched function would not prove that.
             binary = tree / "fxbin"
             binary.mkdir(parents=True, exist_ok=True)
             (binary / "npx").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
@@ -577,14 +559,8 @@ def selftest() -> int:
         )
         ctl.check("PLANT MIRROR: the same verb in a comment is not caught", run(commented), 0)
 
-        # THE VACUITY CONTROL CARRIES A REAL e2e DIRECTORY, and the first cut of
-        # it did not. Without `src/a.ts` the tree has no `packages/e2e-tests` at
-        # all, so the gate returned 1 from the MISSING-DIRECTORY branch and the
-        # control passed while the refusal it names never executed. A control
-        # that fires for the wrong reason is worse than one that does not fire,
-        # because it reads as evidence. The mirror below is the other half: the
-        # same tree with a parseable oracle must PASS, which is what pins the
-        # exit code to the oracle rather than to the fixture's shape.
+        # THE VACUITY CONTROL CARRIES A REAL e2e DIRECTORY, and the first cut of it did not. Without `src/a.ts` the tree has no `packages/e2e-tests` at all, so the gate returned 1 from the MISSING-DIRECTORY branch and the control passed while the refusal it names never executed. A control that fires for the wrong reason is worse than one that does not fire, because it reads as
+        # evidence. The mirror below is the other half: the same tree with a parseable oracle must PASS, which is what pins the exit code to the oracle rather than to the fixture's shape.
         oracle_sources = {"src/a.ts": "const a = { function: 'repo_up' };\n"}
         empty_oracle = build("empty", "export const NOTHING = [] as const;\n", oracle_sources)
         ctl.check("VACUITY: an unparseable oracle is a refusal, not a pass", run(empty_oracle), 1)
@@ -600,10 +576,7 @@ def selftest() -> int:
         (missing_contract / E2E_REL / "src").mkdir(parents=True, exist_ok=True)
         ctl.check("SETUP: an absent contract file is a failure", run(missing_contract), 1)
 
-        # THE FORWARD HALF IS LOAD-BEARING, so a stub that FAILS must red a tree
-        # whose reverse half is spotless. Without this control the gate could
-        # drop the forward exit code entirely and every case above would still
-        # pass.
+        # THE FORWARD HALF IS LOAD-BEARING, so a stub that FAILS must red a tree whose reverse half is spotless. Without this control the gate could drop the forward exit code entirely and every case above would still pass.
         forward_red = build(
             "forward-red",
             _SAMPLE_CONTRACT,

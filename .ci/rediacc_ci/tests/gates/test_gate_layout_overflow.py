@@ -50,9 +50,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-layout-overflow.sh"
 GATE = paths.from_root("scripts", "gates", "check-layout-overflow.ts")
 LIB = paths.from_root("scripts", "lib")
 
-# The one expression the mutant removes. Written out rather than matched loosely,
-# so a rewording of the detector makes the mutation FAIL TO APPLY (and say so)
-# instead of silently producing a copy identical to the gate.
+# The one expression the mutant removes. Written out rather than matched loosely, so a rewording of the detector makes the mutation FAIL TO APPLY (and say so) instead of silently producing a copy identical to the gate.
 DETECTOR = "d.get('white-space') === 'nowrap' &&"
 
 

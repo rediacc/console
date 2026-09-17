@@ -40,13 +40,10 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-second-open-pr.sh"
 ORDER = 25
 
-# FAILS CLOSED is the property, and this is the line that holds it: without the
-# status test an unreadable list becomes an empty list, and "gh is down" reads
-# as "you have no open PRs".
+# FAILS CLOSED is the property, and this is the line that holds it: without the status test an unreadable list becomes an empty list, and "gh is down" reads as "you have no open PRs".
 DEFECT = ("if rc != 0:", "if False:")
 
-# `gh` answering is what makes the block direction reachable at all: under the
-# harness default it exits 1 with nothing, which is only the fail-closed arm.
+# `gh` answering is what makes the block direction reachable at all: under the harness default it exits 1 with nothing, which is only the fail-closed arm.
 _GH_LIST = (
     '#!/bin/sh\ncat <<\'GHEOF\'\n[{"number":563,"title":"t","headRefName":"b","isDraft":false}]\n'
     "GHEOF\n"
@@ -92,8 +89,7 @@ ALREADY_OPEN = (
 EDGE_CASES = [
     ("the create this guard exists for", "gh pr create --draft -t x -b y"),
     ("sh -c wrapping does not bypass it", "sh -c 'gh pr create --draft -t x -b y'"),
-    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or
-    # it would block the FIRST PR too and simply stop all work.
+    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it would block the FIRST PR too and simply stop all work.
     ("a non-create gh command is ignored", "gh pr view 567"),
     ("a submodule create is judged against ITS repo", "gh pr create --repo rediacc/renet -t x"),
     ("prose naming the command", "echo 'gh pr create --draft'"),

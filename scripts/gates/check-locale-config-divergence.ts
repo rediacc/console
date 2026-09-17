@@ -132,9 +132,7 @@ export function findConfigDivergence(
   if (!fs.existsSync(root)) return { findings: [], compared: 0 };
   const catalogs = localeCatalogs(root, layout);
 
-  // The locale universe is @rediacc/locales, never readdirSync. A stray directory would
-  // otherwise be compared against English and reported as twelve divergences, and a
-  // missing one would be silently skipped -- the second is the dangerous half.
+  // The locale universe is @rediacc/locales, never readdirSync. A stray directory would otherwise be compared against English and reported as twelve divergences, and a missing one would be silently skipped -- the second is the dangerous half.
   for (const locale of catalogs.keys()) {
     if (!isSiteLocale(locale)) {
       throw new Error(
@@ -219,9 +217,7 @@ function selftest(): boolean {
 
   reseed();
   const clean = scan();
-  // PLANT TWO, and it is the one that decides whether this gate survives contact with the
-  // repo: every catalog above carries a fully translated string for every key, and the
-  // gate must be silent. A gate that reported those would fire ~6,600 times per locale.
+  // PLANT TWO, and it is the one that decides whether this gate survives contact with the repo: every catalog above carries a fully translated string for every key, and the gate must be silent. A gate that reported those would fire ~6,600 times per locale.
   check(
     'translated strings are NOT reported (control)',
     clean.findings.length === 0,
@@ -320,9 +316,7 @@ function main(): void {
     process.exit(1);
   }
 
-  // FLOOR. "Zero divergences" and "zero leaves compared" print the same checkmark unless
-  // the count is asserted. There are 721 non-string leaves in the www catalogs alone, so
-  // a run that compares nothing means the flattener or the roots have broken.
+  // FLOOR. "Zero divergences" and "zero leaves compared" print the same checkmark unless the count is asserted. There are 721 non-string leaves in the www catalogs alone, so a run that compares nothing means the flattener or the roots have broken.
   if (compared === 0) {
     console.error(
       `✗ Refusing to run: ${roots.length} locale root(s) yielded ZERO non-string leaves to\n` +

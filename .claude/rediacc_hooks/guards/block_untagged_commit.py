@@ -68,9 +68,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-untagged-commit.sh"
 ORDER = 38
 
-# The id-validation arm is the one the 2026-08-27 typo finding added, and the
-# one that makes a trailer worth more than its shape. With it gone every
-# well-formed id passes, including one that names no epic.
+# The id-validation arm is the one the 2026-08-27 typo finding added, and the one that makes a trailer worth more than its shape. With it gone every well-formed id passes, including one that names no epic.
 DEFECT = ("if known and not _grep_qx(found, known):", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
@@ -167,8 +165,7 @@ EDGE_CASES = [
     # A foreign checkout's commits are not this repo's epics' business.
     ("a commit in another tree", 'cd /tmp && git commit -m "x"'),
     ("git -C into another tree", 'git -C /tmp commit -m "x"'),
-    # The tab defect inherited from shellscan.target_root, pinned here so a
-    # future "fix" to that module is a visible divergence rather than a quiet one.
+    # The tab defect inherited from shellscan.target_root, pinned here so a future "fix" to that module is a visible divergence rather than a quiet one.
     ("git -C with a TAB resolves to the empty root", 'git -C\t/tmp commit -m "x"'),
 ]
 
@@ -228,22 +225,10 @@ def run(ev):
     # the substitution runs only when the variable is unset OR empty.
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
 
-    # THIS REPO IS NOT THE ONLY ONE ON THE MACHINE. A command that `cd`s into an
-    # independent sibling checkout (e.g. private/growth, private/generative -- real
-    # repos with their own origin, not a console submodule) and commits there was
-    # still judged against CLAUDE_PROJECT_DIR/agent/pr/<console-branch>.md: wrong
-    # branch name (this repo's HEAD, not the target's), wrong epic snapshot (one
-    # that cannot possibly name an epic for a repo it has never heard of), so every
-    # such commit was refused for a trailer no epic file could ever supply. Detect
-    # a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to
-    # every later segment, so this is deliberately line-wide, matching
-    # hook_target_repo's convention in lib/command-scan.sh -- and if the git root
-    # THAT resolves to is a real repo distinct from this one, this guard has
-    # nothing to check: that repo's commits are not this repo's epics' business.
-    # THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings
-    # had the same defect -- block-unverified-push.sh refused a foreign repo's push against
-    # THIS tree's gate stamp (reproduced live), and warn-remote-drift.sh has the same shape
-    # latently -- so the walk this file pioneered is now shared rather than copied twice more.
+    # THIS REPO IS NOT THE ONLY ONE ON THE MACHINE. A command that `cd`s into an independent sibling checkout (e.g. private/growth, private/generative -- real repos with their own origin, not a console submodule) and commits there was still judged against CLAUDE_PROJECT_DIR/agent/pr/<console-branch>.md: wrong branch name (this repo's HEAD, not the target's), wrong epic snapshot
+    # (one that cannot possibly name an epic for a repo it has never heard of), so every such commit was refused for a trailer no epic file could ever supply. Detect a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to every later segment, so this is deliberately line-wide, matching hook_target_repo's convention in lib/command-scan.sh -- and if the git root
+    # THAT resolves to is a real repo distinct from this one, this guard has nothing to check: that repo's commits are not this repo's epics' business. THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings had the same defect -- block-unverified-push.sh refused a foreign repo's push against THIS tree's gate stamp (reproduced live), and
+    # warn-remote-drift.sh has the same shape latently -- so the walk this file pioneered is now shared rather than copied twice more.
     if shellscan.target_root(scan, root) != "":
         return hookio.ALLOW
 
@@ -255,12 +240,8 @@ def run(ev):
     if hookio.grep_q(HAS_MESSAGE_FLAG, cmd):
         msg = cmd
 
-    # 2. -F - with a heredoc: the body is in the command string. `scan_target`
-    #    STRIPS heredocs (they are data, for its purposes), so this reads $CMD.
-    # The `<<` is required, not incidental: `-F -` ALONE means the message arrives
-    # on a pipe this hook cannot see, and treating the command text as the message
-    # then reads a trailer-less command line as a trailer-less COMMIT. Measured:
-    # `cat msg.txt | git commit -F -` was refused for a message it never saw.
+    # 2. -F - with a heredoc: the body is in the command string. `scan_target` STRIPS heredocs (they are data, for its purposes), so this reads $CMD. The `<<` is required, not incidental: `-F -` ALONE means the message arrives on a pipe this hook cannot see, and treating the command text as the message then reads a trailer-less command line as a trailer-less COMMIT. Measured: `cat
+    # msg.txt | git commit -F -` was refused for a message it never saw.
     if hookio.grep_q(HAS_FILE_DASH, cmd) and hookio.grep_q("<<", cmd, fixed=True):
         msg = msg + "\n" + cmd
 
@@ -288,29 +269,18 @@ def run(ev):
     if re.sub(r"[ \t\n\v\f\r]", "", msg) == "":
         return hookio.ALLOW
 
-    # ---- the epics that actually exist -------------------------------------
-    # `rev-parse --abbrev-ref HEAD` PRINTS THE STRING "HEAD" WHEN DETACHED, and a
-    # detached HEAD is not exotic: it is every pull_request checkout and every
-    # halted rebase. The snapshot path then became agent/pr/HEAD.md, which does not
-    # exist, so KNOWN was empty and a TYPO'D id -- the case this guard was extended
+    # ---- the epics that actually exist ------------------------------------- `rev-parse --abbrev-ref HEAD` PRINTS THE STRING "HEAD" WHEN DETACHED, and a detached HEAD is not exotic: it is every pull_request checkout and every halted rebase. The snapshot path then became agent/pr/HEAD.md, which does not exist, so KNOWN was empty and a TYPO'D id -- the case this guard was extended
     # for -- sailed through. Measured 2026-08-27: the suite case asserting the typo
     # is refused returned 0 in CI while passing on every developer machine.
     #
-    # `git branch --show-current` prints EMPTY when detached rather than lying, and
-    # the CI environment names the branch outright. Same resolution order as
-    # scripts/gates/check-pr-task-trailers.ts, so the gate and the guard agree about which
-    # branch they are judging.
+    # `git branch --show-current` prints EMPTY when detached rather than lying, and the CI environment names the branch outright. Same resolution order as scripts/gates/check-pr-task-trailers.ts, so the gate and the guard agree about which branch they are judging.
     cwd = root or "."
     branch = (
         ev.env("PR_HEAD_REF")
         or ev.env("GITHUB_HEAD_REF")
         or hookio.git_out(["-C", cwd, "branch", "--show-current"])
     )
-    # A HALTED REBASE IS THE DETACHED CASE THAT ACTUALLY MATTERS HERE. This repo
-    # has a rebase executor, so committing mid-rebase is a normal thing to do, and
-    # that is exactly when losing id validation would hurt. git remembers the
-    # branch it is rebasing in rebase-merge/head-name (rebase-apply/head-name for
-    # the am backend), so ask instead of guessing.
+    # A HALTED REBASE IS THE DETACHED CASE THAT ACTUALLY MATTERS HERE. This repo has a rebase executor, so committing mid-rebase is a normal thing to do, and that is exactly when losing id validation would hurt. git remembers the branch it is rebasing in rebase-merge/head-name (rebase-apply/head-name for the am backend), so ask instead of guessing.
     if branch == "":
         for name in ("rebase-merge/head-name", "rebase-apply/head-name"):
             head_path = hookio.git_out(["-C", cwd, "rev-parse", "--git-path", name])
@@ -321,9 +291,7 @@ def run(ev):
                     text = ""
                 branch = hookio._command_substitution(hookio.sed_sub(r"^refs/heads/", "", text))
                 break
-    # Still empty means a plain detached checkout, where there genuinely IS no
-    # branch and therefore no published epic set. The guard allows, as it does
-    # whenever it has nothing to judge against.
+    # Still empty means a plain detached checkout, where there genuinely IS no branch and therefore no published epic set. The guard allows, as it does whenever it has nothing to judge against.
     branch_key = branch.replace("/", "-")
     snap = "%s/agent/pr/%s.md" % (root, branch_key)
     known = ""
@@ -346,9 +314,7 @@ def run(ev):
         _epic_menu(ev, known, snap, branch_key, branch)
         return hookio.DENY
 
-    # A trailer whose id names no epic is WORSE than no trailer: it looks tagged.
-    # Only judge when a snapshot exists -- with none, there is no set to judge
-    # against, and refusing would block the very first commit of a new branch.
+    # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. Only judge when a snapshot exists -- with none, there is no set to judge against, and refusing would block the very first commit of a new branch.
     if known and not _grep_qx(found, known):
         ev.warn_raw(
             "BLOCKED: PR-TASK id '%s' names no epic on this branch.\n"

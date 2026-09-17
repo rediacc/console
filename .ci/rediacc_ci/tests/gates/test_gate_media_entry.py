@@ -191,8 +191,7 @@ def test_the_entry_point_and_its_modules_all_exist(gate):
     for name in sourced:
         if not (ROOT / ".ci" / "media" / name).is_file():
             gate.log_fail("media-entry.sh sources a module that does not exist: %s" % name)
-    # Anti-vacuity: an extraction that stopped matching would report every module
-    # present.
+    # Anti-vacuity: an extraction that stopped matching would report every module present.
     if len(sourced) < 7:
         gate.log_fail(
             "media-entry.sh sources only %d module(s); the extraction has collapsed or "
@@ -212,10 +211,7 @@ def test_the_whole_media_surface_is_delegated_and_this_file_owns_it(gate):
         raise
     entry_set = dispatched_media_functions(entry_region)
 
-    # ANTI-VACUITY FIRST, because every claim below is about a SET BEING EMPTY and
-    # an extraction that matched nothing satisfies all of them at once. Pin the floor
-    # on the side that must be FULL before asserting anything about the side that
-    # must be empty.
+    # ANTI-VACUITY FIRST, because every claim below is about a SET BEING EMPTY and an extraction that matched nothing satisfies all of them at once. Pin the floor on the side that must be FULL before asserting anything about the side that must be empty.
     if len(entry_set) < 10:
         gate.log_fail(
             "only %d media function(s) found in media_entry_main; the extraction is "
@@ -282,8 +278,7 @@ def test_the_delegation_assertion_can_fail(gate):
 
 
 def test_the_usage_line_lives_in_exactly_one_place(gate):
-    # The guidance still names ./run.sh, because that is still how a person reaches
-    # this surface. What changed is that there is now ONE copy of the string.
+    # The guidance still names ./run.sh, because that is still how a person reaches this surface. What changed is that there is now ONE copy of the string.
     if TUTORIALS_USAGE not in ENTRY.read_text(encoding="utf-8"):
         gate.log_fail("media-entry.sh no longer carries the tutorials usage line")
     media_verify_ext.assert_absent_from_origins(
@@ -331,9 +326,7 @@ def test_every_routed_verb_reaches_the_module_that_owns_it(gate, tmp_path):
 
 
 def test_the_chain_probe_can_fail(gate, tmp_path):
-    # CONTROL FOR THE SIXTEEN ROWS ABOVE. Plant the marker exactly as they do, then
-    # take run.sh's exec out. If the marker still appeared, every green above would
-    # be measuring something other than the delegation.
+    # CONTROL FOR THE SIXTEEN ROWS ABOVE. Plant the marker exactly as they do, then take run.sh's exec out. If the marker still appeared, every green above would be measuring something other than the delegation.
     repo = media_verify_ext.media_chain_sandbox(tmp_path)
     media_verify_ext.probe(repo, "tutorials.sh", "www_tutorials_extract")
     media_verify_ext.mutate(repo, "run.sh", r"^        www\) exec .*", "        www) exit 9 ;;")

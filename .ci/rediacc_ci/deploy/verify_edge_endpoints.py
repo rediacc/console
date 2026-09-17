@@ -74,9 +74,7 @@ if TYPE_CHECKING:
 
 SELF = "verify-edge-endpoints.py"
 
-# The twin's hard-coded hosts. Named constants so a reader can see at a glance
-# that this program has no configurable target, which is the fact that decided
-# the fake-`curl` design above.
+# The twin's hard-coded hosts. Named constants so a reader can see at a glance that this program has no configurable target, which is the fact that decided the fake-`curl` design above.
 EDGE = "https://edge.rediacc.com"
 RELEASES = "https://releases.rediacc.com"
 
@@ -204,9 +202,7 @@ def fetch_retry(what: str, predicate: Callable[[], bool], retries: int, sleep_s:
             return True
         if attempt >= retries:
             waited = (retries - 1) * float(sleep_s)
-            # `%d` for a whole number, so an integer EDGE_RETRY_SLEEP renders
-            # exactly as bash arithmetic renders it. See the docstring for why
-            # the fractional case is answered at all rather than reproduced.
+            # `%d` for a whole number, so an integer EDGE_RETRY_SLEEP renders exactly as bash arithmetic renders it. See the docstring for why the fractional case is answered at all rather than reproduced.
             rendered = "%d" % waited if waited == int(waited) else "%g" % waited
             print(
                 "  %s: still disagreeing after %d attempts over %ss of waiting"
@@ -244,12 +240,8 @@ def main(argv: list[str]) -> int:
         refusal.report()
         return refusal.code
 
-    # READ THROUGH `os.environ` DIRECTLY, NOT THROUGH A LOCAL ALIAS.
-    # `check:ci-python-env-registry` derives its declared-input set from the AST
-    # and only recognises `os.environ[...]` and `os.environ.get(...)` AT THE CALL
-    # SITE. Binding a local name to `os.environ` first reads identically at
-    # runtime and is INVISIBLE to that gate, so four undeclared inputs would go
-    # unregistered -- which is precisely the shape the gate exists to catch.
+    # READ THROUGH `os.environ` DIRECTLY, NOT THROUGH A LOCAL ALIAS. `check:ci-python-env-registry` derives its declared-input set from the AST and only recognises `os.environ[...]` and `os.environ.get(...)` AT THE CALL SITE. Binding a local name to `os.environ` first reads identically at runtime and is INVISIBLE to that gate, so four undeclared inputs would go unregistered --
+    # which is precisely the shape the gate exists to catch.
     retries = int(os.environ.get("EDGE_RETRIES") or "6")
     retry_sleep = os.environ.get("EDGE_RETRY_SLEEP") or "5"
 
@@ -260,9 +252,7 @@ def main(argv: list[str]) -> int:
         return 1
     workers_only = os.environ.get("WORKERS_ONLY", "")
 
-    # `cd "$(get_repo_root)"`. regions.json is read by RELATIVE path below, so
-    # the chdir is load-bearing and jq's own "Could not open file regions.json"
-    # diagnostic depends on it too.
+    # `cd "$(get_repo_root)"`. regions.json is read by RELATIVE path below, so the chdir is load-bearing and jq's own "Could not open file regions.json" diagnostic depends on it too.
     os.chdir(paths.repo_root())
 
     print("Verifying edge deployment for v%s..." % version, flush=True)
@@ -309,10 +299,7 @@ def main(argv: list[str]) -> int:
 
     about = probe("%s/about?cb=%s" % (EDGE, rnda), "410")
     if not fetch_retry("about 410", about, retries, retry_sleep):
-        # THE EM DASH IS AN ESCAPE ON PURPOSE. The twin's line 133 carries a
-        # literal U+2014 and this port must emit the same byte, but a literal em
-        # dash in authored source is banned house-wide. The escape keeps the
-        # OUTPUT identical without putting the character in the file.
+        # THE EM DASH IS AN ESCAPE ON PURPOSE. The twin's line 133 carries a literal U+2014 and this port must emit the same byte, but a literal em dash in authored source is banned house-wide. The escape keeps the OUTPUT identical without putting the character in the file.
         print(
             "::error::edge /about expected 410 (curated redirect table), got %s "
             "\u2014 old worker bundle likely live" % _Last.status,
@@ -341,9 +328,7 @@ def main(argv: list[str]) -> int:
 
     # -- Footer version ----------------------------------------------------
     # `sed 's/<!--[^>]*-->//g'` then `grep -qE "footer-version[^<]*>v${VERSION}<"`.
-    # VERSION IS INTERPOLATED RAW INTO AN ERE, exactly as the twin does it, so a
-    # version containing a `.` matches any character. Escaping it here would be
-    # a behaviour change, not a fix.
+    # VERSION IS INTERPOLATED RAW INTO AN ERE, exactly as the twin does it, so a version containing a `.` matches any character. Escaping it here would be a behaviour change, not a fix.
     comment = re.compile(r"<!--[^>]*-->")
     footer_re = re.compile("footer-version[^<]*>v%s<" % version)
     footer_diag = re.compile("footer-version[^<]*>[^<]*<[^>]*>[^<]*<")
@@ -412,9 +397,7 @@ def main(argv: list[str]) -> int:
     if workers_only != "true":
 
         def latest_json_readable() -> bool:
-            # `curl ... 2>/dev/null | jq -re '.version'` under `set +o pipefail`:
-            # the composite status is JQ'S, so a dead curl still reaches jq with
-            # empty input, and jq answers 4. Driven, not assumed.
+            # `curl ... 2>/dev/null | jq -re '.version'` under `set +o pipefail`: the composite status is JQ'S, so a dead curl still reaches jq with empty input, and jq answers 4. Driven, not assumed.
             _rc, body = curl_run(["-fsSL", "%s/cli/edge/latest.json" % RELEASES], quiet_stderr=True)
             jq_rc, out = jq_run(["-re", ".version"], stdin=body)
             _Last.edge_version = substitute(out)

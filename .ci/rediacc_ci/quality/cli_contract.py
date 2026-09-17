@@ -90,8 +90,7 @@ OUTPUT_SUBDIR = "packages/shared/src/cli-contract/data"
 # The generator, run through `npx tsx` from the repository root.
 GENERATOR = "packages/cli/scripts/generate-cli-contract.ts"
 
-# The two non-i18n artefacts, in the twin's order. Order is visible in the
-# `Stale CLI contract: ...` line, which joins the list with spaces.
+# The two non-i18n artefacts, in the twin's order. Order is visible in the `Stale CLI contract: ...` line, which joins the list with spaces.
 TOP_LEVEL_FILES = ("contract.generated.ts", "contract.json")
 
 # The two substrings whose lines are dropped before diffing. Substrings, not
@@ -116,16 +115,11 @@ def strip_version_lines(path: pathlib.Path) -> str | None:
     except OSError:
         return None
     lines = text.split("\n")
-    # `split` leaves a trailing empty element for a file that ends in a newline.
-    # grep would not emit a line there, so it is dropped before filtering rather
-    # than filtered and re-joined, which would add a spurious blank line to one
-    # side of the comparison.
+    # `split` leaves a trailing empty element for a file that ends in a newline. grep would not emit a line there, so it is dropped before filtering rather than filtered and re-joined, which would add a spurious blank line to one side of the comparison.
     if lines and lines[-1] == "":
         lines.pop()
     kept = [line for line in lines if not any(marker in line for marker in VERSION_MARKERS)]
-    # grep terminates every line it prints, including a final one the input did
-    # not terminate. Rebuilding with a trailing newline per line reproduces the
-    # bytes `diff` actually compares.
+    # grep terminates every line it prints, including a final one the input did not terminate. Rebuilding with a trailing newline per line reproduces the bytes `diff` actually compares.
     return "".join(line + "\n" for line in kept)
 
 
@@ -211,8 +205,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     output_dir = root / OUTPUT_SUBDIR
 
-    # The generator imports the live CLI, which resolves @rediacc/shared and
-    # @rediacc/provisioning through their dist builds.
+    # The generator imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds.
     log.step("Building packages the CLI imports...")
     build = subprocess.run(
         ["npm", "run", "build:packages"],
@@ -222,8 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         check=False,
     )
     if build.returncode != 0:
-        # `set -e`: the twin dies here with npm's status and never compares
-        # anything. See the port notes for why this is not collapsed to 1.
+        # `set -e`: the twin dies here with npm's status and never compares anything. See the port notes for why this is not collapsed to 1.
         return build.returncode
 
     log.step("Regenerating the CLI contract...")
@@ -255,8 +247,7 @@ def main(argv: list[str] | None = None) -> int:
 
 # The shims the selftest puts ahead of the real binaries. `npm` does nothing and
 # succeeds; `npx` copies a golden directory into `--output`. Both are FILES on
-# PATH rather than Python mocks, because the subject resolves them through PATH
-# and a mock inside this process would prove nothing about that.
+# PATH rather than Python mocks, because the subject resolves them through PATH and a mock inside this process would prove nothing about that.
 _NPM_SHIM = "#!/bin/bash\nexit ${SHIM_NPM_EXIT:-0}\n"
 _NPX_SHIM = """#!/bin/bash
 # Reads the --output argument the way the real generator does, then copies the
@@ -283,9 +274,7 @@ def _write_tree(base: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     return base
 
 
-# The smallest tree that is a valid contract: two top-level artefacts and one
-# locale. Every plant below is this dict with exactly one entry changed, which
-# is what makes each control name a single cause.
+# The smallest tree that is a valid contract: two top-level artefacts and one locale. Every plant below is this dict with exactly one entry changed, which is what makes each control name a single cause.
 _GOLDEN = {
     "contract.generated.ts": 'export const CLI_VERSION = "0.0.0-dev";\nexport const X = 1;\n',
     "contract.json": '{\n  "version": "0.0.0-dev",\n  "commands": ["repo"]\n}\n',
@@ -340,13 +329,10 @@ def selftest() -> int:
                     else:
                         os.environ[key] = value
 
-        # CONTROL FIRST: committed data identical to what the generator emits.
-        # Without this every plant below could be firing against a fixture that
-        # was already stale, and the suite would be green while testing nothing.
+        # CONTROL FIRST: committed data identical to what the generator emits. Without this every plant below could be firing against a fixture that was already stale, and the suite would be green while testing nothing.
         ctl.check("CONTROL: an up-to-date contract passes", run(dict(_GOLDEN)), 0)
 
-        # THE VERSION EXEMPTION, in both directions. A contract differing ONLY in
-        # the injected version is NOT stale...
+        # THE VERSION EXEMPTION, in both directions. A contract differing ONLY in the injected version is NOT stale...
         version_only = dict(_GOLDEN)
         version_only["contract.generated.ts"] = (
             'export const CLI_VERSION = "1.2.3";\nexport const X = 1;\n'
@@ -354,8 +340,7 @@ def selftest() -> int:
         version_only["contract.json"] = '{\n  "version": "1.2.3",\n  "commands": ["repo"]\n}\n'
         ctl.check("MIRROR: a version-only difference is not stale", run(version_only), 0)
 
-        # ...and a difference on any OTHER line still is, which is what stops the
-        # exemption from swallowing the whole file.
+        # ...and a difference on any OTHER line still is, which is what stops the exemption from swallowing the whole file.
         real_drift = dict(_GOLDEN)
         real_drift["contract.generated.ts"] = (
             'export const CLI_VERSION = "1.2.3";\nexport const X = 2;\n'
@@ -377,18 +362,12 @@ def selftest() -> int:
         missing_locale = {k: v for k, v in _GOLDEN.items() if k != "i18n/tr.json"}
         ctl.check("PLANT: an uncommitted locale is caught", run(missing_locale), 1)
 
-        # PLANT: the ORPHAN direction, which a one-way comparison misses
-        # entirely. A committed bundle for a locale the generator no longer
-        # emits is drift, and the twin is one of the few gates that checks it.
+        # PLANT: the ORPHAN direction, which a one-way comparison misses entirely. A committed bundle for a locale the generator no longer emits is drift, and the twin is one of the few gates that checks it.
         orphaned = dict(_GOLDEN)
         orphaned["i18n/zz.json"] = '{"repo": "Zed"}\n'
         ctl.check("PLANT: an orphaned locale bundle is caught", run(orphaned), 1)
 
-        # THE NO-NULLGLOB DEFECT, pinned rather than fixed. An empty committed
-        # i18n directory makes the SECOND loop iterate over the literal pattern,
-        # and the entry it produces names a glob. Asserting the exact string
-        # here is what stops a future "cleanup" from silently changing the
-        # verdict, and what makes the finding visible to a reader of this file.
+        # THE NO-NULLGLOB DEFECT, pinned rather than fixed. An empty committed i18n directory makes the SECOND loop iterate over the literal pattern, and the entry it produces names a glob. Asserting the exact string here is what stops a future "cleanup" from silently changing the verdict, and what makes the finding visible to a reader of this file.
         empty_i18n = base / "empty-i18n"
         if empty_i18n.exists():
             shutil.rmtree(empty_i18n)
@@ -400,19 +379,14 @@ def selftest() -> int:
             any(entry.startswith("i18n/*.json") for entry in entries),
         )
 
-        # THE GLOB'S NORMAL CASE, so the no-nullglob pin above is not passing
-        # because the helper always returns the literal. Both directions of the
-        # same function, which is the only way either assertion means anything.
+        # THE GLOB'S NORMAL CASE, so the no-nullglob pin above is not passing because the helper always returns the literal. Both directions of the same function, which is the only way either assertion means anything.
         ctl.check(
             "GLOB MIRROR: a populated directory returns its real files",
             [p.name for p in _glob_or_literal(golden / "i18n")],
             ["en.json", "tr.json"],
         )
 
-        # THE VERSION FILTER IS NOT APPLIED TO LOCALE BUNDLES, which is the
-        # asymmetry `_files_equal` exists for. A bundle whose only difference is
-        # a line containing `"version":` is STILL stale, and a port that had
-        # unified the two comparisons would report it clean.
+        # THE VERSION FILTER IS NOT APPLIED TO LOCALE BUNDLES, which is the asymmetry `_files_equal` exists for. A bundle whose only difference is a line containing `"version":` is STILL stale, and a port that had unified the two comparisons would report it clean.
         version_in_locale = dict(_GOLDEN)
         version_in_locale["i18n/en.json"] = '{"repo": "Repository", "version": "x"}\n'
         ctl.check(
@@ -421,8 +395,7 @@ def selftest() -> int:
             1,
         )
 
-        # SETUP ERRORS ARE NOT VERDICTS. A failing build must propagate the
-        # builder's code, not be reported as a stale contract.
+        # SETUP ERRORS ARE NOT VERDICTS. A failing build must propagate the builder's code, not be reported as a stale contract.
         ctl.check(
             "SETUP: a failing build propagates its own exit code",
             run(dict(_GOLDEN), SHIM_NPM_EXIT="7"),

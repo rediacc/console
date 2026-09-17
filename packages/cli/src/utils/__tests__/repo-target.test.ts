@@ -4,8 +4,7 @@ import { configService } from '../../services/config/config-resources.js';
 import type { ClusterConfig, RdcConfig } from '../../types/index.js';
 import { resolveRepoTarget } from '../repo-target.js';
 
-// Minimal config: a standalone machine, a materialized k8s member, and cluster
-// "prod" whose first k8s-server member (prod-k8s-1) is the control node.
+// Minimal config: a standalone machine, a materialized k8s member, and cluster "prod" whose first k8s-server member (prod-k8s-1) is the control node.
 function buildConfig(clusters: Record<string, ClusterConfig>): RdcConfig {
   const cfg = createEmptyRdcConfig();
   cfg.resources = {

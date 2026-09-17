@@ -119,12 +119,8 @@ from rediacc_ci.core import common
 # `BUCKET="rediacc-www-media"` (twin :48). Hard-coded there, hard-coded here.
 BUCKET = "rediacc-www-media"
 
-# The three legs, in the twin's order (twin :110-120), as
-# (remote_prefix, local_path_relative_to_repo_root). ORDER IS OBSERVABLE: it is
-# the order of the step lines and the order of the `aws` calls, and a reordered
-# tuple is a different program even though the same bytes end up on disk.
-# Every local path keeps its TRAILING SLASH because the twin's does, and `aws`
-# is handed the string as written.
+# The three legs, in the twin's order (twin :110-120), as (remote_prefix, local_path_relative_to_repo_root). ORDER IS OBSERVABLE: it is the order of the step lines and the order of the `aws` calls, and a reordered tuple is a different program even though the same bytes end up on disk. Every local path keeps its TRAILING SLASH because the twin's does, and `aws` is handed the string
+# as written.
 TUTORIALS = ("tutorials/video/", "packages/www/public/assets/tutorials/video/")
 SOLUTIONS = ("videos/", "packages/www/public/assets/videos/")
 AUDIO = ("tutorials/audio/", "packages/www/public/assets/tutorials/audio/")
@@ -138,8 +134,7 @@ ENDPOINT_ENV = "CLOUDFLARE_R2_MEDIA_ENDPOINT"
 # spelled `auto`; a real region name makes the SigV4 signature wrong.
 AWS_DEFAULT_REGION = "auto"
 
-# The three facts in the module docstring, as constants so a test can assert
-# each by name instead of restating the sentence.
+# The three facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 REQUIRE_VAR_CHECKS_ONLY_ITS_FIRST_ARGUMENT = True
 AN_EMPTY_CREDENTIAL_IS_NOT_CAUGHT = True
 DRY_RUN_STILL_CREATES_THE_LOCAL_DIRECTORIES = True

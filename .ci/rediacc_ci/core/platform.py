@@ -166,11 +166,7 @@ OS_LINUX = "linux"
 OS_DARWIN = "darwin"
 OS_WINDOWS = "windows"
 
-# `uname -s` prefixes, mapped. The MINGW / MSYS / CYGWIN arms are not
-# hypothetical: `.ci/lib/local-common.sh:795` and `rdc.sh:98` both branch on
-# exactly those three to pick a `.exe` suffix, so Git Bash is a host this repo
-# already meets. Matched by PREFIX because the real strings carry a version
-# (`MINGW64_NT-10.0-22631`, `CYGWIN_NT-10.0`).
+# `uname -s` prefixes, mapped. The MINGW / MSYS / CYGWIN arms are not hypothetical: `.ci/lib/local-common.sh:795` and `rdc.sh:98` both branch on exactly those three to pick a `.exe` suffix, so Git Bash is a host this repo already meets. Matched by PREFIX because the real strings carry a version (`MINGW64_NT-10.0-22631`, `CYGWIN_NT-10.0`).
 SYSTEM_PREFIXES = (
     ("Linux", OS_LINUX),
     ("Darwin", OS_DARWIN),
@@ -180,9 +176,7 @@ SYSTEM_PREFIXES = (
     ("CYGWIN", OS_WINDOWS),
 )
 
-# `uname -m` folded to ONE canonical key per architecture. The two spellings in
-# each row are the pair every `case` in the tree already accepts
-# (`x86_64 | amd64`, `aarch64 | arm64`), so this loses nothing.
+# `uname -m` folded to ONE canonical key per architecture. The two spellings in each row are the pair every `case` in the tree already accepts (`x86_64 | amd64`, `aarch64 | arm64`), so this loses nothing.
 MACHINE_ALIASES = {
     "x86_64": "x86_64",
     "amd64": "x86_64",
@@ -193,17 +187,8 @@ MACHINE_ALIASES = {
 # THE THREE PUBLISHED SPELLINGS, each row read from the file that builds the URL.
 # Do not add a fourth scheme; add a row when a fourth UPSTREAM appears.
 #
-#   goarch  Go's GOARCH, which is how mvdan.cc/sh and go.dev name their assets.
-#           shfmt_v3.13.1_linux_amd64          .ci/scripts/lib/toolchain.sh:339
-#           go1.26.6.linux-amd64.tar.gz        .ci/lib/setup.sh:378
-#   uname   the raw machine name, which is how koalaman/shellcheck and
-#           astral-sh/uv name theirs.
-#           shellcheck-v0.10.0.linux.x86_64.tar.xz
-#                                              .ci/scripts/lib/toolchain.sh:422
-#           uv-x86_64-unknown-linux-gnu.tar.gz .ci/bootstrap.sh:182
-#   node    Node's own release naming, reused by this repo's SEA artefacts.
-#           node-v22.13.0-linux-x64.tar.xz     .ci/lib/setup.sh:105
-#           rdc-linux-x64                      rdc.sh:98
+# goarch Go's GOARCH, which is how mvdan.cc/sh and go.dev name their assets. shfmt_v3.13.1_linux_amd64 .ci/scripts/lib/toolchain.sh:339 go1.26.6.linux-amd64.tar.gz .ci/lib/setup.sh:378 uname the raw machine name, which is how koalaman/shellcheck and astral-sh/uv name theirs. shellcheck-v0.10.0.linux.x86_64.tar.xz .ci/scripts/lib/toolchain.sh:422 uv-x86_64-unknown-linux-gnu.tar.gz
+# .ci/bootstrap.sh:182 node Node's own release naming, reused by this repo's SEA artefacts. node-v22.13.0-linux-x64.tar.xz .ci/lib/setup.sh:105 rdc-linux-x64 rdc.sh:98
 ARCH_NAMES = {
     "goarch": {"x86_64": "amd64", "aarch64": "arm64"},
     "uname": {"x86_64": "x86_64", "aarch64": "aarch64"},
@@ -212,37 +197,26 @@ ARCH_NAMES = {
 
 # THE TWO OS SPELLINGS, same treatment as ARCH_NAMES and for the same reason.
 #
-#   asset   what every third-party download URL in the tree asks for.
-#           shfmt_v3.13.1_darwin_arm64        .ci/scripts/lib/toolchain.sh:339
-#           go1.26.6.linux-amd64.tar.gz       .ci/lib/setup.sh:378
-#   sea     what THIS repo names its own executables, which is a different set
-#           of words for the same three systems and cannot be derived from the
-#           first by any rule.
-#           rdc-mac-arm64, rdc-win-x64.exe    rdc.sh:89,
-#                                             .ci/scripts/build/build-cli-executables.sh:61
+# asset what every third-party download URL in the tree asks for. shfmt_v3.13.1_darwin_arm64 .ci/scripts/lib/toolchain.sh:339 go1.26.6.linux-amd64.tar.gz .ci/lib/setup.sh:378 sea what THIS repo names its own executables, which is a different set of words for the same three systems and cannot be derived from the first by any rule. rdc-mac-arm64, rdc-win-x64.exe rdc.sh:89,
+# .ci/scripts/build/build-cli-executables.sh:61
 OS_NAMES = {
     "asset": {OS_LINUX: "linux", OS_DARWIN: "darwin", OS_WINDOWS: "windows"},
     "sea": {OS_LINUX: "linux", OS_DARWIN: "mac", OS_WINDOWS: "win"},
 }
 
-# The executable suffix per OS, which travels with the `sea` spelling and is the
-# other half of what `.ci/lib/local-common.sh:795` and
-# `.ci/scripts/infra/build-renet.sh:32` each derive by hand.
+# The executable suffix per OS, which travels with the `sea` spelling and is the other half of what `.ci/lib/local-common.sh:795` and `.ci/scripts/infra/build-renet.sh:32` each derive by hand.
 EXE_SUFFIXES = {OS_LINUX: "", OS_DARWIN: "", OS_WINDOWS: ".exe"}
 
-# uv names its assets by target triple, so the OS half of the checksum key is
-# also the OS half of the URL. Mirrors `uv_target` at .ci/bootstrap.sh:91-116.
+# uv names its assets by target triple, so the OS half of the checksum key is also the OS half of the URL. Mirrors `uv_target` at .ci/bootstrap.sh:91-116.
 UV_OS_TRIPLES = {OS_LINUX: "unknown-linux-gnu", OS_DARWIN: "apple-darwin"}
 
 # The OSes whose toolchain this repo provisions and runs directly.
 NATIVE_OSES = (OS_LINUX, OS_DARWIN)
 
-# The two Windows front doors, in the order one calls the other. Named so the
-# refusal below can point at them instead of describing them.
+# The two Windows front doors, in the order one calls the other. Named so the refusal below can point at them instead of describing them.
 WINDOWS_LAUNCHERS = ("run.cmd", "run.ps1")
 
-# The kernel files that ANSWER the WSL question, most specific first so the
-# reported signal is the more precise one when both fire.
+# The kernel files that ANSWER the WSL question, most specific first so the reported signal is the more precise one when both fire.
 WSL_PROC_FILES = ("proc/sys/kernel/osrelease", "proc/version")
 
 # Matched case-insensitively. Both markers, because WSL2 kernels have shipped
@@ -517,9 +491,7 @@ def report(system: str | None = None, machine: str | None = None) -> list[str]:
     return lines
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface a bash caller reaches
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface a bash caller reaches ---------------------------------------------------------------------------
 
 
 def _fail(message: str) -> int:
@@ -544,8 +516,7 @@ def main(argv: list[str]) -> int:
 
     if verb == "wsl":
         # The verdict is the EXIT CODE, so a caller writes `if ... wsl; then`.
-        # The signals go to stdout either way, because the reason is the useful
-        # part in both directions.
+        # The signals go to stdout either way, because the reason is the useful part in both directions.
         evidence = detect_wsl()
         print(evidence.describe())
         return 0 if evidence.is_wsl else 1

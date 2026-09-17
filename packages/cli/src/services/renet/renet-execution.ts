@@ -17,9 +17,7 @@ import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine
 import { renetProvisioner } from './renet-provisioner.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 
-// The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool
-// can read a team key without importing renet. Re-exported here: this module is
-// where the rest of the CLI has always imported them from.
+// The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
 
 /** Setup marker file created by `renet setup` on successful completion */
@@ -91,10 +89,7 @@ export async function provisionRenetToRemote(
     localBinaryPath = resolveRenetPath(config.renetPath);
   }
 
-  // Auto-restart rediacc-router after a binary update so the
-  // long-running router daemon picks up new code without manual
-  // `systemctl restart`. systemctl try-restart is a no-op when the
-  // unit is not running, so this is safe on machines without the
+  // Auto-restart rediacc-router after a binary update so the long-running router daemon picks up new code without manual `systemctl restart`. systemctl try-restart is a no-op when the unit is not running, so this is safe on machines without the
   // router daemon. Opt out via skipRouterRestart=true or
   // REDIACC_SKIP_ROUTER_RESTART=1.
   const skipRestart = options.skipRouterRestart ?? !!process.env.REDIACC_SKIP_ROUTER_RESTART;
@@ -148,10 +143,7 @@ export async function verifyMachineSetup(
 ): Promise<void> {
   if (process.env.REDIACC_SKIP_SETUP_CHECK) return;
 
-  // Only verify setup for functions that require the BTRFS datastore.
-  // System functions (machine_ping, machine_version, setup_machine,
-  // machine_install, machine_uninstall, etc.) must work on machines
-  // regardless of setup state.
+  // Only verify setup for functions that require the BTRFS datastore. System functions (machine_ping, machine_version, setup_machine, machine_install, machine_uninstall, etc.) must work on machines regardless of setup state.
   const needsDatastore = options.functionName
     ? functionRequiresDatastore(options.functionName)
     : true;
@@ -161,8 +153,7 @@ export async function verifyMachineSetup(
   const cached = setupCache.get(cacheKey);
   if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
 
-  // Persistent-state second: a recent rdc process may have verified setup on
-  // this machine already — skip both SSH round-trips (marker + btrfs check).
+  // Persistent-state second: a recent rdc process may have verified setup on this machine already — skip both SSH round-trips (marker + btrfs check).
   if (await isSetupVerifiedFresh(cacheKey).catch(() => false)) {
     setupCache.set(cacheKey, Date.now());
     return;
@@ -181,8 +172,7 @@ export async function verifyMachineSetup(
       }
 
       const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-      // Use multiple detection methods matching the Go bridge's approach:
-      // 1. findmnt (preferred), 2. stat -f, 3. /proc/mounts grep
+      // Use multiple detection methods matching the Go bridge's approach: 1. findmnt (preferred), 2. stat -f, 3. /proc/mounts grep
       const fsCheck = await sftp.exec(
         `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || ` +
           `stat -f -c '%T' '${datastorePath}' 2>/dev/null || ` +

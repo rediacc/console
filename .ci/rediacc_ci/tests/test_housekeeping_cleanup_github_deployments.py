@@ -79,12 +79,8 @@ sys.stdout.write("fake status output that must never be seen\\n")
 sys.exit(int(os.environ.get("FAKE_GH_STATUS_RC", "0")))
 """
 
-# What the two subjects need on PATH besides the fake gh. The twin sources
-# common.sh (`dirname` at line 15, `uname` for the CI_OS/CI_ARCH assignments at
-# source time) and its `parse_args` calls `to_upper`, which shells out to `tr`
-# once per flag (common.sh:301-303). Found by driving it: the first attempt
-# omitted `tr` and every argument-parsing case died with
-# "common.sh: line 302: tr: command not found", exit 127.
+# What the two subjects need on PATH besides the fake gh. The twin sources common.sh (`dirname` at line 15, `uname` for the CI_OS/CI_ARCH assignments at source time) and its `parse_args` calls `to_upper`, which shells out to `tr` once per flag (common.sh:301-303). Found by driving it: the first attempt omitted `tr` and every argument-parsing case died with "common.sh: line 302: tr:
+# command not found", exit 127.
 PATH_MINIMUM = ("dirname", "uname", "tr")
 
 

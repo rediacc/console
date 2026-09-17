@@ -153,8 +153,7 @@ async function runSpecs(): Promise<SpecResult[]> {
       runCases,
       withFixture,
     });
-    // Every invocation inside one spec file is folded onto that file's rule id,
-    // so the report is one line per RULE rather than one per fixture.
+    // Every invocation inside one spec file is folded onto that file's rule id, so the report is one line per RULE rather than one per fixture.
     const folded: SpecResult = { ruleId: mod.ruleId, valid: 0, invalid: 0, failures: [] };
     for (const r of results) {
       folded.valid += r.valid;
@@ -182,14 +181,12 @@ async function selftest(): Promise<number> {
 
   const missedReport = runCases(jsonRuleTester(), 'control/should-have-reported', sortedKeys, {
     valid: [],
-    // Sorted keys. The rule is correct to stay silent, so DEMANDING an error
-    // must be recorded as a failure.
+    // Sorted keys. The rule is correct to stay silent, so DEMANDING an error must be recorded as a failure.
     invalid: [{ code: '{"a": "1", "b": "2"}', errors: [{ messageId: 'unsorted' }] }],
   });
 
   const falseAlarm = runCases(jsonRuleTester(), 'control/should-have-been-quiet', sortedKeys, {
-    // Unsorted keys. The rule is correct to report, so calling this valid must
-    // be recorded as a failure.
+    // Unsorted keys. The rule is correct to report, so calling this valid must be recorded as a failure.
     valid: [{ code: '{"b": "2", "a": "1"}' }],
     invalid: [],
   });
@@ -202,8 +199,7 @@ async function selftest(): Promise<number> {
     problems.push('CONTROL FAILED: an unexpected error on a "valid" case was not reported.');
   }
 
-  // And the corpus must not be empty, or the two controls above are the only
-  // thing this file ever proves.
+  // And the corpus must not be empty, or the two controls above are the only thing this file ever proves.
   const specs = specFiles();
   if (specs.length === 0) {
     problems.push(`CONTROL FAILED: no ${SPEC_SUFFIX} files found in ${SPEC_DIR}.`);

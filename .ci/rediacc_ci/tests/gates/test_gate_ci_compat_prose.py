@@ -58,13 +58,11 @@ BASH_TWIN = ".ci/scripts/test/gates/test-ci-compat-prose.sh"
 
 SUT = paths.from_root(".ci", "scripts", "security", "check-commands.sh")
 
-# See the docstring: built rather than written, so this file is invisible to the
-# scanner it exercises.
+# See the docstring: built rather than written, so this file is invisible to the scanner it exercises.
 BANNED_SEQ = "s" + "eq"
 BANNED_MAPFILE = "map" + "file"
 
-# The anchor the control below cuts out. Named once so a rename reds the control
-# loudly rather than making it a no-op.
+# The anchor the control below cuts out. Named once so a rename reds the control loudly rather than making it a no-op.
 SKIP_ANCHOR = "# Skip if it's in a comment"
 
 
@@ -90,8 +88,7 @@ def run_in(root: pathlib.Path) -> int:
 
 def test_a_banned_command_in_code_is_caught(gate):
     gate.log_test("the control that matters: a real banned command must FAIL")
-    # If this does not fail, every other assertion here is vacuous: the gate
-    # would be passing everything.
+    # If this does not fail, every other assertion here is vacuous: the gate would be passing everything.
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n%s 1 10\n" % BANNED_SEQ
         if run_in(build_root(gate, work, probe)) == 0:
@@ -101,14 +98,12 @@ def test_a_banned_command_in_code_is_caught(gate):
 
 def test_the_same_command_in_a_comment_is_ignored(gate):
     gate.log_test("the same command in a COMMENT must NOT fail")
-    # THE PROBE MUST REACH THE SKIP BRANCH, and the obvious probe does not.
-    # check-commands.sh's outer scan requires the banned word to be immediately
+    # THE PROBE MUST REACH THE SKIP BRANCH, and the obvious probe does not. check-commands.sh's outer scan requires the banned word to be immediately
     # preceded by line-start whitespace, `|`, `&`, `;`, `$(` or `if `. In plain
     # prose the word follows an ordinary letter, so the outer regex never matches
     # and the skip branch is never consulted; such a probe passes identically
     # with the branch DELETED, measured exit 0 both ways. Putting the word
-    # directly after a trigger character makes the outer scan match, so the only
-    # thing that can suppress it is the skip branch itself.
+    # directly after a trigger character makes the outer scan match, so the only thing that can suppress it is the skip branch itself.
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n" % BANNED_SEQ
         if run_in(build_root(gate, work, probe)) != 0:
@@ -120,19 +115,14 @@ def test_the_same_command_in_a_comment_is_ignored(gate):
 
 def test_control_the_probe_actually_reaches_the_skip_branch(gate):
     gate.log_test("CONTROL: delete the skip branch and the probe MUST flip")
-    # The definitive control, and the one whose absence let a vacuous version of
-    # this file ship: copy the real gate, delete ONLY the comment-skip branch,
-    # and require the same probe to change its verdict. If it does not, the probe
-    # is not exercising the branch and every assertion above is decoration.
+    # The definitive control, and the one whose absence let a vacuous version of this file ship: copy the real gate, delete ONLY the comment-skip branch, and require the same probe to change its verdict. If it does not, the probe is not exercising the branch and every assertion above is decoration.
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n" % BANNED_SEQ
         root = build_root(gate, work, probe)
         copy = root / ".ci" / "scripts" / "security" / "check-commands.sh"
         rc_intact = run_in(root)
 
-        # The twin plants this cut with an inline python heredoc. Same edit,
-        # same anchors: from the comment marker through the end of the `fi` that
-        # closes it.
+        # The twin plants this cut with an inline python heredoc. Same edit, same anchors: from the comment marker through the end of the `fi` that closes it.
         source = copy.read_text(encoding="utf-8")
         start = source.find(SKIP_ANCHOR)
         if start < 0:
@@ -160,11 +150,7 @@ def test_control_the_probe_actually_reaches_the_skip_branch(gate):
 
 def test_this_repos_own_explanations_survive(gate):
     gate.log_test("the real tree's own comments about banned commands stay clean")
-    # WHAT THIS DOES AND DOES NOT PROVE. It guards against OVER-firing: the live
-    # tree must stay green while it genuinely documents banned commands in prose.
-    # It does NOT exercise the comment-skip branch, because none of those files
-    # mentions a banned command directly after a trigger char, so the outer scan
-    # never matches their comment lines. The control above is the only assertion
+    # WHAT THIS DOES AND DOES NOT PROVE. It guards against OVER-firing: the live tree must stay green while it genuinely documents banned commands in prose. It does NOT exercise the comment-skip branch, because none of those files mentions a banned command directly after a trigger char, so the outer scan never matches their comment lines. The control above is the only assertion
     # here that reaches the branch.
     pattern = re.compile(r"^[ \t]*#.*\b(%s|%s)\b" % (BANNED_SEQ, BANNED_MAPFILE), re.MULTILINE)
     documented = 0

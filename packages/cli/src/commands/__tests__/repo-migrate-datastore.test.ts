@@ -166,8 +166,7 @@ describe('repo migrate — source datastore declaration (#74)', () => {
 
   it('deletes the source image from the SOURCE datastore, after placement moved', async () => {
     placeOnNamedDatastore();
-    // finalizeCutover rewrites placement BEFORE phase 3, so a derivation done at
-    // delete time would answer for the target and hunt the image on the wrong mount.
+    // finalizeCutover rewrites placement BEFORE phase 3, so a derivation done at delete time would answer for the target and hunt the image on the wrong mount.
     mockSetRepositoryPlacement.mockImplementation(() => {
       mockGetCurrent.mockResolvedValue({
         resources: {

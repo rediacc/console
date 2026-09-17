@@ -73,28 +73,16 @@ ORDER = 16
 
 # AN ASCII ARROW IS NOT A REDIRECT, and this is the FIFTH round of the same
 # class. Measured 2026-09-01: writing a plain markdown file was refused because
-# its PROSE contained `check:ci-hook-worklist-suite ->
-# .claude/hooks/stop/test-worklist-v5.sh`. The `->` scored as a redirect and the
-# path after it as the target, so a document describing a script was treated as
-# a command overwriting it. Widening the class back to "any character" restores
-# that block exactly.
+# its PROSE contained `check:ci-hook-worklist-suite -> .claude/hooks/stop/test-worklist-v5.sh`. The `->` scored as a redirect and the path after it as the target, so a document describing a script was treated as a command overwriting it. Widening the class back to "any character" restores that block exactly.
 DEFECT = ('NOT_ARROW = r"(^|[^->])"', 'NOT_ARROW = r"(^|[^ZZ])"')
 
-# A real redirect's `>` is preceded by whitespace, start-of-string, or a digit
-# (`2>`). Never by `-`. Requiring that keeps every true positive and drops the
-# arrow. One constant, used by BOTH the intent test and the target harvest,
-# because the two disagreeing about what a redirect is was how the class kept
-# coming back.
+# A real redirect's `>` is preceded by whitespace, start-of-string, or a digit (`2>`). Never by `-`. Requiring that keeps every true positive and drops the arrow. One constant, used by BOTH the intent test and the target harvest, because the two disagreeing about what a redirect is was how the class kept coming back.
 NOT_ARROW = r"(^|[^->])"
 
 _S = hookio.SPACE
 _NOT_SEP = r"[^|&;" + _S + r"]"
 
-# A write indicator: a redirect, an in-place edit, a copy/move onto it, or a
-# python/perl write. Reading, running and grepping are none of these.
-# The write-detector. It recognised `write_text` -- the exact idiom in the header
-# comment above -- but NOT `open(path, "w").write(...)`, which is the commoner one,
-# so the door this guard exists to close was open for that spelling. Verified
+# A write indicator: a redirect, an in-place edit, a copy/move onto it, or a python/perl write. Reading, running and grepping are none of these. The write-detector. It recognised `write_text` -- the exact idiom in the header comment above -- but NOT `open(path, "w").write(...)`, which is the commoner one, so the door this guard exists to close was open for that spelling. Verified
 # 2026-08-27: the header's own example was caught and its sibling was not.
 WRITE_INTENT = (
     NOT_ARROW
@@ -110,10 +98,7 @@ WRITE_INTENT = (
     r"|shutil\.(copy|move)|truncate|\bcp[" + _S + r"]|\bmv[" + _S + r"]|\bshfmt[" + _S + r"]+-w"
 )
 
-# Only .sh paths that are actually the TARGET of a write. Collecting every .sh
-# token anywhere in the command blocked a heredoc that merely MENTIONED a running
-# script while writing a different file -- and a false block on a safety guard is
-# how a guard gets worked around, which costs more than the block saved.
+# Only .sh paths that are actually the TARGET of a write. Collecting every .sh token anywhere in the command blocked a heredoc that merely MENTIONED a running script while writing a different file -- and a false block on a safety guard is how a guard gets worked around, which costs more than the block saved.
 TARGET_SPAN = (
     NOT_ARROW
     + r">>?["
@@ -147,19 +132,13 @@ TARGET_SPAN = (
     + r"+\.sh"
 )
 
-# `$` IS IN THE CHARACTER CLASS so a variable expansion is RECOGNISED and then
-# skipped. Without it, `"$SP/mp-$ver.sh"` yielded the candidate `ver.sh` -- the
-# tail of a variable name plus the suffix, a filename that appears nowhere. The
-# guard cannot know what `$ver` expands to, so it must not guess.
+# `$` IS IN THE CHARACTER CLASS so a variable expansion is RECOGNISED and then skipped. Without it, `"$SP/mp-$ver.sh"` yielded the candidate `ver.sh` -- the tail of a variable name plus the suffix, a filename that appears nowhere. The guard cannot know what `$ver` expands to, so it must not guess.
 SH_PATH = r"[A-Za-z0-9_.$/-]+\.sh"
 
-# A python/perl heredoc can name its target in ways no redirect grep will see, so
-# fall back to the old broad scan whenever the command opens one. Broad and noisy
-# beats silent here: this is the door the pre-edit guard cannot cover.
+# A python/perl heredoc can name its target in ways no redirect grep will see, so fall back to the old broad scan whenever the command opens one. Broad and noisy beats silent here: this is the door the pre-edit guard cannot cover.
 PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
 
-# A python write target appears in a target POSITION: assigned to a name, or
-# passed to open()/Path(). A mention inside prose does not.
+# A python write target appears in a target POSITION: assigned to a name, or passed to open()/Path(). A mention inside prose does not.
 #
 # THE `=` BRANCH NEEDS A SPACE BEFORE IT, and this is the third round of the
 # same class. Measured 2026-08-28: a python heredoc's REPLACEMENT STRING held
@@ -174,19 +153,14 @@ PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
 # as DATA is valid bash, which forbids the space (`VAR=value`, no spaces,
 # or it is a syntax error). Requiring a preceding space keeps every documented
 # true positive (all authored `NAME = value` in this repo) while dropping the
-# embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of
-# those idioms exists as bash syntax, so they carry no equivalent ambiguity.
+# embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of those idioms exists as bash syntax, so they carry no equivalent ambiguity.
 ASSIGN_TARGET = (
     r"([" + _S + r"]=[" + _S + r"]|open\(|Path\()[" + _S + r"]*[\"'][^\"']+\.[A-Za-z0-9]+"
 )
 
 # Targets come from TWO places, and looking in only one of them was the bug.
 # A `cat > notes.txt <<'PY'`-shaped command names its target in the REDIRECT;
-# the earlier cut only harvested redirect targets ending in .sh, so a
-# redirect to any other extension contributed nothing and the command read as
-# "target unidentifiable" while its target sat in plain sight. Measured
-# 2026-08-27: writing two commit-message files was refused because their TEXT
-# discussed write_text and named a running script.
+# the earlier cut only harvested redirect targets ending in .sh, so a redirect to any other extension contributed nothing and the command read as "target unidentifiable" while its target sat in plain sight. Measured 2026-08-27: writing two commit-message files was refused because their TEXT discussed write_text and named a running script.
 REDIR_TARGET = NOT_ARROW + r">>?[" + _S + r']*"?[^|&;<' + _S + r'"]+\.[A-Za-z0-9]+'
 
 ANY_TAIL = r"[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$"
@@ -216,15 +190,12 @@ Pick one:
   3. If the process is stale rather than working, stop it first.
 """
 
-# ---------------------------------------------------------------------------
-# The fixture world
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
 # ITS OWN WORLD, not the Edit-side guard's. The two could share one, and sharing
 # would halve the processes; they do not, because the pgrep pattern is built
 # from a BASENAME and two worlds holding the same basename would each report the
-# other's process in the message. Distinct names keep each guard's output about
-# its own world.
+# other's process in the message. Distinct names keep each guard's output about its own world.
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-bashwrite")
 LIVE_SCRIPT = "%s/bash-side-suite.sh" % WORLD
 SIBLING_SCRIPT = "%s/bash-side-chain-evaluator.sh" % WORLD
@@ -262,11 +233,7 @@ def _spawn(argv):
     )
 
 
-# One session at a time in this world. TWO pytest runs of this suite were live
-# on this machine at once on 2026-09-06 (a peer agent's and this one's), and
-# they fought: each `_kill_stale` killed the other's shells, and the case that
-# names a running script reported different pids on the two sides of one
-# differential. The world has to sit at a FIXED path -- a static payload names
+# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names
 # it -- so it cannot be made per-process; an advisory lock held for the life of
 # the interpreter makes the second run wait instead.
 _LOCK_FDS = []
@@ -355,15 +322,12 @@ def _bashwrite_world(_unused):
     for path in (LIVE_SCRIPT, SIBLING_SCRIPT, IDLE_SCRIPT):
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(_BODY)
-        # No chmod: the shells below are started as `bash <script>`, so the
-        # execute bit is never consulted, and setting one would only trip the
-        # permissive-mask lint for no behaviour.
+        # No chmod: the shells below are started as `bash <script>`, so the execute bit is never consulted, and setting one would only trip the permissive-mask lint for no behaviour.
     if not _CHILDREN:
         _hold_world_lock(WORLD)
         _kill_stale((LIVE_SCRIPT, SIBLING_SCRIPT))
         _CHILDREN.append(_spawn([LIVE_SCRIPT]))
-        # An argument naming a chain directory: the only way to reach the
-        # hook-chain-sibling exclusion from a controlled world.
+        # An argument naming a chain directory: the only way to reach the hook-chain-sibling exclusion from a controlled world.
         _CHILDREN.append(_spawn([SIBLING_SCRIPT, ".claude/hooks/pre-bash/marker"]))
         atexit.register(_reap)
         _await_visible()
@@ -490,20 +454,10 @@ def _targets(cmd):
 
     # PRECISE FIRST, BROAD ONLY IF THAT FINDS NOTHING.
     #
-    # The old line took EVERY .sh token in the command. That is correct for a
-    # python heredoc naming its target, and badly wrong for one whose payload
-    # merely MENTIONS a script -- which is what documentation, a hook message,
-    # or a commit body routinely does. Measured 2026-08-27: patching this very
-    # guard's sibling was refused twice because the replacement TEXT contained
-    # `./run.sh devbox remove` while a peer ran that script. No interpreter was
-    # executing the file being written, and the same false-positive class is
-    # already recorded twice in this file's own comments.
+    # The old line took EVERY .sh token in the command. That is correct for a python heredoc naming its target, and badly wrong for one whose payload merely MENTIONS a script -- which is what documentation, a hook message, or a commit body routinely does. Measured 2026-08-27: patching this very guard's sibling was refused twice because the replacement TEXT contained `./run.sh
+    # devbox remove` while a peer ran that script. No interpreter was executing the file being written, and the same false-positive class is already recorded twice in this file's own comments.
     #
-    # ASK "COULD I IDENTIFY THE TARGET AT ALL", not "did I find a .sh".
-    # The first cut of this asked the second question and fell back to the broad
-    # scan whenever no .sh sat in a target position -- which is precisely the
-    # shape of the false positive (real target a .py, payload mentioning a
-    # script), so the narrowing changed nothing. Control 1 caught it.
+    # ASK "COULD I IDENTIFY THE TARGET AT ALL", not "did I find a .sh". The first cut of this asked the second question and fell back to the broad scan whenever no .sh sat in a target position -- which is precisely the shape of the false positive (real target a .py, payload mentioning a script), so the narrowing changed nothing. Control 1 caught it.
     anytarget = "\n".join(
         _sort_u(
             hookio.grep_o(ANY_TAIL, _pipe(ASSIGN_TARGET, cmd))
@@ -512,14 +466,11 @@ def _targets(cmd):
     )
     precise = "\n".join(_sort_u(hookio.grep_lines(r"\.sh$", hookio._printf_line(anytarget))))
     if anytarget != "":
-        # Targets were identifiable. If none is a shell script, this command
-        # writes none, however many it happens to NAME in its payload.
+        # Targets were identifiable. If none is a shell script, this command writes none, however many it happens to NAME in its payload.
         if precise != "":
             targets = "\n".join(_sort_u(("%s\n%s" % (targets, precise)).split("\n")))
     else:
-        # Nothing looked like a target, so keep the old broad-and-noisy scan
-        # rather than going silent: a missed corruption costs more than a
-        # false positive, which is why the broad form was chosen originally.
+        # Nothing looked like a target, so keep the old broad-and-noisy scan rather than going silent: a missed corruption costs more than a false positive, which is why the broad form was chosen originally.
         broad = hookio._command_substitution(_pipe(SH_PATH, cmd))
         targets = "\n".join(_sort_u(("%s\n%s" % (targets, broad)).split("\n")))
     return targets

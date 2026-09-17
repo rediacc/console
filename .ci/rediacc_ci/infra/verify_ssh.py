@@ -93,8 +93,7 @@ from rediacc_ci import log
 
 SELF = "verify-ssh.py"
 
-# The twin's own default, kept as a named constant so the differential can cite
-# it rather than repeat the literal.
+# The twin's own default, kept as a named constant so the differential can cite it rather than repeat the literal.
 DEFAULT_ATTEMPTS = 15
 
 # Seconds between full passes over the target list. Hardcoded in the twin too;
@@ -151,9 +150,7 @@ def parse_attempts(raw: str) -> int | None:
 
 
 def main(argv: list[str]) -> int:
-    # ORDER MATTERS AND IS THE TWIN'S. require_cmd runs before the SSH_KEY test,
-    # which runs before the argument-count test. A caller with no ssh, no key and
-    # no arguments must be told about ssh first, same as today.
+    # ORDER MATTERS AND IS THE TWIN'S. require_cmd runs before the SSH_KEY test, which runs before the argument-count test. A caller with no ssh, no key and no arguments must be told about ssh first, same as today.
     if shutil.which("ssh") is None:
         log.error("Required command 'ssh' is not available")
         return 1
@@ -170,19 +167,13 @@ def main(argv: list[str]) -> int:
 
     # `${ATTEMPTS:-15}`: an empty value takes the default, an unset one too.
     #
-    # PARSED HERE, REFUSED LATER, and the order is the twin's rather than the
-    # tidy one. Bash assigns ATTEMPTS as a plain string and does not evaluate it
-    # arithmetically until the `for ((...))` header, which is AFTER the chown
-    # below has already run. A port that validated eagerly would skip a chown
-    # the twin performs, so the verdict is computed now and acted on at the
-    # loop.
+    # PARSED HERE, REFUSED LATER, and the order is the twin's rather than the tidy one. Bash assigns ATTEMPTS as a plain string and does not evaluate it arithmetically until the `for ((...))` header, which is AFTER the chown below has already run. A port that validated eagerly would skip a chown the twin performs, so the verdict is computed now and acted on at the loop.
     attempts_raw = os.environ.get("ATTEMPTS") or str(DEFAULT_ATTEMPTS)
     attempts = parse_attempts(attempts_raw)
 
     user_name = os.environ.get("SSH_USER") or ""
     if not user_name:
-        # `$(whoami)` under `set -e`: a failing substitution in an assignment
-        # aborts the script with the substitution's status, so this returns it.
+        # `$(whoami)` under `set -e`: a failing substitution in an assignment aborts the script with the substitution's status, so this returns it.
         who = subprocess.run(["whoami"], capture_output=True, text=True, check=False)
         if who.returncode != 0:
             sys.stderr.write(who.stderr)
@@ -193,8 +184,7 @@ def main(argv: list[str]) -> int:
     chown_path = os.environ.get("CHOWN_PATH", "")
     if chown_path:
         # `ops` writes the key as root; the twin chowns it back before reading
-        # it. Not captured: sudo's own prompt and diagnostics belong on this
-        # process's stderr exactly as they do for the twin.
+        # it. Not captured: sudo's own prompt and diagnostics belong on this process's stderr exactly as they do for the twin.
         who = subprocess.run(["whoami"], capture_output=True, text=True, check=False)
         if who.returncode != 0:
             sys.stderr.write(who.stderr)
@@ -212,9 +202,7 @@ def main(argv: list[str]) -> int:
     for i in range(1, attempts + 1):
         for target in argv:
             host, port = split_target(target)
-            # STREAMS ARE INHERITED, NOT CAPTURED. The twin does not redirect
-            # ssh at all, so its banner, its "Connection refused" and its
-            # `SSH OK` all reach this process's own stdout and stderr. A
+            # STREAMS ARE INHERITED, NOT CAPTURED. The twin does not redirect ssh at all, so its banner, its "Connection refused" and its `SSH OK` all reach this process's own stdout and stderr. A
             # `capture_output=True` here would silently swallow every one of
             # them and the two implementations would print different things
             # while agreeing on the exit code.
@@ -240,8 +228,7 @@ def main(argv: list[str]) -> int:
                 log.info(f"SSH connection successful via {target} on attempt {i}")
                 return 0
             log.info(f"Attempt {i} on {target} failed")
-        # THE FALSE LINE AND THE WASTED SLEEP ARE THE TWIN'S, on the last pass
-        # as much as on the first. See the docstring.
+        # THE FALSE LINE AND THE WASTED SLEEP ARE THE TWIN'S, on the last pass as much as on the first. See the docstring.
         log.info(f"Attempt {i} failed for all targets, retrying in 5s...")
         subprocess.run(["sleep", RETRY_SLEEP], check=False)
 

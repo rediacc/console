@@ -104,9 +104,7 @@ AUTOPILOT_FILE_ENV = "AUTOPILOT_BP_ALIGN_AUTOPILOT_FILE"
 DEFAULT_BREAKPOINT_FILE = ".ci/breakpoint/workflow/breakpoint.yml"
 DEFAULT_AUTOPILOT_FILE = ".github/workflows/autopilot.yml"
 
-# The three depths the scanner is built on. Named rather than inlined because
-# they are the load-bearing assumption -- see the module docstring -- and a
-# reader who does not know that reads `6` and `8` as arbitrary.
+# The three depths the scanner is built on. Named rather than inlined because they are the load-bearing assumption -- see the module docstring -- and a reader who does not know that reads `6` and `8` as arbitrary.
 WORKFLOW_DISPATCH_RE = re.compile(r"^  workflow_dispatch:[ \t]*$")
 INPUTS_RE = re.compile(r"^    inputs:[ \t]*$")
 INPUT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+:[ \t]*$")
@@ -117,8 +115,7 @@ FIELD_INDENT = 8
 # not the option list at all; the real one has always carried the full ladder.
 MIN_DURATION_OPTIONS = 5
 
-# The two booleans, and the two fields of each, that must agree. A list rather
-# than four hand-written comparisons so a fifth copied input is one row.
+# The two booleans, and the two fields of each, that must agree. A list rather than four hand-written comparisons so a fifth copied input is one row.
 BOOLEAN_INPUTS = ("debug-shell", "send-email")
 BOOLEAN_FIELDS = ("type", "default")
 
@@ -151,8 +148,7 @@ def input_field(path: pathlib.Path, want: str, field: str) -> str:
             if INPUTS_RE.match(raw):
                 in_inputs = True
             continue
-        # awk: `if ($0 ~ /^[[:space:]]*$/) next` -- a blank line inside the block
-        # is not the end of it, so indentation is not measured for it.
+        # awk: `if ($0 ~ /^[[:space:]]*$/) next` -- a blank line inside the block is not the end of it, so indentation is not measured for it.
         if raw.strip() == "":
             continue
         indent = len(raw) - len(raw.lstrip(" "))
@@ -160,8 +156,7 @@ def input_field(path: pathlib.Path, want: str, field: str) -> str:
         if body.startswith("#"):
             continue
         if indent < INPUT_INDENT:
-            # awk `exit`: the inputs block has ended and there is nothing further
-            # to find. Not a `break` into a later search.
+            # awk `exit`: the inputs block has ended and there is nothing further to find. Not a `break` into a later search.
             return ""
         if indent == INPUT_INDENT and INPUT_NAME_RE.match(body):
             name = body.split(":", 1)[0]
@@ -267,11 +262,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# The smallest pair of files the scanner accepts, used by the selftest as the
-# base every plant is a one-field mutation of. Written out rather than copied
+# The smallest pair of files the scanner accepts, used by the selftest as the base every plant is a one-field mutation of. Written out rather than copied
 # from the real workflows: a fixture built by mutating a real file is a fixture
-# that stops testing the day the real file is reworded, and `check-control-
-# vacuity.sh` exists because that has happened here.
+# that stops testing the day the real file is reworded, and `check-control- vacuity.sh` exists because that has happened here.
 _BREAKPOINT_FIXTURE = """\
 name: breakpoint
 on:
@@ -355,8 +348,7 @@ def selftest() -> int:
             0,
         )
 
-        # THE PLANT THAT MATTERS MOST. send-email's default is what decides
-        # whether a bearer-credential URL reaches a world-readable log.
+        # THE PLANT THAT MATTERS MOST. send-email's default is what decides whether a bearer-credential URL reaches a world-readable log.
         ctl.check(
             "PLANT: send-email.default drift is caught",
             run(
@@ -401,8 +393,7 @@ def selftest() -> int:
             ),
             1,
         )
-        # The mirror of the whole plant family: differing WHITESPACE and quoting
-        # inside the list is not drift, because normalize_options deletes both.
+        # The mirror of the whole plant family: differing WHITESPACE and quoting inside the list is not drift, because normalize_options deletes both.
         ctl.check(
             "MIRROR: quoting and spacing inside the list are not drift",
             run(
@@ -439,9 +430,7 @@ def selftest() -> int:
             ),
             1,
         )
-        # A BLOCK list returns empty from this scanner by design, and the twin's
-        # comment says so: "a block list would return empty here and be caught by
-        # the anti-vacuity check rather than silently comparing nothing."
+        # A BLOCK list returns empty from this scanner by design, and the twin's comment says so: "a block list would return empty here and be caught by the anti-vacuity check rather than silently comparing nothing."
         ctl.check(
             "VACUITY: a block-style options list is refused rather than read as empty",
             run(
@@ -455,9 +444,7 @@ def selftest() -> int:
             1,
         )
 
-        # THE FLOOR, and its mirror. Four options is below MIN_DURATION_OPTIONS,
-        # so an ALIGNED pair must still be refused -- a green there would mean
-        # the extractor matched something that is not the option list.
+        # THE FLOOR, and its mirror. Four options is below MIN_DURATION_OPTIONS, so an ALIGNED pair must still be refused -- a green there would mean the extractor matched something that is not the option list.
         four = plant(_BREAKPOINT_FIXTURE, "'30', '45'", "'30'")
         four_ap = plant(_AUTOPILOT_FIXTURE, "'30', '45'", "'30'")
         ctl.check("FLOOR: four aligned options is still a refusal", run(four, four_ap), 1)

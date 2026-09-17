@@ -11,8 +11,7 @@ import { createQuietStderrPump, shouldEchoRelayLive } from '../executor/output-l
  * camera.
  */
 describe('createQuietStderrPump replay width', () => {
-  // Shaped like the line that actually shipped on camera at 115 columns:
-  // structured, with spaces, so it CAN be broken at a space.
+  // Shaped like the line that actually shipped on camera at 115 columns: structured, with spaces, so it CAN be broken at a space.
   const LONG =
     'time="2026-08-19T17:54:21Z" level=info ' +
     'msg="Starting repository 3d8be679-59f1-4047-8b39-006c60108380 on machine-11 ' +
@@ -60,17 +59,12 @@ describe('createQuietStderrPump replay width', () => {
       .join('')
       .split('\n')
       .filter((r) => r !== '');
-    // DELIBERATE: a 200-character token with no spaces cannot be broken without
-    // making it uncopyable, so it stays over-width. Recorded here so a future
-    // reader knows this is a decision, not an oversight.
+    // DELIBERATE: a 200-character token with no spaces cannot be broken without making it uncopyable, so it stays over-width. Recorded here so a future reader knows this is a decision, not an oversight.
     expect(rows.some((r) => r.length > 107)).toBe(true);
   });
 
   it('echoes info lines LIVE when echoAll is set, which is what --debug relies on', () => {
-    // The concurrent-fork-isolation suite greps a `--debug` log for renet's
-    // "restored from checkpoint", emitted with log.Infof. If echoAll does not
-    // pass info-level lines through immediately, that evidence never reaches the
-    // log and the test blames console#440 for a regression that did not happen.
+    // The concurrent-fork-isolation suite greps a `--debug` log for renet's "restored from checkpoint", emitted with log.Infof. If echoAll does not pass info-level lines through immediately, that evidence never reaches the log and the test blames console#440 for a regression that did not happen.
     const pump = createQuietStderrPump({ echoAll: true });
     pump.write(`${LONG}\n`);
     expect(written.join('')).toContain('level=info');

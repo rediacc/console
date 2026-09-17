@@ -51,24 +51,19 @@ from rediacc_ci.core import common
 if typing.TYPE_CHECKING:
     import pathlib
 
-# `$REPO_ROOT/workers/www` (:14). The MARKETING worker's directory, shared with
-# the stable www deploy, which uses `wrangler.toml` from the same place.
+# `$REPO_ROOT/workers/www` (:14). The MARKETING worker's directory, shared with the stable www deploy, which uses `wrangler.toml` from the same place.
 WORKER_SUBDIR = ("workers", "www")
 
-# `wrangler.edge.toml` (:16, :35). A literal in the twin, twice, so it is a
-# constant here once and the differential asserts the twin still spells it the
-# same way.
+# `wrangler.edge.toml` (:16, :35). A literal in the twin, twice, so it is a constant here once and the differential asserts the twin still spells it the same way.
 CONFIG = "wrangler.edge.toml"
 
-# The two variables `require_var` demands (:23-24), in the twin's order. The
-# FIRST missing one ends the run, so the order is observable.
+# The two variables `require_var` demands (:23-24), in the twin's order. The FIRST missing one ends the run, so the order is observable.
 REQUIRED_VARS = ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")
 
 # See the docstring: demanded, then never read by this script.
 THE_ACCOUNT_ID_IS_CHECKED_AND_UNUSED = True
 
-# `parse_args` IS NOT CALLED (contrast `deploy-account.sh:16` and
-# `deploy-proxy.sh:23`), so every argument is discarded in silence.
+# `parse_args` IS NOT CALLED (contrast `deploy-account.sh:16` and `deploy-proxy.sh:23`), so every argument is discarded in silence.
 ARGUMENTS_ARE_IGNORED = True
 
 

@@ -75,20 +75,10 @@ import { policyPath } from '../lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
-// Test seams, mirroring check-embed-asset-freshness.ts: point the gate at fixture
-// files so its test can prove the BLOCKER validation fires and that a stale pin
-// is caught, without mutating the tracked blocklist or hitting the network.
+// Test seams, mirroring check-embed-asset-freshness.ts: point the gate at fixture files so its test can prove the BLOCKER validation fires and that a stale pin is caught, without mutating the tracked blocklist or hitting the network.
 //
-// DEVCONTAINER_DOCKERFILE is the seam this file was MISSING, and its absence had
-// a cost. --upgrade rewrites the Dockerfile in place, so the gate's test drove it
-// against the REAL tracked file and restored it from a trap. That mutation is
-// visible to every other gate sharing the tree: on 2026-09-03 it reddened
-// check:ci-setup-idempotency in the pre-push lane, which reported
-// "setup --check changed the working tree" over `.devcontainer/Dockerfile` -- a
-// file run.sh never writes, naming the wrong command and sending the reader into
-// run.sh. It is also a hazard beyond CI: this repo's working tree usually holds
-// another session's uncommitted work, and a gate that rewrites a tracked file,
-// however briefly, can be interrupted.
+// DEVCONTAINER_DOCKERFILE is the seam this file was MISSING, and its absence had a cost. --upgrade rewrites the Dockerfile in place, so the gate's test drove it against the REAL tracked file and restored it from a trap. That mutation is visible to every other gate sharing the tree: on 2026-09-03 it reddened check:ci-setup-idempotency in the pre-push lane, which reported "setup
+// --check changed the working tree" over `.devcontainer/Dockerfile` -- a file run.sh never writes, naming the wrong command and sending the reader into run.sh. It is also a hazard beyond CI: this repo's working tree usually holds another session's uncommitted work, and a gate that rewrites a tracked file, however briefly, can be interrupted.
 const DOCKERFILE =
   process.env.DEVCONTAINER_DOCKERFILE || path.join(CONSOLE_ROOT, '.devcontainer/Dockerfile');
 const BLOCKLIST =
@@ -189,11 +179,7 @@ async function latestFor(src: Source): Promise<Latest> {
     };
   }
 
-  // NOT /releases/latest. On a monorepo that endpoint answers with whichever
-  // COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*,
-  // browser-* or cli-* depending on the week -- so it would compare the CLI pin
-  // against a browser-extension version and produce nonsense in both directions.
-  // The list endpoint is ordered newest-first, so the first prefix match is the
+  // NOT /releases/latest. On a monorepo that endpoint answers with whichever COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*, browser-* or cli-* depending on the week -- so it would compare the CLI pin against a browser-extension version and produce nonsense in both directions. The list endpoint is ordered newest-first, so the first prefix match is the
   // answer.
   const rels = (await fetchJson(
     `https://api.github.com/repos/${src.repo}/releases?per_page=100`
@@ -207,9 +193,7 @@ async function latestFor(src: Source): Promise<Latest> {
 
   const digests = new Map<string, string>();
   for (const a of hit.assets ?? []) {
-    // `digest` is "sha256:<hex>". Bitwarden publishes no .sha256 sidecars and no
-    // GPG/cosign signatures, so this is the only machine-readable checksum there
-    // is -- an integrity check against the same API that serves the download,
+    // `digest` is "sha256:<hex>". Bitwarden publishes no .sha256 sidecars and no GPG/cosign signatures, so this is the only machine-readable checksum there is -- an integrity check against the same API that serves the download,
     // not an independent trust root. Worth knowing; still better than no pin.
     if (a.name && a.digest?.startsWith('sha256:')) {
       digests.set(a.name, a.digest.slice('sha256:'.length));
@@ -288,10 +272,7 @@ async function main(): Promise<void> {
   for (const src of SOURCES) {
     const pinned = versions.get(src.base);
     if (!pinned) {
-      // A source naming an ARG the Dockerfile no longer has is a real defect --
-      // the gate would silently watch nothing -- but it is not a STALENESS
-      // failure, and reporting it as one would be the wrong sentence. The
-      // suppression-liveness probe is what turns this into a hard error.
+      // A source naming an ARG the Dockerfile no longer has is a real defect -- the gate would silently watch nothing -- but it is not a STALENESS failure, and reporting it as one would be the wrong sentence. The suppression-liveness probe is what turns this into a hard error.
       unchecked.push(`${src.display}: no ${src.base.toUpperCase()}_VERSION ARG in the Dockerfile`);
       continue;
     }
@@ -372,8 +353,7 @@ async function main(): Promise<void> {
   for (const f of stale) {
     console.error(`  ${f.src.display}: pinned ${f.pinned}  ->  upstream ${f.latest}`);
   }
-  // A copy-pasteable fix, for the same reason check-embed-asset-freshness.ts has
-  // one: a human or an agent reading this should be able to act without hunting.
+  // A copy-pasteable fix, for the same reason check-embed-asset-freshness.ts has one: a human or an agent reading this should be able to act without hunting.
   console.error('');
   console.error(`${YELLOW}TO FIX — bump the pin and its hashes together:${NC}`);
   console.error('    npm run check:ci-devcontainer-pins -- --upgrade');
@@ -388,8 +368,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  // Per-source network failures are caught above, so reaching here is a real bug
-  // in the gate -- which must not be indistinguishable from a pass.
+  // Per-source network failures are caught above, so reaching here is a real bug in the gate -- which must not be indistinguishable from a pass.
   console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
   process.exit(1);
 });

@@ -7,7 +7,5 @@ outcomes in seconds instead of the 8-plus minutes a real suite costs.
 
 GUARD_ENABLED = True
 
-# A line with no behavioural meaning, mutated by the scenario that proves the
-# runner reports "the check does not detect this" when a mutation applies
-# cleanly and changes nothing the suite can observe.
+# A line with no behavioural meaning, mutated by the scenario that proves the runner reports "the check does not detect this" when a mutation applies cleanly and changes nothing the suite can observe.
 HARMLESS_MARKER = "unmutated"

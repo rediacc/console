@@ -54,14 +54,8 @@ def run_one(stem, payload, cwd=None, env=None):
     return event.result(rc)
 
 
-# A chain that loads NO guard is the failure this whole cutover risks, so it is
-# refused in code rather than trusted to a reader. Before P7 a broken glob in
-# `guards.stems()` cost nothing: settings.json named 38 bash files and they ran
-# whatever this package thought. Now settings.json names ONE command per chain,
-# so an empty chain is 37 guards silently not running while every Bash call
-# still looks clean -- which is exactly what require-jq.sh's header calls
-# "strictly worse than having no hooks at all, because no-hooks is at least
-# visible".
+# A chain that loads NO guard is the failure this whole cutover risks, so it is refused in code rather than trusted to a reader. Before P7 a broken glob in `guards.stems()` cost nothing: settings.json named 38 bash files and they ran whatever this package thought. Now settings.json names ONE command per chain, so an empty chain is 37 guards silently not running while every Bash
+# call still looks clean -- which is exactly what require-jq.sh's header calls "strictly worse than having no hooks at all, because no-hooks is at least visible".
 EMPTY_CHAIN = (
     "BLOCKED: the %s guard chain loaded ZERO guards.\n"
     "\n"

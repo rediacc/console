@@ -45,8 +45,7 @@ TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-preview-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_preview_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The eleven values the twin refuses to deploy without, plus the PR number. Two
-# characters each, and visibly not credentials.
+# The eleven values the twin refuses to deploy without, plus the PR number. Two characters each, and visibly not credentials.
 FIXTURE_ENV = {
     "PR_NUMBER": "123",
     "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
@@ -80,11 +79,7 @@ if rc:
 sys.stdout.write("Finished processing secrets JSON file.\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides (the port shells out to the same
-# binary, for the reasons in its docstring), and `uname` / `dirname` are what
-# `common.sh` needs at source time. Nothing else is on the scratch PATH, so a
-# tool leaking in would show up as a behaviour change rather than as a silent
-# convenience.
+# `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring), and `uname` / `dirname` are what `common.sh` needs at source time. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change rather than as a silent convenience.
 PATH_MINIMUM = ("jq", "uname", "dirname")
 
 
@@ -293,9 +288,7 @@ def test_the_guard_message_names_a_variable_this_script_does_not_have(
     old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL="")
     assert "WORKER_NAME=pr-123." in old.stderr
 
-    # The twin names WORKER_NAME exactly once, inside that message, and never
-    # assigns or reads it. If either ever changes, this observation is stale and
-    # the port's constant should be re-read rather than trusted.
+    # The twin names WORKER_NAME exactly once, inside that message, and never assigns or reads it. If either ever changes, this observation is stale and the port's constant should be re-read rather than trusted.
     source = _twin_source()
     assert source.count("WORKER_NAME") == 1
     assert 'WORKER_NAME=$WORKER."' in source

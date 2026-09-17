@@ -178,33 +178,22 @@ USAGE_WHY = (
     "the gate is fixtures-only by design; the calling workflow gathers the fixtures (see header)"
 )
 
-# The only models a round may be dispatched with. An unknown value is a TYPO,
-# not an instruction: it falls back to the default rather than reaching
-# claude_args, where it would fail the round after paying for the runner.
+# The only models a round may be dispatched with. An unknown value is a TYPO, not an instruction: it falls back to the default rather than reaching claude_args, where it would fail the round after paying for the runner.
 DEFAULT_MODEL = "claude-sonnet-5"
 MODEL_ALLOWED = "claude-sonnet-5,claude-opus-5"
 
-# The third consecutive round facing an unchanged failed-job set is the one that
-# refuses: two distinct fixes have already failed to move it.
+# The third consecutive round facing an unchanged failed-job set is the one that refuses: two distinct fixes have already failed to move it.
 STUCK_LIMIT = 3
 
 DEFAULT_MAX_ROUNDS = "25"
 DEFAULT_LABEL = "autopilot"
 BLOCKED_LABEL = "autopilot-blocked"
 
-# The default `state-comment.sh fields` answer when there is no state comment.
-# NOTE THE THREE KEYS: the twin's literal carries `campaign`, `model` and
-# `rounds_max` and NOT `last_sig` or `sig_count`, so on a first round those two
-# read back as the STRING "null" (jq -r of a missing key). Nothing matches
-# "null" -- `SIG` is eight lowercase hex or the word `none` -- so the stuck
-# counter starts at 1, which is the intent. Reproduced verbatim rather than
-# tidied, because "tidying" it to five keys would make `campaign_sig_count` the
-# number 0 and change nothing, and a port that changes nothing is still a port
-# that changed the twin.
+# The default `state-comment.sh fields` answer when there is no state comment. NOTE THE THREE KEYS: the twin's literal carries `campaign`, `model` and `rounds_max` and NOT `last_sig` or `sig_count`, so on a first round those two read back as the STRING "null" (jq -r of a missing key). Nothing matches "null" -- `SIG` is eight lowercase hex or the word `none` -- so the stuck counter
+# starts at 1, which is the intent. Reproduced verbatim rather than tidied, because "tidying" it to five keys would make `campaign_sig_count` the number 0 and change nothing, and a port that changes nothing is still a port that changed the twin.
 NO_STATE_FIELDS = '{"campaign":"none","model":"none","rounds_max":0}'
 
-# The emit program, byte for byte from the twin. Key ORDER is the contract with
-# the workflow step that reads this line, and jq prints keys in program order.
+# The emit program, byte for byte from the twin. Key ORDER is the contract with the workflow step that reads this line, and jq prints keys in program order.
 EMIT_PROGRAM = """{decision: $decision, mode: $mode, reason: $reason, round: $round, push_allowed: $push_allowed,
           armed_by: $armed_by, model: $model, rounds_max: $rounds_max, campaign: $campaign,
           dispatch_trusted: $dispatch_trusted, sig: $sig, sig_count: $sig_count}"""
@@ -291,8 +280,7 @@ def bash_arith(text: str) -> int | None:
             value = int(token, 10)
     except ValueError:
         if token.isdigit() or token[:2].lower() == "0x":
-            # bash: `((: 08: value too great for base (error token is "08")`.
-            # The twin's copy of this line carries the script path and line
+            # bash: `((: 08: value too great for base (error token is "08")`. The twin's copy of this line carries the script path and line
             # number; see the module docstring for why this prefix differs and
             # nothing else does.
             print(
@@ -460,9 +448,7 @@ def non_empty_file(path: str) -> bool:
     try:
         return os.path.getsize(path) > 0
     except OSError:
-        # `-s` is false for anything it cannot stat, including a directory it
-        # can (a directory has a size, and bash's `-s` is true for it, which is
-        # reproduced by getsize succeeding).
+        # `-s` is false for anything it cannot stat, including a directory it can (a directory has a size, and bash's `-s` is true for it, which is reproduced by getsize succeeding).
         return False
 
 
@@ -545,9 +531,7 @@ class Gate:
             ]
         )
         if code != 0:
-            # `set -e` on the jq in `emit`: the `exit 0` after it is never
-            # reached and jq's own status ends the run, with jq's own message
-            # already on stderr.
+            # `set -e` on the jq in `emit`: the `exit 0` after it is never reached and jq's own status ends the run, with jq's own message already on stderr.
             return Decided(code)
         # `$( )` stripped jq's newline; `jq -cn` printed exactly one.
         return Decided(0, line.encode("utf-8", "surrogateescape") + b"\n")
@@ -581,10 +565,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if environ.get("AUTOPILOT_ALLOW_PUSH", "") == "true":
         gate.push_allowed = "true"
 
-    # Round number this invocation would become: ledger entries + 1. The ledger
-    # in the trusted-author state comment is the ONLY round counter (wall 3: the
-    # cap must be enforced by the harness, never by the model). A round counter
-    # the model could write to is a cap the model can lift.
+    # Round number this invocation would become: ledger entries + 1. The ledger in the trusted-author state comment is the ONLY round counter (wall 3: the cap must be enforced by the harness, never by the model). A round counter the model could write to is a cap the model can lift.
     rounds_done_text = "0"
     if non_empty_file(state):
         rounds_done_text = grep_count(["-cE", LEDGER_ROUND_RE], state)
@@ -649,9 +630,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if code != 0:
         return Decided(code)
 
-    # Dispatch facts. The key is absent on the workflow_run path, so
-    # `is_dispatch` is false there without the gate needing to know the event
-    # name twice.
+    # Dispatch facts. The key is absent on the workflow_run path, so `is_dispatch` is false there without the gate needing to know the event name twice.
     is_dispatch = jq_test(["-e", ".autopilot_dispatch", event], quiet=True)
     code, dispatch_actor = jq_capture(["-r", ".autopilot_dispatch.actor // empty", event])
     if code != 0:
@@ -666,12 +645,8 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if code != 0:
         return Decided(code)
 
-    # Is the DISPATCHER trusted? Reported separately from the arming decision
-    # because the workflow gates its hold-open debug session on it, and that
-    # session is a human shell on the runner. Arming can succeed by label (whose
-    # trust check is the label APPLIER, a different person) while the actor who
-    # pressed Run workflow is nobody in particular, so "this round is armed" is
-    # not the same claim as "this dispatcher may open a shell here".
+    # Is the DISPATCHER trusted? Reported separately from the arming decision because the workflow gates its hold-open debug session on it, and that session is a human shell on the runner. Arming can succeed by label (whose trust check is the label APPLIER, a different person) while the actor who pressed Run workflow is nobody in particular, so "this round is armed" is not the same
+    # claim as "this dispatcher may open a shell here".
     applier_allowlist = environ.get("AUTOPILOT_APPLIER_ALLOWLIST", "") or environ.get(
         "AUTOPILOT_AUTHOR_ALLOWLIST", ""
     )
@@ -680,8 +655,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
 
     # Campaign fields, read back through state-comment.sh rather than parsed
     # here. The metadata line therefore has exactly ONE writer and ONE reader; a
-    # second copy of the format in this file is how the two would drift apart
-    # silently. Every value it returns is already normalized there.
+    # second copy of the format in this file is how the two would drift apart silently. Every value it returns is already normalized there.
     campaign_fields = NO_STATE_FIELDS
     if non_empty_file(state):
         proc = _run([str(script_dir() / "state-comment.sh"), "fields", "--body", state])
@@ -690,11 +664,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
             return Decided(proc.returncode)
         campaign_fields = (proc.stdout or b"").decode("utf-8", "surrogateescape").rstrip("\n")
 
-    # FIVE SEPARATE `jq -r` CALLS, exactly as the twin makes them, and NOT one
-    # `json.loads`. The default literal above has only three of these five keys,
-    # so `.last_sig` and `.sig_count` come back as the STRING "null" on a first
-    # round -- which is what the twin's shell variables hold, and what the
-    # comparisons below are written against.
+    # FIVE SEPARATE `jq -r` CALLS, exactly as the twin makes them, and NOT one `json.loads`. The default literal above has only three of these five keys, so `.last_sig` and `.sig_count` come back as the STRING "null" on a first round -- which is what the twin's shell variables hold, and what the comparisons below are written against.
     values = []
     for program in (".campaign", ".model", ".rounds_max", ".last_sig", ".sig_count"):
         code, value = _jq_stdin(["-r", program], campaign_fields)
@@ -704,10 +674,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     campaign_model, campaign_rounds, campaign_last_sig, campaign_sig_count = values[1:]
     gate.campaign_state = values[0]
 
-    # Failure signature: sorted, so the same set of red jobs hashes the same
-    # regardless of the order the jobs API happened to return them in. An empty
-    # or absent list is 'none' and never matches a previous signature -- a green
-    # run must not look like a repeat of the last red one.
+    # Failure signature: sorted, so the same set of red jobs hashes the same regardless of the order the jobs API happened to return them in. An empty or absent list is 'none' and never matches a previous signature -- a green run must not look like a repeat of the last red one.
     if non_empty_file(failed_jobs):
         code, sig = failure_signature(failed_jobs)
         if code != 0:
@@ -717,9 +684,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if gate.sig != "none" and gate.sig == campaign_last_sig:
         gate.sig_count = bash_int(campaign_sig_count) + 1
 
-    # Model resolution, in the design's order: the dispatch input beats the
-    # campaign's recorded model, which beats the default. An unrecognised value
-    # at either level degrades to the default rather than failing the round.
+    # Model resolution, in the design's order: the dispatch input beats the campaign's recorded model, which beats the default. An unrecognised value at either level degrades to the default rather than failing the round.
     if is_dispatch and dispatch_model:
         gate.resolved_model = dispatch_model
     elif campaign_model != "none":
@@ -731,18 +696,13 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
         )
         gate.resolved_model = DEFAULT_MODEL
 
-    # Round-cap resolution, same order, with the repo variable as the third
-    # fallback (already loaded into MAX_ROUNDS above) and 25 as the fourth.
+    # Round-cap resolution, same order, with the repo variable as the third fallback (already loaded into MAX_ROUNDS above) and 25 as the fourth.
     if is_dispatch and _is_small_int(dispatch_rounds) and bash_cmp(dispatch_rounds, ">", "0"):
         gate.max_rounds = dispatch_rounds
     elif bash_cmp(campaign_rounds, ">", "0"):
         gate.max_rounds = campaign_rounds
 
-    # 2. Fork guard, in both records: the run's head repo and the PR's head repo
-    # must both equal the base repo. The autopilot never touches fork-sourced
-    # heads (03-v2-autonomy.md section 2, check 2). BOTH records are checked
-    # because they come from different API calls and a mismatch between them is
-    # itself a reason to stop.
+    # 2. Fork guard, in both records: the run's head repo and the PR's head repo must both equal the base repo. The autopilot never touches fork-sourced heads (03-v2-autonomy.md section 2, check 2). BOTH records are checked because they come from different API calls and a mismatch between them is itself a reason to stop.
     if event_head_repo and event_head_repo != event_repo:
         return gate.no_go(
             "fork-pr: workflow_run head repository '%s' is not the base repo" % event_head_repo
@@ -752,9 +712,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
             "fork-pr: PR head repo '%s' is not the base repo '%s'" % (pr_head_repo, pr_base_repo)
         )
 
-    # 3. Arming. The blocked label is the escalation latch and is checked FIRST,
-    # so it beats every arming path including a fresh dispatch: cancelling a run
-    # kills one round, `autopilot-blocked` kills the loop.
+    # 3. Arming. The blocked label is the escalation latch and is checked FIRST, so it beats every arming path including a fresh dispatch: cancelling a run kills one round, `autopilot-blocked` kills the loop.
     if jq_test(["-e", "--arg", "l", BLOCKED_LABEL, ".labels // [] | index($l)", pr]):
         return gate.no_go(
             "blocked-label: '%s' is applied; a human must clear the escalation first"
@@ -763,15 +721,10 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if jq_test(["-e", "--arg", "l", label, ".labels // [] | index($l)", pr]):
         gate.armed_by = "label"
     elif is_dispatch and dispatch_pr:
-        # The dispatch IS the arming act (03-v2-autonomy.md section 2, corrected
-        # 2026-08-05): round 1 runs straight off it, and the state-comment write
-        # at the end of that round records the campaign so the workflow_run
-        # rounds that follow can continue without a label ever existing.
+        # The dispatch IS the arming act (03-v2-autonomy.md section 2, corrected 2026-08-05): round 1 runs straight off it, and the state-comment write at the end of that round records the campaign so the workflow_run rounds that follow can continue without a label ever existing.
         gate.armed_by = "dispatch"
     elif gate.campaign_state == "open" and bash_cmp(str(rounds_done), "<", gate.max_rounds):
-        # The campaign path. Trust comes from the state comment's AUTHORSHIP,
-        # already enforced upstream by state-comment.sh select (bot author +
-        # exact header), so there is deliberately no applier/actor check below
+        # The campaign path. Trust comes from the state comment's AUTHORSHIP, already enforced upstream by state-comment.sh select (bot author + exact header), so there is deliberately no applier/actor check below
         # for it: an outsider cannot post a comment this gate would read at all.
         gate.armed_by = "campaign"
     else:
@@ -781,22 +734,15 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
             % (label, gate.campaign_state, rounds_done, gate.max_rounds)
         )
 
-    # 4. Author allowlist: the autopilot never babysits a stranger's PR. An
-    # empty allowlist allows nobody (fail closed), by construction of the
-    # membership test above.
+    # 4. Author allowlist: the autopilot never babysits a stranger's PR. An empty allowlist allows nobody (fail closed), by construction of the membership test above.
     if not in_csv_allowlist(pr_author, environ.get("AUTOPILOT_AUTHOR_ALLOWLIST", "")):
         return gate.no_go(
             "author-not-allowlisted: PR author '%s' is not in AUTOPILOT_AUTHOR_ALLOWLIST"
             % pr_author
         )
 
-    # 5. Arming trust, per path. Anyone with triage can apply a label on a
-    # public repo and anyone with write can dispatch a workflow, so whoever
-    # performed the ARMING ACT is a separate trust decision from the PR author.
-    # Same allowlist for both: the act is the same delegation either way.
-    # Two independent `if`s rather than one `if/elif` nest: `armed_by` holds
-    # exactly one value here, so at most one can fire, and flattening keeps each
-    # arm readable beside the message it produces.
+    # 5. Arming trust, per path. Anyone with triage can apply a label on a public repo and anyone with write can dispatch a workflow, so whoever performed the ARMING ACT is a separate trust decision from the PR author. Same allowlist for both: the act is the same delegation either way. Two independent `if`s rather than one `if/elif` nest: `armed_by` holds exactly one value here, so
+    # at most one can fire, and flattening keeps each arm readable beside the message it produces.
     if gate.armed_by == "label" and not in_csv_allowlist(pr_applier, applier_allowlist):
         return gate.no_go(
             "applier-not-allowlisted: label applier '%s' is not allowlisted" % pr_applier
@@ -806,21 +752,15 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
             "dispatch-actor-not-allowlisted: dispatching actor '%s' is not allowlisted"
             % dispatch_actor
         )
-    # `campaign)` is an EMPTY case arm in the twin, and it is empty on purpose:
-    # see the arming block, authorship of the state comment is the check.
+    # `campaign)` is an EMPTY case arm in the twin, and it is empty on purpose: see the arming block, authorship of the state comment is the check.
 
-    # 6. Dedup by (run_id, attempt): a queued duplicate of an already-handled
-    # event must exit without a round (concurrency is cancel-in-progress:false,
-    # so duplicates are expected, not exceptional).
+    # 6. Dedup by (run_id, attempt): a queued duplicate of an already-handled event must exit without a round (concurrency is cancel-in-progress:false, so duplicates are expected, not exceptional).
     if non_empty_file(state) and _grep_quiet(
         ["-qE", "run %s/%s([^0-9]|$)" % (run_id, run_attempt)], state
     ):
         return gate.no_go("already-handled: run %s/%s is in the ledger" % (run_id, run_attempt))
 
-    # 7. Round cap, from the trusted ledger only. This is also what ends a
-    # campaign the operator never stops: the arming path above will not re-arm
-    # on a campaign once the cap is reached, and a label-armed PR dies here with
-    # the reason spelled out instead of a bare "not armed".
+    # 7. Round cap, from the trusted ledger only. This is also what ends a campaign the operator never stops: the arming path above will not re-arm on a campaign once the cap is reached, and a label-armed PR dies here with the reason spelled out instead of a bare "not armed".
     if bash_cmp(str(rounds_done), ">=", gate.max_rounds):
         return gate.no_go(
             "round-cap: %s rounds recorded, cap is %s; escalating to the operator is the "
@@ -841,10 +781,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
 
     # 9. Mode selection (03-v2-autonomy.md section 2, check 6, in its order).
     if conclusion == "failure":
-        # Flapping bound before the fix round, not after: by the time the same
-        # failed-job set arrives for the STUCK_LIMIT-th time, two distinct fixes
-        # have already been spent on it and a third is a worse bet than the
-        # operator's attention.
+        # Flapping bound before the fix round, not after: by the time the same failed-job set arrives for the STUCK_LIMIT-th time, two distinct fixes have already been spent on it and a third is a worse bet than the operator's attention.
         if gate.sig != "none" and gate.sig_count >= STUCK_LIMIT:
             return gate.no_go(
                 "stuck-signature: failed-job set %s is unchanged after %d fix round(s); "
@@ -869,12 +806,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
 
     if conclusion == "success":
         if pr_review_red == "true":
-            # A red Review Gate with NOTHING outstanding to answer is the review
-            # pipeline needing to run again, not the model needing to think: the
-            # deterministic rerun costs zero model tokens (03-v2-autonomy.md
-            # section 9 lists review-gate rerun among the zero-cost paths). With
-            # threads open there IS something to answer, so that case still buys
-            # a round.
+            # A red Review Gate with NOTHING outstanding to answer is the review pipeline needing to run again, not the model needing to think: the deterministic rerun costs zero model tokens (03-v2-autonomy.md section 9 lists review-gate rerun among the zero-cost paths). With threads open there IS something to answer, so that case still buys a round.
             if bash_cmp(pr_threads, "==", "0"):
                 return gate.emit(
                     "go",
@@ -933,8 +865,7 @@ def _is_digits(text: str) -> bool:
 
 def main(argv: list[str]) -> int:
     # `MODE_ARG="${1:-}"`: the mode is positional and is NOT a flag, so it never
-    # reaches parse_args. With no arguments at all it is the empty string, which
-    # lands in the usage arm -- LOUD (exit 2), never a quiet no-go.
+    # reaches parse_args. With no arguments at all it is the empty string, which lands in the usage arm -- LOUD (exit 2), never a quiet no-go.
     mode_arg = argv[0] if argv else ""
     if mode_arg != "--classify":
         log.error(USAGE)
@@ -957,9 +888,7 @@ def main(argv: list[str]) -> int:
         except common.RefusalError as exc:
             exc.report()
             return exc.code
-    # `jq -e .` on each: valid JSON AND not `null`/`false`, which is jq's rule
-    # and not `json.loads`'. A fixture whose whole body is `null` is refused
-    # here rather than producing a decision over nothing.
+    # `jq -e .` on each: valid JSON AND not `null`/`false`, which is jq's rule and not `json.loads`'. A fixture whose whole body is `null` is refused here rather than producing a decision over nothing.
     if not jq_test(["-e", ".", event]):
         log.error("event payload is not valid JSON: %s" % event)
         return 2

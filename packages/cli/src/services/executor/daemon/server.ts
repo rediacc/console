@@ -70,9 +70,7 @@ export interface DaemonHandle {
  * returns; the listening socket keeps the process alive on its own.
  */
 export async function startExecutorDaemon(deps: DaemonServerDeps = {}): Promise<DaemonHandle> {
-  // The daemon is the one long-lived process that wants warm SSH sessions:
-  // enable the connection pool's idle linger for THIS process (default is 0 —
-  // an open SSH socket would keep a short-lived CLI from exiting).
+  // The daemon is the one long-lived process that wants warm SSH sessions: enable the connection pool's idle linger for THIS process (default is 0 — an open SSH socket would keep a short-lived CLI from exiting).
   process.env.REDIACC_SSH_LINGER_MS ??= String(5 * 60 * 1000);
   const executor = deps.executor ?? localExecutorService;
   const socketPath = deps.socketPath ?? daemonSocketPath();
@@ -86,8 +84,7 @@ export async function startExecutorDaemon(deps: DaemonServerDeps = {}): Promise<
   await claimSocket(socketPath, exit);
   const token = writeToken(tokenPath);
 
-  // Attribute daemon-run commands: telemetry/audit that reads the environment can
-  // tell a daemon-executed command from a directly-run one without a new field.
+  // Attribute daemon-run commands: telemetry/audit that reads the environment can tell a daemon-executed command from a directly-run one without a new field.
   process.env.REDIACC_VIA_DAEMON = '1';
 
   const inFlight = new Set<Promise<unknown>>();
@@ -200,8 +197,7 @@ function handleHello(
   if (frame.type !== 'hello') return false;
   if (!tokensMatch(frame.token, ctx.token)) return false;
   if (frame.identity !== ctx.identity) {
-    // The client runs a different build than this daemon. Tell it so it can fall
-    // back and respawn a fresh daemon, then exit ourselves after draining.
+    // The client runs a different build than this daemon. Tell it so it can fall back and respawn a fresh daemon, then exit ourselves after draining.
     send({ type: 'stale' });
     void ctx.teardown().finally(() => ctx.exit(0));
     return false;
@@ -233,8 +229,7 @@ function handleAuthedFrame(
       void ctx.teardown().finally(() => ctx.exit(0));
       return;
     case 'cancel':
-      // Best-effort only: the Executor interface has no cancellation channel, so
-      // an in-flight execute runs to completion. Accepted here for parity.
+      // Best-effort only: the Executor interface has no cancellation channel, so an in-flight execute runs to completion. Accepted here for parity.
       return;
     default:
       return;
@@ -249,16 +244,11 @@ function runExecute(
 ): void {
   // Per-request config freshness. ConfigFileStorage memoizes parsed configs
   // with no mtime check, and daemon clients rewrite the config between
-  // requests (the tutorial preambles wipe + re-init it constantly) — serving
-  // a request from the first snapshot executed against deleted repos and
-  // machines (observed live: whole-sequence cascade). The fs.watch below is
-  // kept for the provisioner caches but is too coalesced/latent to be the
+  // requests (the tutorial preambles wipe + re-init it constantly) — serving a request from the first snapshot executed against deleted repos and machines (observed live: whole-sequence cascade). The fs.watch below is kept for the provisioner caches but is too coalesced/latent to be the
   // correctness mechanism for wipe-then-execute patterns; a ~1ms re-read per
   // request is nothing next to the SSH/provision savings the daemon exists for.
   configFileStorage.clearCache();
-  // The parsed-file cache above is only half the staleness: configService
-  // memoizes a ResourceState VIEW per process, which in a long-lived daemon
-  // freezes the repository/machine world at boot. Reset both per request.
+  // The parsed-file cache above is only half the staleness: configService memoizes a ResourceState VIEW per process, which in a long-lived daemon freezes the repository/machine world at boot. Reset both per request.
   configService.resetResourceView();
   send({ type: 'accepted', id });
   ctx.warmHosts.set(options.machineName, (ctx.warmHosts.get(options.machineName) ?? 0) + 1);
@@ -266,14 +256,9 @@ function runExecute(
   const promise = ctx.executor
     .execute({
       ...options,
-      // Force events mode: the daemon's own stdout is /dev/null, so output must
-      // travel as event frames the client re-renders. The events path already
-      // reconstructs result.stdout from the collector, so captured JSON commands
-      // still get their payload back in the result.
+      // Force events mode: the daemon's own stdout is /dev/null, so output must travel as event frames the client re-renders. The events path already reconstructs result.stdout from the collector, so captured JSON commands still get their payload back in the result.
       eventsMode: true,
-      // Silence the executor's own spinners: they would draw to the daemon's
-      // /dev/null stdout, and the CLI-side provision steps are recovered client
-      // side from result.cliSteps instead. Mirrors the serve/tap path.
+      // Silence the executor's own spinners: they would draw to the daemon's /dev/null stdout, and the CLI-side provision steps are recovered client side from result.cliSteps instead. Mirrors the serve/tap path.
       quietSpinners: true,
       onEvent: (event, line) => send({ type: 'event', id, event, line }),
       onJobStarted: (jobId) => send({ type: 'jobStarted', id, jobId }),

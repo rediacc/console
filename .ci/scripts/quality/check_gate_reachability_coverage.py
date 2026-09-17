@@ -53,8 +53,7 @@ from rediacc_ci import paths
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
 
-# The probe knows about 191 manifest gates today. A floor well under that catches
-# "the manifest stopped parsing" without failing on ordinary gate churn.
+# The probe knows about 191 manifest gates today. A floor well under that catches "the manifest stopped parsing" without failing on ordinary gate churn.
 MIN_MANIFEST_GATES = 40
 
 RED = "\033[0;31m"
@@ -72,15 +71,10 @@ def load_probe():
         die(
             f"check-gate-reachability-coverage: {HOOK_DIR} not found; cannot judge a probe that is not there"
         )
-    # Through the package's resolver, not a bare insert: `paths.on_sys_path` is
-    # idempotent, and this hop runs inside a FUNCTION that a caller may call more
-    # than once, which is the case a hand-written insert leaves duplicate copies
-    # behind for. HOOK_DIR is passed rather than recomputed so the die() messages
-    # above and the directory actually added stay the same string.
+    # Through the package's resolver, not a bare insert: `paths.on_sys_path` is idempotent, and this hop runs inside a FUNCTION that a caller may call more than once, which is the case a hand-written insert leaves duplicate copies behind for. HOOK_DIR is passed rather than recomputed so the die() messages above and the directory actually added stay the same string.
     paths.on_sys_path(HOOK_DIR)
     try:
-        # Deferred deliberately: HOOK_DIR must be on sys.path first, and a
-        # top-level import would make this gate uncollectable outside the repo.
+        # Deferred deliberately: HOOK_DIR must be on sys.path first, and a top-level import would make this gate uncollectable outside the repo.
         import wl_reggate  # noqa: PLC0415
     except ImportError as exc:
         die(

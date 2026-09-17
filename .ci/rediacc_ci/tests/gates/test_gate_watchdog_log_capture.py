@@ -38,9 +38,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-log-capture.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 
-# The harness: mock github/context/core, run the real monitor once, print what it
-# did. Argv: <watchdog> <capture-dir> <job-name> <run-status> [event] [conclusion]
-# [elapsed-minutes]
+# The harness: mock github/context/core, run the real monitor once, print what it did. Argv: <watchdog> <capture-dir> <job-name> <run-status> [event] [conclusion] [elapsed-minutes]
 HARNESS_CJS = r"""
 const monitor = require(process.argv[2]);
 const captureDir = process.argv[3];
@@ -118,8 +116,7 @@ FAST_FAIL_JOB = "Stage Artifacts / Stage Artifacts"
 
 def subject(gate):
     # The four lines this used to hold were byte-identical in three watchdog gate tests;
-    # they live in `harness` now. See harness.watchdog_subject for why this one is
-    # extractable where an assertion message is not.
+    # they live in `harness` now. See harness.watchdog_subject for why this one is extractable where an assertion message is not.
     return harness.watchdog_subject(gate, WATCHDOG)
 
 
@@ -226,8 +223,7 @@ def test_capture_before_the_rerun(gate, tmp_path):
     gate.assert_eq(
         captured_files(tmp_path, "retry"), 1, "the log was captured even though the job was rerun"
     )
-    # The trace is ordered: the log fetch (which performs the capture) must
-    # appear before the rerun request.
+    # The trace is ordered: the log fetch (which performs the capture) must appear before the rerun request.
     before_rerun = trace.split("request:rerun")[0]
     gate.assert_contains(
         before_rerun,
@@ -288,9 +284,7 @@ def test_a_scheduled_run_records_the_failure_and_keeps_monitoring(gate, tmp_path
     trace = run_monitor(gate, tmp_path, FAST_FAIL_JOB, "in_progress", "sched", "schedule", "1")
     gate.assert_not_contains(trace, "force-cancel", "a scheduled run must NOT be force-cancelled")
     gate.assert_not_contains(trace, "request:cancel", "nor cancelled by the fallback path")
-    # Phase 3b (2026-08-26): the cancel-exempt path no longer core.setFailed()s,
-    # because 63 of 64 repo-wide `failure` conclusions were the watchdog working
-    # correctly. The INTENT is unchanged -- the outcome must still be recorded.
+    # Phase 3b (2026-08-26): the cancel-exempt path no longer core.setFailed()s, because 63 of 64 repo-wide `failure` conclusions were the watchdog working correctly. The INTENT is unchanged -- the outcome must still be recorded.
     gate.assert_contains(trace, "output:by_design=true", "the outcome is still recorded")
     gate.assert_contains(
         trace,

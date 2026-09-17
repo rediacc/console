@@ -129,9 +129,7 @@ def _emit(line: str, env: dict[str, str]) -> None:
         sys.stdout.write(line)
         sys.stdout.flush()
         return
-    # Flushed FIRST: the twin's `echo` reaches the fd before its `>>` append
-    # does, and a caller that points GITHUB_OUTPUT at /dev/stdout would
-    # otherwise see the two lines swap places behind Python's own buffer.
+    # Flushed FIRST: the twin's `echo` reaches the fd before its `>>` append does, and a caller that points GITHUB_OUTPUT at /dev/stdout would otherwise see the two lines swap places behind Python's own buffer.
     sys.stdout.flush()
     with open(target, "a", encoding="utf-8") as fh:
         fh.write(line)

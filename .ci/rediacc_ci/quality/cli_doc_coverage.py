@@ -75,8 +75,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# label | script | doc | extractor. One row per pair, and the extractor is named
-# per row because argparse and a hand-rolled TS switch look nothing alike.
+# label | script | doc | extractor. One row per pair, and the extractor is named per row because argparse and a hand-rolled TS switch look nothing alike.
 PAIRS = (
     (
         "ci-trace",
@@ -87,9 +86,7 @@ PAIRS = (
     ("ci-runner", "scripts/ci-runner/run.ts", "docs/agent-reference/ci-gates.md", "ts_switch_case"),
 )
 
-# The two extraction patterns, kept as written. `--[a-z][a-z-]*` deliberately
-# refuses a leading digit or capital: argparse flags in this tree are lowercase,
-# and widening the class is how a subprocess flag sneaks into the surface.
+# The two extraction patterns, kept as written. `--[a-z][a-z-]*` deliberately refuses a leading digit or capital: argparse flags in this tree are lowercase, and widening the class is how a subprocess flag sneaks into the surface.
 _ARGPARSE_FLAG = re.compile(r'"(--[a-z][a-z-]*)"')
 _SWITCH_FLAG = re.compile(r"case '(--[a-zA-Z][a-zA-Z-]*)'")
 _ADD_ARGUMENT = "add_argument("
@@ -187,9 +184,7 @@ def check_pair(
 
     flags = EXTRACTORS[extractor](script)
 
-    # ANTI-VACUITY. Zero flags means the EXTRACTION broke, not that the script has
-    # no CLI. Reporting "every one of 0 flags is taught" would be a green over
-    # nothing, which is the shape this repo keeps finding.
+    # ANTI-VACUITY. Zero flags means the EXTRACTION broke, not that the script has no CLI. Reporting "every one of 0 flags is taught" would be a green over nothing, which is the shape this repo keeps finding.
     if not flags:
         report.fail(
             "%s: found ZERO flags in %s -- the extraction broke, not the script"
@@ -211,9 +206,7 @@ def check_pair(
             "never taught is invisible to any session reading only the doc",
         )
 
-    # CONTROL, built by construction: a REAL copy of the doc with one real flag's
-    # only mention replaced, not a synthetic fixture -- the extraction above must
-    # fire on it, or this check proves nothing.
+    # CONTROL, built by construction: a REAL copy of the doc with one real flag's only mention replaced, not a synthetic fixture -- the extraction above must fire on it, or this check proves nothing.
     fixture = tmp / ("%s-doc-missing-flag" % label)
     fixture.write_text(doc_text, encoding="utf-8")
     target = ""
@@ -246,8 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     report = _Report()
 
-    # The registry itself can collapse. An empty PAIRS list would run no checks
-    # and print "0 pair(s) clean", which reads as coverage.
+    # The registry itself can collapse. An empty PAIRS list would run no checks and print "0 pair(s) clean", which reads as coverage.
     if not PAIRS:
         report.fail("PAIRS is empty -- the registry broke, not the docs")
 
@@ -322,8 +314,7 @@ def selftest() -> int:
             3,
         )
 
-        # THE PLANT: one flag exists but is not taught, in each pair separately so
-        # a gate that only ever reads the first row is caught.
+        # THE PLANT: one flag exists but is not taught, in each pair separately so a gate that only ever reads the first row is caught.
         expect_finding(py, ts, "\n".join(py[:2]), taught_ts)
         ctl.check("PLANT: an untaught argparse flag is caught", run(), 1)
         expect_finding(py, ts, taught_py, "\n".join(ts[:2]))
@@ -333,8 +324,7 @@ def selftest() -> int:
         expect_finding(py, ts, taught_py, taught_ts)
         ctl.check("MIRROR: teaching the flag makes it clean again", run(), 0)
 
-        # ANTI-VACUITY: a script with no flags at all. `0 of 0 taught` would be a
-        # green over nothing.
+        # ANTI-VACUITY: a script with no flags at all. `0 of 0 taught` would be a green over nothing.
         expect_finding([], ts, taught_py, taught_ts)
         ctl.check("VACUITY: zero extracted flags is a refusal, not a clean pair", run(), 1)
 
@@ -346,16 +336,11 @@ def selftest() -> int:
         (root / ".claude/skills/ci-watch/SKILL.md").unlink()
         ctl.check("VACUITY: a missing doc is a refusal", run(), 1)
 
-        # THE CONTROL'S OWN CONTROL. A doc that teaches a flag only as part of a
-        # LONGER one still counts as a mention, because the twin's test is a
-        # substring test. Pinned so a port that "improved" it to a word-boundary
-        # match is caught: that would be a different gate.
+        # THE CONTROL'S OWN CONTROL. A doc that teaches a flag only as part of a LONGER one still counts as a mention, because the twin's test is a substring test. Pinned so a port that "improved" it to a word-boundary match is caught: that would be a different gate.
         expect_finding(["--json"], ts, "--json-output only", taught_ts)
         ctl.check("SUBSTRING: --json is taught by a mention of --json-output", run(), 0)
 
-        # And the shape that makes the constructed control meaningful: a doc that
-        # mentions NONE of the flags cannot supply a target, so the control
-        # reports that it could not test anything rather than passing.
+        # And the shape that makes the constructed control meaningful: a doc that mentions NONE of the flags cannot supply a target, so the control reports that it could not test anything rather than passing.
         expect_finding(py, ts, "nothing relevant here", taught_ts)
         ctl.check("CONTROL VACUITY: a doc with no flag at all is a refusal", run(), 1)
 

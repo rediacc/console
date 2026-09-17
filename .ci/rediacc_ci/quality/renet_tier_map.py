@@ -85,9 +85,7 @@ from rediacc_ci.controls import Controls, plant
 RENET_REL = "private/renet"
 MARKER = "go.mod"
 
-# The tests this gate exists to run. NAMED INDIVIDUALLY rather than swept by a
-# pattern so a RENAME is a loud failure here instead of a silent selection of
-# zero tests.
+# The tests this gate exists to run. NAMED INDIVIDUALLY rather than swept by a pattern so a RENAME is a loud failure here instead of a silent selection of zero tests.
 EXPECTED_TESTS = (
     "TestTierMapCoversRegistry",
     "TestTierMapHasNoOrphans",
@@ -98,8 +96,7 @@ EXPECTED_TESTS = (
     "TestTierProbeMatchesTheMap",
 )
 
-# The regex handed to `go test -list` and `go test -run`. Byte for byte from the
-# twin: the two must select the same set or phase 1 verifies a different thing
+# The regex handed to `go test -list` and `go test -run`. Byte for byte from the twin: the two must select the same set or phase 1 verifies a different thing
 # from the one phase 2 runs.
 RUN_REGEX = (
     "^(TestTierMap.*|TestTierProbeMatchesTheMap|TestOperateTierSurvivesExpiry"
@@ -108,8 +105,7 @@ RUN_REGEX = (
 
 TEST_PACKAGE = "./pkg/functions/"
 
-# `auto` so private/renet/go.mod's toolchain directive stays the single source
-# of truth, matching every sibling renet script.
+# `auto` so private/renet/go.mod's toolchain directive stays the single source of truth, matching every sibling renet script.
 GOTOOLCHAIN_DEFAULT = "auto"
 
 
@@ -180,9 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     renet_dir = pathlib.Path(os.environ.get("RENET_DIR") or (root / RENET_REL))
 
-    # go.mod is the marker, NOT the directory: an uninitialised submodule leaves
-    # an EMPTY directory behind, and a gate that ran zero tests against it would
-    # report success while checking nothing.
+    # go.mod is the marker, NOT the directory: an uninitialised submodule leaves an EMPTY directory behind, and a gate that ran zero tests against it would report success while checking nothing.
     if not _require_submodule(renet_dir / MARKER, "Renet submodule"):
         return 0
 
@@ -199,18 +193,14 @@ def main(argv: list[str] | None = None) -> int:
             env=_go_env(),
         )
     except FileNotFoundError:
-        # `go` absent: the twin dies with bash's own `command not found` and
-        # exit 127, a message it never wrote. Same code, own words. See
-        # `rediacc_ci.quality.renet_types` for the identical decision.
+        # `go` absent: the twin dies with bash's own `command not found` and exit 127, a message it never wrote. Same code, own words. See `rediacc_ci.quality.renet_types` for the identical decision.
         log.error("go is not installed, so NOTHING was verified.")
         log.error("  Install the Go toolchain, or run this gate where one exists.")
         return 127
     sys.stderr.write(listing.stderr)
     listed = listed_from(listing.stdout)
     if listing.returncode != 0 or not listed:
-        # THE SILENT ABORT, REPRODUCED. `set -euo pipefail` plus `grep`'s
-        # exit 1 on no match kills the twin here with no message of its own.
-        # See the port notes: the defect is reported, not repaired.
+        # THE SILENT ABORT, REPRODUCED. `set -euo pipefail` plus `grep`'s exit 1 on no match kills the twin here with no message of its own. See the port notes: the defect is reported, not repaired.
         return 1
 
     if listed != wanted():
@@ -235,8 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         text=True,
         check=False,
         env=_go_env(),
-        # The twin's own `2>&1`. See the port notes: this merge is inside the
-        # subject, not a shortcut taken by the comparison.
+        # The twin's own `2>&1`. See the port notes: this merge is inside the subject, not a shortcut taken by the comparison.
         stdin=subprocess.DEVNULL,
     )
     # `$( ... 2>&1 )` -- merged, then trailing newlines stripped.
@@ -264,16 +253,13 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A `go test -v` transcript in which every expected test passes. The base every
-# plant below mutates, and asserted CLEAN first: without that, each plant would
-# "fire" against a transcript that was already failing.
+# A `go test -v` transcript in which every expected test passes. The base every plant below mutates, and asserted CLEAN first: without that, each plant would "fire" against a transcript that was already failing.
 _PASSING_RUN = (
     "\n".join("=== RUN   %s\n--- PASS: %s (0.00s)" % (name, name) for name in EXPECTED_TESTS)
     + "\nPASS\nok  \tgithub.com/rediacc/renet/pkg/functions\t0.004s\n"
 )
 
-# What `go test -list` prints: one name per line, then the package result line
-# that `grep '^Test'` exists to drop.
+# What `go test -list` prints: one name per line, then the package result line that `grep '^Test'` exists to drop.
 _LISTING = "\n".join(EXPECTED_TESTS) + "\nok  \tgithub.com/rediacc/renet/pkg/functions\t0.002s\n"
 
 
@@ -389,8 +375,7 @@ def selftest() -> int:
 
     # -- the regex and the list must agree ---------------------------------
     #
-    # PHASE 1 IS ONLY MEANINGFUL IF THE REGEX CAN SELECT EXACTLY THESE SEVEN.
-    # A port that copied one and mistyped the other would fail every real run
+    # PHASE 1 IS ONLY MEANINGFUL IF THE REGEX CAN SELECT EXACTLY THESE SEVEN. A port that copied one and mistyped the other would fail every real run
     # for a reason that looks like drift in renet.
     compiled = re.compile(RUN_REGEX)
     ctl.check(

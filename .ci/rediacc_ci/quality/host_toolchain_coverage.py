@@ -106,8 +106,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The two files whose literal lists must agree. Absolute paths in the twin's
-# messages, so they are joined to the root rather than kept relative.
+# The two files whose literal lists must agree. Absolute paths in the twin's messages, so they are joined to the root rather than kept relative.
 PINS_REL = ".ci/scripts/quality/check-toolchain-pins.sh"
 GUARD_REL = ".claude/rediacc_hooks/guards/block_host_toolchain_run.py"
 
@@ -141,10 +140,7 @@ def extract_gated_tools(text: str) -> list[str]:
             continue
         # `grep -o` PRINTS THE MATCH, NOT THE LINE, and that is why the `$`
         # anchor in the twin's sed always fires: sed is fed `GATED_TOOLS='a|b'`
-        # and nothing else, so trailing text on the source line (` # note`) has
-        # already been discarded upstream. A port that ran the sed against the
-        # whole line would find the anchor failing and would split the comment
-        # too. Verified against the real pipeline in the pytest twin.
+        # and nothing else, so trailing text on the source line (` # note`) has already been discarded upstream. A port that ran the sed against the whole line would find the anchor failing and would split the comment too. Verified against the real pipeline in the pytest twin.
         tools.update(part for part in match.group(1).split("|") if part)
     return sorted(tools)
 
@@ -171,8 +167,7 @@ def extract_array(text: str, name: str) -> list[str]:
         match = pattern.match(line)
         if not match:
             continue
-        # See extract_gated_tools: `grep -o` feeds sed the match alone, so the
-        # `$` anchor in the twin's substitution always fires.
+        # See extract_gated_tools: `grep -o` feeds sed the match alone, so the `$` anchor in the twin's substitution always fires.
         raw = match.group(1).replace('"', "").replace("'", "").replace(",", " ")
         tools.update(part for part in raw.split(" ") if part)
     return sorted(tools)
@@ -219,15 +214,12 @@ def main(argv: list[str] | None = None) -> int:
         failures += 1
 
     def ok(message: str) -> None:
-        # STDOUT, matching the twin's `pass()`. `scripts/lib/shadow-gate.ts`
-        # classifies `ok␣␣` as chatter, which is what a progress line is.
+        # STDOUT, matching the twin's `pass()`. `scripts/lib/shadow-gate.ts` classifies `ok␣␣` as chatter, which is what a progress line is.
         print("ok   %s" % message)
 
     # --- controls first: a gate nobody has watched fail is not a gate --------
     #
-    # INLINE, on every invocation, exactly as the twin runs them. Moving them
-    # behind `--selftest` would change what a plain run proves, and what a plain
-    # run proves is the only thing CI ever sees.
+    # INLINE, on every invocation, exactly as the twin runs them. Moving them behind `--selftest` would change what a plain run proves, and what a plain run proves is the only thing CI ever sees.
     bad_pins = "GATED_TOOLS='shfmt|shellcheck|ruff|actionlint|newlypinned'\n"
     guard_missing = "NPX_TOOLS=(ruff go shfmt shellcheck actionlint)\nBARE_TOOLS=(ruff go shfmt shellcheck actionlint)\n"
     missing = missing_from(extract_gated_tools(bad_pins), extract_array(guard_missing, "NPX_TOOLS"))
@@ -261,9 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     pins = root / PINS_REL
     guard = root / GUARD_REL
 
-    # A MISSING SUBJECT IS A FAILURE, NOT AN ABSTENTION. Both of these read as
-    # "the thing this gate compares has moved", which is exactly when a green
-    # would mean nothing.
+    # A MISSING SUBJECT IS A FAILURE, NOT AN ABSTENTION. Both of these read as "the thing this gate compares has moved", which is exactly when a green would mean nothing.
     if not pins.is_file():
         fail("the pinned-tools source is gone: %s" % pins)
         return 1
@@ -294,8 +284,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if missing_npx:
         fail("pinned tool(s) missing from NPX_TOOLS in %s: %s" % (guard, " ".join(missing_npx)))
-        # RAW, indented, on stderr: the twin's continuation line. See the port
-        # notes for why it does not go through the logger.
+        # RAW, indented, on stderr: the twin's continuation line. See the port notes for why it does not go through the logger.
         print(
             "     A bare 'npx <tool>' for these will fail with a confusing npm error "
             "instead of the actionable npx-cannot-run-this message.",
@@ -314,8 +303,7 @@ def main(argv: list[str] | None = None) -> int:
             "%d pinned tool(s) all covered by the runtime guard's NPX_TOOLS and BARE_TOOLS"
             % n_gated
         )
-        # THE SHAPE, NOT JUST THE VERDICT. The count is printed on the success
-        # line so a reader can notice when it collapses.
+        # THE SHAPE, NOT JUST THE VERDICT. The count is printed on the success line so a reader can notice when it collapses.
         print("✓ host-toolchain runtime guard covers every pinned tool (%d)." % n_gated)
         return 0
 
@@ -352,8 +340,7 @@ def selftest() -> int:
     ctl.check(
         "gated: duplicates collapse", extract_gated_tools("GATED_TOOLS='a|a|b'\n"), ["a", "b"]
     )
-    # MIRRORS: the anchor and the single-line confinement, both blind spots the
-    # port notes name. Pinned so a later reader sees they are DECISIONS.
+    # MIRRORS: the anchor and the single-line confinement, both blind spots the port notes name. Pinned so a later reader sees they are DECISIONS.
     ctl.check(
         "gated: MIRROR an indented declaration is invisible",
         extract_gated_tools("  GATED_TOOLS='a'\n"),
@@ -384,9 +371,7 @@ def selftest() -> int:
     ctl.check(
         "array: MIRROR an absent array yields nothing", extract_array(guard_ok, "NOPE_TOOLS"), []
     )
-    # THE TAB DEFECT, PINNED. `tr ' '` does not split on a tab, so two members
-    # separated by one become a single pseudo-tool. If someone "fixes" the twin,
-    # this control fails and points at the sentence that explains why.
+    # THE TAB DEFECT, PINNED. `tr ' '` does not split on a tab, so two members separated by one become a single pseudo-tool. If someone "fixes" the twin, this control fails and points at the sentence that explains why.
     ctl.check(
         "array: a TAB does not separate members (the twin's tr ' ')",
         extract_array("NPX_TOOLS=(ruff\tgo)\n", "NPX_TOOLS"),
@@ -430,8 +415,7 @@ def selftest() -> int:
 
         ctl.check("CONTROL: a covered pair passes", write(pins_ok, guard_ok), 0)
 
-        # THE VACUITY CASES. Each of these is a state in which the gate has
-        # compared nothing, and each must refuse rather than report coverage.
+        # THE VACUITY CASES. Each of these is a state in which the gate has compared nothing, and each must refuse rather than report coverage.
         ctl.check("VACUITY: an absent pins file is refused", write(None, guard_ok), 1)
         ctl.check("VACUITY: an absent guard file is refused", write(pins_ok, None), 1)
         ctl.check("VACUITY: an unreadable GATED_TOOLS is refused", write("echo hi\n", guard_ok), 1)
@@ -447,8 +431,7 @@ def selftest() -> int:
             1,
         )
 
-        # PLANTS: a fifth pinned tool the guard never learns about, which is the
-        # 2026-08-28 drift this gate was built for.
+        # PLANTS: a fifth pinned tool the guard never learns about, which is the 2026-08-28 drift this gate was built for.
         ctl.check(
             "PLANT: a tool missing from BOTH arrays is caught",
             write("GATED_TOOLS='shfmt|shellcheck|ruff|actionlint|newlypinned'\n", guard_ok),
@@ -479,9 +462,7 @@ def selftest() -> int:
             ),
             0,
         )
-        # ITS MIRROR: the blind spot is a PASS, and that is the honest record of
-        # what this gate does not see. A multi-line array reads as absent, which
-        # this gate reports as a refusal rather than as coverage.
+        # ITS MIRROR: the blind spot is a PASS, and that is the honest record of what this gate does not see. A multi-line array reads as absent, which this gate reports as a refusal rather than as coverage.
         ctl.check(
             "BLIND SPOT: a multi-line array reads as ABSENT, so it refuses",
             write(pins_ok, "NPX_TOOLS=(\n  ruff\n)\nBARE_TOOLS=(ruff)\n"),

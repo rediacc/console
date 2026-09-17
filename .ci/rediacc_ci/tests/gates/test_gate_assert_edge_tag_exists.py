@@ -64,8 +64,7 @@ LIB_DIR = paths.from_root(".ci", "scripts", "lib")
 BEGIN_ANCHOR = "COULD_NOT_TELL_ARM_BEGIN"
 END_ANCHOR = "COULD_NOT_TELL_ARM_END"
 
-# The arm the mutant carries INSTEAD of the real one: an unprovable probe read as a
-# pass. Written here as a literal, never derived from the live text.
+# The arm the mutant carries INSTEAD of the real one: an unprovable probe read as a pass. Written here as a literal, never derived from the live text.
 MUTANT_ARM = """        unknown:*)
             log_warn "MUTANT: treating an unprovable probe as a pass -- ${what}"
             return 0
@@ -173,10 +172,7 @@ def fakes(gate, tmp_path) -> Fakes:
     return Fakes(tmp_path)
 
 
-# -- the six properties, each 0 when it HOLDS ---------------------------------
-# Written as predicates returning a complaint (or None) so the mutant control can
-# re-run the very same code against the planted copy. That is what makes case 5 and
-# its control the same assertion rather than two similar ones.
+# -- the six properties, each 0 when it HOLDS --------------------------------- Written as predicates returning a complaint (or None) so the mutant control can re-run the very same code against the planted copy. That is what makes case 5 and its control the same assertion rather than two similar ones.
 
 
 def case_no_tag(f: Fakes, script) -> str | None:
@@ -331,9 +327,7 @@ def test_the_control_fires_against_a_planted_403_pass(gate, tmp_path):
     if text == TARGET.read_text(encoding="utf-8"):
         gate.log_fail("CONTROL COULD NOT PLANT: mutant is identical to the source")
 
-    # LIVENESS. A mutant that merely crashes exits non-zero for reasons unrelated to
-    # the plant, and case 5 would "still fail" for the wrong reason. Prove the mutant
-    # both RUNS (case 4 -> 0) and still detects genuine absence (case 1 -> 1).
+    # LIVENESS. A mutant that merely crashes exits non-zero for reasons unrelated to the plant, and case 5 would "still fail" for the wrong reason. Prove the mutant both RUNS (case 4 -> 0) and still detects genuine absence (case 1 -> 1).
     f = fakes(gate, tmp_path)
     gate.assertions += 1
     if case_all_present(f, mutant) is not None or case_no_tag(f, mutant) is not None:

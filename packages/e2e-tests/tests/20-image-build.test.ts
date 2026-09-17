@@ -351,8 +351,7 @@ test.describe('Image Configuration @image @config', () => {
 // =============================================================================
 
 test.describe('Build All Images @image @slow @all', () => {
-  // This test builds all images sequentially
-  // Expected duration: ~3-4 hours
+  // This test builds all images sequentially Expected duration: ~3-4 hours
   test.setTimeout(5 * 60 * 60 * 1000); // 5 hours
 
   test('should build all 10 configured images', async () => {

@@ -66,12 +66,9 @@ def main(argv: list[str]) -> int:
             data = json.loads(manifest_text)
         except json.JSONDecodeError:
             # `jq -r '.version'` on non-JSON input exits 5; under `set -euo
-            # pipefail` that aborts the twin silently, before any output. Same
-            # silence here, same reasoning as check_soak_period.py's own
-            # silent-abort note.
+            # pipefail` that aborts the twin silently, before any output. Same silence here, same reasoning as check_soak_period.py's own silent-abort note.
             return 1
-        # jq -r prints the literal string "null" for an absent/null field,
-        # never Python's "None".
+        # jq -r prints the literal string "null" for an absent/null field, never Python's "None".
         version = data.get("version")
         version_out = "null" if version is None else version
         date = data.get("releaseDate")

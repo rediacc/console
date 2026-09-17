@@ -126,8 +126,7 @@ beforeEach(() => {
   h.written = undefined;
   h.failOn = null;
   h.deletedRepos = [];
-  // Re-establish defaults each test: clearAllMocks() wipes call history but NOT
-  // implementations, so a per-test getCurrent/resolveRepoRef override would leak.
+  // Re-establish defaults each test: clearAllMocks() wipes call history but NOT implementations, so a per-test getCurrent/resolveRepoRef override would leak.
   vi.mocked(configService.getCurrent).mockResolvedValue(null);
   vi.mocked(resolveRepoRef).mockResolvedValue({
     name: 'shop',
@@ -143,8 +142,7 @@ describe('repo migrate — placement rewrite (R1)', () => {
   it('routes the ref to the TARGET machine after a successful migrate', async () => {
     await migrateRepo('shop', { to: 'm2' });
 
-    // The declaration migrate left behind is what resolveMachine reads. Before
-    // R1 nothing was written, so this falls back to the source and FAILS.
+    // The declaration migrate left behind is what resolveMachine reads. Before R1 nothing was written, so this falls back to the source and FAILS.
     const declared = h.written ?? { machine: 'm1' };
     const resolved = await resolveMachine('shop', viewWith(declared));
     expect(resolved.machine).toBe('m2');
@@ -176,8 +174,7 @@ describe('repo migrate — family semantics (R2, fallback scope)', () => {
       machineName: 'm1',
       tag: 'test',
     });
-    // ValidationError is the exit-2 refusal class (handleError -> exit 2), the
-    // same precedent `repo promote` uses for its not-a-fork refusal.
+    // ValidationError is the exit-2 refusal class (handleError -> exit 2), the same precedent `repo promote` uses for its not-a-fork refusal.
     await expect(migrateRepo('shop:test', { to: 'm2' })).rejects.toBeInstanceOf(ValidationError);
     // Nothing moved: no placement write, no source delete.
     expect(h.written).toBeUndefined();

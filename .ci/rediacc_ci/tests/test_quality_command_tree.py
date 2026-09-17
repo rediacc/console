@@ -101,9 +101,7 @@ def test_port_and_twin_agree(
     assert new_exit == old_exit
     assert diff_body(new_out) == diff_body(old_out)
     assert bool(diff_body(old_out)) == want_diff
-    # The verdict line is the one finding on stderr, and its text is what the
-    # shadow comparator compares. Both sides must say STALE, or missing, or
-    # neither.
+    # The verdict line is the one finding on stderr, and its text is what the shadow comparator compares. Both sides must say STALE, or missing, or neither.
     assert ("STALE" in new_err) == ("STALE" in old_err)
     assert ("missing" in new_err) == ("missing" in old_err)
 

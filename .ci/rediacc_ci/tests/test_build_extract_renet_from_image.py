@@ -64,11 +64,9 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real and deterministic: the twin genuinely calls each, and `ls`/`sha256sum`
-# put their stdout straight into the script's own output. `grep`/`sed`/`sort`
+# Real and deterministic: the twin genuinely calls each, and `ls`/`sha256sum` put their stdout straight into the script's own output. `grep`/`sed`/`sort`
 # are here for the twin's version-check pipeline; the port uses `re` instead,
-# which is the one named divergence, and supplying the real binaries is what
-# makes the two sides comparable at all.
+# which is the one named divergence, and supplying the real binaries is what makes the two sides comparable at all.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -85,10 +83,7 @@ PATH_MINIMUM = (
     "basename",
 )
 
-# A minimal but REAL-SHAPED lockfile: two arches, both classes, and one
-# component (`criu`) whose version is checkable plus one (`rsync`) whose version
-# is declared and deliberately not checkable, so the "return success rather than
-# pretend" branch is exercised too.
+# A minimal but REAL-SHAPED lockfile: two arches, both classes, and one component (`criu`) whose version is checkable plus one (`rsync`) whose version is declared and deliberately not checkable, so the "return success rather than pretend" branch is exercised too.
 LOCKFILE = """{
   "schemaVersion": 1,
   "components": {
@@ -152,9 +147,7 @@ esac
 exit 0
 """
 
-# `zstd -19 -T0 -q --rm -f <file>`: compresses in place and REMOVES the input.
-# The fake keeps that contract (the `.zst` appears, the input goes away) without
-# actually compressing, so the staged tree can be compared byte for byte.
+# `zstd -19 -T0 -q --rm -f <file>`: compresses in place and REMOVES the input. The fake keeps that contract (the `.zst` appears, the input goes away) without actually compressing, so the staged tree can be compared byte for byte.
 FAKE_ZSTD = """#!/bin/bash
 {
     printf 'FAKEBIN zstd'
@@ -246,8 +239,7 @@ def fixture(
     (renet / "build.sh").write_text(FAKE_BUILD_SH, encoding="utf-8")
     (renet / "build.sh").chmod(0o755)
     if stale_zst:
-        # `:106` exists to remove exactly this: a payload a PREVIOUS extraction
-        # left behind, at the depth the glob is written for.
+        # `:106` exists to remove exactly this: a payload a PREVIOUS extraction left behind, at the depth the glob is written for.
         stale = renet / "pkg" / "embed" / "assets" / "amd64" / "base"
         stale.mkdir(parents=True, exist_ok=True)
         (stale / "criu-linux-amd64.zst").write_text("STALE PAYLOAD\n", encoding="utf-8")
@@ -404,9 +396,7 @@ def _calls(log: str, tool: str) -> list[list[str]]:
     return [ln.split("\t") for ln in log.splitlines() if ln.startswith(prefix)]
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker_or_go(tmp_path) -> None:
@@ -430,9 +420,7 @@ def test_the_ls_mask_hides_only_the_timestamp(tmp_path) -> None:
     assert _mask(a) != _mask(c)
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
 
 
 def test_no_tag_refuses(tmp_path) -> None:
@@ -479,9 +467,7 @@ def test_the_registry_defaults_and_can_be_overridden(tmp_path) -> None:
     _agree(old2_t, new2_t, "custom-registry")
 
 
-# ---------------------------------------------------------------------------
-# The success path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The success path ---------------------------------------------------------------------------
 
 
 def test_the_full_success_path(tmp_path) -> None:
@@ -594,9 +580,7 @@ def test_output_selects_where_the_binaries_land(tmp_path) -> None:
     _agree(old_t, new_t, "output-dir")
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_a_missing_lockfile_refuses(tmp_path) -> None:
@@ -702,9 +686,7 @@ def test_a_failing_build_sh_stops_the_run(tmp_path) -> None:
     _agree(old_t, new_t, "build-sh-fails")
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, and the planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, and the planted defect ---------------------------------------------------------------------------
 
 
 def test_bash_glob_reproduces_both_of_the_shell_behaviours(tmp_path) -> None:

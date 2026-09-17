@@ -215,8 +215,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as exc:
-        # QUIRK 3: `printf -v` on a key that is not a shell identifier exits 2
-        # and, under this script's `set -e`, takes the whole run down before a
+        # QUIRK 3: `printf -v` on a key that is not a shell identifier exits 2 and, under this script's `set -e`, takes the whole run down before a
         # single validation has happened. `--foo.bar=x` is the reachable shape.
         exc.report()
         return exc.code
@@ -259,8 +258,7 @@ def main(argv: list[str]) -> int:
         return code
 
     log.step("Cleaning up GHCR credentials...")
-    # UNGUARDED, unlike `ci-pull-images.sh`. Difference 4 in the module
-    # docstring: a failing logout costs the success line and the zero exit.
+    # UNGUARDED, unlike `ci-pull-images.sh`. Difference 4 in the module docstring: a failing logout costs the success line and the zero exit.
     code = _run(["docker", "logout", REGISTRY_HOST])
     if code != 0:
         return code

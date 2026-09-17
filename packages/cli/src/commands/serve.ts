@@ -57,8 +57,7 @@ export function registerServeCommand(program: Command): void {
     )
     .action((options: ServeOptions) => {
       try {
-        // --mode is constrained by Commander's .choices(), so an invalid value
-        // never reaches here.
+        // --mode is constrained by Commander's .choices(), so an invalid value never reaches here.
         const executorToken = process.env.REDIACC_TOKEN;
         if (!executorToken) {
           throw new ValidationError(
@@ -71,9 +70,7 @@ export function registerServeCommand(program: Command): void {
 
         const sessions = new SessionStore();
 
-        // The daemon reads its enrolled config off disk. The container has no
-        // disk and no enrollment: it pulls the config encrypted and opens it with
-        // the key the caller granted for the session.
+        // The daemon reads its enrolled config off disk. The container has no disk and no enrollment: it pulls the config encrypted and opens it with the key the caller granted for the session.
         const loadConfig =
           options.mode === 'container'
             ? createContainerConfigLoader({ accountUrl, executorToken, sessions })
@@ -90,8 +87,7 @@ export function registerServeCommand(program: Command): void {
           audit: createExecutorAudit({
             accountUrl,
             executorToken,
-            // A command that ran but could not be recorded is exactly the case an
-            // audit trail exists to catch, so it is never swallowed.
+            // A command that ran but could not be recorded is exactly the case an audit trail exists to catch, so it is never swallowed.
             onFailure: (error, event) => {
               outputService.warn(
                 `Ran "${event.commandPath}" for ${event.principal.userEmail} but could not record it: ` +
@@ -111,9 +107,7 @@ export function registerServeCommand(program: Command): void {
         );
         outputService.info(t('commands.serve.hint'));
 
-        // A container gets SIGTERM and then 15 minutes before SIGKILL. Stop
-        // accepting new work immediately, but let commands already in flight
-        // finish rather than orphaning an operation halfway through a machine.
+        // A container gets SIGTERM and then 15 minutes before SIGKILL. Stop accepting new work immediately, but let commands already in flight finish rather than orphaning an operation halfway through a machine.
         const shutdown = () => {
           outputService.info(t('commands.serve.draining'));
           server.close(() => process.exit(0));

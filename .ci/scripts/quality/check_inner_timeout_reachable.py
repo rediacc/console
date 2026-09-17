@@ -52,9 +52,7 @@ from rediacc_ci.controls import Controls, plant
 
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 
-# A module-level constant naming seconds. Anchored at column 0 so a timer
-# discussed in a comment or held in a string fixture is not mistaken for one
-# that is declared -- the same trap `check_pytest.py`'s corpus counter fell into.
+# A module-level constant naming seconds. Anchored at column 0 so a timer discussed in a comment or held in a string fixture is not mistaken for one that is declared -- the same trap `check_pytest.py`'s corpus counter fell into.
 TIMER_RE = re.compile(r"^([A-Z][A-Z0-9_]*_TIMEOUT_S)\s*=.*?(\d{2,})", re.MULTILINE)
 
 
@@ -217,8 +215,7 @@ def main(argv: list[str]) -> int:
             examined += 1
             problems.extend(findings(timers, ceiling, entry.get("id", "?"), leaf))
 
-    # ANTI-VACUITY. Finding no timer anywhere means the reader broke or the
-    # convention was renamed, and a green would then mean "checked nothing".
+    # ANTI-VACUITY. Finding no timer anywhere means the reader broke or the convention was renamed, and a green would then mean "checked nothing".
     if examined == 0:
         print(
             "✗ scanned %d registered gate(s) and found NO script declaring a `*_TIMEOUT_S`\n"

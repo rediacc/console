@@ -103,8 +103,7 @@ function stripComments(src: string): string[] {
         line = line.slice(0, block) + line.slice(end + 2);
       }
     }
-    // A `//` inside a string literal is not a comment. Rare in this tree, and
-    // erring toward KEEPING text only ever produces a finding to look at.
+    // A `//` inside a string literal is not a comment. Rare in this tree, and erring toward KEEPING text only ever produces a finding to look at.
     const slash = line.indexOf('//');
     if (slash !== -1 && (line.slice(0, slash).match(/"/g)?.length ?? 0) % 2 === 0) {
       line = line.slice(0, slash);

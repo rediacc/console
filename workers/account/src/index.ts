@@ -6,9 +6,7 @@ interface Env {
   [key: string]: unknown;
 }
 
-// Mirrors packages/www/public/_headers. Applied to every response served from
-// this worker (SPA HTML, static assets, API JSON, redirects, 404). Responses
-// that already declare a Content-Security-Policy (the invoice PDF routes —
+// Mirrors packages/www/public/_headers. Applied to every response served from this worker (SPA HTML, static assets, API JSON, redirects, 404). Responses that already declare a Content-Security-Policy (the invoice PDF routes —
 // private/account/src/routes/{root,portal}-invoices.ts) keep their stricter
 // per-route policy untouched.
 const SECURITY_HEADERS: Record<string, string> = {
@@ -16,9 +14,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser
-  // calls fail under future Cloudflare-edge tightening. Stripe redirects via
-  // window.location.assign which is a top-level navigation not gated by Permissions-Policy.
+  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser calls fail under future Cloudflare-edge tightening. Stripe redirects via window.location.assign which is a top-level navigation not gated by Permissions-Policy.
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)',
   'Content-Security-Policy': [
@@ -56,8 +52,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Account portals (eu/us/asia/bench + edge variants) are logged-in apps,
-    // not public content — keep them out of every search index.
+    // Account portals (eu/us/asia/bench + edge variants) are logged-in apps, not public content — keep them out of every search index.
     if (url.pathname === '/robots.txt') {
       return withSecurityHeaders(
         new Response('User-agent: *\nDisallow: /\n', {
@@ -80,8 +75,7 @@ export default {
       if (/\.\w+$/.test(url.pathname)) {
         return withSecurityHeaders(await env.ASSETS.fetch(request));
       }
-      // SPA routes: rewrite to /account/ so assets serves index.html.
-      // Don't use /account/index.html -- Cloudflare pretty URLs 307-redirects it.
+      // SPA routes: rewrite to /account/ so assets serves index.html. Don't use /account/index.html -- Cloudflare pretty URLs 307-redirects it.
       if (url.pathname !== '/account' && url.pathname !== '/account/') {
         const spaRequest = new Request(new URL('/account/', url.origin), request);
         return withSecurityHeaders(await env.ASSETS.fetch(spaRequest));
@@ -99,19 +93,13 @@ export default {
     return withSecurityHeaders(new Response('Not Found', { status: 404 }));
   },
 
-  // Cron entrypoint. Every deployed region reaches the account app's scheduled
-  // work through here, so forgetting this re-export silently disables it: the
-  // nightly event_log retention sweep never ran in any region until this line
-  // existed, because this module used to export `fetch` alone while the handler
-  // sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
+  // Cron entrypoint. Every deployed region reaches the account app's scheduled work through here, so forgetting this re-export silently disables it: the nightly event_log retention sweep never ran in any region until this line existed, because this module used to export `fetch` alone while the handler sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
   // block in every wrangler.*.toml is the other half; both are gated by
   // private/account/tests/integration/cron-wiring.test.ts.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
-    // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this
-    // worker's Env satisfies it, so the cast was load-bearing for nothing and
+    // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this worker's Env satisfies it, so the cast was load-bearing for nothing and
     // @typescript-eslint/no-unnecessary-type-assertion said so as soon as
-    // workers/ entered the lint scope (2026-09-06). Keeping it would have hidden
-    // any real future divergence between the two Env shapes behind `never`.
+    // workers/ entered the lint scope (2026-09-06). Keeping it would have hidden any real future divergence between the two Env shapes behind `never`.
     accountApp.scheduled(controller, env, ctx);
   },
 };

@@ -99,9 +99,7 @@ DEFAULT_MAX_BYTES = "49152"
 # `[[ "$MAX_BYTES" =~ ^[0-9]{1,8}$ ]]`.
 MAX_BYTES_RE = re.compile(r"^[0-9]{1,8}$")
 
-# jq's own exit code for a runtime error in the program. MEASURED (jq 1.8.1):
-# `jq -c '.[].x' <<<'[1]'` exits 5, not 2. A port that guessed 2 would diverge
-# on every malformed-element case.
+# jq's own exit code for a runtime error in the program. MEASURED (jq 1.8.1): `jq -c '.[].x' <<<'[1]'` exits 5, not 2. A port that guessed 2 would diverge on every malformed-element case.
 JQ_RUNTIME_RC = 5
 
 
@@ -151,11 +149,7 @@ def _iterate(value: Any) -> list[Any]:
     raise JqError("Cannot iterate over %s" % _render(value))
 
 
-# jq TRUNCATES every value it quotes in an error message, and the port has to do
-# the same or its "identical" message is a different string. jq renders the
-# value into a fixed buffer (`char errbuf[15]`) and overwrites the last three
-# usable characters with dots, so a dump of 15 bytes or more comes out as its
-# first 11 bytes plus `...`. MEASURED at the boundary, not read off the source:
+# jq TRUNCATES every value it quotes in an error message, and the port has to do the same or its "identical" message is a different string. jq renders the value into a fixed buffer (`char errbuf[15]`) and overwrites the last three usable characters with dots, so a dump of 15 bytes or more comes out as its first 11 bytes plus `...`. MEASURED at the boundary, not read off the source:
 # a 14-byte dump survives whole, a 15-byte dump is cut.
 JQ_ERRBUF = 15
 
@@ -315,8 +309,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as exc:
-        # parse_args QUIRK 3: `printf -v` refuses an invalid identifier and
-        # takes the twin down with exit 2.
+        # parse_args QUIRK 3: `printf -v` refuses an invalid identifier and takes the twin down with exit 2.
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)
         return exc.code
 
@@ -350,16 +343,14 @@ def main(argv: list[str]) -> int:
         data = load_threads(raw)
     if not isinstance(data, list):
         # One message for both halves of `jq -e 'type == "array"'`: a file that
-        # will not parse, and a file that parses into something else. An empty
-        # file lands here too, where `jq -e` exits 4.
+        # will not parse, and a file that parses into something else. An empty file lands here too, where `jq -e` exits 4.
         log.error("threads fixture is not a JSON array: %s" % threads_path)
         return 2
 
     try:
         payload = build_payload(data, author_filter, int(max_bytes_raw))
     except JqError as exc:
-        # jq's own frame, on stderr, and jq's own exit code. `set -e` gives the
-        # twin no chance to say anything of its own here, so neither does this.
+        # jq's own frame, on stderr, and jq's own exit code. `set -e` gives the twin no chance to say anything of its own here, so neither does this.
         print(
             "jq: error (at %s:%d): %s" % (threads_path, jq_error_line(raw), exc),
             file=sys.stderr,

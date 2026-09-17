@@ -67,9 +67,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-greenlight.sh"
 
-# The closure-path sweep, the two fake-gh CLI cases and the three cases reading
-# scope-shadow.sh all read the tracked tree. The lock says `tree:repo` too. See
-# the docstring.
+# The closure-path sweep, the two fake-gh CLI cases and the three cases reading scope-shadow.sh all read the tracked tree. The lock says `tree:repo` too. See the docstring.
 REAL_TREE_TWIN = True
 
 ENGINE_REL = ".ci/scripts/ci/greenlight.cjs"
@@ -182,9 +180,7 @@ def captured(result: harness.RunResult) -> str:
     return result.out.rstrip("\n")
 
 
-# ---------------------------------------------------------------------------
-# Case 1: a full match greenlights, and names the run that proved it.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Case 1: a full match greenlights, and names the run that proved it. ---------------------------------------------------------------------------
 
 
 def test_full_match_greenlights_and_names_the_run(gate):
@@ -193,8 +189,7 @@ def test_full_match_greenlights_and_names_the_run(gate):
     gate.assert_eq(jget(v, "runId"), "4242", "and must name the run id that is the evidence")
     gate.assert_eq(jget(v, "reason"), "job-green-same-inputs", "with the reason stated")
 
-    # CONTROL: greenlit is not the constant answer. The SAME candidate against a
-    # different wanted pointer must refuse, or nothing above is proven.
+    # CONTROL: greenlit is not the constant answer. The SAME candidate against a different wanted pointer must refuse, or nothing above is proven.
     v = ev(
         gate,
         '{"key":"renet","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
@@ -211,9 +206,7 @@ def test_full_match_greenlights_and_names_the_run(gate):
     gate.log_pass("a full match greenlights and names its evidence run (case 1)")
 
 
-# ---------------------------------------------------------------------------
-# Case 2: the job ran and FAILED. Matching inputs are irrelevant.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Case 2: the job ran and FAILED. Matching inputs are irrelevant. ---------------------------------------------------------------------------
 
 
 def test_failed_job_refuses(gate):
@@ -226,9 +219,7 @@ def test_failed_job_refuses(gate):
         jget(v, "trail"), "job-failed:failure", "refused as job-failed, carrying the conclusion"
     )
 
-    # A cancelled run is the same class and is NOT rare: a live listing of
-    # rediacc/console showed 'Tests + Infra / Account E2E' cancelled on the most
-    # recent completed run.
+    # A cancelled run is the same class and is NOT rare: a live listing of rediacc/console showed 'Tests + Infra / Account E2E' cancelled on the most recent completed run.
     cand = candidate(
         8, "Tests + Infra / Renet", "cancelled", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
@@ -239,21 +230,12 @@ def test_failed_job_refuses(gate):
     gate.log_pass("a job that ran and did not succeed is refused (case 2)")
 
 
-# ---------------------------------------------------------------------------
-# Case 3: the job was SKIPPED. THE intent-versus-outcome case, and the one the
-# planted-defect proof targets.
+# --------------------------------------------------------------------------- Case 3: the job was SKIPPED. THE intent-versus-outcome case, and the one the planted-defect proof targets.
 #
-# PLANTED-DEFECT PROOF, executed 2026-07-31 on the twin. Rule 1 in
-# greenlight.cjs::evaluateCandidate was inverted so a skipped conclusion fell
+# PLANTED-DEFECT PROOF, executed 2026-07-31 on the twin. Rule 1 in greenlight.cjs::evaluateCandidate was inverted so a skipped conclusion fell
 # through to the success path (`if (conclusion === 'skipped') { /* accept */ }`
-# in place of the refusal). With that one edit:
-#   - this case FAILED, with the exact text
-#       FAIL: a skipped job must never greenlight: expected 'false', got 'true'
-#   - cases 1 and 2 still PASSED, so the defect is detected by this property
-#     alone and not by a suite-wide collapse.
-# The engine was then restored and re-verified byte-identical by md5
-# (8b35c56e7f5ca90c959f90ac7db029b9 before and after).
-# ---------------------------------------------------------------------------
+# in place of the refusal). With that one edit: - this case FAILED, with the exact text FAIL: a skipped job must never greenlight: expected 'false', got 'true' - cases 1 and 2 still PASSED, so the defect is detected by this property alone and not by a suite-wide collapse. The engine was then restored and re-verified byte-identical by md5 (8b35c56e7f5ca90c959f90ac7db029b9 before and
+# after). ---------------------------------------------------------------------------
 
 
 def test_skipped_job_refuses_as_not_run(gate):
@@ -266,17 +248,14 @@ def test_skipped_job_refuses_as_not_run(gate):
         jget(v, "trail"), "job-not-run", "refused as job-not-run, exactly like an absent job"
     )
 
-    # A run carrying no such job at all lands on the same reason, because
-    # neither can prove the suite executed.
+    # A run carrying no such job at all lands on the same reason, because neither can prove the suite executed.
     cand = candidate(
         10, "Tests + Infra / Unit", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_contains(jget(v, "trail"), "job-not-run", "an absent job is refused as job-not-run")
 
-    # CONTROL: flipping only the conclusion to success greenlights the very same
-    # fixture, so the refusal above is about the conclusion and nothing else in
-    # the candidate.
+    # CONTROL: flipping only the conclusion to success greenlights the very same fixture, so the refusal above is about the conclusion and nothing else in the candidate.
     cand = candidate(
         9, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
@@ -287,11 +266,7 @@ def test_skipped_job_refuses_as_not_run(gate):
     gate.log_pass("a skipped job is refused, so evidence cannot chain across reduced runs (case 3)")
 
 
-# ---------------------------------------------------------------------------
-# Case 4: the job is green and the pointer matches, but a console-side input
-# differs. This is the rule that makes the greenlight safe for a PR that edits
-# run-renet.sh without touching the submodule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Case 4: the job is green and the pointer matches, but a console-side input differs. This is the rule that makes the greenlight safe for a PR that edits run-renet.sh without touching the submodule. ---------------------------------------------------------------------------
 
 
 def test_differing_closure_refuses(gate):
@@ -302,8 +277,7 @@ def test_differing_closure_refuses(gate):
     gate.assert_eq(jget(v, "greenlit"), "false", "a differing console-side closure must refuse")
     gate.assert_contains(jget(v, "trail"), "closure-differs", "named as closure-differs")
 
-    # CONTROL: flipping only the closure hash back greenlights the same fixture,
-    # so the refusal is about the closure and nothing else.
+    # CONTROL: flipping only the closure hash back greenlights the same fixture, so the refusal is about the closure and nothing else.
     cand = candidate(
         11, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
@@ -316,10 +290,7 @@ def test_differing_closure_refuses(gate):
 
 # ---------------------------------------------------------------------------
 # Case 5: FAIL-OPEN. Absence and failure must both yield greenlit=false, never
-# an exception and never a greenlight. This is the contract the whole design
-# rests on: the engine may only ever turn a RUN into a SKIP, so every way it can
-# go wrong has to land on "changed nothing".
-# ---------------------------------------------------------------------------
+# an exception and never a greenlight. This is the contract the whole design rests on: the engine may only ever turn a RUN into a SKIP, so every way it can go wrong has to land on "changed nothing". ---------------------------------------------------------------------------
 
 THROWING_JS = """
 const g = require(process.argv[1]);
@@ -366,9 +337,7 @@ def test_absent_and_throwing_candidates_fail_open(gate):
     )
     gate.assert_contains(jget(v, "reason"), "unknown-key", "an unknown key must not greenlight")
 
-    # A THROWING fetch at each of the three lazy stages. Injected here rather
-    # than fixtured, because a thrown fetch is exactly what a rate-limited or
-    # 404ing API looks like and JSON cannot express it.
+    # A THROWING fetch at each of the three lazy stages. Injected here rather than fixtured, because a thrown fetch is exactly what a rate-limited or 404ing API looks like and JSON cannot express it.
     result = node_eval(gate, THROWING_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
@@ -392,21 +361,12 @@ def test_absent_and_throwing_candidates_fail_open(gate):
     gate.log_pass("absence, bad input and a throwing API all fail open to no greenlight (case 5)")
 
 
-# ---------------------------------------------------------------------------
-# install_fake_gh -- put a working fake `gh` on PATH at <work>/bin.
+# --------------------------------------------------------------------------- install_fake_gh -- put a working fake `gh` on PATH at <work>/bin.
 #
-# It serves this repo's REAL tree as the candidate's content, so the fixture
-# cannot rot: whatever HEAD holds, the candidate holds the same, and a
-# greenlight is due. Each CLI-level case then flips exactly ONE fact and asserts
-# the greenlight withdraws.
+# It serves this repo's REAL tree as the candidate's content, so the fixture cannot rot: whatever HEAD holds, the candidate holds the same, and a greenlight is due. Each CLI-level case then flips exactly ONE fact and asserts the greenlight withdraws.
 #
-# Every case that uses it calls it first, deliberately. One case replaces the
-# binary with a deliberately broken one, and a later case that inherited that
-# would pass for the wrong reason while looking like a real control. The port
-# keeps the explicit call even though each case already has its own temp dir:
-# the ordering hazard is the thing being documented, and a reader comparing the
-# two files should not have to notice that Python made it moot.
-# ---------------------------------------------------------------------------
+# Every case that uses it calls it first, deliberately. One case replaces the binary with a deliberately broken one, and a later case that inherited that would pass for the wrong reason while looking like a real control. The port keeps the explicit call even though each case already has its own temp dir: the ordering hazard is the thing being documented, and a reader comparing the
+# two files should not have to notice that Python made it moot. ---------------------------------------------------------------------------
 
 FAKE_GH_BACKEND = r"""const { execFileSync } = require('child_process');
 const args = process.argv.slice(2);
@@ -462,14 +422,12 @@ def run_cli(gate, bindir, **extra) -> harness.RunResult:
     )
 
 
-# ---------------------------------------------------------------------------
-# Case 6: the CLI's emit, end to end and offline.
+# --------------------------------------------------------------------------- Case 6: the CLI's emit, end to end and offline.
 #
 # The property asserted is the fail-open asymmetry: stdout may carry
 # `run_<key>=false` and may never carry `run_<key>=true`, because `=false` is
 # the only value that can shrink a round and there is no `=true` form to get
-# wrong.
-# ---------------------------------------------------------------------------
+# wrong. ---------------------------------------------------------------------------
 
 
 def test_cli_emit_is_false_only(gate):
@@ -495,9 +453,7 @@ def test_cli_emit_is_false_only(gate):
         )
         gate.assert_eq(out, "", "a single changed closure file withdraws the greenlight")
 
-        # CONTROL 3: a gh that fails outright. The engine must stay silent and
-        # exit 0, because a crash inside `initialize` stalls every job that needs
-        # it, and this engine must never be the thing that fails.
+        # CONTROL 3: a gh that fails outright. The engine must stay silent and exit 0, because a crash inside `initialize` stalls every job that needs it, and this engine must never be the thing that fails.
         broken = bindir / "gh"
         broken.write_text('#!/bin/bash\necho "gh: boom" >&2\nexit 1\n', encoding="utf-8")
         broken.chmod(0o755)
@@ -507,34 +463,16 @@ def test_cli_emit_is_false_only(gate):
         gate.log_pass("the CLI emits run_<key>=false or nothing, never =true (case 6)")
 
 
-# ---------------------------------------------------------------------------
-# Case 7: THE SUBMODULE POINTER RULE, stated by the operator as the core
-# soundness requirement of the whole feature: a suite may be skipped ONLY when
-# the submodule points at the exact hash some job-green run already tested. Any
-# submodule change, however small, means the related tests run.
+# --------------------------------------------------------------------------- Case 7: THE SUBMODULE POINTER RULE, stated by the operator as the core soundness requirement of the whole feature: a suite may be skipped ONLY when the submodule points at the exact hash some job-green run already tested. Any submodule change, however small, means the related tests run.
 #
-# It gets its own case because it is the rule most likely to be quietly weakened
-# later. It is also the only rule that a plausible-sounding "optimisation" would
-# break: accepting an ANCESTOR of the tested commit, or a pointer that merely
-# resolves to the same branch, both read as reasonable and both let untested
-# submodule code merge. The comparison is hash equality and nothing else.
+# It gets its own case because it is the rule most likely to be quietly weakened later. It is also the only rule that a plausible-sounding "optimisation" would break: accepting an ANCESTOR of the tested commit, or a pointer that merely resolves to the same branch, both read as reasonable and both let untested submodule code merge. The comparison is hash equality and nothing else.
 #
-# PLANTED-DEFECT PROOF, executed 2026-07-31 on the twin. Rule 2 in
-# greenlight.cjs::evaluateCandidate was weakened from full equality to a
-# 4-character prefix comparison, the shape a "cheap early-out" would take.
-# With that one edit:
-#   - this case FAILED, on the near-miss assertion specifically, with
-#       FAIL: a pointer differing in one character must refuse: expected 'false', got 'true'
-#   - cases 1 to 6 ALL still passed, so a weakened pointer rule is invisible to
-#     every other property in this file and visible to this one.
-# The engine was restored and re-verified byte-identical by md5
-# (8b35c56e7f5ca90c959f90ac7db029b9 before and after).
-# ---------------------------------------------------------------------------
+# PLANTED-DEFECT PROOF, executed 2026-07-31 on the twin. Rule 2 in greenlight.cjs::evaluateCandidate was weakened from full equality to a 4-character prefix comparison, the shape a "cheap early-out" would take. With that one edit: - this case FAILED, on the near-miss assertion specifically, with FAIL: a pointer differing in one character must refuse: expected 'false', got 'true' -
+# cases 1 to 6 ALL still passed, so a weakened pointer rule is invisible to every other property in this file and visible to this one. The engine was restored and re-verified byte-identical by md5 (8b35c56e7f5ca90c959f90ac7db029b9 before and after). ---------------------------------------------------------------------------
 
 
 def test_moved_pointer_refuses(gate):
-    # FIRE: everything else is a perfect match. Job green, closure identical,
-    # and ONLY the gitlink moved.
+    # FIRE: everything else is a perfect match. Job green, closure identical, and ONLY the gitlink moved.
     cand = candidate(
         31, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_B, HASH_A
     )
@@ -543,8 +481,7 @@ def test_moved_pointer_refuses(gate):
     gate.assert_eq(jget(v, "runId"), "null", "and must name no evidence run")
     gate.assert_contains(jget(v, "trail"), "pointer-differs", "refused as pointer-differs")
 
-    # CONTROL: restore the pointer, change nothing else, and the same fixture
-    # greenlights. Without this the refusal above could come from any field.
+    # CONTROL: restore the pointer, change nothing else, and the same fixture greenlights. Without this the refusal above could come from any field.
     cand = candidate(
         31, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
@@ -553,8 +490,7 @@ def test_moved_pointer_refuses(gate):
         jget(v, "greenlit"), "true", "the same fixture with the matching pointer DOES greenlight"
     )
 
-    # A one-character difference is a difference. Equality is over the whole
-    # hash, not a prefix, so a near-miss cannot be read as a match.
+    # A one-character difference is a difference. Equality is over the whole hash, not a prefix, so a near-miss cannot be read as a match.
     near = SHA_A[:39] + "9"
     cand = candidate(
         32, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % near, HASH_A
@@ -562,36 +498,26 @@ def test_moved_pointer_refuses(gate):
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a pointer differing in one character must refuse")
 
-    # An absent gitlink (the candidate commit did not carry that submodule) is a
-    # difference too, not a free pass.
+    # An absent gitlink (the candidate commit did not carry that submodule) is a difference too, not a free pass.
     cand = candidate(33, "Tests + Infra / Renet", "success", "{}", HASH_A)
     v = ev(gate, want("[%s]" % cand))
     gate.assert_contains(
         jget(v, "trail"), "pointer-differs", "an absent gitlink refuses as pointer-differs"
     )
 
-    # AND IT CHANGES NOTHING, proven at CLI level against the real tree: the fake
-    # gh serves this repo's own content, so everything matches and a greenlight
-    # is due, except that private/renet's gitlink is reported moved. The emit
-    # must be empty, which is the state in which ci.yml runs the job.
+    # AND IT CHANGES NOTHING, proven at CLI level against the real tree: the fake gh serves this repo's own content, so everything matches and a greenlight is due, except that private/renet's gitlink is reported moved. The emit must be empty, which is the state in which ci.yml runs the job.
     with harness.temp_dir() as work:
         bindir = install_fake_gh(work)
         out = captured(run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="renet"))
         gate.assert_eq(out, "", "a moved private/renet pointer emits nothing, so the suite runs")
 
-        # CONTROL for that emit: the same invocation WITHOUT the perturbation
-        # does greenlight, so the empty output above is the moved pointer and not
-        # a broken harness quietly emitting nothing for every input.
+        # CONTROL for that emit: the same invocation WITHOUT the perturbation does greenlight, so the empty output above is the moved pointer and not a broken harness quietly emitting nothing for every input.
         out = captured(run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT)))
         gate.assert_contains(out, "run_renet=false", "the unperturbed pointer still greenlights")
     gate.log_pass("the skip requires the EXACT submodule hash; any move runs the tests (case 7)")
 
 
-# ---------------------------------------------------------------------------
-# The job-name hazard, live-derived. A real run of rediacc/console carries all
-# of "Tests + Infra / Renet" (the suite), "Build (Renet) / Renet (cached)" and
-# "Build (Docker Fast) / Renet Docker". A prefix or substring match would read a
-# cache-hit build job as proof that a 90-minute test suite passed.
+# --------------------------------------------------------------------------- The job-name hazard, live-derived. A real run of rediacc/console carries all of "Tests + Infra / Renet" (the suite), "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker". A prefix or substring match would read a cache-hit build job as proof that a 90-minute test suite passed.
 # ---------------------------------------------------------------------------
 
 
@@ -607,8 +533,7 @@ def test_job_name_leaf_must_match_exactly(gate):
             jget(v, "greenlit"), "false", "'%s' must not be read as the Renet suite" % decoy
         )
 
-    # CONTROL: the real name, under a DIFFERENT caller prefix, still matches.
-    # Only the leaf is ct-tests.yml's to control, so only the leaf is matched.
+    # CONTROL: the real name, under a DIFFERENT caller prefix, still matches. Only the leaf is ct-tests.yml's to control, so only the leaf is matched.
     cand = candidate(
         22, "Some Other Caller / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
     )
@@ -617,8 +542,7 @@ def test_job_name_leaf_must_match_exactly(gate):
         jget(v, "greenlit"), "true", "the leaf name matches regardless of the caller prefix"
     )
 
-    # Two jobs answering to one name means the name no longer identifies the
-    # suite, so neither reading is evidence.
+    # Two jobs answering to one name means the name no longer identifies the suite, so neither reading is evidence.
     cand = (
         '{"runId":23,"jobs":[{"name":"A / Renet","conclusion":"success"},'
         '{"name":"B / Renet","conclusion":"success"}],'
@@ -631,12 +555,9 @@ def test_job_name_leaf_must_match_exactly(gate):
     gate.log_pass("only an exact job leaf name is evidence, and only when it is unique")
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY on the closure table itself. A declared path that no longer
+# --------------------------------------------------------------------------- ANTI-VACUITY on the closure table itself. A declared path that no longer
 # exists would be hashed by nobody and noticed by nothing; the table would
-# quietly stop covering the input it names. Assert the paths are real, and that
-# both keys declare a non-trivial closure.
-# ---------------------------------------------------------------------------
+# quietly stop covering the input it names. Assert the paths are real, and that both keys declare a non-trivial closure. ---------------------------------------------------------------------------
 
 CLOSURE_PATHS_JS = r"""
 const { CLOSURES } = require(process.argv[1]);
@@ -680,9 +601,7 @@ def test_declared_closure_paths_exist(gate):
             ls_tree_lines(gate, path), 1, "closure path for %s must exist in HEAD: %s" % (key, path)
         )
         count += 1
-    # The floor sits JUST BELOW the real total (408 across 18 keys as of
-    # 2026-08-08), not at some token value: a `> 15` floor survived a table that
-    # had lost every key but one. At 400 a parse break reads as 0 and a dropped
+    # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped
     # VM/E2E key costs 30 entries, both of which fire this; trimming a path or
     # two during honest maintenance does not.
     gate.assert_eq(
@@ -691,8 +610,7 @@ def test_declared_closure_paths_exist(gate):
         "the table must stay whole (%d entries seen, floor 400)" % count,
     )
 
-    # CONTROL: the same assertion applied to a path that does NOT exist must
-    # fail, or the loop above proves only that the loop ran.
+    # CONTROL: the same assertion applied to a path that does NOT exist must fail, or the loop above proves only that the loop ran.
     gate.assert_eq(
         ls_tree_lines(gate, ".ci/scripts/private/no-such-file.sh"),
         0,
@@ -701,26 +619,16 @@ def test_declared_closure_paths_exist(gate):
     gate.log_pass("every declared closure path exists in HEAD (%d entries)" % count)
 
 
-# ---------------------------------------------------------------------------
-# Case 10: MATRIX EVIDENCE. e2e_workers is five API jobs, one per distro. The
-# property is that ALL FIVE must have run green: a candidate carrying four of
-# them, or five with one skipped, proves nothing about the missing leg, and
-# accepting it would let exactly the distro a PR breaks be the one never run.
+# --------------------------------------------------------------------------- Case 10: MATRIX EVIDENCE. e2e_workers is five API jobs, one per distro. The property is that ALL FIVE must have run green: a candidate carrying four of them, or five with one skipped, proves nothing about the missing leg, and accepting it would let exactly the distro a PR breaks be the one never run.
 #
-# This is rule 1 restated for the matrix case, and it is the reason `jobNames`
-# is a list rather than a name plus a count.
-# ---------------------------------------------------------------------------
+# This is rule 1 restated for the matrix case, and it is the reason `jobNames` is a list rather than a name plus a count. ---------------------------------------------------------------------------
 
 LEGS_JS = """
 const { CLOSURES } = require(process.argv[1]);
 process.stdout.write(CLOSURES.e2e_workers.jobNames.join("\\n"));
 """
 
-# The twin builds this candidate through `node -e <mk> -- <leg>...` and records
-# a real trap in its comment: `node -e <code> -- a b` puts `a` at argv[1], not
-# argv[2], because node consumes the `--` itself, and slicing from 2 silently
-# dropped the first leg while reading as a real refusal. The port sidesteps the
-# argv question entirely by building the JSON here, which cannot lose a leg
+# The twin builds this candidate through `node -e <mk> -- <leg>...` and records a real trap in its comment: `node -e <code> -- a b` puts `a` at argv[1], not argv[2], because node consumes the `--` itself, and slicing from 2 silently dropped the first leg while reading as a real refusal. The port sidesteps the argv question entirely by building the JSON here, which cannot lose a leg
 # without the list below visibly losing one.
 MATRIX_GITLINKS = {
     "private/renet": SHA_A,
@@ -783,8 +691,7 @@ def test_matrix_key_needs_every_leg(gate):
         "and the trail must name the leg that was missing",
     )
 
-    # FIRE 2: all five present, one of them SKIPPED. This is the shape a reduced
-    # run leaves behind, and it is the one that must never chain.
+    # FIRE 2: all five present, one of them SKIPPED. This is the shape a reduced run leaves behind, and it is the one that must never chain.
     cand = matrix_candidate(
         "E2E Workers (ubuntu-24.04)=success",
         "E2E Workers (debian-13)=success",
@@ -811,15 +718,13 @@ def test_matrix_key_needs_every_leg(gate):
     v = ev(gate, want_workers(cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "one failed leg out of five must NOT greenlight")
 
-    # CONTROL: all five green, nothing else changed, and the same shape DOES
-    # greenlight. Without it every assertion above could be a broken fixture.
+    # CONTROL: all five green, nothing else changed, and the same shape DOES greenlight. Without it every assertion above could be a broken fixture.
     cand = matrix_candidate(*ALL_FIVE)
     v = ev(gate, want_workers(cand))
     gate.assert_eq(jget(v, "greenlit"), "true", "all five legs green DOES greenlight")
     gate.assert_eq(jget(v, "runId"), "60", "naming the run that proved it")
 
-    # And a moved pointer on ANY ONE of the four pinned submodules withdraws it,
-    # so the multi-submodule rule 2 is not satisfied by the first entry.
+    # And a moved pointer on ANY ONE of the four pinned submodules withdraws it, so the multi-submodule rule 2 is not satisfied by the first entry.
     one_moved = dict(MATRIX_GITLINKS)
     one_moved["private/elite"] = SHA_B
     v = ev(gate, want_workers(cand, one_moved))
@@ -830,21 +735,11 @@ def test_matrix_key_needs_every_leg(gate):
     gate.log_pass("a matrix key needs every leg green; four of five is not evidence (case 10)")
 
 
-# ---------------------------------------------------------------------------
-# Case 11: `submodules: []` is LEGAL and VACUOUS, not a mistake to be rescued.
-# `Linux Packages` checks out with no submodules at all (ci.yml:709), so there
-# is no pointer to pin and rule 2 has nothing to compare. The hazard being
-# asserted against is the opposite of the usual one: an empty pin list must not
-# be treated as "no local gitlink" and refuse forever, and it must not stop
-# rules 1 and 3 from still deciding.
+# --------------------------------------------------------------------------- Case 11: `submodules: []` is LEGAL and VACUOUS, not a mistake to be rescued. `Linux Packages` checks out with no submodules at all (ci.yml:709), so there is no pointer to pin and rule 2 has nothing to compare. The hazard being asserted against is the opposite of the usual one: an empty pin list must not
+# be treated as "no local gitlink" and refuse forever, and it must not stop rules 1 and 3 from still deciding.
 #
-# This case used `unit` as its example until Unit grew a submodule checkout --
-# its suite parses private/renet source and was failing on a file it never
-# fetched. The assertion moved to a key that is STILL an example rather than
-# being deleted: what is under test is the empty-list BEHAVIOUR, not which key
-# happens to have one, and dropping the assertion would have left that behaviour
-# unpinned while looking like a tidy-up.
-# ---------------------------------------------------------------------------
+# This case used `unit` as its example until Unit grew a submodule checkout -- its suite parses private/renet source and was failing on a file it never fetched. The assertion moved to a key that is STILL an example rather than being deleted: what is under test is the empty-list BEHAVIOUR, not which key happens to have one, and dropping the assertion would have left that behaviour
+# unpinned while looking like a tidy-up. ---------------------------------------------------------------------------
 
 PACKAGE_TESTS_PINS_JS = """
 const { CLOSURES } = require(process.argv[1]);
@@ -875,8 +770,7 @@ def test_empty_submodule_list_is_vacuous_not_broken(gate):
     )
     gate.assert_eq(jget(v, "runId"), "70", "naming the evidence run")
 
-    # CONTROL 1: rule 3 still decides for a key with no pins, so the pass above
-    # is not "empty submodules disables every rule".
+    # CONTROL 1: rule 3 still decides for a key with no pins, so the pass above is not "empty submodules disables every rule".
     cand = (
         '{"runId":71,"jobs":[{"name":"Linux Packages","conclusion":"success"}],'
         '"gitlinks":{},"closureHash":"%s"}' % HASH_B
@@ -901,9 +795,7 @@ def test_empty_submodule_list_is_vacuous_not_broken(gate):
     )
     gate.assert_eq(jget(v, "greenlit"), "false", "a skipped job still refuses a pinless key")
 
-    # CONTROL 3: the emptiness is a property of THAT key, not of the check. A key
-    # that DOES declare pins and cannot read one of them must still refuse with
-    # no-local-gitlink rather than proceeding on a short map.
+    # CONTROL 3: the emptiness is a property of THAT key, not of the check. A key that DOES declare pins and cannot read one of them must still refuse with no-local-gitlink rather than proceeding on a short map.
     v = ev(
         gate,
         '{"key":"e2e_workers","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
@@ -917,23 +809,15 @@ def test_empty_submodule_list_is_vacuous_not_broken(gate):
     gate.log_pass("an empty submodule list is vacuous for that key and only that key (case 11)")
 
 
-# ---------------------------------------------------------------------------
-# Case 12: KEY ORDER IS COST-DESCENDING. scope-shadow.sh passes the pending keys
-# through in CLOSURES' own order and the walk budget is per invocation, so the
-# tail of this list is what a timeout abandons. Pin both ends: the most
-# expensive key first, the cheapest last. Inserting a new key at the top of the
-# table (the natural place to paste one) would fire this.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Case 12: KEY ORDER IS COST-DESCENDING. scope-shadow.sh passes the pending keys through in CLOSURES' own order and the walk budget is per invocation, so the tail of this list is what a timeout abandons. Pin both ends: the most expensive key first, the cheapest last. Inserting a new key at the top of the
+# table (the natural place to paste one) would fire this. ---------------------------------------------------------------------------
 
 KEY_ORDER_JS = """
 const { CLOSURES } = require(process.argv[1]);
 process.stdout.write(Object.keys(CLOSURES).join(" "));
 """
 
-# `^\s*if ! bounded node "\$GREENLIGHT"`, the twin's grep. Written as a Python
-# regex on purpose: CLAUDE.md records that ugrep's `-E` returns silent false
-# zeros when `^` is alternated with a negated class, and a sweep that reports
-# "no findings" for the wrong reason is exactly what this case exists to catch.
+# `^\s*if ! bounded node "\$GREENLIGHT"`, the twin's grep. Written as a Python regex on purpose: CLAUDE.md records that ugrep's `-E` returns silent false zeros when `^` is alternated with a negated class, and a sweep that reports "no findings" for the wrong reason is exactly what this case exists to catch.
 INVOCATION_RE = re.compile(r'^\s*if ! bounded node "\$GREENLIGHT"')
 
 
@@ -965,12 +849,8 @@ def test_key_order_is_cost_descending(gate):
     # CONTROL: the probe reads the real order rather than echoing its argument.
     gate.assert_not_contains(first, "unit", "the first key is not the last one")
 
-    # scope-shadow.sh must be the consumer of that order, and must ask for the
-    # raised budget. Asserted against the INVOCATION LINE, not the file: the
-    # first version of this grepped the whole file for '--budget 90', and the
-    # mutation proof caught it passing with the flag deleted from the command,
-    # because the comment ABOVE the command explains the flag and still says
-    # '--budget 90'. A gate satisfied by its own prose cannot fire.
+    # scope-shadow.sh must be the consumer of that order, and must ask for the raised budget. Asserted against the INVOCATION LINE, not the file: the first version of this grepped the whole file for '--budget 90', and the mutation proof caught it passing with the flag deleted from the command, because the comment ABOVE the command explains the flag and still says '--budget 90'. A
+    # gate satisfied by its own prose cannot fire.
     invocation = "\n".join(
         line for line in read_scope_shadow(gate).splitlines() if INVOCATION_RE.match(line)
     )
@@ -984,15 +864,9 @@ def test_key_order_is_cost_descending(gate):
     )
 
 
-# ---------------------------------------------------------------------------
-# Case 13: THE TRAIL MUST STAY READABLE. The trail is the only thing that makes
-# a non-greenlight diagnosable, and it is surfaced through a step summary with a
+# --------------------------------------------------------------------------- Case 13: THE TRAIL MUST STAY READABLE. The trail is the only thing that makes a non-greenlight diagnosable, and it is surfaced through a step summary with a
 # byte cap. At two keys the raw dump fitted; at eighteen keys against a
-# 25-candidate list it is ~450 rows and it truncated MID-LINE inside the second
-# key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's
-# greenlight_digest exists to condense it, and this case is what stops the
-# digest silently dropping keys as the table grows again.
-# ---------------------------------------------------------------------------
+# 25-candidate list it is ~450 rows and it truncated MID-LINE inside the second key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's greenlight_digest exists to condense it, and this case is what stops the digest silently dropping keys as the table grows again. ---------------------------------------------------------------------------
 
 
 def extract_digest_fn(gate) -> str:
@@ -1104,9 +978,7 @@ def test_the_trail_digest_names_every_key(gate):
             "a line the digest does not recognise must survive verbatim",
         )
 
-        # CONTROL: the digest is a real reduction. Against the LIVE-shaped input
-        # it must be far smaller than the raw trail, or it is not solving the
-        # problem it was written for.
+        # CONTROL: the digest is a real reduction. Against the LIVE-shaped input it must be far smaller than the raw trail, or it is not solving the problem it was written for.
         rawbytes = raw.stat().st_size
         digestbytes = len(digest.encode("utf-8"))
         gate.assert_eq(
@@ -1118,44 +990,23 @@ def test_the_trail_digest_names_every_key(gate):
         gate.log_pass("the trail digest names every key and survives a growing table (case 13)")
 
 
-# ---------------------------------------------------------------------------
-# Case 15: THE CANDIDATE WINDOW MUST BE WIDER THAN THE DEFAULT.
+# --------------------------------------------------------------------------- Case 15: THE CANDIDATE WINDOW MUST BE WIDER THAN THE DEFAULT.
 #
-# A GREENLIT run cannot serve as evidence for the next one -- rule 1 refuses a
-# `skipped` job (greenlight.cjs:675-697) -- so the last EXECUTING run recedes one
-# slot per push. With the engine's default of 25 (greenlight.cjs:980) that window
-# is small enough to fall off in normal use: measured on run 32946684108, renet,
+# A GREENLIT run cannot serve as evidence for the next one -- rule 1 refuses a `skipped` job (greenlight.cjs:675-697) -- so the last EXECUTING run recedes one slot per push. With the engine's default of 25 (greenlight.cjs:980) that window is small enough to fall off in normal use: measured on run 32946684108, renet,
 # package_tests and license_enforcement were already at walked=21 of 24, three
 # pushes from dropping out.
 #
-# What happens then is the reason this is pinned rather than left to judgement:
-# CI silently reverts to running the 90-minute suites. Nothing goes red, nothing
-# is reported, and the only symptom is that CI got slower -- which nobody
-# investigates.
+# What happens then is the reason this is pinned rather than left to judgement: CI silently reverts to running the 90-minute suites. Nothing goes red, nothing is reported, and the only symptom is that CI got slower -- which nobody investigates.
 #
-# Widening is monotone in the SAFE direction (it can only find an EXISTING proof,
-# never manufacture one), so the floor below is a floor, not an equality.
-# ---------------------------------------------------------------------------
+# Widening is monotone in the SAFE direction (it can only find an EXISTING proof, never manufacture one), so the floor below is a floor, not an equality. ---------------------------------------------------------------------------
 
 # THE TWIN RUNS TWO DIFFERENT PIPELINES HERE, AND THAT IS PRESERVED, NOT TIDIED.
 #
-# The real extractor is
-#     grep -n -- '--limit' <file> | grep -v '^[[:space:]]*#' | grep 'GREENLIGHT'
-# and its middle stage is INERT: `grep -n` prefixes every line with `<n>:`, so a
-# pattern anchored at `^` followed by optional whitespace and `#` can never
-# match. Measured on the real file today: stage 2 passes BOTH lines through
-# (422, the comment, and 436, the invocation) and only stage 3 drops the comment,
-# because that comment says "GREENLIT" rather than "GREENLIGHT".
+# The real extractor is grep -n -- '--limit' <file> | grep -v '^[[:space:]]*#' | grep 'GREENLIGHT' and its middle stage is INERT: `grep -n` prefixes every line with `<n>:`, so a pattern anchored at `^` followed by optional whitespace and `#` can never match. Measured on the real file today: stage 2 passes BOTH lines through (422, the comment, and 436, the invocation) and only stage
+# 3 drops the comment, because that comment says "GREENLIT" rather than "GREENLIGHT".
 #
-# The second CONTROL below uses a DIFFERENT and correct filter,
-# `grep -vE '^[0-9]+:[[:space:]]*#'`, which does anchor after the line number. So
-# the control proves a comment filter the real path does not use. The twin's own
-# comment describes the hazard exactly ("the trailing GREENLIGHT match hides the
-# rot until someone writes that literal in a comment near --limit"), so this is a
-# known shape rather than a discovery, and unifying the two here would CHANGE THE
-# VERDICT on a tree where a comment near `--limit` mentions GREENLIGHT. A port
-# does not get to fix its subject. Both pipelines are therefore transcribed as
-# they are, and the divergence is reported rather than absorbed.
+# The second CONTROL below uses a DIFFERENT and correct filter, `grep -vE '^[0-9]+:[[:space:]]*#'`, which does anchor after the line number. So the control proves a comment filter the real path does not use. The twin's own comment describes the hazard exactly ("the trailing GREENLIGHT match hides the rot until someone writes that literal in a comment near --limit"), so this is a
+# known shape rather than a discovery, and unifying the two here would CHANGE THE VERDICT on a tree where a comment near `--limit` mentions GREENLIGHT. A port does not get to fix its subject. Both pipelines are therefore transcribed as they are, and the divergence is reported rather than absorbed.
 POSIX_SPACE = " \t\n\r\f\v"
 LIMIT_VALUE_RE = re.compile(r".*--limit\s+([0-9]+).*")
 # `^[[:space:]]*#` applied to `<n>:<text>`: inert, and deliberately so.
@@ -1203,8 +1054,7 @@ def test_candidate_window_is_widened(gate):
 
     # `sed -E 's/.*--limit +([0-9]+).*/\1/'` over the whole capture. The twin
     # feeds it every surviving line at once; there is exactly one today, and a
-    # second would make the value ambiguous, so that is asserted rather than
-    # silently resolved by taking the first.
+    # second would make the value ambiguous, so that is asserted rather than silently resolved by taking the first.
     gate.assert_eq(len(lines), 1, "exactly one GREENLIGHT invocation may carry --limit: %r" % lines)
     match = LIMIT_VALUE_RE.match(lines[0])
     if match is None:
@@ -1216,17 +1066,11 @@ def test_candidate_window_is_widened(gate):
             "default reopens the cliff" % limit
         )
 
-    # CONTROL, by construction: the same extractor must REFUSE an invocation that
-    # omits --limit. Without this the assertion above passes trivially the day
-    # someone drops the flag and the grep returns nothing... which is what the
-    # first branch checks, so prove that branch can actually distinguish.
+    # CONTROL, by construction: the same extractor must REFUSE an invocation that omits --limit. Without this the assertion above passes trivially the day someone drops the flag and the grep returns nothing... which is what the first branch checks, so prove that branch can actually distinguish.
     if limit_lines('bounded node "$GREENLIGHT" --repo x --budget 90 --debug\n'):
         gate.log_fail("CONTROL DID NOT FIRE: an invocation with no --limit read as compliant")
 
-    # CONTROL: the comment filter must actually EXCLUDE a comment. Without this
-    # it can rot back to dead code unnoticed -- the trailing GREENLIGHT match
-    # hides the rot until someone writes that literal in a comment near --limit,
-    # which is exactly how the first version shipped.
+    # CONTROL: the comment filter must actually EXCLUDE a comment. Without this it can rot back to dead code unnoticed -- the trailing GREENLIGHT match hides the rot until someone writes that literal in a comment near --limit, which is exactly how the first version shipped.
     kept = limit_lines_control(
         "    # note: pass --limit to GREENLIGHT here\n"
         '    bounded node "$GREENLIGHT" --limit 60 --budget 90\n'

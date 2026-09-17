@@ -27,12 +27,9 @@ import pytest
 from rediacc_ci.quality import config_migrations as cm
 from rediacc_ci.tests import differential as diff
 
-# ---------------------------------------------------------------------------
-# The version pipeline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The version pipeline ---------------------------------------------------------------------------
 
-# Every shape the runner can present, plus the near-misses that decide whether
-# the gate dies silently. The comment on each line is the property it is there
+# Every shape the runner can present, plus the near-misses that decide whether the gate dies silently. The comment on each line is the property it is there
 # for; a case with no property is a case that will be deleted the first time
 # someone tidies this file.
 VERSION_CASES = [
@@ -103,9 +100,7 @@ def test_the_unparseable_runner_dies_before_its_error_message(
         assert "REACHED_THE_MESSAGE" not in out
 
 
-# ---------------------------------------------------------------------------
-# Migration file coverage
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Migration file coverage ---------------------------------------------------------------------------
 
 COVERAGE_CASES = [
     (1, ()),  # the boundary: version 1 needs nothing
@@ -142,9 +137,7 @@ def test_coverage_loop_matches_bash(
     assert cm.missing_migrations(tmp_path, current) == from_bash
 
 
-# ---------------------------------------------------------------------------
-# The fixture lister
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture lister ---------------------------------------------------------------------------
 
 
 def test_fixture_files_matches_find_and_sort(tmp_path: pathlib.Path) -> None:
@@ -193,9 +186,7 @@ def test_an_empty_and_an_absent_fixtures_dir_are_both_empty(tmp_path: pathlib.Pa
     assert cm.fixture_files(tmp_path / "gone") == []
 
 
-# ---------------------------------------------------------------------------
-# The generated tsx program
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The generated tsx program ---------------------------------------------------------------------------
 
 
 def test_the_embedded_tsx_is_byte_identical_to_the_heredoc() -> None:

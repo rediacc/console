@@ -27,14 +27,10 @@ const WWW_ROOT = 'packages/www';
 const WWW_DIST = 'packages/www/dist';
 const PAGES_DIR = path.join(WWW_SRC, 'pages');
 
-// Internal-path prefixes that route to a different system or static asset tree
-// where trailing slashes are intentional or controlled elsewhere.
+// Internal-path prefixes that route to a different system or static asset tree where trailing slashes are intentional or controlled elsewhere.
 //
 // IMPORTED, not copied. Until 2026-09-06 this gate and the ESLint rule below
-// each carried their own copy of the list with a "keep in sync" comment on both
-// sides, which is the arrangement that guarantees a silent divergence: the two
-// checks would then disagree about which paths are exempt, and the one a given
-// file happens to be scanned by decides the verdict. The definition lives in the
+// each carried their own copy of the list with a "keep in sync" comment on both sides, which is the arrangement that guarantees a silent divergence: the two checks would then disagree about which paths are exempt, and the one a given file happens to be scanned by decides the verdict. The definition lives in the
 // rule because an ESLint rule cannot import a `.ts` module; the same direction,
 // and the same import shape, as scripts/lib/positional-cli-detector.ts pulling
 // eslint-rules/lib/cli-exempt-lists.js.
@@ -76,9 +72,7 @@ function warn(file: string, message: string) {
   warnings++;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 1. Astro.redirect() must specify 301 status
-// ──────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────── 1. Astro.redirect() must specify 301 status ──────────────────────────────────────────────────────────────────────────────
 function checkRedirects() {
   console.log('Checking Astro.redirect() calls for 301 status...');
   const files = globSync(`${WWW_SRC}/**/*.astro`);
@@ -97,8 +91,7 @@ function checkRedirects() {
             `line ${i + 1}: Astro.redirect() without explicit 301 status. Use Astro.redirect(url, 301)`
           );
         }
-        // Check that the first-arg path doesn't end with `/` (conflicts with
-        // trailingSlash: 'never' — produces an extra redirect hop).
+        // Check that the first-arg path doesn't end with `/` (conflicts with trailingSlash: 'never' — produces an extra redirect hop).
         const argMatch = line.match(/Astro\.redirect\(\s*(['"`])([^'"`]*)\1/);
         if (argMatch) {
           const target = argMatch[2];
@@ -133,9 +126,7 @@ function checkMetaRefresh() {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 3. trailingSlash must be configured in astro.config.mjs
-// ──────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────── 3. trailingSlash must be configured in astro.config.mjs ──────────────────────────────────────────────────────────────────────────────
 function checkTrailingSlash() {
   console.log('Checking trailingSlash config...');
   const configPath = path.join(WWW_ROOT, 'astro.config.mjs');
@@ -149,9 +140,7 @@ function checkTrailingSlash() {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 4. Hreflang codes in BaseLayout must match sitemap i18n codes
-// ──────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────── 4. Hreflang codes in BaseLayout must match sitemap i18n codes ──────────────────────────────────────────────────────────────────────────────
 function checkHreflangConsistency() {
   console.log('Checking hreflang consistency with sitemap...');
 
@@ -194,15 +183,11 @@ function checkHreflangConsistency() {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 5. Page files should include an H1 (directly or via known hero components)
-// ──────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────── 5. Page files should include an H1 (directly or via known hero components) ──────────────────────────────────────────────────────────────────────────────
 function checkH1Presence() {
   console.log('Checking H1 presence in pages...');
 
-  // Components known to render an H1 (directly or via SPHero)
-  // Components that render the page's <h1> themselves. `SPHomeHero` is the
-  // homepage's own hero, split out of the shared `SPHero` so the homepage could
+  // Components known to render an H1 (directly or via SPHero) Components that render the page's <h1> themselves. `SPHomeHero` is the homepage's own hero, split out of the shared `SPHero` so the homepage could
   // drop `min-height: 100dvh`; `SPWhyNow` is a section that became its own route
   // and whose title is that route's subject.
   const h1Components = [
@@ -235,9 +220,7 @@ function checkH1Presence() {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 6. Internal navigation links must not end with `/` in source files
-// ──────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────── 6. Internal navigation links must not end with `/` in source files ──────────────────────────────────────────────────────────────────────────────
 // ESLint covers .ts/.tsx/.js/.jsx via custom/seo-no-trailing-slash-internal-link
 // but cannot lint .astro files. This function fills the gap with a regex pass.
 function checkTrailingSlashLinks() {

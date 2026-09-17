@@ -47,12 +47,9 @@ describe('buildStrategyUpdate include/exclude', () => {
   });
 
   it('accepts both modes now that the scheduled verb can express cold', () => {
-    // The inverse of what this asserted until 2026-08-15. `--mode cold` was
-    // refused here because scheduling it would have promised a container
+    // The inverse of what this asserted until 2026-08-15. `--mode cold` was refused here because scheduling it would have promised a container
     // quiesce that `backup snapshot` could not perform; the verb grew --cold,
-    // so the refusal went with it. The schema's enum is exactly hot|cold, so
-    // there is no third value left for a guard to catch — one that survived
-    // would be a check that can never fire.
+    // so the refusal went with it. The schema's enum is exactly hot|cold, so there is no third value left for a guard to catch — one that survived would be a check that can never fire.
     expect(buildStrategyUpdate({ mode: 'cold' }, undefined).mode).toBe('cold');
     expect(buildStrategyUpdate({ mode: 'hot' }, undefined).mode).toBe('hot');
   });
@@ -97,8 +94,7 @@ describe('creating a destination an operator can actually schedule', () => {
   });
 
   it('and the unit generator emits a real snapshot command for that object', () => {
-    // The crossing: create path -> generator, no fake in between. Before the
-    // fix this could not even be written, because the create path threw.
+    // The crossing: create path -> generator, no fake in between. Before the fix this could not even be written, because the create path threw.
     const dest = buildDestination({ destinationName: 'chunks' }, undefined);
     const { commands, envVars } = buildBackupCommands(
       { schedule: '0 * * * *', destinations: [dest] },
@@ -107,15 +103,12 @@ describe('creating a destination an operator can actually schedule', () => {
       '/usr/bin/renet'
     );
     expect(commands).toEqual(['/usr/bin/renet backup snapshot --datastore /mnt/rediacc']);
-    // No credential reaches the unit: the machine authenticates with its
-    // licence blob and the server hands back a short-lived grant.
+    // No credential reaches the unit: the machine authenticates with its licence blob and the server hands back a short-lived grant.
     expect(envVars).toEqual({});
   });
 
   it('and a whole systemd unit comes out of it, ExecStart and all', () => {
-    // One step further than the command list: what `rdc backup schedule` will
-    // actually write to the machine, built from the object the create path
-    // produced. This is the end-to-end claim the defect made impossible.
+    // One step further than the command list: what `rdc backup schedule` will actually write to the machine, built from the object the create path produced. This is the end-to-end claim the defect made impossible.
     const dest = buildDestination({ destinationName: 'chunks' }, undefined);
     const { serviceContent } = generateServiceUnit(
       'hourly-chunks',
@@ -131,17 +124,14 @@ describe('creating a destination an operator can actually schedule', () => {
   });
 
   it('still makes a storage destination when --storage is given', () => {
-    // `--storage` keeps working for as long as storage destinations are legal
-    // to hold on disk. It is now also the explicit opt-in to the legacy kind.
+    // `--storage` keeps working for as long as storage destinations are legal to hold on disk. It is now also the explicit opt-in to the legacy kind.
     const dest = buildDestination({ destinationName: 'offsite', storage: 'onedrive' }, undefined);
     expect(dest.kind).toBe('storage');
     expect(dest).toMatchObject({ storage: 'onedrive' });
   });
 
   it('does NOT convert an existing storage destination just because --storage was omitted', () => {
-    // `set s --destination onedrive-hourly --disable` against the operator's
-    // live rclone destination must edit it in place. Flipping its kind here
-    // would orphan every backup already behind it.
+    // `set s --destination onedrive-hourly --disable` against the operator's live rclone destination must edit it in place. Flipping its kind here would orphan every backup already behind it.
     const existing: BackupStrategyDestination = {
       kind: 'storage',
       name: 'onedrive-hourly',
@@ -154,8 +144,7 @@ describe('creating a destination an operator can actually schedule', () => {
   });
 
   it('treats a destination with no `kind` at all as storage, not as a chunk store', () => {
-    // How the operator's real config reads: `kind` was added later. Guessing
-    // hosted-service for it would silently repoint an rclone destination.
+    // How the operator's real config reads: `kind` was added later. Guessing hosted-service for it would silently repoint an rclone destination.
     const raw: Record<string, unknown> = { name: 'onedrive-hourly', storage: 'microsoft' };
     const legacy = raw as BackupStrategyDestination;
     const dest = buildDestination({ destinationName: 'onedrive-hourly' }, legacy);
@@ -172,9 +161,7 @@ describe('creating a destination an operator can actually schedule', () => {
 
   it('omits keys the flags did not set, so the stored value survives the merge', () => {
     // addBackupDestination merges with `{...existing, ...dest}`, and zod KEEPS
-    // an optional key passed as an explicit undefined. Before this, setting a
-    // bandwidth limit silently re-ENABLED a destination the operator had
-    // disabled, and any set without --bwlimit dropped the cap.
+    // an optional key passed as an explicit undefined. Before this, setting a bandwidth limit silently re-ENABLED a destination the operator had disabled, and any set without --bwlimit dropped the cap.
     const dest = buildDestination({ destinationName: 'chunks', bwlimit: '6M' }, undefined);
     expect(Object.hasOwn(dest, 'enabled')).toBe(false);
     const merged = { ...{ name: 'chunks', kind: 'hosted-service', enabled: false }, ...dest };
@@ -182,9 +169,7 @@ describe('creating a destination an operator can actually schedule', () => {
   });
 
   it('REFUSES --folder on a chunk-store destination rather than dropping it', () => {
-    // The server names every key in the chunk store, so a folder has nothing to
-    // mean. Dropping it would put backups somewhere other than where the
-    // operator said.
+    // The server names every key in the chunk store, so a folder has nothing to mean. Dropping it would put backups somewhere other than where the operator said.
     expect(() => buildDestination({ destinationName: 'chunks', folder: 'hot' }, undefined)).toThrow(
       /--storage/
     );

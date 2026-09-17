@@ -67,11 +67,7 @@ export function findRepoRoot(from: string): string {
     }
     const parent = path.dirname(dir);
     if (parent === dir) {
-      // The vacuity guard, and it is a real refusal rather than the word.
-      // Falling back to cwd, or to `from`, or to `/` would hand every caller a
-      // root that is confidently wrong, and a gate anchored on a wrong root
-      // reads an empty corpus and prints a tick. Throwing is the only answer
-      // that cannot be mistaken for success.
+      // The vacuity guard, and it is a real refusal rather than the word. Falling back to cwd, or to `from`, or to `/` would hand every caller a root that is confidently wrong, and a gate anchored on a wrong root reads an empty corpus and prints a tick. Throwing is the only answer that cannot be mistaken for success.
       throw new Error(
         `repo-root: VACUOUS anchor. Walked to the filesystem root from ${from} without ` +
           'finding a directory holding both package.json and .ci, so there is no repository ' +

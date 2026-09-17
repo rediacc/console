@@ -298,11 +298,7 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
   test('should handle sequential operations on nonexistent resources', async () => {
     const nonexistent = 'nonexistent-resource-xyz';
 
-    // SEQUENTIAL, as the test's name always claimed: the dark-era body fired
-    // all six lifecycle ops in Promise.all — six concurrent operations racing
-    // on one resource, whose "tolerant" outcomes were timing artifacts (up
-    // passed in a full-suite run and failed in isolation). Sequential ops have
-    // deterministic contracts.
+    // SEQUENTIAL, as the test's name always claimed: the dark-era body fired all six lifecycle ops in Promise.all — six concurrent operations racing on one resource, whose "tolerant" outcomes were timing artifacts (up passed in a full-suite run and failed in isolation). Sequential ops have deterministic contracts.
     const info = await runner.repositoryInfo(nonexistent, DEFAULT_DATASTORE_PATH);
     const mount = await runner.repositoryMount(nonexistent, TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
     const up = await runner.repositoryUp(nonexistent, DEFAULT_DATASTORE_PATH);
@@ -310,17 +306,12 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
     const unmount = await runner.repositoryUnmount(nonexistent, DEFAULT_DATASTORE_PATH);
     const rm = await runner.repositoryRm(nonexistent, DEFAULT_DATASTORE_PATH);
 
-    // Strict operations - fail because the resource doesn't exist. up is
-    // strict: it implies mount, and SafeStartup refuses a mount with no
-    // credentials for a repo that was never created (observed live).
+    // Strict operations - fail because the resource doesn't exist. up is strict: it implies mount, and SafeStartup refuses a mount with no credentials for a repo that was never created (observed live).
     expect(runner.isSuccess(info)).toBe(false); // Can't get info on nonexistent
     expect(runner.isSuccess(mount)).toBe(false); // Can't mount nonexistent
     expect(runner.isSuccess(up)).toBe(false); // Implies mount; SafeStartup refuses
 
-    // Tolerant operations - CONVERGE to the desired end state (the #45 ENOENT
-    // ruling, #95's no-set no-op, the convergent-init contract): what is
-    // already stopped/unmounted/absent is success, not error. The dark-era
-    // suite predated that doctrine.
+    // Tolerant operations - CONVERGE to the desired end state (the #45 ENOENT ruling, #95's no-set no-op, the convergent-init contract): what is already stopped/unmounted/absent is success, not error. The dark-era suite predated that doctrine.
     expect(runner.isSuccess(down)).toBe(true); // Nothing to stop, succeeds
     expect(runner.isSuccess(unmount)).toBe(true); // Already unmounted, succeeds
     expect(runner.isSuccess(rm)).toBe(true); // Already absent: converged

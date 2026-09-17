@@ -63,8 +63,7 @@ describe('paramsFromCommand', () => {
     const entry = getCommand('repo cat');
     if (!entry) throw new Error('repo cat is missing from the contract');
 
-    // Commander stores --skip-router-restart as `skipRouterRestart`. The executor
-    // validates against the contract, which knows it as `skip-router-restart`.
+    // Commander stores --skip-router-restart as `skipRouterRestart`. The executor validates against the contract, which knows it as `skip-router-restart`.
     const params = paramsFromCommand(
       entry,
       parse(['cat', 'shop', '--remote-file', '/etc/hostname', '--skip-router-restart'])
@@ -93,8 +92,7 @@ describe('paramsFromCommand', () => {
     const entry = getCommand('repo cat');
     if (!entry) throw new Error('repo cat is missing from the contract');
 
-    // The command carries a value the contract does not know about. Only declared
-    // options are read, so it cannot travel.
+    // The command carries a value the contract does not know about. Only declared options are read, so it cannot travel.
     const command = parse(['cat', 'shop', '--remote-file', '/etc/hostname']);
     command.setOptionValue('somethingElse', 'smuggled');
 
@@ -132,8 +130,7 @@ describe('assertDetachable', () => {
   it('refuses a non-detachable command with its proxy-blocked reason', () => {
     const entry = getCommand('term connect');
     expect(entry?.detachable).toBe(false);
-    // term connect is not proxyable (interactive), so it is not detachable either,
-    // and the message is the same reason the proxy would give.
+    // term connect is not proxyable (interactive), so it is not detachable either, and the message is the same reason the proxy would give.
     expect(() => assertDetachable('term connect', entry)).toThrow(/terminal|--proxy/i);
   });
 
@@ -180,9 +177,7 @@ describe('ProxyClient', () => {
   });
 
   it('refuses to call a truncated stream a success', async () => {
-    // The executor died mid-operation: events arrived, a result never did. The
-    // work may still be running on the machine, so reporting success here would
-    // be the worst possible lie.
+    // The executor died mid-operation: events arrived, a result never did. The work may still be running on the machine, so reporting success here would be the worst possible lie.
     const client = clientWith(() =>
       Promise.resolve(ndjson([{ kind: 'event', event: { type: 'step_start', name: 'snapshot' } }]))
     );
@@ -199,8 +194,7 @@ describe('ProxyClient', () => {
     const client = clientWith((url) => {
       const u = String(url);
       if (u.includes(PROXY_ROUTES.command)) {
-        // Announces the job, streams two ordinal-tagged events, then the
-        // connection drops before the result line ever arrives.
+        // Announces the job, streams two ordinal-tagged events, then the connection drops before the result line ever arrives.
         return Promise.resolve(
           ndjson([
             { kind: 'job', jobId: 'j1-deadbeef', sinceLine: 0 },
@@ -209,8 +203,7 @@ describe('ProxyClient', () => {
           ])
         );
       }
-      // The re-attach resumes from the last complete line and renet re-sends the
-      // boundary line (ordinal 2) it may have only half-delivered, then finishes.
+      // The re-attach resumes from the last complete line and renet re-sends the boundary line (ordinal 2) it may have only half-delivered, then finishes.
       expect(u).toContain('/v1/jobs/j1-deadbeef/events');
       expect(u).toContain('machine=hostinger');
       expect(u).toContain('sinceLine=2');
@@ -258,8 +251,7 @@ describe('ProxyClient', () => {
       params: {},
       positionals: { ref: 'demo' },
     });
-    // No function name, no machine address, no key, no config: the executor
-    // derives everything else from the command itself.
+    // No function name, no machine address, no key, no config: the executor derives everything else from the command itself.
     expect(JSON.stringify(sent)).not.toContain('functionName');
     expect(outcome.stdout).toBe('ok');
   });

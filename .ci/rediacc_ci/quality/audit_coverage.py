@@ -101,39 +101,31 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The audit call every machine-level path must carry. A plain substring, because
-# the twin's pattern `auditService\.recordOperation` is a BRE whose only
-# metacharacter is an escaped dot.
+# The audit call every machine-level path must carry. A plain substring, because the twin's pattern `auditService\.recordOperation` is a BRE whose only metacharacter is an escaped dot.
 AUDIT_CALL = "auditService.recordOperation"
 
-# Files that execute machine operations OUTSIDE localExecutorService (SFTP sync
-# and direct SSH terminal) and therefore need explicit audit calls.
+# Files that execute machine operations OUTSIDE localExecutorService (SFTP sync and direct SSH terminal) and therefore need explicit audit calls.
 EDGE_CASE_FILES = (
     "packages/cli/src/commands/repo-sync.ts",
     "packages/cli/src/commands/term.ts",
 )
 
-# Known files that legitimately import SFTPClient for machine operations. If a
-# new file imports SFTPClient, it may need audit logging.
+# Known files that legitimately import SFTPClient for machine operations. If a new file imports SFTPClient, it may need audit logging.
 KNOWN_SFTP_COMMAND_FILES = (
     "packages/cli/src/commands/repo-sync.ts",
     "packages/cli/src/commands/storage.ts",
 )
 
-# The three needles phase 4 looks for, as the BRE alternation `A\|B\|C` spells
-# them: three literals, no metacharacters.
+# The three needles phase 4 looks for, as the BRE alternation `A\|B\|C` spells them: three literals, no metacharacters.
 SFTP_NEEDLES = ("SFTPClient", "sftpUploadDirectory", "sftpDownloadDirectory")
 
-# Phase 5's two EREs, and the substring `grep -v` that is meant to drop the audit
-# service and does not. See the port notes.
+# Phase 5's two EREs, and the substring `grep -v` that is meant to drop the audit service and does not. See the port notes.
 EVENT_TYPE_RE = re.compile(r"'cli\.[a-z._]+[a-z_]'")
 FUNCTION_NAME_LINE_RE = re.compile(r"functionName: '[a-z_]+'")
 FUNCTION_NAME_RE = re.compile(r"functionName: '([a-z_]+)'")
 AUDIT_TS_LINE_RE = re.compile(r"audit.ts")  # BRE `.`: any character, not a dot
 
-# The prefix rules `functionNameToEventType` in event-schema.ts applies, in the
-# twin's `case` order. ORDER IS SIGNIFICANT because a shell `case` takes the
-# FIRST arm that matches, so this is a tuple and not a dict.
+# The prefix rules `functionNameToEventType` in event-schema.ts applies, in the twin's `case` order. ORDER IS SIGNIFICANT because a shell `case` takes the FIRST arm that matches, so this is a tuple and not a dict.
 PREFIX_RULES: tuple[tuple[str, str], ...] = (
     ("repository_", "cli.repo."),
     ("backup_", "cli.backup."),
@@ -350,8 +342,7 @@ def main(argv: list[str] | None = None) -> int:
             "If these files perform machine-level operations, add auditService.recordOperation()"
         )
         log.warn("and add them to the EDGE_CASE_FILES list in this script.")
-        # This is a warning, not an error: new SFTP usage might be
-        # internal/utility.
+        # This is a warning, not an error: new SFTP usage might be internal/utility.
 
     # -- Phase 5: Event-type union completeness ----------------------------
     log.step("Checking event-type union covers every functionName emitted...")
@@ -361,8 +352,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Shared audit event schema missing: %s" % event_schema)
         errors += 1
     else:
-        # Extract literal event-type strings from the schema file. The schema
-        # declares them as 'cli.X.Y' inside ALL_EVENT_TYPES via the per-group
+        # Extract literal event-type strings from the schema file. The schema declares them as 'cli.X.Y' inside ALL_EVENT_TYPES via the per-group
         # const arrays -- grep is sufficient because the file is purely
         # declarative.
         types = union_types(_read(event_schema))
@@ -372,10 +362,7 @@ def main(argv: list[str] | None = None) -> int:
             log.error("Expected literal strings like 'cli.repo.up'. Has the schema format changed?")
             errors += 1
 
-        # A ZERO-TYPE UNION DOES NOT STOP PHASE 5. The twin counts the parse
-        # failure and then runs the coverage loop anyway, against an empty union,
-        # so every emitted functionName is additionally reported as missing. That
-        # is loud rather than wrong, and it is preserved.
+        # A ZERO-TYPE UNION DOES NOT STOP PHASE 5. The twin counts the parse failure and then runs the coverage loop anyway, against an empty union, so every emitted functionName is additionally reported as missing. That is loud rather than wrong, and it is preserved.
         known = set(types)
         missing_types: list[str] = []
         for fn in emitted_function_names(cli_src):
@@ -496,10 +483,7 @@ def selftest() -> int:
             (r / rel).write_text("export function x() {}\n", encoding="utf-8")
             ctl.check("PLANT: %s without an audit call is caught" % rel, run(), 1)
 
-        # ITS MIRROR, AND THE DEFECT IT EXPOSES. A MISSING edge-case file is only
-        # a warning, so the gate still passes -- and still says "All 2". The
-        # control names the behaviour so a later reader cannot mistake it for an
-        # accident.
+        # ITS MIRROR, AND THE DEFECT IT EXPOSES. A MISSING edge-case file is only a warning, so the gate still passes -- and still says "All 2". The control names the behaviour so a later reader cannot mistake it for an accident.
         r = fresh()
         (r / EDGE_CASE_FILES[1]).unlink()
         ctl.check("PRESERVED DEFECT: a MISSING edge-case file only warns", run(), 0)
@@ -536,9 +520,7 @@ def selftest() -> int:
         )
         ctl.check("MIRROR: the same name with its literal declared passes", run(), 0)
 
-        # MIRROR: a __tests__ directory is excluded, so a fixture's functionName
-        # is not a finding. This is the direction that would silently invert if
-        # someone dropped --exclude-dir.
+        # MIRROR: a __tests__ directory is excluded, so a fixture's functionName is not a finding. This is the direction that would silently invert if someone dropped --exclude-dir.
         r = fresh()
         (r / "packages/cli/src/commands/__tests__").mkdir(parents=True)
         (r / "packages/cli/src/commands/__tests__/x.test.ts").write_text(
@@ -553,8 +535,7 @@ def selftest() -> int:
         )
         ctl.check("MIRROR: a non-.ts file is not in the functionName corpus", run(), 0)
 
-        # PLANT 7: phase 4's warning. It must APPEAR and must NOT change the exit
-        # code, which is the whole distinction between phase 4 and the others.
+        # PLANT 7: phase 4's warning. It must APPEAR and must NOT change the exit code, which is the whole distinction between phase 4 and the others.
         r = fresh()
         (r / "packages/cli/src/commands/blob.ts").write_text(
             "import { SFTPClient } from '../remote/sftp';\n", encoding="utf-8"

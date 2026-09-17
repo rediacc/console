@@ -30,14 +30,8 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-ci-reverse-poll.sh"
 ORDER = 12
 
-# The line whose loss the differential must notice: with the `&&[[:space:]]*sleep`
-# tail gone the pattern still matches every `gh run view N --jq`, so the guard
-# refuses a plain read of a run. Chosen because it is the half that makes this a
-# POLLING guard rather than a `gh run view` ban.
-# A SOURCE substring pair, not an evaluated one. The first cut of this
-# computed the two halves with the same expression the pattern uses, which
-# reads well and cannot work: the planter searches the module's TEXT, and the
-# text holds `hookio.BLANK`, not its value. Caught on the first run.
+# The line whose loss the differential must notice: with the `&&[[:space:]]*sleep` tail gone the pattern still matches every `gh run view N --jq`, so the guard refuses a plain read of a run. Chosen because it is the half that makes this a POLLING guard rather than a `gh run view` ban. A SOURCE substring pair, not an evaluated one. The first cut of this computed the two halves with
+# the same expression the pattern uses, which reads well and cannot work: the planter searches the module's TEXT, and the text holds `hookio.BLANK`, not its value. Caught on the first run.
 DEFECT = ("&&[{B}]*sleep", "&&[{B}]*")
 
 PATTERN = hookio.rx(r"gh[{B}]+run[{B}]+view[{B}]+[0-9]+[^|;&]*--jq[^|;&]*&&[{B}]*sleep")
@@ -62,11 +56,7 @@ EDGE_CASES = [
     ("a plain run view is not polling", "gh run view 123 --json status"),
     ("--jq with no wait after it", "gh run view 123 --jq .status"),
     ("a separator between them is not the && shape", "gh run view 1 --jq .s; sleep 30"),
-    # The case the planted defect needs, and it is a real shape rather than a
-    # test-shaped one: reading a run and then doing something that is not a
-    # wait. Without it nothing in the whole corpus could tell the pattern with
-    # its `sleep` tail from the pattern without it, and the anti-vacuity
-    # control said so on the first run rather than at review time.
+    # The case the planted defect needs, and it is a real shape rather than a test-shaped one: reading a run and then doing something that is not a wait. Without it nothing in the whole corpus could tell the pattern with its `sleep` tail from the pattern without it, and the anti-vacuity control said so on the first run rather than at review time.
     ("--jq then a command that is not a wait", "gh run view 1 --jq .status && echo done"),
 ]
 

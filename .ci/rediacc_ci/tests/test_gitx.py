@@ -29,10 +29,7 @@ import pytest
 from rediacc_ci import gitx, proc
 from rediacc_ci.tests import differential as diff
 
-# Ambient git configuration is switched OFF, not merely overridden. `/dev/null`
-# is a valid empty config file to git, so this is the documented way to say "no
-# global, no system". Without it the fixture inherits init.defaultBranch, commit
-# signing and any alias the developer happens to have.
+# Ambient git configuration is switched OFF, not merely overridden. `/dev/null` is a valid empty config file to git, so this is the documented way to say "no global, no system". Without it the fixture inherits init.defaultBranch, commit signing and any alias the developer happens to have.
 ISOLATED = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_SYSTEM": "/dev/null",
@@ -66,9 +63,7 @@ def repo(tmp_path, monkeypatch):
     return root
 
 
-# ---------------------------------------------------------------------------
-# ANTI-VACUITY
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY ---------------------------------------------------------------------------
 
 
 def test_the_fixture_really_is_a_repository(repo):
@@ -86,9 +81,7 @@ def test_git_is_reachable_and_at_a_plausible_version():
     assert result.stdout.startswith("git version 2.")
 
 
-# ---------------------------------------------------------------------------
-# TRAP 3: the branch, and the spelling that lies
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 3: the branch, and the spelling that lies ---------------------------------------------------------------------------
 
 
 def test_branch_matches_the_two_honest_spellings(repo):
@@ -138,9 +131,7 @@ def test_branch_from_ci_does_not_silently_fall_through_to_git(repo):
     assert gitx.branch(repo) == "main"
 
 
-# ---------------------------------------------------------------------------
-# TRAP 1: ls-files reads the index
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 1: ls-files reads the index ---------------------------------------------------------------------------
 
 
 def test_ls_files_equals_raw_git_on_the_real_repository():
@@ -210,9 +201,7 @@ def test_recurse_submodules_with_untracked_is_refused_with_a_sentence(repo):
         gitx.ls_files(root=repo, untracked=True, recurse_submodules=True)
 
 
-# ---------------------------------------------------------------------------
-# TRAP 2: the pathspec that quietly narrows
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 2: the pathspec that quietly narrows ---------------------------------------------------------------------------
 
 
 def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
@@ -227,15 +216,9 @@ def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
     (repo / "a" / "deep" / "nested.sh").write_text("#!/bin/sh\n")
     sh("git add -A && git commit -q -m more", repo)
 
-    # THE NARROWING SPELLING IS ASSEMBLED, NOT WRITTEN. This test's whole subject is
-    # that `a/**/*.sh` under git's DEFAULT matching DEMANDS a literal slash and so
-    # silently drops the top-level file, which is exactly what check_pathspec_scope.py
-    # refuses everywhere else in the tree. Written as a literal it is an instance of the
+    # THE NARROWING SPELLING IS ASSEMBLED, NOT WRITTEN. This test's whole subject is that `a/**/*.sh` under git's DEFAULT matching DEMANDS a literal slash and so silently drops the top-level file, which is exactly what check_pathspec_scope.py refuses everywhere else in the tree. Written as a literal it is an instance of the
     # defect and that gate reds on it, correctly; it cannot be spelled `:(glob)a/**/*.sh`
-    # either, because that opts into the semantics this test exists to show we do NOT get.
-    # Assembling it keeps the behaviour identical and keeps the gate honest, which is the
-    # same treatment check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts
-    # already use for their own deliberately-bad fixtures.
+    # either, because that opts into the semantics this test exists to show we do NOT get. Assembling it keeps the behaviour identical and keeps the gate honest, which is the same treatment check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts already use for their own deliberately-bad fixtures.
     narrowing = "a/" + "**" + "/*.sh"
     wide = gitx.ls_files("a/*.sh", root=repo)
     narrow = gitx.ls_files(narrowing, root=repo)
@@ -255,9 +238,7 @@ def test_pathspec_warning_names_the_narrowing_spelling():
     assert gitx.pathspec_warning(":(glob)a/**/*.sh") is None, "magic pathspecs opt in"
 
 
-# ---------------------------------------------------------------------------
-# TRAP 4: four different questions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 4: four different questions ---------------------------------------------------------------------------
 
 
 def test_a_staged_change_is_dirty_but_git_diff_quiet_calls_it_clean(repo):
@@ -324,9 +305,7 @@ def test_a_failed_probe_returns_none_and_not_clean(tmp_path):
     assert gitx.has_unstaged_changes(tmp_path) is None
 
 
-# ---------------------------------------------------------------------------
-# TRAP 5: ancestry is tri-state
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 5: ancestry is tri-state ---------------------------------------------------------------------------
 
 
 def test_is_ancestor_agrees_with_raw_git_in_both_directions(repo):
@@ -364,9 +343,7 @@ def test_count_commits_is_none_rather_than_zero_when_the_probe_fails(repo):
     assert gitx.merge_base("HEAD", "refs/heads/nope", root=repo) is None
 
 
-# ---------------------------------------------------------------------------
-# TRAP 6: submodules, read and never hardcoded
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- TRAP 6: submodules, read and never hardcoded ---------------------------------------------------------------------------
 
 
 def test_submodules_match_the_git_config_enumeration_on_the_real_repo():
@@ -465,9 +442,7 @@ def test_a_worktree_git_file_still_counts_as_a_repository(tmp_path):
     assert gitx.sibling_repos(tmp_path) == ["private/wt"]
 
 
-# ---------------------------------------------------------------------------
-# file modes, and the git-versus-disk distinction
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- file modes, and the git-versus-disk distinction ---------------------------------------------------------------------------
 
 
 def test_file_modes_report_what_git_recorded_not_what_is_on_disk(repo):
@@ -498,9 +473,7 @@ def test_file_modes_equal_raw_ls_files_s_on_the_real_repository():
     assert gitx.file_modes("*.py", root=root) == raw
 
 
-# ---------------------------------------------------------------------------
-# The runner underneath
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The runner underneath ---------------------------------------------------------------------------
 
 
 def test_git_runs_noninteractively(repo):

@@ -65,8 +65,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-shell-counter-increment.sh"
 
-# Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real
-# working tree. See the module docstring.
+# Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real working tree. See the module docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-submodule-branches.sh"
@@ -81,8 +80,7 @@ FIXTURE = """[
 # The pre-fix increment, as the twin greps for it.
 BUGGY_INCREMENT_RE = re.compile(r"\(\(\s*unreplied_count\+\+\s*\)\)")
 
-# `grep -qE '^\s*\(\(\s*[a-zA-Z_][a-zA-Z0-9_]*\+\+\s*\)\)\s*$'` from the twin's
-# structural sweep, character for character.
+# `grep -qE '^\s*\(\(\s*[a-zA-Z_][a-zA-Z0-9_]*\+\+\s*\)\)\s*$'` from the twin's structural sweep, character for character.
 STANDALONE_INCREMENT_RE = re.compile(r"^\s*\(\(\s*[a-zA-Z_][a-zA-Z0-9_]*\+\+\s*\)\)\s*$")
 
 # `grep -q '^set -e\|^set -[a-z]*e'` -- the twin's own two-alternative BRE.
@@ -143,11 +141,7 @@ def build_harness(source: str, out: pathlib.Path) -> pathlib.Path:
         # common.sh so the harness has no repo dependencies.
         "log_warn() { :; }",
         "log_error() { :; }",
-        # gh_json is the third common.sh helper the gate now uses: the fetch was
-        # `gh api ... 2>/dev/null || echo "[]"`, which turned an API failure into a
-        # PR with no review comments. The stub keeps this harness about the COUNTING
-        # loop by passing the call straight through to the shimmed gh, exactly as the
-        # real helper does on its first successful attempt.
+        # gh_json is the third common.sh helper the gate now uses: the fetch was `gh api ... 2>/dev/null || echo "[]"`, which turned an API failure into a PR with no review comments. The stub keeps this harness about the COUNTING loop by passing the call straight through to the shimmed gh, exactly as the real helper does on its first successful attempt.
         'gh_json() { shift; [[ "${1:-}" == "--" ]] && shift; gh "$@"; }',
     ]
     body = "\n".join(parts) + "\n"
@@ -218,9 +212,7 @@ def test_prefix_version_could_not_count_at_all(gate):
     if not BUGGY_INCREMENT_RE.search(old_source):
         gate.log_info("HEAD no longer contains the buggy increment (the fix has been committed)")
         gate.log_info("control satisfied by the standalone bash semantics assertion below")
-        # THE ADDITION over the twin, and the reason is in the module docstring: a
-        # bash test may return with no PASS line, a ported one may not. Rather than
-        # print a decorative pass, assert what the two INFO lines above assume.
+        # THE ADDITION over the twin, and the reason is in the module docstring: a bash test may return with no PASS line, a ported one may not. Rather than print a decorative pass, assert what the two INFO lines above assume.
         gate.assert_eq(
             bool(BUGGY_INCREMENT_RE.search(old_source)),
             False,
@@ -271,9 +263,7 @@ def test_no_standalone_increments_remain(gate):
             *(root / ".ci" / "scripts" / "security").glob("*.sh"),
         ]
     )
-    # ANTI-VACUITY, and the twin has no equivalent: its `for f in <glob>` would
-    # iterate the unexpanded pattern once, `[[ -f ]]` would drop it, and the sweep
-    # would report zero findings having read nothing.
+    # ANTI-VACUITY, and the twin has no equivalent: its `for f in <glob>` would iterate the unexpanded pattern once, `[[ -f ]]` would drop it, and the sweep would report zero findings having read nothing.
     if not files:
         gate.log_fail(
             "the sweep matched no shell files under .ci/scripts/quality or "

@@ -61,8 +61,7 @@ export type GhAuthTokenReader = () => string;
 const runGhAuthToken: GhAuthTokenReader = () =>
   execFileSync('gh', ['auth', 'token'], {
     encoding: 'utf8',
-    // stderr to /dev/null: "not logged in" is an ANSWER here, not an incident,
-    // and printing it would make every gate run on a `gh`-less box look broken.
+    // stderr to /dev/null: "not logged in" is an ANSWER here, not an incident, and printing it would make every gate run on a `gh`-less box look broken.
     stdio: ['ignore', 'pipe', 'ignore'],
     timeout: 10_000,
   });

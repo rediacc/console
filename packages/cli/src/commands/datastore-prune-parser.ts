@@ -33,9 +33,7 @@ export interface DatastorePrunableResources {
   stale_snapshots?: string[] | null;
   stale_backup_snapshots?: string[] | null;
   stale_pull_staging?: string[] | null;
-  // Reclaimable staging left by a killed `backup restore`. Same shape and same
-  // reclaim rule as pull staging, and a DISTINCT prefix on purpose so a restore
-  // and a `backup sync pull` cannot collide on one path.
+  // Reclaimable staging left by a killed `backup restore`. Same shape and same reclaim rule as pull staging, and a DISTINCT prefix on purpose so a restore and a `backup sync pull` cannot collide on one path.
   stale_restore_staging?: string[] | null;
   stale_churn_probe_bases?: string[] | null;
   stale_backup_anchors?: string[] | null;
@@ -64,8 +62,7 @@ export function parseDatastorePruneOutput(stdout: string): Record<string, unknow
     .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, ''))
     // Drop logrus text lines. The renet relay merges the sub-command's stderr
     // into stdout, so under load a `time="…" level=info msg="…"` line can land
-    // BETWEEN the pretty-printed JSON's lines — inside the brace span — and
-    // break the parse (observed intermittently on `repo trim` right after
+    // BETWEEN the pretty-printed JSON's lines — inside the brace span — and break the parse (observed intermittently on `repo trim` right after
     // heavy I/O; rediacc/console#424 sequence run).
     .filter((line) => !/^time="[^"]*" level=\w+/.test(line))
     .join('\n')

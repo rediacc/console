@@ -148,8 +148,7 @@ def test_the_address_tally_matches_sort_uniq_c_sort_rn() -> None:
         if line.strip() != ""
     ]
     assert ci.email_tally(ci.parse_payload(payload)) == want
-    # The null-committer commit has a resolved author, so its address is NOT in
-    # the tally even though the commit IS in the offender list above.
+    # The null-committer commit has a resolved author, so its address is NOT in the tally even though the commit IS in the offender list above.
     assert all(email != "linked@example.invalid" for _n, email in want)
 
 

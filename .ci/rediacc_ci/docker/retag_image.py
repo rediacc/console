@@ -47,12 +47,9 @@ import sys
 
 from rediacc_ci import log
 
-# ---------------------------------------------------------------------------
-# The twin's constants
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
-# `.ci/config/constants.sh:169` and `:162`. Restated for the reason
-# `cleanup_staging` records, and pinned against constants.sh by the differential.
+# `.ci/config/constants.sh:169` and `:162`. Restated for the reason `cleanup_staging` records, and pinned against constants.sh by the differential.
 PUBLISH_IMAGES = ("renet", "rdc")
 REGISTRY_DEFAULT = "ghcr.io/rediacc"
 
@@ -62,9 +59,7 @@ DIGEST_FORMAT = "{{.Manifest.Digest}}"
 # `set -u` death sites: the line of each `VAR="$2"` assignment in the twin.
 UNBOUND_LINES = {"--image": 42, "--image-path": 46, "--from": 54, "--to": 58}
 
-# docker call sites, for the `command not found` line number bash would print.
-# The two `--skip-if-exists` probes are absent on purpose: they carry
-# `2>/dev/null`, which suppresses the shell's own diagnostic as well.
+# docker call sites, for the `command not found` line number bash would print. The two `--skip-if-exists` probes are absent on purpose: they carry `2>/dev/null`, which suppresses the shell's own diagnostic as well.
 DRY_RUN_INSPECT_LINE = 161
 RETAG_CREATE_LINE = 172
 LATEST_CREATE_LINE = 178

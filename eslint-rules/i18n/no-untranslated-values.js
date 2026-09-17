@@ -83,8 +83,7 @@ const needsTranslation = (value) => {
   return true;
 };
 
-// Rule-option default: values shorter than this are too small to judge as
-// "identical to English" (product names, "OK", punctuation).
+// Rule-option default: values shorter than this are too small to judge as "identical to English" (product names, "OK", punctuation).
 const DEFAULT_MIN_LENGTH = 3;
 
 /** @type {import('eslint').Rule.RuleModule} */

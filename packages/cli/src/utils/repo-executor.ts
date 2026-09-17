@@ -99,8 +99,7 @@ export async function executeRepoFunction(
   });
 
   if (result.success) {
-    // Steps are rendered in real-time by the onStdout step detector.
-    // Just show "Total: Xs" at the end.
+    // Steps are rendered in real-time by the onStdout step detector. Just show "Total: Xs" at the end.
     if (result.allSteps && result.allSteps.length > 0) {
       const totalMs = result.allSteps.reduce((sum, s) => sum + s.duration_ms, 0);
       outputService.info(`\nTotal: ${formatStepDuration(totalMs)}`);

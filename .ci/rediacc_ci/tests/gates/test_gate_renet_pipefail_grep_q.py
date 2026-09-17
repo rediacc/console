@@ -62,9 +62,7 @@ RENET_GATE = paths.from_root("private", "renet", ".ci", "scripts", "quality", "p
 GQ = "grep -q"
 PF = "set -o pipefail"
 
-# The floor under the IMPORT, not under the comparison. An import that returned
-# nothing would make the superset assertion trivially true, which is the
-# "a check that cannot fail" shape this whole directory exists to refuse. Console's
+# The floor under the IMPORT, not under the comparison. An import that returned nothing would make the superset assertion trivially true, which is the "a check that cannot fail" shape this whole directory exists to refuse. Console's
 # list was 18 names when this was written and 20 after the tee/docker widening; ten
 # is comfortably below either and well above zero.
 MIN_CONSOLE_PRODUCERS = 10
@@ -135,10 +133,7 @@ def renet_list(gate, variable: str) -> list[str]:
 
 # ---- 1. the detector contract, twelve directions ----------------------------
 #
-# The seven FLAGGED cases and the five SILENT ones are the same twelve the renet
-# script's own in-script controls assert. Stated from both sides on purpose: a
-# gate that can only say yes is half a gate, and an over-broad one gets
-# suppressed, which is how a gate dies.
+# The seven FLAGGED cases and the five SILENT ones are the same twelve the renet script's own in-script controls assert. Stated from both sides on purpose: a gate that can only say yes is half a gate, and an over-broad one gets suppressed, which is how a gate dies.
 
 
 def test_a_local_function_is_flagged(gate, tmp_path):

@@ -34,9 +34,7 @@ TWIN = ".ci/scripts/lib/gate-controls.sh"
 
 # The driver, in both languages, reading the same US-separated program on stdin.
 # `IFS=$'\x1f'` and NOT `$'\t'`: tab is IFS WHITESPACE, so consecutive tabs
-# collapse and an empty field vanishes, shifting every later field left. That
-# cost a false STDOUT-DIFF on this differential's first run and is recorded at
-# `rediacc_ci.core.gate_controls`'s SEP.
+# collapse and an empty field vanishes, shifting every later field left. That cost a false STDOUT-DIFF on this differential's first run and is recorded at `rediacc_ci.core.gate_controls`'s SEP.
 BASH_DRIVER = textwrap.dedent(
     """
     _drive() {
@@ -78,22 +76,19 @@ CASES = [
             ("finish", "5", "short battery"),
         ],
     ),
-    # EMPTY FIELDS ARE A CASE, not an edge: `gate_check "" "" ""` is what a gate
-    # writes when the value it measured was itself empty, and it must PASS.
+    # EMPTY FIELDS ARE A CASE, not an edge: `gate_check "" "" ""` is what a gate writes when the value it measured was itself empty, and it must PASS.
     (
         "empty-fields",
         [("check", "", "", ""), ("check", " ", "x", ""), ("finish", "1", "empty fields")],
     ),
-    # A floor of zero with zero controls. The one shape where the floor cannot
-    # fire, kept so a future change that made the floor unconditional is caught.
+    # A floor of zero with zero controls. The one shape where the floor cannot fire, kept so a future change that made the floor unconditional is caught.
     ("floor-zero", [("finish", "0", "nothing ran")]),
     # Quoting and globbing hostility, because every field crosses a shell.
     (
         "shell-hostile",
         [("check", "it's *", "a b", "a b"), ("finish", "1", "sub ject")],
     ),
-    # A label with a colon and a value with an equals sign: the two characters
-    # most likely to be eaten by a naive split on either side.
+    # A label with a colon and a value with an equals sign: the two characters most likely to be eaten by a naive split on either side.
     (
         "punctuation",
         [("check", "ratio: got=want", "3=4", "3=4"), ("finish", "1", "punct")],

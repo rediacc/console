@@ -70,8 +70,7 @@ function makeDeps(
     },
     writeResources: (updater) => {
       calls.writeResources++;
-      // dryRunResources models the command's --dry-run wiring: the call is made
-      // but nothing is persisted.
+      // dryRunResources models the command's --dry-run wiring: the call is made but nothing is persisted.
       if (!opts.dryRunResources) current = updater(current);
       return Promise.resolve();
     },

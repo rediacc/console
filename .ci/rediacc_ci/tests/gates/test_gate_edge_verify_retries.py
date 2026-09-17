@@ -41,15 +41,13 @@ BASH_TWIN = ".ci/scripts/test/gates/test-edge-verify-retries.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "deploy", "verify-edge-endpoints.sh")
 
-# The floor is 9, the number actually wrapped, NOT a token 4. A floor set below the
-# real count is a ratchet that permits silent regression: someone unwraps four
+# The floor is 9, the number actually wrapped, NOT a token 4. A floor set below the real count is a ratchet that permits silent regression: someone unwraps four
 # assertions and the gate still reports green. Raise this when more are wrapped;
 # never lower it to make a red go away.
 MIN_RETRYING_CALL_SITES = 9
 
 # `fetch_retry() {` .. the closing `}` at column 0. Extraction BY ANCHOR, so a
-# rename or a rewrite breaks THIS test loudly instead of leaving it exercising a
-# stale copy pasted in here.
+# rename or a rewrite breaks THIS test loudly instead of leaving it exercising a stale copy pasted in here.
 FN_RE = re.compile(r"^fetch_retry\(\) \{.*?^\}", re.MULTILINE | re.DOTALL)
 
 
@@ -110,8 +108,7 @@ def test_the_retry_engine_is_extractable(gate):
 
 
 def test_stale_then_correct_is_accepted(gate, tmp_path):
-    # The predicate fails twice, then succeeds: exactly the shape of a CDN that has
-    # not finished propagating.
+    # The predicate fails twice, then succeeds: exactly the shape of a CDN that has not finished propagating.
     if not run_case(fetch_retry_source(), 2, 6, tmp_path / "state"):
         gate.log_fail(
             "a stale-then-correct surface was rejected; one unlucky sample can "
@@ -132,9 +129,7 @@ def test_always_wrong_is_still_rejected(gate, tmp_path):
 
 
 def test_no_assertion_reads_the_network_exactly_once(gate):
-    # Every bare `curl` that feeds an assertion must sit inside a predicate that
-    # fetch_retry drives. Counting is the cheap, robust form: the script had TWELVE
-    # single-sample reads and zero retries when this incident happened.
+    # Every bare `curl` that feeds an assertion must sit inside a predicate that fetch_retry drives. Counting is the cheap, robust form: the script had TWELVE single-sample reads and zero retries when this incident happened.
     retrying = TARGET.read_text(encoding="utf-8").count('fetch_retry "')
     if retrying < MIN_RETRYING_CALL_SITES:
         gate.log_fail(
@@ -146,11 +141,9 @@ def test_no_assertion_reads_the_network_exactly_once(gate):
 
 
 def test_control_stripping_the_retry_makes_the_stale_case_fail(gate, tmp_path):
-    # Collapse the loop to a single attempt. If the stale-then-correct case still
-    # passes against that, this gate is not measuring what it claims.
+    # Collapse the loop to a single attempt. If the stale-then-correct case still passes against that, this gate is not measuring what it claims.
     #
-    # ONE substitution, and it must be effective. The first version of this control
-    # also tried `EDGE_RETRIES:-6 -> :-1`, which matched NOTHING: the extraction
+    # ONE substitution, and it must be effective. The first version of this control also tried `EDGE_RETRIES:-6 -> :-1`, which matched NOTHING: the extraction
     # starts at `fetch_retry() {` and the default assignment lives ABOVE the
     # function, so it was never in scope. The control still fired -- via the second
     # substitution alone -- which is exactly the shape that hides a dead check.

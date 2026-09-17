@@ -63,10 +63,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "compose_healthcheck_smoke_test
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/compose-healthcheck-smoke-test.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/compose_healthcheck_smoke_test.py")
 
-# `rdc`, `sleep` and `whoami`: log the argv, write canned bytes to both streams,
-# exit with a status looked up by SUBCOMMAND PREFIX. Keyed on the prefix rather
-# than the tool name because `rdc` is invoked eight times per healthy run with
-# eight different subcommands, and "the run fails at `repo up`" is a different
+# `rdc`, `sleep` and `whoami`: log the argv, write canned bytes to both streams, exit with a status looked up by SUBCOMMAND PREFIX. Keyed on the prefix rather than the tool name because `rdc` is invoked eight times per healthy run with eight different subcommands, and "the run fails at `repo up`" is a different
 # case from "the run fails at `machine setup`".
 FAKE_TOOL = """#!/usr/bin/env python3
 import json, os, pathlib, sys
@@ -90,10 +87,7 @@ for prefix, code in sorted(RC.items(), key=lambda kv: -len(kv[0])):
 sys.exit(0)
 """
 
-# `date`: a STEPPED CLOCK, not a real one. Each invocation consumes the next
-# entry of `TICKS` (the last entry repeats forever), so a case states its
-# timeline as data. Its status comes from the same list, which is how "the clock
-# itself failed" is driven.
+# `date`: a STEPPED CLOCK, not a real one. Each invocation consumes the next entry of `TICKS` (the last entry repeats forever), so a case states its timeline as data. Its status comes from the same list, which is how "the clock itself failed" is driven.
 FAKE_DATE = """#!/usr/bin/env python3
 import json, os, pathlib, sys
 LOG = %(log)r
@@ -111,15 +105,10 @@ if text is not None:
 sys.exit(rc)
 """
 
-# `ssh`: the only fake that reads its input. It classifies the remote program by
-# a marker unique to each of the four, then answers from a per-kind script whose
-# entries are consumed in order with the last repeating. That is what lets one
+# `ssh`: the only fake that reads its input. It classifies the remote program by a marker unique to each of the four, then answers from a per-kind script whose entries are consumed in order with the last repeating. That is what lets one
 # case say "starting, starting, healthy" and another say "starting forever".
 #
-# THE CLASSIFIER IS DELIBERATELY STRICT: an unrecognised remote program is a
-# loud failure rather than a default reply, because the four differ by a few
-# characters and a port that sent the diagnostic dump where the poll belongs
-# would otherwise be answered politely and look equivalent.
+# THE CLASSIFIER IS DELIBERATELY STRICT: an unrecognised remote program is a loud failure rather than a default reply, because the four differ by a few characters and a port that sent the diagnostic dump where the poll belongs would otherwise be answered politely and look equivalent.
 FAKE_SSH = """#!/usr/bin/env python3
 import json, os, pathlib, sys
 LOG = %(log)r
@@ -156,8 +145,7 @@ sys.exit(rc)
 # The five externals both subjects may reach.
 TOOLS = ("rdc", "ssh", "date", "sleep", "whoami")
 
-# Everything both subjects need once PATH is rebuilt from scratch, minus the
-# five above. Named rather than derived: a PATH built by copying "everything
+# Everything both subjects need once PATH is rebuilt from scratch, minus the five above. Named rather than derived: a PATH built by copying "everything
 # except rdc" is a PATH nobody can state, and the first tool it forgot would
 # look like a divergence in the subject rather than a hole in the harness.
 NEEDED = ("bash", "sh", "python3", "uname", "dirname", "cat", "grep", "sed", "rm", "env", "ls")
@@ -291,8 +279,7 @@ def _run(
         "USER": "labuser",
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

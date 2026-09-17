@@ -1,23 +1,14 @@
-// ---------------------------------------------------------------------------
-// JAVASCRIPT AND TYPESCRIPT BASE, AND THE LOCAL RULE PLUGIN
+// --------------------------------------------------------------------------- JAVASCRIPT AND TYPESCRIPT BASE, AND THE LOCAL RULE PLUGIN
 //
-// The recommended sets, the relaxations for scripts/**/*.ts, and the one
-// repo-wide type-aware block that carries every plugin this repo lints with,
+// The recommended sets, the relaxations for scripts/**/*.ts, and the one repo-wide type-aware block that carries every plugin this repo lints with,
 // including the `custom` plugin that wires up eslint-rules/.
 //
-// The plugin wiring does NOT get a module of its own, on purpose. `plugins`
-// and the `custom/*` severities live in the SAME config object, and pulling
-// the plugin map into a separate block would either change which files the
-// rules attach to or add a block that was not there before. Both are edits,
-// and this split is a move.
+// The plugin wiring does NOT get a module of its own, on purpose. `plugins` and the `custom/*` severities live in the SAME config object, and pulling the plugin map into a separate block would either change which files the rules attach to or add a block that was not there before. Both are edits, and this split is a move.
 // ---------------------------------------------------------------------------
 //
 // ORDER IS THE CONTRACT. Flat config resolves by LAST MATCH WINS, so these
 // blocks mean what they mean only in the position eslint.config.js splices them
-// into. This module is a verbatim slice of the single 1,444-line file that came
-// before it: the blocks, their order, their comments and their whitespace are
-// unchanged. Anything else would be a rewrite wearing a refactor's clothes.
-// ---------------------------------------------------------------------------
+// into. This module is a verbatim slice of the single 1,444-line file that came before it: the blocks, their order, their comments and their whitespace are unchanged. Anything else would be a rewrite wearing a refactor's clothes. ---------------------------------------------------------------------------
 
 import path from 'node:path';
 import js from '@eslint/js';
@@ -48,11 +39,9 @@ import { seoNoTrailingSlashInternalLink } from '../eslint-rules/seo-no-trailing-
 import { noUnawaitedDrizzleTerminator } from '../eslint-rules/no-unawaited-drizzle-terminator.js';
 import { noDirectSftpClient } from '../eslint-rules/no-direct-sftp-client.js';
 
-// The single-file config sat at the repository root, so `import.meta.dirname`
-// meant the root and the two values below were absolute against it. From inside
+// The single-file config sat at the repository root, so `import.meta.dirname` meant the root and the two values below were absolute against it. From inside
 // eslint.config/ that same expression means one directory DEEPER, which would
-// silently retarget the TypeScript project service and the locale directories
-// one level down without any error to read. Derive the root once, explicitly.
+// silently retarget the TypeScript project service and the locale directories one level down without any error to read. Derive the root once, explicitly.
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 
 export default [
@@ -135,8 +124,7 @@ export default [
         projectService: {
           allowDefaultProject: [
             'scripts/*.ts',
-            // @rediacc/locales is deliberately buildless plain ESM with a hand-written
-            // .d.ts, so it has no tsconfig of its own to be included by. It exists in
+            // @rediacc/locales is deliberately buildless plain ESM with a hand-written .d.ts, so it has no tsconfig of its own to be included by. It exists in
             // that shape because eslint itself — this file — is one of its consumers and
             // runs before any build could produce a dist/.
             'packages/locales/*.js',
@@ -181,8 +169,7 @@ export default [
         ignoreParameters: false,
         ignoreProperties: false,
       }],
-      // STRICT: No underscore prefix allowed - if unused, delete it
-      // Only exception: function parameters required by interfaces (use _ prefix for those)
+      // STRICT: No underscore prefix allowed - if unused, delete it Only exception: function parameters required by interfaces (use _ prefix for those)
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^$' // Empty pattern = no variables allowed with underscore
@@ -252,8 +239,7 @@ export default [
       }],
 
       // === E2E Testing Rules ===
-      // Enforce data-testid on interactive elements for E2E test coverage
-      // This is strict (error) to ensure all interactive elements have testids
+      // Enforce data-testid on interactive elements for E2E test coverage This is strict (error) to ensure all interactive elements have testids
       'custom/require-testid': ['error', {
         requiredElements: ['Modal', 'Drawer'],
         interactiveElements: ['Button'],
@@ -331,11 +317,9 @@ export default [
       '@typescript-eslint/prefer-regexp-exec': 'error',           // S6594: RegExp.exec
       '@typescript-eslint/no-redundant-type-constituents': 'error', // S6571: unknown in union
 
-      // Import ordering is handled by Biome (organizeImports in biome.json).
-      // Do not add import/order here — it conflicts with Biome's formatter.
+      // Import ordering is handled by Biome (organizeImports in biome.json). Do not add import/order here — it conflicts with Biome's formatter.
 
-      // Ban styled-components and Layout to enforce Ant Design best practices
-      // Ban deprecated type utilities to prevent hopping type patterns
+      // Ban styled-components and Layout to enforce Ant Design best practices Ban deprecated type utilities to prevent hopping type patterns
       'no-restricted-imports': ['error', {
         paths: [
           { name: 'styled-components', message: 'Use Ant Design components with CSS utility classes (className) instead.' },

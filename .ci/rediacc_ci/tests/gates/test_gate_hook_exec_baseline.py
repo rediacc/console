@@ -138,10 +138,7 @@ def test_the_counter_runs_standalone_and_agrees_with_the_pin(gate):
     gate.assert_exit_code(0, result.rc, "execcount.py --json (stderr: %s)" % result.err)
     live = json.loads(result.out)
     pinned = json.loads(BASELINE.read_text(encoding="utf-8"))["measured"]
-    # The bare CLI derives its probe set from the matchers, so it measures FEWER
-    # tools than the baseline declares. Comparing the intersection is the honest
-    # claim: the two implementations agree wherever they overlap. Comparing the
-    # whole dict would fail for a reason that is not a disagreement.
+    # The bare CLI derives its probe set from the matchers, so it measures FEWER tools than the baseline declares. Comparing the intersection is the honest claim: the two implementations agree wherever they overlap. Comparing the whole dict would fail for a reason that is not a disagreement.
     shared = sorted(set(live["tools"]) & set(pinned["tools"]))
     gate.assert_eq(len(shared) >= 4, True, "the overlap is non-trivial (%d tools)" % len(shared))
     for tool in shared:
@@ -156,9 +153,7 @@ def test_the_selftest_runs_and_is_not_empty(gate):
     result = harness.run([sys.executable, str(GATE), "--selftest"], cwd=paths.repo_root())
     gate.assert_exit_code(0, result.rc, "selftest (stderr: %s)" % result.err)
     passes = [ln for ln in result.combined.splitlines() if "PASS " in ln]
-    # A floor, not a count: controls get added. Zero PASS lines with exit 0 is
-    # the shape this whole file exists to refuse, and it is what a `--selftest`
-    # that silently returned early would print.
+    # A floor, not a count: controls get added. Zero PASS lines with exit 0 is the shape this whole file exists to refuse, and it is what a `--selftest` that silently returned early would print.
     gate.assert_eq(len(passes) >= 12, True, "%d control(s) ran, floor 12" % len(passes))
     plants = [ln for ln in passes if "PLANT:" in ln]
     anti = [ln for ln in passes if "ANTI-SILENCER:" in ln]

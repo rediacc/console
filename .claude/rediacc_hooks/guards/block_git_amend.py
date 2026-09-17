@@ -29,16 +29,11 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-amend.sh"
 ORDER = 18
 
-# BUT STRIPPING QUOTES ALONE OPENS AN EVASION: without the wrapper payload
-# appended, `sh -c "git commit --amend"` has the whole command inside a quoted
-# span, the span is removed, and the guard returns 0.
+# BUT STRIPPING QUOTES ALONE OPENS AN EVASION: without the wrapper payload appended, `sh -c "git commit --amend"` has the whole command inside a quoted span, the span is removed, and the guard returns 0.
 DEFECT = (r'"%s\n%s" % (stripped, wrapped)', r'"%s\n%s" % (stripped, "")')
 
-# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
-# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
-# means a doc line, a worklist note or an `echo` explaining the rule is refused
-# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
-# below still blocks the real command, at line start and after a separator.
+# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
+# separator.
 AMEND = hookio.rx(
     r"(^|[;&|(])[{S}]*git commit[^|;&]*--amend|(^|[;&|(])[{S}]*git commit[^|;&]*[{S}]-[a-zA-Z]*amend"
 )
@@ -57,8 +52,7 @@ EDGE_CASES = [
     ("the plain shape", "git commit --amend --no-edit"),
     ("the bundled short flag", "git commit -am amend"),
     ("after a separator", "true; git commit --amend"),
-    # The two false-positive classes, and the evasion that closing the first
-    # one opened.
+    # The two false-positive classes, and the evasion that closing the first one opened.
     (
         "a cat heredoc documenting the rule is data",
         "cat > RULES.md <<'EOF'\ngit commit --amend\nEOF",
@@ -127,26 +121,14 @@ def run(ev):
 
     # QUOTED SPANS GO TOO, on top of the heredoc stripping above. The awk pass
     # handles a documented heredoc; it does nothing for `echo 'git commit
-    # --amend'` or a commit message quoting the rule, both of which were refused
-    # as if they were amends.
+    # --amend'` or a commit message quoting the rule, both of which were refused as if they were amends.
     #
-    # BUT STRIPPING QUOTES ALONE OPENS AN EVASION, and the first draft of this
-    # shipped it: `sh -c "git commit --amend"` has the whole command inside a
-    # quoted span, so removing quotes removed the amend and the guard returned
-    # 0. The comment written alongside that draft claimed the dedicated test
-    # file pinned the `sh -c` case. It does not -- the file has no such case,
-    # and the claim was never checked. One probe found both the false comment
-    # and the hole.
+    # BUT STRIPPING QUOTES ALONE OPENS AN EVASION, and the first draft of this shipped it: `sh -c "git commit --amend"` has the whole command inside a quoted span, so removing quotes removed the amend and the guard returned 0. The comment written alongside that draft claimed the dedicated test file pinned the `sh -c` case. It does not -- the file has no such case, and the claim was
+    # never checked. One probe found both the false comment and the hole.
     #
-    # So the wrapper payload is extracted and appended, exactly as
-    # hook_scan_target does for the guards that use it wholesale. This one
-    # cannot use it wholesale: hook_scan_target drops heredoc BODIES, and the
-    # awk pass above exists to keep a `cat <<EOF` body as docs while still
-    # reading a body that would execute. Two different heredoc rules, so only
-    # the wrapper half is borrowed.
+    # So the wrapper payload is extracted and appended, exactly as hook_scan_target does for the guards that use it wholesale. This one cannot use it wholesale: hook_scan_target drops heredoc BODIES, and the awk pass above exists to keep a `cat <<EOF` body as docs while still reading a body that would execute. Two different heredoc rules, so only the wrapper half is borrowed.
     #
-    # PORT NOTE: no env-prefix strip in either half, unlike `scan_target`. That
-    # is the bash's own shape and not an omission here.
+    # PORT NOTE: no env-prefix strip in either half, unlike `scan_target`. That is the bash's own shape and not an omission here.
     wrapped = shellscan._command_substitution(
         shellscan._sed_quotes_to_spaces(shellscan._wrapper_payload(shellscan._tr(scan, "\n", " ")))
     )

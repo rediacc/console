@@ -41,10 +41,7 @@ CONFIG = paths.CI_DIR.parent / ".ci" / "config" / "plan-lifecycle.json"
 
 # check-plan-housekeeping.sh:128 and :138, verbatim.
 BLOB_SED = r"""sed -n '1,10s/^Full-Text-Blob:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' "$1" | head -1"""
-# W12 P3.3. BUILT FROM THE CONFIG, NOT TYPED. This literal used to carry the
-# alternation `compacted\|parked` verbatim, which made it the THIRD copy of one
-# vocabulary beside the two twins. A test that hard-types what it is checking
-# cannot see the two implementations agree on a word the config no longer has.
+# W12 P3.3. BUILT FROM THE CONFIG, NOT TYPED. This literal used to carry the alternation `compacted\|parked` verbatim, which made it the THIRD copy of one vocabulary beside the two twins. A test that hard-types what it is checking cannot see the two implementations agree on a word the config no longer has.
 STATUS_SED = (
     r"""sed -n '1,10s/^Status:[[:space:]]*\(%s\)[[:space:]]*$/\1/p' "$1" | head -1"""
     % r"\|".join(hk.record_states(CONFIG))
@@ -87,9 +84,7 @@ FILLER = "".join("filler %d\n" % i for i in range(1, 11))
 BLOB = "a" * 40
 
 
-# ---------------------------------------------------------------------------
-# record_blob, against the real sed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- record_blob, against the real sed ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -118,9 +113,7 @@ def test_record_blob_agrees_with_the_twin_sed(tmp_path: pathlib.Path, body: str,
     assert hk.record_blob(path) == want
 
 
-# ---------------------------------------------------------------------------
-# record_status, against the real sed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- record_status, against the real sed ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -128,8 +121,7 @@ def test_record_blob_agrees_with_the_twin_sed(tmp_path: pathlib.Path, body: str,
     [
         ("# t\nStatus: compacted\n", "compacted"),
         ("# t\nStatus: parked\n", "parked"),
-        # `parked` is NOT `compacted`: parking buys a smaller file, never an
-        # exemption, and collapsing the two is a one-word change.
+        # `parked` is NOT `compacted`: parking buys a smaller file, never an exemption, and collapsing the two is a one-word change.
         ("# t\nStatus: draft\n", ""),
         # The word in PROSE must not exempt anything.
         ("# t\nStatus: draft\n\nWe should set Status: compacted here one day.\n", ""),
@@ -164,11 +156,9 @@ def test_display_status_scans_the_whole_file_unlike_the_exemption_reader(
     assert hk.display_status(path) == "executing"
     assert hk.record_status(path) == ""
 
-    # THE BOLD FORM THE TWIN ACCEPTS IS `**Status:`, NOT `**Status**:`. The
-    # regex allows a leading `**` and then requires `Status` to be followed by
+    # THE BOLD FORM THE TWIN ACCEPTS IS `**Status:`, NOT `**Status**:`. The regex allows a leading `**` and then requires `Status` to be followed by
     # optional space and a `:` or `=`, so the closing `**` breaks the match.
-    # Both sides agree on that, and the agreement is the assertion: a port that
-    # "fixed" the regex would print a status the twin prints as UNKNOWN.
+    # Both sides agree on that, and the agreement is the assertion: a port that "fixed" the regex would print a status the twin prints as UNKNOWN.
     bold = _write(tmp_path, "# t\n**Status:** executing\n")
     assert _sed(DISPLAY_SED, bold) == hk.display_status(bold)
     closed = tmp_path / "closed.md"
@@ -177,9 +167,7 @@ def test_display_status_scans_the_whole_file_unlike_the_exemption_reader(
     assert hk.display_status(closed) == ""
 
 
-# ---------------------------------------------------------------------------
-# blob_is_real, against a real repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- blob_is_real, against a real repository ---------------------------------------------------------------------------
 
 
 def test_blob_is_real_answers_yes_for_a_minted_blob_and_no_for_a_fake(
@@ -202,9 +190,7 @@ def test_blob_is_real_answers_yes_for_a_minted_blob_and_no_for_a_fake(
     assert not hk.blob_is_real("", root=tmp_path)
 
 
-# ---------------------------------------------------------------------------
-# The allowlist parser, against the real bash loop
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The allowlist parser, against the real bash loop ---------------------------------------------------------------------------
 
 ALLOW_LOOP = r"""
 declare -A EXEMPT_UNTIL=()
@@ -263,8 +249,7 @@ def _bash_allowlist(tmp: pathlib.Path, text: str) -> tuple[dict[str, str], list[
     "text",
     [
         "# BLOCKER: %s\n2099-12-01  agent/PLAN-a.md\n" % GOOD,
-        # A thin reason is refused, and the 40-character bar is this gate's own,
-        # stricter than blocker-validator.sh's 30.
+        # A thin reason is refused, and the 40-character bar is this gate's own, stricter than blocker-validator.sh's 30.
         "# BLOCKER: short\n2099-12-01  agent/PLAN-a.md\n",
         "# BLOCKER: %s\n2099-12-01  agent/PLAN-a.md\n2099-12-02  agent/PLAN-b.md\n" % GOOD,
         # No reason at all.
@@ -273,8 +258,7 @@ def _bash_allowlist(tmp: pathlib.Path, text: str) -> tuple[dict[str, str], list[
         "# BLOCKER: %s\njustonefield\n" % GOOD,
         # A plain comment does NOT reset the armed reason.
         "# BLOCKER: %s\n# an ordinary comment\n2099-12-01  agent/PLAN-a.md\n" % GOOD,
-        # ...and neither does a blank line, which is the opposite of
-        # blocker-validator.sh and is deliberate on the twin's part.
+        # ...and neither does a blank line, which is the opposite of blocker-validator.sh and is deliberate on the twin's part.
         "# BLOCKER: %s\n\n2099-12-01  agent/PLAN-a.md\n" % GOOD,
         # The last line without a terminating newline is still read.
         "# BLOCKER: %s\n2099-12-01  agent/PLAN-a.md" % GOOD,
@@ -303,9 +287,7 @@ def test_a_tab_only_line_is_malformed_not_blank(tmp_path: pathlib.Path) -> None:
     assert sorted(got_problems) == sorted(want_problems)
 
 
-# ---------------------------------------------------------------------------
-# The age arithmetic
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The age arithmetic ---------------------------------------------------------------------------
 
 
 def test_age_days_reports_over_and_under_and_refuses_a_bad_date() -> None:
@@ -342,9 +324,7 @@ def test_selftest_passes() -> None:
     assert hk.selftest() == 0
 
 
-# ---------------------------------------------------------------------------
-# W12 P3.3. The record-status vocabulary: ONE source, and the mirror is checked
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- W12 P3.3. The record-status vocabulary: ONE source, and the mirror is checked ---------------------------------------------------------------------------
 
 
 def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> None:

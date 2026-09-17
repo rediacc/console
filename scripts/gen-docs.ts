@@ -141,17 +141,10 @@ function targets(root: string): string[] {
     if (!st.isFile() || st.size > 4 * 1024 * 1024) continue;
     // A TARGET IS A FILE WITH A REAL MARKER LINE, not one that merely contains the string.
     //
-    // The first version tested `text.includes('>>> gen-docs:')`, and the document that
-    // DOCUMENTS this mechanism immediately became a target of it: 07-tooling-decisions.md
-    // quotes the marker syntax inside a table cell, so the generator adopted it, found no
-    // region in it, and reported `ok <file> ()` -- a target with an empty provider list,
-    // which reads as success and is really "I scanned a file that was never mine". Any
-    // future document explaining the idiom would have done the same.
+    // The first version tested `text.includes('>>> gen-docs:')`, and the document that DOCUMENTS this mechanism immediately became a target of it: 07-tooling-decisions.md quotes the marker syntax inside a table cell, so the generator adopted it, found no region in it, and reported `ok <file> ()` -- a target with an empty provider list, which reads as success and is really "I
+    // scanned a file that was never mine". Any future document explaining the idiom would have done the same.
     //
-    // OPEN_RE is anchored to a whole line, so a quotation inside prose or a table cell is
-    // not a marker and a marker is never a quotation. That is the same predicate
-    // findRegions uses, which is the point: discovery and parsing must agree, or a file can
-    // be adopted by one and refused by the other.
+    // OPEN_RE is anchored to a whole line, so a quotation inside prose or a table cell is not a marker and a marker is never a quotation. That is the same predicate findRegions uses, which is the point: discovery and parsing must agree, or a file can be adopted by one and refused by the other.
     if (
       fs
         .readFileSync(abs, 'utf-8')
@@ -422,8 +415,7 @@ function diffSnapshot(root: string): number {
     const acknowledged = v.missing.filter((k) => (reasons[k] ?? '').trim().length > 0);
     const unexplained = v.missing.filter((k) => (reasons[k] ?? '').trim().length === 0);
 
-    // Acknowledged rows are PRINTED whether or not anything is wrong, so a retirement
-    // list cannot quietly grow into a place regressions go to hide.
+    // Acknowledged rows are PRINTED whether or not anything is wrong, so a retirement list cannot quietly grow into a place regressions go to hide.
     for (const k of acknowledged)
       console.log(`${GREEN}retired${NC} ${v.id}: ${k} -- ${reasons[k]}`);
 
@@ -648,11 +640,8 @@ function main(argv: string[]): number {
   if (argv.includes('--diff-snapshot')) return diffSnapshot(ROOT);
 
   if (argv.includes('--list')) {
-    // A provider that yields nothing is a BROKEN provider, not an empty subject. Every one of
-    // the four scans a part of the tree that cannot legitimately be empty: a repository with no
-    // gates, no hooks, no BLOCKER mechanism and no `.ci` directory is not this repository. So
-    // `--list` reporting `gates 0` and exiting 0 would be a green that means the opposite of
-    // what it says, which is the whole shape TRAPS.md is about. Refuse instead.
+    // A provider that yields nothing is a BROKEN provider, not an empty subject. Every one of the four scans a part of the tree that cannot legitimately be empty: a repository with no gates, no hooks, no BLOCKER mechanism and no `.ci` directory is not this repository. So `--list` reporting `gates 0` and exiting 0 would be a green that means the opposite of what it says, which is
+    // the whole shape TRAPS.md is about. Refuse instead.
     let vacuous = 0;
     for (const p of PROVIDERS) {
       const rows = p.rows(ROOT);

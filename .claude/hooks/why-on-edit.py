@@ -134,9 +134,7 @@ def similar_plans(root, slug):
     """
     mine = tokens(slug)
     if len(mine) < 2:
-        # A one-word slug is too coarse to judge. `PLAN-secrets.md` against
-        # `PLAN-secrets-rotation.md` would be a subset and refused, and the
-        # short one is exactly the shape a genuinely new umbrella plan takes.
+        # A one-word slug is too coarse to judge. `PLAN-secrets.md` against `PLAN-secrets-rotation.md` would be a subset and refused, and the short one is exactly the shape a genuinely new umbrella plan takes.
         return []
     out = []
     try:
@@ -289,9 +287,7 @@ def main():
     except Exception:  # noqa: BLE001 -- a broken index must never cost an edit
         return 0
     if state != R.WHY_EDGES or not lines:
-        # SILENT. See property 1: this hook was not asked, so nothing to say
-        # means nothing said. The state is still recorded, so a path with no
-        # edge is not re-looked-up on every keystroke of the same file.
+        # SILENT. See property 1: this hook was not asked, so nothing to say means nothing said. The state is still recorded, so a path with no edge is not re-looked-up on every keystroke of the same file.
         seen["paths"].append(rel)
         save_seen(session_id, seen)
         return 0

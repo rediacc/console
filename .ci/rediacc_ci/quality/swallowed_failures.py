@@ -182,8 +182,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
 
-# The seams the twin exposes so its own controls, and any gate test, can drive
-# it against fixtures instead of the real tree.
+# The seams the twin exposes so its own controls, and any gate test, can drive it against fixtures instead of the real tree.
 ROOT_ENV = "SWALLOWED_SCAN_ROOT"
 DIRS_ENV = "SWALLOWED_SCAN_DIRS"
 
@@ -237,8 +236,7 @@ ELSE_RE = re.compile(r"^(else|elif)([ \t]|$)")
 # A logical line's trailing continuation shapes: a pipe, an `&&`, a backslash.
 CONTINUES_RE = re.compile(r"(\||&&|\\)$")
 
-# The two verdict strings, and the default. Quoted as constants because each is
-# a distinct diagnosis and a reader greps for them.
+# The two verdict strings, and the default. Quoted as constants because each is a distinct diagnosis and a reader greps for them.
 VERDICT_EXITS_OK = "the empty case exits successfully"
 VERDICT_NO_REPORT = "nothing reports the empty case"
 VERDICT_NO_TEST = "no test distinguishes a failed probe from an empty result"
@@ -399,8 +397,7 @@ def classify(lines: list[Logical], i: int, var: str) -> str:
             return ""
         if PASS_RE.search(branch):
             return VERDICT_EXITS_OK
-        # A test with neither an escalation nor an exit in its own branch:
-        # accept it if the surrounding window reports the problem at all.
+        # A test with neither an escalation nor an exit in its own branch: accept it if the surrounding window reports the problem at all.
         if window_has_escalation(lines, i, limit):
             return ""
         return VERDICT_NO_REPORT
@@ -455,22 +452,15 @@ def scan_text(text: str, file: str) -> list[Row]:
 
 # -- the BLOCKER quality bar, from rediacc_ci.core.allowlist -------------------
 #
-# COLLAPSED 2026-09-09. This module used to carry its own copy of both
-# banned-phrase tables, the 30-character floor and all four message bodies, 150
-# lines transcribed from `.ci/scripts/lib/blocker-validator.sh`. Two things had
-# already drifted in that copy and neither was visible from here:
+# COLLAPSED 2026-09-09. This module used to carry its own copy of both banned-phrase tables, the 30-character floor and all four message bodies, 150 lines transcribed from `.ci/scripts/lib/blocker-validator.sh`. Two things had already drifted in that copy and neither was visible from here:
 #
-#   * the messages spelled the separator `--` where the bash twin this module
-#     ports prints U+2014, so the two disagreed byte for byte on every rejection
+# * the messages spelled the separator `--` where the bash twin this module ports prints U+2014, so the two disagreed byte for byte on every rejection
 #     from line 2 onward. It never reddened anything because `shadow-gate`
-#     classifies only the ci_error line as a FINDING and the rest as chatter.
-#   * the trim was `re.sub(r"^[ \t]*", ...)`, space and tab only, where the twin's
+# classifies only the ci_error line as a FINDING and the rest as chatter. * the trim was `re.sub(r"^[ \t]*", ...)`, space and tab only, where the twin's
 #     `sed 's/^[[:space:]]*//'` under LC_ALL=C also eats \v \f \r. A reason led by
-#     a carriage return normalised to a different length in the two.
+# a carriage return normalised to a different length in the two.
 #
-# Both are gone by construction now: the phrases, the floor and the words are
-# `rediacc_ci.core.allowlist`'s, which is the same module the bash twin and the
-# TypeScript gates read.
+# Both are gone by construction now: the phrases, the floor and the words are `rediacc_ci.core.allowlist`'s, which is the same module the bash twin and the TypeScript gates read.
 
 
 def ci_error(message: str) -> None:
@@ -546,8 +536,7 @@ def main(argv: list[str] | None = None) -> int:
 
     files = discover(root, dirs)
 
-    # ANTI-VACUITY. A gate that scans zero files reports "clean" forever, which
-    # is the exact failure mode this gate exists to police. Refuse to be that.
+    # ANTI-VACUITY. A gate that scans zero files reports "clean" forever, which is the exact failure mode this gate exists to police. Refuse to be that.
     if not files:
         log.error("No shell scripts found under: %s" % " ".join(dirs))
         log.error("This gate scanned nothing, so its verdict would be meaningless. Fix the scope.")
@@ -559,9 +548,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
-            # The twin's awk would fail to open the file, `scan_file` would see
-            # a non-zero exit, and the whole gate would refuse. Same here: a
-            # dead scanner produces the same empty output as a clean file.
+            # The twin's awk would fail to open the file, `scan_file` would see a non-zero exit, and the whole gate would refuse. Same here: a dead scanner produces the same empty output as a clean file.
             log.error("could not read %s (%s):" % (path, exc))
             log.error("A dead scanner produces the same empty output as a clean file.")
             log.error("Refusing to report a verdict.")
@@ -569,14 +556,12 @@ def main(argv: list[str] | None = None) -> int:
         for row in scan_text(text, str(path)):
             (waivers if row.kind == "WAIVER" else findings).append(row)
 
-    # Every waiver reason is held to the BLOCKER quality bar. A waiver reopens
-    # the hole this gate closes, so "# swallowed-failure-ok: fine" must not pass.
+    # Every waiver reason is held to the BLOCKER quality bar. A waiver reopens the hole this gate closes, so "# swallowed-failure-ok: fine" must not pass.
     waiver_bad = False
     for waiver in waivers:
         reason = waiver.detail.split("swallowed-failure-ok:", 1)[-1]
         # `${reason# }`: ONE leading space, not a strip. A reason indented two
-        # spaces keeps one of them, which is the twin's behaviour and matters
-        # because the length floor counts characters.
+        # spaces keeps one of them, which is the twin's behaviour and matters because the length floor counts characters.
         reason = reason.removeprefix(" ")
         if not validate_blocker_quality(
             "%s:%d ($%s)" % (waiver.file, waiver.line, waiver.var), reason, waiver.file

@@ -22,8 +22,7 @@
  * ---- end gate ----
  */
 
-// Source imports (not @rediacc/shared dist) so the gate always judges the
-// CURRENT registry/schema, even when packages/shared has not been rebuilt.
+// Source imports (not @rediacc/shared dist) so the gate always judges the CURRENT registry/schema, even when packages/shared has not been rebuilt.
 import {
   COVERAGE_CONTROL_POINTER,
   computeSchemaCoverage,

@@ -162,19 +162,10 @@ export function planExtract(
   }
   // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the
   // header re-derives the right id, step and run; NONE of it proved the lane can
-  // provide what the file needs, which is precisely what the verifier asserts a
-  // moment later. So --extract happily wrote headers that gate-bind then rejected,
-  // and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to
-  // be stripped by hand. A tool whose write mode does not run its own verify is
-  // how a green plan produces a red tree.
+  // provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
   //
-  // Refusing HERE turns that into a named refusal the caller can act on, which is
-  // the difference between "this gate cannot be declared, and here is why" and a
-  // broken tree someone else has to diagnose. The two known causes are a genuine
-  // lane mismatch (check-editorconfig.sh needs submodules its lane does not check
-  // out) and a false positive in inferredNeeds (its npx probe has no command
-  // position check, so it matches a parameter expansion). Both deserve a refusal
-  // rather than a write.
+  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (check-editorconfig.sh needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
+  // command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
   const extractLane = caps.get(reg.job);
   if (extractLane === undefined) {
     return { error: `${reg.file}: lane '${reg.job}' is not a job of ${WORKFLOW}` };
@@ -250,11 +241,7 @@ export function bind(file: string, source: string): Bound | null {
   // inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason
   // (enforced in analyzeGateHeader), because the inference reads string literals and a
   // control's own description routinely names a tool it does not run. Measured
-  // 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in
-  // account_portal.py and a selftest description in check_checkout_cone.py both infer
-  // `node` for pure-Python gates. Tightening the pattern instead was REJECTED on
-  // measurement: 24 files would lose the inference and at least one of them,
-  // test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
+  // 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in account_portal.py and a selftest description in check_checkout_cone.py both infer `node` for pure-Python gates. Tightening the pattern instead was REJECTED on measurement: 24 files would lose the inference and at least one of them, test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
   const denied = new Set(h.needsNot);
   const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
     .filter((n) => !denied.has(n))
@@ -268,13 +255,8 @@ export function bind(file: string, source: string): Bound | null {
     ...(h.emit === false ? { emit: false } : {}),
     needs,
     ...(h.lane === undefined ? {} : { lane: h.lane }),
-    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree
-    // plant caught after twelve selftest controls had all passed: `emitStep` handled env
-    // and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a
-    // gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind
-    // --dry-run` reported `already matches`. A selftest that calls `emitStep` directly
-    // cannot see this, which is exactly the specialist's rule about a green that only
-    // proves the helper functions work.
+    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree plant caught after twelve selftest controls had all passed: `emitStep` handled env and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind --dry-run` reported `already matches`. A selftest that
+    // calls `emitStep` directly cannot see this, which is exactly the specialist's rule about a green that only proves the helper functions work.
     ...(h.env === undefined ? {} : { env: h.env }),
     ...(h.when === undefined ? {} : { when: h.when }),
   };
@@ -491,9 +473,7 @@ export function shardAssignment(
   }
   const emittedSteps = new Set(emitting.map((e) => e.step));
   const laneEntries = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === job);
-  // `?? ''` for a step-less "step kind" entry: the type does not forbid it structurally
-  // (`ShardInput.ci.step` is optional), and an empty string never matches a real emitted
-  // step name, so such an entry correctly counts as replicated rather than type-erroring.
+  // `?? ''` for a step-less "step kind" entry: the type does not forbid it structurally (`ShardInput.ci.step` is optional), and an empty string never matches a real emitted step name, so such an entry correctly counts as replicated rather than type-erroring.
   const replicated = laneEntries.filter((e) => !emittedSteps.has(e.ci.step ?? '')).map((e) => e.id);
   const ceiling = ceilings[job];
   if (ceiling === undefined) {
@@ -685,23 +665,16 @@ export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
   // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate
   // running after setup failed; a field that could replace it would let a gate opt out
-  // of the ordering contract, which is invariant 11 through a side door. Parenthesised
-  // so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard --
-  // `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
+  // of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
   const cond =
     `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
-  // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays
-  // byte-identical to before D4 -- an added id on a step nothing reads it from is a
-  // diff with no reader, which is how a generator trains people to stop reading its
-  // diffs at all.
+  // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays byte-identical to before D4 -- an added id on a step nothing reads it from is a diff with no reader, which is how a generator trains people to stop reading its diffs at all.
   const head = [
     `      - name: ${b.step}`,
     ...(stepId !== undefined ? [`        id: ${stepId}`] : []),
     `        if: \${{ ${cond} }}`,
   ];
-  // ENV BEFORE RUN, and sorted, because the map is emitted from an object whose key order
-  // is otherwise insertion order -- a generator whose output depends on parse order is a
-  // generator that produces spurious diffs and breaks the idempotency control below.
+  // ENV BEFORE RUN, and sorted, because the map is emitted from an object whose key order is otherwise insertion order -- a generator whose output depends on parse order is a generator that produces spurious diffs and breaks the idempotency control below.
   const env =
     b.env && Object.keys(b.env).length > 0
       ? [
@@ -824,9 +797,7 @@ export function rewriteRegions(
       i += 1;
     }
     const guard = regionGuard(raw);
-    // THE SHARD CONJUNCT IS ANDED ONTO ANY HEADER `when`, NEVER SUBSTITUTED FOR IT, and the
-    // header half is parenthesised for the reason `emitStep` documents: `a || b && c` binds
-    // the wrong way and would put a gate on every leg.
+    // THE SHARD CONJUNCT IS ANDED ONTO ANY HEADER `when`, NEVER SUBSTITUTED FOR IT, and the header half is parenthesised for the reason `emitStep` documents: `a || b && c` binds the wrong way and would put a gate on every leg.
     const shardOf = shards?.get(job) ?? null;
     const shardedEntries: Emitting[] = [];
     for (const b of (byLane.get(job) ?? []).slice().sort((a, z) => a.step.localeCompare(z.step))) {
@@ -837,26 +808,14 @@ export function rewriteRegions(
           : {
               ...b,
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
-              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK
-              // IDS (`check-quality-complete.ts:226` compares against
-              // `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`,
-              // one outcome per EMITTED STEP -- which is coarser than one per lock id
-              // the moment two ids ever share a step (D1's whole reason for merging
-              // them). This map is what lets the receipt step translate "this step ran"
-              // back into "these lock ids ran", correct today (always exactly `[b.id]`,
-              // since no auto-emitted gate currently shares a step with another) and
-              // correct if that ever changes, without the receipt script itself needing
-              // to know which case it is in.
+              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the
+              // receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
               env: { ...b.env, GATE_LOCK_IDS: lockIdsEnvValue([b.id]) },
             };
       if (leg !== undefined) shardedEntries.push(b);
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
     }
-    // T-SCHED B2 D4, final clause. One receipt step per sharded job, emitted from the
-    // SAME `shardOf` this region already used to conjunct every gate above it -- `of`
-    // is the highest leg number `shardPlan` assigned, which is correct because
-    // `shardPlan`'s bin-packer always fills legs 1..N with none left empty (its own
-    // acceptance clause 3, "no shard is empty").
+    // T-SCHED B2 D4, final clause. One receipt step per sharded job, emitted from the SAME `shardOf` this region already used to conjunct every gate above it -- `of` is the highest leg number `shardPlan` assigned, which is correct because `shardPlan`'s bin-packer always fills legs 1..N with none left empty (its own acceptance clause 3, "no shard is empty").
     if (shardOf !== null && shardOf.size > 0) {
       const of = Math.max(...shardOf.values());
       out.push(...emitReceiptStep(job, of, shardedEntries));
@@ -985,11 +944,7 @@ export function registered(manifest: string, id: string): Registered | { error: 
   const end = text.indexOf('\n  },\n', at);
   if (start === -1 || end === -1) return { error: `could not bound the entry for '${id}'` };
   const block = text.slice(start, end);
-  // BOTH QUOTE STYLES. This accepted single quotes only, so an entry whose value
-  // CONTAINS an apostrophe -- and is therefore written with double quotes in the
-  // manifest -- read as absent. check:ci-cli-doc-coverage's step is
-  // "CLI docs stay in sync with their scripts' real flags", so field('step')
-  // returned '' and --extract reported "entry is missing leaves, ci.step or
+  // BOTH QUOTE STYLES. This accepted single quotes only, so an entry whose value CONTAINS an apostrophe -- and is therefore written with double quotes in the manifest -- read as absent. check:ci-cli-doc-coverage's step is "CLI docs stay in sync with their scripts' real flags", so field('step') returned '' and --extract reported "entry is missing leaves, ci.step or
   // ci.job". The entry was complete; the reader was not, and every other entry
   // needing double quotes was silently un-extractable the same way.
   const field = (k: string): string =>
@@ -1032,14 +987,8 @@ export function headerLines(
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
   const wanted = r.run ?? '';
-  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on
-  // the flag only there. For a .sh or .py gate derivedRun(f, true) equals
-  // derivedRun(f), so the first arm always matched and every such header
-  // asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's
-  // briefs cite as the model: check-npmrc.sh carried `selftest: true` while
-  // containing ZERO occurrences of --selftest. Roughly 30 headers claimed a leg
-  // that does not exist. Inert for binding, and a declaration that lies is worse
-  // than a missing one, because the next reader trusts it.
+  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on the flag only there. For a .sh or .py gate derivedRun(f, true) equals derivedRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
+  // occurrences of --selftest. Roughly 30 headers claimed a leg that does not exist. Inert for binding, and a declaration that lies is worse than a missing one, because the next reader trusts it.
   const selftestIsReal = r.file.endsWith('.ts');
   if (selftestIsReal && wanted !== '' && wanted === derivedRun(r.file, true)) {
     out.push('selftest: true');
@@ -2255,8 +2204,7 @@ function main(argv: string[]): void {
     // would write 143 duplicate copies of one battery step into a region.
     // HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a
     // hand-written step a region must not take over; not saying so would make "declared
-    // and deliberately not emitted" look identical to "declared and forgotten", which is
-    // the exact confusion the import guard above exists to end.
+    // and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
       console.log(
@@ -2272,9 +2220,7 @@ function main(argv: string[]): void {
         console.error(`✗ ${b.file}: ${'error' in placed ? placed.error : 'no lane'}`);
         process.exit(1);
       }
-      // A LANE WITH NO `- id: setup` CANNOT HOLD A REGION (invariant 11), so a gate
-      // pinned there is hand-registered by construction. Held out of byLane and NAMED
-      // below -- never silently, because "not emitted" and "forgotten" look identical.
+      // A LANE WITH NO `- id: setup` CANNOT HOLD A REGION (invariant 11), so a gate pinned there is hand-registered by construction. Held out of byLane and NAMED below -- never silently, because "not emitted" and "forgotten" look identical.
       if (!laneCanEmit(workflow, job)) {
         handRegistered.push(`${b.file} -> ${job} (no \`- id: setup\`, so no region may exist)`);
         continue;
@@ -2288,9 +2234,7 @@ function main(argv: string[]): void {
       );
       for (const h of handRegistered) console.log(`    ${h}`);
     }
-    // Restrict to one lane when asked. Done by narrowing byLane rather than by
-    // filtering the output, so a lane with no region simply is not touched and every
-    // refusal below still speaks for the lane actually being written.
+    // Restrict to one lane when asked. Done by narrowing byLane rather than by filtering the output, so a lane with no region simply is not touched and every refusal below still speaks for the lane actually being written.
     const scoped =
       onlyLane === undefined ? byLane : new Map([...byLane].filter(([lane]) => lane === onlyLane));
     const only = onlyLane === undefined ? undefined : new Set([onlyLane]);
@@ -2301,9 +2245,7 @@ function main(argv: string[]): void {
       );
       process.exit(1);
     }
-    // THE SHARD ASSIGNMENT, computed once per run from the SAME plan the aggregator
-    // re-runs. A lane absent from SHARD_COUNTS yields nothing and its steps emit exactly
-    // as before, which is what keeps this change inert for the nine unsharded lanes.
+    // THE SHARD ASSIGNMENT, computed once per run from the SAME plan the aggregator re-runs. A lane absent from SHARD_COUNTS yields nothing and its steps emit exactly as before, which is what keeps this change inert for the nine unsharded lanes.
     const shardMap = new Map<string, ReadonlyMap<string, number>>();
     for (const job of Object.keys(SHARD_COUNTS)) {
       const assigned = shardAssignment(job, lockEntries, caps, byLane.get(job) ?? []);
@@ -2312,9 +2254,7 @@ function main(argv: string[]): void {
         console.error(`✗ ${job}: ${assigned.error}`);
         process.exit(1);
       }
-      // PRINTED EVERY RUN a lane is sharded, never only on refusal: a quiet exemption is
-      // how a gate stops meaning its name, and D2 exists because the quality-security
-      // mistake was silent right up until someone ran the numbers by hand.
+      // PRINTED EVERY RUN a lane is sharded, never only on refusal: a quiet exemption is how a gate stops meaning its name, and D2 exists because the quality-security mistake was silent right up until someone ran the numbers by hand.
       if (assigned.replicated.length > 0) {
         console.log(
           `note: ${job} shards with ${assigned.replicated.length} entr${assigned.replicated.length === 1 ? 'y' : 'ies'} ` +
@@ -2324,11 +2264,7 @@ function main(argv: string[]): void {
       }
       shardMap.set(job, assigned.legs);
     }
-    // T-SCHED B2 D3, BEFORE rewriteRegions: a shard conjunct on a job with no real
-    // `strategy:` block is Finding 2's vacuity (GitHub evaluates `matrix.shard` as
-    // `null` with no `strategy.matrix`, so every conjuncted step silently skips).
-    // A REFUSAL, not a rewrite -- see rewriteStrategyRegions's own docstring for why
-    // this one region is never auto-applied.
+    // T-SCHED B2 D3, BEFORE rewriteRegions: a shard conjunct on a job with no real `strategy:` block is Finding 2's vacuity (GitHub evaluates `matrix.shard` as `null` with no `strategy.matrix`, so every conjuncted step silently skips). A REFUSAL, not a rewrite -- see rewriteStrategyRegions's own docstring for why this one region is never auto-applied.
     const strategyFindings = rewriteStrategyRegions(workflow, SHARD_COUNTS);
     if (strategyFindings.length > 0) {
       console.error(`✗ ${strategyFindings.length} shard-strategy finding(s):`);
@@ -2336,27 +2272,15 @@ function main(argv: string[]): void {
       process.exit(1);
     }
     const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap);
-    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the
-    // region that no declared gate emits is either stale (fine to drop) or a gate
-    // someone hand-added in the wrong place (NOT fine -- dropping it stops that gate
-    // running in CI). The manifest is the arbiter: if it names the step, the removal is
-    // a regression and this refuses rather than reporting a tidy "rewrote N region(s)".
-    // Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane,
-    // which is the optional header override and is undefined for most gates. Keying on
-    // it made every emitted step look like an unexplained removal.
+    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy
+    // "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal.
     const emitted = new Set(
       [...scoped.entries()].flatMap(([lane, gates]) => gates.map((b) => `${lane}: ${b.step}`))
     );
-    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still
-    // names, which is the loudest case. It is not the only harmful one, and the gap has
-    // a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in
-    // a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`,
-    // `if:`, a `with:` block or a secret that no manifest entry mentions, and dropping it
-    // was reported as a tidy `rewrote N region(s)`.
+    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest
+    // entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
     //
-    // So `--write` now refuses on ANY drop the rewrite cannot re-emit, whatever the
-    // reason, and `--allow-drop <step>` is the single typed escape. The two refusals stay
-    // SEPARATE rather than merged: a manifest-claimed drop is a regression and says so,
+    // So `--write` now refuses on ANY drop the rewrite cannot re-emit, whatever the reason, and `--allow-drop <step>` is the single typed escape. The two refusals stay SEPARATE rather than merged: a manifest-claimed drop is a regression and says so,
     // while an unexplained drop may be legitimate cleanup that simply has to be named.
     const { claimed, unclaimed } = classifyDrops(dropped, emitted, allowDrop, manifest);
     if (unclaimed.length > 0) {
@@ -2385,22 +2309,13 @@ function main(argv: string[]): void {
       console.error('  the `# <<< gate-bind` marker, where a hand-registered step belongs.');
       process.exit(1);
     }
-    // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none
-    // would silently drop the step and report success -- the vacuity shape again.
-    // THE REGION IS THE OPT-IN, which is what makes a STAGED cutover expressible.
+    // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none would silently drop the step and report success -- the vacuity shape again. THE REGION IS THE OPT-IN, which is what makes a STAGED cutover expressible.
     //
-    // This used to refuse outright unless EVERY lane holding a declared gate had a
-    // region. That sounds protective and is not: 46 gates across five lanes declare
-    // headers while still being hand-registered, so `--write` refused repo-wide and no
-    // lane could go first. All-or-nothing across five lanes, each with its own
-    // step-ordering constraints, is the opposite of the one-lane pilot a cutover needs.
+    // This used to refuse outright unless EVERY lane holding a declared gate had a region. That sounds protective and is not: 46 gates across five lanes declare headers while still being hand-registered, so `--write` refused repo-wide and no lane could go first. All-or-nothing across five lanes, each with its own step-ordering constraints, is the opposite of the one-lane pilot a
+    // cutover needs.
     //
-    // A lane with no region does not emit, and its gates keep running from their
-    // hand-written steps -- a state the verify path already checks per gate, since
-    // `stepInJob` demands the step exist whether a region wrote it or not. What the old
-    // refusal actually guarded, a region silently losing its steps, is caught anyway:
-    // delete a region and check:ci-parity reds on a manifest entry naming a step that is
-    // no longer in the file.
+    // A lane with no region does not emit, and its gates keep running from their hand-written steps -- a state the verify path already checks per gate, since `stepInJob` demands the step exist whether a region wrote it or not. What the old refusal actually guarded, a region silently losing its steps, is caught anyway: delete a region and check:ci-parity reds on a manifest entry
+    // naming a step that is no longer in the file.
     const notYet = [...scoped.keys()].filter((j) => !lanes.includes(j));
     if (notYet.length > 0) {
       console.log(
@@ -2442,29 +2357,17 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE
-    // RULE RATHER THAN THE DEFECT. check-gate-id-convention.sh requires a gate-test to be
-    // registered as `gate-test:<name>` whose `run` points at the script directly, with no
+    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. check-gate-id-convention.sh requires a gate-test to be registered as `gate-test:<name>` whose `run` points at the script directly, with no
     // package.json entry at all: 148 keys that only ever restate a path would be 148 keys
-    // against the package key budget for nothing. Checking these against package.json
-    // would therefore red all 148 the moment they became subjects, for a reason that has
-    // nothing to do with their headers. The lock's `run` is what they must agree with.
-    // THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not "is it flagged a
-    // gate-test". Those are the same set for the 148 under .ci/scripts/test/gates, and
-    // they diverge for `test:install-script` and `test:write-once-guard`, which are
-    // registered exactly the same way (run: the .sh path, no package.json key) and carry
-    // no `qualityGateTest`. Keying on the flag refused both the moment they declared a
-    // header on 2026-09-06, for a convention they follow correctly.
+    // against the package key budget for nothing. Checking these against package.json would therefore red all 148 the moment they became subjects, for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not "is it flagged a gate-test". Those are the same set for the 148 under
+    // .ci/scripts/test/gates, and they diverge for `test:install-script` and `test:write-once-guard`, which are registered exactly the same way (run: the .sh path, no package.json key) and carry no `qualityGateTest`. Keying on the flag refused both the moment they declared a header on 2026-09-06, for a convention they follow correctly.
     const lockEntry = lockById.get(b.id);
     const runsScriptDirectly =
       lockEntry !== undefined &&
       !lockEntry.run.startsWith('npm run ') &&
-      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with
-      // no package.json key keeps that shape when its path is repointed at a Python
+      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python
       // port; keying on `.sh` alone meant the checks below -- run must match the
-      // header's derived run, and no package.json key may exist -- silently stopped
-      // applying to a gate the moment it was ported. Same class as the `paths:`
-      // glob that stops selecting its own gate once the leaf is a `.py`.
+      // header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:` glob that stops selecting its own gate once the leaf is a `.py`.
       (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
     if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
@@ -2491,10 +2394,7 @@ function main(argv: string[]): void {
     );
     if (!entry) problems.push(`${b.file}: no manifest entry with id '${b.id}'`);
 
-    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what
-    // placement derives from `needs`. For `battery` it is a FACT OF THE WORKFLOW: the job
-    // holding the step it rides. Deriving it from needs instead would check a lane the
-    // gate never enters, and pass.
+    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what placement derives from `needs`. For `battery` it is a FACT OF THE WORKFLOW: the job holding the step it rides. Deriving it from needs instead would check a lane the gate never enters, and pass.
     let job: string;
     if (b.kind === 'battery') {
       const owners = jobsWithStep(workflow, b.step as string);
@@ -2529,11 +2429,7 @@ function main(argv: string[]): void {
     if (!satisfies(lane, b.needs)) {
       problems.push(`${b.file}: lane '${job}' does not provide all of ${JSON.stringify(b.needs)}`);
     }
-    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three
-    // remaining checks says why. They are all statements about a region this gate is
-    // never written into, so applying them to a battery gate reports a defect in a step
-    // somebody else owns -- the shape that produced six false lane mismatches during the
-    // drain, once per gate, for one hand-written step.
+    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three remaining checks says why. They are all statements about a region this gate is never written into, so applying them to a battery gate reports a defect in a step somebody else owns -- the shape that produced six false lane mismatches during the drain, once per gate, for one hand-written step.
     if (!emits(b)) continue;
     if (!regionAfterSetup(workflow, job)) {
       problems.push(
@@ -2554,9 +2450,7 @@ function main(argv: string[]): void {
     }
   }
 
-  // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses
-  // above, before the write branch, so `malformed` is always empty by here. The
-  // line stays because the refusal above is the load-bearing one and this is the
+  // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses above, before the write branch, so `malformed` is always empty by here. The line stays because the refusal above is the load-bearing one and this is the
   // safety net if the two are ever reordered; it is annotated rather than deleted
   // so nobody reads it as the check that catches malformed headers. It is not.
   problems.push(...malformed);

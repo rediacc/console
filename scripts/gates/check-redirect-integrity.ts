@@ -103,10 +103,7 @@ ok(
   `all ${Object.values(redirects.exact).filter((r) => r.status === 301).length} exact 301 targets are live`
 );
 
-// --- Check 2: No redirect chains -------------------------------------------
-// Self-maps (A -> A) are legal: they trigger lang-prefix addition, and the
-// Worker's self-redirect guard prevents loops. A rule pointing at a self-map
-// target is also fine (Worker resolves in one hop). Only flag genuine chains
+// --- Check 2: No redirect chains ------------------------------------------- Self-maps (A -> A) are legal: they trigger lang-prefix addition, and the Worker's self-redirect guard prevents loops. A rule pointing at a self-map target is also fine (Worker resolves in one hop). Only flag genuine chains
 // A -> B where B -> C with C !== B.
 
 const chains: Array<{ from: string; to: string; via: string }> = [];
@@ -147,9 +144,7 @@ ok(`all ${redirects.patterns.length} patterns compile`);
 const shapeIssues: string[] = [];
 for (const [from, rule] of Object.entries(redirects.exact)) {
   if (!from.startsWith('/')) shapeIssues.push(`key must start with /: ${from}`);
-  // Keys must be already-normalized: the Worker runs normalizePath BEFORE
-  // alias lookup, so a trailing-slash key is unreachable and probably a
-  // transcription mistake.
+  // Keys must be already-normalized: the Worker runs normalizePath BEFORE alias lookup, so a trailing-slash key is unreachable and probably a transcription mistake.
   if (from.length > 1 && from.endsWith('/'))
     shapeIssues.push(`key has trailing slash (will never match after normalization): ${from}`);
   // Same for .html/.md suffix — normalizer strips those, so a rule keyed

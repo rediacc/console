@@ -78,9 +78,7 @@ BASE_ENV = {
     "DRY_RUN": "false",
 }
 
-# Fake aws: dispatches on the first two args so each subcommand can be scripted
-# independently. Also records every invocation into $TEMP/aws.log so tests can
-# assert whether `aws s3 rm --recursive` was called by the orphan-scrub path.
+# Fake aws: dispatches on the first two args so each subcommand can be scripted independently. Also records every invocation into $TEMP/aws.log so tests can assert whether `aws s3 rm --recursive` was called by the orphan-scrub path.
 FAKE_AWS = """#!/bin/bash
 printf '%s\\n' "$*" >>"{temp}/aws.log"
 case "$1 $2" in
@@ -161,9 +159,7 @@ class Harness:
         aws.write_text(FAKE_AWS.format(temp=self.temp), encoding="utf-8")
         aws.chmod(0o755)
 
-        # Extract just the guard function + define stubs for log_* + pull in the
-        # validator library (which provides rsv_sentinel_exists /
-        # rsv_prefix_nonempty).
+        # Extract just the guard function + define stubs for log_* + pull in the validator library (which provides rsv_sentinel_exists / rsv_prefix_nonempty).
         guard = extract_guard(GUARD_SCRIPT.read_text(encoding="utf-8"))
         (self.temp / "guard.sh").write_text(guard, encoding="utf-8")
         self.bundle.write_text(
@@ -203,8 +199,7 @@ class Harness:
 
 
 # PREFIX_KEYCOUNT drives BOTH the mock's list-objects-v2 responses; the guard
-# only calls rsv_binary_count when the sentinel exists, so it doubles as the
-# "binary count" for the sealed cases below.
+# only calls rsv_binary_count when the sentinel exists, so it doubles as the "binary count" for the sealed cases below.
 
 
 def test_sealed_with_binaries_skips(h: Harness) -> None:
@@ -235,18 +230,13 @@ def test_no_sentinel_proceeds_without_scrub(h: Harness) -> None:
     if h.logged("s3 rm"):
         log_fail("guard must NEVER scrub a clean prefix")
 
-    # Orphan prefix (bytes, no sentinel): PROCEED and OVERWRITE in place -- must
-    # NOT scrub (the old behaviour that deleted retried releases' binaries).
+    # Orphan prefix (bytes, no sentinel): PROCEED and OVERWRITE in place -- must NOT scrub (the old behaviour that deleted retried releases' binaries).
     h.reset_log()
     if h.run_guard("cli/v0.0.0/", SENTINEL_EXISTS="false", PREFIX_KEYCOUNT="9") != 0:
         log_fail("orphan prefix should PROCEED (rc=0), overwriting in place")
     if h.logged("s3 rm"):
-        # THE EM DASH IS WRITTEN AS AN ESCAPE ON PURPOSE. The twin's message
-        # carries a literal U+2014 (test-write-once-guard.sh:140) and this port
-        # must emit the same bytes, but a literal em dash in a `.ci/rediacc_ci`
-        # `.py` file is a NEW finding for `check:ci-em-dash-surfaces`, whose
-        # baseline is shrink-only. The escape keeps the OUTPUT identical without
-        # putting the character in the source.
+        # THE EM DASH IS WRITTEN AS AN ESCAPE ON PURPOSE. The twin's message carries a literal U+2014 (test-write-once-guard.sh:140) and this port must emit the same bytes, but a literal em dash in a `.ci/rediacc_ci` `.py` file is a NEW finding for `check:ci-em-dash-surfaces`, whose baseline is shrink-only. The escape keeps the OUTPUT identical without putting the character in the
+        # source.
         log_fail(
             "guard must NEVER scrub an orphan -- that is the nightly housekeeping "
             "job's responsibility"

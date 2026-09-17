@@ -43,9 +43,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-nonstandard-branch-name.sh"
 ORDER = 17
 
-# The earlier draft, restored. Skipping any candidate that merely CONTAINS a
-# slash silently let `checkout -b feature/x` through -- the exact shape this
-# hook exists to refuse -- while still looking like a start-point carve-out.
+# The earlier draft, restored. Skipping any candidate that merely CONTAINS a slash silently let `checkout -b feature/x` through -- the exact shape this hook exists to refuse -- while still looking like a start-point carve-out.
 DEFECT = (r"^[0-9a-f]{7,40}$|^origin/|^refs/", r"^[0-9a-f]{7,40}$|/")
 
 # Cheap reject: no branch-creating verb anywhere.
@@ -55,11 +53,9 @@ HAS_BRANCH_VERB = hookio.rx(
 
 # -b/-B (checkout), -c/-C (switch): the new name is the next token.
 #
-# ANCHORED TO A COMMAND POSITION, and the anchor is not decoration. Without it
-# the pattern matched a shell VARIABLE ASSIGNMENT whose value happened to hold
+# ANCHORED TO A COMMAND POSITION, and the anchor is not decoration. Without it the pattern matched a shell VARIABLE ASSIGNMENT whose value happened to hold
 # the words -- `SLASH='git checkout -b some/name'` -- and refused a line that
-# runs nothing. Requiring `git` after a command boundary is what makes this a
-# guard on an act rather than on a vocabulary.
+# runs nothing. Requiring `git` after a command boundary is what makes this a guard on an act rather than on a vocabulary.
 GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
 
 NEW_BRANCH_FLAG = GIT_AT_CMD + hookio.rx(
@@ -109,18 +105,10 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    # A HEREDOC BODY IS DATA, NOT A COMMAND. This hook blocked its own commit
-    # message for saying so: the message described the slashed-name shape the
-    # guard refuses, and the guard read the description as the act. It then
-    # blocked the edit that would have fixed it, for the same reason -- the fix
-    # had to come through the Edit tool. That is the fifth mention-vs-execution
-    # false positive in one session, so this uses the SHARED stripper the rest
-    # of the pre-bash family already uses rather than inventing a fifth private
-    # one.
+    # A HEREDOC BODY IS DATA, NOT A COMMAND. This hook blocked its own commit message for saying so: the message described the slashed-name shape the guard refuses, and the guard read the description as the act. It then blocked the edit that would have fixed it, for the same reason -- the fix had to come through the Edit tool. That is the fifth mention-vs-execution false positive
+    # in one session, so this uses the SHARED stripper the rest of the pre-bash family already uses rather than inventing a fifth private one.
     #
-    # Only heredoc BODIES are dropped, deliberately: hook_scan_target also
-    # strips quoted strings, and a branch name may legitimately be quoted, so
-    # using it would fail this open on `git branch "bad name"`.
+    # Only heredoc BODIES are dropped, deliberately: hook_scan_target also strips quoted strings, and a branch name may legitimately be quoted, so using it would fail this open on `git branch "bad name"`.
     cmd = shellscan._command_substitution(shellscan._strip_heredocs(cmd))
 
     if not hookio.grep_q(HAS_BRANCH_VERB, cmd):
@@ -133,10 +121,7 @@ def run(ev):
     if name != "":
         candidate = name
 
-    # `git branch [-m|-M] ...`: the new name is the LAST positional, because the
-    # rename form is `-m <old> <new>` and the create form is `branch <new> [start]`.
-    # Handled separately so a rename INTO a legal name passes while a rename INTO a
-    # suffixed one does not -- which is exactly how this session fixed its own.
+    # `git branch [-m|-M] ...`: the new name is the LAST positional, because the rename form is `-m <old> <new>` and the create form is `branch <new> [start]`. Handled separately so a rename INTO a legal name passes while a rename INTO a suffixed one does not -- which is exactly how this session fixed its own.
     if candidate == "":
         cut = hookio.sed_sub(
             hookio.rx(r".*[{S}]branch[{S}]+"),
@@ -152,9 +137,7 @@ def run(ev):
                 if tok.startswith("-"):
                     continue
                 candidate = tok
-            # `git branch <new> <start-point>`: the START POINT is an existing ref,
-            # not a name being created, so only the FIRST positional is judged --
-            # unless this is a rename, where the new name is the SECOND.
+            # `git branch <new> <start-point>`: the START POINT is an existing ref, not a name being created, so only the FIRST positional is judged -- unless this is a rename, where the new name is the SECOND.
             if not hookio.grep_q(RENAME, branch_args):
                 for tok in tokens:
                     if tok.startswith("-"):
@@ -173,11 +156,7 @@ def run(ev):
         return hookio.ALLOW
     if hookio.grep_q(r"^[0-9]{4}-[0-9]+$", candidate):
         return hookio.ALLOW
-    # A SHA or a remote-tracking ref is a START POINT, not a name being created,
-    # so it is not this hook's call. NOTE the anchors: an earlier draft skipped any
-    # candidate containing a slash, which silently let `checkout -b feature/x`
-    # through -- the exact shape this hook exists to refuse. Caught by its own
-    # control, which is the argument for writing the controls first.
+    # A SHA or a remote-tracking ref is a START POINT, not a name being created, so it is not this hook's call. NOTE the anchors: an earlier draft skipped any candidate containing a slash, which silently let `checkout -b feature/x` through -- the exact shape this hook exists to refuse. Caught by its own control, which is the argument for writing the controls first.
     if hookio.grep_q(r"^[0-9a-f]{7,40}$|^origin/|^refs/", candidate):
         return hookio.ALLOW
 

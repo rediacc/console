@@ -133,12 +133,8 @@ function tierFindings(
   typical: Record<string, number> = {}
 ): Finding[] {
   const out: Finding[] = [];
-  // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here
-  // contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and
-  // 132s through `needs: build:www`: the closure oracle says mark it, the tier
-  // oracle then says it is too cheap to be marked. Both are right about
-  // different costs, so tier defers to closure -- the number that decides lane
-  // membership is what the gate costs to RUN, prerequisites included.
+  // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and 132s through `needs: build:www`: the closure oracle says mark it, the tier oracle then says it is too cheap to be marked. Both are right about different costs, so tier defers to closure -- the number that decides lane membership is
+  // what the gate costs to RUN, prerequisites included.
   const slowByClosure = slowByClosureSet(specs);
   for (const spec of specs) {
     const ms = dur[spec.id];
@@ -343,8 +339,7 @@ function selftest(tracked: readonly string[]): number {
     'tier CONTROL: a slow-marked gate that IS slow passes',
     tierFindings([spec({ slow: true })], { x: 60_000 }).length === 0
   );
-  // The five-false-reds fix, both directions. Without the second control the
-  // precondition could be a blanket "never tier" and the suite would not notice.
+  // The five-false-reds fix, both directions. Without the second control the precondition could be a blanket "never tier" and the suite would not notice.
   check(
     'tier: a thin window of measurements does NOT convict',
     tierFindings([spec({})], { x: 60_000 }, { x: 3 }).length === 0
@@ -394,8 +389,7 @@ function selftest(tracked: readonly string[]): number {
     tierFindings([spec({ slow: true })], {}).length === 0
   );
 
-  // Closure, both directions AND transitively -- a one-hop-only check would
-  // pass the two-hop case, which is the shape that actually occurs.
+  // Closure, both directions AND transitively -- a one-hop-only check would pass the two-hop case, which is the shape that actually occurs.
   const a = spec({ id: 'a', needs: ['b'] });
   const b = spec({ id: 'b', needs: ['c'] });
   const cSlow = spec({ id: 'c', slow: true });
@@ -418,9 +412,7 @@ function selftest(tracked: readonly string[]): number {
     closureFindings([spec({ id: 'a', needs: ['b'] }), spec({ id: 'b', needs: ['a'] })]).length === 0
   );
 
-  // THE TWO ORACLES MUST NOT CONTRADICT EACH OTHER. This fired live: a gate
-  // costing 0.8s itself but 132s through its closure was told to mark itself
-  // slow by one oracle and unmark itself by the other.
+  // THE TWO ORACLES MUST NOT CONTRADICT EACH OTHER. This fired live: a gate costing 0.8s itself but 132s through its closure was told to mark itself slow by one oracle and unmark itself by the other.
   check(
     'tier defers to closure: a cheap gate that is slow by closure may stay marked',
     tierFindings([spec({ id: 'a', needs: ['c'], slow: true }), spec({ id: 'c', slow: true })], {
@@ -474,8 +466,7 @@ function selftest(tracked: readonly string[]): number {
     tracked.length > 500
   );
 
-  // The `**/` semantics this file deliberately does NOT gate on, pinned so the
-  // comment above cannot rot into a claim nobody can check.
+  // The `**/` semantics this file deliberately does NOT gate on, pinned so the comment above cannot rot into a claim nobody can check.
   check(
     'the runner matcher treats **/ as zero-or-more dirs',
     globToRegExp('**/*.sh').test('run.sh')
@@ -515,19 +506,14 @@ function main(): number {
     const raw: Record<string, unknown> = JSON.parse(
       fs.readFileSync(path.join(REPO, '.ci', 'cache', 'gate-durations.json'), 'utf-8')
     );
-    // The oracle judges the FLOOR of the last few raw measurements, not the
-    // scheduling average: load only ever adds time, so the cheapest recent run
-    // is the honest cost. A full run that overlapped two other sessions on
-    // 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded
-    // it be marked slow. A bare number is the older cache shape.
+    // The oracle judges the FLOOR of the last few raw measurements, not the scheduling average: load only ever adds time, so the cheapest recent run is the honest cost. A full run that overlapped two other sessions on 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded it be marked slow. A bare number is the older cache shape.
     for (const [id, v] of Object.entries(raw)) {
       if (typeof v === 'number') dur[id] = v;
       else if (v !== null && typeof v === 'object') {
         const { ewma, recent } = v as { ewma?: number; recent?: number[] };
         const floor = Array.isArray(recent) && recent.length > 0 ? Math.min(...recent) : ewma;
         if (typeof floor === 'number') dur[id] = floor;
-        // A bare number is the older cache shape and carries no window, so it is
-        // left unrecorded here and tiers as it always did.
+        // A bare number is the older cache shape and carries no window, so it is left unrecorded here and tiers as it always did.
         if (Array.isArray(recent) && recent.length > 0) {
           samples[id] = recent.length;
           typical[id] = median(recent);
@@ -535,9 +521,7 @@ function main(): number {
       }
     }
   } catch {
-    // NOT fatal, and NOT silent. The cache is written by real runs, so a fresh
-    // clone has none and the tier oracle simply has nothing to say yet. Saying
-    // so is the difference between "no findings" and "did not look".
+    // NOT fatal, and NOT silent. The cache is written by real runs, so a fresh clone has none and the tier oracle simply has nothing to say yet. Saying so is the difference between "no findings" and "did not look".
     process.stdout.write('- tier oracle: no duration cache yet, so cost claims are unjudged\n');
   }
 

@@ -361,9 +361,7 @@ def _sides(name: str, env_extra: dict[str, str] | None = None, *, build=None, pa
 BASE_ENV = {"EVENT_NAME": "issue_comment", "PR_NUMBER": "42"}
 
 
-# ---------------------------------------------------------------------------
-# Controls.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls. ---------------------------------------------------------------------------
 
 
 def test_all_three_files_exist_where_this_file_says_they_do() -> None:
@@ -392,9 +390,7 @@ def test_the_real_gate_still_carries_both_prefixes() -> None:
     assert rs.parse_prefix(text, "ATTEMPT_PREFIX") == "<!-- claude-review-attempt:"
 
 
-# ---------------------------------------------------------------------------
-# The two extraction helpers, driven against the programs they replace.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two extraction helpers, driven against the programs they replace. ---------------------------------------------------------------------------
 
 
 def _sed_prefix(text: str, name: str) -> str:
@@ -486,9 +482,7 @@ def test_the_first_submodule_is_not_special_cased_away() -> None:
     assert rs.non_gitlink_count(["private/renet"], ["private/renet", "private/account"]) == 0
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before any network.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before any network. ---------------------------------------------------------------------------
 
 
 def test_a_missing_jq_is_refused_by_name() -> None:
@@ -579,9 +573,7 @@ def test_an_unparseable_attempt_prefix_names_the_553_failure_mode() -> None:
     assert old.stderr.count(b"\n") == 4, old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The PR-resolution arms.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The PR-resolution arms. ---------------------------------------------------------------------------
 
 
 def test_a_closed_pr_is_reported_and_nothing_is_posted() -> None:
@@ -628,8 +620,7 @@ def test_a_non_numeric_pr_number_reaches_the_api_unvalidated() -> None:
     assert "GET\trepos/acme/widget/pulls/not-a-number" in old.calls, old.calls
     assert b"PR #not-a-number head" in old.stderr
     # Against the real API that call 404s and the run ends with gh's status;
-    # the fake serves the fixture, so what this pins is that the junk reached
-    # the API PATH unaltered on both sides.
+    # the fake serves the fixture, so what this pins is that the junk reached the API PATH unaltered on both sides.
 
 
 def test_a_workflow_run_with_no_artifact_exits_quietly() -> None:
@@ -729,9 +720,7 @@ def test_a_cancelled_review_run_is_a_note_not_a_failure() -> None:
     assert "Triggering Claude Review run: `cancelled`." in payload["output"]["summary"]
 
 
-# ---------------------------------------------------------------------------
-# CURRENCY.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CURRENCY. ---------------------------------------------------------------------------
 
 
 def test_a_marker_on_the_current_head_is_a_plain_success() -> None:
@@ -835,9 +824,7 @@ def test_the_last_sha_in_a_multi_line_marker_body_wins() -> None:
     assert "head `%s` is the reviewed SHA" % NEW_SHA in payload["output"]["summary"]
 
 
-# ---------------------------------------------------------------------------
-# The deadlock guards.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The deadlock guards. ---------------------------------------------------------------------------
 
 
 def test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable() -> None:
@@ -909,10 +896,7 @@ def test_a_non_infra_attempt_never_exhausts_a_head() -> None:
             "comments", [_marker(OLD_SHA), _attempt(NEW_SHA, attempts=3, cls="something_else")]
         )
         world.compare("src/main.ts")
-        # A BIGGER DIFF, so the PR-wide cap (5 here) is NOT the thing that
-        # answers. Three non-infra attempts are all chargeable, so against the
-        # smallest tier this case would take the cap branch and prove nothing
-        # about the per-head one.
+        # A BIGGER DIFF, so the PR-wide cap (5 here) is NOT the thing that answers. Three non-infra attempts are all chargeable, so against the smallest tier this case would take the cap branch and prove nothing about the per-head one.
         world.write("pr-size", {"additions": 20000, "deletions": 1})
 
     old = _sides("head-not-infra", BASE_ENV, build=build)
@@ -947,9 +931,7 @@ def test_spent_attempts_count_against_the_cap_beside_posted_reports() -> None:
     assert payload["conclusion"] == "success"
 
 
-# ---------------------------------------------------------------------------
-# HYGIENE.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- HYGIENE. ---------------------------------------------------------------------------
 
 
 def test_a_failing_hygiene_script_is_a_failure_carrying_its_output() -> None:
@@ -999,9 +981,7 @@ def test_a_non_executable_hygiene_script_is_fatal_too() -> None:
     assert b"hygiene script missing or not executable" in old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The write itself.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The write itself. ---------------------------------------------------------------------------
 
 
 def test_an_existing_check_run_is_patched_without_the_head_sha() -> None:
@@ -1015,9 +995,7 @@ def test_an_existing_check_run_is_patched_without_the_head_sha() -> None:
 
     old = _sides("patch", BASE_ENV, build=build)
     assert old.exit == 0
-    # pulls, marker comments, report count, attempt states, pr size, existing
-    # check-run, then the write. The ORDER is part of the contract: the
-    # check-run lookup has to happen after the head SHA is known.
+    # pulls, marker comments, report count, attempt states, pr size, existing check-run, then the write. The ORDER is part of the contract: the check-run lookup has to happen after the head SHA is known.
     assert old.methods() == ["GET"] * 6 + ["PATCH"], old.calls
     assert b"PATH=repos/acme/widget/check-runs/4242" in old.capture
     payload = old.payload()

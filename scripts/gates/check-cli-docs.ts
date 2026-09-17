@@ -50,25 +50,13 @@ const TREE_PATH = path.join(ROOT, 'packages/cli/scripts/command-tree.json');
 const DOC_GLOBS = [
   '.claude/skills/rdc',
   'packages/www/src/content/docs/en',
-  // Executable CI tutorial scripts. They were never covered, which is why the
-  // reshape broke them silently — see listCheckableFiles().
+  // Executable CI tutorial scripts. They were never covered, which is why the reshape broke them silently — see listCheckableFiles().
   '.ci/tutorials',
-  // ★ The executable CI TEST DRIVERS, one directory over. Adding `.ci/tutorials`
-  // fixed the instance and left the class: these scripts drive the `Tests + Infra`
-  // jobs against a live machine, and they still spoke the pre-P4 CLI (`rdc config
-  // machine setup`, `repo template apply`, `repo up --name`). Nothing caught it,
-  // because that tier is gated behind the upstream gates and had never once run in
-  // this campaign — so they failed at RUNTIME, in the one place where a stale
-  // command is not a typo but a broken build.
+  // ★ The executable CI TEST DRIVERS, one directory over. Adding `.ci/tutorials` fixed the instance and left the class: these scripts drive the `Tests + Infra` jobs against a live machine, and they still spoke the pre-P4 CLI (`rdc config machine setup`, `repo template apply`, `repo up --name`). Nothing caught it, because that tier is gated behind the upstream gates and had never
+  // once run in this campaign — so they failed at RUNTIME, in the one place where a stale command is not a typo but a broken build.
   //
-  // Scoped to `private/` (the drivers), NOT all of `.ci/scripts`: the sibling
-  // setup/test/gates scripts MENTION rdc without invoking it (`command -v rdc`,
-  // an error string naming "an rdc executable", a heredoc echoing fake `rdc
-  // version` output) and the positional-detector gate carries deliberately dead
-  // specimens as FIXTURES — one is literally labeled "MUST NOT FLAG". This
-  // extractor cannot tell an invocation from a mention in that code, and a gate
-  // that cries wolf gets an allowlist, which is how a gate dies. Widening this
-  // needs a smarter extractor, not a bigger glob.
+  // Scoped to `private/` (the drivers), NOT all of `.ci/scripts`: the sibling setup/test/gates scripts MENTION rdc without invoking it (`command -v rdc`, an error string naming "an rdc executable", a heredoc echoing fake `rdc version` output) and the positional-detector gate carries deliberately dead specimens as FIXTURES — one is literally labeled "MUST NOT FLAG". This extractor
+  // cannot tell an invocation from a mention in that code, and a gate that cries wolf gets an allowlist, which is how a gate dies. Widening this needs a smarter extractor, not a bigger glob.
   '.ci/scripts/private',
   // Repo docs. See EXCLUDED_DIRS: docs/design/** is held out.
   'docs',
@@ -104,24 +92,15 @@ const GLOBAL_LONG_FLAGS = new Set([
   '--quiet',
   '--config',
 ]);
-// Global options that consume the following token as their value (so we skip it
-// when locating the first real subcommand, e.g. `rdc --config prod machine …`).
+// Global options that consume the following token as their value (so we skip it when locating the first real subcommand, e.g. `rdc --config prod machine …`).
 const GLOBAL_VALUE_FLAGS = new Set(['--output', '--context', '--lang', '--config']);
 
-// Curated renames applied by --fix: stale command prefixes whose current form is
-// unambiguous (verified against `rdc <cmd> --help`). Keys/values are the tokens
-// after `rdc`. Applied longest-key-first as a prefix replace.
-// ★ P4 REVERSED SEVERAL OF THESE. The map used to carry
-// `'machine status': 'machine query'` and `'subscription refresh': 'subscription
-// refresh activation'` — both of which now point at commands that NO LONGER EXIST,
-// because P4 renamed them in the OPPOSITE direction (`machine query` became
+// Curated renames applied by --fix: stale command prefixes whose current form is unambiguous (verified against `rdc <cmd> --help`). Keys/values are the tokens after `rdc`. Applied longest-key-first as a prefix replace. ★ P4 REVERSED SEVERAL OF THESE. The map used to carry `'machine status': 'machine query'` and `'subscription refresh': 'subscription refresh activation'` — both of
+// which now point at commands that NO LONGER EXIST, because P4 renamed them in the OPPOSITE direction (`machine query` became
 // `machine status`; the three `subscription refresh *` leaves collapsed into
-// `subscription refresh`). Running `--fix` would have rewritten CORRECT docs into
-// broken ones, which is worse than not having a fixer at all: the tool that repairs
-// staleness would have been the thing introducing it.
+// `subscription refresh`). Running `--fix` would have rewritten CORRECT docs into broken ones, which is worse than not having a fixer at all: the tool that repairs staleness would have been the thing introducing it.
 //
-// Only unambiguous CURRENT targets belong here, and every value is checked below
-// against the live tree so this map can never again name a command that is gone.
+// Only unambiguous CURRENT targets belong here, and every value is checked below against the live tree so this map can never again name a command that is gone.
 const RENAMES: Record<string, string> = {
   'machine query': 'machine status',
   'machine deploy-backup': 'backup schedule',
@@ -194,24 +173,12 @@ const tree: TreeNode = JSON.parse(fs.readFileSync(TREE_PATH, 'utf-8'));
 const ROOT_CMD = buildCmd(tree);
 for (const f of longFlagsOf(tree)) GLOBAL_LONG_FLAGS.add(f);
 
-// Top-level commands that export-command-tree.ts drops via EXCLUDED_TOP_LEVEL.
-// They are real and take positional args, so register them as arg-accepting
-// leaves to avoid false "unknown subcommand" reports.
+// Top-level commands that export-command-tree.ts drops via EXCLUDED_TOP_LEVEL. They are real and take positional args, so register them as arg-accepting leaves to avoid false "unknown subcommand" reports.
 //
-// IMPORTED, not re-listed. This used to be a hand-copy that had drifted to
-// ['run', 'login', 'logout', 'trace', 'cancel', 'retry'] — five names that are
-// not commands. Every one of them was therefore registered here as a VALID
-// arg-accepting command, so this validator would have blessed a doc snippet like
-// `rdc login --whatever` instead of reporting it. A stale allowlist in the gate
-// that exists to catch stale docs is the worst place for one, and the only fix
-// that holds is to make divergence impossible rather than to correct the copy.
-// ★ THEIR REAL FLAGS, READ FROM THE LIVE COMMANDER TREE — NOT AN EMPTY SET, AND NOT A PERMISSIVE
-// ONE. `run` is held out of the generated CONTRACT, not out of the CLI: it exists, and it has
-// `-f/--function`, `-m/--machine`, `--param` and the rest. An EMPTY flag set made every flag on it
-// read as unknown (it reported the CORRECT `rdc run -f <fn>` as an error). The tempting fix — let
-// any flag through — would be a FAIL-OPEN: tomorrow a doc could teach `rdc run --parent` and this
-// gate would bless it. ★★ CLOSING A FALSE POSITIVE BY OPENING A BLIND SPOT IS THE TRADE THIS PHASE
-// REFUSED SIX TIMES. So ask the thing that decides: the live Commander tree.
+// IMPORTED, not re-listed. This used to be a hand-copy that had drifted to ['run', 'login', 'logout', 'trace', 'cancel', 'retry'] — five names that are not commands. Every one of them was therefore registered here as a VALID arg-accepting command, so this validator would have blessed a doc snippet like `rdc login --whatever` instead of reporting it. A stale allowlist in the gate
+// that exists to catch stale docs is the worst place for one, and the only fix that holds is to make divergence impossible rather than to correct the copy. ★ THEIR REAL FLAGS, READ FROM THE LIVE COMMANDER TREE — NOT AN EMPTY SET, AND NOT A PERMISSIVE ONE. `run` is held out of the generated CONTRACT, not out of the CLI: it exists, and it has `-f/--function`, `-m/--machine`,
+// `--param` and the rest. An EMPTY flag set made every flag on it read as unknown (it reported the CORRECT `rdc run -f <fn>` as an error). The tempting fix — let any flag through — would be a FAIL-OPEN: tomorrow a doc could teach `rdc run --parent` and this gate would bless it. ★★ CLOSING A FALSE POSITIVE BY OPENING A BLIND SPOT IS THE TRADE THIS PHASE REFUSED SIX TIMES. So ask
+// the thing that decides: the live Commander tree.
 for (const name of EXCLUDED_TOP_LEVEL) {
   if (ROOT_CMD.subcommands.has(name)) continue;
   const live = cli.commands.find((c) => c.name() === name);
@@ -224,12 +191,8 @@ for (const name of EXCLUDED_TOP_LEVEL) {
   });
 }
 
-// ─── cli.json command-key validation ───────────────────────────────────────
-// The CLI docs (cli-application*.md) are generated from cli.json: a node with a
-// `description` becomes a documented command. A stale command key (left after a
-// command is renamed/removed) silently produces a doc section for a command that
-// no longer exists. Catch those by checking every cli.json command-key path
-// against the live command tree.
+// ─── cli.json command-key validation ─────────────────────────────────────── The CLI docs (cli-application*.md) are generated from cli.json: a node with a `description` becomes a documented command. A stale command key (left after a command is renamed/removed) silently produces a doc section for a command that no longer exists. Catch those by checking every cli.json command-key
+// path against the live command tree.
 const CLI_JSON_PATH = path.join(ROOT, 'packages/cli/src/i18n/locales/en/cli.json');
 // Real top-level command groups (camelCase keys map to kebab tree names).
 const COMMAND_GROUPS = new Set([
@@ -292,9 +255,7 @@ function validCommandPaths(): Set<string> {
  * This reuses `validateInvocation` — the same per-command resolver the docs use — so a flag is
  * checked against the command it is written on, which is the only question worth asking.
  */
-// English function words that can never name a command. A locale value is PROSE with commands
-// embedded in it, so `rdc --help for architecture ...` puts "for" in command position. Without
-// this the gate cries wolf, and a gate nobody trusts is a gate nobody runs.
+// English function words that can never name a command. A locale value is PROSE with commands embedded in it, so `rdc --help for architecture ...` puts "for" in command position. Without this the gate cries wolf, and a gate nobody trusts is a gate nobody runs.
 const PROSE_WORDS = new Set([
   'for',
   'to',
@@ -366,15 +327,10 @@ function invocationShapes(value: string): string[] {
         flags.push(token.split('=')[0].replace(/[.,;:)\]]+$/, ''));
         continue;
       }
-      // ★ A COMMAND NAME IS ASCII. Japanese, Korean and Arabic attach punctuation and grammatical
-      // particles DIRECTLY to it with no space — `rdc subscription login。`, `rdc repo sync를`,
-      // `rdc subscription login،`. Splitting on whitespace yields `login。` / `sync를`, which
-      // resolve to nothing, so the gate reported CORRECT Japanese and Korean as stale commands.
-      // Take the leading ASCII run: anything non-ASCII glued to a command name is foreign
-      // punctuation, never part of the name.
+      // ★ A COMMAND NAME IS ASCII. Japanese, Korean and Arabic attach punctuation and grammatical particles DIRECTLY to it with no space — `rdc subscription login。`, `rdc repo sync를`, `rdc subscription login،`. Splitting on whitespace yields `login。` / `sync를`, which resolve to nothing, so the gate reported CORRECT Japanese and Korean as stale commands. Take the leading ASCII run:
+      // anything non-ASCII glued to a command name is foreign punctuation, never part of the name.
       const clean = (token.match(/^[A-Za-z0-9-]+/) ?? [''])[0];
-      // The path ends at the first token that is not a subcommand of where we are. In a locale
-      // that is usually where the translated prose begins, and that is exactly right.
+      // The path ends at the first token that is not a subcommand of where we are. In a locale that is usually where the translated prose begins, and that is exactly right.
       const next = clean ? node.subcommands.get(clean) : undefined;
       if (!next) break;
       if (!started && !TOP_LEVEL.has(clean)) break;
@@ -383,23 +339,16 @@ function invocationShapes(value: string): string[] {
       node = next;
     }
 
-    // Only invocations that actually name a command are compared. `rdc para usar ...` names
-    // nothing, so it is prose in every language, including English.
+    // Only invocations that actually name a command are compared. `rdc para usar ...` names nothing, so it is prose in every language, including English.
     if (parts.length > 0) {
       shapes.push(`${parts.join(' ')} [${flags.sort().join(' ')}]`);
       continue;
     }
 
-    // ★ THE HEAD RESOLVED TO NOTHING. Two very different things look like this:
-    //   (a) PROSE — `rdc para usar la versión anterior` (a Spanish preposition), or English's own
-    //       `rdc --help for architecture`. Not a command, never was.
-    //   (b) A DEAD NOUN — `rdc auth login`. `auth` was a real top-level command until the cloud
-    //       adapter was deleted. It is the single worst string in the catalogue: the CLI telling a
-    //       user to run a noun that no longer exists.
-    // Skipping both (the first attempt) means the FALSE-POSITIVE FILTER BLINDS THE GATE TO ITS MOST
+    // ★ THE HEAD RESOLVED TO NOTHING. Two very different things look like this: (a) PROSE — `rdc para usar la versión anterior` (a Spanish preposition), or English's own `rdc --help for architecture`. Not a command, never was. (b) A DEAD NOUN — `rdc auth login`. `auth` was a real top-level command until the cloud adapter was deleted. It is the single worst string in the catalogue:
+    // the CLI telling a user to run a noun that no longer exists. Skipping both (the first attempt) means the FALSE-POSITIVE FILTER BLINDS THE GATE TO ITS MOST
     // SEVERE CASE. So record the unresolved head; the caller decides, using English as the
-    // discriminator: if ENGLISH names a real command for this key and the LOCALE's head names
-    // nothing, the locale is stale — prose does not replace a command, a dead noun does.
+    // discriminator: if ENGLISH names a real command for this key and the LOCALE's head names nothing, the locale is stale — prose does not replace a command, a dead noun does.
     const head = tokens.find((t) => !t.startsWith('-'))?.replace(/[.,;:)\]'"]+$/, '');
     if (head && /^[a-z][a-z0-9-]*$/.test(head)) shapes.push(`?${head}`);
   }
@@ -696,15 +645,9 @@ function extractInvocations(content: string, shellFile = false): { line: number;
     const norm = text.replace(/\.\/rdc\.sh/g, 'rdc');
     // The preceding character may be a QUOTE. Shell scripts wrap commands in
     // helpers (`run_cmd "rdc repo up shop"`, and those strings are eval'd), so a
-    // regex that only accepted start/space/backtick/paren skipped the majority of
-    // the calls in .ci/tutorials — the gate would have gone green over scripts
-    // that still failed at runtime. Covering a file is not the same as reading it.
-    // ★ NOT AN ALLOWLIST OF DELIMITERS. This used to enumerate the characters allowed before `rdc`
-    // (space, backtick, paren, quote) — and Chinese writes `请使用以下命令创建：rdc config init`, with a
-    // FULL-WIDTH COLON and no space. `rdc` was therefore never extracted, the locale resolved no
-    // command, and the dead-noun rule LAUNDERED THAT EXTRACTION MISS INTO A CONFIDENT ACCUSATION
-    // that correct Chinese was stale. Every CJK and Arabic string was exposed to the same failure.
-    // The real property is simply: `rdc` is a standalone token, i.e. not preceded by a word
+    // regex that only accepted start/space/backtick/paren skipped the majority of the calls in .ci/tutorials — the gate would have gone green over scripts that still failed at runtime. Covering a file is not the same as reading it. ★ NOT AN ALLOWLIST OF DELIMITERS. This used to enumerate the characters allowed before `rdc` (space, backtick, paren, quote) — and Chinese writes
+    // `请使用以下命令创建：rdc config init`, with a FULL-WIDTH COLON and no space. `rdc` was therefore never extracted, the locale resolved no command, and the dead-noun rule LAUNDERED THAT EXTRACTION MISS INTO A CONFIDENT ACCUSATION that correct Chinese was stale. Every CJK and Arabic string was exposed to the same failure. The real property is simply: `rdc` is a standalone token, i.e. not
+    // preceded by a word
     // character. State the property; do not enumerate the exceptions.
     const re = /(?<![\w-])rdc\s+[^\n`]*/g;
     let m: RegExpExecArray | null;

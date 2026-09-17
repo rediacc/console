@@ -56,27 +56,22 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-inline-python.sh"
 ORDER = 8
 
-# The documented escape. Removing it does not make the guard stricter in any
-# useful way -- it makes it the guard "somebody deletes the first time it is
-# wrong", which removes the protection permanently rather than for one edit.
+# The documented escape. Removing it does not make the guard stricter in any useful way -- it makes it the guard "somebody deletes the first time it is wrong", which removes the protection permanently rather than for one edit.
 DEFECT = ('if ev.env("REDIACC_ALLOW_INLINE_PYTHON") == "1":', "if False:")
 
 # `case "$FILE" in *.ts | *.tsx | *.js | *.jsx | *.cjs | *.mjs) ;; *) exit 0`.
-# Narrower than block-suppressions.sh's list on purpose: .vue, .svelte and
-# .astro are not places this incident can take the shape it took.
+# Narrower than block-suppressions.sh's list on purpose: .vue, .svelte and .astro are not places this incident can take the shape it took.
 CODE_SUFFIXES = ("*.ts", "*.tsx", "*.js", "*.jsx", "*.cjs", "*.mjs")
 
 DETECTOR_REL = ".ci/scripts/quality/check_inline_python.py"
 
-# The two sides of the escape hatch. Both are run over the whole case list, so
-# the override is proved to let a real finding through rather than assumed to.
+# The two sides of the escape hatch. Both are run over the whole case list, so the override is proved to let a real finding through rather than assumed to.
 ENVS = [
     ("default", {}, {}),
     ("override", {"REDIACC_ALLOW_INLINE_PYTHON": "1"}, {}),
 ]
 
-# The detector's own control case, reused rather than reinvented: two distinct
-# statement-shaped signals at the head of a line inside one quoted region.
+# The detector's own control case, reused rather than reinvented: two distinct statement-shaped signals at the head of a line inside one quoted region.
 _PROGRAM = "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"
 
 EDGE_CASES = [
@@ -103,8 +98,7 @@ EDGE_CASES = [
         "ordinary TypeScript",
         {"tool_input": {"file_path": "packages/cli/src/a.ts", "new_string": "const x = 1;"}},
     ),
-    # A .py file is where the program is SUPPOSED to live, so this guard has
-    # nothing to say about it.
+    # A .py file is where the program is SUPPOSED to live, so this guard has nothing to say about it.
     ("the program in a real .py file", {"tool_input": {"file_path": "a.py", "content": _PROGRAM}}),
     # No `""` arm in the `case`, so a payload naming no file leaves early.
     ("no file_path at all", {"tool_input": {"new_string": _PROGRAM}}),
@@ -184,15 +178,12 @@ def run(ev):
 
     detector = "%s/%s" % (hookio.repo_root(), DETECTOR_REL)
 
-    # A missing detector must not read as "clean". It means the hook cannot judge,
-    # and a guard that cannot judge should say so rather than wave the edit through.
+    # A missing detector must not read as "clean". It means the hook cannot judge, and a guard that cannot judge should say so rather than wave the edit through.
     if not os.access(detector, os.X_OK):
         ev.warn(MISSING_DETECTOR % detector)
         return hookio.ALLOW
 
-    # Judge the FRAGMENT, not the file on disk: the point is to refuse the content
-    # before it lands. The suffix matters because the detector selects rules by
-    # file type, so the temp file keeps the real one's extension.
+    # Judge the FRAGMENT, not the file on disk: the point is to refuse the content before it lands. The suffix matters because the detector selects rules by file type, so the temp file keeps the real one's extension.
     #
     # `${FILE##*.}` strips the longest `*.` prefix and yields the whole string
     # when there is no dot at all; the `case` above means there always is one,
@@ -209,12 +200,10 @@ def run(ev):
         ok, findings = _detector_output(detector, tmp)
         if ok:
             return hookio.ALLOW
-        # Rewrite the temp path back to the real one so the message names a file the
-        # author recognises.
+        # Rewrite the temp path back to the real one so the message names a file the author recognises.
         findings = findings.replace(tmp, file_path)
     finally:
-        # `trap 'rm -f "$TMP"' EXIT` -- and `rm -f` never complains about a file
-        # that is already gone, which is what `missing_ok` says here.
+        # `trap 'rm -f "$TMP"' EXIT` -- and `rm -f` never complains about a file that is already gone, which is what `missing_ok` says here.
         with contextlib.suppress(OSError):
             os.unlink(tmp)
 

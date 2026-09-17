@@ -25,9 +25,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-nondraft-pr-create.sh"
 ORDER = 23
 
-# Reading `--draft` from the whole line instead of from this invocation's
-# segment is the exact donation the header describes: a sibling create's flag
-# makes an unrelated one look compliant.
+# Reading `--draft` from the whole line instead of from this invocation's segment is the exact donation the header describes: a sibling create's flag makes an unrelated one look compliant.
 DEFECT = ("hookio.grep_q_line(HAS_DRAFT, seg)", "hookio.grep_q_line(HAS_DRAFT, scan)")
 
 HAS_DRAFT = hookio.rx(r"(^|[{S}])(--draft|-d)([{S}=]|$)")
@@ -68,20 +66,14 @@ EDGE_CASES = [
 def run(ev):
     cmd = ev.field("tool_input", "command")
     # Bypass-resistant scanning (unwraps sh -c/eval, strips heredocs+prose); a
-    # `sh -c 'gh pr create'` must not slip a non-draft past this. SCAN is the only
-    # parsed view -- it already carries the prose-stripped command plus any
-    # unwrapped payload. See lib/command-scan.sh.
+    # `sh -c 'gh pr create'` must not slip a non-draft past this. SCAN is the only parsed view -- it already carries the prose-stripped command plus any unwrapped payload. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not shellscan.gh_pr_at_command_pos(scan, "create"):
         return hookio.ALLOW
 
-    # --repo and --draft both come from the SEGMENT carrying this `gh pr create`,
-    # and EVERY create on the line is judged on its own: line-wide parsing let a
-    # sibling invocation donate its repo or its --draft, so
+    # --repo and --draft both come from the SEGMENT carrying this `gh pr create`, and EVERY create on the line is judged on its own: line-wide parsing let a sibling invocation donate its repo or its --draft, so
     # `gh pr create --repo rediacc/renet -t x; gh pr create -t y` read as one
-    # compliant draft. The cd/-C hint stays line-wide, because a cd genuinely does
-    # apply to every later segment. No signal at all defaults to the console
-    # checkout, which fails toward draft. See hook_gh_pr_segment / hook_target_repo.
+    # compliant draft. The cd/-C hint stays line-wide, because a cd genuinely does apply to every later segment. No signal at all defaults to the console checkout, which fails toward draft. See hook_gh_pr_segment / hook_target_repo.
     cwd = ev.field("cwd")
     segs = shellscan.gh_pr_segment(scan, "create")
     records, _ = shellscan._records(shellscan._here_string(segs))

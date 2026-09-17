@@ -54,32 +54,21 @@ TOOLCHAIN_SH = ".ci/scripts/lib/toolchain.sh"
 SETUP_SH = ".ci/lib/setup.sh"
 RUN_PS1 = "run.ps1"
 
-# The `uname -s` strings a host really presents, and the ones this repo's own
-# `case` blocks already list. MINGW/MSYS/CYGWIN are not hypothetical: both
-# `.ci/lib/local-common.sh:795` and `rdc.sh:98` branch on them for a `.exe`.
-# WHAT `uname -s` REALLY PRINTS. There is no `Windows` here, and its absence is
-# the point: on Windows the only shells that HAVE uname are Git Bash, MSYS2 and
-# Cygwin, and each prints its own `<flavour>_NT-<build>` string. So this is the
-# corpus every bash differential is driven with, and a `Windows` in it would ask
-# the frozen `case` about an input it can never receive.
+# The `uname -s` strings a host really presents, and the ones this repo's own `case` blocks already list. MINGW/MSYS/CYGWIN are not hypothetical: both `.ci/lib/local-common.sh:795` and `rdc.sh:98` branch on them for a `.exe`. WHAT `uname -s` REALLY PRINTS. There is no `Windows` here, and its absence is the point: on Windows the only shells that HAVE uname are Git Bash, MSYS2 and
+# Cygwin, and each prints its own `<flavour>_NT-<build>` string. So this is the corpus every bash differential is driven with, and a `Windows` in it would ask the frozen `case` about an input it can never receive.
 UNAME_SYSTEMS = ("Linux", "Darwin", "MINGW64_NT-10.0-22631", "MSYS_NT-10.0", "CYGWIN_NT-10.0")
 
 # WHAT THE PYTHON MODULE MUST HANDLE, which is a strict superset. A native
 # Windows CPython answers `platform.system() == "Windows"` and never goes near
-# uname, so `os_name()` has to map that string too -- and the two corpora are
-# separate because the first draft used one for both and the differential
-# failed on `Windows` for a reason that was the TEST's, not the module's.
+# uname, so `os_name()` has to map that string too -- and the two corpora are separate because the first draft used one for both and the differential failed on `Windows` for a reason that was the TEST's, not the module's.
 SYSTEMS = (*UNAME_SYSTEMS, "Windows")
 UNSUPPORTED_SYSTEMS = ("SunOS", "FreeBSD", "AIX", "")
 
-# The `uname -m` strings, both spellings of each architecture, exactly the pairs
-# every `case` in the tree accepts.
+# The `uname -m` strings, both spellings of each architecture, exactly the pairs every `case` in the tree accepts.
 MACHINES = ("x86_64", "amd64", "aarch64", "arm64")
 UNSUPPORTED_MACHINES = ("ppc64le", "i686", "riscv64", "armv7l", "")
 
-# A stub `uname`. A shell FUNCTION rather than a script on PATH, because the
-# frozen bodies call it inside `$(...)` and command-substitution subshells
-# inherit functions -- which keeps the fixture to one string with no tempdir.
+# A stub `uname`. A shell FUNCTION rather than a script on PATH, because the frozen bodies call it inside `$(...)` and command-substitution subshells inherit functions -- which keeps the fixture to one string with no tempdir.
 FAKE_UNAME = """
 uname() {
     case "$1" in
@@ -165,8 +154,7 @@ uv_target() {
 """
 
 
-# .ci/scripts/build/build-cli-executables.sh:61-69, whose arms rdc.sh:89-106
-# repeats verbatim for the same artefact names.
+# .ci/scripts/build/build-cli-executables.sh:61-69, whose arms rdc.sh:89-106 repeats verbatim for the same artefact names.
 FROZEN_OS_SEA = """
 frozen_os_sea() {
     case "$(uname -s)" in
@@ -178,8 +166,7 @@ frozen_os_sea() {
 }
 """
 
-# The `.exe` half of the same decision: .ci/lib/local-common.sh:794-796 and
-# .ci/scripts/infra/build-renet.sh:32-34, which are two copies of one fact.
+# The `.exe` half of the same decision: .ci/lib/local-common.sh:794-796 and .ci/scripts/infra/build-renet.sh:32-34, which are two copies of one fact.
 FROZEN_EXE = """
 frozen_exe() {
     local ext=""
@@ -204,9 +191,7 @@ def _bash(script: str, system: str = "Linux", machine: str = "x86_64"):
     )
 
 
-# ---------------------------------------------------------------------------
-# the OS map
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the OS map ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("system", ["Linux", "Darwin"])
@@ -268,9 +253,7 @@ def test_wsl_reports_as_linux_not_as_a_fourth_os() -> None:
     assert plat.detect_wsl().is_wsl in (True, False)
 
 
-# ---------------------------------------------------------------------------
-# the three arch spellings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the three arch spellings ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("machine", MACHINES)
@@ -410,9 +393,7 @@ def test_arch_for_control_a_known_scheme_answers() -> None:
     assert plat.arch_for("goarch", "x86_64") == "amd64"
 
 
-# ---------------------------------------------------------------------------
-# uv_target
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- uv_target ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("machine", MACHINES)
@@ -451,9 +432,7 @@ def test_uv_target_refuses_windows() -> None:
         plat.uv_target("MINGW64_NT-10.0-22631", "x86_64")
 
 
-# ---------------------------------------------------------------------------
-# WSL: evidence, in both directions, with the signal named
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- WSL: evidence, in both directions, with the signal named ---------------------------------------------------------------------------
 
 # Real banners. `/proc/version` here is the string a WSL2 kernel prints, and the
 # Debian one is a real non-WSL banner; neither is a shortened stand-in, because a
@@ -585,9 +564,7 @@ def test_detection_agrees_with_the_live_bash_on_this_host() -> None:
     assert fired is (rc == 0)
 
 
-# ---------------------------------------------------------------------------
-# sha256: the macOS half of the same defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- sha256: the macOS half of the same defect ---------------------------------------------------------------------------
 
 
 def _stub_path(tmp_path, *names: str) -> str:
@@ -645,9 +622,7 @@ def test_the_returned_argv_actually_computes_the_right_digest(tmp_path) -> None:
     assert result.stdout.split()[0] == hashlib.sha256(payload).hexdigest()
 
 
-# ---------------------------------------------------------------------------
-# Windows only ever points at a WSL launcher
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Windows only ever points at a WSL launcher ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("system", ["Windows", "MINGW64_NT-10.0-22631", "CYGWIN_NT-10.0"])
@@ -682,8 +657,7 @@ def test_the_windows_launcher_really_re_enters_wsl() -> None:
 
 # ---------------------------------------------------------------------------
 # the fix in the bash, pinned; each pattern with the control that it would catch
-# a regression
-# ---------------------------------------------------------------------------
+# a regression ---------------------------------------------------------------------------
 
 
 def _url_lines() -> list[str]:
@@ -755,9 +729,7 @@ def test_the_sha256_pattern_would_catch_a_regression() -> None:
     assert not planted.strip().startswith("#")
 
 
-# ---------------------------------------------------------------------------
-# the argv surface
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the argv surface ---------------------------------------------------------------------------
 
 
 def _module(*args: str):

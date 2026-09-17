@@ -67,10 +67,7 @@ import shlex
 
 import wl_rules
 
-# The substring the prompt section carries, used by wl_judge.judge_schema_for to
-# decide whether `class_sweep` is REQUIRED. Same contract as _REGGATE_MARKER:
-# when the prompt asks for the object, the schema requires it, so the model
-# cannot satisfy the schema by omitting the answer.
+# The substring the prompt section carries, used by wl_judge.judge_schema_for to decide whether `class_sweep` is REQUIRED. Same contract as _REGGATE_MARKER: when the prompt asks for the object, the schema requires it, so the model cannot satisfy the schema by omitting the answer.
 SWEEP_MARKER = "SWEEP THE CLASS, NOT THE INSTANCE"
 
 EVIDENCE_KINDS = ("gate", "scan", "statement", "none")
@@ -100,9 +97,7 @@ CLASS_SWEEP_SCHEMA = {
     "additionalProperties": False,
 }
 
-# The rubric. Written as WORKED EXAMPLES from this repo rather than as
-# definitions, because "is there a class?" is a judgement about a specific
-# defect and the five cases below are the calibration set the operator supplied.
+# The rubric. Written as WORKED EXAMPLES from this repo rather than as definitions, because "is there a class?" is a judgement about a specific defect and the five cases below are the calibration set the operator supplied.
 SWEEP_PROMPT = """
 
 SWEEP THE CLASS, NOT THE INSTANCE. ALSO fill the `class_sweep` object, about
@@ -266,17 +261,12 @@ def read_verdict(out):
         return "degraded", "class_sweep evidence_kind %r is not one of %s" % (kind, EVIDENCE_KINDS)
     if not cs["applicable"]:
         return "silent", "no class: this defect cannot occur twice"
-    # THE CLAIM IS CHECKED AGAINST ITS OWN EVIDENCE, not taken as given. The
-    # operator's ask was for evidence, not assertion, so `swept: true` with
-    # evidence_kind `none` is a bare assertion and counts as NOT swept. This is
-    # the one place the rule overrides the model's own summary, and it is the
-    # point of the rule.
+    # THE CLAIM IS CHECKED AGAINST ITS OWN EVIDENCE, not taken as given. The operator's ask was for evidence, not assertion, so `swept: true` with evidence_kind `none` is a bare assertion and counts as NOT swept. This is the one place the rule overrides the model's own summary, and it is the point of the rule.
     if cs["swept"] and kind != "none":
         return "silent", "class swept (%s): %s" % (kind, _clean(cs, "evidence", 160) or "(quoted)")
     defect_class = _clean(cs, "defect_class", 300)
     if not defect_class:
-        # An order with no class named is unactionable, and an unactionable
-        # block is the noise that gets this rule routed around.
+        # An order with no class named is unactionable, and an unactionable block is the noise that gets this rule routed around.
         return "degraded", "class_sweep fired with no defect_class named"
     return "fire", {
         "defect_class": defect_class,
@@ -289,46 +279,30 @@ def read_verdict(out):
 
 # -- The judge's own command is CHECKED before it becomes an order ----------
 #
-# WHY. `enforce` writes "Run: <search>" and the session is told to run exactly
-# that, so the command IS the enforcement. Over four consecutive stops in one
-# session the commands handed over were:
+# WHY. `enforce` writes "Run: <search>" and the session is told to run exactly that, so the command IS the enforcement. Over four consecutive stops in one session the commands handed over were:
 #
 #   grep -rn 'export.*worker' packages/workers/ --include='*.ts' | wc -l
-#       `packages/workers/` DOES NOT EXIST in this repo (the workers live at
-#       `workers/`). The command printed `1` -- grep's error line, counted by
-#       wc -- and a bare `1` reads exactly like a finding.
+# `packages/workers/` DOES NOT EXIST in this repo (the workers live at `workers/`). The command printed `1` -- grep's error line, counted by wc -- and a bare `1` reads exactly like a finding.
 #
 #   find workers -type f \( -name '*.ts' -o -name '*.tsx' \) | xargs -I {} sh -c 'grep -q {} tsconfig.json || echo {
-#       cut off at the 300-character schema cap, mid-token, with an unbalanced
-#       quote. It cannot parse, so it cannot run.
+# cut off at the 300-character schema cap, mid-token, with an unbalanced quote. It cannot parse, so it cannot run.
 #
-# The module docstring already says an unactionable block is "the one thing
-# this rule cannot afford". A WRONG-BUT-PLAUSIBLE order is worse than an absent
-# one: it spends the session's turn and can manufacture a false finding out of
-# an error message. So the command is validated, and a command that fails is
+# The module docstring already says an unactionable block is "the one thing this rule cannot afford". A WRONG-BUT-PLAUSIBLE order is worse than an absent one: it spends the session's turn and can manufacture a false finding out of an error message. So the command is validated, and a command that fails is
 # DROPPED -- never the demand. The block still happens, at full strength; only
-# the bogus "Run: ..." is replaced by the generic order plus the reason, which
-# is also how the operator gets to see that the model is emitting commands that
-# do not run.
+# the bogus "Run: ..." is replaced by the generic order plus the reason, which is also how the operator gets to see that the model is emitting commands that do not run.
 #
-# WHAT THIS CANNOT CATCH, said plainly so the green is not over-read: a command
-# that runs and answers the wrong question. `tsc --noEmit | grep 'error TS'` at
-# this repo's root is perfectly runnable and reports 10,095 errors that are all
-# the base config rather than any defect. Static validation reaches syntax and
+# WHAT THIS CANNOT CATCH, said plainly so the green is not over-read: a command that runs and answers the wrong question. `tsc --noEmit | grep 'error TS'` at this repo's root is perfectly runnable and reports 10,095 errors that are all the base config rather than any defect. Static validation reaches syntax and
 # existence; it never reaches meaning.
 
 SEARCH_MAX = 300  # the schema's maxLength; a value at the cap arrived truncated
 
-# A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that
-# does is not a bad search -- it is an order to damage the tree, issued by a model and
-# handed to a session under the word "Run:". The verb sets and the prose matcher live
+# A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that does is not a bad search -- it is an order to damage the tree, issued by a model and handed to a session under the word "Run:". The verb sets and the prose matcher live
 # in wl_rules because wl_bravedefault needs them too at a DIFFERENT threshold; keeping
 # a second copy here is the very duplication this module exists to catch.
 _DESTRUCTIVE = wl_rules.WRITE_VERBS
 _DESTRUCTIVE_GIT = wl_rules.WRITE_GIT
 
-# A token shaped like a repo path: at least one `/`, and only characters a path
-# or a glob would carry.
+# A token shaped like a repo path: at least one `/`, and only characters a path or a glob would carry.
 _PATHY = re.compile(r"^[A-Za-z0-9_.@+-]*(?:/[A-Za-z0-9_.@+*?\[\]-]*)+/?$")
 
 
@@ -388,10 +362,7 @@ def validate_search(search, root=None):
         if any(c in tok for c in "*?["):
             continue  # a glob names a set, not a file; nothing to exist-check
         rel = tok.rstrip("/")
-        # ONLY judge a token whose FIRST segment is a real top-level entry. That
-        # is what makes it a repo path rather than a quoted regex that happens
-        # to contain a slash, and it is exactly the shape that failed:
-        # `packages/` exists, `packages/workers/` does not.
+        # ONLY judge a token whose FIRST segment is a real top-level entry. That is what makes it a repo path rather than a quoted regex that happens to contain a slash, and it is exactly the shape that failed: `packages/` exists, `packages/workers/` does not.
         head = rel.split("/", 1)[0]
         if not head or not os.path.exists(os.path.join(root, head)):
             continue
@@ -415,11 +386,7 @@ V_ACTION_NOSEARCH = (
     "Grep for siblings of this class across the repo, fix every one you find and say the COUNT, "
     "or say plainly that this is the only instance. %s"
 )
-# Kept SHORT on purpose: wl_rules.apply_order caps next_action at 200 characters,
-# and the first draft of this string put the reason last, where the cap ate it --
-# the session was handed a sentence that stopped mid-word. The WHY leads, and the
-# rejected command is deliberately NOT echoed: it is the one thing that must not
-# be run, and quoting it is what blew the budget.
+# Kept SHORT on purpose: wl_rules.apply_order caps next_action at 200 characters, and the first draft of this string put the reason last, where the cap ate it -- the session was handed a sentence that stopped mid-word. The WHY leads, and the rejected command is deliberately NOT echoed: it is the one thing that must not be run, and quoting it is what blew the budget.
 V_ACTION_DROPPED = (
     "Proposed command DROPPED: %(why)s. Grep for siblings yourself, fix each and say the "
     "COUNT, or say it is the only instance."
@@ -436,11 +403,7 @@ def enforce(out, payload):
         action = V_ACTION_DROPPED % {"why": why[:70]}
     else:
         verb = names_destructive(payload["instruction"])
-        # THE SAME SECOND DOOR, for the standing order rather than for safety.
-        # `instruction` is model prose reaching the session verbatim, so it can
-        # carry "commit the fix" as easily as "git clean" -- and this repo's first
-        # standing order reserves committing, branching, pushing and opening a PR
-        # to an explicit operator ask. wl_bravedefault emitted exactly that on
+        # THE SAME SECOND DOOR, for the standing order rather than for safety. `instruction` is model prose reaching the session verbatim, so it can carry "commit the fix" as easily as "git clean" -- and this repo's first standing order reserves committing, branching, pushing and opening a PR to an explicit operator ask. wl_bravedefault emitted exactly that on
         # 2026-09-02 and the session quietly disobeyed it; the fix belongs on every
         # path that hands model text to a session, not only the one that was seen.
         reserved = wl_rules.names_operator_reserved(payload["instruction"])
@@ -460,21 +423,15 @@ def enforce(out, payload):
 
 # -- The outstanding-demand marker -----------------------------------------
 #
-# WHY A MARKER AT ALL. The fix signal is de-duplicated per fix-set by wl_reggate
-# and a settled fix-set is never re-asked, so without this the demand is
-# strictly one-shot: a session could stop again with no new commits and never be
-# asked whether it did the sweep. The marker carries the question forward onto
-# the next judged stop. Its bounds -- and why they are hard -- are in wl_rules.
+# WHY A MARKER AT ALL. The fix signal is de-duplicated per fix-set by wl_reggate and a settled fix-set is never re-asked, so without this the demand is strictly one-shot: a session could stop again with no new commits and never be asked whether it did the sweep. The marker carries the question forward onto the next judged stop. Its bounds -- and why they are hard -- are in
+# wl_rules.
 
 SWEEP_TTL_MIN = int(os.environ.get("WORKLIST_SWEEP_TTL_MIN", "120"))
 SWEEP_MAX_FIRES = int(os.environ.get("WORKLIST_SWEEP_MAX_FIRES", "2"))
 
 SWEEP_DEMAND = wl_rules.Demand("classsweep", SWEEP_TTL_MIN, SWEEP_MAX_FIRES)
 
-# Three named wrappers, not four. A `marker_path` wrapper stood here after the
-# refactor onto wl_rules.Demand with nothing left calling it, and case 143's
-# dead-code gate named it on the first full run -- SWEEP_DEMAND.path() is the
-# one spelling. Do not add a pass-through here unless something calls it.
+# Three named wrappers, not four. A `marker_path` wrapper stood here after the refactor onto wl_rules.Demand with nothing left calling it, and case 143's dead-code gate named it on the first full run -- SWEEP_DEMAND.path() is the one spelling. Do not add a pass-through here unless something calls it.
 
 
 def load_outstanding(path=None):

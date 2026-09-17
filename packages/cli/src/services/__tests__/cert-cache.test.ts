@@ -21,8 +21,7 @@ function buildAcme(
   resolver: string,
   certs: { domain: string; key: string }[]
 ): Record<string, { Certificates: unknown[] }> {
-  // Use `unknown` here so we don't have to re-declare the full AcmeCertEntry
-  // shape in the test file — the cert-cache functions accept the wider JSON.
+  // Use `unknown` here so we don't have to re-declare the full AcmeCertEntry shape in the test file — the cert-cache functions accept the wider JSON.
   const result: Record<string, { Certificates: unknown[] }> = {
     [resolver]: {
       Certificates: certs.map((c) => ({
@@ -157,8 +156,7 @@ describe('compressAndChunk / decompressFromCache', () => {
   });
 
   it('chunks large payloads and re-joins on decompress', () => {
-    // Build something bigger than one chunk but not repetitive so gzip can't
-    // collapse it below the chunk boundary.
+    // Build something bigger than one chunk but not repetitive so gzip can't collapse it below the chunk boundary.
     const chunks: string[] = [];
     for (let i = 0; i < 10000; i++) {
       chunks.push(`line-${i}-${Math.random()}`);
@@ -209,10 +207,7 @@ describe('isCertCacheStale', () => {
 });
 
 describe('mergeAcmeJson', () => {
-  // mergeAcmeJson uses the real parseCertExpiry via buildCertMap. Tests that
-  // cover merge semantics with real certs belong in an integration suite —
-  // here we verify that merging an empty secondary is a no-op, which is
-  // the critical safety property.
+  // mergeAcmeJson uses the real parseCertExpiry via buildCertMap. Tests that cover merge semantics with real certs belong in an integration suite — here we verify that merging an empty secondary is a no-op, which is the critical safety property.
   it('is a no-op when secondary has no resolvers', () => {
     const primary = buildAcme('letsencrypt', [{ domain: 'a', key: 'k' }]);
     const { mergedFromSecondary } = mergeAcmeJson(primary as never, {});
@@ -223,8 +218,7 @@ describe('mergeAcmeJson', () => {
     const primary: Record<string, unknown> = {};
     const secondary = buildAcme('letsencrypt', [{ domain: 'a', key: 'k' }]);
     const { mergedFromSecondary } = mergeAcmeJson(primary as never, secondary as never);
-    // Without real parseable certs, the secondary's expiry parses to '' and
-    // still wins over missing primary — so we expect exactly one merge.
+    // Without real parseable certs, the secondary's expiry parses to '' and still wins over missing primary — so we expect exactly one merge.
     expect(mergedFromSecondary).toBe(1);
     expect((primary.letsencrypt as { Certificates: unknown[] }).Certificates).toHaveLength(1);
   });

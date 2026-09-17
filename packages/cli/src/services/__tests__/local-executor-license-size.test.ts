@@ -65,9 +65,7 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-// Only the network-facing licence verbs are stubbed. `isDatastoreScopedId`
-// stays REAL, so the identity this test feeds has to be one the licence writer
-// would also accept.
+// Only the network-facing licence verbs are stubbed. `isDatastoreScopedId` stays REAL, so the identity this test feeds has to be one the licence writer would also accept.
 vi.mock('../account/license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -234,8 +232,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     const result = await localExecutorService.execute(forkOptions);
 
     expect(result.success).toBe(true);
-    // Full-command equality, not `toContain`: any drift in the mount OR the
-    // guid fails, which is what makes the mount-mutation control below bite.
+    // Full-command equality, not `toContain`: any drift in the mount OR the guid fails, which is what makes the mount-mutation control below bite.
     expect(statCommands()).toEqual([expectedProbe(NAMED_MOUNT, PARENT_GUID)]);
     // Both probes (pre-issuance and post-create refresh) ran, and they agreed.
     expect(probeCount()).toBe(2);
@@ -263,9 +260,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     expect(sizeWarnings(warnSpy)).toEqual([]);
   });
 
-  // CONTROL, direction 2: the same assertion applied to a repo with NO named
-  // placement must produce the DEFAULT mount. A fix that hard-coded the named
-  // mount would pass the test above and fail this one.
+  // CONTROL, direction 2: the same assertion applied to a repo with NO named placement must produce the DEFAULT mount. A fix that hard-coded the named mount would pass the test above and fail this one.
   it('keeps the machine default for a repo with no named-datastore placement', async () => {
     mockGetRepository.mockResolvedValue(parentRepo());
 
@@ -286,8 +281,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     expect(statCommands()).toEqual([expectedProbe(DEFAULT_MOUNT, PARENT_GUID)]);
   });
 
-  // CONTROL, direction 3: the machine's own datastore override still wins over
-  // the compiled-in default when the repo declares no named datastore.
+  // CONTROL, direction 3: the machine's own datastore override still wins over the compiled-in default when the repo declares no named datastore.
   it("honours the machine's datastore override for an unplaced repo", async () => {
     mockGetLocalMachine.mockResolvedValue({
       machineName: 'hostinger',
@@ -303,9 +297,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     expect(statCommands()).toEqual([expectedProbe('/srv/pool', PARENT_GUID)]);
   });
 
-  // The mount-mutation control the campaign asks for, written as an assertion
-  // rather than a comment: the expected string is the thing under test, so a
-  // single wrong character in it must fail the comparison.
+  // The mount-mutation control the campaign asks for, written as an assertion rather than a comment: the expected string is the thing under test, so a single wrong character in it must fail the comparison.
   it('the mount assertion is falsifiable: a mutated mount does not match', async () => {
     mockGetRepository.mockResolvedValue(parentRepo({ datastore: 'tier1' }));
 
@@ -369,9 +361,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
     expect(warnings[0]).toContain('1 GB minimum');
   });
 
-  // CONTROL: `repository_create` probes a repo that does not exist yet BY
-  // CONSTRUCTION, so an unanswerable stat is normal there and must stay quiet.
-  // A fix that warned unconditionally would fail this.
+  // CONTROL: `repository_create` probes a repo that does not exist yet BY CONSTRUCTION, so an unanswerable stat is normal there and must stay quiet. A fix that warned unconditionally would fail this.
   it('stays quiet for repository_create, whose target cannot exist yet', async () => {
     routeExec('rediacc-size-unknown\n');
     mockGetRepository.mockResolvedValue(parentRepo({ datastore: 'tier1' }));
@@ -387,9 +377,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
     expect(sizeWarnings(warnSpy)).toEqual([]);
   });
 
-  // The sentinel is what makes the distinction expressible: under `|| echo 0`
-  // this run and a genuine 0-byte image were the same bytes. A real zero is a
-  // MEASUREMENT, so it still floors to 1 GB and still says nothing.
+  // The sentinel is what makes the distinction expressible: under `|| echo 0` this run and a genuine 0-byte image were the same bytes. A real zero is a MEASUREMENT, so it still floors to 1 GB and still says nothing.
   it('treats a genuine zero-byte image as measured, not as a failed probe', async () => {
     routeExec('0\n');
     mockGetRepository.mockResolvedValue(parentRepo({ datastore: 'tier1' }));

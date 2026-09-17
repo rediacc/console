@@ -266,9 +266,7 @@ def main(argv: list[str]) -> int:
     if count_text == "0":
         log.info("submodule-prs: the round named no submodules; nothing to open or link")
         return 0
-    # THE STAGE FLAG IS CHECKED AFTER THE COUNT, which the twin's own header
-    # calls out: "the verdict named no submodules" exits 0 whatever the flag
-    # says, because nothing would have been written either way.
+    # THE STAGE FLAG IS CHECKED AFTER THE COUNT, which the twin's own header calls out: "the verdict named no submodules" exits 0 whatever the flag says, because nothing would have been written either way.
     if os.environ.get(ALLOW_ENV, "") != ALLOW_VALUE and not dry_run:
         log.error(
             "stage-flag-disabled: %s is not '%s'; refusing to open or link PRs (fail closed)"
@@ -276,18 +274,12 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # THE THIRD PRESERVED DEFECT, and the worst of the three. jq's `length` on a
-    # NUMBER is its absolute value, so `"submodules": 3.5` yields the count
+    # THE THIRD PRESERVED DEFECT, and the worst of the three. jq's `length` on a NUMBER is its absolute value, so `"submodules": 3.5` yields the count
     # `3.5`, and bash's `for ((i = 0; i < 3.5; i++))` is an ARITHMETIC SYNTAX
-    # ERROR that `set -e` does NOT catch (driven: the diagnostic prints, the loop
-    # body never runs, the script CONTINUES). The twin therefore walks on with an
-    # empty links file and PATCHes the console PR body with an empty
-    # `**Submodule PRs**` block -- wiping any links a previous round put there,
-    # which reds `check-submodule-branches.sh` on a gate no later round can clear
-    # by editing code -- and exits 0 saying "linked 3.5 submodule PR(s)".
+    # ERROR that `set -e` does NOT catch (driven: the diagnostic prints, the loop body never runs, the script CONTINUES). The twin therefore walks on with an empty links file and PATCHes the console PR body with an empty `**Submodule PRs**` block -- wiping any links a previous round put there, which reds `check-submodule-branches.sh` on a gate no later round can clear by editing
+    # code -- and exits 0 saying "linked 3.5 submodule PR(s)".
     #
-    # Reproduced rather than repaired, on this wave's rule: the twin stays live
-    # and the port must be equivalent to it. Naming it here and in
+    # Reproduced rather than repaired, on this wave's rule: the twin stays live and the port must be equivalent to it. Naming it here and in
     # `test_a_non_integer_count_wipes_the_block_and_exits_0` is the deliverable;
     # the fix belongs to whoever cuts over, and it is one `[[ "$count" =~ ^[0-9]+$ ]]`
     # guard away.
@@ -368,9 +360,7 @@ def _run(
                     handle.write(title + "\n")
                 body_file = os.path.join(work, "body.txt")
                 with open(body_file, "w", encoding="utf-8") as handle:
-                    # Neither the title nor this body mentions any agent: the
-                    # console body is policed by check-claude-attribution.sh, and
-                    # keeping both sides in the same voice avoids a surprise there.
+                    # Neither the title nor this body mentions any agent: the console body is policed by check-claude-attribution.sh, and keeping both sides in the same voice avoids a surprise there.
                     handle.write(
                         "Submodule change for %s#%s.\n\nOpened by the autopilot "
                         "harness alongside the console PR; review there.\n" % (repo, pr)
@@ -401,9 +391,7 @@ def _run(
         links.append(link_line(sub, url))
 
     if dry_run:
-        # A dry run does not read the live body, so the block it prints is
-        # rebuilt onto an EMPTY one. That is the twin's behaviour and it means a
-        # dry run cannot show what the merged body would look like.
+        # A dry run does not read the live body, so the block it prints is rebuilt onto an EMPTY one. That is the twin's behaviour and it means a dry run cannot show what the merged body would look like.
         body = ""
     else:
         ok, body = gh_retry(
@@ -432,8 +420,7 @@ def _run(
     if not ok:
         return 1
     log.info(
-        # `$count`, NOT the loop bound: the twin interpolates the raw jq output,
-        # which is how "linked 3.5 submodule PR(s)" is a sentence this can print.
+        # `$count`, NOT the loop bound: the twin interpolates the raw jq output, which is how "linked 3.5 submodule PR(s)" is a sentence this can print.
         "linked %s submodule PR(s) in the %s#%s body (the Submodule Branches gate reads them "
         "from there)" % (count_text, repo, pr)
     )

@@ -55,8 +55,7 @@ def test_soft_failure_is_green_with_warning(gate):
 
 
 def test_hard_failure_blocks_with_original_code(gate):
-    # CONTROL for the case above: the same failing command must still fail in
-    # hard mode, and with ITS exit code, not a generic 1.
+    # CONTROL for the case above: the same failing command must still fail in hard mode, and with ITS exit code, not a generic 1.
     out = run_wrapper(gate, "hard", 3, "hard mode preserves the exit code", "bash", "-c", "exit 3")
     gate.assert_not_contains(out, "::warning::", "hard failure must not emit the soft warning")
     gate.log_pass("hard mode: failing command keeps exit code 3, no warning")
@@ -70,15 +69,13 @@ def test_success_is_silent_in_both_modes(gate):
 
 
 def test_unset_mode_fails_closed_to_hard(gate):
-    # A wiring break (env var never reaches the step) must behave as HARD:
-    # silently going soft would disable a blocking gate with no visible trace.
+    # A wiring break (env var never reaches the step) must behave as HARD: silently going soft would disable a blocking gate with no visible trace.
     run_wrapper(gate, UNSET, 1, "unset mode is hard", "false")
     gate.log_pass("unset EXTERNAL_QUALITY_MODE fails closed to hard")
 
 
 def test_unknown_mode_refuses(gate):
-    # Same fail-closed logic one step further: an unknown value is a wiring bug
-    # and must refuse loudly even when the wrapped command SUCCEEDS.
+    # Same fail-closed logic one step further: an unknown value is a wiring bug and must refuse loudly even when the wrapped command SUCCEEDS.
     out = run_wrapper(gate, "sideways", 2, "unknown mode refuses", "true")
     gate.assert_contains(
         out, "unknown EXTERNAL_QUALITY_MODE", "unknown mode must name itself in the refusal"

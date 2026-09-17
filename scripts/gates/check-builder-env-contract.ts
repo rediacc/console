@@ -321,9 +321,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     const runIdx = block.findIndex((l) => /^\s*run:/.test(l));
     if (runIdx < 0) continue;
     const keyIndent = block[runIdx].length - block[runIdx].trimStart().length;
-    // The builder must appear in the `run:` SCALAR (its line plus any more-
-    // indented continuation), never merely somewhere in the step: a comment
-    // naming the builder must not claim the step.
+    // The builder must appear in the `run:` SCALAR (its line plus any more- indented continuation), never merely somewhere in the step: a comment naming the builder must not claim the step.
     let runEnd = runIdx + 1;
     while (
       runEnd < block.length &&

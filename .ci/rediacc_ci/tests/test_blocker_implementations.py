@@ -71,16 +71,11 @@ BASH_MIRROR = ".ci/scripts/lib/blocker-validator.sh"
 VENDORED = ".ci/breakpoint/lib/breakpoint-blocker.sh"
 TS_CLIENT = "scripts/lib/blocker-validator.ts"
 
-# Files that legitimately carry MANY of these phrases without being an
-# implementation of the BLOCKER contract. Exempt BY NAME, with the reason, and
-# kept visible in the inventory assertion's message rather than silently
-# filtered: a quiet exemption is how a gate stops meaning what its name says.
+# Files that legitimately carry MANY of these phrases without being an implementation of the BLOCKER contract. Exempt BY NAME, with the reason, and kept visible in the inventory assertion's message rather than silently filtered: a quiet exemption is how a gate stops meaning what its name says.
 #
-# BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately
-# different punctuation class (it strips only `.!?`, this one strips
+# BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately different punctuation class (it strips only `.!?`, this one strips
 # `.!?,;:`). The two lists were written separately, the difference is real, and
-# unifying them would change one gate's verdicts to fix nothing. The bash
-# validator's own header has cross-referenced this sibling since it was written.
+# unifying them would change one gate's verdicts to fix nothing. The bash validator's own header has cross-referenced this sibling since it was written.
 SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
     ".ci/scripts/quality/check-review-comments.sh": "is_low_effort_reply, review replies",
     ".ci/scripts/quality/check-review-report-replies.sh": "is_low_effort_reply, report replies",
@@ -90,15 +85,11 @@ SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
     ".ci/rediacc_ci/quality/submodule_branches.py": "port of check-submodule-branches.sh",
 }
 
-# A file holding at least this many of the canonical phrases as QUOTED LITERALS
-# is carrying a table, not mentioning the convention. Ten rather than forty: the
-# vendored subset holds 44 and the sibling reply rule holds 13-14, so ten is
-# below every real table AND below the siblings, which is what forces every
-# sibling to be named above instead of cleared by a threshold nobody re-derives.
+# A file holding at least this many of the canonical phrases as QUOTED LITERALS is carrying a table, not mentioning the convention. Ten rather than forty: the vendored subset holds 44 and the sibling reply rule holds 13-14, so ten is below every real table AND below the siblings, which is what forces every sibling to be named above instead of cleared by a threshold nobody
+# re-derives.
 TABLE_THRESHOLD = 10
 
-# Text extensions only. A binary read would raise, and catching the raise is how
-# a scan silently stops scanning.
+# Text extensions only. A binary read would raise, and catching the raise is how a scan silently stops scanning.
 SKIP_SUFFIXES = (
     ".png",
     ".jpg",
@@ -119,9 +110,7 @@ SKIP_SUFFIXES = (
 )
 
 
-# ---------------------------------------------------------------------------
-# Extractors
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Extractors ---------------------------------------------------------------------------
 
 
 def _text(rel: str) -> str:
@@ -201,9 +190,7 @@ def files_carrying_a_table() -> dict[str, int]:
     return found
 
 
-# ---------------------------------------------------------------------------
-# 1. The inventory
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. The inventory ---------------------------------------------------------------------------
 
 
 def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
@@ -241,8 +228,7 @@ def test_the_inventory_detector_would_find_a_planted_table():
     near = "\n".join("  '%s'," % p for p in allowlist.LOW_EFFORT_PHRASES[: TABLE_THRESHOLD - 1])
     assert quoted_phrase_hits(near) < TABLE_THRESHOLD
 
-    # BOTH DIRECTIONS ON THE QUOTING RULE. Prose that merely NAMES the phrases
-    # must not count, or every doc file in the tree becomes an implementation.
+    # BOTH DIRECTIONS ON THE QUOTING RULE. Prose that merely NAMES the phrases must not count, or every doc file in the tree becomes an implementation.
     prose = " ".join(allowlist.LOW_EFFORT_PHRASES)
     assert quoted_phrase_hits(prose) == 0, (
         "unquoted prose naming every phrase was counted as a table; the detector "
@@ -250,9 +236,7 @@ def test_the_inventory_detector_would_find_a_planted_table():
     )
 
 
-# ---------------------------------------------------------------------------
-# 2. The bash mirror
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. The bash mirror ---------------------------------------------------------------------------
 
 
 def test_the_bash_mirror_is_exactly_the_canonical_tables():
@@ -299,8 +283,7 @@ def test_the_bash_mirror_is_exactly_the_canonical_tables():
         CANONICAL,
     )
 
-    # ORDER IS LOAD-BEARING and set equality does not see it. The message quotes
-    # the FIRST pattern that matches, so a reordering changes printed bytes.
+    # ORDER IS LOAD-BEARING and set equality does not see it. The message quotes the FIRST pattern that matches, so a reordering changes printed bytes.
     assert phrases == list(allowlist.LOW_EFFORT_PHRASES), (
         "the two tables hold the same phrases in a DIFFERENT order. The rejection "
         "message names the first pattern that matches, so order changes output."
@@ -349,12 +332,9 @@ def test_the_bash_mirror_is_not_read_by_the_bash_validator():
     )
 
 
-# ---------------------------------------------------------------------------
-# 3. The TypeScript client, structurally
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. The TypeScript client, structurally ---------------------------------------------------------------------------
 
-# An array literal holding at least three quoted strings. The shape a phrase
-# table has in TypeScript, and the shape this file must not contain.
+# An array literal holding at least three quoted strings. The shape a phrase table has in TypeScript, and the shape this file must not contain.
 _TS_ARRAY = re.compile(r"=\s*\[[^\]]*?((?:'[^']*'|\"[^\"]*\")\s*,\s*){3,}", re.DOTALL)
 _TS_FLOOR = re.compile(r"\b[A-Za-z_]*(?:MIN_LENGTH|minLength)\s*[:=]\s*\d+")
 
@@ -417,9 +397,7 @@ def test_the_typescript_table_detector_would_find_a_planted_table():
     )
     assert "a numeric length floor" in ts_own_tables(floor)
 
-    # The negative control: the real file, unmodified, must produce nothing. That
-    # is the same assertion as the test above, made here so this control proves
-    # the detector discriminates rather than merely fires.
+    # The negative control: the real file, unmodified, must produce nothing. That is the same assertion as the test above, made here so this control proves the detector discriminates rather than merely fires.
     assert ts_own_tables(text) == []
 
 
@@ -439,12 +417,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
     ):
         text = _text(rel)
         hits = quoted_phrase_hits(text)
-        # THE SAME THRESHOLD THE INVENTORY USES, not zero. Both files legitimately
-        # write one or two of these words for other reasons: `swallowed_failures`
-        # feeds the literal "todo" to a control probe, and emits a JSON object with
-        # an "ok" key. A floor of zero here and ten there would be two different
-        # answers to one question, and the stricter one would be the one nobody
-        # could satisfy.
+        # THE SAME THRESHOLD THE INVENTORY USES, not zero. Both files legitimately write one or two of these words for other reasons: `swallowed_failures` feeds the literal "todo" to a control probe, and emits a JSON object with an "ok" key. A floor of zero here and ten there would be two different answers to one question, and the stricter one would be the one nobody could satisfy.
         assert hits < TABLE_THRESHOLD, (
             "%s carries %d canonical phrase(s) as quoted literals, at or over the "
             "table threshold of %d; it is supposed to call rediacc_ci.core.allowlist"
@@ -454,13 +427,8 @@ def test_the_python_clients_declare_no_rule_of_their_own():
             "%s stopped naming the canonical module" % rel
         )
 
-    # AND THE HOP THAT IS STILL THERE, recorded rather than asserted away.
-    # `check_language_policy.blocker_quality_problem` shells out to
-    # `.ci/scripts/lib/blocker-validator.sh` for the QUALITY rule, and that file
-    # now shells back to `rediacc_ci.core.allowlist`. Python -> bash -> Python for
-    # an answer the first Python could have computed. It is correct and it is
-    # wasteful, and the reason it was not changed in the same pass is that the
-    # shell-out is what its gate test's "the validator cannot be consulted"
+    # AND THE HOP THAT IS STILL THERE, recorded rather than asserted away. `check_language_policy.blocker_quality_problem` shells out to `.ci/scripts/lib/blocker-validator.sh` for the QUALITY rule, and that file now shells back to `rediacc_ci.core.allowlist`. Python -> bash -> Python for an answer the first Python could have computed. It is correct and it is wasteful, and the
+    # reason it was not changed in the same pass is that the shell-out is what its gate test's "the validator cannot be consulted"
     # refusal exists to exercise; removing one without the other deletes a live
     # control. Pinned so the hop cannot be forgotten.
     policy = _text(".ci/scripts/quality/check_language_policy.py")
@@ -479,9 +447,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
     )
 
 
-# ---------------------------------------------------------------------------
-# 4. The TypeScript client, behaviourally, on the LIVE file
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. The TypeScript client, behaviourally, on the LIVE file ---------------------------------------------------------------------------
 
 
 def _tsx_available() -> bool:
@@ -611,8 +577,7 @@ def test_the_live_typescript_client_agrees_with_the_canonical():
         len(mismatches),
         "\n  ".join(mismatches[:10]),
     )
-    # ANTI-VACUITY, both sides. A comparison in which nothing was rejected, or
-    # nothing was accepted, agrees about nothing.
+    # ANTI-VACUITY, both sides. A comparison in which nothing was rejected, or nothing was accepted, agrees about nothing.
     accepted = len(cases) - rejected
     shape = "%d case(s), %d rejection(s), %d acceptance(s)" % (len(cases), rejected, accepted)
     assert rejected > 0, "no case was rejected, so the reject side proved nothing: " + shape
@@ -669,8 +634,7 @@ def test_the_contract_the_typescript_client_reads_is_complete():
 @pytest.mark.parametrize(
     "reason",
     [
-        # Under the floor on purpose: the too-short arm quotes the reason back
-        # verbatim, which is where a rescanning renderer would corrupt it.
+        # Under the floor on purpose: the too-short arm quotes the reason back verbatim, which is where a rescanning renderer would corrupt it.
         "{entry} {file} {min}",
         # And the deferral arm, which is the only one that interpolates a SECOND
         # runtime value ({pattern}) into the same message as the reason.

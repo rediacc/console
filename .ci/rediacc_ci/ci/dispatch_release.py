@@ -91,31 +91,23 @@ SKIP_LABEL = "bump-none"
 # The three accepted invocations, and the MODE each selects (twin :81-89).
 MODES = {"": "full", "--decide-only": "decide", "--dispatch-only": "dispatch"}
 
-# The two variables the twin refuses without, IN ITS ORDER (twin :91-92). The
-# order is load-bearing: with both unset the twin names GITHUB_REPOSITORY and
-# exits before it ever looks at GITHUB_SHA.
+# The two variables the twin refuses without, IN ITS ORDER (twin :91-92). The order is load-bearing: with both unset the twin names GITHUB_REPOSITORY and exits before it ever looks at GITHUB_SHA.
 REQUIRED_VARS = ("GITHUB_REPOSITORY", "GITHUB_SHA")
 
-# Divergence 1 above. A stand-in for bash's `line N: gh: command not found`,
-# which cannot be reproduced without naming a line of a file this module is
-# not.
+# Divergence 1 above. A stand-in for bash's `line N: gh: command not found`, which cannot be reproduced without naming a line of a file this module is not.
 GH_NOT_FOUND = "gh: command not found"
 
-# Defect A, named so `test_ci_dispatch_release.py` can assert it by name rather
-# than by restating the sentence.
+# Defect A, named so `test_ci_dispatch_release.py` can assert it by name rather than by restating the sentence.
 STDERR_IS_DATA = True
 
 # `--jq '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) |
-# map(.name) | join(","))"'` (twin :120). Identical to detect-bump-type.sh's,
-# deliberately, and passed to `gh` rather than to a separate `jq` process, so a
-# fake `gh` that ignored `--jq` would exercise a path CI never runs.
+# map(.name) | join(","))"'` (twin :120). Identical to detect-bump-type.sh's, deliberately, and passed to `gh` rather than to a separate `jq` process, so a fake `gh` that ignored `--jq` would exercise a path CI never runs.
 PULLS_JQ = (
     '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) | map(.name) | join(","))"'
 )
 
 # `[[:space:]]` under LC_ALL=C, which is what CI runs (twin :127). Spelled out
-# rather than reached through `str.strip()`, whose default set is Python's and
-# includes \x1c-\x1f.
+# rather than reached through `str.strip()`, whose default set is Python's and includes \x1c-\x1f.
 POSIX_SPACE = " \t\n\r\v\f"
 
 
@@ -298,17 +290,11 @@ def main(argv: list[str]) -> int:
 
     # Read at the call site with a LITERAL name, never through an
     # `env = os.environ` alias and never through a loop variable. The loop
-    # variable form is what `check:ci-python-env-registry` has to bank as an
-    # OPAQUE entry (`dispatch_release.py:*name`), which is a visible unknown
-    # rather than a declared input, and the whole point of that registry is
-    # that an environment read is an input a reader can see.
+    # variable form is what `check:ci-python-env-registry` has to bank as an OPAQUE entry (`dispatch_release.py:*name`), which is a visible unknown rather than a declared input, and the whole point of that registry is that an environment read is an input a reader can see.
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     sha = os.environ.get("GITHUB_SHA", "")
 
-    # `require_var GITHUB_REPOSITORY` then `require_var GITHUB_SHA`, in the
-    # twin's order. Reading both first cannot change the verdict: an
-    # environment read has no side effect, and only the FIRST empty one is
-    # ever reported.
+    # `require_var GITHUB_REPOSITORY` then `require_var GITHUB_SHA`, in the twin's order. Reading both first cannot change the verdict: an environment read has no side effect, and only the FIRST empty one is ever reported.
     for name, value in zip(REQUIRED_VARS, (repository, sha), strict=True):
         if not value:
             log.error("Required environment variable '%s' is not set" % name)
@@ -327,9 +313,7 @@ def main(argv: list[str]) -> int:
                     with open(github_output, "a", encoding="utf-8") as fh:
                         fh.write("skip_release=true\n")
                 except OSError as exc:
-                    # Divergence 3: bash's own redirection error names a line of
-                    # the twin (`line 170: /no/such: No such file or directory`)
-                    # and `set -e` turns it into exit 1. Same stream, same exit.
+                    # Divergence 3: bash's own redirection error names a line of the twin (`line 170: /no/such: No such file or directory`) and `set -e` turns it into exit 1. Same stream, same exit.
                     print("%s: %s" % (github_output, exc.strerror), file=sys.stderr, flush=True)
                     return 1
         else:

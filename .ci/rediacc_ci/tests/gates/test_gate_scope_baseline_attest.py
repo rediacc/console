@@ -380,8 +380,7 @@ def test_control_green_full_attested_baseline(gate, tmp_path):
         "with reconciled DERIVED by the reader (nothing wrote it)",
     )
     gate.assert_eq(dumps(sc["baselineRunId"]), "1001", "naming the run it was proven against")
-    # The end of the mechanism, not just its middle. Without this the file would prove
-    # attestation works and never that anything is gained by it.
+    # The end of the mechanism, not just its middle. Without this the file would prove attestation works and never that anything is gained by it.
     gate.assert_eq(sc["mode"], "reduced", "and the round reduces off that baseline")
     gate.assert_eq(sc["jobsCalls"], 1, "the Jobs API was consulted exactly once")
     gate.assert_eq(sc["downloadCalls"], 1, "and the plan downloaded exactly once")
@@ -456,8 +455,7 @@ def test_run_id_mismatch_refuses(gate, tmp_path):
         reason0(sc), "unreconciled-outcome:run-id-mismatch", "refused with its own distinct token"
     )
     gate.assert_eq(sc["jobsCalls"], 0, "and refused CHEAPLY: no Jobs API round trip is spent on it")
-    # CONTROL: the matching id (numeric on the API side, string in the plan) attests,
-    # so the check is about identity, not about types.
+    # CONTROL: the matching id (numeric on the API side, string in the plan) attests, so the check is about identity, not about types.
     sc = drive(tmp_path, 'f.plans["1001"].run_id = 1001')
     gate.assert_eq(sc.rc, 0, "control runs")
     gate.assert_eq(
@@ -475,9 +473,7 @@ def test_head_sha_mismatch_refuses(gate, tmp_path):
         reason0(sc), "unreconciled-outcome:head-sha-mismatch", "refused with its own distinct token"
     )
     gate.assert_eq(sc["jobsCalls"], 0, "also cheaply")
-    # CONTROL: the candidate's own sha attests. Absent head_sha is the base fixture and
-    # is covered by every other control: the field is optional because nothing writes it
-    # yet, so its ABSENCE must not refuse.
+    # CONTROL: the candidate's own sha attests. Absent head_sha is the base fixture and is covered by every other control: the field is optional because nothing writes it yet, so its ABSENCE must not refuse.
     sc = drive(tmp_path, 'f.plans["1001"].head_sha = "CAND1"')
     gate.assert_eq(sc.rc, 0, "control runs")
     gate.assert_eq(reason0(sc), "full-green-attested", "a plan naming the candidate commit attests")
@@ -494,8 +490,7 @@ def test_jobs_api_failure_is_an_answer_not_an_exception(gate, tmp_path):
     )
     gate.assert_eq(sc["mode"], "full", "and the round goes full")
     gate.assert_eq(sc.err, "", "with nothing spilled on stderr")
-    # An EMPTY payload is unusable evidence too, not a clean bill of health:
-    # reconcile() would report ok against zero observed jobs.
+    # An EMPTY payload is unusable evidence too, not a clean bill of health: reconcile() would report ok against zero observed jobs.
     sc = drive(tmp_path, 'f.jobs["1001"] = { jobs: [] }')
     gate.assert_eq(sc.rc, 0, "an empty payload answers")
     gate.assert_eq(
@@ -554,8 +549,7 @@ def test_reduced_baseline_refused_before_any_jobs_call(gate, tmp_path):
     gate.assert_eq(sc["jobsCalls"], 0, "with ZERO Jobs API calls: the cheap checks come first")
     gate.assert_eq(sc["downloadCalls"], 1, "though the plan itself was read")
 
-    # THE PAIR THAT SEPARATES THE TWO KINDS OF SKIP. Identical mode, identical shape,
-    # and the only difference is WHY the key did not run.
+    # THE PAIR THAT SEPARATES THE TWO KINDS OF SKIP. Identical mode, identical shape, and the only difference is WHY the key did not run.
     greenlit = (
         'f.plans["1001"].mode = "reduced";'
         'f.plans["1001"].jobs.renet = { run: false, reason: "greenlight:30968082228" }'
@@ -615,8 +609,7 @@ def test_second_green_run_on_the_same_sha_is_found(gate, tmp_path):
     )
     gate.assert_eq(dumps(sc["baselineRunId"]), "1002", "and attests against the run that HAS one")
     gate.assert_contains(dumps(sc["calls"]), "gh run download 1001", "having tried the first")
-    # CONTROL: when NEITHER green run has a plan, the answer is still an honest
-    # no-skip-plan rather than an attestation conjured from nothing.
+    # CONTROL: when NEITHER green run has a plan, the answer is still an honest no-skip-plan rather than an attestation conjured from nothing.
     sc = drive(tmp_path, two_runs + 'delete f.plans["1001"]')
     gate.assert_eq(sc.rc, 0, "control runs")
     gate.assert_eq(reason0(sc), "no-skip-plan", "two planless green runs read as no-skip-plan")
@@ -641,8 +634,7 @@ def test_multi_page_jobs_payload_is_merged(gate, tmp_path):
         "full-green-attested",
         "and reconciles: the pages are merged, not truncated to the first",
     )
-    # CONTROL: truncating to ONE page must NOT attest, or the merge above would be
-    # indistinguishable from reading page one and ignoring the rest.
+    # CONTROL: truncating to ONE page must NOT attest, or the merge above would be indistinguishable from reading page one and ignoring the rest.
     sc = drive(
         tmp_path,
         "const all = healthyJobs();"
@@ -771,8 +763,7 @@ def test_fence_stops_the_walk_at_the_merge_boundary(gate, tmp_path):
         "baseline:merge-base-reached",
         "with the fence named as what ended the walk",
     )
-    # CONTROL, the other direction: the same green INSIDE the fence resolves, so the
-    # exclusion above is the fence working and not a dead walk.
+    # CONTROL, the other direction: the same green INSIDE the fence resolves, so the exclusion above is the fence working and not a dead walk.
     inside = (
         'f.candidates = ["C1", "NEARGREEN", "BASE1"];'
         "delete f.runs.CAND1;"
@@ -807,8 +798,7 @@ def test_green_attestation_budget_binds_both_ways(gate, tmp_path):
     )
     gate.assert_eq(sc["downloadCalls"], 3, "exactly three downloads were paid for")
     gate.assert_eq(dumps(sc["baselineRunId"]), "null", "and the fourth green was never tried")
-    # CONTROL, the other direction: two failures then an attestable third must RESOLVE,
-    # so the budget is not merely a smaller fixed count in disguise.
+    # CONTROL, the other direction: two failures then an attestable third must RESOLVE, so the budget is not merely a smaller fixed count in disguise.
     within = (
         'f.candidates = ["G1", "G2", "G3"];'
         "delete f.runs.CAND1;"

@@ -113,15 +113,9 @@ export interface Finding {
  */
 export function scanSource(file: string, body: string): Finding[] {
   const isScript = file.endsWith('.sh');
-  // A translation JSON has no fences and no comments. Every string in it is
-  // rendered to a reader, so any retired invocation there is being TAUGHT --
-  // there is no "explaining the retirement" register to protect.
+  // A translation JSON has no fences and no comments. Every string in it is rendered to a reader, so any retired invocation there is being TAUGHT -- there is no "explaining the retirement" register to protect.
   //
-  // This file type was added after the gate went green over docs while
-  // `pages.solutionPages.backupVerification.bottomCta.command` shipped
-  // `rdc backup list --storage backup-vault` in ALL 13 languages: a
-  // customer-facing call to action, on the page about backup VERIFICATION,
-  // naming a command that refuses. The gate was looking at the wrong files.
+  // This file type was added after the gate went green over docs while `pages.solutionPages.backupVerification.bottomCta.command` shipped `rdc backup list --storage backup-vault` in ALL 13 languages: a customer-facing call to action, on the page about backup VERIFICATION, naming a command that refuses. The gate was looking at the wrong files.
   const isTranslation = file.endsWith('.json');
   const findings: Finding[] = [];
   let fenced = false;

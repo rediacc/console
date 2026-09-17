@@ -55,23 +55,14 @@ from rediacc_ci.quality import python_env_registry
 if typing.TYPE_CHECKING:
     import pathlib
 
-# BOTH PROMOTE DIFFERENTIALS SHARE THIS GROUP, and the group is the only thing
-# standing between them and each other's `/tmp/promote-cli`. `--dist loadgroup`
-# is on `check_pytest.py`'s argv, so a static marker here is honoured.
+# BOTH PROMOTE DIFFERENTIALS SHARE THIS GROUP, and the group is the only thing standing between them and each other's `/tmp/promote-cli`. `--dist loadgroup` is on `check_pytest.py`'s argv, so a static marker here is honoured.
 #
-# THE NAME IS NOW SHARED WITH test_deploy_simulate_promotion.py, and the widening
-# is the fix rather than tidying. This module drives `/tmp/config` too -- the
-# docstring above lists it among the twin's fixed paths -- and so does that one,
-# which additionally holds a machine-wide flock for it. A lock ONE of two parties
-# takes is not a lock: under the old split names `--dist loadgroup` put the two
-# modules on different workers BY CONSTRUCTION, so this module's `/tmp/config`
-# writes landed inside the other's critical section. Measured 2026-09-15: 50/50
-# pass serially, 4-5 fail under xdist, and not the same 4-5 on consecutive runs.
+# THE NAME IS NOW SHARED WITH test_deploy_simulate_promotion.py, and the widening is the fix rather than tidying. This module drives `/tmp/config` too -- the docstring above lists it among the twin's fixed paths -- and so does that one, which additionally holds a machine-wide flock for it. A lock ONE of two parties takes is not a lock: under the old split names `--dist loadgroup`
+# put the two modules on different workers BY CONSTRUCTION, so this module's `/tmp/config` writes landed inside the other's critical section. Measured 2026-09-15: 50/50 pass serially, 4-5 fail under xdist, and not the same 4-5 on consecutive runs.
 #
 # RESIDUAL, named rather than left to be rediscovered: this module still does not
 # take `FIXED_TMP_LOCK`. The shared group makes the two serial WITHIN a run; the
-# lock is what would also protect against a SECOND pytest run in the same tree,
-# and only the simulate module has it.
+# lock is what would also protect against a SECOND pytest run in the same tree, and only the simulate module has it.
 pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
@@ -81,8 +72,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_r2_to_stable_hotfix.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The exact paths the twin hard-codes. Named once so the cleanup below cannot
-# drift from what the scripts use.
+# The exact paths the twin hard-codes. Named once so the cleanup below cannot drift from what the scripts use.
 FIXED_TMP_PATHS = (
     *(port.TMP_PREFIX + d for d in port.CHANNEL_DIRS),
     port.CONFIG_SCRATCH,
@@ -99,9 +89,7 @@ BASE_ENV = {
 
 # The bucket fixture. `apt` holds a file in a SUBDIRECTORY as well as one at the
 # top, because `${f#"$TMP"/}` is a prefix strip rather than a basename and the
-# two differ only on that file. The `*/stable/` entries exist because the twin's
-# rewrite loops DOWNLOAD them back out of stable after the recursive copy has
-# already overwritten them.
+# two differ only on that file. The `*/stable/` entries exist because the twin's rewrite loops DOWNLOAD them back out of stable after the recursive copy has already overwritten them.
 DEFAULT_BUCKET = {
     "cli/edge/rdc-linux-x64": "rdc binary bytes\n",
     "cli/edge/manifest.json": '{"version":"1.2.3"}\n',
@@ -241,11 +229,9 @@ if rc:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# Every real binary either side reaches for. `find` and `sed` are called by BOTH
-# implementations (the port shells out to the same two, for the reasons in its
+# Every real binary either side reaches for. `find` and `sed` are called by BOTH implementations (the port shells out to the same two, for the reasons in its
 # docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`, `basename`
-# and `tr` are what the twin and common.sh need. Nothing else is on the scratch
-# PATH, so a tool leaking in would show up as a behaviour change.
+# and `tr` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "tr", "find", "wc", "sed", "rm")
 
 
@@ -397,9 +383,7 @@ def _urls(calls: str) -> list[str]:
     return []
 
 
-# ---------------------------------------------------------------------------
-# The happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
 def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
@@ -417,9 +401,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
     ], old.stdout
     assert old.stderr == ""
 
-    # PRINT THE SHAPE: ten channel copies (two per directory), four config
-    # fetch/put pairs, and one purge. A collapse in any of those numbers is what
-    # a "they both printed the same six lines" comparison would miss.
+    # PRINT THE SHAPE: ten channel copies (two per directory), four config fetch/put pairs, and one purge. A collapse in any of those numbers is what a "they both printed the same six lines" comparison would miss.
     aws_calls = [line for line in old_calls.splitlines() if line.startswith("aws\t")]
     assert len(aws_calls) == 18, aws_calls
     assert len([line for line in old_calls.splitlines() if line.startswith("curl\t")]) == 1
@@ -448,9 +430,7 @@ def test_a_nested_file_keeps_its_directories_in_the_purge_url(tmp_path) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# The three named facts
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three named facts ---------------------------------------------------------------------------
 
 
 def test_defect_purge_list_contains_duplicates(tmp_path) -> None:
@@ -521,8 +501,7 @@ def test_defect_the_vacuity_floor_runs_after_the_upload(tmp_path) -> None:
     assert "VACUOUS" not in old.stderr, old.stderr
     assert "does not exist" in old.stderr, old.stderr
 
-    # (b) an empty leftover: the upload succeeds having moved nothing, and the
-    #     floor is what stops the run.
+    # (b) an empty leftover: the upload succeeds having moved nothing, and the floor is what stops the run.
     def plant() -> None:
         os.makedirs(port.TMP_PREFIX + "cli", exist_ok=True)
 
@@ -536,9 +515,7 @@ def test_defect_the_vacuity_floor_runs_after_the_upload(tmp_path) -> None:
     assert old.stdout == "Promoting cli/edge/ -> cli/stable/\n"
 
 
-# ---------------------------------------------------------------------------
-# Refusals and failures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals and failures ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -635,9 +612,7 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
     assert "curl" not in old_calls
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -669,9 +644,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert old_calls.count("--cache-control") == new_calls.count("--cache-control") + 5
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_directory_order_is_the_twins() -> None:
@@ -749,10 +722,7 @@ def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
     for name in names:
         assert 'os.environ.get("%s"' % name in source, name
 
-    # THE STRONG HALF: ask THE GATE'S OWN SCANNER, not a substring search. If
-    # `check:ci-python-env-registry` cannot derive a name, registering it would
-    # be a STALE entry and leaving it out would be an undeclared input, so the
-    # two sets must be equal in both directions.
+    # THE STRONG HALF: ask THE GATE'S OWN SCANNER, not a substring search. If `check:ci-python-env-registry` cannot derive a name, registering it would be a STALE entry and leaving it out would be an undeclared input, so the two sets must be equal in both directions.
     tree = ast.parse(source, filename=str(PORT_FILE))
     derived = python_env_registry.scan_module(
         str(PORT_FILE),

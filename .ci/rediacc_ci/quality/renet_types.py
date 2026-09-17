@@ -141,12 +141,9 @@ def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -
     right, right_err = strip_version_lines(generated)
     for err in (left_err, right_err):
         if err is not None:
-            # THE LEAK, REPRODUCED. See the port notes: the enclosing
-            # `2>/dev/null` does not reach into a process substitution.
+            # THE LEAK, REPRODUCED. See the port notes: the enclosing `2>/dev/null` does not reach into a process substitution.
             print(err, file=sys.stderr)
-    # NO SHORT-CIRCUIT ON THE ERROR. A missing file contributes an EMPTY line
-    # list and the comparison proceeds, which is what `diff` does with the empty
-    # stream a failed `grep` leaves behind. See `strip_version_lines`.
+    # NO SHORT-CIRCUIT ON THE ERROR. A missing file contributes an EMPTY line list and the comparison proceeds, which is what `diff` does with the empty stream a failed `grep` leaves behind. See `strip_version_lines`.
     return left == right
 
 
@@ -196,8 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = root / OUTPUT_REL
 
     if not _require_submodule(renet_dir / MARKER, "Renet submodule"):
-        # The caller's `|| exit 0`. A skip, loud on stderr, and never a claim
-        # that anything was checked.
+        # The caller's `|| exit 0`. A skip, loud on stderr, and never a claim that anything was checked.
         return 0
 
     log.step("Building renet...")
@@ -213,9 +209,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("  Install the Go toolchain, or run this gate where one exists.")
         return 127
     if built.returncode != 0:
-        # `set -e`: the twin dies here with go's own diagnostics already on
-        # stderr and go's exit code. Nothing is added, because anything added
-        # would be a line the twin does not print.
+        # `set -e`: the twin dies here with go's own diagnostics already on stderr and go's exit code. Nothing is added, because anything added would be a line the twin does not print.
         return built.returncode
 
     log.step("Checking types freshness...")
@@ -235,8 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             check=False,
         )
         if generated.returncode != 0:
-            # `set -e` again: the generator's own output is already on the
-            # streams and its exit code is the gate's.
+            # `set -e` again: the generator's own output is already on the streams and its exit code is the gate's.
             return generated.returncode
 
         # A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED, not reported. See
@@ -292,9 +285,7 @@ def selftest() -> int:
         ctl.check("PLANT: an ADDED line is caught", cmp_files("x\n", "x\ny\n"), False)
         ctl.check("PLANT: a REMOVED line is caught", cmp_files("x\ny\n", "x\n"), False)
 
-        # THE VERSION EXCLUSION, in both directions. This is the whole reason
-        # the comparison is not `diff`, and a port that dropped it would report
-        # the contract stale on every commit.
+        # THE VERSION EXCLUSION, in both directions. This is the whole reason the comparison is not `diff`, and a port that dropped it would report the contract stale on every commit.
         ctl.check(
             "MIRROR: a differing _VERSION line does not count",
             cmp_files(
@@ -324,8 +315,7 @@ def selftest() -> int:
         )
         ctl.check("MIRROR: two empty files agree", cmp_files("", ""), True)
 
-        # THE MISSING-FILE PATH. A committed file that does not exist is
-        # reported as differing, which is what puts it on the STALE list.
+        # THE MISSING-FILE PATH. A committed file that does not exist is reported as differing, which is what puts it on the STALE list.
         missing = root / "gone.ts"
         b.write_text("x\n", encoding="utf-8")
         ctl.check(
@@ -338,11 +328,7 @@ def selftest() -> int:
             compare_ignoring_version(b, missing),
             False,
         )
-        # AND THE CASE THAT IS NOT A REFUSAL, which is the one a draft got
-        # wrong: BOTH files missing are two empty streams, and `diff` calls
-        # those identical. It cannot arise in the gate's own loop -- the
-        # generated side is guarded by `-f` -- and it is pinned anyway, because
-        # the port had already disagreed with the twin about it once.
+        # AND THE CASE THAT IS NOT A REFUSAL, which is the one a draft got wrong: BOTH files missing are two empty streams, and `diff` calls those identical. It cannot arise in the gate's own loop -- the generated side is guarded by `-f` -- and it is pinned anyway, because the port had already disagreed with the twin about it once.
         gone = root / "also-gone.ts"
         ctl.check(
             "MIRROR: TWO missing files are two EMPTY streams, which diff calls equal",
@@ -362,8 +348,7 @@ def selftest() -> int:
             "grep: %s: No such file or directory" % missing,
         )
 
-    # THE LIST IS THE GATE. Asserted so a port that lost an entry is caught
-    # here rather than by a contract going stale for months.
+    # THE LIST IS THE GATE. Asserted so a port that lost an entry is caught here rather than by a contract going stale for months.
     ctl.check("the compared file list still holds six entries", len(FILES), 6)
     ctl.check("and license-tiers is one of them", "license-tiers.generated.ts" in FILES, True)
 

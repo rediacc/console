@@ -1,8 +1,5 @@
 #!/usr/bin/env tsx
-// ---- gate ----
-// step: jq boolean defaults
-// needs: node
-// ---- end gate ----
+// ---- gate ---- step: jq boolean defaults needs: node ---- end gate ----
 
 import { execFileSync } from 'node:child_process';
 /**
@@ -38,10 +35,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// `// true` with any spacing, inside what is plausibly a jq filter. Deliberately
-// narrow: it must be the alternative operator followed by the literal `true`,
-// not a comment. A JS line comment `// true story` is excluded by requiring the
-// token to end there or be followed by a jq continuation character.
+// `// true` with any spacing, inside what is plausibly a jq filter. Deliberately narrow: it must be the alternative operator followed by the literal `true`, not a comment. A JS line comment `// true story` is excluded by requiring the token to end there or be followed by a jq continuation character.
 const BAD = /\/\/\s*true\s*(?=[)|,\s'"]|$)/;
 
 // A `//` that begins a whole-line comment is never the jq operator.
@@ -76,10 +70,7 @@ function control(): void {
     console.error(`✗ CONTROL FAILED: ${why}`);
     process.exit(1);
   };
-  // The fixture is concatenated so this file's own on-disk text does not
-  // match the scanner it feeds: the gate scans every tracked file,
-  // including itself, and a literal fixture here self-fired the gate on
-  // its very own control line (found 2026-07-31, the first time anything
+  // The fixture is concatenated so this file's own on-disk text does not match the scanner it feeds: the gate scans every tracked file, including itself, and a literal fixture here self-fired the gate on its very own control line (found 2026-07-31, the first time anything
   // actually ran the scan; see the CI-wiring issue filed the same day).
   const fires = scanText('x.sh', "jq -r '{ not_draft: (.draft /" + "/ true | not) }'");
   if (fires.length !== 1) die(`expected 1 finding on the planted defect, got ${fires.length}`);
@@ -103,11 +94,7 @@ function control(): void {
 function main(): void {
   if (!process.argv.slice(2).includes('--skip-control')) control();
 
-  // ANTI-VACUITY, and it must REFUSE rather than crash. `git ls-files` throws
-  // outside a repository, and an uncaught throw exits nonzero with a stack
-  // trace, which looks like a failing gate but says nothing. The anti-vacuity
-  // registry pins the diagnostic for exactly this reason, and it caught this
-  // gate crashing instead of refusing on its first run.
+  // ANTI-VACUITY, and it must REFUSE rather than crash. `git ls-files` throws outside a repository, and an uncaught throw exits nonzero with a stack trace, which looks like a failing gate but says nothing. The anti-vacuity registry pins the diagnostic for exactly this reason, and it caught this gate crashing instead of refusing on its first run.
   let files: string[] = [];
   try {
     files = execFileSync('git', ['ls-files', '-z', '*.sh', '*.ts', '*.cjs', '*.js', '*.yml'], {

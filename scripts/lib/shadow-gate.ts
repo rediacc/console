@@ -76,9 +76,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
 /** Every way a comparison can end. Exactly one is a pass. */
 export type Verdict =
@@ -251,9 +249,7 @@ export interface LedgerSide {
   durationMs: number;
 }
 
-// ---------------------------------------------------------------------------
-// Normalization
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Normalization ---------------------------------------------------------------------------
 
 /**
  * ANSI CSI sequences. Colour is decided by `isatty`, so the same gate emits
@@ -263,10 +259,7 @@ export interface LedgerSide {
  * empty under `CI=true` and to escapes otherwise, which is the same fact from
  * the other end.
  */
-// BUILT FROM A STRING, not written as a regex literal. The literal form carried a raw
-// ESC byte, which `no-control-regex` flags -- correctly in general, since an unnoticed
-// control character in a pattern is almost always a mistake. Here it is the whole point,
-// so the escape is named rather than embedded and the rule has nothing to object to. A
+// BUILT FROM A STRING, not written as a regex literal. The literal form carried a raw ESC byte, which `no-control-regex` flags -- correctly in general, since an unnoticed control character in a pattern is almost always a mistake. Here it is the whole point, so the escape is named rather than embedded and the rule has nothing to object to. A
 // scoped eslint-disable would have worked and would have taught the next reader that
 // this rule is negotiable.
 const ESC = String.fromCharCode(27);
@@ -374,8 +367,7 @@ const PATH_LINE = /^\S*[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:\d+(?::\d+)?[:\s]/;
  * different finding, and that is the whole point of the comparison.
  */
 const MASKS: ReadonlyArray<[RegExp, string]> = [
-  // Absolute temp paths, including the mktemp suffix. Before the repo-root mask,
-  // because TMPDIR can legitimately sit inside a worktree.
+  // Absolute temp paths, including the mktemp suffix. Before the repo-root mask, because TMPDIR can legitimately sit inside a worktree.
   [/\/(?:tmp|var\/folders)\/[^\s'"),:]*/g, '<tmp>'],
   // ISO-8601, with or without a zone.
   [/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/g, '<ts>'],
@@ -410,12 +402,10 @@ export function classify(
 
   const normalize = (s: string): string => {
     let text = s.trim();
-    // Repo root first: it is the longest prefix, and a later mask would otherwise
-    // eat a fragment of it and leave an unmatchable tail.
+    // Repo root first: it is the longest prefix, and a later mask would otherwise eat a fragment of it and leave an unmatchable tail.
     if (opts.repoRoot) text = text.split(opts.repoRoot).join('<repo>');
     for (const [re, to] of masks) text = text.replace(re, to);
-    // Collapse internal whitespace runs. A port that re-indents its continuation
-    // lines has not changed which thing it objects to.
+    // Collapse internal whitespace runs. A port that re-indents its continuation lines has not changed which thing it objects to.
     return text.replace(/\s+/g, ' ').trim();
   };
 
@@ -470,20 +460,14 @@ export function classify(
         }
       }
 
-      // An unmarked line still counts when the caller taught the extractor its
-      // gate's shape, or when it is the repo's grep-style finding shape.
+      // An unmarked line still counts when the caller taught the extractor its gate's shape, or when it is the repo's grep-style finding shape.
       if (sev === null && (opts.findingRe?.test(line) || PATH_LINE.test(lead))) {
         sev = 'error';
       }
 
-      // THE CONTINUATION RULE. Findings in this tree are overwhelmingly printed
-      // as a marked HEADER ("✗ Found 3 unguarded pipelines:") followed by the
-      // three actual findings on unmarked indented lines. Treating only the
-      // header as the finding is how a comparator scores two gates as equivalent
+      // THE CONTINUATION RULE. Findings in this tree are overwhelmingly printed as a marked HEADER ("✗ Found 3 unguarded pipelines:") followed by the three actual findings on unmarked indented lines. Treating only the header as the finding is how a comparator scores two gates as equivalent
       // while they disagree about every instance: both print "Found 3".
-      // Indentation varies across gates -- `  %s`, `    %s`, `  - %s`,
-      // `      %s` -- so the rule is any indent, and the leading bullet is
-      // stripped so the same finding under two different bullet styles matches.
+      // Indentation varies across gates -- ` %s`, ` %s`, ` - %s`, ` %s` -- so the rule is any indent, and the leading bullet is stripped so the same finding under two different bullet styles matches.
       if (sev === null && indented && carrying !== null && !PROSE.test(lead)) {
         sev = carrying;
         body = lead.replace(/^[-*•]\s+/, '');
@@ -491,8 +475,7 @@ export function classify(
 
       if (sev === null) {
         chatter.push(lead.trim());
-        // Prose does not end a continuation block: `emit_advisory` prints
-        // `  Fix:` BETWEEN a header and further detail lines.
+        // Prose does not end a continuation block: `emit_advisory` prints ` Fix:` BETWEEN a header and further detail lines.
         if (!(indented && PROSE.test(lead))) carrying = null;
         continue;
       }
@@ -514,9 +497,7 @@ export function fingerprint(findings: string[]): string {
     .slice(0, 16);
 }
 
-// ---------------------------------------------------------------------------
-// Execution
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Execution ---------------------------------------------------------------------------
 
 /**
  * The environment a side runs under: the caller's, plus determinism pins.
@@ -569,8 +550,7 @@ export function runSide(spec: SideSpec, opts: NormalizeOptions, timeoutMs: numbe
   const stdout = r.stdout ?? '';
   const stderr = r.stderr ?? '';
   const timedOut = r.error !== undefined && (r.error as NodeJS.ErrnoException).code === 'ETIMEDOUT';
-  // A signalled child has a null status. Report it as 128+signal, the shell's
-  // own convention, rather than as 0 -- which would read as a clean pass.
+  // A signalled child has a null status. Report it as 128+signal, the shell's own convention, rather than as 0 -- which would read as a clean pass.
   const exit = r.status ?? (r.signal ? 128 + signalNumber(r.signal) : 255);
   const { findings, chatter, refusals } = classify(stdout, stderr, opts);
   return {
@@ -599,9 +579,7 @@ function signalNumber(sig: NodeJS.Signals): number {
   return table[sig] ?? 0;
 }
 
-// ---------------------------------------------------------------------------
-// The ruling
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The ruling ---------------------------------------------------------------------------
 
 /** Multiset difference: elements of `a` not covered by `b`, with multiplicity. */
 function multisetMinus(a: string[], b: string[]): string[] {
@@ -738,9 +716,7 @@ export function shadow(
   return decide(pair, oldRun, newRun);
 }
 
-// ---------------------------------------------------------------------------
-// Tree identity
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Tree identity ---------------------------------------------------------------------------
 
 function git(repoRoot: string, args: string[]): { out: string; code: number } {
   const r = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', env: buildEnv() });
@@ -779,15 +755,8 @@ export function treeIdentity(repoRoot: string, ignoreRelPaths: string[] = []): T
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
   // `-uall` and a pathspec exclusion rather than filtering the output as text.
   //
-  // THE TRAP THAT FORCED THIS, measured 2026-09-06. `git status --porcelain`
-  // COLLAPSES an untracked directory to a single entry: with `.ci/shadow/` the
-  // only new thing in the tree, it prints `?? .ci/` -- not the ledger's path.
-  // A text filter looking for `.ci/shadow/k.jsonl` therefore matches nothing,
-  // the tree reads dirty, and every `--record` after the first is refused
-  // because of the file the previous one wrote. Worse, "fixing" that by
-  // matching the collapsed prefix would silently excuse every untracked file
-  // anywhere under `.ci/`. `-uall` stops the collapse and the pathspec excludes
-  // exactly one path, so git does the matching and no prefix is guessed.
+  // THE TRAP THAT FORCED THIS, measured 2026-09-06. `git status --porcelain` COLLAPSES an untracked directory to a single entry: with `.ci/shadow/` the only new thing in the tree, it prints `?? .ci/` -- not the ledger's path. A text filter looking for `.ci/shadow/k.jsonl` therefore matches nothing, the tree reads dirty, and every `--record` after the first is refused because of
+  // the file the previous one wrote. Worse, "fixing" that by matching the collapsed prefix would silently excuse every untracked file anywhere under `.ci/`. `-uall` stops the collapse and the pathspec excludes exactly one path, so git does the matching and no prefix is guessed.
   const statusArgs = ['status', '--porcelain', '-uall'];
   if (ignoreRelPaths.length > 0) {
     statusArgs.push('--', '.', ...ignoreRelPaths.map((p) => `:(exclude)${p}`));
@@ -803,9 +772,7 @@ export function treeIdentity(repoRoot: string, ignoreRelPaths: string[] = []): T
   };
 }
 
-// ---------------------------------------------------------------------------
-// Driver-contract 5c: comment preservation
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Driver-contract 5c: comment preservation ---------------------------------------------------------------------------
 
 /** Comment bytes in a bash / Python / TypeScript file. Docstrings count. */
 export function commentBytes(file: string): number {
@@ -900,14 +867,8 @@ export const COMMENT_RATIO_FLOOR = 0.9;
 
 export function ledgerPath(repoRoot: string, pair: string, override?: string): string {
   if (override) return override;
-  // `<pair>.observations.jsonl` FIRST, because that is what every ledger in this
-  // repo is actually called. This defaulted to `<pair>.jsonl`, which exists for
-  // no pair, so the invocation printed in this tool's own USAGE string reported
-  // `0 row(s), 0 distinct clean tree(s)` for ALL FOURTEEN pairs. That reads as
-  // "not enough evidence recorded yet" rather than "you are pointing at a file
-  // that is not there", so a reviewer following the help text would conclude the
-  // whole W7 P2 evidence base was missing. Nothing gated on it and nobody noticed
-  // because every real caller passes --ledger.
+  // `<pair>.observations.jsonl` FIRST, because that is what every ledger in this repo is actually called. This defaulted to `<pair>.jsonl`, which exists for no pair, so the invocation printed in this tool's own USAGE string reported `0 row(s), 0 distinct clean tree(s)` for ALL FOURTEEN pairs. That reads as "not enough evidence recorded yet" rather than "you are pointing at a file
+  // that is not there", so a reviewer following the help text would conclude the whole W7 P2 evidence base was missing. Nothing gated on it and nobody noticed because every real caller passes --ledger.
   const observations = path.join(repoRoot, LEDGER_DIR, `${pair}.observations.jsonl`);
   if (fs.existsSync(observations)) return observations;
   return path.join(repoRoot, LEDGER_DIR, `${pair}.jsonl`);
@@ -1215,18 +1176,11 @@ function selftest(repoRoot: string): number {
     }
   };
 
-  // EVERY fixture path in this selftest is ASSEMBLED at runtime rather than written as a
-  // literal, and that is not a dodge of gate-test:gate-paths-exist. That gate reads a
-  // path-shaped literal inside a gate script as a real path constant and reds when the file
-  // does not exist, which is the right rule: such a constant is usually a rename nobody
-  // finished. These name nothing on disk ON PURPOSE, because the comparator under test is
-  // pure string handling and never opens them. Same treatment and same reasoning as
-  // check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts, which each hit this.
+  // EVERY fixture path in this selftest is ASSEMBLED at runtime rather than written as a literal, and that is not a dodge of gate-test:gate-paths-exist. That gate reads a path-shaped literal inside a gate script as a real path constant and reds when the file does not exist, which is the right rule: such a constant is usually a rename nobody finished. These name nothing on disk ON
+  // PURPOSE, because the comparator under test is pure string handling and never opens them. Same treatment and same reasoning as check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts, which each hit this.
   const fx = (stem: string): string => `${'packages'}/${stem}.ts`;
 
-  // Two implementations of one gate. They differ in language, in the order they
-  // report, in their banner text, and in which stream each finding lands on --
-  // every axis a port is ALLOWED to differ on.
+  // Two implementations of one gate. They differ in language, in the order they report, in their banner text, and in which stream each finding lands on -- every axis a port is ALLOWED to differ on.
   const twinBash = `
     echo "→ scanning 3 files"
     echo "✗ ${fx('a')}:14 missing BLOCKER reason" >&2
@@ -1325,8 +1279,7 @@ function selftest(repoRoot: string): number {
     exit: crash.new.exit,
   });
 
-  // Chatter must not be able to carry a verdict. If the banner counted as a
-  // finding, the vacuity rule would be defeated by every gate that prints one.
+  // Chatter must not be able to carry a verdict. If the banner counted as a finding, the vacuity rule would be defeated by every gate that prints one.
   const banner = shadow('selftest-banner', 'echo "→ 10 files"', 'echo "→ 11 files"', opts);
   ck(
     'CHATTER: differing progress lines do not manufacture a finding',
@@ -1347,8 +1300,7 @@ function selftest(repoRoot: string): number {
     { verdict: dup.verdict, onlyOld: dup.onlyOld }
   );
 
-  // A LEDGER ROW THAT IS NOT A LEDGER ROW. Anything matching
-  // `.ci/shadow/*.observations.jsonl` is read as a shadow-pair ledger, so a
+  // A LEDGER ROW THAT IS NOT A LEDGER ROW. Anything matching `.ci/shadow/*.observations.jsonl` is read as a shadow-pair ledger, so a
   // foreign or truncated file lands here; before 2026-09-08 it threw a raw
   // TypeError naming neither the pair nor the row.
   const malformed = assertEquivalent([{ subject: 'x', agreed: true } as unknown as LedgerRow], 1);
@@ -1365,8 +1317,7 @@ function selftest(repoRoot: string): number {
     ok: mixed.ok,
   });
 
-  // Severity is part of the finding. A port that downgrades error to warning has
-  // changed the verdict even though the text is identical.
+  // Severity is part of the finding. A port that downgrades error to warning has changed the verdict even though the text is identical.
   const sev = shadow(
     'selftest-severity',
     'echo "✗ a.ts:1 thing" >&2; exit 1',
@@ -1379,9 +1330,7 @@ function selftest(repoRoot: string): number {
     onlyNew: sev.onlyNew,
   });
 
-  // Refusals. A gate that could not run says so in a documented vocabulary and
-  // exits NON-ZERO with ZERO findings, which is the exact shape the vacuity rule
-  // would otherwise mislabel.
+  // Refusals. A gate that could not run says so in a documented vocabulary and exits NON-ZERO with ZERO findings, which is the exact shape the vacuity rule would otherwise mislabel.
   const bothRefuse = shadow(
     'selftest-refusal',
     'echo "VACUOUS INPUT: /x is not a git work tree" >&2; exit 1',
@@ -1407,8 +1356,7 @@ function selftest(repoRoot: string): number {
 
   // The continuation rule. Both sides say "Found 2", and they disagree about
   // both. A header-only comparator calls this EQUIVALENT; it is the single most
-  // likely way this module could launder a port, because the header is the only
-  // line carrying a severity marker.
+  // likely way this module could launder a port, because the header is the only line carrying a severity marker.
   const contOld =
     `echo "✗ Found 2 problem(s):" >&2; echo "    ${fx('a')}:3: bad thing" >&2; ` +
     `echo "    ${fx('b')}:9: other thing" >&2; exit 1`;
@@ -1555,8 +1503,7 @@ function selftest(repoRoot: string): number {
     ledgerRefusal(row('tC', 'EQUIVALENT', 'f').tree) === null
   );
 
-  // PROVENANCE, every branch, both directions. The issue-number branch was UNREACHABLE
-  // until 2026-09-06 -- `\b` before `#` is non-word-to-non-word, so `#576` never matched
+  // PROVENANCE, every branch, both directions. The issue-number branch was UNREACHABLE until 2026-09-06 -- `\b` before `#` is non-word-to-non-word, so `#576` never matched
   // while dates always did. Contract 5c names issue numbers explicitly, so the audit was
   // under-reporting its own subject and every port it blessed looked audited.
   const provDir = fs.mkdtempSync(path.join(process.env.TMPDIR ?? '/tmp', 'sg-prov-'));
@@ -1585,9 +1532,7 @@ function selftest(repoRoot: string): number {
   return failures === 0 ? 0 : 1;
 }
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- CLI ---------------------------------------------------------------------------
 
 const USAGE = `shadow-gate -- compare a ported gate against its bash twin
 
@@ -1646,14 +1591,8 @@ export function main(argv: string[]): number {
       console.error('shadow-gate: --k must be a positive integer');
       return 2;
     }
-    // A LEDGER THAT DOES NOT EXIST IS NOT AN UNDER-RECORDED ONE. readLedger
-    // returns [] for a missing path, so a typo'd --pair used to print
-    // `0 row(s), 0 distinct clean tree(s)` and `5 are required`, which reads as
-    // "keep recording" rather than "you are pointing at nothing". The default
-    // name is `<pair>.jsonl` while every real ledger here is
-    // `<pair>.observations.jsonl`, so this is the EASY typo to make and it was
-    // made: an agent's first run of all four asserts reported four
-    // under-recorded pairs that were in fact four wrong filenames.
+    // A LEDGER THAT DOES NOT EXIST IS NOT AN UNDER-RECORDED ONE. readLedger returns [] for a missing path, so a typo'd --pair used to print `0 row(s), 0 distinct clean tree(s)` and `5 are required`, which reads as "keep recording" rather than "you are pointing at nothing". The default name is `<pair>.jsonl` while every real ledger here is `<pair>.observations.jsonl`, so this is
+    // the EASY typo to make and it was made: an agent's first run of all four asserts reported four under-recorded pairs that were in fact four wrong filenames.
     const ledgerFile = ledgerPath(repoRoot, pair, arg(argv, '--ledger'));
     if (!fs.existsSync(ledgerFile)) {
       console.error(`✗ ${pair}: no ledger at ${path.relative(repoRoot, ledgerFile)}`);
@@ -1702,9 +1641,7 @@ export function main(argv: string[]): number {
     ...(chatterRe ? { chatterRe: new RegExp(chatterRe) } : {}),
   };
 
-  // Recorded into the row VERBATIM as the operator typed them, not as compiled
-  // RegExp objects, so the ledger carries something a reader can paste back into
-  // a command line and re-run.
+  // Recorded into the row VERBATIM as the operator typed them, not as compiled RegExp objects, so the ledger carries something a reader can paste back into a command line and re-run.
   const rowOpts: RowOpts = {
     ...(findingRe ? { findingRe } : {}),
     ...(chatterRe ? { chatterRe } : {}),
@@ -1745,11 +1682,7 @@ export function main(argv: string[]): number {
   }
 
   if (argv.includes('--record')) {
-    // The commands are passed HERE as well as inside appendLedger, because this
-    // preflight is the message the operator actually reads. Without them the
-    // escape check ran only in the library and the CLI reported whichever other
-    // refusal happened to come first, which on a shared checkout is always the
-    // dirty-tree one.
+    // The commands are passed HERE as well as inside appendLedger, because this preflight is the message the operator actually reads. Without them the escape check ran only in the library and the CLI reported whichever other refusal happened to come first, which on a shared checkout is always the dirty-tree one.
     const refusal = ledgerRefusal(tree, { old: oldCmd, new: newCmd, repoRoot });
     if (refusal) {
       console.error(`✗ ${pair}: ledger write REFUSED -- ${refusal}`);

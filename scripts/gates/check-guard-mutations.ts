@@ -49,10 +49,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PKG = join(REPO, 'packages/cli');
-// UNIQUE per process. `npm run ci` is a parallel worker pool, so a fixed path
-// lets one run `rm -rf` another's sandbox mid-flight - which surfaces as a
-// control failure that a serial rerun cannot reproduce. Still ends in `.tmp`,
-// so the existing gitignore rule covers it.
+// UNIQUE per process. `npm run ci` is a parallel worker pool, so a fixed path lets one run `rm -rf` another's sandbox mid-flight - which surfaces as a control failure that a serial rerun cannot reproduce. Still ends in `.tmp`, so the existing gitignore rule covers it.
 const SANDBOX = join(PKG, `.guard-mutations.${process.pid}.${randomBytes(4).toString('hex')}.tmp`);
 
 interface Mutant {

@@ -91,15 +91,11 @@ if TYPE_CHECKING:  # `os` is reached only by the PathLike annotations below
 from rediacc_ci import gitx
 
 # The bash defaults. They were `readonly AGE_WARN_DAYS="${AGE_WARN_DAYS:-180}"`,
-# i.e. environment-overridable, and the shim still resolves the override before
-# calling in -- so the numbers live in exactly one place while the override
-# keeps working for the gates' own tests.
+# i.e. environment-overridable, and the shim still resolves the override before calling in -- so the numbers live in exactly one place while the override keeps working for the gates' own tests.
 DEFAULT_WARN_DAYS = 180
 DEFAULT_FAIL_DAYS = 365
 
-# The sentinel. Named rather than written as a bare -1 at four call sites,
-# because the whole point of the 2026-09-03 finding is that this value must
-# never be arithmetic'd into an age.
+# The sentinel. Named rather than written as a bare -1 at four call sites, because the whole point of the 2026-09-03 finding is that this value must never be arithmetic'd into an age.
 CANNOT_VERIFY = -1
 
 SECONDS_PER_DAY = 86400
@@ -227,10 +223,7 @@ def verdict(
     answerable again.
     """
     if age < 0:
-        # CANNOT VERIFY. In CI that is a refusal: this gate's entire purpose is
-        # expiring stale suppressions, and a truncated history makes every one
-        # of them look new. Locally it is a warning, because a developer's
-        # shallow clone is normal and should not block their run.
+        # CANNOT VERIFY. In CI that is a refusal: this gate's entire purpose is expiring stale suppressions, and a truncated history makes every one of them look new. Locally it is a warning, because a developer's shallow clone is normal and should not block their run.
         if ci:
             return Verdict(
                 "error",
@@ -258,9 +251,7 @@ def verdict(
     return Verdict("ok")
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch -- the surface the bash shim in .ci/scripts/lib/age-check.sh calls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch -- the surface the bash shim in .ci/scripts/lib/age-check.sh calls ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -277,8 +268,7 @@ def main(argv: list[str]) -> int:
     if verb == "grafts-file":
         # Prints the path or nothing, and always exits 0 -- the bash it
         # replaces was `[[ -n "$f" && -s "$f" ]] && echo "$f"; return 0`, and a
-        # caller testing `[[ -n "$(_age_grafts_file)" ]]` reads the output, not
-        # the status.
+        # caller testing `[[ -n "$(_age_grafts_file)" ]]` reads the output, not the status.
         path = grafts_file()
         if path is not None:
             print(path)

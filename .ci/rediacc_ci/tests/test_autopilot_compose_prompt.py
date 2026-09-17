@@ -56,10 +56,7 @@ BASE_ENV = {
 
 DELIM_RE = re.compile(rb"AUTOPILOT_PROMPT_EOF_[0-9a-f]{32}")
 
-# A template with NO trailing newline, so the `printf '\n<autopilot_state>\n'`
-# that follows is the only thing separating it from the state block. A template
-# that ended in a newline would make the two implementations agree even if one
-# of them dropped that leading `\n`.
+# A template with NO trailing newline, so the `printf '\n<autopilot_state>\n'` that follows is the only thing separating it from the state block. A template that ended in a newline would make the two implementations agree even if one of them dropped that leading `\n`.
 TEMPLATE_BODY = b"You are the autopilot.\nRound template body."
 
 # Deliberately not valid UTF-8. The subject concatenates bytes; a port that
@@ -81,8 +78,7 @@ def _fixture(base: pathlib.Path, **files: bytes | None) -> tuple[pathlib.Path, p
         "fx/failed-jobs.txt": None,
         "fx/review-payload.json": None,
     }
-    # KEYWORD KEYS ARE ENCODED PATHS: `__` is `/`, `_dash_` is `-`, `_dot_` is
-    # `.`. Spelled out because the first version of this helper forgot `_dash_`,
+    # KEYWORD KEYS ARE ENCODED PATHS: `__` is `/`, `_dash_` is `-`, `_dot_` is `.`. Spelled out because the first version of this helper forgot `_dash_`,
     # so `fx__review_dash_payload_dot_json=` silently created a file called
     # `fx/review_dash_payload.json` that the subject never reads -- every review
     # case was running with NO payload and agreeing for the wrong reason. The
@@ -253,8 +249,7 @@ def test_missing_inputs() -> None:
     _sides("missing-template", _argv("fix", template="nope.md"))
     # A DIRECTORY where a template file is expected: `-f` is false for both.
     _sides("template-is-a-directory", _argv("fix", template="."))
-    # THE HAZARD: decision.json has no require_file in front of it, so this is
-    # coreutils' message and a half-written --out, not a named refusal.
+    # THE HAZARD: decision.json has no require_file in front of it, so this is coreutils' message and a half-written --out, not a named refusal.
     exit_code, _, stderr, out_bytes, _ = _sides(
         "missing-decision", _argv("fix"), fx__decision_dot_json=None
     )
@@ -298,8 +293,7 @@ def test_missing_directories() -> None:
                 "p.txt",
             ],
         ),
-        # A FILE where a directory is expected: `-d` is false for both, so both
-        # must refuse identically.
+        # A FILE where a directory is expected: `-d` is false for both, so both must refuse identically.
         (
             "prompts-is-a-file",
             [
@@ -340,8 +334,7 @@ def test_usage_refusals() -> None:
         assert exit_code == 2, "%s: expected the usage refusal" % drop
         assert "usage: compose-prompt.sh" in stderr
         # And the same flag present but EMPTY (`--mode=`), which parse_args
-        # stores as the empty string rather than leaving unset. The twin's test
-        # is `-n`, so both shapes must refuse.
+        # stores as the empty string rather than leaving unset. The twin's test is `-n`, so both shapes must refuse.
         empty: list[str] = []
         for flag, value in full.items():
             empty += [flag + "="] if flag == drop else [flag, value]

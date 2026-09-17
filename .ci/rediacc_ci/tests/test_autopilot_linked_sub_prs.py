@@ -56,9 +56,7 @@ BASE_ENV = {
     "PYTHONDONTWRITEBYTECODE": "1",
 }
 
-# One body carrying all three accepted spellings, a duplicate, a leading-zero
-# twin of an existing number, an eight-digit run and a link to a repository
-# that is NOT a submodule of this monorepo.
+# One body carrying all three accepted spellings, a duplicate, a leading-zero twin of an existing number, an eight-digit run and a link to a repository that is NOT a submodule of this monorepo.
 FULL_BODY = b"""## Linked submodule PRs
 
 - https://github.com/rediacc/renet/pull/12
@@ -158,8 +156,7 @@ def test_near_miss_spellings_are_not_links() -> None:
             b"rediacc/renet PR 12",  # no separator
             b"rediacc/renet#",  # no number
             b"http://github.com/rediacc/account/pull/9",  # http, and the
-            # optional group only matches https -- but `rediacc/account/pull/9`
-            # is still a bare match inside it, so this line DOES link 9.
+            # optional group only matches https -- but `rediacc/account/pull/9` is still a bare match inside it, so this line DOES link 9.
             b"rediacc/elite/pulls/4",  # /pulls/ is not /pull/
             b"rediacc/homebrew-tap#x7",  # digit not adjacent to the separator
             b"",

@@ -176,8 +176,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The seams the twin exposes so the standalone gate test can drive the
-# inline-run rule against fixtures.
+# The seams the twin exposes so the standalone gate test can drive the inline-run rule against fixtures.
 WORKFLOW_DIR_ENV = "WORKFLOW_DIR"
 INLINE_MAX_ENV = "INLINE_MAX_LOGIC"
 INLINE_ONLY_ENV = "WORKFLOW_INLINE_ONLY"
@@ -236,8 +235,7 @@ BANNED = (
 
 # `grep -n '\${{.*secrets\.'` -- `\$` is a literal dollar in BRE.
 SECRET_INTERP_RE = re.compile(r"\$\{\{.*secrets\.")
-# A YAML key-value assignment whose key is NOT `run`. Safe: env:, with:,
-# secrets:, private-key:, password: and friends.
+# A YAML key-value assignment whose key is NOT `run`. Safe: env:, with:, secrets:, private-key:, password: and friends.
 YAML_KEY_RE = re.compile(r"^[ \t]+[a-zA-Z][a-zA-Z0-9_-]*:")
 RUN_KEY_RE = re.compile(r"^[ \t]+run:")
 
@@ -484,8 +482,7 @@ def check_inline_run_blocks(
             if lines_out:
                 detail[name] = lines_out
 
-    # Anti-vacuity: no workflows parsed means the layout moved and this gate is
-    # asserting nothing. Fail loudly rather than report a clean run.
+    # Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run.
     if not actual:
         log.error("No workflows found under %s -- this check is blind" % workflow_dir)
         errors.count += 1
@@ -558,10 +555,7 @@ def check_env_shell_vars(errors: Errors, root: pathlib.Path, workflow_dir: str) 
         hits = env_shell_hits(read_lines(path))
         if not hits:
             continue
-        # ONE `ERRORS` INCREMENT PER FILE, not per hit: the twin loops the hits
-        # inside a single `if [[ -n "$out" ]]` block and increments once after
-        # it. Every hit gets its own `log_error`, so the finding SET is per hit
-        # and the COUNT is per file. That asymmetry is the twin's.
+        # ONE `ERRORS` INCREMENT PER FILE, not per hit: the twin loops the hits inside a single `if [[ -n "$out" ]]` block and increments once after it. Every hit gets its own `log_error`, so the finding SET is per hit and the COUNT is per file. That asymmetry is the twin's.
         for number, line in hits:
             log.error(
                 "%s/%s:%d: env: value uses shell syntax GitHub will not expand"
@@ -649,17 +643,8 @@ def slurp_jq_offenders(text: str) -> list[int]:
         else:
             joined = line
             start = number
-        # BASH CONTINUES WITH A BACKSLASH, PYTHON WITH AN OPEN BRACKET, and the second
-        # is not a line SUFFIX -- it is a running depth. A per-line test was written
-        # first and its control refused it: in
-        #     subprocess.run(
-        #         [
-        #             "gh", "api", "repos/x/issues",
-        #             "--paginate", "--slurp",
-        #             "--jq", ".[]",
-        # the third line opens nothing, so a suffix test ends the join there and the
-        # `--slurp`/`--jq` pair two lines later is never seen. Counting brackets across
-        # the joined text is what actually spans the call.
+        # BASH CONTINUES WITH A BACKSLASH, PYTHON WITH AN OPEN BRACKET, and the second is not a line SUFFIX -- it is a running depth. A per-line test was written first and its control refused it: in subprocess.run( [ "gh", "api", "repos/x/issues", "--paginate", "--slurp", "--jq", ".[]", the third line opens nothing, so a suffix test ends the join there and the `--slurp`/`--jq` pair
+        # two lines later is never seen. Counting brackets across the joined text is what actually spans the call.
         #
         # QUOTED BRACKETS ARE NOT DISCOUNTED. Over-joining can only make this scan see
         # MORE of a command; its failure mode is missing one, so the cheap reading is
@@ -682,13 +667,9 @@ def check_gh_slurp_jq(errors: Errors, root: pathlib.Path, files: list[str]) -> N
         for dirpath, _dirnames, filenames in paths.walk_tree(ci_scripts):
             for name in filenames:
                 candidate = pathlib.Path(dirpath) / name
-                # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the
-                # extension-shaped matcher class rather than a decision: W7 ported the
-                # quality gates under this very tree to Python, and a gate that shells
-                # out to `gh api --slurp --jq` is exactly as broken in Python as in bash.
+                # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the extension-shaped matcher class rather than a decision: W7 ported the quality gates under this very tree to Python, and a gate that shells out to `gh api --slurp --jq` is exactly as broken in Python as in bash.
                 # A matcher keyed on `.sh` does not report that it stopped looking; it
-                # reports nothing, and exits 0. 72 `.py` files under `.ci/scripts`
-                # mention `gh` and none of them was being read.
+                # reports nothing, and exits 0. 72 `.py` files under `.ci/scripts` mention `gh` and none of them was being read.
                 if name.endswith((".sh", ".py")) and candidate.is_file():
                     scan_files.append(str(candidate.relative_to(root)))
 
@@ -741,11 +722,7 @@ def main(argv: list[str] | None = None) -> int:
     raw_max = os.environ.get(INLINE_MAX_ENV) or ""
     max_logic = int(raw_max) if raw_max.isdigit() else DEFAULT_INLINE_MAX_LOGIC
 
-    # When the gate test exercises ONLY the inline-run rule, empty the file list
-    # the banned-pattern scans iterate so they become no-ops. This keeps the rule
-    # living in this one gate while letting the test point WORKFLOW_DIR at a
-    # fixture tree without also tripping (or depending on) the real .github
-    # banned-pattern state.
+    # When the gate test exercises ONLY the inline-run rule, empty the file list the banned-pattern scans iterate so they become no-ops. This keeps the rule living in this one gate while letting the test point WORKFLOW_DIR at a fixture tree without also tripping (or depending on) the real .github banned-pattern state.
     if os.environ.get(INLINE_ONLY_ENV, "0") == "1":
         files = []
 
@@ -822,14 +799,8 @@ def selftest() -> int:
         "CONTROL: an indented `uses:` key is a subject",
         bool(USES_RE.search("        uses: actions/checkout@v4")),
     )
-    # A BLIND SPOT IN THE TWIN, PINNED HERE RATHER THAN WIDENED. `^\s+uses:\s`
-    # requires `uses:` to follow leading WHITESPACE, so the YAML list form
-    # `      - uses: actions/checkout@v4` -- a step with no `name:` -- is not a
-    # subject at all and its pin is never checked. The form that IS checked is
-    # the continuation `        uses:` under a `- name:`, which is what this
-    # repo's workflows happen to use. Widening the pattern would be a verdict
-    # change on any tree that carries the other spelling, so the control asserts
-    # the CURRENT answer and names it as the defect it is.
+    # A BLIND SPOT IN THE TWIN, PINNED HERE RATHER THAN WIDENED. `^\s+uses:\s` requires `uses:` to follow leading WHITESPACE, so the YAML list form ` - uses: actions/checkout@v4` -- a step with no `name:` -- is not a subject at all and its pin is never checked. The form that IS checked is the continuation ` uses:` under a `- name:`, which is what this repo's workflows happen to
+    # use. Widening the pattern would be a verdict change on any tree that carries the other spelling, so the control asserts the CURRENT answer and names it as the defect it is.
     ctl.falsy(
         "INHERITED DEFECT: the `- uses:` list form is NOT a subject (the anchor "
         "demands whitespace immediately before `uses:`)",
@@ -1004,8 +975,7 @@ def selftest() -> int:
         ctl.check("PLANT: one banned pattern reds the gate", run(root), 1)
 
     with tempfile.TemporaryDirectory() as tmp:
-        # THE ANTI-VACUITY CASE. A tree with no workflows at all must be a
-        # FAILURE: the layout moved and the gate is asserting nothing.
+        # THE ANTI-VACUITY CASE. A tree with no workflows at all must be a FAILURE: the layout moved and the gate is asserting nothing.
         ctl.check(
             "VACUITY: no workflows under the scan dir is a FAILURE, never a clean run",
             run(pathlib.Path(tmp)),

@@ -81,8 +81,7 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every guard message it emits (:67). A literal
-# rather than argv[0], because the bytes must survive the port.
+# The twin's own name, printed in every guard message it emits (:67). A literal rather than argv[0], because the bytes must survive the port.
 SELF = "set-www-worker-secrets.sh"
 
 # The `${WORKER_NAME:?...}` stand-in named in the docstring's divergence note.
@@ -90,13 +89,9 @@ SELF = "set-www-worker-secrets.sh"
 MISSING_WORKER_NAME = "WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set"
 
 # The twenty-four `--arg <var> "${<ENV>:-}"` pairs (:92-115) in the twin's ORDER,
-# which is also the key order of the object it builds (:116-140). ORDER IS
-# OBSERVABLE: it is the byte order of the document on wrangler's stdin. The
-# differential re-derives this list from the twin's source and compares.
+# which is also the key order of the object it builds (:116-140). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin. The differential re-derives this list from the twin's source and compares.
 #
-# (environment variable this script READS, jq variable it binds it to). ONE NAME
-# EVERYWHERE: the variable read is the key written, which is what the Worker's
-# zod schema declares (private/account/src/types/env.ts).
+# (environment variable this script READS, jq variable it binds it to). ONE NAME EVERYWHERE: the variable read is the key written, which is what the Worker's zod schema declares (private/account/src/types/env.ts).
 KEYS: tuple[tuple[str, str], ...] = (
     ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub"),
@@ -124,20 +119,13 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("SELLER_EMAIL", "seller_email"),
 )
 
-# The thirteen `_require_nonempty` calls (:77-89), in order. The FIRST empty one
-# ends the run, so the order is observable in the message a caller reads.
+# The thirteen `_require_nonempty` calls (:77-89), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks
-# several of them optional() and normalises "" to undefined, so an empty value
+# WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value
 # deploys cleanly and SILENTLY turns the feature off; `required: true` on the
-# GitHub side used to be the guard and a job-start Bitwarden fetch has no
-# equivalent. The six env.ts declares NON-optional are demanded here too,
-# because zod does catch those, but only inside the deployed Worker as an
-# EnvConfigError 500 on every request afterwards.
+# GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
 #
-# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: edge
-# gets the sandbox key and stable the live one, so it is never legitimately
-# empty for www.
+# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: edge gets the sandbox key and stable the live one, so it is never legitimately empty for www.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -154,19 +142,13 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "STRIPE_WEBHOOK_SECRET",
 )
 
-# The two explanation lines under a guard failure (:68-69), byte for byte,
-# including their two-space indent. NOT the preview sibling's wording: that one
-# offers two possibilities ("either accepts ... or rejects"), this one states the
-# single behaviour the www schema has and names where to look.
+# The two explanation lines under a guard failure (:68-69), byte for byte, including their two-space indent. NOT the preview sibling's wording: that one offers two possibilities ("either accepts ... or rejects"), this one states the single behaviour the www schema has and names where to look.
 GUARD_EXPLANATION: tuple[str, ...] = (
     "  The Worker's schema accepts an empty value and silently disables the feature it",
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# THE HAPPY PATH SAYS NOTHING OF ITS OWN. There is no closing `log_info` at the
-# end of the twin, unlike `set-preview-worker-secrets.sh:105`. Named as a
-# constant because it is the reason the differential compares the document on
-# wrangler's stdin rather than the streams: a silent success is indistinguishable
+# THE HAPPY PATH SAYS NOTHING OF ITS OWN. There is no closing `log_info` at the end of the twin, unlike `set-preview-worker-secrets.sh:105`. Named as a constant because it is the reason the differential compares the document on wrangler's stdin rather than the streams: a silent success is indistinguishable
 # from a silent no-op on stdout and stderr alone.
 SUCCESS_IS_SILENT = True
 
@@ -250,8 +232,7 @@ def _wrangler(argv: list[str], payload: str) -> int:
 def main(argv: list[str]) -> int:
     del argv  # the twin parses nothing; extra arguments are ignored by both
 
-    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both
-    # binaries names jq, and both run BEFORE the WORKER_NAME guard.
+    # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq, and both run BEFORE the WORKER_NAME guard.
     for tool in ("jq", "npx"):
         try:
             common.require_cmd(tool)

@@ -375,9 +375,7 @@ export const P = () => <h1>{t(\`\${ns}.hero.title\`)}</h1>;`;
     'a key reached through a TEMPLATE namespace is reachable (control)',
     reach(TMPL, 'pages.resourcesBrief.ransomwareSurvival.title')
   );
-  // A template namespace deliberately vouches for its whole subtree (see the header: the
-  // deck key is data, so every deck under it is reachable). What it must NOT do is reach
-  // past its own prefix -- a wildcard segment is one segment, never a free pass.
+  // A template namespace deliberately vouches for its whole subtree (see the header: the deck key is data, so every deck under it is reachable). What it must NOT do is reach past its own prefix -- a wildcard segment is one segment, never a free pass.
   check(
     'a template namespace covers its own subtree (control)',
     reach(TMPL, 'pages.resourcesBrief.ransomwareSurvival.sections.0.body')
@@ -468,8 +466,7 @@ const body = (content as any).problem;`;
 
   for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail);
 
-  // A different key with a matching SUFFIX must not be laundered as reachable, or half the
-  // dead keys in the tree would look alive.
+  // A different key with a matching SUFFIX must not be laundered as reachable, or half the dead keys in the tree would look alive.
   check(
     'a similarly named key elsewhere does not make this one reachable',
     !reach("const x = t('layout.meta.siteName');", 'common.siteName')
@@ -566,9 +563,7 @@ function main(): void {
     : [];
 
   if (argv.includes('--write-baseline')) {
-    // COMPOSITION lives in scripts/lib/shrink-only-baseline.ts. No seed target: there is no
-    // legitimate way for this backlog to grow, because a new dead key is always either a
-    // deletion someone forgot or a wiring someone forgot.
+    // COMPOSITION lives in scripts/lib/shrink-only-baseline.ts. No seed target: there is no legitimate way for this backlog to grow, because a new dead key is always either a deletion someone forgot or a wiring someone forgot.
     const verdict = writeBaselineVerdict({
       baselineExists,
       firstSeedFlag: argv.includes('--first-seed'),
@@ -617,8 +612,7 @@ function main(): void {
     return;
   }
 
-  // Group by the shallowest branch that holds only dead leaves, so 46 sibling leaves read
-  // as one decision to make rather than 46.
+  // Group by the shallowest branch that holds only dead leaves, so 46 sibling leaves read as one decision to make rather than 46.
   const byBranch = new Map<string, string[]>();
   for (const k of fresh) {
     const branch = k.split('.').slice(0, 3).join('.');

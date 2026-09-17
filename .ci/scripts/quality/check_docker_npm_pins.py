@@ -54,19 +54,12 @@ from pathlib import Path
 ROOT = Path(os.environ.get("DOCKER_NPM_PINS_ROOT") or Path(__file__).resolve().parents[3])
 EXCLUSIONS = ROOT / ".ci" / "config" / "docker-npm-pin-exclusions.json"
 MIN_REASON_CHARS = 40
-# Measured 2026-09-04 with the enumeration this gate actually uses (git ls-files
-# --recurse-submodules): 11 tracked Dockerfiles carrying 9 npm-install lines between
-# them. A `find` over the tree says 14, which is the number a first draft of this
-# comment carried -- it counts untracked and node_modules copies that CI never sees.
-# The floor guards the ENUMERATION, not the population.
+# Measured 2026-09-04 with the enumeration this gate actually uses (git ls-files --recurse-submodules): 11 tracked Dockerfiles carrying 9 npm-install lines between them. A `find` over the tree says 14, which is the number a first draft of this comment carried -- it counts untracked and node_modules copies that CI never sees. The floor guards the ENUMERATION, not the population.
 MIN_DOCKERFILES = int(os.environ.get("DOCKER_NPM_PINS_MIN", "6"))
-# Workflows are the bigger half of the corpus and the half this gate originally
-# missed, so they get their own floor rather than hiding inside a combined one.
+# Workflows are the bigger half of the corpus and the half this gate originally missed, so they get their own floor rather than hiding inside a combined one.
 MIN_WORKFLOWS = int(os.environ.get("DOCKER_NPM_PINS_MIN_WORKFLOWS", "20"))
 
-# Long flags that are BOOLEAN, so the token after them really is a package.
-# Listed rather than guessed: treating every long flag as value-taking would
-# swallow the package in `npm install --ignore-scripts foo@latest`.
+# Long flags that are BOOLEAN, so the token after them really is a package. Listed rather than guessed: treating every long flag as value-taking would swallow the package in `npm install --ignore-scripts foo@latest`.
 _VALUELESS_LONG_FLAGS = frozenset(
     {
         "--ignore-scripts",
@@ -87,10 +80,7 @@ _VALUELESS_LONG_FLAGS = frozenset(
 )
 
 MOVING_TAGS = ("latest", "next", "beta", "canary", "rc", "dev")
-# `run:` joins the lead-ins for the workflow arm. Without it the gate matched
-# `run: cd "$HOME" && npm install -g x@latest` (via the `&&`) but NOT the plainer
-# `run: npm install -g x@latest` -- caught by this file's own control, which is
-# the whole reason the workflow cases plant both shapes.
+# `run:` joins the lead-ins for the workflow arm. Without it the gate matched `run: cd "$HOME" && npm install -g x@latest` (via the `&&`) but NOT the plainer `run: npm install -g x@latest` -- caught by this file's own control, which is the whole reason the workflow cases plant both shapes.
 NPM_RE = re.compile(r"(?:^|&&|;|\|\||\bRUN\s+|\brun:\s*)\s*npm\s+(install|i|add)\b([^&;|\n]*)")
 
 
@@ -136,10 +126,7 @@ def unpinned_specs(args: str) -> list[str]:
     out = []
     prev_flag_wants_value = False
     for tok in args.split():
-        # A FLAG'S ARGUMENT IS NOT A PACKAGE. `npm install --prefix private/account`
-        # read `private/account` as an unpinned package name and reported
-        # cleanup-preview.yml as a finding -- caught the moment the gate started
-        # scanning workflows, where `--prefix` and `-w` are common and Dockerfiles
+        # A FLAG'S ARGUMENT IS NOT A PACKAGE. `npm install --prefix private/account` read `private/account` as an unpinned package name and reported cleanup-preview.yml as a finding -- caught the moment the gate started scanning workflows, where `--prefix` and `-w` are common and Dockerfiles
         # had none. A long flag with no `=` takes the next token; that one rule
         # covers --prefix, --workspace, --registry, --omit and the rest.
         if prev_flag_wants_value:
@@ -208,13 +195,9 @@ def findings_for(text: str, kind: str = "dockerfile") -> tuple[list[tuple[str, s
         # if a lockfile came with it.
         specs = unpinned_specs(args)
         if kind == "workflow":
-            # A BARE `npm install` MEANS SOMETHING ELSE IN A WORKFLOW, and treating
-            # the two alike produced four false findings the moment this gate was
-            # widened. A Dockerfile stage sees only what it COPYs, so `npm install`
+            # A BARE `npm install` MEANS SOMETHING ELSE IN A WORKFLOW, and treating the two alike produced four false findings the moment this gate was widened. A Dockerfile stage sees only what it COPYs, so `npm install`
             # with no lockfile beside it really does resolve live. A workflow step
-            # runs against a full checkout with package-lock.json already on disk.
-            # What still applies here is the half that broke CI: a package spec that
-            # names no fixed version.
+            # runs against a full checkout with package-lock.json already on disk. What still applies here is the half that broke CI: a package spec that names no fixed version.
             if specs:
                 out.append((line, "unpinned package(s): " + ", ".join(specs)))
             continue
@@ -283,11 +266,7 @@ def selftest() -> int:
         findings_for("      - run: npm install -g --ignore-scripts x@latest", "workflow")[0],
     )
 
-    # THE WORKFLOW ARM, both directions. It was added after the gate shipped
-    # Dockerfile-only and reported a clean tree while ci-quality.yml installed
-    # `agent-browser@latest` on every run -- so the case that matters most is the one
-    # this gate could not see, and the case beside it is the false finding that
-    # widening produced on the first try.
+    # THE WORKFLOW ARM, both directions. It was added after the gate shipped Dockerfile-only and reported a clean tree while ci-quality.yml installed `agent-browser@latest` on every run -- so the case that matters most is the one this gate could not see, and the case beside it is the false finding that widening produced on the first try.
     wf_bad = "      - run: npm install -g agent-browser@latest"
     check(
         "workflow: an unpinned GLOBAL install is a finding",
@@ -312,8 +291,7 @@ def selftest() -> int:
         findings_for(wf_bare, "dockerfile")[0],
     )
 
-    # THE LOCKFILE ARM, both answers, because it is the one that decides whether
-    # tonight's actual break is reported or forgiven.
+    # THE LOCKFILE ARM, both answers, because it is the one that decides whether tonight's actual break is reported or forgiven.
     with_lock = "COPY package*.json ./\nRUN npm install --ignore-scripts"
     check(
         "CONTROL: a bare install IS forgiven when a lockfile is COPYed in",
@@ -346,17 +324,11 @@ def main() -> int:
     except (OSError, ValueError):
         excl = {}
 
-    # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST, and this gate learned
-    # it the same way check_syncpack_sources.py did -- from CI, on its first run.
+    # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST, and this gate learned it the same way check_syncpack_sources.py did -- from CI, on its first run.
     #
-    # quality-static checks out NO submodules. private/account/Dockerfile then simply
-    # vanishes from the enumeration, its two exclusions match nothing, and the
-    # dead-scaffold arm fires: two confident findings telling the reader to delete
-    # entries that are entirely correct (job 100870135489). A missing file is
-    # "cannot verify", never "your entry is dead".
+    # quality-static checks out NO submodules. private/account/Dockerfile then simply vanishes from the enumeration, its two exclusions match nothing, and the dead-scaffold arm fires: two confident findings telling the reader to delete entries that are entirely correct (job 100870135489). A missing file is "cannot verify", never "your entry is dead".
     #
-    # Checked against the paths the CONFIG names, not against what the scan found:
-    # asking the enumeration whether the enumeration is complete answers itself.
+    # Checked against the paths the CONFIG names, not against what the scan found: asking the enumeration whether the enumeration is complete answers itself.
     absent = sorted({k.split(":", 1)[0] for k in excl} - set(scanned()))
     if absent:
         print(
@@ -401,11 +373,9 @@ def main() -> int:
         hits, seen = findings_for(text, "workflow" if rel.startswith(".github/") else "dockerfile")
         n_install += seen
         for line, why in hits:
-            # EXACT line, not a substring, and the difference is not style. The two
-            # excluded lines in private/account/Dockerfile are `npm install` and
+            # EXACT line, not a substring, and the difference is not style. The two excluded lines in private/account/Dockerfile are `npm install` and
             # `npm install --omit=dev && \`; under substring matching the shorter key
-            # matches BOTH, the longer one then matches nothing, and the gate reports
-            # a live exclusion as dead scaffold. Exact is the only unambiguous key.
+            # matches BOTH, the longer one then matches nothing, and the gate reports a live exclusion as dead scaffold. Exact is the only unambiguous key.
             key = next((k for k in excl if k == "%s:%s" % (rel, line)), None)
             if key:
                 used.add(key)
@@ -425,9 +395,7 @@ def main() -> int:
                 "reasons." % key
             )
 
-    # ANTI-VACUITY. A scan that inspected nothing reports a clean tree, and the first
-    # draft of this gate did exactly that: it counted FILES WITH FINDINGS and printed
-    # "0 with an npm install" beside a tick.
+    # ANTI-VACUITY. A scan that inspected nothing reports a clean tree, and the first draft of this gate did exactly that: it counted FILES WITH FINDINGS and printed "0 with an npm install" beside a tick.
     if n_install == 0:
         print(
             "VACUOUS: %d Dockerfile(s) scanned and NOT ONE runs an npm install. That is a "

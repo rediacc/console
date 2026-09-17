@@ -246,8 +246,7 @@ def main(argv: list[str] | None = None) -> int:
             "docker-compose references ${%s} (no safe default) but ci-env.sh does not "
             "persist it" % var
         )
-        # STDOUT, as in the twin: these two are bare `echo`, not log_error, so
-        # they land on the data stream while the finding lands on stderr.
+        # STDOUT, as in the twin: these two are bare `echo`, not log_error, so they land on the data stream while the finding lands on stderr.
         print("  This variable will be empty in workflow steps that don't source ci-env.sh")
         print("  Fix: Add it to the .env file AND GITHUB_ENV blocks in ci-env.sh")
         errors += 1
@@ -258,14 +257,12 @@ def main(argv: list[str] | None = None) -> int:
         print("See: .ci/scripts/infra/ci-env.sh (.env file + GITHUB_ENV blocks)")
         return 1
 
-    # THE SHAPE, NOT JUST THE VERDICT: the count is in the success line so a
-    # reader notices the day the parse collapses from 9 to 1.
+    # THE SHAPE, NOT JUST THE VERDICT: the count is in the success line so a reader notices the day the parse collapses from 9 to 1.
     log.info("All compose env vars are properly defined (%d vars checked)" % len(compose_vars))
     return 0
 
 
-# The smallest pair that exercises every branch: one variable persisted, one with
-# a safe default, one with an EMPTY default (which is not safe).
+# The smallest pair that exercises every branch: one variable persisted, one with a safe default, one with an EMPTY default (which is not safe).
 _COMPOSE = """services:
   app:
     image: x
@@ -332,8 +329,7 @@ def selftest() -> int:
             referenced_vars(files),
             ["DEFAULTED_ONE", "EMPTY_DEFAULTED", "PERSISTED_ONE"],
         )
-        # THE EMPTY DEFAULT IS NOT SAFE, which is the distinction the dead filter
-        # was written for and which the FIRST pattern already enforces.
+        # THE EMPTY DEFAULT IS NOT SAFE, which is the distinction the dead filter was written for and which the FIRST pattern already enforces.
         ctl.check(
             "PARSE: only the non-empty default counts as safe",
             safe_default_vars(files),
@@ -344,8 +340,7 @@ def selftest() -> int:
             persisted_vars(root / CI_ENV_SUBPATH),
             ["EMPTY_DEFAULTED", "PERSISTED_ONE"],
         )
-        # ITS MIRROR: the two assignments outside the block must be absent, or
-        # the range is not a range and the gate would accept an `export`.
+        # ITS MIRROR: the two assignments outside the block must be absent, or the range is not a range and the gate would accept an `export`.
         found = persisted_vars(root / CI_ENV_SUBPATH)
         ctl.falsy(
             "PARSE MIRROR: an export above the block is not persisted",
@@ -356,11 +351,7 @@ def selftest() -> int:
             "OUTSIDE_THE_BLOCK" in found,
         )
 
-        # THE FILTER IS DORMANT, NOT DEAD, and this is the control that
-        # measured it. With the pattern loosened by one character the filter
-        # DOES fire, which is what makes deleting it a behaviour change rather
-        # than a cleanup. Asserted against the same two constants the gate uses,
-        # so it cannot drift away from them.
+        # THE FILTER IS DORMANT, NOT DEAD, and this is the control that measured it. With the pattern loosened by one character the filter DOES fire, which is what makes deleting it a behaviour change rather than a cleanup. Asserted against the same two constants the gate uses, so it cannot drift away from them.
         loose = re.compile(SAFE_DEFAULT_RE.pattern.replace("[^}]+", "[^}]*"))
         empty_ref = "x: ${EMPTY_DEFAULTED:-}\n"
         ctl.check(
@@ -385,14 +376,11 @@ def selftest() -> int:
         # -- THE VERDICT -------------------------------------------------------
         ctl.check("CONTROL: a fully persisted compose passes", run(_COMPOSE, _CI_ENV), 0)
 
-        # THE PLANT: drop the variable from the heredoc while leaving the
-        # reference. Exactly the shape the gate exists for.
+        # THE PLANT: drop the variable from the heredoc while leaving the reference. Exactly the shape the gate exists for.
         unpersisted = plant(_CI_ENV, "PERSISTED_ONE=yes\n", "")
         ctl.check("PLANT: an unpersisted reference is caught", run(_COMPOSE, unpersisted), 1)
 
-        # AND THE NEAR MISS: the same assignment moved OUTSIDE the heredoc. It
-        # is exported, it works in that shell, and it is gone in the next step.
-        # A gate that grepped the whole file would pass this.
+        # AND THE NEAR MISS: the same assignment moved OUTSIDE the heredoc. It is exported, it works in that shell, and it is gone in the next step. A gate that grepped the whole file would pass this.
         exported_only = plant(
             plant(_CI_ENV, "PERSISTED_ONE=yes\n", ""),
             "OUTSIDE_THE_BLOCK=no\n",
@@ -404,8 +392,7 @@ def selftest() -> int:
             1,
         )
 
-        # THE MIRROR a reviewer waves through: a variable with a safe default
-        # needs no persistence at all and must NOT be reported.
+        # THE MIRROR a reviewer waves through: a variable with a safe default needs no persistence at all and must NOT be reported.
         only_defaulted = "services:\n  app:\n    environment:\n      B: ${DEFAULTED_ONE:-false}\n"
         ctl.check("MIRROR: a safe default needs no persistence", run(only_defaulted, _CI_ENV), 0)
 
@@ -423,13 +410,10 @@ def selftest() -> int:
         )
         ctl.check("VACUITY: no compose file at all is refused", run(None, _CI_ENV), 1)
 
-        # A MISSING ci-env.sh reddens rather than passing, which is the twin's
-        # behaviour. Asserted so nobody "fixes" it into a silent pass.
+        # A MISSING ci-env.sh reddens rather than passing, which is the twin's behaviour. Asserted so nobody "fixes" it into a silent pass.
         ctl.check("VACUITY: a missing ci-env.sh reddens", run(_COMPOSE, None), 1)
 
-        # THE FLOOR MIRROR for the refusal: exactly one reference, persisted, is
-        # enough to pass. Without this the vacuity checks above could be passing
-        # because the gate refuses everything.
+        # THE FLOOR MIRROR for the refusal: exactly one reference, persisted, is enough to pass. Without this the vacuity checks above could be passing because the gate refuses everything.
         one_var = "services:\n  app:\n    environment:\n      A: ${PERSISTED_ONE}\n"
         ctl.check("FLOOR MIRROR: one persisted reference is enough", run(one_var, _CI_ENV), 0)
 

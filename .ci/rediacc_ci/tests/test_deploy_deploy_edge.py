@@ -84,8 +84,7 @@ if rc:
 sys.stdout.write("added 1 package\\n")
 """
 
-# Found by `command -v`, never executed. It exists so the ONE case where this
-# script and its account sibling disagree can be driven.
+# Found by `command -v`, never executed. It exists so the ONE case where this script and its account sibling disagree can be driven.
 FAKE_WRANGLER = "#!/usr/bin/python3\nraise SystemExit('the fake wrangler must never run')\n"
 
 BASE_ENV = {

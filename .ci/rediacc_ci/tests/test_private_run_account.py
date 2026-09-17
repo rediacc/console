@@ -56,9 +56,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "run_account.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/run-account.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/run_account.py")
 
-# The recording `npm`. Its status is chosen per SUBCOMMAND so a case can make
-# the install fail without also failing the tests, which is the difference
-# between "exit with npm ci's code" and "exit with npm run test's code".
+# The recording `npm`. Its status is chosen per SUBCOMMAND so a case can make the install fail without also failing the tests, which is the difference between "exit with npm ci's code" and "exit with npm run test's code".
 FAKE_NPM = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -74,11 +72,7 @@ sys.stderr.flush()
 sys.exit(RC_CI if args[:1] == ["ci"] else RC_TEST)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch, MINUS `npm`,
-# which is supplied per case. Named rather than derived: a PATH built by copying
-# "everything except npm" is a PATH nobody can state, and the first tool it
-# forgot would look like a divergence in the subject rather than a hole in the
-# harness.
+# Everything both subjects need once PATH is rebuilt from scratch, MINUS `npm`, which is supplied per case. Named rather than derived: a PATH built by copying "everything except npm" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -208,8 +202,7 @@ def _run(
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

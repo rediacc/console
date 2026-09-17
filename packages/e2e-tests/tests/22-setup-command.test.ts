@@ -25,9 +25,7 @@ test.describe('Setup Command @bridge', () => {
   });
 
   test('setup command should not have shell syntax errors', async () => {
-    // This test would have caught the bash -c error!
-    // When setup was incorrectly using ["bash", "-c", "if..."], the
-    // command would fail with: "syntax error near unexpected token `then'"
+    // This test would have caught the bash -c error! When setup was incorrectly using ["bash", "-c", "if..."], the command would fail with: "syntax error near unexpected token `then'"
     const result = await runner.testFunction({
       function: 'setup',
       datastorePath: DEFAULT_DATASTORE_PATH,
@@ -37,8 +35,7 @@ test.describe('Setup Command @bridge', () => {
     expect(result.stderr).not.toContain('syntax error');
     expect(result.stderr).not.toContain('unexpected token');
 
-    // The command should either succeed or fail gracefully
-    // (it may fail in test-mode due to missing vault data, but not syntax errors)
+    // The command should either succeed or fail gracefully (it may fail in test-mode due to missing vault data, but not syntax errors)
   });
 
   test('setup command should handle compound shell commands', async () => {
@@ -75,8 +72,7 @@ test.describe('Setup Command Edge Cases @bridge', () => {
       // Note: no datastorePath provided
     });
 
-    // Should either use default path or provide clear error
-    // Should NOT have shell syntax errors
+    // Should either use default path or provide clear error Should NOT have shell syntax errors
     expect(result.stderr).not.toContain('syntax error');
     expect(result.stderr).not.toContain('unexpected token');
   });

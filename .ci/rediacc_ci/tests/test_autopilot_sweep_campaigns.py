@@ -55,8 +55,7 @@ BASE_ENV = {
 
 BOT = "rediacc-autopilot[bot]"
 
-# `state-comment.sh`'s HEADER, and a body that does not start with it is not a
-# state comment however well it is worded.
+# `state-comment.sh`'s HEADER, and a body that does not start with it is not a state comment however well it is worded.
 HEADER = "### Autopilot state (machine-maintained, do not edit)"
 
 

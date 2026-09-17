@@ -57,13 +57,9 @@ export class OpsCommandRunner {
       });
 
       const timeout = setTimeout(() => {
-        // SIGTERM here is not the end of the story on the renet side: `ops up`
-        // cancels its root context on SIGTERM (cmd/renet/ops_up.go), and every
-        // ssh/scp it has in flight is an exec.CommandContext, which Go kills
+        // SIGTERM here is not the end of the story on the renet side: `ops up` cancels its root context on SIGTERM (cmd/renet/ops_up.go), and every ssh/scp it has in flight is an exec.CommandContext, which Go kills
         // with SIGKILL. The operator-visible wreckage is therefore an
-        // unrelated-looking "ssh command failed: signal: killed" deep inside
-        // whatever step happened to be running. Say plainly, here, that WE
-        // killed it and after how long.
+        // unrelated-looking "ssh command failed: signal: killed" deep inside whatever step happened to be running. Say plainly, here, that WE killed it and after how long.
         childProcess.kill('SIGTERM');
         resolve({
           stdout,

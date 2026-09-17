@@ -41,10 +41,7 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "resolve-model-args.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "resolve_model_args.py"
 
-# The environment both sides get. REPLACED, not inherited: a differential that
-# inherits the caller's environment passes or fails depending on whether the
-# developer happens to export CI or NO_COLOR, and both sides decide colour from
-# those. LC_ALL pins message text.
+# The environment both sides get. REPLACED, not inherited: a differential that inherits the caller's environment passes or fails depending on whether the developer happens to export CI or NO_COLOR, and both sides decide colour from those. LC_ALL pins message text.
 BASE_ENV = {
     "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
     "HOME": os.environ.get("HOME", "/tmp"),
@@ -126,11 +123,7 @@ def test_effort_cross_product() -> None:
         for e_name, e_argv in EFFORT_SHAPES:
             for v_name, v_argv in EFFORT_VAR_SHAPES:
                 argv = ["--model", "claude-opus-5", "--mode", mode]
-                # THE VARIABLE FLAG GOES FIRST when --effort is the bare form,
-                # because `--effort` followed by nothing and `--effort` followed
-                # by `--effort-var` are the SAME case in the twin's parser (the
-                # next token starts with `--`), and putting it last would make
-                # the bare-flag row degenerate into an end-of-argv row.
+                # THE VARIABLE FLAG GOES FIRST when --effort is the bare form, because `--effort` followed by nothing and `--effort` followed by `--effort-var` are the SAME case in the twin's parser (the next token starts with `--`), and putting it last would make the bare-flag row degenerate into an end-of-argv row.
                 if v_argv:
                     argv += v_argv
                 if e_argv:
@@ -183,9 +176,7 @@ def test_usage_refusals() -> None:
         ("mode-only", ["--mode", "fix"]),
         ("model-empty", ["--model=", "--mode", "fix"]),
         ("mode-empty", ["--model", "m", "--mode="]),
-        # `--model` swallowed by the next flag: parse_args stores the string
-        # "true", which is non-empty, so this is NOT a usage error. Driven here
-        # so the surprising answer is pinned rather than assumed.
+        # `--model` swallowed by the next flag: parse_args stores the string "true", which is non-empty, so this is NOT a usage error. Driven here so the surprising answer is pinned rather than assumed.
         ("model-swallowed", ["--model", "--mode", "fix"]),
         ("positionals-ignored", ["stray", "--model", "m", "--mode", "fix", "words"]),
     ]
@@ -233,8 +224,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
     assert rma.resolve_effort("banana", "")[0] == ""
     assert rma.resolve_effort("", "")[0] == ""
     assert rma.resolve_effort("", "default")[0] == ""
-    # The empty string must never be a member, even though the allowlist is
-    # split on commas.
+    # The empty string must never be a member, even though the allowlist is split on commas.
     assert not rma.in_csv("", rma.EFFORT_ALLOWED)
     assert not rma.in_csv("default", rma.EFFORT_ALLOWED)
     assert rma.in_csv("xhigh", rma.EFFORT_ALLOWED)

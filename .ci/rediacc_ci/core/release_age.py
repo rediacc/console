@@ -166,8 +166,7 @@ RELEASE_AGE_DEFAULT_WINDOW_SECONDS = 86400
 RELEASE_AGE_TS = "scripts/lib/release-age.ts"
 
 _UNSIGNED = re.compile(r"[0-9]+")
-# One character wider on purpose: `:179` accepts a negative epoch, `:160` and
-# `:227` do not. See WHAT IS FAITHFULLY REPRODUCED.
+# One character wider on purpose: `:179` accepts a negative epoch, `:160` and `:227` do not. See WHAT IS FAITHFULLY REPRODUCED.
 _SIGNED = re.compile(r"-?[0-9]+")
 
 USAGE = """release_age -- the `release-age.sh` shim verbs.
@@ -216,8 +215,7 @@ class ReleaseAge:
             return self._runner
         # `command -v node >/dev/null 2>&1`.
         if shutil.which("node") is not None:
-            # NO `cd` HERE, deliberately: the twin probes at `:118` without the
-            # subshell `cd` that `:137` uses for real queries.
+            # NO `cd` HERE, deliberately: the twin probes at `:118` without the subshell `cd` that `:137` uses for real queries.
             self.probe_calls += 1
             probe = self._capture(
                 ["node", "--experimental-strip-types", self.lib, "--window-seconds"], cwd=None

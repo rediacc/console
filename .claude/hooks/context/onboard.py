@@ -48,8 +48,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ctx_budget as B
 
-# One compaction fires SessionStart AND PostCompact. Re-arming twice would reset
-# the machine and emit twice, so an arm inside this window is a no-op.
+# One compaction fires SessionStart AND PostCompact. Re-arming twice would reset the machine and emit twice, so an arm inside this window is a no-op.
 ARM_DEBOUNCE_S = 120
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
 
@@ -112,8 +111,7 @@ def my_open_items(session_id):
             text=True,
             timeout=20,
             stdin=subprocess.DEVNULL,
-            # A non-zero exit is DATA here, not an error: --list --open exits 1
-            # on an EMPTY slice, which is a real answer and not a failure.
+            # A non-zero exit is DATA here, not an error: --list --open exits 1 on an EMPTY slice, which is a real answer and not a failure.
             check=False,
         )
     except Exception:  # noqa: BLE001
@@ -121,8 +119,7 @@ def my_open_items(session_id):
     rows = [ln for ln in r.stdout.splitlines() if ln.strip().startswith("- [")]
     if rows:
         return rows, len(rows)
-    # EXIT CODE ALONE CANNOT ANSWER THIS, and reading it as if it could was a
-    # real bug here: `--list --open <session-with-nothing>` exits 1, so a plain
+    # EXIT CODE ALONE CANNOT ANSWER THIS, and reading it as if it could was a real bug here: `--list --open <session-with-nothing>` exits 1, so a plain
     # `returncode != 0 -> unknown` collapsed "owns nothing" into "cannot say"
     # and arm (b) could never fire. The empty slice announces itself in words,
     # so key on those; anything else genuinely is unknown.

@@ -108,9 +108,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The needle. A literal string, not a pattern: the twin passes it to grep with no
-# `-E`, and `.` in `github.com` would match any character under a regex reading.
-# It does not matter for this needle and it would matter for the next one.
+# The needle. A literal string, not a pattern: the twin passes it to grep with no `-E`, and `.` in `github.com` would match any character under a regex reading. It does not matter for this needle and it would matter for the next one.
 REPLACE_NEEDLE = "replace github.com/rediacc/renet"
 
 # `--include=go.mod`: a basename match, not a suffix match.
@@ -122,8 +120,7 @@ EXCLUDE_SUBSTRING = "node_modules"
 # `head -20` on the captured diff.
 DIFF_EXCERPT_LINES = 20
 
-# The exit code for a setup error, documented in the twin's header as "2 setup
-# error". See the port notes for why it is not 77.
+# The exit code for a setup error, documented in the twin's header as "2 setup error". See the port notes for why it is not 77.
 EXIT_SETUP_ERROR = 2
 
 
@@ -144,9 +141,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
             text = absolute.read_text(encoding="utf-8", errors="replace")
         except OSError:
             # grep skips what it cannot read and carries on; it does not abort
-            # the scan. One unreadable go.mod must not turn a discovery gate
-            # into a gate that discovered nothing, which is the failure this
-            # whole file is written against.
+            # the scan. One unreadable go.mod must not turn a discovery gate into a gate that discovered nothing, which is the failure this whole file is written against.
             continue
         if REPLACE_NEEDLE not in text:
             continue
@@ -156,8 +151,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
             continue
         found.append(composed)
     # `sort` with LC_ALL=C is a byte sort. Python's default str comparison is by
-    # code point, which agrees for ASCII and diverges for anything else, so the
-    # bytes are compared rather than the characters.
+    # code point, which agrees for ASCII and diverges for anything else, so the bytes are compared rather than the characters.
     return sorted(found, key=str.encode)
 
 
@@ -178,8 +172,7 @@ def tidy_diff(directory: pathlib.Path) -> tuple[int, str]:
         check=False,
     )
     # `out="$(...)"` strips every trailing newline, and the twin then tests
-    # `[[ -n "$out" ]]`. An output of only newlines is therefore EMPTY to the
-    # twin and would be non-empty to a naive port.
+    # `[[ -n "$out" ]]`. An output of only newlines is therefore EMPTY to the twin and would be non-empty to a naive port.
     return completed.returncode, completed.stdout.rstrip("\n")
 
 
@@ -191,8 +184,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = paths.repo_root()
 
-    # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a
-    # traceback from a subprocess launch that reads as flake. The twin probes
+    # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a traceback from a subprocess launch that reads as flake. The twin probes
     # with `command -v go`; `shutil.which` is the same question.
     if shutil.which("go") is None:
         log.error("go is required to check module sync")
@@ -200,9 +192,7 @@ def main(argv: list[str] | None = None) -> int:
 
     modules = find_modules(root)
 
-    # ZERO INPUTS IS A FAILURE, NEVER A PASS. The twin's three lines say both
-    # things a reader needs: what a green would have meant, and the two ways the
-    # discovery could have gone stale.
+    # ZERO INPUTS IS A FAILURE, NEVER A PASS. The twin's three lines say both things a reader needs: what a green would have meant, and the two ways the discovery could have gone stale.
     if not modules:
         log.error("no go.mod replaces the renet worktree, so this gate verified NOTHING.")
         log.error("  Either the coupling is gone and this gate should be deleted deliberately,")
@@ -230,17 +220,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # THE SHAPE, NOT JUST THE VERDICT. The count is in the success line so a
-    # reader notices the day it collapses from N to 1.
+    # THE SHAPE, NOT JUST THE VERDICT. The count is in the success line so a reader notices the day it collapses from N to 1.
     log.info("Go module sync holds: %d module(s) tidy against the renet worktree" % len(modules))
     return 0
 
 
 # A module that needs no network: it requires the replaced module and nothing
 # else, and the replacement is a local directory inside the fixture. `go mod
-# tidy -diff` on this resolves entirely from disk, so the selftest cannot fail
-# because a proxy was unreachable -- which would be a red that names the wrong
-# thing.
+# tidy -diff` on this resolves entirely from disk, so the selftest cannot fail because a proxy was unreachable -- which would be a red that names the wrong thing.
 _REPLACED_GOMOD = "module github.com/rediacc/renet\n\ngo 1.21\n"
 _REPLACED_SRC = 'package renet\n\nfunc Name() string { return "renet" }\n'
 _CONSUMER_SRC = (
@@ -253,8 +240,7 @@ _TIDY_GOMOD = (
 )
 # THE UNTIDY ONE DIFFERS IN EXACTLY ONE LINE: the `require` is gone while the
 # import stays, which is the shape the incident took (a require left pinning a
-# stale version is the same class). Two fixtures that differ in more than the
-# property under test prove nothing about which difference fired.
+# stale version is the same class). Two fixtures that differ in more than the property under test prove nothing about which difference fired.
 _UNTIDY_GOMOD = (
     "module example.com/consumer\n\ngo 1.21\n\nreplace github.com/rediacc/renet => ./renet\n"
 )
@@ -300,8 +286,7 @@ def selftest() -> int:
         empty.mkdir()
         ctl.check("DISCOVERY: a tree with no go.mod finds nothing", find_modules(empty), [])
 
-        # A go.mod WITHOUT the replace directive is not a subject. This is the
-        # mirror that stops the discovery matching every Go module in the tree.
+        # A go.mod WITHOUT the replace directive is not a subject. This is the mirror that stops the discovery matching every Go module in the tree.
         unrelated = base / "unrelated"
         unrelated.mkdir()
         (unrelated / "go.mod").write_text("module example.com/x\n\ngo 1.21\n", encoding="utf-8")
@@ -317,20 +302,15 @@ def selftest() -> int:
             "DISCOVERY: the replacing go.mod is found", find_modules(tidy_root), ["./mod/go.mod"]
         )
 
-        # node_modules is excluded as a SUBSTRING of the path, so a module
-        # vendored under one is invisible even though it replaces renet.
+        # node_modules is excluded as a SUBSTRING of the path, so a module vendored under one is invisible even though it replaces renet.
         vendored = base / "vendored"
         _build_module(vendored, "node_modules", _TIDY_GOMOD)
         ctl.check("DISCOVERY: a node_modules path is excluded", find_modules(vendored), [])
 
-        # -- THE REFUSAL -------------------------------------------------------
-        # Zero modules must be a FAILURE. A discovery gate that finds nothing
-        # and reports success is the exact defect this gate is written against.
+        # -- THE REFUSAL ------------------------------------------------------- Zero modules must be a FAILURE. A discovery gate that finds nothing and reports success is the exact defect this gate is written against.
         ctl.check("VACUITY: zero replacing modules is a refusal", run(empty), 1)
 
-        # -- THE MISSING-TOOLCHAIN BRANCH --------------------------------------
-        # Driven for real by emptying PATH, so the branch is exercised rather
-        # than reasoned about. Exit 2, not 1: a setup error is not a verdict.
+        # -- THE MISSING-TOOLCHAIN BRANCH -------------------------------------- Driven for real by emptying PATH, so the branch is exercised rather than reasoned about. Exit 2, not 1: a setup error is not a verdict.
         saved_path = os.environ.get("PATH", "")
         os.environ["PATH"] = str(base / "no-such-bin")
         try:
@@ -349,8 +329,7 @@ def selftest() -> int:
                 "go not on PATH",
             )
         else:
-            # CONTROL FIRST: the tidy fixture must be genuinely tidy, or every
-            # plant below fires against something that was broken to begin with.
+            # CONTROL FIRST: the tidy fixture must be genuinely tidy, or every plant below fires against something that was broken to begin with.
             code, out = tidy_diff(tidy_root / "mod")
             ctl.check("CONTROL: the tidy fixture is tidy (go mod tidy -diff)", code, 0)
             ctl.check("CONTROL: a tidy module produces no diff", out, "")
@@ -364,9 +343,7 @@ def selftest() -> int:
             ctl.truthy("PLANT: go says something about it", planted_out != "")
             ctl.check("PLANT: an out-of-sync module is caught", run(untidy_root), 1)
 
-            # AND THE MIRROR, which is the half a reviewer waves through: two
-            # modules, one tidy and one not, must still be a failure -- a loop
-            # that stopped after its first success would pass this.
+            # AND THE MIRROR, which is the half a reviewer waves through: two modules, one tidy and one not, must still be a failure -- a loop that stopped after its first success would pass this.
             mixed_root = base / "mixed"
             _build_module(mixed_root, "a-tidy", _TIDY_GOMOD)
             _build_module(mixed_root, "b-untidy", _UNTIDY_GOMOD)

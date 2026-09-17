@@ -37,8 +37,7 @@ if TYPE_CHECKING:
 TWIN = ".ci/scripts/ci/check-rerun-attempt.sh"
 MODULE = "rediacc_ci.ci.check_rerun_attempt"
 
-# `<anything>: line <N>: ` at the start of a line. The path is the program name
-# and is the only token allowed to differ between the two sides.
+# `<anything>: line <N>: ` at the start of a line. The path is the program name and is the only token allowed to differ between the two sides.
 _PROG = re.compile(r"^\S+: line ", re.MULTILINE)
 
 FAKE_GH_SRC = """#!{python}

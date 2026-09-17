@@ -38,15 +38,9 @@ import sys
 
 SELF = "backfill-write-sentinel.py"
 
-# `.ci/rediacc_ci/release/backfill_write_sentinel.py` -> `.ci` -> repo root,
-# exactly as the twin's `SCRIPT_DIR/../../..` (`.ci/scripts/release/../../..`)
-# is the same three levels up, even though the two files live in different
-# directories.
+# `.ci/rediacc_ci/release/backfill_write_sentinel.py` -> `.ci` -> repo root, exactly as the twin's `SCRIPT_DIR/../../..` (`.ci/scripts/release/../../..`) is the same three levels up, even though the two files live in different directories.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-# The RELATIVE spelling the twin prints and invokes, once it has `cd`'d to the
-# repo root (`.ci/scripts/release/backfill-write-sentinel.sh:33`). The dry-run
-# preview line must show this exact relative path, not the absolute one this
-# port resolves `_WRITER` to for the actual (non-dry-run) subprocess call.
+# The RELATIVE spelling the twin prints and invokes, once it has `cd`'d to the repo root (`.ci/scripts/release/backfill-write-sentinel.sh:33`). The dry-run preview line must show this exact relative path, not the absolute one this port resolves `_WRITER` to for the actual (non-dry-run) subprocess call.
 _WRITER_REL = os.path.join(".ci", "scripts", "deploy", "write-release-sentinel.sh")
 _WRITER = os.path.join(_ROOT, _WRITER_REL)
 

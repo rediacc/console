@@ -1,10 +1,5 @@
 #!/usr/bin/env tsx
-// ---- gate ----
-// step: Locale sources
-// needs: node, submodules
-// selftest: true
-// lane: quality-i18n
-// ---- end gate ----
+// ---- gate ---- step: Locale sources needs: node, submodules selftest: true lane: quality-i18n ---- end gate ----
 
 import { execFileSync } from 'node:child_process';
 /**
@@ -254,8 +249,7 @@ function selftest(): void {
     0
   );
 
-  // Control: a literal passed to subset() is the SANCTIONED form and must be exempt —
-  // without this the gate condemns the exact pattern its own error message recommends.
+  // Control: a literal passed to subset() is the SANCTIONED form and must be exempt — without this the gate condemns the exact pattern its own error message recommends.
   w('src/sub.ts', "const NIS2 = subset('nis2', ['en','de','es','fr','et','it','pt']);\n");
   check(
     'a subset() literal is NOT reported (control)',
@@ -271,9 +265,7 @@ function selftest(): void {
     0
   );
 
-  // ---- the three-way source agreement (index.js / index.d.ts / site-locales.json) ----
-  // Each case writes a fresh locale package into its own temp root, so a perturbation cannot
-  // leak into the next case or into the real repo.
+  // ---- the three-way source agreement (index.js / index.d.ts / site-locales.json) ---- Each case writes a fresh locale package into its own temp root, so a perturbation cannot leak into the next case or into the real repo.
   const threeWay = (
     name: string,
     jsCodes: string[],
@@ -313,8 +305,7 @@ function selftest(): void {
   const THREE = ['en', 'de', 'es'];
   const okJson = JSON.stringify({ siteLocales: THREE, defaultLocale: 'en' });
 
-  // Control: all three agreeing must report NOTHING. If this ever fails, every other case
-  // below is meaningless because the check would be firing unconditionally.
+  // Control: all three agreeing must report NOTHING. If this ever fails, every other case below is meaningless because the check would be firing unconditionally.
   threeWay('all three sources agreeing report nothing (control)', THREE, THREE, okJson, null);
   threeWay(
     'site-locales.json disagreeing with index.js is caught',
@@ -374,8 +365,7 @@ function main(): void {
   const root = i >= 0 ? path.resolve(argv[i + 1]) : REPO_ROOT;
 
   const files = trackedFiles(root);
-  // Refuse on an empty scan: a gate that reports "all clear" over nothing is worse than
-  // no gate, because it reads as a pass. (anti-vacuity root pattern 1)
+  // Refuse on an empty scan: a gate that reports "all clear" over nothing is worse than no gate, because it reads as a pass. (anti-vacuity root pattern 1)
   if (files.length < 50) {
     console.error(`✗ Refusing to run: only ${files.length} source file(s) found under ${root}.`);
     process.exit(1);

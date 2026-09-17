@@ -76,9 +76,7 @@ def port(argv: list[str], stdin: str = "", **env):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# 1. THE DENOMINATOR (common.sh:534-550)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. THE DENOMINATOR (common.sh:534-550) ---------------------------------------------------------------------------
 
 CAP_CASES = [
     "0",
@@ -90,8 +88,7 @@ CAP_CASES = [
     "50000",
     "50001",
     "250000",
-    # Every non-`^[0-9]+$` value lands in the SMALLEST tier, which is the
-    # conservative direction for this number.
+    # Every non-`^[0-9]+$` value lands in the SMALLEST tier, which is the conservative direction for this number.
     "abc",
     "",
     "-5",
@@ -126,17 +123,14 @@ def test_the_cap_fallback_is_unreachable_while_the_last_tier_is_open():
     assert rb.CAP_FALLBACK == 3
 
 
-# ---------------------------------------------------------------------------
-# 2. THE INFRA CLASSES (common.sh:661-672)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. THE INFRA CLASSES (common.sh:661-672) ---------------------------------------------------------------------------
 
 CLASS_CASES = [
     "error_max_turns",
     "error_during_execution",
     "unknown",
     "",
-    # The twin word-splits its space-separated string, so a multi-word value
-    # could never match a member. Both sides say no.
+    # The twin word-splits its space-separated string, so a multi-word value could never match a member. Both sides say no.
     "error_max_turns extra",
     "review step did not succeed",
 ]
@@ -167,9 +161,7 @@ def test_the_unclassified_fallback_is_deliberately_not_infra():
     assert rb.class_is_infra("review step did not succeed") is False
 
 
-# ---------------------------------------------------------------------------
-# 3. THE AWK PARSER, against the twin's OWN awk program
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. THE AWK PARSER, against the twin's OWN awk program ---------------------------------------------------------------------------
 
 
 def _twin_awk_program() -> str:
@@ -234,8 +226,7 @@ AWK_CASES = [
         "class: error_max_turns\nclaude-review-attempt: s1\n---REVIEW-ATTEMPT-EOF---",
     ),
     ("attempts-zero", "claude-review-attempt: s\nattempts: 0\n---REVIEW-ATTEMPT-EOF---"),
-    # The `[0-9]+` guard: a non-numeric count leaves the default of 1, which is
-    # what makes DEFECT 2 latent.
+    # The `[0-9]+` guard: a non-numeric count leaves the default of 1, which is what makes DEFECT 2 latent.
     ("attempts-non-numeric", "claude-review-attempt: s\nattempts: zz\n---REVIEW-ATTEMPT-EOF---"),
     (
         "attempts-numeric-prefix",
@@ -277,9 +268,7 @@ def test_the_awk_corpus_is_not_empty():
     assert len(AWK_CASES) >= 15
 
 
-# ---------------------------------------------------------------------------
-# 4. THE CHARGE LEDGER (common.sh:708-743)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. THE CHARGE LEDGER (common.sh:708-743) ---------------------------------------------------------------------------
 
 STATE_CASES = [
     ("infra-discount-plus-plain", "a1\t3\terror_max_turns\nb2\t5\tunknown"),
@@ -337,14 +326,11 @@ def test_head_is_exhausted_agrees_with_the_twin(name, states, sha):
 
 # Both operands non-empty ONLY. An empty operand makes the TWIN treat it as
 # "not provided" and attempt a network fetch (common.sh:757-759); the port's
-# `spend-total` CLI verb never fetches at all -- "THE FETCHING FORM IS
-# DELIBERATELY NOT HERE" above -- so the two sides are not comparable on an
-# empty operand. Before the DEFECT 1 fix this test happened to pass anyway,
+# `spend-total` CLI verb never fetches at all -- "THE FETCHING FORM IS DELIBERATELY NOT HERE" above -- so the two sides are not comparable on an empty operand. Before the DEFECT 1 fix this test happened to pass anyway,
 # for the wrong reason: the twin's failed fetch silently zeroed to the same
 # number the port's CLI produces by never fetching. The fix correctly broke
 # that coincidence (the twin now fails loudly instead); the real fetch-failure
-# behavior is covered by test_the_twin_now_fails_loudly_on_a_gh_failure and
-# test_the_twin_now_fails_loudly_on_an_unbound_variable instead.
+# behavior is covered by test_the_twin_now_fails_loudly_on_a_gh_failure and test_the_twin_now_fails_loudly_on_an_unbound_variable instead.
 SPEND_CASES = [("3", "4"), (" 3 ", " 4 "), ("0", "0"), ("10", "0")]
 
 
@@ -362,9 +348,7 @@ def test_spend_total_agrees_with_the_twin(posted, spent):
     assert old[1] == new[1], "twin=%r port=%r" % (old, new)
 
 
-# ---------------------------------------------------------------------------
-# 5. THE SNAPSHOT (common.sh:603-617)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. THE SNAPSHOT (common.sh:603-617) ---------------------------------------------------------------------------
 
 SNAPSHOT_LINES = (
     "`PR-TASK: abc123`",
@@ -427,9 +411,7 @@ def test_epic_ids_does_not_depend_on_the_cwd(snap, monkeypatch, tmp_path):
     assert rb.epic_ids("0906-1", env) == ["abc123", "deadbeefcafe", "aabbcc"]
 
 
-# ---------------------------------------------------------------------------
-# 6. DEFECT 1 -- pinned from BOTH sides
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 6. DEFECT 1 -- pinned from BOTH sides ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -546,9 +528,7 @@ def test_a_missing_github_repository_is_a_sentence_not_an_unbound_variable():
     assert "common.sh:592" in str(caught.value)
 
 
-# ---------------------------------------------------------------------------
-# 7. DEFECT 2 -- the non-numeric attempt count
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 7. DEFECT 2 -- the non-numeric attempt count ---------------------------------------------------------------------------
 
 
 def test_the_twin_aborts_on_a_non_numeric_attempt_count():
@@ -582,16 +562,12 @@ def test_defect_2_is_latent_because_the_awk_forces_a_number():
     )
 
 
-# ---------------------------------------------------------------------------
-# 8. PLANTED DEFECTS -- proving the controls can fire
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 8. PLANTED DEFECTS -- proving the controls can fire ---------------------------------------------------------------------------
 
 
 def test_planted_a_cap_tier_edit_is_caught_by_the_band_assertion(monkeypatch):
     monkeypatch.setattr(rb, "CAP_TIERS", ((10000, 3), (50000, 5), (100000, 7)))
-    # The top tier is now CLOSED, so the fallback becomes reachable and a
-    # 200k-line diff gets 3 instead of 7 -- the smallest budget for the biggest
-    # diff, which is exactly backwards.
+    # The top tier is now CLOSED, so the fallback becomes reachable and a 200k-line diff gets 3 instead of 7 -- the smallest budget for the biggest diff, which is exactly backwards.
     assert rb.cap_for(200000) == 3
     assert rb.cap_for(200000) != 7
 

@@ -48,11 +48,9 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// `setup()` LIVES IN THE LEGACY BODY, not the router. The 2026-09-06 split left
-// run.sh a 120-line dispatcher and moved every verb implementation to
+// `setup()` LIVES IN THE LEGACY BODY, not the router. The 2026-09-06 split left run.sh a 120-line dispatcher and moved every verb implementation to
 // .ci/legacy/run-legacy.sh; this gate read run.sh and reported "lost its subject",
-// which is the honest refusal working -- a scan whose subject moved must go red, not
-// pass on an empty file.
+// which is the honest refusal working -- a scan whose subject moved must go red, not pass on an empty file.
 export const ENTRY = '.ci/legacy/run-legacy.sh';
 export const SCANNED = [ENTRY, '.ci/lib/setup.sh'];
 export const HELPER_FILE = '.ci/lib/local-common.sh';
@@ -151,8 +149,7 @@ const selftest = (): number => {
   check('an unguarded root install is flagged', scan('f', bare).length === 1);
   check('and it names the function', scan('f', bare)[0]?.fn === 'setup');
 
-  // THE CONTROL THAT MATTERS: a guarded function must NOT be flagged, or a gate
-  // that flags every install would also pass its defect test.
+  // THE CONTROL THAT MATTERS: a guarded function must NOT be flagged, or a gate that flags every install would also pass its defect test.
   check(
     'a function calling ensure_deps is clean',
     scan('f', 'setup() {\n  ensure_deps\n}\n').length === 0
@@ -182,8 +179,7 @@ const selftest = (): number => {
     scan('f', 'x() {\n  # npm install then rebuild\n}\n').length === 0
   );
   check('code outside any function is ignored', scan('f', 'npm install\n').length === 0);
-  // THE FALSE POSITIVE THE FIRST VERSION SHIPPED: a message that merely explains
-  // what install:natives does is prose, not an install.
+  // THE FALSE POSITIVE THE FIRST VERSION SHIPPED: a message that merely explains what install:natives does is prose, not an install.
   check(
     'a log_warn mentioning the command is NOT flagged',
     scan('f', 'x() {\n  log_warn "  npm run install:natives runs node-gyp"\n}\n').length === 0
@@ -238,19 +234,11 @@ const main = (): number => {
   // setup() is the entry point this gate was written for; if it stops reaching
   // the helper the gate has lost its subject.
   //
-  // THE SUBJECT MOVED A SECOND TIME, and this is the second repoint rather than a
-  // relaxation. The 2026-09-06 router split moved the verb bodies out of run.sh
-  // into .ci/legacy/run-legacy.sh (the note on ENTRY above). Then `setup` was
+  // THE SUBJECT MOVED A SECOND TIME, and this is the second repoint rather than a relaxation. The 2026-09-06 router split moved the verb bodies out of run.sh into .ci/legacy/run-legacy.sh (the note on ENTRY above). Then `setup` was
   // PORTED OUT OF BASH ENTIRELY -- run.sh now declares `PORTED_VERBS=(setup)` and
-  // the implementation is the rediacc_ci.setup package. There is no `setup()`
-  // shell function left to find anywhere, so the old assertion could only ever
-  // report "lost its subject" from here on: a permanent red that says nothing
-  // about idempotency.
+  // the implementation is the rediacc_ci.setup package. There is no `setup()` shell function left to find anywhere, so the old assertion could only ever report "lost its subject" from here on: a permanent red that says nothing about idempotency.
   //
-  // THE INVARIANT ITSELF IS UNCHANGED AND STILL HOLDS -- setup still installs
-  // THROUGH the stamp rather than shelling out to npm -- so it is re-anchored to
-  // the two places that now carry it, and BOTH must hold. One anchor would let a
-  // rename on the other side pass silently.
+  // THE INVARIANT ITSELF IS UNCHANGED AND STILL HOLDS -- setup still installs THROUGH the stamp rather than shelling out to npm -- so it is re-anchored to the two places that now carry it, and BOTH must hold. One anchor would let a rename on the other side pass silently.
   const SETUP_ANCHORS: Array<[string, RegExp, string]> = [
     [
       '.ci/rediacc_ci/setup/phases.py',

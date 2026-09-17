@@ -83,17 +83,10 @@ from rediacc_ci import log, paths
 from rediacc_ci.setup import bridge, host, machine
 from rediacc_ci.setup.ctx import Ctx, Result
 
-# The prefix `shadow-gate --finding-re` is pointed at. Deliberately not `✗` or
-# `FAIL:`: those already mean "a finding" to the comparator's own marker table,
-# and an observation that AGREES is not a failure. A neutral token keeps the
-# ledger readable by a person who did not write this file.
+# The prefix `shadow-gate --finding-re` is pointed at. Deliberately not `✗` or `FAIL:`: those already mean "a finding" to the comparator's own marker table, and an observation that AGREES is not a failure. A neutral token keeps the ledger readable by a person who did not write this file.
 OBS = "obs"
 
-# The seven functions of `.ci/lib/setup.sh` that can be driven without a tty,
-# without root and without the network. `setup_docker_probe` is here even though
-# `setup()` never calls it: it is real code, it is drivable, and driving it is
-# the cheapest way to keep the port honest while the bash still exists. See
-# `host.py`'s header for the measurement that it is uncalled.
+# The seven functions of `.ci/lib/setup.sh` that can be driven without a tty, without root and without the network. `setup_docker_probe` is here even though `setup()` never calls it: it is real code, it is drivable, and driving it is the cheapest way to keep the port honest while the bash still exists. See `host.py`'s header for the measurement that it is uncalled.
 DRIVABLE: tuple[str, ...] = (
     "setup_node_toolchain",
     "setup_system_tools",
@@ -104,8 +97,7 @@ DRIVABLE: tuple[str, ...] = (
     "setup_git_credentials",
 )
 
-# bash name -> the `host.py` callable. Written out rather than derived by
-# stripping `setup_`, so a renamed port cannot silently pair with the wrong twin.
+# bash name -> the `host.py` callable. Written out rather than derived by stripping `setup_`, so a renamed port cannot silently pair with the wrong twin.
 PY_FOR: dict[str, str] = {
     "setup_node_toolchain": "node_toolchain",
     "setup_system_tools": "system_tools",
@@ -116,10 +108,7 @@ PY_FOR: dict[str, str] = {
     "setup_git_credentials": "git_credentials",
 }
 
-# A FIXED corpus for the two pure pickers, so this group's findings do not
-# depend on what nodejs.org and go.dev are serving today. A live index would
-# make the ledger's fingerprints move for reasons that have nothing to do with
-# either implementation, which is noise dressed as evidence.
+# A FIXED corpus for the two pure pickers, so this group's findings do not depend on what nodejs.org and go.dev are serving today. A live index would make the ledger's fingerprints move for reasons that have nothing to do with either implementation, which is noise dressed as evidence.
 NODE_INDEX = json.dumps(
     [
         {"version": "v23.1.0", "lts": False},
@@ -157,9 +146,7 @@ GO_FILES = (
 )
 
 # The bash prelude every `--side old` call runs. `REDIACC_DOCKER_GROUP_REEXEC=1`
-# makes `reexec_with_docker_group` a no-op, which is required rather than
-# convenient: without it a traced `setup` would `exec sg docker -c ...` and
-# replace this process with a real, unstubbed run.
+# makes `reexec_with_docker_group` a no-op, which is required rather than convenient: without it a traced `setup` would `exec sg docker -c ...` and replace this process with a real, unstubbed run.
 OLD_PRELUDE = """
 set -euo pipefail
 export REDIACC_DOCKER_GROUP_REEXEC=1
@@ -169,18 +156,10 @@ source "$ROOT_DIR/.ci/lib/devbox.sh"
 
 # The stubs that turn `setup()` into a phase trace.
 #
-# `source` IS OVERRIDDEN, and that one line is what makes the trace possible.
-# `.ci/legacy/run-legacy.sh:583` re-sources `.ci/lib/devbox.sh` from INSIDE
-# `setup()`, which would redefine `devbox_up`, `devbox_ensure_image`,
-# `devbox_url` and `devbox_status` and silently discard the stubs below. The
-# first version of this trace lost exactly those four phases and looked correct.
-# A bash function shadows a builtin, so `source` becomes a filter and every other
-# `source` still works.
+# `source` IS OVERRIDDEN, and that one line is what makes the trace possible. `.ci/legacy/run-legacy.sh:583` re-sources `.ci/lib/devbox.sh` from INSIDE `setup()`, which would redefine `devbox_up`, `devbox_ensure_image`, `devbox_url` and `devbox_status` and silently discard the stubs below. The first version of this trace lost exactly those four phases and looked correct. A bash
+# function shadows a builtin, so `source` becomes a filter and every other `source` still works.
 #
-# `bash` and `npm` ARE STUBBED AS COMMANDS, because those two phases are spelled
-# inline in `setup()` rather than as a function call: `bash
-# "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet` and `npm run --silent
-# check:env-credential-drift`. Nothing else in the traced body invokes either.
+# `bash` and `npm` ARE STUBBED AS COMMANDS, because those two phases are spelled inline in `setup()` rather than as a function call: `bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet` and `npm run --silent check:env-credential-drift`. Nothing else in the traced body invokes either.
 TRACE_STUBS = """
 _p() { printf 'PHASE %s\\n' "$1"; }
 source() { case "${1:-}" in *devbox.sh) return 0 ;; esac; builtin source "$@"; }
@@ -204,9 +183,7 @@ npm()                     { _p check:env-credential-drift; }
 """
 
 
-# ---------------------------------------------------------------------------
-# emitting
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- emitting ---------------------------------------------------------------------------
 
 
 class _Counting(io.StringIO):
@@ -242,9 +219,7 @@ def emit_block(group: str, text: str) -> None:
         emit(group, "%02d %s" % (index, line if line != "" else "<blank>"))
 
 
-# ---------------------------------------------------------------------------
-# the old side
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the old side ---------------------------------------------------------------------------
 
 
 def bash_run(root: pathlib.Path, body: str, env: dict[str, str]) -> tuple[int, str, str]:
@@ -345,9 +320,7 @@ def _emit_plan(root: pathlib.Path, env: dict[str, str]) -> None:
     emit("plan", "skip-drift=%s" % (env.get("SKIP_ENV_DRIFT_CHECK", "") or "<unset>"))
 
 
-# ---------------------------------------------------------------------------
-# the new side
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the new side ---------------------------------------------------------------------------
 
 
 def _capture(call) -> tuple[int, str, str]:
@@ -417,9 +390,7 @@ def new_phase_trace(
             if body.startswith(key):
                 sink.append(key)
                 return 0
-        # `devbox_status` is reached only from `check()`, never from a traced
-        # `run_setup`. Recorded rather than silently allowed, so a phase this
-        # stub does not know about cannot pass as a no-op.
+        # `devbox_status` is reached only from `check()`, never from a traced `run_setup`. Recorded rather than silently allowed, so a phase this stub does not know about cannot pass as a no-op.
         sink.append("UNSTUBBED:%s" % body.split("\n")[0])
         return 0
 
@@ -483,8 +454,7 @@ def new_side(root: pathlib.Path, env: dict[str, str]) -> None:
     # -- the two pure pickers ---------------------------------------------
     for major in NODE_MAJORS:
         answer = host.node_pick_lts(NODE_INDEX, major)
-        # `rc` MIRRORS THE BASH's: `node_pick_lts` exits 1 when it finds nothing
-        # (`sys.exit(1)` inside its heredoc) and the caller reads that, so a
+        # `rc` MIRRORS THE BASH's: `node_pick_lts` exits 1 when it finds nothing (`sys.exit(1)` inside its heredoc) and the caller reads that, so a
         # port returning None must be reported as rc=1 rather than as rc=0 with
         # an empty answer.
         emit("pure/node-lts", "%s rc=%d -> %s" % (major, 0 if answer else 1, answer or "<none>"))
@@ -516,35 +486,21 @@ def _unknown(printer: log.Logger, name: str) -> int:
     return machine.EXIT_USAGE
 
 
-# ---------------------------------------------------------------------------
-# entry
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- entry ---------------------------------------------------------------------------
 
 
-# The bash this differential is ABOUT. Named on the command line rather than
-# only here for a second reason beyond readability:
-# `.ci/rediacc_ci/quality/dead_python.py:317` scans the OLD side's command
-# string for a `.sh` token and treats the port as ADMITTED only while that file
-# is still on disk. A ledger row whose old command names no `.sh` at all admits
-# nothing, so the port would read as dead the day it landed.
+# The bash this differential is ABOUT. Named on the command line rather than only here for a second reason beyond readability: `.ci/rediacc_ci/quality/dead_python.py:317` scans the OLD side's command string for a `.sh` token and treats the port as ADMITTED only while that file is still on disk. A ledger row whose old command names no `.sh` at all admits nothing, so the port would
+# read as dead the day it landed.
 TWIN_DEFAULT = ".ci/lib/setup.sh"
 
-# The body file the phase trace needs. Separate from the twin because they are
-# different files and either can move on its own.
+# The body file the phase trace needs. Separate from the twin because they are different files and either can move on its own.
 BODY_DEFAULT = ".ci/legacy/run-legacy.sh"
 
-# Exit 77 is CANNOT RUN and is never a verdict, the convention
-# `scripts/ci-runner/pool.ts:80-89` defines and `rediacc_ci.check_pytest:124`
-# names. Used here for exactly one condition: the subject is not on disk.
+# Exit 77 is CANNOT RUN and is never a verdict, the convention `scripts/ci-runner/pool.ts:80-89` defines and `rediacc_ci.check_pytest:124` names. Used here for exactly one condition: the subject is not on disk.
 EXIT_CANNOT_RUN = 77
 
-# The floor no honest run of this driver can fall below. NOT a round number
-# picked to look safe: the six groups emit at least
-# 2 phase headers + 13 + 12 phase lines + 1 check rc + 2 check blocks +
-# 7 functions * 8 lines + 5 + 5 pure + 2 args + 3 plan, and the smallest fixture
-# measured (fx3, no `.gitmodules`) produced 114. A run under 80 means a group
-# silently produced nothing, which is the shape a green comparison of two empty
-# sides has.
+# The floor no honest run of this driver can fall below. NOT a round number picked to look safe: the six groups emit at least 2 phase headers + 13 + 12 phase lines + 1 check rc + 2 check blocks + 7 functions * 8 lines + 5 + 5 pure + 2 args + 3 plan, and the smallest fixture measured (fx3, no `.gitmodules`) produced 114. A run under 80 means a group silently produced nothing, which
+# is the shape a green comparison of two empty sides has.
 OBSERVATION_FLOOR = 80
 
 
@@ -571,13 +527,11 @@ def main(argv: list[str] | None = None) -> int:
     env = dict(os.environ)
     # DETERMINISM PINS, applied to BOTH sides. `shadow-gate.ts:buildEnv` already
     # sets LC_ALL and TZ for the processes it spawns; these are the two this
-    # comparison needs on top and they are set here so the driver behaves the
-    # same when a person runs it by hand.
+    # comparison needs on top and they are set here so the driver behaves the same when a person runs it by hand.
     env["NO_COLOR"] = "1"
     env["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
 
-    # BOTH SIDES CHECK THE TWIN, not just the old one. After the flip the bash
-    # is gone and BOTH sides must refuse: a new side that kept answering would
+    # BOTH SIDES CHECK THE TWIN, not just the old one. After the flip the bash is gone and BOTH sides must refuse: a new side that kept answering would
     # let a comparison record `NEW_SIDE_NOISY` against a deleted twin, which
     # reads as a port defect and is really an expired ledger.
     twin = root / args.twin
@@ -606,10 +560,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     sys.stdout.write(text)
 
-    # NO SUMMARY LINE AND NO VERDICT. This is an OBSERVER: it reports what each
-    # implementation did and the comparator rules. A driver that also ruled would
-    # be a second opinion nobody asked for, and its exit code would enter the
-    # ledger as if it were the gate's.
+    # NO SUMMARY LINE AND NO VERDICT. This is an OBSERVER: it reports what each implementation did and the comparator rules. A driver that also ruled would be a second opinion nobody asked for, and its exit code would enter the ledger as if it were the gate's.
     return 0
 
 

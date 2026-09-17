@@ -29,10 +29,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GENERATOR = path.join(REPO_ROOT, 'packages/www/scripts/generate-search-index.js');
 const PUBLIC_DIR = path.join(REPO_ROOT, 'packages/www/public');
-// Matches the legacy combined file (`search-index.json`, kept as a byte-
-// identical copy of the English file for backward compat) plus every
-// per-locale file (`search-index-<lang>.json`). Restricted to lowercase
-// 2-letter codes so unrelated public/ artifacts aren't swept by mistake.
+// Matches the legacy combined file (`search-index.json`, kept as a byte- identical copy of the English file for backward compat) plus every per-locale file (`search-index-<lang>.json`). Restricted to lowercase 2-letter codes so unrelated public/ artifacts aren't swept by mistake.
 const INDEX_PATTERN = /^search-index(?:-[a-z]{2})?\.json$/;
 
 function fail(msg: string): never {
@@ -44,10 +41,7 @@ if (!existsSync(GENERATOR)) {
   fail(`Missing generator ${GENERATOR}. Was the script moved or renamed?`);
 }
 
-// Discover the set of committed index files. We can't hardcode locales
-// because adding a new locale should "just work" once the indexer detects
-// its content directory. The pattern matches search-index.json (legacy
-// fallback) and search-index-<lang>.json (per-locale).
+// Discover the set of committed index files. We can't hardcode locales because adding a new locale should "just work" once the indexer detects its content directory. The pattern matches search-index.json (legacy fallback) and search-index-<lang>.json (per-locale).
 const committedFiles = readdirSync(PUBLIC_DIR)
   .filter((f) => INDEX_PATTERN.test(f))
   .sort();
@@ -58,8 +52,7 @@ if (committedFiles.length === 0) {
   );
 }
 
-// Stash committed copies so we can restore regardless of drift outcome.
-// copyFileSync is portable — `cp` assumed unix.
+// Stash committed copies so we can restore regardless of drift outcome. copyFileSync is portable — `cp` assumed unix.
 const tmpDir = mkdtempSync(path.join(tmpdir(), 'search-index-check-'));
 const committedBefore = new Map<string, string>();
 const backupPaths = new Map<string, string>();
@@ -72,9 +65,7 @@ for (const file of committedFiles) {
 }
 
 const restore = () => {
-  // Sweep any new index files the generator just produced (e.g. for a freshly
-  // added locale) so the check is truly non-destructive in dev — otherwise
-  // those files would persist after the script exits, polluting git status.
+  // Sweep any new index files the generator just produced (e.g. for a freshly added locale) so the check is truly non-destructive in dev — otherwise those files would persist after the script exits, polluting git status.
   for (const file of readdirSync(PUBLIC_DIR)) {
     if (INDEX_PATTERN.test(file) && !committedFiles.includes(file)) {
       rmSync(path.join(PUBLIC_DIR, file), { force: true });
@@ -96,8 +87,7 @@ try {
   fail(`Generator script failed: ${(err as Error).message}`);
 }
 
-// The generator may have created files we didn't have committed (new locale
-// added) or removed ones we did (locale removed). Both are drift.
+// The generator may have created files we didn't have committed (new locale added) or removed ones we did (locale removed). Both are drift.
 const regeneratedFiles = readdirSync(PUBLIC_DIR)
   .filter((f) => INDEX_PATTERN.test(f))
   .sort();
@@ -163,8 +153,7 @@ for (const file of allFiles) {
 const countPlaceholders = (text: string): string[] =>
   text.match(/\{\{t:[a-zA-Z]+\.[a-zA-Z0-9_.]+\}\}/g) ?? [];
 
-// CONTROL, both directions, inline on every run. A detector that matches nothing reports a
-// clean index forever, which is precisely the failure this assertion exists to end.
+// CONTROL, both directions, inline on every run. A detector that matches nothing reports a clean index forever, which is precisely the failure this assertion exists to end.
 if (countPlaceholders('a {{t:cli.docs.tableHeaders.flag}} b').length !== 1) {
   restore();
   fail(

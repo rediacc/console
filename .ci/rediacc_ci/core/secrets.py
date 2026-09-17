@@ -89,30 +89,18 @@ import os
 import sys
 from collections.abc import Iterable, Mapping
 
-# What a masked value is replaced BY. Three asterisks matches what a GitHub
-# Actions runner substitutes for a registered mask, so a log that has been
-# through both this and the runner reads the same way throughout.
+# What a masked value is replaced BY. Three asterisks matches what a GitHub Actions runner substitutes for a registered mask, so a log that has been through both this and the runner reads the same way throughout.
 MASK = "***"
 
-# How many hex digits of the sha256 a fingerprint carries. Not chosen here:
-# scripts/dev/bws-map-refresh.py:67 already fingerprints a token's client id as
-# `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and .ci/config/
-# bws-token-expiry.json stores the results. A second width would mean the two
-# could never be compared.
+# How many hex digits of the sha256 a fingerprint carries. Not chosen here: scripts/dev/bws-map-refresh.py:67 already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and .ci/config/ bws-token-expiry.json stores the results. A second width would mean the two could never be compared.
 FINGERPRINT_HEX_DIGITS = 16
 
 PRESENT = "present"
 ABSENT = "absent"
 
-# Name segments that make a name a secret. Matched against the `_`-separated
-# SEGMENTS of the name and never as substrings.
+# Name segments that make a name a secret. Matched against the `_`-separated SEGMENTS of the name and never as substrings.
 #
-# THE COLLISIONS THAT MAKES A DIFFERENCE TO, named because the first draft of
-# this comment named one ("WEBAUTHN_RP_ID contains AUTH") that is not a marker
-# at all, and a planted substring-matching defect went undetected as a result:
-#   KEY  is inside KEYBOARD, KEYCHAIN, MONKEY
-#   SIG  is inside DESIGN, ASSIGNMENT
-# Under substring matching DESIGN_DOC_URL and KEYBOARD_LAYOUT are both secrets.
+# THE COLLISIONS THAT MAKES A DIFFERENCE TO, named because the first draft of this comment named one ("WEBAUTHN_RP_ID contains AUTH") that is not a marker at all, and a planted substring-matching defect went undetected as a result: KEY is inside KEYBOARD, KEYCHAIN, MONKEY SIG is inside DESIGN, ASSIGNMENT Under substring matching DESIGN_DOC_URL and KEYBOARD_LAYOUT are both secrets.
 # (WEBAUTHN_RP_ID is not classified for a different reason: the `_ID` rule.)
 _STRONG = frozenset(
     {
@@ -129,15 +117,10 @@ _STRONG = frozenset(
     }
 )
 
-# The weaker markers. A name carrying one of these is a secret UNLESS the name
-# is an identifier (see `looks_secret`), because `..._ACCESS_KEY_ID` is the
-# public half of a credential pair and `..._ACCESS_KEY` is the private half.
+# The weaker markers. A name carrying one of these is a secret UNLESS the name is an identifier (see `looks_secret`), because `..._ACCESS_KEY_ID` is the public half of a credential pair and `..._ACCESS_KEY` is the private half.
 _WEAK = frozenset({"KEY", "SALT", "SEED", "SIGNATURE", "SIG"})
 
-# The one segment that overrides everything. ACCOUNT_ED25519_PUBLIC_KEY is
-# published: .ci/lib/local-common.sh:814 reads it out of a file specifically to
-# hand it to a build, and rdc.sh:248 extracts ACCOUNT_X25519_PUBLIC_KEY into a
-# config that is written to disk in cleartext.
+# The one segment that overrides everything. ACCOUNT_ED25519_PUBLIC_KEY is published: .ci/lib/local-common.sh:814 reads it out of a file specifically to hand it to a build, and rdc.sh:248 extracts ACCOUNT_X25519_PUBLIC_KEY into a config that is written to disk in cleartext.
 _PUBLIC = frozenset({"PUBLIC", "PUB"})
 
 
@@ -158,10 +141,7 @@ def looks_secret(name: str) -> bool:
     if segments & _STRONG:
         return True
     if name.upper().endswith("_ID"):
-        # The identifier half of a pair. `.ci/config/bws-token-expiry.json`
-        # rules on exactly this shape: the client id of a BWS token is "the
-        # IDENTIFIER half ... never the secret", which is why fingerprinting it
-        # is publishable in a tracked file.
+        # The identifier half of a pair. `.ci/config/bws-token-expiry.json` rules on exactly this shape: the client id of a BWS token is "the IDENTIFIER half ... never the secret", which is why fingerprinting it is publishable in a tracked file.
         return False
     return bool(segments & _WEAK)
 
@@ -291,8 +271,7 @@ def main(argv: list[str]) -> int:
     verb, names = argv[0], argv[1:]
 
     if verb == "redact":
-        # stdin to stdout. The values come from this process's own environment,
-        # so no secret ever appears in argv.
+        # stdin to stdout. The values come from this process's own environment, so no secret ever appears in argv.
         sys.stdout.write(redact_env(sys.stdin.read(), names=names or None))
         return 0
     if verb == "report":

@@ -56,9 +56,7 @@ INITIAL_PROMPT = paths.from_root(".ci", "scripts", "review", "prompts", "initial
 FOLLOWUP_PROMPT = paths.from_root(".ci", "scripts", "review", "prompts", "followup.md")
 REUSABLE_WF = paths.from_root(".github", "workflows", "claude-review-reusable.yml")
 
-# The fence key the prompt emits and this arm parses. Asserted present in BOTH
-# producers below, for the reason test-review-status.sh spells out about
-# json:review-findings: a rename on one side alone makes the parser silently blind
+# The fence key the prompt emits and this arm parses. Asserted present in BOTH producers below, for the reason test-review-status.sh spells out about json:review-findings: a rename on one side alone makes the parser silently blind
 # while everything still reports OK.
 LABELS_FENCE_KEY = "json:pr-labels"
 LEDGER_PREFIX_EXPECTED = "<!-- claude-labels:"
@@ -381,9 +379,7 @@ def test_kind_vocabulary_maps_to_the_repo_labels(gate, tmp_path):
     gate.assert_eq(
         world.added(), "documentation enhancement", "feature -> enhancement, docs -> documentation"
     )
-    # The needle is BUILT, never spelled out. See the module docstring: written
-    # literally, it is indistinguishable to check:ci-label-refs from real code
-    # applying a label by that name.
+    # The needle is BUILT, never spelled out. See the module docstring: written literally, it is indistinguishable to check:ci-label-refs from real code applying a label by that name.
     for raw in ("feature", "docs"):
         gate.assert_not_contains(
             world.captured(),
@@ -409,8 +405,7 @@ def test_major_verdict_is_never_applied(gate, tmp_path):
     )
     gate.assert_contains(world.out, "config schema break", "and the reason is the model's own")
 
-    # CONTROL: the identical path with `minor` DOES write. Without it the assertion
-    # above passes just as well on a harness that writes nothing ever.
+    # CONTROL: the identical path with `minor` DOES write. Without it the assertion above passes just as well on a harness that writes nothing ever.
     world.setup()
     world.execution_file(report_with_verdict('{"bump": "minor", "kind": [], "why": "new command"}'))
     world.run_apply()
@@ -536,8 +531,7 @@ def test_docs_only_diff_yields_documentation(gate, tmp_path):
     world.execution_file(report_with_verdict(""))
     gate.assert_eq(world.added(), "", "precondition: nothing captured yet")
     world.run_apply()
-    # The rule is all-files and conservative: one real source file and this is not a
-    # docs PR, however many .md files ride along with it.
+    # The rule is all-files and conservative: one real source file and this is not a docs PR, however many .md files ride along with it.
     gate.assert_eq(world.added(), "", "a single non-matching path disqualifies the all-files rule")
 
     world.setup()
@@ -913,8 +907,7 @@ def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
     )
     gate.assert_contains(world.out, "posted NOTHING", "and the refusal says why")
 
-    # CONTROL: a real report comment in the same slot DOES satisfy it, so the assertion
-    # above is about the prefix and not about a broken fixture.
+    # CONTROL: a real report comment in the same slot DOES satisfy it, so the assertion above is about the prefix and not about a broken fixture.
     world.comments_fixture(
         {
             "id": 902,
@@ -1009,8 +1002,7 @@ def test_fence_key_is_shared_by_prompt_and_parser(gate):
         )
     if LABELS_FENCE_KEY not in UNDER_TEST.read_text(encoding="utf-8"):
         gate.log_fail("claude-review-gate.sh no longer parses '%s'" % LABELS_FENCE_KEY)
-    # The closed vocabulary has to be stated to the model, or it will invent words the
-    # validator then rejects on every single run.
+    # The closed vocabulary has to be stated to the model, or it will invent words the validator then rejects on every single run.
     for word in ("bug", "feature", "docs", "ci"):
         if word not in initial:
             gate.log_fail(

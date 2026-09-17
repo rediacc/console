@@ -58,10 +58,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 VERSION = "1.2.3"
 
-# Fixed so both fixtures produce the SAME commit SHA. Without this the reuse
-# notice's `(<sha>)` differs between the sides and the comparison has to be
-# weakened to a regex, which would also stop it noticing a port that printed
-# the wrong sha.
+# Fixed so both fixtures produce the SAME commit SHA. Without this the reuse notice's `(<sha>)` differs between the sides and the comparison has to be weakened to a regex, which would also stop it noticing a port that printed the wrong sha.
 FIXED_GIT_ENV = {
     "GIT_AUTHOR_NAME": "Fixture",
     "GIT_AUTHOR_EMAIL": "fixture@example.com",
@@ -103,8 +100,7 @@ def _submodule(parent: pathlib.Path, *, commits: int = 1) -> pathlib.Path:
     _git(sub, "init", "-q")
     _git(sub, "config", "user.name", "Fixture")
     _git(sub, "config", "user.email", "fixture@example.com")
-    # RELATIVE remote: see this module's docstring on why `To <remote>` must
-    # not carry a tmpdir path.
+    # RELATIVE remote: see this module's docstring on why `To <remote>` must not carry a tmpdir path.
     _git(sub, "remote", "add", "origin", "../renet-remote.git")
     for i in range(commits):
         (sub / "f.txt").write_text("content %d\n" % i, encoding="utf-8")

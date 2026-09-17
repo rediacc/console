@@ -72,9 +72,7 @@ USAGE = (
     "[--effort <dispatch>] [--effort-var <variable>]"
 )
 
-# The only efforts the CLI accepts, as one string rather than a list, because
-# the twin interpolates this exact CSV into both notice messages and a reader
-# greps the log for it.
+# The only efforts the CLI accepts, as one string rather than a list, because the twin interpolates this exact CSV into both notice messages and a reader greps the log for it.
 EFFORT_ALLOWED = "low,medium,high,xhigh,max"
 
 # The dispatch input's way of saying "do not pass --effort at all". NOT a member
@@ -87,11 +85,7 @@ TURNS_DEFAULT = 60
 TURNS_FIX = 80
 MODE_FIX = "fix"
 
-# The GITHUB_OUTPUT heredoc marker. FIXED, unlike compose-prompt.sh's random
-# one, and that asymmetry is correct rather than an oversight: nothing in this
-# output is attacker-influenced. The values are a model id the gate already
-# allowlisted, an integer this file chose, a constant, and an effort drawn from
-# EFFORT_ALLOWED, so there is no text here an outsider can steer into producing
+# The GITHUB_OUTPUT heredoc marker. FIXED, unlike compose-prompt.sh's random one, and that asymmetry is correct rather than an oversight: nothing in this output is attacker-influenced. The values are a model id the gate already allowlisted, an integer this file chose, a constant, and an effort drawn from EFFORT_ALLOWED, so there is no text here an outsider can steer into producing
 # the marker.
 ARGS_DELIM = "AUTOPILOT_ARGS_EOF"
 
@@ -133,11 +127,7 @@ def resolve_effort(effort: str, effort_var: str) -> tuple[str, str, list[str]]:
                 % (effort, EFFORT_ALLOWED)
             )
 
-    # NOT `elif`. The twin re-tests `-z "$resolved_effort"`, which means a
-    # REJECTED dispatch effort falls through to the variable rather than
-    # suppressing it. That is the behaviour a human wants (a typo'd dispatch
-    # should not also disable the standing setting), and it is why both notices
-    # can appear in one run.
+    # NOT `elif`. The twin re-tests `-z "$resolved_effort"`, which means a REJECTED dispatch effort falls through to the variable rather than suppressing it. That is the behaviour a human wants (a typo'd dispatch should not also disable the standing setting), and it is why both notices can appear in one run.
     if not resolved and effort_var and effort_var != EFFORT_DEFAULT:
         if in_csv(effort_var, EFFORT_ALLOWED):
             resolved = effort_var

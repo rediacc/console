@@ -66,10 +66,7 @@ import pathlib
 PACKAGE = "rediacc_hooks.guards"
 HERE = pathlib.Path(__file__).resolve().parent
 
-# The chains, in the order `.claude/settings.json` declares them. `post-bash`
-# is here because `check-hook-integrity.sh` added it on 2026-08-28 after
-# finding a whole registered chain outside its inventory: "that was a filename
-# prefix escaping the net, this was a whole chain".
+# The chains, in the order `.claude/settings.json` declares them. `post-bash` is here because `check-hook-integrity.sh` added it on 2026-08-28 after finding a whole registered chain outside its inventory: "that was a filename prefix escaping the net, this was a whole chain".
 CHAINS = ("pre-bash", "pre-edit", "pre-ask", "post-bash")
 
 

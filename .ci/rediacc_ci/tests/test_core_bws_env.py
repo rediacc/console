@@ -52,9 +52,7 @@ ONLY_ALPHA = json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}])
 
 MAP = '{ "project": "p", "secrets": { "ALPHA_TOKEN": { "id": "1" }, "BETA_TOKEN": { "id": "2" } } }'
 
-# The bash driver: source the twin, load, then print the NAMES that are now set.
-# `set +e` because the twin returns 1 on a partial load and the driver has to
-# survive it to report anything at all.
+# The bash driver: source the twin, load, then print the NAMES that are now set. `set +e` because the twin returns 1 on a partial load and the driver has to survive it to report anything at all.
 BASH_DRIVER = textwrap.dedent(
     """
     _drive() {
@@ -106,9 +104,7 @@ def env_for(root, with_token: bool = True) -> dict:
         "BWS_ENV_ROOT": str(root),
     }
     if with_token:
-        # The VALUE is irrelevant to every case here -- the fake `bws` never reads
-        # it -- so it is a literal rather than a parameter. Only its PRESENCE is
-        # under test, which is the twin's first precondition.
+        # The VALUE is irrelevant to every case here -- the fake `bws` never reads it -- so it is a literal rather than a parameter. Only its PRESENCE is under test, which is the twin's first precondition.
         overrides[bws_env.ACCESS_ENV] = "fixture-token-not-a-credential"
     return diff.env_for(**overrides)
 

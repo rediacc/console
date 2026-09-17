@@ -234,8 +234,7 @@ function main(argv: string[]): number {
   const enBase = Object.keys(flatten(JSON.parse(enBaseRaw)));
   const enNow = Object.keys(flatten(JSON.parse(fs.readFileSync(path.join(REPO, enRel), 'utf8'))));
 
-  // FLOOR. A collapsed read makes every key look new (or none), and both directions are a
-  // broken instrument reporting confidently.
+  // FLOOR. A collapsed read makes every key look new (or none), and both directions are a broken instrument reporting confidently.
   if (enBase.length < 1000 || enNow.length < 1000) {
     return refused(
       `check-i18n-ledger-growth: en.json flattened to ${enBase.length} keys at ${base} and ` +

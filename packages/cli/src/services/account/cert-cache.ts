@@ -321,10 +321,7 @@ function isCertStaleByAnchor(
     case 'guid':
       return anchors.guids.has(a.anchor!) ? null : `unknown GUID ${a.anchor}`;
     case 'repo-name':
-      // Wildcard `*.<X>.<machine>.<baseDomain>` where X isn't a GUID. It's
-      // stale only when the machine itself is unknown — the head label could
-      // legitimately be a service subdomain (e.g. `*.erp.<machine>.<base>`),
-      // so we keep it as long as the machine is alive.
+      // Wildcard `*.<X>.<machine>.<baseDomain>` where X isn't a GUID. It's stale only when the machine itself is unknown — the head label could legitimately be a service subdomain (e.g. `*.erp.<machine>.<base>`), so we keep it as long as the machine is alive.
       return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;
     case 'service':
       return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;

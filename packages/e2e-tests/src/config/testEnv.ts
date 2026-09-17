@@ -1,8 +1,6 @@
-// The bridge/worker IPs and the RustFS endpoint are derived from the VM group's
-// network env (VM_NET_BASE / VM_NET_OFFSET / VM_BRIDGE / VM_WORKERS) so a second
+// The bridge/worker IPs and the RustFS endpoint are derived from the VM group's network env (VM_NET_BASE / VM_NET_OFFSET / VM_BRIDGE / VM_WORKERS) so a second
 // concurrent KVM group (e.g. VM_NET_BASE=192.168.112) resolves its own topology
-// instead of the hardcoded 192.168.111.x. Fallbacks equal the historical
-// single-group constants, so a normal run (whose .env already sets these to the
+// instead of the hardcoded 192.168.111.x. Fallbacks equal the historical single-group constants, so a normal run (whose .env already sets these to the
 // group-A values) is unaffected. Read once at import; playwright loads the group
 // .env before test modules import, so process.env is already populated.
 const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
@@ -36,9 +34,7 @@ export const TEST_ENV = {
   },
   rustfs: {
     endpoint: `http://${BRIDGE_IP}:9000`,
-    // Must match renet's RustFS defaults (pkg/infra/config/config.go): non-default
-    // creds are required since rustfs (CVE-2025-68926) rejects "rustfsadmin" on
-    // the bridge's non-loopback 0.0.0.0:9000 listener.
+    // Must match renet's RustFS defaults (pkg/infra/config/config.go): non-default creds are required since rustfs (CVE-2025-68926) rejects "rustfsadmin" on the bridge's non-loopback 0.0.0.0:9000 listener.
     accessKey: 'rediacc-rustfs',
     secretKey: 'rediacc-rustfs-secret-key',
     bucket: 'rediacc-test',

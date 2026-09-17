@@ -164,11 +164,7 @@ import time
 
 from rediacc_ci.controls import Controls
 
-# "The report header. A PRODUCER CONSTANT, not a wording guess:
-# claude-review-gate.sh:188 writes it verbatim, and the Claude Code action's own
-# tracking comment uses the same prefix (comment-logic.ts, quoted at
-# claude-review-gate.sh:153). An in-progress comment cannot match it -- the word
-# is 'finished'."
+# "The report header. A PRODUCER CONSTANT, not a wording guess: claude-review-gate.sh:188 writes it verbatim, and the Claude Code action's own tracking comment uses the same prefix (comment-logic.ts, quoted at claude-review-gate.sh:153). An in-progress comment cannot match it -- the word is 'finished'."
 REPORT_PREFIX = "**Claude finished"
 
 EPIC_PREFIX_ENV = "REVIEW_EPIC_PREFIX"
@@ -178,8 +174,7 @@ PUBLISH_ROOT_ENV = "WORKLIST_PUBLISH_ROOT"
 SUMMARY_MIN_CHARS = 30
 SUMMARY_LONGFORM_CHARS = 200
 
-# Low-effort filter, same philosophy as check-review-comments.sh: a reply must say
-# what was done (or why not), not just acknowledge.
+# Low-effort filter, same philosophy as check-review-comments.sh: a reply must say what was done (or why not), not just acknowledge.
 LOW_EFFORT_PATTERNS = (
     "acknowledged",
     "ack",
@@ -281,8 +276,7 @@ def newest_report(comments: list[dict], prefix: str) -> dict | None:
     ]
     if not matches:
         return None
-    # `sorted(...)[-1]`, NOT `max(...)`. jq's `sort_by(...) | last` takes the LAST
-    # of equal keys and Python's `sorted` is stable, so two reports sharing a
+    # `sorted(...)[-1]`, NOT `max(...)`. jq's `sort_by(...) | last` takes the LAST of equal keys and Python's `sorted` is stable, so two reports sharing a
     # created_at resolve the same way on both sides; `max` returns the FIRST of
     # equal keys and would name a different comment id in the success line.
     ordered = sorted(matches, key=lambda c: c.get("created_at") or "")
@@ -342,12 +336,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
                     pass
                 else:
                     # `out="$(gh "$@" ...)"` in `_gh_probe`: COMMAND SUBSTITUTION
-                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the
-                    # stripped value with `printf '%s'`. That matters because
-                    # `check-review-comments.sh` compares the result against the
-                    # literal `"[]"`, and an unstripped `"[]\n"` takes the other
-                    # branch. Found by the differential, on a specimen with no
-                    # inline comments.
+                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the stripped value with `printf '%s'`. That matters because `check-review-comments.sh` compares the result against the literal `"[]"`, and an unstripped `"[]\n"` takes the other branch. Found by the differential, on a specimen with no inline comments.
                     return proc.stdout.rstrip("\n")
         if attempt < GH_ATTEMPTS:
             print(
@@ -460,8 +449,7 @@ def main(argv: list[str] | None = None) -> int:
         ["api", "repos/%s/issues/%s/comments" % (repo, pr_number), "--paginate"],
     )
     if body is None:
-        # A SECOND INSTRUMENT, not a softer verdict. See the module docstring for
-        # the 2026-08-17 incident that produced it.
+        # A SECOND INSTRUMENT, not a softer verdict. See the module docstring for the 2026-08-17 incident that produced it.
         raw = gh_json(
             "issue comments for PR #%s (graphql fallback)" % pr_number,
             [
@@ -606,8 +594,7 @@ def selftest() -> int:
     }
     matcher_cases = [
         ("the header alone identifies a report", [report], REPORT_PREFIX, 5189238220),
-        # THE 2026-08-05 BUG. A wrap-up with no fence and no heading must still be
-        # found: the extra clause is what made this gate blind on PR #551.
+        # THE 2026-08-05 BUG. A wrap-up with no fence and no heading must still be found: the extra clause is what made this gate blind on PR #551.
         (
             "a wrap-up with no fence and no heading is still a report",
             [dict(report, body="**Claude finished** Posted the review. Summary of what I did:")],

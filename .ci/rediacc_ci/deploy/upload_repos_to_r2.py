@@ -104,12 +104,10 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, printed in its five guard messages and its one
-# non-release-channel notice. A literal, because the bytes must survive the port.
+# The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
 SELF = "upload-repos-to-r2.sh"
 
-# `for dir in apt rpm apk archlinux` (:114). ORDER MATTERS to both the call log
-# and the purge list, which is how this port is proved equivalent.
+# `for dir in apt rpm apk archlinux` (:114). ORDER MATTERS to both the call log and the purge list, which is how this port is proved equivalent.
 FORMATS = ("apt", "rpm", "apk", "archlinux")
 
 # `CC_MUTABLE="no-cache"` (:111). The whole subject of the header above.
@@ -119,9 +117,7 @@ CC_MUTABLE = "no-cache"
 BUCKET = "rediacc-releases"
 PUBLIC_HOST = "https://releases.rediacc.com"
 
-# `.ci/scripts/deploy/cf-purge-urls.sh` (:162), relative to the repository root
-# the twin cd's into. Named once so the cutover to `cf_purge_urls.py` is one
-# line in the box that owns it.
+# `.ci/scripts/deploy/cf-purge-urls.sh` (:162), relative to the repository root the twin cd's into. Named once so the cutover to `cf_purge_urls.py` is one line in the box that owns it.
 PURGE_SCRIPT = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # The two install scripts (:142), in order, relative to the repository root.
@@ -137,11 +133,9 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("CLOUDFLARE_ZONE_ID", "%s: CLOUDFLARE_ZONE_ID must be set" % SELF),
 )
 
-# The `case` arms of `skip_release_requested` (:70-73). A SET, because the twin
-# lists each spelling explicitly rather than lowercasing: `TrUe` and `Y` are NOT
+# The `case` arms of `skip_release_requested` (:70-73). A SET, because the twin lists each spelling explicitly rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would skip a release the twin
-# publishes. Sits between the two marker comments the gate test
-# `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin
+# publishes. Sits between the two marker comments the gate test `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin
 # on; that test assembles its mutants from the twin's own text, so it is
 # unaffected by this file, but the set has to stay in step with those lines.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
@@ -150,8 +144,7 @@ SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y",
 # channel has no tag contract, so the bump-none refusal is scoped to these two.
 RELEASE_CHANNELS = ("stable", "edge")
 
-# Vacuity fact 2 in the module docstring, as a constant so a test can assert the
-# defect by name instead of restating the sentence.
+# Vacuity fact 2 in the module docstring, as a constant so a test can assert the defect by name instead of restating the sentence.
 AN_EMPTY_DIST_REPORTS_SUCCESS = True
 
 
@@ -391,8 +384,7 @@ def _upload_repos(channel: str, endpoint: str) -> list[str]:
     urls: list[str] = []
     for fmt in FORMATS:
         directory = "dist/repos/%s" % fmt
-        # `[[ -d ... ]] || continue`: a format this channel does not build is
-        # legitimate, and is vacuity fact 1 in the module docstring.
+        # `[[ -d ... ]] || continue`: a format this channel does not build is legitimate, and is vacuity fact 1 in the module docstring.
         if not os.path.isdir(directory):
             continue
 
@@ -493,13 +485,10 @@ def main(argv: list[str]) -> int:
             "uploading as usual" % (SELF, channel)
         )
 
-    # The dist/ paths and the purge call below are repo-relative, exactly as they
-    # were in the workflow step this came from.
+    # The dist/ paths and the purge call below are repo-relative, exactly as they were in the workflow step this came from.
     os.chdir(repo_root())
 
-    # `export`ed, so the `aws` child sees them. R2 speaks S3, and the twin's
-    # header names the mapping because a missing bridge surfaces as an
-    # unhelpful credentials error rather than as a missing variable.
+    # `export`ed, so the `aws` child sees them. R2 speaks S3, and the twin's header names the mapping because a missing bridge surfaces as an unhelpful credentials error rather than as a missing variable.
     os.environ["AWS_ACCESS_KEY_ID"] = values["CLOUDFLARE_R2_ACCESS_KEY_ID"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = values["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
     os.environ["AWS_DEFAULT_REGION"] = "auto"

@@ -24,8 +24,7 @@ describe('matchesGlob', () => {
   });
 
   it('does not let a literal space act as a wildcard', () => {
-    // Regression: an escaping scheme that reuses the space as the wildcard
-    // sentinel turns "repo fork" into /^repo.*fork$/ and matches this.
+    // Regression: an escaping scheme that reuses the space as the wildcard sentinel turns "repo fork" into /^repo.*fork$/ and matches this.
     expect(matchesGlob('repo fork', 'repoXXXfork')).toBe(false);
   });
 
@@ -97,9 +96,7 @@ describe('evaluatePolicy — commands', () => {
   });
 
   it('fails CLOSED when a document defines no commands rule (the footgun)', () => {
-    // A present document that allow-lists no commands must grant nothing, not
-    // everything. A reviewer flagged the old allow-all behavior: an admin who
-    // scopes machines but forgets commands would otherwise hand out every verb.
+    // A present document that allow-lists no commands must grant nothing, not everything. A reviewer flagged the old allow-all behavior: an admin who scopes machines but forgets commands would otherwise hand out every verb.
     const d = doc({ defaults: {} });
     const decision = evaluatePolicy(d, ctx({ commandPath: 'machine deprovision' }));
     expect(decision.allowed).toBe(false);
@@ -107,8 +104,7 @@ describe('evaluatePolicy — commands', () => {
   });
 
   it('denies even an owner when a document allow-lists no commands', () => {
-    // Under a document, the allow-list binds everyone (deny already outranks all
-    // tiers, including owners). An empty allow-list is an empty grant for all.
+    // Under a document, the allow-list binds everyone (deny already outranks all tiers, including owners). An empty allow-list is an empty grant for all.
     const d = doc({ defaults: { machines: ['*'] } });
     expect(evaluatePolicy(d, ctx({ commandPath: 'repo delete', orgRole: 'owner' })).allowed).toBe(
       false

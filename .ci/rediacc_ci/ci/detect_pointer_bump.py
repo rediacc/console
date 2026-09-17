@@ -164,10 +164,7 @@ from rediacc_ci.core import common
 # needs each commit's PARENT as well as the commit.
 WALK_CAP = 5
 
-# The gitlink mode pair `git diff-tree -r --raw` prints for a submodule pointer
-# that moved (twin :136, :158). `-r` is load-bearing in the twin's own words:
-# without it a nested gitlink change reports as its parent TREE (`:040000
-# 040000 ... private`) and never matches this prefix.
+# The gitlink mode pair `git diff-tree -r --raw` prints for a submodule pointer that moved (twin :136, :158). `-r` is load-bearing in the twin's own words: without it a nested gitlink change reports as its parent TREE (`:040000 040000 ... private`) and never matches this prefix.
 GITLINK_PREFIX = ":160000 160000 "
 
 # `check_name='CI Complete'` and the reducing `--jq` (twin :149-152).
@@ -176,8 +173,7 @@ GREEN_JQ = '[.check_runs[] | select(.conclusion == "success")] | length'
 TREE_JQ = ".commit.tree.sha"
 STATUS_JQ = ".status"
 
-# `jq -r '.pull_request.head.sha // empty'` (twin :92). `// empty` is what makes
-# an absent field print nothing rather than the string `null`.
+# `jq -r '.pull_request.head.sha // empty'` (twin :92). `// empty` is what makes an absent field print nothing rather than the string `null`.
 HEAD_SHA_JQ = ".pull_request.head.sha // empty"
 
 # `sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#'` (twin :175). Two programs in
@@ -188,25 +184,19 @@ REPO_SLUG_SED = r"s#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#"
 KEY_POINTER = "pointer_bump_only"
 KEY_BASELINE = "baseline_sha"
 
-# `case "$status" in identical | ahead)` (twin :192-195). `compare BASE...HEAD`
-# reports HEAD relative to BASE, so main being 'ahead' of (or 'identical' to)
-# NEW means NEW is an ancestor of main. 'behind' and 'diverged' mean unmerged or
-# drifted.
+# `case "$status" in identical | ahead)` (twin :192-195). `compare BASE...HEAD` reports HEAD relative to BASE, so main being 'ahead' of (or 'identical' to) NEW means NEW is an ancestor of main. 'behind' and 'diverged' mean unmerged or drifted.
 MERGED_STATUSES = ("identical", "ahead")
 
 # The three `GITHUB_STEP_SUMMARY` lines (twin :202-204).
 SUMMARY_HEADING = "### Pointer-bump fast path"
 
-# A bash NAME, used to tell "this expression mentions an unset variable" from
-# "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that
-# is a bad NUMBER, and bash treats the two cases differently.
+# A bash NAME, used to tell "this expression mentions an unset variable" from "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that is a bad NUMBER, and bash treats the two cases differently.
 BASH_NAME = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_][A-Za-z0-9_]*")
 
 # A complete bash arithmetic literal: optional sign, then hex, octal or decimal.
 BASH_NUMBER = re.compile(r"^[+-]?(?:0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)$")
 
-# The four defects in the module docstring, as constants a test can assert by
-# name instead of restating the sentence.
+# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
 THE_HEAD_GUARD_IS_UNREACHABLE_ON_A_PULL_REQUEST = True
 STEP_THREE_STILL_COMPARES_AGAINST_THE_MERGE_COMMIT = True
 AN_EMPTY_GITMODULES_IS_A_HARD_EXIT_NOT_A_FAIL_SAFE = True
@@ -374,8 +364,7 @@ class Outputs:
                 with open(self.output_file, "a", encoding="utf-8") as handle:
                     handle.write(line + "\n")
             except OSError as exc:
-                # bash prints `<script>: line 50: <file>: <reason>` and `set -e`
-                # ends the run. Same three facts, same stream, same status.
+                # bash prints `<script>: line 50: <file>: <reason>` and `set -e` ends the run. Same three facts, same stream, same status.
                 print(
                     "detect-pointer-bump.sh: %s: %s" % (self.output_file, exc.strerror),
                     file=sys.stderr,
@@ -514,9 +503,7 @@ def verify_moves(net: str, pat_token: str) -> str:
         old_sha = awk_field(meta, 3)
         new_sha = awk_field(meta, 4)
 
-        # DEFECT C: `git config --get-regexp` exits 1 on no match, `pipefail`
-        # promotes it to the assignment's status, and `set -e` ends the script
-        # before the guard on the next line can say anything.
+        # DEFECT C: `git config --get-regexp` exits 1 on no match, `pipefail` promotes it to the assignment's status, and `set -e` ends the script before the guard on the next line can say anything.
         status, config_lines = git(
             ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"]
         )
@@ -645,14 +632,12 @@ def main(argv: list[str]) -> int:
         current = resolve_current(os.environ.get("GITHUB_EVENT_PATH", ""), shallow)
         if not current:
             # `[[ -n "$current" ]] || current=$(git rev-parse HEAD)`. The
-            # assignment is the LAST member of the `||` list, so `set -e` does
-            # reach it: a failing rev-parse ends the run with git's status.
+            # assignment is the LAST member of the `||` list, so `set -e` does reach it: a failing rev-parse ends the run with git's status.
             status, current = git(["rev-parse", "HEAD"])
             if status != 0:
                 raise BashExitError(status)
 
-        # DEFECT A: this is `git rev-parse HEAD`, which on a pull_request event
-        # is the synthetic merge commit and therefore never equal to `current`.
+        # DEFECT A: this is `git rev-parse HEAD`, which on a pull_request event is the synthetic merge commit and therefore never equal to `current`.
         status, head_sha = git(["rev-parse", "HEAD"])
         if status != 0:
             log.info("git rev-parse HEAD failed; cannot verify the walk's own stopping point")
@@ -685,9 +670,7 @@ def main(argv: list[str]) -> int:
         try:
             enough = _at_least_one(green)
         except BashUnboundError as exc:
-            # DEFECT D: bash prints `<script>: line 154: <name>: unbound
-            # variable` and stops, with no output pair written at all. Same
-            # three facts, same stream, same status.
+            # DEFECT D: bash prints `<script>: line 154: <name>: unbound variable` and stops, with no output pair written at all. Same three facts, same stream, same status.
             print(
                 "detect-pointer-bump.sh: %s: unbound variable" % exc.name,
                 file=sys.stderr,
@@ -697,8 +680,7 @@ def main(argv: list[str]) -> int:
         if not enough:
             return refuse("baseline %s has no successful CI Complete" % short(baseline))
 
-        # --- Step 3: every net gitlink move is tree-identical and merged -----
-        # DEFECT B: `HEAD`, not `$current`.
+        # --- Step 3: every net gitlink move is tree-identical and merged ----- DEFECT B: `HEAD`, not `$current`.
         _, net = git(["diff-tree", "-r", "--raw", baseline, "HEAD"])
         if has_non_gitlink(net):
             return refuse("net diff vs baseline is not gitlink-only")
@@ -712,8 +694,7 @@ def main(argv: list[str]) -> int:
         outputs.write(KEY_POINTER, "true")
         outputs.write(KEY_BASELINE, baseline)
     except FastPathRefusedError as exc:
-        # `no_fast_path` can itself fail, on an `--output` file it cannot append
-        # to. bash would exit with 1 there too, from inside the function.
+        # `no_fast_path` can itself fail, on an `--output` file it cannot append to. bash would exit with 1 there too, from inside the function.
         try:
             return refuse(exc.reason)
         except BashExitError as inner:
@@ -766,8 +747,7 @@ def _at_least_one(green: str) -> bool:
     if name:
         raise BashUnboundError(name.group(0))
     if stripped[0].isdigit():
-        # `[[: 08: value too great for base (error token is "08")`, verbatim
-        # apart from bash's own `<file>: line <n>:` prefix.
+        # `[[: 08: value too great for base (error token is "08")`, verbatim apart from bash's own `<file>: line <n>:` prefix.
         print(
             '%s: [[: %s: value too great for base (error token is "%s")'
             % ("detect-pointer-bump.sh", stripped, stripped),

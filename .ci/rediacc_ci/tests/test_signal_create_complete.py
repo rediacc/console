@@ -273,9 +273,7 @@ def test_unwritable_output_directory_fails_the_same_way_reworded(tmp_path: pathl
     assert o[0] == 1
     assert n[0] == 1
     assert o[1] == n[1] == ""
-    # Both refuse loudly. Only the wording is allowed to differ, and the twin's
-    # is the WEAKER of the two on this host: uutils' `mkdir` (which `/usr/bin/mkdir`
-    # symlinks to here) prints a bare `mkdir: Already exists` naming no path at all,
+    # Both refuse loudly. Only the wording is allowed to differ, and the twin's is the WEAKER of the two on this host: uutils' `mkdir` (which `/usr/bin/mkdir` symlinks to here) prints a bare `mkdir: Already exists` naming no path at all,
     # while GNU coreutils would name it. The port names it unconditionally, so that
     # half is asserted directly rather than left to whichever mkdir is installed.
     assert o[2].strip() != ""

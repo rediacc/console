@@ -61,8 +61,7 @@ import sys
 import _cipath  # noqa: F401
 from rediacc_ci.controls import plant
 
-# A sed that rewrites an apt source URL to a specific host. The captured group is
-# the DESTINATION host, which is what has to vary for a fallback to exist.
+# A sed that rewrites an apt source URL to a specific host. The captured group is the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
 
 # Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell
@@ -110,14 +109,8 @@ def run_blocks(text):
     A fallback lives in the SAME block as the rewrite it protects, because that is
     the only place it can run between two attempts of the same loop.
     """
-    # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker
-    # itself uses: a comment line inside a continued instruction is REMOVED, and
-    # the continuation closes over it. Joining first instead made a mid-RUN
-    # comment terminate the block, and everything after it -- in .devcontainer/
-    # Dockerfile, the entire fallback arm -- fell outside the block the gate then
-    # judged. The gate reported that file as "pinned to a SINGLE mirror" while
-    # its fallback sat 60 lines further down the SAME RUN, and pointed at that
-    # same file as the example to copy. A parser that ends a block early does not
+    # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker itself uses: a comment line inside a continued instruction is REMOVED, and the continuation closes over it. Joining first instead made a mid-RUN comment terminate the block, and everything after it -- in .devcontainer/ Dockerfile, the entire fallback arm -- fell outside the block the gate then judged. The
+    # gate reported that file as "pinned to a SINGLE mirror" while its fallback sat 60 lines further down the SAME RUN, and pointed at that same file as the example to copy. A parser that ends a block early does not
     # under-report; it reports the opposite of the truth.
     decommented = "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\s*\n", " ", decommented)
@@ -143,10 +136,7 @@ def offenders(text):
     bad = []
     blocks = run_blocks(text)
     if not blocks and REWRITE.search(text):
-        # A shell script, not a Dockerfile: there is no RUN instruction to scope
-        # by, so the whole file is one scope. Coarser than the Dockerfile path on
-        # purpose, and still decisive for the shape that matters: a file that
-        # rewrites apt to exactly one host names one destination and nothing else.
+        # A shell script, not a Dockerfile: there is no RUN instruction to scope by, so the whole file is one scope. Coarser than the Dockerfile path on purpose, and still decisive for the shape that matters: a file that rewrites apt to exactly one host names one destination and nothing else.
         blocks = [re.sub(r"\\\s*\n", " ", text)]
     for block in blocks:
         hosts = {m.group(1).lower() for m in REWRITE.finditer(block)}
@@ -176,12 +166,8 @@ def offenders(text):
                 )
             )
         elif guard is not None and last is None:
-            # ANTI-VACUITY. Both sequencing checks above are guarded on having
-            # parsed a number, so an edit that makes the loop unreadable would
-            # skip them SILENTLY and the file would pass while nothing had been
-            # verified. A conditional fallback whose loop cannot be parsed is
-            # reported as unverifiable rather than waved through: this gate must
-            # not be able to say "fine" when it means "I could not tell".
+            # ANTI-VACUITY. Both sequencing checks above are guarded on having parsed a number, so an edit that makes the loop unreadable would skip them SILENTLY and the file would pass while nothing had been verified. A conditional fallback whose loop cannot be parsed is reported as unverifiable rather than waved through: this gate must not be able to say "fine" when it means "I
+            # could not tell".
             bad.append(
                 (
                     "fallback is guarded on iteration %d but the retry loop's bounds "
@@ -195,14 +181,10 @@ def offenders(text):
 # An iteration test against a literal, in the shapes shell actually uses.
 #
 # This started as `[ "$i" = "N" ]` only, and review caught the consequence: `[[ $i -eq N ]]`
-# is a real idiom, used elsewhere in the very delta that added this gate, and a fallback
-# guarded that way was INVISIBLE here. Both sequencing checks are conditioned on finding a
-# guard, so not finding one meant reporting nothing, and the gate passed on exactly the
-# defect it exists to catch. That is the vacuity class this file's own header warns about,
+# is a real idiom, used elsewhere in the very delta that added this gate, and a fallback guarded that way was INVISIBLE here. Both sequencing checks are conditioned on finding a guard, so not finding one meant reporting nothing, and the gate passed on exactly the defect it exists to catch. That is the vacuity class this file's own header warns about,
 # so it is worth being explicit: `[` and `[[`, and `=`, `==` or `-eq`.
 #
-# Declared ONCE and shared by both readers below. They had identical copies, which is how
-# a fix lands in one and not the other.
+# Declared ONCE and shared by both readers below. They had identical copies, which is how a fix lands in one and not the other.
 ITER_TEST = r'\[\[?\s*"?\$\{?\w+\}?"?\s*(?:==?|-eq)\s*"?(\d+)"?\s*\]\]?'
 
 
@@ -258,11 +240,8 @@ def selftest():
         nonlocal ok
         if not cond:
             ok = False
-        # `% (detail,)`, NOT `% detail`. With a list or tuple detail the bare form treats
-        # it as the argument LIST, so an empty list raises TypeError and a 2-element one
-        # raises too. That turns a control FAILURE into a traceback, which is the worst
-        # possible time to lose the message: found while mutation-testing this very file,
-        # where a genuinely failing control crashed instead of printing what it wanted.
+        # `% (detail,)`, NOT `% detail`. With a list or tuple detail the bare form treats it as the argument LIST, so an empty list raises TypeError and a 2-element one raises too. That turns a control FAILURE into a traceback, which is the worst possible time to lose the message: found while mutation-testing this very file, where a genuinely failing control crashed instead of
+        # printing what it wanted.
         print(
             "  %s  %s%s"
             % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %r" % (detail,))
@@ -282,8 +261,7 @@ def selftest():
     )
     none = "RUN apt-get update && apt-get install -y curl\n"
 
-    # A fallback that fires only on the LAST attempt: two hosts are named, so the
-    # shallow "does a second host appear" test passes, and it still cannot help.
+    # A fallback that fires only on the LAST attempt: two hosts are named, so the shallow "does a second host appear" test passes, and it still cannot help.
     too_late = (
         "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
         "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
@@ -326,9 +304,7 @@ def selftest():
         fallback_iteration(both),
     )
 
-    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the
-    # bound check above is satisfied, and it still never runs because an earlier
-    # iteration bails out first. Loop bound and fallback position are each fine in
+    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the bound check above is satisfied, and it still never runs because an earlier iteration bails out first. Loop bound and fallback position are each fine in
     # isolation; only their RELATION to the give-up point decides reachability.
     stranded = (
         "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
@@ -361,11 +337,9 @@ def selftest():
 
     # THE DOUBLE-BRACKET BLINDSPOT, found in review. The iteration test used to be
     # `[ "$i" = "N" ]` and NOTHING else, so a fallback guarded `[[ $i -eq N ]]` was
-    # invisible: both sequencing checks are conditioned on finding a guard, so finding
-    # none meant reporting none, and the gate passed on the very defect it exists to
+    # invisible: both sequencing checks are conditioned on finding a guard, so finding none meant reporting none, and the gate passed on the very defect it exists to
     # catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the
-    # delta that added this file. Each shape below is the SAME defect written a different
-    # legal way, and every one must still be caught.
+    # delta that added this file. Each shape below is the SAME defect written a different legal way, and every one must still be caught.
     for label, test in (
         ("[[ $i -eq N ]]", "[[ $i -eq 5 ]]"),
         ('[[ "$i" == "N" ]]', '[[ "$i" == "5" ]]'),
@@ -385,8 +359,7 @@ def selftest():
             len(offenders(variant)) == 1 and "after the " in offenders(variant)[0][0],
             offenders(variant),
         )
-    # CONTROL for the control: the same bracket shapes must NOT manufacture a finding
-    # when the fallback is early, or the fix would just be "report more".
+    # CONTROL for the control: the same bracket shapes must NOT manufacture a finding when the fallback is early, or the fix would just be "report more".
     early_dbl = (
         "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
         "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
@@ -401,8 +374,7 @@ def selftest():
         (offenders(early_dbl), fallback_iteration(early_dbl)),
     )
 
-    # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number,
-    # so an unparseable loop would skip them silently and the file would pass
+    # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number, so an unparseable loop would skip them silently and the file would pass
     # while NOTHING had been verified. That is the exact shape this repo calls a
     # gate that cannot fail, and it must be reported instead.
     unparseable = (
@@ -424,8 +396,7 @@ def selftest():
         "unverifiable" in offenders(unparseable)[0][0] if offenders(unparseable) else False,
         offenders(unparseable),
     )
-    # A fallback applied EVERY iteration has no guard at all, so there is nothing
-    # to sequence and nothing to be unverifiable about. It must stay legal.
+    # A fallback applied EVERY iteration has no guard at all, so there is nothing to sequence and nothing to be unverifiable about. It must stay legal.
     check(
         "an unconditional fallback needs no guard and still passes",
         fallback_iteration(both) is None and offenders(both) == [],
@@ -436,20 +407,15 @@ def selftest():
     # Not everything is its business.
     check("a block that never rewrites apt is ignored", offenders(none) == [])
     check("an empty file is ignored", offenders("") == [])
-    # Continuation joining is load-bearing: the rewrite and its fallback are on
-    # different physical lines, so a scanner that reads line-by-line sees only the
-    # rewrite and reports a false positive on correct code.
+    # Continuation joining is load-bearing: the rewrite and its fallback are on different physical lines, so a scanner that reads line-by-line sees only the rewrite and reports a false positive on correct code.
     check(
         "continuations are joined, so a multi-line block reads as one",
         len(run_blocks(both)) == 1,
         run_blocks(both),
     )
-    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the
-    # opposite of the truth. Docker removes such a line and closes the
+    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the opposite of the truth. Docker removes such a line and closes the
     # continuation over it; joining first instead ended the block there, so a
-    # fallback below the comment fell outside the block and a correct Dockerfile
-    # was reported "pinned to a SINGLE mirror". Both directions, because the
-    # repair must not also swallow the finding it exists to make.
+    # fallback below the comment fell outside the block and a correct Dockerfile was reported "pinned to a SINGLE mirror". Both directions, because the repair must not also swallow the finding it exists to make.
     commented = plant(
         both, " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
     )

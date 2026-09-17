@@ -88,9 +88,7 @@ export async function enablePassword(
   configName: string,
   opts: { force?: boolean } = {}
 ): Promise<void> {
-  // 1. Ask the server to hand back the pre-provisioned password slot. userId is
-  //    resolved server-side from the token creator, so the body is empty. An
-  //    api token with the config:enroll scope authenticates the call.
+  // 1. Ask the server to hand back the pre-provisioned password slot. userId is resolved server-side from the token creator, so the body is empty. An api token with the config:enroll scope authenticates the call.
   let enroll: PasswordEnrollResponse;
   try {
     enroll = await accountServerFetch<PasswordEnrollResponse>(
@@ -118,9 +116,7 @@ export async function enablePassword(
   const { derivePasswordSlotSecret } = await import('@rediacc/shared/config-crypto');
   const slotSecret = await derivePasswordSlotSecret(password, enroll.kdfParams);
 
-  // 3. Persist exactly like the browser handoff: slot secret in OS secure storage
-  //    under a fresh local key id, token + wrappedCek in the token file, and a
-  //    stripped pointer once the probe pull confirms the unwrap.
+  // 3. Persist exactly like the browser handoff: slot secret in OS secure storage under a fresh local key id, token + wrappedCek in the token file, and a stripped pointer once the probe pull confirms the unwrap.
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const secureStorage = getSecureStorage();
   const storageKeyId = `rdc:pw:${crypto.randomUUID()}`;
@@ -132,18 +128,14 @@ export async function enablePassword(
   const remote: PendingRemoteConfig = {
     apiUrl,
     storeId: enroll.storeId,
-    // null (zero-config store) collapses to undefined so finalizeEnable mints
-    // a configId from the local config's id and seeds the store.
+    // null (zero-config store) collapses to undefined so finalizeEnable mints a configId from the local config's id and seeds the store.
     configId: enroll.configId ?? undefined,
     storageKeyId,
-    // null (default/org config) collapses to undefined — RemoteConfig.teamId is
-    // an optional uuid, and a falsy teamId already means "no team filter" on pull.
+    // null (default/org config) collapses to undefined — RemoteConfig.teamId is an optional uuid, and a falsy teamId already means "no team filter" on pull.
     teamId: enroll.teamId ?? undefined,
   };
 
-  // 4. Probe pull to fail fast. A wrong password surfaces as a CEK unwrap failure
-  //    (RemoteStaleSlotError from the adapter). Clean up the stored artifacts so a
-  //    retry starts from a clean slate, and report an actionable message.
+  // 4. Probe pull to fail fast. A wrong password surfaces as a CEK unwrap failure (RemoteStaleSlotError from the adapter). Clean up the stored artifacts so a retry starts from a clean slate, and report an actionable message.
   try {
     await finalizeEnable(remote, configName, opts);
   } catch (error) {

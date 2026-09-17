@@ -18,8 +18,7 @@ import pytest
 
 from rediacc_ci.quality import tracked_sidecars as mod
 
-# The heredoc from `.ci/scripts/quality/check-tracked-sidecars.sh`, lifted
-# verbatim. Nothing is changed, so a divergence here is a divergence in the port.
+# The heredoc from `.ci/scripts/quality/check-tracked-sidecars.sh`, lifted verbatim. Nothing is changed, so a divergence here is a divergence in the port.
 TWIN_PARSER = """
 import re, sys
 src = open(sys.argv[1], encoding="utf-8").read()

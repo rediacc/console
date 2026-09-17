@@ -179,9 +179,7 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
   const fields = new Map<string, string>();
   const env = new Map<string, string>();
   for (const line of lines.slice(open + 1, close)) {
-    // ENV FIRST. `FIELD` only accepts lowercase keys, so `env-GITHUB_TOKEN:` does not
-    // match it at all -- checking env first is what makes that a feature (a dedicated
-    // grammar) rather than an accident (a silently ignored line).
+    // ENV FIRST. `FIELD` only accepts lowercase keys, so `env-GITHUB_TOKEN:` does not match it at all -- checking env first is what makes that a feature (a dedicated grammar) rather than an accident (a silently ignored line).
     const e = ENV_FIELD.exec(line);
     if (e) {
       env.set(e[1], value(e[2]));
@@ -216,10 +214,7 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
       error: 'kind: test needs `test:` naming the gate-test that runs it in CI',
     };
   }
-  // `needs-not` REQUIRES a reason, for the same argument the BLOCKER convention makes
-  // everywhere else in this repo: an unexplained subtraction from a safety-side default
-  // is indistinguishable from a mistake, and this one subtracts from a capability claim
-  // whose failure mode is a gate dying on a clean runner.
+  // `needs-not` REQUIRES a reason, for the same argument the BLOCKER convention makes everywhere else in this repo: an unexplained subtraction from a safety-side default is indistinguishable from a mistake, and this one subtracts from a capability claim whose failure mode is a gate dying on a clean runner.
   const needsNotRaw = (fields.get('needs-not') ?? '').trim();
   if (needsNotRaw !== '' && (fields.get('blocker') ?? '') === '') {
     return {
@@ -247,9 +242,7 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
     };
   }
 
-  // `when` IS A CONJUNCT AND MAY NOT REACH FOR A STEP. See the field's own comment: a
-  // `steps.` reference is how a gate would reach around the setup guard and judge its own
-  // prerequisites, which is invariant 11 re-opened through a side door.
+  // `when` IS A CONJUNCT AND MAY NOT REACH FOR A STEP. See the field's own comment: a `steps.` reference is how a gate would reach around the setup guard and judge its own prerequisites, which is invariant 11 re-opened through a side door.
   const when = fields.get('when');
   if (when !== undefined && when.includes('steps.')) {
     return {
@@ -262,8 +255,7 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
   if (when !== undefined && when.trim() === '') {
     return { error: 'when: is empty. Omit the field rather than ANDing nothing.' };
   }
-  // An env value that is empty is a variable set to the empty string, which is NOT the
-  // same as unset and has bitten this repo before through toolchain_pin_for returning "".
+  // An env value that is empty is a variable set to the empty string, which is NOT the same as unset and has bitten this repo before through toolchain_pin_for returning "".
   for (const [k, v] of env) {
     if (v.trim() === '') {
       return {
@@ -325,17 +317,9 @@ export function headerError(source: string): string | null {
  */
 export function derivedId(repoPath: string): string {
   const base = (repoPath.split('/').pop() ?? '').replace(/\.(py|sh|ts|cjs|mjs)$/, '');
-  // BOTH ARMS NORMALISE `_` TO `-`, and until 2026-09-08 only the second did.
-  // The prefix strip has been `[-_]`-tolerant on both lines for a while, which
-  // made the missing normalisation on the gate-test arm read as deliberate. It
-  // was not: every one of the 149 `id: 'gate-test:...'` entries in
-  // scripts/ci-runner/manifest.ts is hyphenated, so a ported `test_gate_lanes.py`
-  // would have derived `gate-test:gate_lanes` and matched none of them.
-  // LATENT RATHER THAN LIVE TODAY, stated so nobody reads this as a bug that was
-  // biting: `.ci/scripts/test/gates/` holds 149 files and 0 `.py`, and the pytest
-  // ports live under `.ci/rediacc_ci/tests/gates/` -- note the `s` -- which this
-  // branch does not match and which carries no gate header anyway. It fires on
-  // the first battery test ported IN PLACE.
+  // BOTH ARMS NORMALISE `_` TO `-`, and until 2026-09-08 only the second did. The prefix strip has been `[-_]`-tolerant on both lines for a while, which made the missing normalisation on the gate-test arm read as deliberate. It was not: every one of the 149 `id: 'gate-test:...'` entries in scripts/ci-runner/manifest.ts is hyphenated, so a ported `test_gate_lanes.py` would have
+  // derived `gate-test:gate_lanes` and matched none of them. LATENT RATHER THAN LIVE TODAY, stated so nobody reads this as a bug that was biting: `.ci/scripts/test/gates/` holds 149 files and 0 `.py`, and the pytest ports live under `.ci/rediacc_ci/tests/gates/` -- note the `s` -- which this branch does not match and which carries no gate header anyway. It fires on the first
+  // battery test ported IN PLACE.
   if (repoPath.includes('/test/gates/'))
     return `gate-test:${base.replace(/^test[-_]/, '').replace(/_/g, '-')}`;
   return `check:ci-${base.replace(/^check[-_]/, '').replace(/_/g, '-')}`;
@@ -391,11 +375,7 @@ export function inferredNeeds(rawSource: string): string[] {
     out.add('submodules');
   }
   if (/^\s*import\s+yaml\b|\byaml\.safe_load\b/m.test(source)) out.add('python-yaml');
-  // `\bnode\b` alone matched the Python AST variable `node` in
-  // check_allowlist_key_matching.py and inferred a node runtime for a pure-Python gate.
-  // A RUNTIME need is an invocation or an ES import, never a bare identifier.
-  // ...and `node\s+[\w./]` then matched `for node in ast.walk(tree)`. A runtime need
-  // means node in COMMAND position: line start, or after a shell operator.
+  // `\bnode\b` alone matched the Python AST variable `node` in check_allowlist_key_matching.py and inferred a node runtime for a pure-Python gate. A RUNTIME need is an invocation or an ES import, never a bare identifier. ...and `node\s+[\w./]` then matched `for node in ast.walk(tree)`. A runtime need means node in COMMAND position: line start, or after a shell operator.
   if (
     /\bnpx\s|\btsx\s|(?:^|[|&;(]|\$\()\s*node\s+[\w./]|require\(|^\s*import .* from ['"]/m.test(
       source

@@ -117,13 +117,10 @@ from rediacc_ci.controls import Controls
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
 SPACE = r"[ \t\n\v\f\r]"
 
-# Tools commonly provisioned with `go install`. A bare invocation of one of these
-# in a script that also installs it is the defect. The alternation is carried in
-# the twin's order, which is not alphabetical and does not need to be.
+# Tools commonly provisioned with `go install`. A bare invocation of one of these in a script that also installs it is the defect. The alternation is carried in the twin's order, which is not alphabetical and does not need to be.
 GO_TOOLS = "goimports|golangci-lint|govulncheck|gotestsum|deadcode|staticcheck|shfmt|gopls|mockgen"
 
-# The pathspecs the twin hands to `git ls-files`. See the port notes: the single
-# `*` is deliberate and the `**` spelling is a bug, not a tidy-up.
+# The pathspecs the twin hands to `git ls-files`. See the port notes: the single `*` is deliberate and the `**` spelling is a bug, not a tidy-up.
 PATHSPECS = (".ci/*.sh", "scripts/*.sh")
 
 # ANTI-VACUITY FLOOR. Fewer tracked shell files than this and the gate refuses.
@@ -141,18 +138,13 @@ _INSTALLS = re.compile(r"(^|[ \t;&|])go[ \t]+install[ \t]")
 # anywhere in the file clears it; see the per-FILE note in the module docstring.
 _FIXED = re.compile(r"GOBIN=|go env GOPATH.*bin|GOPATH_BIN|_go_bin")
 
-# A comment line, dropped before the numbering grep. This is the filter that
-# makes the reported numbers count the surviving lines rather than the file's.
+# A comment line, dropped before the numbering grep. This is the filter that makes the reported numbers count the surviving lines rather than the file's.
 _COMMENT = re.compile(r"^[ \t]*#")
 
-# Is a go tool invoked by BARE name? The three openers are: line start, one of
-# the shell separators, or the literal `$(`. The trailing space class is what
-# stops a bare mention at end-of-line from counting.
+# Is a go tool invoked by BARE name? The three openers are: line start, one of the shell separators, or the literal `$(`. The trailing space class is what stops a bare mention at end-of-line from counting.
 _BARE = re.compile(r"(^|[ \t;&|(]|\$\()[ \t]*(%s)[ \t]" % GO_TOOLS)
 
-# A path-qualified call ($x/tool, ./tool, /usr/bin/tool, "$VAR") already resolves
-# without PATH, and a mention inside a string is not an invocation. `grep -vE`
-# in the twin, so a line matching this is DROPPED however else it looked.
+# A path-qualified call ($x/tool, ./tool, /usr/bin/tool, "$VAR") already resolves without PATH, and a mention inside a string is not an invocation. `grep -vE` in the twin, so a line matching this is DROPPED however else it looked.
 _QUALIFIED = re.compile(r"[/\"'$](%s)" % GO_TOOLS)
 
 
@@ -224,8 +216,7 @@ def scan_file(path: pathlib.Path, label: str) -> list[str]:
         "%s installs a go tool and then invokes one by bare name, "
         "with no GOBIN and no GOPATH/bin on PATH:" % label
     ]
-    # `head -3`: only the first three hits are shown, so a file with thirty bad
-    # lines prints three. The count is not printed either, which means the
+    # `head -3`: only the first three hits are shown, so a file with thirty bad lines prints three. The count is not printed either, which means the
     # operator cannot tell three from thirty. Carried; reported.
     lines.extend("         " + hit for hit in hits[:3])
     lines.append(
@@ -287,9 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     files = tracked_shell_files(root)
     count = len(files)
 
-    # THE FLOOR, AND IT IS A FAILURE RATHER THAN AN ABSTENTION. A green from a
-    # gate that saw four files is a statement about four files wearing the
-    # sentence "every script that installs a go tool can find it".
+    # THE FLOOR, AND IT IS A FAILURE RATHER THAN AN ABSTENTION. A green from a gate that saw four files is a statement about four files wearing the sentence "every script that installs a go tool can find it".
     if count < MIN_FILES:
         fail(
             "only %d shell file(s) in scope -- the scan is not reaching the tree, "
@@ -307,11 +296,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- controls: the gate must be able to FIRE, and must not fire on the fix -
     #
-    # Run against fixtures in a scratch dir, because the live tree is expected to
-    # be clean and a gate proven only on a clean tree has proven nothing. These
-    # are the twin's four fixtures verbatim, kept INLINE (not moved behind
-    # `--selftest`) because the twin runs them on every invocation and a port
-    # that moved them would change what a plain run proves.
+    # Run against fixtures in a scratch dir, because the live tree is expected to be clean and a gate proven only on a clean tree has proven nothing. These are the twin's four fixtures verbatim, kept INLINE (not moved behind `--selftest`) because the twin runs them on every invocation and a port that moved them would change what a plain run proves.
     with tempfile.TemporaryDirectory() as ctl_dir:
         ctl_root = pathlib.Path(ctl_dir)
         for name, text in _CONTROL_FIXTURES.items():
@@ -389,8 +374,7 @@ def selftest() -> int:
         installs_go_tool("cd x; go install foo@latest\n"),
         True,
     )
-    # MIRROR: `cargo install` is not `go install`, and neither is a word ending
-    # in "go". The opener class is what carries this.
+    # MIRROR: `cargo install` is not `go install`, and neither is a word ending in "go". The opener class is what carries this.
     ctl.check(
         "installs: MIRROR cargo install is not go install",
         installs_go_tool("cargo install x\n"),
@@ -431,9 +415,7 @@ def selftest() -> int:
         bare_invocations("# goimports -l .\n"),
         [],
     )
-    # THE NUMBERING DEFECT, PINNED. Two comment lines above the hit and the
-    # reported number is 1, not 3. If someone "fixes" the twin, this control
-    # fails and points at the sentence in the port notes that explains why.
+    # THE NUMBERING DEFECT, PINNED. Two comment lines above the hit and the reported number is 1, not 3. If someone "fixes" the twin, this control fails and points at the sentence in the port notes that explains why.
     ctl.check(
         "bare: the number counts the FILTERED stream, not the file",
         bare_invocations("# a\n# b\ngoimports -l .\n"),
@@ -451,8 +433,7 @@ def selftest() -> int:
         ctl.check("scan: unrelated.sh is silent", scan_file(root / "unrelated.sh", "u"), [])
         # An absent file is not a finding; see scan_file's docstring.
         ctl.check("scan: an unreadable path is not a finding", scan_file(root / "nope.sh", "n"), [])
-        # The header names the file, and the FIX line is present. Both are the
-        # output contract: a finding a reader cannot act on is a count.
+        # The header names the file, and the FIX line is present. Both are the output contract: a finding a reader cannot act on is a count.
         header = scan_file(root / "bad.sh", "bad.sh")
         ctl.check("scan: the header names the file", header[0].startswith("bad.sh installs"), True)
         ctl.check("scan: the FIX line is the last line", "FIX: GOBIN=" in header[-1], True)
@@ -462,12 +443,10 @@ def selftest() -> int:
         root = pathlib.Path(tmp)
         _git_init(root)
         (root / ".ci").mkdir()
-        # THE VACUITY CASE FIRST. A repository with no shell files at all must be
-        # a refusal, never a clean verdict.
+        # THE VACUITY CASE FIRST. A repository with no shell files at all must be a refusal, never a clean verdict.
         ctl.check("VACUITY: an empty tree is refused", _run(root), 1)
 
-        # Fill to the floor with harmless scripts, then assert the floor is the
-        # thing that flipped rather than anything about their contents.
+        # Fill to the floor with harmless scripts, then assert the floor is the thing that flipped rather than anything about their contents.
         for i in range(MIN_FILES):
             (root / ".ci" / ("filler%02d.sh" % i)).write_text(
                 "#!/bin/bash\necho hi\n", encoding="utf-8"
@@ -475,8 +454,7 @@ def selftest() -> int:
         _git_add(root)
         ctl.check("CONTROL: %d harmless scripts pass" % MIN_FILES, _run(root), 0)
 
-        # ONE SHORT OF THE FLOOR IS STILL A REFUSAL. Off-by-one on a floor is how
-        # a floor stops being one.
+        # ONE SHORT OF THE FLOOR IS STILL A REFUSAL. Off-by-one on a floor is how a floor stops being one.
         (root / ".ci" / "filler00.sh").unlink()
         _git_add(root)
         ctl.check("VACUITY: %d files is one short and is refused" % (MIN_FILES - 1), _run(root), 1)
@@ -491,8 +469,7 @@ def selftest() -> int:
         _git_add(root)
         ctl.check("MIRROR: the GOBIN shape in the same slot passes", _run(root), 0)
 
-        # UNTRACKED IS INVISIBLE, on purpose: the scan reads `git ls-files`. A
-        # port that quietly added --others would find things CI never sees.
+        # UNTRACKED IS INVISIBLE, on purpose: the scan reads `git ls-files`. A port that quietly added --others would find things CI never sees.
         (root / ".ci" / "untracked-plant.sh").write_text(bad, encoding="utf-8")
         ctl.check("SCOPE: an UNTRACKED bad script is not seen", _run(root), 0)
 

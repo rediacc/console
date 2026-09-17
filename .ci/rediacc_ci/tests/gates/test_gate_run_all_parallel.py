@@ -97,8 +97,7 @@ def test_pool_runs_tests_concurrently(gate, tmp_path):
     gate.assertions += 1
     gate.log_pass("four 2s tests finish in %dms at jobs=4 (ceiling 6000ms)" % parallel_ms)
 
-    # THE CONTROL. Without it, a runner that silently ignored RUN_ALL_JOBS and ran
-    # everything at once anyway would pass the assertion above, and so would a
+    # THE CONTROL. Without it, a runner that silently ignored RUN_ALL_JOBS and ran everything at once anyway would pass the assertion above, and so would a
     # broken stopwatch. The same four fixtures at jobs=1 must be SLOW.
     start = time.monotonic()
     run_runner(gate, gates, env={"RUN_ALL_JOBS": "1"})
@@ -167,10 +166,7 @@ def test_output_blocks_never_interleave(gate, tmp_path):
         )
 
     result = run_runner(gate, gates, "--verbose", env={"RUN_ALL_JOBS": "4"})
-    # `grep -oE '^(alpha|beta)-[0-9]' | paste -sd' '` in the twin. The same scan in
-    # Python: an anchored per-line match, joined with single spaces. Anchored, so a
-    # line merely CONTAINING the token (a summary line naming the fixture) is not
-    # counted on either side.
+    # `grep -oE '^(alpha|beta)-[0-9]' | paste -sd' '` in the twin. The same scan in Python: an anchored per-line match, joined with single spaces. Anchored, so a line merely CONTAINING the token (a summary line naming the fixture) is not counted on either side.
     seen = " ".join(
         line[: len(match.group(0))]
         for line in result.combined.splitlines()
@@ -192,8 +188,7 @@ def test_scanners_never_overlap_writers(gate, tmp_path):
     gates.mkdir()
     sentinel = tmp_path / "writer.sentinel"
 
-    # The writer holds a sentinel for 2s, exactly as the two real writers hold a
-    # fixture file inside .ci/scripts and scripts.
+    # The writer holds a sentinel for 2s, exactly as the two real writers hold a fixture file inside .ci/scripts and scripts.
     mk_fixture(
         gates,
         "test-w-writer.sh",
@@ -202,8 +197,7 @@ def test_scanners_never_overlap_writers(gate, tmp_path):
         'rm -f "%s"' % sentinel,
         'echo "PASS: writer held and released its fixture"',
     )
-    # The scanner reds if it sees the sentinel, exactly as a recursive copy of a
-    # directory reds when a file vanishes underneath it.
+    # The scanner reds if it sees the sentinel, exactly as a recursive copy of a directory reds when a file vanishes underneath it.
     mk_fixture(
         gates,
         "test-x-scanner.sh",
@@ -232,9 +226,7 @@ def test_scanners_never_overlap_writers(gate, tmp_path):
     )
     gate.log_pass("the S set is held back until the W chain has released the tree")
 
-    # THE CONTROL. Drop both fixtures into T -- which is what a flat pool is -- and
-    # the same two must collide. Without this, a runner that ran everything serially,
-    # or one whose scanner check never fired, would look identical.
+    # THE CONTROL. Drop both fixtures into T -- which is what a flat pool is -- and the same two must collide. Without this, a runner that ran everything serially, or one whose scanner check never fired, would look identical.
     unscheduled = run_runner(
         gate, gates, env={"RUN_ALL_JOBS": "4", "RUN_ALL_WRITERS": "", "RUN_ALL_SCANNERS": ""}
     )

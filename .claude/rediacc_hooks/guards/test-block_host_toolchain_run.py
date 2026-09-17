@@ -18,17 +18,9 @@ import subprocess
 import sys
 import tempfile
 
-# THIS HARNESS SITS BESIDE ITS GUARD, which is what
-# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
-# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
-# and it is the only credit these four have because their block direction needs
-# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
-# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
-# to .claude/oracles/, where the differential still compares the two
-# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
-# the reason the cutover exists at all: a suite that kept driving the retired file
-# would keep passing while the thing that actually runs went unchecked.
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original to .claude/oracles/, where the differential still compares the two byte for byte. This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked.
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_host_toolchain_run"]
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
@@ -41,9 +33,7 @@ def fake(name):
     p = os.path.join(shim, name)
     with open(p, "w", encoding="utf-8") as fh:
         fh.write("#!/bin/sh\nexit 0\n")
-    # 0o700, not 0o755: the shim only has to be executable by THIS process,
-    # and mkdtemp() already made the parent owner-only, so the group/other
-    # bits were unreachable decoration.
+    # 0o700, not 0o755: the shim only has to be executable by THIS process, and mkdtemp() already made the parent owner-only, so the group/other bits were unreachable decoration.
     os.chmod(p, 0o700)
 
 
@@ -78,20 +68,13 @@ def run_full(cmd, path=None):
 REAL = os.environ.get("PATH", "")
 WITH_SHIM = f"{shim}:{REAL}"
 
-# The directory that resolves `bash` must survive every "host lacks <tool>"
-# PATH strip below, even when that directory ALSO resolves the tool being
-# hidden. On this CI runner go is apt-installed into /usr/bin, the same
-# directory bash lives in, so a strip keyed only on "does this dir contain
-# <tool>" silently removed bash too and every subprocess.run(["bash", GUARD])
-# call in this file failed with FileNotFoundError. Locally go lives under
-# /usr/local/go/bin (the go.dev tarball path from `./run.sh setup`), a
-# separate directory from bash's, which is why this never reproduced there.
+# The directory that resolves `bash` must survive every "host lacks <tool>" PATH strip below, even when that directory ALSO resolves the tool being hidden. On this CI runner go is apt-installed into /usr/bin, the same directory bash lives in, so a strip keyed only on "does this dir contain <tool>" silently removed bash too and every subprocess.run(["bash", GUARD]) call in this file
+# failed with FileNotFoundError. Locally go lives under /usr/local/go/bin (the go.dev tarball path from `./run.sh setup`), a separate directory from bash's, which is why this never reproduced there.
 _bash_which = shutil.which("bash", path=REAL)
 BASH_DIR = os.path.dirname(_bash_which) if _bash_which else None
 
 # Does a devbox exist? The refusal arm requires one; without it the guard
-# correctly downgrades to a note, and asserting exit 2 would be asserting the
-# wrong thing on a machine with no container.
+# correctly downgrades to a note, and asserting exit 2 would be asserting the wrong thing on a machine with no container.
 box_name = subprocess.run(
     ["docker", "ps", "--filter", "label=com.rediacc.devbox.worktree", "--format", "{{.Names}}"],
     capture_output=True,
@@ -133,10 +116,7 @@ cases.append(
     )
 )
 
-# A GATE THAT PROVISIONS ITS OWN PINNED TOOL MUST NEVER BE ROUTED.
-# Three of the table's original six entries were this mistake, so it is pinned
-# rather than remembered. These run with the REAL host PATH: if either tool is
-# absent here (it is, on this host) the old table refused the command outright,
+# A GATE THAT PROVISIONS ITS OWN PINNED TOOL MUST NEVER BE ROUTED. Three of the table's original six entries were this mistake, so it is pinned rather than remembered. These run with the REAL host PATH: if either tool is absent here (it is, on this host) the old table refused the command outright,
 # while the gate itself acquires its pin and passes.
 cases.extend(
     (
@@ -175,16 +155,10 @@ else:
         )
     )
 
-# --- BARE TOOL: the same class, for a directly-typed command ----------------
-# The NEEDS table above matches a GATE KEY string in the command
+# --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command
 # (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate
-# at all. BARE_TOOLS exists to catch exactly that shape.
-# Constructed rather than ambient: whether THIS host happens to have `go` on PATH
-# must not decide which branch of the guard gets exercised. Strip every PATH entry
-# that actually resolves `go`, so the REFUSE branch runs deterministically instead
-# of silently degrading to a no-op CONTROL assertion on a host that has go (which
-# is exactly what happened the first time this case was written: it passed while
-# testing nothing, because `go` was on this host's PATH the whole time).
+# at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is
+# exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
 NOGO = os.pathsep.join(
     d for d in REAL.split(os.pathsep) if d == BASH_DIR or not os.path.isfile(os.path.join(d, "go"))
 )
@@ -222,9 +196,7 @@ cases.append(
 
 # --- NPX MISUSE: fires on shape, independent of host tool state -------------
 # npx resolves its argument as an npm package name; none of ruff/go/shfmt/
-# shellcheck/actionlint are npm packages, so this fails whether or not the
-# tool is on PATH. Measured 2026-08-28: this exact shape, with ruff genuinely
-# present on PATH the whole time.
+# shellcheck/actionlint are npm packages, so this fails whether or not the tool is on PATH. Measured 2026-08-28: this exact shape, with ruff genuinely present on PATH the whole time.
 cases.append(
     (2, run("npx --yes ruff format file.py", REAL), "npx cannot run a pinned non-npm tool")
 )
@@ -233,31 +205,18 @@ cases.append(
     (0, run("npx --yes tsx scripts/foo.ts", REAL), "CONTROL: npx running a real npm package")
 )
 
-# ---------------------------------------------------------------------------
-# Submodule / non-submodule split, and the credential file. Both added 2026-08-28
-# after each failed for real.
+# --------------------------------------------------------------------------- Submodule / non-submodule split, and the credential file. Both added 2026-08-28 after each failed for real.
 #
-# The property that decides routing is NOT "is this a submodule". It is whether the
-# target owns a HOST-BUILT toolchain. private/renet is a submodule with neither a
-# .venv nor node_modules, so it routes like the root repo. private/account is a
-# submodule WITH node_modules, and private/growth/video_pipeline is not a submodule
+# The property that decides routing is NOT "is this a submodule". It is whether the target owns a HOST-BUILT toolchain. private/renet is a submodule with neither a .venv nor node_modules, so it routes like the root repo. private/account is a submodule WITH node_modules, and private/growth/video_pipeline is not a submodule
 # at all but carries its own .venv; neither can run in the container. Routing
-# video_pipeline into the devbox produced ModuleNotFoundError: anyio.
-# THE ROOT-REPO EXPECTATION IS DERIVED, NEVER HARDCODED. This case asserted a
-# literal 2 for private/renet and went red on 2026-08-28 the moment `ruff` was
-# installed on this host -- the guard then correctly declined to route, exactly
-# as its own comment says it should ("THE HOST IS ASKED, NOT ASSUMED").
+# video_pipeline into the devbox produced ModuleNotFoundError: anyio. THE ROOT-REPO EXPECTATION IS DERIVED, NEVER HARDCODED. This case asserted a literal 2 for private/renet and went red on 2026-08-28 the moment `ruff` was installed on this host -- the guard then correctly declined to route, exactly as its own comment says it should ("THE HOST IS ASKED, NOT ASSUMED").
 #
-# The property under test is the one the section header states: a submodule with
-# no host toolchain routes LIKE THE ROOT REPO. So compare it to the root repo's
-# verdict rather than to a constant, which holds in both worlds and keeps the
+# The property under test is the one the section header states: a submodule with no host toolchain routes LIKE THE ROOT REPO. So compare it to the root repo's verdict rather than to a constant, which holds in both worlds and keeps the
 # case meaningful on a machine that has ruff and on one that does not.
 #
-# SAME CLASS AS wl_git.py's force-push probe trio, found the same day: a control
-# whose expectation was pinned to ambient machine state (there, a branch name
+# SAME CLASS AS wl_git.py's force-push probe trio, found the same day: a control whose expectation was pinned to ambient machine state (there, a branch name
 # from an earlier wave). Neither went green and lied -- both went RED for a
-# reason unrelated to what they assert, which is worse, because a red nobody can
-# explain is a red everybody learns to ignore.
+# reason unrelated to what they assert, which is worse, because a red nobody can explain is a red everybody learns to ignore.
 _root_like = 2 if (have_box and shutil.which("ruff", path=REAL) is None) else 0
 if have_box:
     for path, want, why in (
@@ -274,10 +233,7 @@ if have_box:
             continue
         cases.append((want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why))
 
-# A command that uploads to R2 without sourcing private/account/.env does not fail,
-# it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning
-# that named the wrong cause. Only assert this when the credential file is present,
-# since the guard is deliberately silent without it.
+# A command that uploads to R2 without sourcing private/account/.env does not fail, it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning that named the wrong cause. Only assert this when the credential file is present, since the guard is deliberately silent without it.
 if os.path.exists(os.path.join(REPO, "private/account/.env")):
     cases.append(
         (
@@ -301,12 +257,9 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
                 " ./run.sh --publish-www --langs en",
                 REAL,
             ),
-            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the
-            # predicate are in different functions and nothing else holds them together:
-            # a guard that recommends a command it then blocks is worse than one that
+            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the predicate are in different functions and nothing else holds them together: a guard that recommends a command it then blocks is worse than one that
             # recommends nothing. `set -a; .` stays accepted above -- it is still a real
-            # way to get the credentials into the shell, it is just no longer the one to
-            # print, because it EXECUTES a file holding two private keys.
+            # way to get the credentials into the shell, it is just no longer the one to print, because it EXECUTES a file holding two private keys.
             "CONTROL: the form the message now advises is accepted",
         )
     )
@@ -318,21 +271,13 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
         )
     )
 
-# ---------------------------------------------------------------------------
-# EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh
+# --------------------------------------------------------------------------- EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh
 # proves NPX_TOOLS/BARE_TOOLS LIST the same tools GATED_TOOLS pins; it says
-# nothing about whether the ROUTING REGEX actually FIRES for each of them at
-# runtime. A tool could sit in the array and still be unreachable -- a name
-# containing a regex metacharacter, a word-boundary edge case on a two-letter
-# name like `go` -- and list-membership coverage would not catch it. Before
-# this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
+# nothing about whether the ROUTING REGEX actually FIRES for each of them at runtime. A tool could sit in the array and still be unreachable -- a name containing a regex metacharacter, a word-boundary edge case on a two-letter name like `go` -- and list-membership coverage would not catch it. Before this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
 # for ruff and go only: 2 of 5 tools on each path, with shellcheck, actionlint
 # (both paths) and go/shfmt (npx path) never actually invoked.
 #
-# PATH is constructed per tool, never trusted to ambient host state: this host
-# happens to lack shfmt/shellcheck/actionlint and have ruff/go, and a case
-# written against today's ambient mix silently stops testing the branch it
-# names the moment the host's toolset changes.
+# PATH is constructed per tool, never trusted to ambient host state: this host happens to lack shfmt/shellcheck/actionlint and have ruff/go, and a case written against today's ambient mix silently stops testing the branch it names the moment the host's toolset changes.
 ALL_TOOLS = ["ruff", "go", "shfmt", "shellcheck", "actionlint"]
 
 
@@ -348,8 +293,7 @@ def _path_without(tool, base):
 
 
 for tool in ALL_TOOLS:
-    # npx-misuse: fires on SHAPE alone, so REAL PATH is the right environment --
-    # it must refuse whether or not the tool happens to be installed.
+    # npx-misuse: fires on SHAPE alone, so REAL PATH is the right environment -- it must refuse whether or not the tool happens to be installed.
     cases.append(
         (
             2,
@@ -360,16 +304,10 @@ for tool in ALL_TOOLS:
 
     if not have_box:
         continue
-    # Bare-tool routing, host lacks it, devbox has it: constructed absence, not
-    # assumed. `fake()` proves the opposite direction: with the tool shimmed
-    # onto PATH, the same command must NOT be routed.
+    # Bare-tool routing, host lacks it, devbox has it: constructed absence, not assumed. `fake()` proves the opposite direction: with the tool shimmed onto PATH, the same command must NOT be routed.
     #
-    # DEVBOX PRESENCE IS CHECKED, NOT ASSUMED, per tool. actionlint is
-    # DELIBERATELY absent from the baked image (its own gate downloads a
-    # pinned, checksum-verified release on demand -- see this guard's own
-    # comment on why it is not in NEEDS either), so on a host that also lacks
-    # it the guard correctly NOTES rather than blocks: there is nowhere to
-    # route TO. Hardcoding "devbox has it" for every tool would have made this
+    # DEVBOX PRESENCE IS CHECKED, NOT ASSUMED, per tool. actionlint is DELIBERATELY absent from the baked image (its own gate downloads a pinned, checksum-verified release on demand -- see this guard's own comment on why it is not in NEEDS either), so on a host that also lacks it the guard correctly NOTES rather than blocks: there is nowhere to route TO. Hardcoding "devbox has it"
+    # for every tool would have made this
     # case assert the wrong exit code for exactly the one tool the image
     # intentionally does not carry.
     tool_in_box = (

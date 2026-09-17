@@ -49,11 +49,7 @@ TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "finish.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "finish.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `tr` is here because `parse_args` shells out to `to_upper` once per flag, and
-# `sleep` because `_gh_probe`'s backoff is an external command: without it the
-# twin dies at 127 on every retry case while the port sails through.
-# `mktemp` and `rm` are `_gh_probe`'s scratch file for gh's stderr, and their
-# absence shows up as a 127 from the twin on every gh path.
+# `tr` is here because `parse_args` shells out to `to_upper` once per flag, and `sleep` because `_gh_probe`'s backoff is an external command: without it the twin dies at 127 on every retry case while the port sails through. `mktemp` and `rm` are `_gh_probe`'s scratch file for gh's stderr, and their absence shows up as a 127 from the twin on every gh path.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq", "sleep", "cat", "sed", "mktemp", "rm")
 
 FAKE_GH = """#!/usr/bin/python3
@@ -132,9 +128,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str], **extra: st
 def _sides(name: str, argv: list[str], *, fixtures: dict[str, bytes] | None = None, **extra: str):
     with tempfile.TemporaryDirectory() as td:
         results = []
-        # "old"/"new", NOT `subject.stem`: both subjects are called `finish`
-        # here (`finish.sh` and `finish.py` share a stem), so a stem-named
-        # directory makes the second side collide with the first.
+        # "old"/"new", NOT `subject.stem`: both subjects are called `finish` here (`finish.sh` and `finish.py` share a stem), so a stem-named directory makes the second side collide with the first.
         for side, subject in (("old", TWIN), ("new", PORT)):
             base = pathlib.Path(td) / side
             base.mkdir(parents=True)
@@ -189,8 +183,7 @@ def test_check_done_names_every_unmet_condition() -> None:
     assert stdout == (
         b'{"done":false,"missing":["ci_green","not_draft","reviewed","threads_resolved"]}\n'
     ), stdout
-    # One condition at a time, so a port that collapsed them all into one flag
-    # would fail here rather than on the all-or-nothing cases.
+    # One condition at a time, so a port that collapsed them all into one flag would fail here rather than on the all-or-nothing cases.
     for field, missing in (
         ("ci_green", b'["ci_green"]'),
         ("draft", b'["not_draft"]'),
@@ -265,8 +258,7 @@ def test_unknown_subcommands() -> None:
     exit_code, _, stderr, _ = _sides("no-args", [])
     assert exit_code == 2
     assert b"unknown subcommand '' (check-done|ready-flip|rerun-review)" in stderr
-    # A FLAG in the subcommand slot is a subcommand, not a flag: `parse_args`
-    # never sees `$1`.
+    # A FLAG in the subcommand slot is a subcommand, not a flag: `parse_args` never sees `$1`.
     exit_code, _, stderr, _ = _sides("flag-first", ["--pr", "pr.json"], fixtures=_fixture(**DONE))
     assert exit_code == 2
     assert b"unknown subcommand '--pr'" in stderr
@@ -316,8 +308,7 @@ def test_ready_flip_when_the_gate_is_open() -> None:
         FAKE_READY_ERR="gh: some progress chatter\n",
     )
     assert exit_code == 0
-    # `gh_retry`'s `printf '%s'`: gh's stdout with its trailing newline
-    # STRIPPED by the command substitution and none added back.
+    # `gh_retry`'s `printf '%s'`: gh's stdout with its trailing newline STRIPPED by the command substitution and none added back.
     assert stdout == b"marked ready", stdout
     assert b"PR #5 flipped ready for review" in stderr
     # gh's own stderr is CAPTURED by the probe and dropped on success.
@@ -336,8 +327,7 @@ def test_rerun_review_walks_head_then_run_then_rerun() -> None:
     assert b"review run 4242 rerun requested for PR #5" in stderr
     assert len(calls) == 3, calls
     assert calls[0].startswith("api\trepos/rediacc/console/pulls/5\t--jq\t{sha: .head.sha}")
-    # The head sha from call 1 is what call 2 queries with. A port that dropped
-    # it would still make three calls.
+    # The head sha from call 1 is what call 2 queries with. A port that dropped it would still make three calls.
     assert "head_sha=deadbeef&event=pull_request" in calls[1], calls[1]
     assert calls[2] == "run\trerun\t4242\t--repo\trediacc/console\t--failed"
 

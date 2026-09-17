@@ -125,29 +125,18 @@ import sys
 from rediacc_ci import gitx, paths
 from rediacc_ci.core import toolchain
 
-# -e SC1090 can't follow non-constant source, -e SC1091 not following sourced
-# files (both dynamic sourcing), -e SC2034 "appears unused" (false positive for
-# exported constants), -S warning fail on warnings or errors only.
+# -e SC1090 can't follow non-constant source, -e SC1091 not following sourced files (both dynamic sourcing), -e SC2034 "appears unused" (false positive for exported constants), -S warning fail on warnings or errors only.
 SHELLCHECK_OPTS = ("-e", "SC1090", "-e", "SC1091", "-e", "SC2034", "-S", "warning")
 
-# `xargs -r -n 40 -P1`. BATCHED, but batching is NOT what fixed the OOM: measured
-# 2026-08-25 with the pinned 0.10.0, ONE file (test-worklist-v5.sh, 11,955 lines)
-# peaked at 2714 MB on its own and a batch of 40 containing it still dies. The
+# `xargs -r -n 40 -P1`. BATCHED, but batching is NOT what fixed the OOM: measured 2026-08-25 with the pinned 0.10.0, ONE file (test-worklist-v5.sh, 11,955 lines) peaked at 2714 MB on its own and a batch of 40 containing it still dies. The
 # real fix is that file's `# shellcheck extended-analysis=false` directive.
-# Batching caps the much smaller many-files component (360 MB -> 98 MB) and is
-# kept as a floor for the next large file nobody has noticed yet. -P1
-# deliberately: `npm run ci` already parallelises across gates.
+# Batching caps the much smaller many-files component (360 MB -> 98 MB) and is kept as a floor for the next large file nobody has noticed yet. -P1 deliberately: `npm run ci` already parallelises across gates.
 BATCH = 40
 
-# The directory the bash-4 probes read, and the four constructs. macOS ships
-# bash 3.2 because of GPLv3, and `.ci/scripts/build/` is what runs there for the
-# CLI SEA builds (ci-build-cli.yml uses macos-latest and macos-15-intel).
+# The directory the bash-4 probes read, and the four constructs. macOS ships bash 3.2 because of GPLv3, and `.ci/scripts/build/` is what runs there for the CLI SEA builds (ci-build-cli.yml uses macos-latest and macos-15-intel).
 BUILD_DIR = ".ci/scripts/build"
 
-# The `readarray` / `mapfile` pattern is BUILT FROM HALVES IN THE TWIN so that
-# `.ci/scripts/quality/check-commands.sh` does not flag this file for naming a
-# banned command. The same dodge is reproduced here for the same reason: that
-# gate reads bytes, not intent.
+# The `readarray` / `mapfile` pattern is BUILT FROM HALVES IN THE TWIN so that `.ci/scripts/quality/check-commands.sh` does not flag this file for naming a banned command. The same dodge is reproduced here for the same reason: that gate reads bytes, not intent.
 _READ_ARR = "read" + "array"
 _MAP_FILE = "map" + "file"
 
@@ -187,9 +176,7 @@ def log_info(message: str) -> None:
     print("info: %s" % message)
 
 
-# ---------------------------------------------------------------------------
-# `echo -e`, faithfully
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- `echo -e`, faithfully ---------------------------------------------------------------------------
 
 _ECHO_E_SIMPLE = {
     "a": "\a",
@@ -254,9 +241,7 @@ def echo_e(text: str) -> str:
     return "".join(out)
 
 
-# ---------------------------------------------------------------------------
-# The corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus ---------------------------------------------------------------------------
 
 
 def shell_files() -> list[str]:
@@ -297,9 +282,7 @@ def batches(files: list[str], size: int = BATCH) -> list[list[str]]:
     return [files[i : i + size] for i in range(0, len(files), size)]
 
 
-# ---------------------------------------------------------------------------
-# The bash-4 probes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The bash-4 probes ---------------------------------------------------------------------------
 
 
 def build_scripts() -> list[str]:
@@ -346,22 +329,17 @@ def grep_lines(files: list[str], matcher) -> str:
             text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        # splitlines(), not split("\n"): the latter invents an empty final line
-        # after a trailing newline, and grep does not report one.
+        # splitlines(), not split("\n"): the latter invents an empty final line after a trailing newline, and grep does not report one.
         for number, line in enumerate(text.splitlines(), start=1):
             if matcher(line):
                 hits.append("%s:%d:%s" % (path, number, line))
     return "\n".join(hits)
 
 
-# `-w` in GNU grep means the match must be bounded by non-word characters on
-# both sides, where a word character is `[A-Za-z0-9_]`. Expressed as lookarounds
-# rather than `\b` so the boundary rule is visible at the call site.
+# `-w` in GNU grep means the match must be bounded by non-word characters on both sides, where a word character is `[A-Za-z0-9_]`. Expressed as lookarounds rather than `\b` so the boundary rule is visible at the call site.
 _COPROC = re.compile(r"(?<![A-Za-z0-9_])coproc(?![A-Za-z0-9_])")
 _MAPFILE = re.compile(r"^[^#]*(?:%s|%s)(?![A-Za-z0-9_])" % (_MAP_FILE, _READ_ARR))
-# `[^#]*|&` is a BASIC regular expression, in which `|` is a LITERAL pipe and
-# NOT an alternation. So the pattern is "some non-# characters, then `|&`", which
-# is any line containing `|&` at all.
+# `[^#]*|&` is a BASIC regular expression, in which `|` is a LITERAL pipe and NOT an alternation. So the pattern is "some non-# characters, then `|&`", which is any line containing `|&` at all.
 _PIPE_AMP = re.compile(r"[^#]*\|&")
 
 
@@ -388,17 +366,14 @@ def bash4_issues() -> str:
     return out
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- main ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
     """`main` (:45-178). argv is accepted and ignored, as `main "$@"` does."""
     del argv
     base = paths.repo_root()
-    # `cd "$ROOT_DIR"` (:46). Load-bearing: every path below is repo-relative
-    # and the relative spelling reaches shellcheck's own finding lines.
+    # `cd "$ROOT_DIR"` (:46). Load-bearing: every path below is repo-relative and the relative spelling reaches shellcheck's own finding lines.
     os.chdir(base)
 
     log_info("Checking shell script compatibility")
@@ -428,14 +403,10 @@ def main(argv: list[str]) -> int:
         )
         if not os.path.exists(files[-1]):
             return 1
-        # DEFECT 2, REPRODUCED. The filtering assignment's status is the last
-        # iteration's `[ -e "$f" ] && printf` list, so a missing LAST path takes
-        # the whole gate down with `set -e` right here, silently, having linted
-        # nothing. See the module docstring for the measurement.
+        # DEFECT 2, REPRODUCED. The filtering assignment's status is the last iteration's `[ -e "$f" ] && printf` list, so a missing LAST path takes the whole gate down with `set -e` right here, silently, having linted nothing. See the module docstring for the measurement.
         files = [f for f in files if f not in set(gone)]
 
-    # A gate that lints nothing exits 0 and looks identical to a gate that lints
-    # everything. Refuse the empty list rather than pass it.
+    # A gate that lints nothing exits 0 and looks identical to a gate that lints everything. Refuse the empty list rather than pass it.
     if not files:
         log_error("no tracked *.sh files found: the enumerator is broken, not the tree clean")
         return 1
@@ -447,8 +418,7 @@ def main(argv: list[str]) -> int:
         sys.stderr.flush()
         proc = subprocess.run([binary, *SHELLCHECK_OPTS, *chunk], check=False)
         if proc.returncode != 0:
-            # xargs runs EVERY batch and then reports 123 if any of them exited
-            # 1-125, so a finding in batch 1 does not stop batch 2 from running.
+            # xargs runs EVERY batch and then reports 123 if any of them exited 1-125, so a finding in batch 1 does not stop batch 2 from running.
             failed = True
     if failed:
         log_error("shellcheck reported findings")
@@ -465,10 +435,7 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # NOTE: a "duplicated shared constants" check lived here until 2026-07-22. It
-    # guarded exactly one constant (MAX_GEMINI_REVIEWS, removed with the Gemini
-    # review machinery) and an empty guard list checks nothing. Reintroduce the
-    # loop if common.sh ever grows shared constants again.
+    # NOTE: a "duplicated shared constants" check lived here until 2026-07-22. It guarded exactly one constant (MAX_GEMINI_REVIEWS, removed with the Gemini review machinery) and an empty guard list checks nothing. Reintroduce the loop if common.sh ever grows shared constants again.
 
     log_success("Shell scripts passed")
     return 0

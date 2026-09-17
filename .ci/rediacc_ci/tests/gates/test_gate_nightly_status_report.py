@@ -45,8 +45,7 @@ WORKFLOW = paths.from_root(".github", "workflows", "nightly-status.yml")
 RUN_ID = "30237524399"
 RUN_URL = "https://github.com/rediacc/console/actions/runs/30237524399"
 
-# Lifted verbatim from the twin's HARNESS heredoc. See the module docstring for
-# why it is not translated.
+# Lifted verbatim from the twin's HARNESS heredoc. See the module docstring for why it is not translated.
 HARNESS_CJS = r"""
 const report = require(process.argv[2]);
 const openIssues = JSON.parse(process.argv[3]);   // e.g. [] or [{number: 7}]
@@ -170,10 +169,7 @@ class Reporter:
 
 
 def test_cancelled_is_not_green(gate, tmp_path):
-    # THE LOAD-BEARING ASSERTION. Treating `cancelled` as green is the exact
-    # conflation that hid twelve red nights: the watchdog cancelled each failing
-    # run, so its conclusion read `cancelled`, and every reader took that for
-    # "superseded, ignore". If this ever returns true the whole reporter is inert.
+    # THE LOAD-BEARING ASSERTION. Treating `cancelled` as green is the exact conflation that hid twelve red nights: the watchdog cancelled each failing run, so its conclusion read `cancelled`, and every reader took that for "superseded, ignore". If this ever returns true the whole reporter is inert.
     reporter = Reporter(gate, tmp_path)
     probe = (
         "const r = require(process.argv[1]);"
@@ -192,8 +188,7 @@ def test_cancelled_is_not_green(gate, tmp_path):
 
 
 def test_non_schedule_event_is_a_no_op(gate, tmp_path):
-    # The second lock behind the workflow's own `if:`. A future trigger change
-    # must not silently start opening an issue for every PR run.
+    # The second lock behind the workflow's own `if:`. A future trigger change must not silently start opening an issue for every PR run.
     reporter = Reporter(gate, tmp_path)
     gate.assert_eq(
         reporter.trace_of("failure", "pull_request", "[]"),
@@ -220,9 +215,7 @@ def test_first_red_night_opens_one_issue(gate, tmp_path):
 
 
 def test_second_red_night_comments_instead_of_opening_another(gate, tmp_path):
-    # The anti-spam claim. Twelve red nights must produce ONE issue with twelve
-    # comments, not twelve issues -- a wall of identical issues is its own kind
-    # of invisible.
+    # The anti-spam claim. Twelve red nights must produce ONE issue with twelve comments, not twelve issues -- a wall of identical issues is its own kind of invisible.
     trace = Reporter(gate, tmp_path).trace_of("cancelled", "schedule", '[{"number":7}]')
     gate.assert_contains(trace, "comment:7", "a subsequent red night comments on the open issue")
     gate.assert_not_contains(trace, "create:", "it must NOT open a second issue")
@@ -244,9 +237,7 @@ def test_green_with_nothing_open_is_a_no_op(gate, tmp_path):
 
 
 def test_missing_label_is_created_before_use(gate, tmp_path):
-    # createIssue with an unknown label fails the ENTIRE call, so the label must
-    # be ensured first. `nightly-red` does not exist in the repo yet, so this is
-    # the path the very first red night will actually take.
+    # createIssue with an unknown label fails the ENTIRE call, so the label must be ensured first. `nightly-red` does not exist in the repo yet, so this is the path the very first red night will actually take.
     trace = Reporter(gate, tmp_path).trace_of("cancelled", "schedule", "[]", "0")
     gate.assert_contains(trace, "create-label:nightly-red", "the missing label is created")
     gate.assert_contains(trace, "create:Nightly CI is red", "and the issue is still opened")
@@ -254,8 +245,7 @@ def test_missing_label_is_created_before_use(gate, tmp_path):
 
 
 def test_body_names_the_failed_jobs(gate, tmp_path):
-    # "The nightly failed" is not actionable: a 90-job run means opening it to
-    # find the two that matter. Successes and skips must be filtered out.
+    # "The nightly failed" is not actionable: a 90-job run means opening it to find the two that matter. Successes and skips must be filtered out.
     body = Reporter(gate, tmp_path).body_of("cancelled", "schedule", "[]")
     gate.assert_contains(body, "Stage Artifacts", "the failing job is named")
     gate.assert_contains(body, "Quality / Workflows", "every failing job is named")
@@ -268,9 +258,7 @@ def test_body_names_the_failed_jobs(gate, tmp_path):
 def test_paginated_response_shape_still_names_jobs(gate, tmp_path):
     # THE REGRESSION THIS SUITE MISSED. `github.paginate` returned RESPONSE
     # objects ({total_count, jobs}) rather than flattened jobs, so every element
-    # lacked `.conclusion`, the filter matched none of NINE real failures, and
-    # issue #544 told a human "no job reported a non-success conclusion". The
-    # old fixture only produced the flat shape, so the suite could not see it.
+    # lacked `.conclusion`, the filter matched none of NINE real failures, and issue #544 told a human "no job reported a non-success conclusion". The old fixture only produced the flat shape, so the suite could not see it.
     body = Reporter(gate, tmp_path).body_of("failure", "schedule", "[]", "1", "[]", "paged")
     gate.assert_contains(
         body, "Stage Artifacts", "the failing job is named from the paginated shape"
@@ -283,10 +271,7 @@ def test_paginated_response_shape_still_names_jobs(gate, tmp_path):
 
 
 def test_unreadable_job_list_is_not_reported_as_clean(gate, tmp_path):
-    # ANTI-VACUITY, and the actual lesson of #544. Zero READABLE jobs is evidence
-    # the read failed, never evidence that nothing failed. Reporting empty data
-    # as clean data is the defect class this whole programme exists to remove, so
-    # the body must say it could not tell rather than implying an all-green run.
+    # ANTI-VACUITY, and the actual lesson of #544. Zero READABLE jobs is evidence the read failed, never evidence that nothing failed. Reporting empty data as clean data is the defect class this whole programme exists to remove, so the body must say it could not tell rather than implying an all-green run.
     body = Reporter(gate, tmp_path).body_of("failure", "schedule", "[]", "1", "[]", "unreadable")
     gate.assert_contains(
         body, "could not read the job list", "an unreadable roster says so plainly"
@@ -308,8 +293,7 @@ def test_empty_job_list_is_not_reported_as_clean(gate, tmp_path):
 
 
 def test_workflow_is_wired_to_schedule_runs_only(gate):
-    # Anti-vacuity against the real workflow: the module is inert for non-schedule
-    # events, but the workflow must also not burn a job on every PR run.
+    # Anti-vacuity against the real workflow: the module is inert for non-schedule events, but the workflow must also not burn a job on every PR run.
     if not WORKFLOW.is_file():
         gate.log_fail(
             "the workflow that drives the reporter is missing: %s -- an assertion "
@@ -328,11 +312,7 @@ def test_workflow_is_wired_to_schedule_runs_only(gate):
 
 
 def test_a_rerun_of_the_same_night_does_not_double_comment(gate, tmp_path):
-    # `workflow_run: completed` fires once per ATTEMPT and a run keeps its id
-    # across attempts, so a nightly whose failed jobs are re-run reaches this
-    # code twice for the same night. A duplicate comment per attempt makes a
-    # streak look longer than it is, and streak length is the one number this
-    # issue exists to communicate.
+    # `workflow_run: completed` fires once per ATTEMPT and a run keeps its id across attempts, so a nightly whose failed jobs are re-run reaches this code twice for the same night. A duplicate comment per attempt makes a streak look longer than it is, and streak length is the one number this issue exists to communicate.
     same_night = json.dumps(
         [{"body": "### 2026-07-27 -- nightly [run %s](x) concluded `cancelled`" % RUN_ID}]
     )
@@ -345,9 +325,7 @@ def test_a_rerun_of_the_same_night_does_not_double_comment(gate, tmp_path):
 
 
 def test_a_different_night_still_comments(gate, tmp_path):
-    # The control for the dedupe: it must suppress only the SAME run id, not
-    # every subsequent night. Getting this wrong would silence the streak
-    # entirely after night one.
+    # The control for the dedupe: it must suppress only the SAME run id, not every subsequent night. Getting this wrong would silence the streak entirely after night one.
     other_night = json.dumps(
         [{"body": "### 2026-07-26 -- nightly [run 30187728271](x) concluded `cancelled`"}]
     )
@@ -361,10 +339,7 @@ def test_a_different_night_still_comments(gate, tmp_path):
 def test_dedupe_is_anchored_not_a_bare_substring(gate, tmp_path):
     # A LONGER run id that merely starts with these digits must not be mistaken
     # for this night. Run ids gain a digit over time, so a bare
-    # `includes("run " + runId)` becomes wrong on its own schedule, and a false
-    # dedupe is SILENT, dropping a night from the streak with nothing to show.
-    # The posted format is always `[run <id>](<url>)`, so the marker is anchored
-    # on the closing bracket.
+    # `includes("run " + runId)` becomes wrong on its own schedule, and a false dedupe is SILENT, dropping a night from the streak with nothing to show. The posted format is always `[run <id>](<url>)`, so the marker is anchored on the closing bracket.
     longer = json.dumps(
         [{"body": "### earlier -- nightly [run %s0](x) concluded `cancelled`" % RUN_ID}]
     )
@@ -380,9 +355,7 @@ def test_dedupe_is_anchored_not_a_bare_substring(gate, tmp_path):
 
 
 def test_a_pull_request_carrying_the_label_is_ignored(gate, tmp_path):
-    # GitHub's issues API returns PULL REQUESTS as issues. A PR wearing this
-    # label would otherwise be adopted as the tracking issue: commented on, and
-    # CLOSED on the next green nightly.
+    # GitHub's issues API returns PULL REQUESTS as issues. A PR wearing this label would otherwise be adopted as the tracking issue: commented on, and CLOSED on the next green nightly.
     trace = Reporter(gate, tmp_path).trace_of(
         "success", "schedule", '[{"number":42,"pull_request":{"url":"x"}}]'
     )

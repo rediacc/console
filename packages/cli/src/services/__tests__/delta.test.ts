@@ -103,8 +103,7 @@ describe('delta updates', () => {
   });
 
   it('still matches shared payload when it shifts to a different offset', async () => {
-    // The rolling checksum exists precisely so an insertion does not defeat
-    // matching by pushing every subsequent block out of alignment.
+    // The rolling checksum exists precisely so an insertion does not defeat matching by pushing every subsequent block out of alignment.
     const payload = filler(5, BLOCK_SIZE * 20);
     const oldBin = new Uint8Array(BLOCK_SIZE * 21);
     oldBin.set(payload, BLOCK_SIZE);
@@ -173,12 +172,8 @@ describe('delta updates', () => {
   });
 
   it('stays fast on large repeated-byte runs (zero-padding pathology)', async () => {
-    // Real binaries carry large zero-padded regions. Every offset inside such
-    // a run produces the SAME weak checksum, which used to make the matcher
-    // (a) re-walk the full duplicate-candidate list at every one of millions
-    // of offsets, and (b) — in the trailing-block scan, which ignored the
-    // stored weak checksum entirely — compute a tail-sized sha256 at EVERY
-    // byte offset of the local file. On an input this size that took minutes
+    // Real binaries carry large zero-padded regions. Every offset inside such a run produces the SAME weak checksum, which used to make the matcher (a) re-walk the full duplicate-candidate list at every one of millions of offsets, and (b) — in the trailing-block scan, which ignored the stored weak checksum entirely — compute a tail-sized sha256 at EVERY byte offset of the local
+    // file. On an input this size that took minutes
     // (a release-sized local projected to hours); the fix must finish in
     // well under a second.
     const zeroBlocks = 64;
@@ -206,8 +201,7 @@ describe('delta updates', () => {
     expect(sha256Hex(got)).toBe(index.sha256);
     expect(srv.fetched).toBe(0);
 
-    // Generous bound (CI headroom): the fix takes ~0.1s here, the pathological
-    // version took minutes.
+    // Generous bound (CI headroom): the fix takes ~0.1s here, the pathological version took minutes.
     expect(elapsed).toBeLessThan(10_000);
   }, 30_000);
 

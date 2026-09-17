@@ -57,34 +57,19 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-self-matching-pgrep.sh"
 ORDER = 15
 
-# THE TEST IS THE BUG ITSELF. Without it every wait loop with a `pgrep -f` is
-# refused, including the documented remedy -- the bracket class that makes the
-# regex not match its own literal text -- so the guard would refuse the very
-# form its own message tells you to write.
+# THE TEST IS THE BUG ITSELF. Without it every wait loop with a `pgrep -f` is refused, including the documented remedy -- the bracket class that makes the regex not match its own literal text -- so the guard would refuse the very form its own message tells you to write.
 DEFECT = ("if not _matches(pat, cmd):\n            continue", "if False:\n            continue")
 
-# A loop, and a pgrep that matches on the full command line (-f, in any flag
-# cluster). Either alone is fine.
-# THE pgrep MUST BE IN THE LOOP'S CONDITION, not merely somewhere in the same
-# command as the word "while". Testing the two independently made this refuse a
-# one-shot `pgrep -cf` diagnostic that happened to sit in the same line as a
-# worklist message containing the ordinary English word "while" -- a line that
-# loops over nothing. That is the sixth mention-as-execution false positive of
-# this session, this time in the guard written to stop the previous one.
+# A loop, and a pgrep that matches on the full command line (-f, in any flag cluster). Either alone is fine. THE pgrep MUST BE IN THE LOOP'S CONDITION, not merely somewhere in the same command as the word "while". Testing the two independently made this refuse a one-shot `pgrep -cf` diagnostic that happened to sit in the same line as a worklist message containing the ordinary
+# English word "while" -- a line that loops over nothing. That is the sixth mention-as-execution false positive of this session, this time in the guard written to stop the previous one.
 #
 # A loop condition runs from the keyword to the `; do` that closes it, so that
 # is the span to search. `[^;]*` keeps it to a single condition rather than
-# letting a later, unrelated pgrep pair up with an earlier loop.
-# ANCHORED TO COMMAND POSITION 2026-08-28, found by
-# check:ci-guard-mention-anchoring. The old group's own [[:space:]] alternative
-# defeated it: ANY word followed by a space before `until` matched, so
-# "TRAPS.md explains why until pgrep -xf never exits" refused as if it were the
-# loop itself. This narrows PROSE only -- the real loop, at line start or after
-# a separator, is still caught by the control below.
+# letting a later, unrelated pgrep pair up with an earlier loop. ANCHORED TO COMMAND POSITION 2026-08-28, found by check:ci-guard-mention-anchoring. The old group's own [[:space:]] alternative defeated it: ANY word followed by a space before `until` matched, so "TRAPS.md explains why until pgrep -xf never exits" refused as if it were the loop itself. This narrows PROSE only -- the
+# real loop, at line start or after a separator, is still caught by the control below.
 LOOP_WITH_PGREP = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*(until|while)[^;]*pgrep[{S}]+-[a-zA-Z]*f")
 
-# The pattern is the first argument after the flag cluster: quoted either way,
-# or bare up to the next whitespace.
+# The pattern is the first argument after the flag cluster: quoted either way, or bare up to the next whitespace.
 PATTERN_ARG = (
     r"pgrep["
     + hookio.SPACE

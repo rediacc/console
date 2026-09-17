@@ -160,8 +160,7 @@ export function mapRcloneToStorageProvider(
 
   for (const [key, value] of Object.entries(config)) {
     if (key === 'type') continue; // Skip: mapped via PROVIDER_MAPPING
-    // Rclone's "provider" field (e.g. "DigitalOcean" for S3) is the sub-provider,
-    // distinct from our mapped provider type (e.g. "s3"). Store it as "sub_provider"
+    // Rclone's "provider" field (e.g. "DigitalOcean" for S3) is the sub-provider, distinct from our mapped provider type (e.g. "s3"). Store it as "sub_provider"
     // so buildRcloneArgs can output it as --{backend}-provider={value}.
     if (key === 'provider') {
       if (value && value !== provider) {

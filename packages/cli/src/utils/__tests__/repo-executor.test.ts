@@ -119,8 +119,7 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
   });
 
   it('resolves the placement from the FAMILY, so a tagged ref reaches it too', async () => {
-    // Placement lives on the repo FAMILY, not the per-tag record. A fork must reach the
-    // same datastore as its parent, or it dispatches where its data is not.
+    // Placement lives on the repo FAMILY, not the per-tag record. A fork must reach the same datastore as its parent, or it dispatches where its data is not.
     const exec = mockRepo();
     mockPlacement({ datastore: 'pds3' });
 
@@ -130,9 +129,7 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
   });
 
   it('stays silent for a {machine} placement, so the machine default still applies', async () => {
-    // The fallback is CORRECT for a machine with no named datastore. #74 is that the
-    // caller said nothing when it had something to say, not that the default exists.
-    // A gate that refuses everything protects nothing.
+    // The fallback is CORRECT for a machine with no named datastore. #74 is that the caller said nothing when it had something to say, not that the default exists. A gate that refuses everything protects nothing.
     const exec = mockRepo();
     mockPlacement({ machine: 'm1' });
 

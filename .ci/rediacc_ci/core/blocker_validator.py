@@ -131,8 +131,7 @@ from typing import NamedTuple
 from rediacc_ci.core import advisory, allowlist
 
 # `readonly BLOCKER_VALIDATOR_RS=$'\x1e'` (blocker-validator.sh:106). ASCII 30,
-# RECORD SEPARATOR. A counted frame rather than a sentinel line, because a
-# sentinel can be forged by a BLOCKER reason and a count cannot.
+# RECORD SEPARATOR. A counted frame rather than a sentinel line, because a sentinel can be forged by a BLOCKER reason and a count cannot.
 BLOCKER_VALIDATOR_RS = "\x1e"
 
 # `readonly BLOCKER_MIN_LENGTH=30` (blocker-validator.sh:167), as a REFERENCE.
@@ -195,9 +194,7 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
     and it is written here rather than inherited so it shows up in a diff.
     """
     path = pathlib.Path(file)
-    # `[[ ! -f "$file" ]] && return 0` (blocker-validator.sh:202). True for an
-    # absent path AND for a directory, and `is_file()` is true for exactly the
-    # same set.
+    # `[[ ! -f "$file" ]] && return 0` (blocker-validator.sh:202). True for an absent path AND for a directory, and `is_file()` is true for exactly the same set.
     if not path.is_file():
         return Tables({}, {})
 
@@ -217,9 +214,7 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
         )
         raise BrokenReaderError(str(exc)) from exc
 
-    # The `pairs` projection, which is what an associative array can hold:
-    # deduplicated entry -> reason, LAST write wins. Identical to the rows the
-    # twin reads off the canonical module's stdout, minus the TAB round trip.
+    # The `pairs` projection, which is what an associative array can hold: deduplicated entry -> reason, LAST write wins. Identical to the rows the twin reads off the canonical module's stdout, minus the TAB round trip.
     pairs = allowlist.pairs(entries)
     return Tables(dict.fromkeys(pairs, 1), dict(pairs))
 
@@ -278,8 +273,7 @@ def replay_frames(stream: str, *, out=None) -> bool:
     Reads exactly `count` lines per frame, so a BLOCKER reason that contains a
     line starting with RS cannot open a frame of its own.
     """
-    # `done <<<"$stream"`: the here-string's appended newline is why an EMPTY
-    # stream still yields one (empty, unframed) line. See behaviour 3 in the
+    # `done <<<"$stream"`: the here-string's appended newline is why an EMPTY stream still yields one (empty, unframed) line. See behaviour 3 in the
     # module docstring; this is the line that makes the zero-frame arm below
     # unreachable, exactly as in the twin.
     lines = stream.split("\n")
@@ -299,10 +293,7 @@ def replay_frames(stream: str, *, out=None) -> bool:
             )
             return False
         count_text = line[len(BLOCKER_VALIDATOR_RS) :]
-        # `((index < count))` on a non-numeric count is a bash arithmetic error
-        # on stderr and a FALSE comparison, so the frame renders as zero lines.
-        # Python has no such arithmetic-on-strings rule, so the same input has to
-        # be spelled: a count that is not a number counts as zero.
+        # `((index < count))` on a non-numeric count is a bash arithmetic error on stderr and a FALSE comparison, so the frame renders as zero lines. Python has no such arithmetic-on-strings rule, so the same input has to be spelled: a count that is not a number counts as zero.
         try:
             count = int(count_text)
         except ValueError:
@@ -425,9 +416,7 @@ def main(argv: list[str]) -> int:
         if not rest:
             print("replay needs a path holding an RS-framed stream", file=sys.stderr)
             return 2
-        # `$(cat file)` is what a bash driver passes, and command substitution
-        # strips every trailing newline, so the reader is handed the same bytes
-        # on both sides.
+        # `$(cat file)` is what a bash driver passes, and command substitution strips every trailing newline, so the reader is handed the same bytes on both sides.
         text = pathlib.Path(rest[0]).read_text(encoding="utf-8").rstrip("\n")
         return 0 if replay_frames(text) else 1
 

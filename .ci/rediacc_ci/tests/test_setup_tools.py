@@ -54,9 +54,7 @@ def run_module(*args: str, root: str | None = None) -> subprocess.CompletedProce
     )
 
 
-# ---------------------------------------------------------------------------
-# The table against the tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The table against the tree ---------------------------------------------------------------------------
 
 
 def test_the_shipped_table_audits_clean() -> None:
@@ -157,9 +155,7 @@ def test_no_row_writes_a_version_down() -> None:
     assert offenders == []
 
 
-# ---------------------------------------------------------------------------
-# The table against the bash enumerations it consolidates
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The table against the bash enumerations it consolidates ---------------------------------------------------------------------------
 
 
 def test_the_table_covers_ensure_host_tools() -> None:
@@ -184,9 +180,7 @@ def test_the_table_covers_the_toolchain_acquire_arms() -> None:
     assert arms - {row.name for row in tools.TOOLS} == set()
 
 
-# ---------------------------------------------------------------------------
-# The program contract: exit codes and streams
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The program contract: exit codes and streams ---------------------------------------------------------------------------
 
 
 def test_selftest_passes_and_prints_controls() -> None:
@@ -239,9 +233,7 @@ def test_report_never_gates() -> None:
     assert "row(s)," in result.stdout
 
 
-# ---------------------------------------------------------------------------
-# The audit's own both-direction behaviour, driven from pytest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The audit's own both-direction behaviour, driven from pytest ---------------------------------------------------------------------------
 
 
 def _minimal(**kwargs: object) -> tools.Tool:

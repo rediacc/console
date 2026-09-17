@@ -38,9 +38,7 @@ export async function createSecureTempFile(
   // Explicitly set permissions (in case umask affected the mode)
   await chmod(filePath, 0o600);
 
-  // Windows validation: Read back the file to ensure it was written correctly
-  // This works around potential issues with file system caching and libcrypto
-  // (matches Python CLI behavior from shared.py:629-637)
+  // Windows validation: Read back the file to ensure it was written correctly This works around potential issues with file system caching and libcrypto (matches Python CLI behavior from shared.py:629-637)
   if (getPlatform() === 'windows') {
     const written = await readFile(filePath);
     const expected = typeof content === 'string' ? Buffer.from(content) : content;

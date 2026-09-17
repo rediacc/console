@@ -147,7 +147,7 @@ def test_parse_blank_line_resets_blocker(gate, tmp_path):
 
 
 def test_parse_inline_form_with_blocker(gate, tmp_path):
-    # Pattern used by .deps-upgrade-blocklist: "package-name  # BLOCKER: reason"
+    # Pattern used by .deps-upgrade-blocklist: "package-name # BLOCKER: reason"
     (tmp_path / "list").write_text(
         "antd  # BLOCKER: v6.x requires CSS-in-JS removal and component API changes\n"
         "electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors\n",
@@ -162,8 +162,7 @@ def test_parse_inline_form_with_blocker(gate, tmp_path):
 
 def test_validate_rejects_every_low_effort_phrase(gate):
     patterns = low_effort_patterns(gate)
-    # ANTI-VACUITY, and it is the whole case: a library whose banned-phrase array
-    # emptied would make the loop below prove nothing while still exiting green.
+    # ANTI-VACUITY, and it is the whole case: a library whose banned-phrase array emptied would make the loop below prove nothing while still exiting green.
     if not patterns:
         gate.log_fail(
             "LOW_EFFORT_BLOCKER_PATTERNS came back EMPTY, so the loop below checked "
@@ -214,9 +213,7 @@ def test_validate_rejects_deferral_phrasing(gate):
             gate.log_fail(
                 'can-kicking deferral reason should be rejected but passed: "%s"' % reason
             )
-    # Legitimate major-migration holds that mention a dedicated PR must STILL pass --
-    # they read "dedicated lint-tooling PR" / "dedicated PR that exercises the email
-    # flows", not "dedicated dependency-bump PR".
+    # Legitimate major-migration holds that mention a dedicated PR must STILL pass -- they read "dedicated lint-tooling PR" / "dedicated PR that exercises the email flows", not "dedicated dependency-bump PR".
     legit = (
         (
             "v66 is a major release that adds and renames lint rules; adoption deferred to a "
@@ -257,10 +254,7 @@ def test_validate_accepts_all_current_audit_entries(gate):
                     "current allowlist entry %s in %s has a BLOCKER that fails validation: "
                     '"%s"' % (ident, name, reason)
                 )
-    # ANTI-VACUITY. The twin's loop `continue`s past a missing file, so on a tree
-    # where all three vanished it would report a pass having validated nothing.
-    # PORT-ONLY strengthening, and it is the difference between "they all pass"
-    # and "there were none".
+    # ANTI-VACUITY. The twin's loop `continue`s past a missing file, so on a tree where all three vanished it would report a pass having validated nothing. PORT-ONLY strengthening, and it is the difference between "they all pass" and "there were none".
     if seen_files == 0 or checked == 0:
         gate.log_fail(
             "read %d of the %d policy file(s) and found %d reason(s) to validate. Zero "

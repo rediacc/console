@@ -103,9 +103,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The directory the sidecars live in, relative to the repository root. The twin
-# `cd`s to the root and uses this bare relative string as the pathspec prefix,
-# which is the same fact with the cd removed.
+# The directory the sidecars live in, relative to the repository root. The twin `cd`s to the root and uses this bare relative string as the pathspec prefix, which is the same fact with the cd removed.
 HOOK_DIR = ".claude/hooks/stop"
 
 # The single source for the family. The twin reads it as an absolute path built
@@ -113,9 +111,7 @@ HOOK_DIR = ".claude/hooks/stop"
 # REDIACC_CI_ROOT override reaches it.
 STORE_REL = (".claude", "hooks", "stop", "wl_store.py")
 
-# The two expressions the twin's heredoc uses, carried verbatim. `re.S` is
-# required (spelled `re.DOTALL`, which is the same flag the twin's `re.S` names):
-# the list spans five physical lines in wl_store.py today.
+# The two expressions the twin's heredoc uses, carried verbatim. `re.S` is required (spelled `re.DOTALL`, which is the same flag the twin's `re.S` names): the list spans five physical lines in wl_store.py today.
 SIDECAR_LIST_RE = re.compile(r"The sidecars \((.*?)\)", re.DOTALL)
 TOKEN_SPLIT_RE = re.compile(r"[,\s]+")
 
@@ -136,9 +132,7 @@ def parse_patterns(source: str) -> list[str]:
     out: list[str] = []
     for raw in TOKEN_SPLIT_RE.split(match.group(1)):
         token = raw.strip()
-        # Only tokens that are globs. The list is prose as well as data: it
-        # contains the words "keep their v5-v9 formats" further down, and the
-        # leading-dot test is what separates the two.
+        # Only tokens that are globs. The list is prose as well as data: it contains the words "keep their v5-v9 formats" further down, and the leading-dot test is what separates the two.
         if token.startswith("."):
             out.append(token)
     return out
@@ -209,9 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     store = root.joinpath(*STORE_REL)
 
-    # THE ABSENT SOURCE IS A FAILURE, NOT AN ABSTENTION, and the twin spells out
-    # why in the message itself: without wl_store.py there is no pattern list, so
-    # the gate "would be checking nothing. That is a failure, not a pass."
+    # THE ABSENT SOURCE IS A FAILURE, NOT AN ABSTENTION, and the twin spells out why in the message itself: without wl_store.py there is no pattern list, so the gate "would be checking nothing. That is a failure, not a pass."
     if not store.is_file():
         err("\u2717 %s not found -- cannot derive the sidecar list, so this gate" % store)
         err("  would be checking nothing. That is a failure, not a pass.")
@@ -244,10 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         tracked.extend(line for line in text.split("\n") if line != "")
 
     if tracked:
-        # THE BLANK LINES ARE PART OF THE OUTPUT, not spacing that can be tidied
-        # away: the twin writes `echo >&2` between the header, the path list and
-        # the advice, and a blank line is what separates a finding from the prose
-        # about it. Reproduced literally.
+        # THE BLANK LINES ARE PART OF THE OUTPUT, not spacing that can be tidied away: the twin writes `echo >&2` between the header, the path list and the advice, and a blank line is what separates a finding from the prose about it. Reproduced literally.
         err("\u2717 RUNTIME SIDECAR(S) ARE TRACKED BY GIT:")
         err("")
         for path in tracked:
@@ -265,10 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A docstring shaped exactly like wl_store.py's, small enough to read. The
-# selftest mutates copies of this rather than the real file, because a control
-# built by substituting into real source silently stops controlling anything the
-# day that source is reworded (see check-control-vacuity.sh).
+# A docstring shaped exactly like wl_store.py's, small enough to read. The selftest mutates copies of this rather than the real file, because a control built by substituting into real source silently stops controlling anything the day that source is reworded (see check-control-vacuity.sh).
 _STORE_DOC = '''"""The worklist store.
 
 The sidecars (.requests, .sessions, .loop, .reggate-*,
@@ -301,9 +287,7 @@ def selftest() -> int:
         [],
     )
     ctl.check("VACUITY: an empty source parses to nothing", parse_patterns(""), [])
-    # THE DOTALL CASE. Without re.S the list would stop at the first newline and
-    # the gate would derive a SHORTER list, which is the silent-shrink failure
-    # rather than a loud one. Assert the multi-line list survives.
+    # THE DOTALL CASE. Without re.S the list would stop at the first newline and the gate would derive a SHORTER list, which is the silent-shrink failure rather than a loud one. Assert the multi-line list survives.
     ctl.check(
         "CONTROL: the list spans lines, so DOTALL is required",
         len(parse_patterns("The sidecars (.a,\n.b,\n.c)")),
@@ -348,9 +332,7 @@ def selftest() -> int:
             subprocess.run(
                 ["git", "add", "-f", "%s/%s" % (HOOK_DIR, name)], cwd=str(root), check=True
             )
-        # A commit is not required: `git ls-files` reads the INDEX, and adding is
-        # what puts a path there. Stated because "tracked" and "committed" are
-        # different claims and this gate is about the first one.
+        # A commit is not required: `git ls-files` reads the INDEX, and adding is what puts a path there. Stated because "tracked" and "committed" are different claims and this gate is about the first one.
         return root
 
     def run(root: pathlib.Path) -> int:
@@ -391,16 +373,14 @@ def selftest() -> int:
             1,
         )
     with tempfile.TemporaryDirectory() as tmp:
-        # The `.events.*` token carries a dot INSIDE the glob, which is the shape
-        # a naive `startswith(".")`-then-`split(".")` parser mangles.
+        # The `.events.*` token carries a dot INSIDE the glob, which is the shape a naive `startswith(".")`-then-`split(".")` parser mangles.
         ctl.check(
             "PLANT: a tracked .events.<n> is caught through a dotted glob",
             run(build(tmp, store=_STORE_DOC, tracked=(".events.3",))),
             1,
         )
     with tempfile.TemporaryDirectory() as tmp:
-        # MIRROR: a file under the hook dir that is NOT a sidecar is source and
-        # must stay tracked. A gate that flagged this would be unusable.
+        # MIRROR: a file under the hook dir that is NOT a sidecar is source and must stay tracked. A gate that flagged this would be unusable.
         ctl.check(
             "MIRROR: an ordinary tracked file in the hook dir is not a sidecar",
             run(build(tmp, store=_STORE_DOC, tracked=("worklist.py",))),

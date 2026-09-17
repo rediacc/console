@@ -75,8 +75,7 @@ def test_a_test_that_exits_zero_asserting_nothing_is_a_failure(tmp_path):
     report = battery.run_battery(gates_dir=gates, root=tmp_path, lock_path=lock, check_tree=False)
     assert not report.ok
     assert any("made no assertions" in f for f in report.failed)
-    # And the green one still counted, so this is a per-test verdict and not a
-    # whole-battery panic.
+    # And the green one still counted, so this is a per-test verdict and not a whole-battery panic.
     assert report.passed == 1
 
 
@@ -99,8 +98,7 @@ def test_a_glob_that_matches_nothing_is_a_failure(tmp_path):
 
 
 def test_the_pass_predicate_sees_the_real_escape_byte(tmp_path):
-    # THE DEFECT THIS EXISTS FOR. run-all.sh once spelled the escape as the literal
-    # text "x1b", so every colour-emitting gate test contributed zero assertions
+    # THE DEFECT THIS EXISTS FOR. run-all.sh once spelled the escape as the literal text "x1b", so every colour-emitting gate test contributed zero assertions
     # while the pass counter stayed right.
     gates, lock = _fixture_battery(
         tmp_path,
@@ -217,24 +215,14 @@ def test_the_live_lock_is_read_by_the_same_code_the_twin_uses(tmp_path):
     for claim in ("mutex", "reads"):
         assert battery.classify_from_lock(lock, claim) == twin_answer(lock, claim)
 
-    # THE AGREEMENT ABOVE WAS VACUOUS UNTIL 2026-09-07, and the assertion that used
-    # to sit here is what said so. Then: ZERO of the 148 gate-test entries in the
-    # live lock declared `mutex`, `reads`, `heavy` or `weight`, so both readers
-    # correctly answered with the empty set and "they agree" was a claim about
-    # nothing -- two readers returning nothing agree the way two broken clocks do.
+    # THE AGREEMENT ABOVE WAS VACUOUS UNTIL 2026-09-07, and the assertion that used to sit here is what said so. Then: ZERO of the 148 gate-test entries in the live lock declared `mutex`, `reads`, `heavy` or `weight`, so both readers correctly answered with the empty set and "they agree" was a claim about nothing -- two readers returning nothing agree the way two broken clocks do.
     # That state was pinned with `== set()` and a message telling whoever landed the
     # declarations to delete it.
     #
     # They landed. W2.4's missing half was a MISSING TYPE: `gate-spec.ts` declared
-    # `mutex?: string[]` and had no `reads` field at all, so the 21 scanner gate
-    # tests were undeclarable while the battery asked `classify_from_lock` for
-    # exactly that claim. The lock now carries `mutex: ['tree:repo']` on the 4
-    # real-tree writers and `reads: ['tree:repo']` on the 21 scanners.
+    # `mutex?: string[]` and had no `reads` field at all, so the 21 scanner gate tests were undeclarable while the battery asked `classify_from_lock` for exactly that claim. The lock now carries `mutex: ['tree:repo']` on the 4 real-tree writers and `reads: ['tree:repo']` on the 21 scanners.
     #
-    # So the live comparison now has an answer, and it is ASSERTED NON-EMPTY rather
-    # than assumed to be. A lock that silently lost its declarations again would
-    # otherwise slide back into the vacuous state while this test stayed green,
-    # which is the exact failure the old assertion existed to make visible.
+    # So the live comparison now has an answer, and it is ASSERTED NON-EMPTY rather than assumed to be. A lock that silently lost its declarations again would otherwise slide back into the vacuous state while this test stayed green, which is the exact failure the old assertion existed to make visible.
     live_writers = battery.classify_from_lock(lock, "mutex")
     live_scanners = battery.classify_from_lock(lock, "reads")
     assert live_writers, (
@@ -248,9 +236,7 @@ def test_the_live_lock_is_read_by_the_same_code_the_twin_uses(tmp_path):
         "trusting this test's green."
     )
 
-    # The comparison is ALSO repeated on a SYNTHETIC lock carrying every shape the
-    # readers have to tell apart, because the live lock exercises only the shapes it
-    # happens to use today.
+    # The comparison is ALSO repeated on a SYNTHETIC lock carrying every shape the readers have to tell apart, because the live lock exercises only the shapes it happens to use today.
     synthetic = tmp_path / "synthetic.json"
     synthetic.write_text(
         json.dumps(
@@ -282,8 +268,7 @@ def test_the_selftest_exits_zero_and_prints_a_floored_control_count():
     proc = _run_program(["--selftest"])
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "control(s) passed" in proc.stdout
-    # A floored tally, so a file whose controls stopped executing cannot report
-    # green with a small number.
+    # A floored tally, so a file whose controls stopped executing cannot report green with a small number.
     count = int(proc.stdout.rsplit("\n", 2)[-2].split()[0])
     assert count >= 22
 
@@ -300,9 +285,7 @@ def test_the_selftest_writes_nothing_to_stderr(tmp_path):
     proc = _run_program(["--selftest"])
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stderr == "", proc.stderr
-    # CONTROL: the block printer is not simply dead. A non-quiet fixture run still
-    # says the same thing, so `quiet` suppresses output rather than removing the
-    # refusal.
+    # CONTROL: the block printer is not simply dead. A non-quiet fixture run still says the same thing, so `quiet` suppresses output rather than removing the refusal.
     gates, lock = _fixture_battery(tmp_path, test_vacuous="#!/bin/bash\necho 'asserted nothing'\n")
     loud = battery.run_battery(
         gates_dir=gates, root=tmp_path, lock_path=lock, check_tree=False, env={}
@@ -407,8 +390,7 @@ def test_the_tracked_tree_guard_notices_a_modified_tracked_file(tmp_path):
     assert not report.ok
     assert any("left a tracked file modified" in f for f in report.failed)
 
-    # CONTROL FOR THE PLANT. Restore the file and the same battery is green, so the
-    # refusal above is caused by the modification and not by the fixture repo.
+    # CONTROL FOR THE PLANT. Restore the file and the same battery is green, so the refusal above is caused by the modification and not by the fixture repo.
     tracked.write_text("original\n", encoding="utf-8")
     (gates / "test-writer.sh").write_text(
         "#!/bin/bash\necho 'PASS: wrote nothing'\n", encoding="utf-8"

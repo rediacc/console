@@ -75,8 +75,7 @@ USAGE = "Usage: cleanup-pr-environments.sh --repo <owner/repo> [--dry-run]"
 # `true`, exactly -- see parse_args quirk 2 in the sibling port.
 DRY_RUN_ON = "true"
 
-# `grep -E '^pr-[0-9]+$'`, the first of the three refusals: `edge`, `stable` and
-# `production-eu` live in the same listing and must never be touched.
+# `grep -E '^pr-[0-9]+$'`, the first of the three refusals: `edge`, `stable` and `production-eu` live in the same listing and must never be touched.
 PR_ENV_RE = re.compile(r"^pr-[0-9]+$")
 
 
@@ -185,8 +184,7 @@ def main(argv: list[str]) -> int:
     envs = select_environments([n for n in listing.stdout.split("\n") if n])
     status = pipeline_status(listing.returncode, len(envs))
     if status != 0:
-        # DEFECT 1: `set -e` on the failed assignment. No message, and the
-        # `if [[ -z "$envs" ]]` branch below the twin's pipeline is dead code.
+        # DEFECT 1: `set -e` on the failed assignment. No message, and the `if [[ -z "$envs" ]]` branch below the twin's pipeline is dead code.
         return status
 
     deleted = 0

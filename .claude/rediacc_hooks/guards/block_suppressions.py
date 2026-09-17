@@ -52,16 +52,13 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-suppressions.sh"
 ORDER = 4
 
-# Narrowing 1, and the one the 2026-08-27 measurement exists for. Dropping the
-# extension test restores "does this content contain the token, anywhere, in
-# any file" -- which refused `docs/style.md` teaching the rule it enforces.
+# Narrowing 1, and the one the 2026-08-27 measurement exists for. Dropping the extension test restores "does this content contain the token, anywhere, in any file" -- which refused `docs/style.md` teaching the rule it enforces.
 DEFECT = (
     'if not (hookio.case_glob(file_path, *CODE_SUFFIXES) or file_path == ""):',
     "if False:",
 )
 
-# The extensions a real suppression directive can live in. Everything else is
-# prose until proven otherwise.
+# The extensions a real suppression directive can live in. Everything else is prose until proven otherwise.
 CODE_SUFFIXES = (
     "*.ts",
     "*.tsx",
@@ -107,8 +104,7 @@ EDGE_CASES = [
         "a JSX comment opener",
         {"tool_input": {"file_path": "src/a.tsx", "new_string": "{/* %s */}" % _ESLINT_DISABLE}},
     ),
-    # The 2026-08-27 case, in the file it was measured on. Markdown is not code,
-    # so teaching the rule is not breaking it.
+    # The 2026-08-27 case, in the file it was measured on. Markdown is not code, so teaching the rule is not breaking it.
     (
         "the rule written down in a doc",
         {
@@ -118,8 +114,7 @@ EDGE_CASES = [
             }
         },
     ),
-    # ... and the same sentence inside a code file, which narrowing 2 covers on
-    # its own: prose puts words between the opener and the token.
+    # ... and the same sentence inside a code file, which narrowing 2 covers on its own: prose puts words between the opener and the token.
     (
         "prose in a code file is still prose",
         {
@@ -133,8 +128,7 @@ EDGE_CASES = [
         "the token with no opener at all",
         {"tool_input": {"file_path": "src/a.ts", "new_string": "const s = '%s';" % _TS_IGNORE}},
     ),
-    # The empty arm of the `case`: a payload naming no file could be anything,
-    # and defaulting to "not code" would be a hole.
+    # The empty arm of the `case`: a payload naming no file could be anything, and defaulting to "not code" would be a hole.
     (
         "no file_path at all still gets checked",
         {"tool_input": {"new_string": "// %s" % _TS_IGNORE}},
@@ -170,8 +164,7 @@ EDGE_CASES = [
 def run(ev):
     file_path = ev.field("tool_input", "file_path")
     # `case "$FILE" in *.ts | ... ) ;; "") ;; *) exit 0 ;; esac`. No file_path
-    # at all still gets checked: a payload that names no file could be
-    # anything, and defaulting to "not code" would be a hole.
+    # at all still gets checked: a payload that names no file could be anything, and defaulting to "not code" would be a hole.
     if not (hookio.case_glob(file_path, *CODE_SUFFIXES) or file_path == ""):
         return hookio.ALLOW
 
@@ -186,10 +179,7 @@ def run(ev):
     if content == "":
         return hookio.ALLOW
 
-    # `printf '%s' "$CONTENT" | grep -qE ...`, so an empty subject would be zero
-    # records rather than one empty one. The `-z` test above already returned,
-    # but the spelling is kept because the two differ and the next edit here
-    # should not have to rediscover which one the original used.
+    # `printf '%s' "$CONTENT" | grep -qE ...`, so an empty subject would be zero records rather than one empty one. The `-z` test above already returned, but the spelling is kept because the two differ and the next edit here should not have to rediscover which one the original used.
     if hookio.grep_q(PATTERN, content):
         ev.warn(MESSAGE)
         return hookio.DENY

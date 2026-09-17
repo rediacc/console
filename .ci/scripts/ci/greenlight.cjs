@@ -1,56 +1,29 @@
 #!/usr/bin/env node
-// CROSS-PR GREENLIGHT: skip test-renet / account E2E when the exact inputs
-// they consume were already executed green by some OTHER run, on ANY branch.
+// CROSS-PR GREENLIGHT: skip test-renet / account E2E when the exact inputs they consume were already executed green by some OTHER run, on ANY branch.
 //
-// The scope engine answers a narrower question. It skips a job when the delta
-// against a LINEAGE-LOCAL baseline does not touch that job's surface, so a PR
-// that rebases, or a second PR bumping the same submodule pointer, pays for
-// the same 90-minute renet suite again. This engine answers the wider one:
-// has this exact input closure ever been green anywhere.
+// The scope engine answers a narrower question. It skips a job when the delta against a LINEAGE-LOCAL baseline does not touch that job's surface, so a PR that rebases, or a second PR bumping the same submodule pointer, pays for the same 90-minute renet suite again. This engine answers the wider one: has this exact input closure ever been green anywhere.
 //
-// THE ONE HARD RULE: NO STORED MEMO. scope-engine.cjs:177 states the doctrine
-// ("NOBODY WRITES `reconciled`, the READER derives it... SELF-DECLARATION IS
-// DELETED, NOT BLACKLISTED"): a run that writes its own trust token mints a
-// claim later readers cannot check, and a durable memo store would need write
-// powers inside a PR-triggered job whose code comes from the PR itself, which
-// is the exact bypass .github/actions/app-token/action.yml:13-34 exists to
-// remove. So nothing is written. The greenlight is DERIVED FRESH at Initialize
-// time from facts nobody had to be trusted to record:
+// THE ONE HARD RULE: NO STORED MEMO. scope-engine.cjs:177 states the doctrine ("NOBODY WRITES `reconciled`, the READER derives it... SELF-DECLARATION IS DELETED, NOT BLACKLISTED"): a run that writes its own trust token mints a claim later readers cannot check, and a durable memo store would need write powers inside a PR-triggered job whose code comes from the PR itself, which is
+// the exact bypass .github/actions/app-token/action.yml:13-34 exists to remove. So nothing is written. The greenlight is DERIVED FRESH at Initialize time from facts nobody had to be trusted to record:
 //
-//   - the per-JOB conclusion from the Actions API. Run-level "CI Complete"
-//     cannot serve here: assert-ci-complete.sh puts TESTS in SOFT_REQUIRED
-//     where `skipped` passes identically to `success`, so a green check cannot
-//     distinguish an executed job from a scope-skipped one. The job object
-//     can, and that difference is the whole evidence base.
-//   - the candidate's submodule gitlink, read from
+// - the per-JOB conclusion from the Actions API. Run-level "CI Complete" cannot serve here: assert-ci-complete.sh puts TESTS in SOFT_REQUIRED where `skipped` passes identically to `success`, so a green check cannot distinguish an executed job from a scope-skipped one. The job object can, and that difference is the whole evidence base. - the candidate's submodule gitlink, read from
 //     GET /repos/{repo}/contents/<path>?ref=<head_sha>, which returns
 //     type "submodule" and its sha. Derived from the commit, not from
-//     anything the candidate run said about itself.
-//   - the candidate's console-side closure, read the same way.
+// anything the candidate run said about itself. - the candidate's console-side closure, read the same way.
 //
-// INTENT IS NOT OUTCOME. A candidate that was itself a REDUCED run is a
-// perfectly good witness, because rule 1 asks whether the job RAN, not what
-// the plan intended. A skipped job is refused precisely so evidence cannot
-// chain across runs that skipped their way to green.
+// INTENT IS NOT OUTCOME. A candidate that was itself a REDUCED run is a perfectly good witness, because rule 1 asks whether the job RAN, not what the plan intended. A skipped job is refused precisely so evidence cannot chain across runs that skipped their way to green.
 //
 // FAIL-OPEN IS THE CONTRACT, identical to scope-shadow.sh:9-19. This engine
 // may only ever cause a job to be SKIPPED that would otherwise RUN; it has no
 // path that turns a skip back into a run, because it emits `run_<key>=false`
-// and nothing else. Any error, any timeout, any absence of a match yields no
-// emit line at all, which changes nothing, which is a full round.
+// and nothing else. Any error, any timeout, any absence of a match yields no emit line at all, which changes nothing, which is a full round.
 //
-// Usage:
-//   greenlight.cjs --key <name> [--key ...] [--repo owner/name]
-//                  [--limit N] [--budget SECONDS] [--debug]
-// Run with --help for the current key list, which is CLOSURES' own key order.
+// Usage: greenlight.cjs --key <name> [--key ...] [--repo owner/name] [--limit N] [--budget SECONDS] [--debug] Run with --help for the current key list, which is CLOSURES' own key order.
 //
 // On stdout, ONLY on a greenlight, one pair of lines per greenlit key:
 //   run_<key>=false
 //   evidence_<key>=<candidate-run-id>
-// Everything else (the candidate table, every refusal reason) goes to stderr,
-// so a caller reads stdout as instructions and never has to parse prose.
-// Exit status is 0 on every path including failure: like scope-shadow.sh, this
-// decides what runs and must never be the thing that fails.
+// Everything else (the candidate table, every refusal reason) goes to stderr, so a caller reads stdout as instructions and never has to parse prose. Exit status is 0 on every path including failure: like scope-shadow.sh, this decides what runs and must never be the thing that fails.
 
 'use strict';
 
@@ -58,44 +31,24 @@
 // global now, and rebinding it shadows the builtin.
 const { createHash } = require('node:crypto');
 
-// ---------------------------------------------------------------------------
-// THE CLOSURE TABLE. Hand-derived by walking each job's steps in its DEFINING
-// workflow and one level into every script it invokes, then re-verified
-// against the live tree. A path here is either a file (blob sha) or a
+// --------------------------------------------------------------------------- THE CLOSURE TABLE. Hand-derived by walking each job's steps in its DEFINING workflow and one level into every script it invokes, then re-verified against the live tree. A path here is either a file (blob sha) or a
 // directory (tree sha); both come back from the same contents listing.
 //
 // OVER-INCLUSION IS SAFE AND UNDER-INCLUSION IS NOT. Every extra path can only
 // make a greenlight rarer (more full rounds); a missing one would let a PR
-// that edits a real input inherit somebody else's green. When in doubt the
-// path is listed.
+// that edits a real input inherit somebody else's green. When in doubt the path is listed.
 //
 // SHAPE. Each entry is { jobNames: [...], submodules: [...], paths: [...] }.
-//   - `jobNames` is a LIST because a matrix job is several API jobs. Every
-//     name must match exactly one job and every one of them must be `success`:
-//     a five-leg matrix with four green legs and one skipped leg proves
-//     nothing about the fifth, so partial evidence is refused outright.
-//   - `submodules` may be EMPTY, which is legal and means rule 2 is vacuous.
-//     `Unit` and `Linux Packages` check out with no submodules at all, so
-//     there is no pointer for them to be pinned to.
+// - `jobNames` is a LIST because a matrix job is several API jobs. Every name must match exactly one job and every one of them must be `success`: a five-leg matrix with four green legs and one skipped leg proves nothing about the fifth, so partial evidence is refused outright. - `submodules` may be EMPTY, which is legal and means rule 2 is vacuous. `Unit` and `Linux Packages`
+// check out with no submodules at all, so there is no pointer for them to be pinned to.
 //
-// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. scope-shadow.sh
-// derives its pending list from Object.keys(CLOSURES) (a JS insertion-order
-// guarantee for string keys) and passes it through in that order, so if the
-// walk budget runs out mid-list the keys that go unasked are the cheap ones.
-// test-greenlight.sh pins the two ends of that order.
+// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. scope-shadow.sh derives its pending list from Object.keys(CLOSURES) (a JS insertion-order guarantee for string keys) and passes it through in that order, so if the walk budget runs out mid-list the keys that go unasked are the cheap ones. test-greenlight.sh pins the two ends of that order.
 // ---------------------------------------------------------------------------
 
-// The eight VM/E2E legs share ONE closure. They check out with
-// `submodules: true`, run the same setup-workspace + build-cli + build-renet
-// chain, and differ only in env and playwright config that live inside
-// ct-tests.yml and packages/e2e-tests, both of which are in the closure.
-// scope-map.cjs:243-264 already treats them as a single surface for the same
-// reason. Sharing the list also makes the candidate walk cheap: one parent
-// listing answers all eight keys, cached per ref.
+// The eight VM/E2E legs share ONE closure. They check out with `submodules: true`, run the same setup-workspace + build-cli + build-renet chain, and differ only in env and playwright config that live inside ct-tests.yml and packages/e2e-tests, both of which are in the closure. scope-map.cjs:243-264 already treats them as a single surface for the same reason. Sharing the list also
+// makes the candidate walk cheap: one parent listing answers all eight keys, cached per ref.
 const VM_E2E_SUBMODULES = [
-  // `submodules: true` (ct-tests.yml:259 and the seven siblings) pulls every
-  // gitlink in .gitmodules, so all four are checked out and all four are
-  // pinned. private/elite and private/homebrew-tap are not READ by these
+  // `submodules: true` (ct-tests.yml:259 and the seven siblings) pulls every gitlink in .gitmodules, so all four are checked out and all four are pinned. private/elite and private/homebrew-tap are not READ by these
   // suites; they are listed because a moved pointer changes the tree the job
   // ran against, and the safe direction is to refuse.
   'private/renet',
@@ -105,16 +58,9 @@ const VM_E2E_SUBMODULES = [
 ];
 
 const VM_E2E_PATHS = [
-  // The shadow-run step every VM E2E leg now carries: it `uses:` this local
-  // composite, which resolves from the WORKSPACE, so every key sharing this list
-  // must hold it or a change to the action does not re-run these legs.
+  // The shadow-run step every VM E2E leg now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so every key sharing this list must hold it or a change to the action does not re-run these legs.
   '.github/actions/bws-secrets',
-  // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03
-  // (check:ci-workflows caps inline logic at 8 lines).
-  // Built and installed globally by every leg: build-cli.sh:32 runs
-  // `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it.
-  // packages/locales rides along as a workspace dependency of the CLI
-  // (packages/cli/package.json:53-55).
+  // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03 (check:ci-workflows caps inline logic at 8 lines). Built and installed globally by every leg: build-cli.sh:32 runs `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it. packages/locales rides along as a workspace dependency of the CLI (packages/cli/package.json:53-55).
   'packages/cli',
   'packages/shared',
   'packages/provisioning',
@@ -122,8 +68,7 @@ const VM_E2E_PATHS = [
   'packages/json',
   // The suites themselves, plus their playwright configs and .env target.
   'packages/e2e-tests',
-  // Step scripts, in workflow order. Each one sources exactly lib/common.sh
-  // and nothing else, verified by sweep.
+  // Step scripts, in workflow order. Each one sources exactly lib/common.sh and nothing else, verified by sweep.
   '.ci/scripts/setup/install-deps.sh',
   '.ci/scripts/setup/build-packages.sh',
   '.ci/scripts/build/build-cli.sh',
@@ -134,32 +79,23 @@ const VM_E2E_PATHS = [
   '.ci/scripts/env/create-e2e-env.sh',
   '.ci/scripts/test/run-e2e.sh',
   '.ci/scripts/signal/create-complete.sh',
-  // Used by ONE leg each and carried by all eight: start-account-for-e2e.sh by
-  // e2e_k8s_multinode (ct-tests.yml:1080), the two private scripts by
-  // fork_isolation (:1423, :1436). Over-wide for the other seven, which is the
-  // safe direction and costs nothing extra: they are in the same listing.
+  // Used by ONE leg each and carried by all eight: start-account-for-e2e.sh by e2e_k8s_multinode (ct-tests.yml:1080), the two private scripts by fork_isolation (:1423, :1436). Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
   '.ci/scripts/test/start-account-for-e2e.sh',
   '.ci/scripts/private/concurrent-fork-isolation-test.sh',
   '.ci/scripts/private/compose-healthcheck-smoke-test.sh',
   '.ci/scripts/lib/common.sh',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
-  // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle
-  // scripts repo-wide, so it changes what gets installed).
+  // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle scripts repo-wide, so it changes what gets installed).
   'package.json',
   'package-lock.json',
   '.npmrc',
-  // The whole workflow file, not the single job block. Hashing one block means
-  // tracking its line range, and the range moves whenever anything above it
-  // grows. Over-invalidating on unrelated ct-tests edits is the accepted cost
-  // of a key that cannot silently drift off its subject.
+  // The whole workflow file, not the single job block. Hashing one block means tracking its line range, and the range moves whenever anything above it grows. Over-invalidating on unrelated ct-tests edits is the accepted cost of a key that cannot silently drift off its subject.
   '.github/workflows/ct-tests.yml',
 ];
 
 const CLOSURES = {
-  // ct-tests.yml:195 `test-e2e-workers`. FIVE matrix legs, one per distro
-  // (:203-207), each of them a 90-minute ceiling: the single most expensive
-  // key in the table, hence first.
+  // ct-tests.yml:195 `test-e2e-workers`. FIVE matrix legs, one per distro (:203-207), each of them a 90-minute ceiling: the single most expensive key in the table, hence first.
   e2e_workers: {
     jobNames: [
       'E2E Workers (ubuntu-24.04)',
@@ -201,8 +137,7 @@ const CLOSURES = {
     submodules: VM_E2E_SUBMODULES,
     paths: VM_E2E_PATHS,
   },
-  // ct-tests.yml:392. The leaf is matched exactly, so "E2E Ceph" cannot be
-  // satisfied by "E2E Ceph Workers" and vice versa.
+  // ct-tests.yml:392. The leaf is matched exactly, so "E2E Ceph" cannot be satisfied by "E2E Ceph Workers" and vice versa.
   e2e_ceph: {
     jobNames: ['E2E Ceph'],
     submodules: VM_E2E_SUBMODULES,
@@ -217,23 +152,13 @@ const CLOSURES = {
   // ct-tests.yml:1465 `test-renet`, gate at :1467
   // `inputs.full_suite == 'true' && inputs.run_renet != 'false'`.
   renet: {
-    // The API job name is the CALLER's job name plus the callee's, joined by
-    // " / ": a live run shows "Tests + Infra / Renet". Matching is on the last
-    // segment, which is the only part ct-tests.yml controls. Exactness matters
-    // here: the same run also carries "Build (Renet) / Renet (cached)" and
-    // "Build (Docker Fast) / Renet Docker", and a prefix or substring match
-    // would accept either as evidence for a suite neither of them runs.
+    // The API job name is the CALLER's job name plus the callee's, joined by " / ": a live run shows "Tests + Infra / Renet". Matching is on the last segment, which is the only part ct-tests.yml controls. Exactness matters here: the same run also carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker", and a prefix or substring match would accept either
+    // as evidence for a suite neither of them runs.
     jobNames: ['Renet'],
     submodules: ['private/renet'],
-    // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, plus the two
-    // libraries they source: run-renet.sh:12 pulls in lib/common.sh, and
-    // renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26 sources
-    // the CONSOLE-side infra/ci-env.sh, which is why this job is not
-    // submodule-only however much it looks like it.
+    // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, plus the two libraries they source: run-renet.sh:12 pulls in lib/common.sh, and renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26 sources the CONSOLE-side infra/ci-env.sh, which is why this job is not submodule-only however much it looks like it.
     paths: [
-      // The shadow-run step this job now carries: it `uses:` this local composite,
-      // which resolves from the WORKSPACE, so the closure must hold it or a change
-      // to the action does not re-run this key.
+      // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/private/run-renet.sh',
       '.ci/scripts/private/renet-ebpf-e2e.sh',
@@ -242,12 +167,8 @@ const CLOSURES = {
       '.ci/scripts/private/renet-integration.sh',
       '.ci/scripts/lib/common.sh',
       '.ci/scripts/infra/ci-env.sh',
-      // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this
-      // job mints its submodule-capable token through the composite action
-      // (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e
-      // declared it. An edit to the action would not have withdrawn a renet
-      // greenlight. Found by test-greenlight-closure-trace.sh on its first run,
-      // which is the case that gate exists for.
+      // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this job mints its submodule-capable token through the composite action (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e declared it. An edit to the action would not have withdrawn a renet greenlight. Found by test-greenlight-closure-trace.sh on its first run, which is the case that gate
+      // exists for.
       '.github/actions/app-token',
       '.github/workflows/ct-tests.yml',
     ],
@@ -265,27 +186,17 @@ const CLOSURES = {
     ],
     // Only ops-vm-provision checks out submodules (`recursive`,
     // ci-ops-test.yml:55-59); the qemu and platform-check legs consume a
-    // prebuilt renet artifact instead. renet and account are pinned because
-    // the provision leg builds renet from source and runs the account-backed
-    // tutorial sequence. elite and homebrew-tap are NOT pinned: nothing in
-    // this workflow reads them, and pinning them would cost greenlights on
-    // every elite pointer bump for no coverage gain.
+    // prebuilt renet artifact instead. renet and account are pinned because the provision leg builds renet from source and runs the account-backed tutorial sequence. elite and homebrew-tap are NOT pinned: nothing in this workflow reads them, and pinning them would cost greenlights on every elite pointer bump for no coverage gain.
     submodules: ['private/renet', 'private/account'],
     paths: [
-      // The shadow-run step this job now carries: it `uses:` this local composite,
-      // which resolves from the WORKSPACE, so the closure must hold it or a change
-      // to the action does not re-run this key.
+      // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
       'packages/json',
-      // run-sequence.sh:31,37 globs packages/www/src/content/docs/en/
-      // tutorial-*.mdx and derives the tutorial list AND its order from their
-      // `order:` frontmatter, then requires a 1:1 match against
-      // .ci/tutorials/tutorial-<slug>.sh (:57-70). Both sides are inputs. The
-      // `en` tree is the narrowest entry that self-maintains as tutorials come
+      // run-sequence.sh:31,37 globs packages/www/src/content/docs/en/ tutorial-*.mdx and derives the tutorial list AND its order from their `order:` frontmatter, then requires a 1:1 match against .ci/tutorials/tutorial-<slug>.sh (:57-70). Both sides are inputs. The `en` tree is the narrowest entry that self-maintains as tutorials come
       // and go; the other locales are not read.
       'packages/www/src/content/docs/en',
       '.ci/tutorials',
@@ -300,24 +211,15 @@ const CLOSURES = {
       'package-lock.json',
       '.npmrc',
       '.github/workflows/ci-ops-test.yml',
-      // The two non-provision legs run the binaries from the `renet-binaries`
-      // artifact (ci-ops-test.yml:357-361, :503-507), which ci-build-renet.yml
-      // produces, so its recipe is an input to what they test.
+      // The two non-provision legs run the binaries from the `renet-binaries` artifact (ci-ops-test.yml:357-361, :503-507), which ci-build-renet.yml produces, so its recipe is an input to what they test.
       '.github/workflows/ci-build-renet.yml',
     ],
   },
-  // ct-install-methods.yml, called from ci.yml:1246. Six platform legs plus a
-  // STRICT aggregator, and the aggregator alone is sufficient evidence:
-  // "Install Methods Complete" runs `if: always() && !cancelled()`
-  // (ct-install-methods.yml:218) and assert-install-methods-complete.sh:43-45
-  // fails on anything that is not the literal `success`, `skipped` included.
-  // Aggregator green therefore means all six legs executed green, which is
-  // exactly what six separate jobNames would have asserted.
+  // ct-install-methods.yml, called from ci.yml:1246. Six platform legs plus a STRICT aggregator, and the aggregator alone is sufficient evidence: "Install Methods Complete" runs `if: always() && !cancelled()` (ct-install-methods.yml:218) and assert-install-methods-complete.sh:43-45 fails on anything that is not the literal `success`, `skipped` included. Aggregator green therefore
+  // means all six legs executed green, which is exactly what six separate jobNames would have asserted.
   install_methods: {
     jobNames: ['Install Methods Complete'],
-    // No leg checks out submodules. The pointers are pinned anyway because the
-    // artifacts under test are built from them: the SEA embeds renet, and the
-    // brew leg installs from the tap.
+    // No leg checks out submodules. The pointers are pinned anyway because the artifacts under test are built from them: the SEA embeds renet, and the brew leg installs from the tap.
     submodules: ['private/renet', 'private/homebrew-tap'],
     paths: [
       'packages/cli',
@@ -327,9 +229,7 @@ const CLOSURES = {
       'packages/json',
       // install.sh is the script under test for the quick-install method.
       'packages/www/public/install.sh',
-      // The whole producer script dir: this job tests the fully-built product,
-      // so every step of the build and staging pipeline is an input to it.
-      // Directory entries self-maintain as scripts are added.
+      // The whole producer script dir: this job tests the fully-built product, so every step of the build and staging pipeline is an input to it. Directory entries self-maintain as scripts are added.
       '.ci/scripts/build',
       '.ci/scripts/deploy',
       '.ci/scripts/version',
@@ -360,18 +260,11 @@ const CLOSURES = {
     // Live run shows "Tests + Infra / Account E2E".
     jobNames: ['Account E2E'],
     submodules: ['private/account'],
-    // Steps at ct-tests.yml:1653 (setup-workspace with account: 'true'),
-    // :1656 (`npm run build:packages`) and :1666 (run-account-e2e.sh).
+    // Steps at ct-tests.yml:1653 (setup-workspace with account: 'true'), :1656 (`npm run build:packages`) and :1666 (run-account-e2e.sh).
     //
-    // NOT in this list, and the absence is derived rather than overlooked:
-    // .ci/scripts/setup/build-packages.sh. setup-workspace only runs it when
-    // its `build-packages` input is 'true' (action.yml:91-93) and this job
-    // leaves that input unset, calling `npm run build:packages` directly
-    // instead. The script is therefore not an input to this job.
+    // NOT in this list, and the absence is derived rather than overlooked: .ci/scripts/setup/build-packages.sh. setup-workspace only runs it when its `build-packages` input is 'true' (action.yml:91-93) and this job leaves that input unset, calling `npm run build:packages` directly instead. The script is therefore not an input to this job.
     paths: [
-      // The shadow-run step this job now carries: it `uses:` this local composite,
-      // which resolves from the WORKSPACE, so the closure must hold it or a change
-      // to the action does not re-run this key.
+      // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/test/run-account-e2e.sh',
       // run-account-e2e.sh:27 sources it.
@@ -386,52 +279,33 @@ const CLOSURES = {
       'package.json',
       'package-lock.json',
       '.npmrc',
-      // scope-map.cjs:274 declares the surface as ['account', 'shared'], the
-      // console half of it being packages/shared, wired in by the `file:`
-      // dependency at private/account/package.json. provisioning rides along
-      // because build:packages builds it in the same step, so a break there
-      // fails this job too.
+      // scope-map.cjs:274 declares the surface as ['account', 'shared'], the console half of it being packages/shared, wired in by the `file:` dependency at private/account/package.json. provisioning rides along because build:packages builds it in the same step, so a break there fails this job too.
       'packages/shared',
       'packages/provisioning',
       '.github/workflows/ct-tests.yml',
     ],
   },
-  // ct-tests.yml:1728 `test-drills`. Drives `./run.sh drill universe` and
-  // `drill transfer` against a real `./run.sh account dev` gateway.
+  // ct-tests.yml:1728 `test-drills`. Drives `./run.sh drill universe` and `drill transfer` against a real `./run.sh account dev` gateway.
   drills: {
     jobNames: ['Drills'],
-    // `submodules: true` at ct-tests.yml:1743 checks out all four, but only
-    // two are consumed: rdc.sh builds renet unconditionally (rdc.sh:188) and
-    // the drills log in against the account gateway. Pinning the two that are
-    // read matches scope-map.cjs:290 (['cli', 'shared', 'account'] plus the
-    // renet build).
+    // `submodules: true` at ct-tests.yml:1743 checks out all four, but only two are consumed: rdc.sh builds renet unconditionally (rdc.sh:188) and the drills log in against the account gateway. Pinning the two that are read matches scope-map.cjs:290 (['cli', 'shared', 'account'] plus the renet build).
     submodules: ['private/renet', 'private/account'],
     paths: [
-      // The shadow-run step every ct-tests job now carries: it `uses:` this local
-      // composite, which resolves from the WORKSPACE, so the job's closure has to
-      // hold it or a change to the action does not re-run this key.
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
-      // The drills' own source, and the entry points that reach it. The drill
-      // dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router
+      // The drills' own source, and the entry points that reach it. The drill dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router
       // split moved every verb body to .ci/legacy/run-legacy.sh; run.sh is now a
-      // 120-line dispatcher that execs into it. Both are listed, because a change
-      // to EITHER can change which drill runs, and the line numbers this comment
-      // used to cite (run.sh:1987 and :1991) no longer exist -- naming the files
-      // rather than their addresses is what stops that going stale again.
+      // 120-line dispatcher that execs into it. Both are listed, because a change to EITHER can change which drill runs, and the line numbers this comment used to cite (run.sh:1987 and :1991) no longer exist -- naming the files rather than their addresses is what stops that going stale again.
       'scripts/drills',
       'run.sh',
       '.ci/legacy',
       'rdc.sh',
-      // The router sources constants.sh, local-common.sh and service.sh, and the
-      // legacy body sources account.sh, which pulls in find-port.sh. Named by FILE
-      // rather than by address: the line numbers this comment used to carry
-      // (run.sh:15-17 and :1854/:1891) pointed past the end of a file that is now
-      // 120 lines, which is the same way the block three lines above went stale.
-      // The whole .ci/lib tree is one listing entry and self-maintains.
+      // The router sources constants.sh, local-common.sh and service.sh, and the legacy body sources account.sh, which pulls in find-port.sh. Named by FILE rather than by address: the line numbers this comment used to carry (run.sh:15-17 and :1854/:1891) pointed past the end of a file that is now 120 lines, which is the same way the block three lines above went stale. The whole
+      // .ci/lib tree is one listing entry and self-maintains.
       '.ci/lib',
       '.ci/config/constants.sh',
       '.ci/scripts/test/collect-drill-diagnostics.sh',
@@ -443,12 +317,8 @@ const CLOSURES = {
       'package.json',
       'package-lock.json',
       '.npmrc',
-      // packages/www is DELIBERATELY ABSENT even though `./run.sh account dev`
-      // starts the Astro dev server. Same question, same answer and the same
-      // accepted cost as the documented scope decision at scope-map.cjs:284:
-      // a www change cannot change what these drills ASSERT, only whether the
-      // harness comes up, and carrying it would refuse a greenlight on the
-      // single most common change shape in this repo.
+      // packages/www is DELIBERATELY ABSENT even though `./run.sh account dev` starts the Astro dev server. Same question, same answer and the same accepted cost as the documented scope decision at scope-map.cjs:284: a www change cannot change what these drills ASSERT, only whether the harness comes up, and carrying it would refuse a greenlight on the single most common change
+      // shape in this repo.
       '.github/workflows/ct-tests.yml',
     ],
   },
@@ -457,16 +327,10 @@ const CLOSURES = {
     jobNames: ['Elite Run'],
     submodules: ['private/elite', 'private/renet', 'private/account'],
     paths: [
-      // The shadow-run step every ct-tests job now carries: it `uses:` this local
-      // composite, which resolves from the WORKSPACE, so the job's closure has to
-      // hold it or a change to the action does not re-run this key.
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
-      // The images this job pulls are content-tagged builds of the console
-      // tree: derive-image-tag.sh turns the tree into the tag, so a change
-      // anywhere in the image's inputs pulls a DIFFERENT image and the
-      // evidence would be about something else. Dockerfile:93 copies
-      // ./www-assets/ and :95 the account SPA, and ci-build-docker.yml:214-225
-      // builds both from packages/www, packages/shared and private/account.
+      // The images this job pulls are content-tagged builds of the console tree: derive-image-tag.sh turns the tree into the tag, so a change anywhere in the image's inputs pulls a DIFFERENT image and the evidence would be about something else. Dockerfile:93 copies ./www-assets/ and :95 the account SPA, and ci-build-docker.yml:214-225 builds both from packages/www, packages/shared
+      // and private/account.
       'packages/www',
       'packages/shared',
       'packages/provisioning',
@@ -496,20 +360,14 @@ const CLOSURES = {
       '.github/workflows/ci-build-renet.yml',
     ],
   },
-  // ct-tests.yml:1596 `test-license-enforcement`. Checkout plus Go plus one
-  // script: no npm, no setup-workspace, no packages/.
+  // ct-tests.yml:1596 `test-license-enforcement`. Checkout plus Go plus one script: no npm, no setup-workspace, no packages/.
   license_enforcement: {
     jobNames: ['License Enforcement'],
     // `submodules: true` at ct-tests.yml:1611 checks out all four; only renet
-    // is read. license-e2e.sh:186 `go build`s ./cmd/renet out of private/renet
-    // and mints its own throwaway key, so private/account is not consumed
-    // (the reference at license-e2e.sh:179-180 is a comment explaining why the
-    // account key path is deliberately NOT taken).
+    // is read. license-e2e.sh:186 `go build`s ./cmd/renet out of private/renet and mints its own throwaway key, so private/account is not consumed (the reference at license-e2e.sh:179-180 is a comment explaining why the account key path is deliberately NOT taken).
     submodules: ['private/renet'],
     paths: [
-      // The shadow-run step every ct-tests job now carries: it `uses:` this local
-      // composite, which resolves from the WORKSPACE, so the job's closure has to
-      // hold it or a change to the action does not re-run this key.
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/private/license-e2e.sh',
       // license-e2e.sh:69 points MINT_SRC at it and :605 `go build`s it; the
@@ -524,10 +382,7 @@ const CLOSURES = {
   // ct-update-flow.yml, called from ci.yml:692.
   update_flow: {
     jobNames: ['Update flow (Linux x64)'],
-    // The job itself checks out with no submodules (ct-update-flow.yml:39).
-    // private/renet is pinned all the same because the binary under test is
-    // the SEA from the `build-cli-linux-x64` artifact (:41-45), and the SEA
-    // embeds renet.
+    // The job itself checks out with no submodules (ct-update-flow.yml:39). private/renet is pinned all the same because the binary under test is the SEA from the `build-cli-linux-x64` artifact (:41-45), and the SEA embeds renet.
     submodules: ['private/renet'],
     paths: [
       'packages/cli',
@@ -537,15 +392,12 @@ const CLOSURES = {
       'packages/json',
       // Driven directly as the installer under test, test-rdc-update.sh:33.
       'packages/www/public/install.sh',
-      // The artifact producer's whole script dir plus the version injector it
-      // calls (ci-build-cli.yml:102,107,118).
+      // The artifact producer's whole script dir plus the version injector it calls (ci-build-cli.yml:102,107,118).
       '.ci/scripts/build',
       '.ci/scripts/version',
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
-      // Sources nothing, deliberately: it is the one .ci script with no
-      // lib/common.sh dependency. common.sh is carried anyway via the
-      // producer's scripts.
+      // Sources nothing, deliberately: it is the one .ci script with no lib/common.sh dependency. common.sh is carried anyway via the producer's scripts.
       '.ci/scripts/test/test-rdc-update.sh',
       '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
@@ -557,16 +409,11 @@ const CLOSURES = {
       '.github/workflows/ci-build-renet.yml',
     ],
   },
-  // ci.yml:702 `package-tests`, gate at :707. The rendered name already
-  // carries a "Tests + Infra / " prefix written into `name:` by hand
+  // ci.yml:702 `package-tests`, gate at :707. The rendered name already carries a "Tests + Infra / " prefix written into `name:` by hand
   // (ci.yml:703); only the leaf is matched, so that spelling is irrelevant.
   package_tests: {
     jobNames: ['Linux Packages'],
-    // EMPTY, and the emptiness is derived: ci.yml:709 is a bare checkout with
-    // no `with:` block at all, so no submodule is present and rule 2 has
-    // nothing to compare. The binary under test is a dummy shell script the
-    // harness synthesises in-job (test-linux-packages.sh:122-131), which is
-    // also why no packages/ tree is listed.
+    // EMPTY, and the emptiness is derived: ci.yml:709 is a bare checkout with no `with:` block at all, so no submodule is present and rule 2 has nothing to compare. The binary under test is a dummy shell script the harness synthesises in-job (test-linux-packages.sh:122-131), which is also why no packages/ tree is listed.
     submodules: [],
     paths: [
       '.ci/scripts/test/test-linux-packages.sh',
@@ -574,13 +421,9 @@ const CLOSURES = {
       '.ci/scripts/build/build-linux-pkg.sh',
       '.ci/scripts/build/build-pkg-repo.sh',
       '.ci/scripts/lib/common.sh',
-      // Sourced by all three scripts. It carries the nfpm version and its
-      // checksum, which ensure-nfpm.sh below is now the only reader of --
-      // ci.yml used to inline that fetch, and so did cd-stage.yml, and the two
-      // copies had already drifted (one verified the checksum, one did not).
+      // Sourced by all three scripts. It carries the nfpm version and its checksum, which ensure-nfpm.sh below is now the only reader of -- ci.yml used to inline that fetch, and so did cd-stage.yml, and the two copies had already drifted (one verified the checksum, one did not).
       '.ci/config/constants.sh',
-      // Installs the pinned nfpm. Called by test-linux-packages.sh when nfpm is
-      // absent, which is what lets that gate run off a GitHub runner at all.
+      // Installs the pinned nfpm. Called by test-linux-packages.sh when nfpm is absent, which is what lets that gate run off a GitHub runner at all.
       '.ci/scripts/build/ensure-nfpm.sh',
       // build-linux-pkg.sh:218-223 renders packages from it.
       '.ci/config/nfpm.yaml',
@@ -589,33 +432,20 @@ const CLOSURES = {
       '.github/workflows/ci.yml',
     ],
   },
-  // ct-tests.yml:183 `test-unit`. Last: at 14 minutes on ubuntu-slim it is the
-  // cheapest key in the table, so it is the one to starve if the budget dies.
+  // ct-tests.yml:183 `test-unit`. Last: at 14 minutes on ubuntu-slim it is the cheapest key in the table, so it is the one to starve if the budget dies.
   unit: {
     jobNames: ['Unit'],
-    // NO LONGER EMPTY. The job took a bare checkout until the suite failed with
-    // ENOENT on private/renet/pkg/prune/datastore.go: datastore-prune-parser
-    // asserts the CLI's prune fixtures cover every kind renet reports, by
-    // parsing that Go source, and throws rather than skipping when it is absent.
-    // renet is therefore a HARD dependency of this key -- a change to
-    // DatastorePrunableResources must re-run these tests, or the fixtures drift
-    // and nothing says so.
+    // NO LONGER EMPTY. The job took a bare checkout until the suite failed with ENOENT on private/renet/pkg/prune/datastore.go: datastore-prune-parser asserts the CLI's prune fixtures cover every kind renet reports, by parsing that Go source, and throws rather than skipping when it is absent. renet is therefore a HARD dependency of this key -- a change to
+    // DatastorePrunableResources must re-run these tests, or the fixtures drift and nothing says so.
     //
-    // account is listed for the softer reason: crypto.test.ts verifies
-    // cross-language fixtures from private/account and degrades with
-    // describe.skipIf(!existsSync(...)), so a fixture change there silently
-    // changes what this key proves rather than failing it.
+    // account is listed for the softer reason: crypto.test.ts verifies cross-language fixtures from private/account and degrades with describe.skipIf(!existsSync(...)), so a fixture change there silently changes what this key proves rather than failing it.
     submodules: ['private/renet', 'private/account'],
     paths: [
-      // The shadow-run step every ct-tests job now carries: it `uses:` this local
-      // composite, which resolves from the WORKSPACE, so the job's closure has to
-      // hold it or a change to the action does not re-run this key.
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       // The app-token step the submodule checkout needs to authenticate.
       '.github/actions/app-token',
-      // run-unit.sh:29,35,41,47 runs the four workspace suites, :55 the
-      // coverage roll-up. scope-map.cjs:266 additionally names www and
-      // workers, both of which the coverage config reaches.
+      // run-unit.sh:29,35,41,47 runs the four workspace suites, :55 the coverage roll-up. scope-map.cjs:266 additionally names www and workers, both of which the coverage config reaches.
       'packages/shared',
       'packages/cli',
       'packages/provisioning',
@@ -637,11 +467,9 @@ const CLOSURES = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// PURE CORE. No network, no git, no clock. Everything below the io line feeds
+// --------------------------------------------------------------------------- PURE CORE. No network, no git, no clock. Everything below the io line feeds
 // this; the unit gate (.ci/scripts/test/gates/test-greenlight.sh) drives it
-// directly with fixtures.
-// ---------------------------------------------------------------------------
+// directly with fixtures. ---------------------------------------------------------------------------
 
 // The leaf of a reusable-workflow job name. See CLOSURES.renet.jobNames.
 function jobLeafName(name) {
@@ -649,11 +477,7 @@ function jobLeafName(name) {
   return parts[parts.length - 1].trim();
 }
 
-// Resolve a candidate field that may be a value or a zero-argument function.
-// The function form is what makes cheap-first ordering real rather than
-// stylistic, exactly as in scope-engine.cjs's attestPlan: a candidate refused
-// on its job conclusion never pays for the gitlink call, and one refused on
-// its gitlink never pays for the closure listing, which is the expensive one.
+// Resolve a candidate field that may be a value or a zero-argument function. The function form is what makes cheap-first ordering real rather than stylistic, exactly as in scope-engine.cjs's attestPlan: a candidate refused on its job conclusion never pays for the gitlink call, and one refused on its gitlink never pays for the closure listing, which is the expensive one.
 function pull(field) {
   return typeof field === 'function' ? field() : field;
 }
@@ -662,27 +486,16 @@ function errText(e) {
   return e && e.message ? e.message : String(e);
 }
 
-// One candidate, one verdict. NEVER throws: a throw from any lazy fetch
-// becomes a named refusal, because an unreadable candidate and an unusable one
-// have the same consequence (no greenlight from this candidate) and only the
-// reason string should differ.
+// One candidate, one verdict. NEVER throws: a throw from any lazy fetch becomes a named refusal, because an unreadable candidate and an unusable one have the same consequence (no greenlight from this candidate) and only the reason string should differ.
 function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash }) {
   if (!candidate || typeof candidate !== 'object') {
     return { usable: false, reason: 'no-candidate' };
   }
 
-  // RULE ORDER IS COST ORDER, NOT PRECEDENCE. All three rules are ANDed, so
-  // reordering cannot change a verdict, only which refusal reason the trail
-  // records. Rule 2 goes first because it is answered from a `private`
-  // directory listing that is cached across every key and every candidate,
-  // where rule 1 costs a paginated jobs read (1-2s) per candidate. On
-  // pointer-bump-heavy history `pointer-differs` is the dominant refusal, so
-  // asking it first is what keeps a walk over 25 candidates inside the budget.
-  // The anti-chaining property lives in rule 1 itself, not in its position.
+  // RULE ORDER IS COST ORDER, NOT PRECEDENCE. All three rules are ANDed, so reordering cannot change a verdict, only which refusal reason the trail records. Rule 2 goes first because it is answered from a `private` directory listing that is cached across every key and every candidate, where rule 1 costs a paginated jobs read (1-2s) per candidate. On pointer-bump-heavy history
+  // `pointer-differs` is the dominant refusal, so asking it first is what keeps a walk over 25 candidates inside the budget. The anti-chaining property lives in rule 1 itself, not in its position.
 
-  // Rule 2: every pinned submodule points at the same commit. An empty
-  // `wantGitlinks` is legal and makes this vacuous, which is the honest
-  // answer for a job that checks out no submodules at all.
+  // Rule 2: every pinned submodule points at the same commit. An empty `wantGitlinks` is legal and makes this vacuous, which is the honest answer for a job that checks out no submodules at all.
   let gitlinks;
   try {
     gitlinks = pull(candidate.gitlinks);
@@ -698,13 +511,9 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
     }
   }
 
-  // Rule 1: the job RAN and SUCCEEDED. This is the rule that stops evidence
-  // chaining across reduced runs, so it refuses loudest.
+  // Rule 1: the job RAN and SUCCEEDED. This is the rule that stops evidence chaining across reduced runs, so it refuses loudest.
   //
-  // EVERY name in `jobNames` must clear it. A matrix key whose five legs are
-  // one job short, or four green and one skipped, proves nothing about the
-  // missing leg, and accepting partial evidence would let exactly the leg a PR
-  // breaks be the one that never ran.
+  // EVERY name in `jobNames` must clear it. A matrix key whose five legs are one job short, or four green and one skipped, proves nothing about the missing leg, and accepting partial evidence would let exactly the leg a PR breaks be the one that never ran.
   let jobs;
   try {
     jobs = pull(candidate.jobs);
@@ -715,8 +524,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
     return { usable: false, reason: 'jobs-unreadable:not-a-list' };
   }
   // Only a multi-leg key tags its refusal with the leg that caused it; a
-  // single-name key keeps the bare reason, which is what the trail table and
-  // every existing assertion read.
+  // single-name key keeps the bare reason, which is what the trail table and every existing assertion read.
   const tag = (name) => (jobNames.length > 1 ? `@${name}` : '');
   for (const jobName of jobNames) {
     const matches = jobs.filter((j) => j && jobLeafName(j.name) === jobName);
@@ -731,9 +539,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
     }
     const conclusion = matches[0].conclusion;
     if (conclusion === 'skipped') {
-      // The intent-versus-outcome case. A scope-skipped job reports exactly
-      // this and is indistinguishable from a green one at run level, which is
-      // why greenlight evidence is always the job conclusion.
+      // The intent-versus-outcome case. A scope-skipped job reports exactly this and is indistinguishable from a green one at run level, which is why greenlight evidence is always the job conclusion.
       return { usable: false, reason: `job-not-run${tag(jobName)}` };
     }
     if (conclusion !== 'success') {
@@ -759,10 +565,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
 // The whole decision for one key. Returns the first usable candidate; the
 // caller orders candidates newest-first, so "first" means "most recent proof".
 //
-// `trail` records every candidate examined with its refusal reason. It is the
-// only thing that makes a non-greenlight diagnosable: without it, "no match"
-// and "the API returned nothing" read identically in the job log, which is the
-// unreadable-instrument failure scope-shadow.sh:96-104 was written to fix.
+// `trail` records every candidate examined with its refusal reason. It is the only thing that makes a non-greenlight diagnosable: without it, "no match" and "the API returned nothing" read identically in the job log, which is the unreadable-instrument failure scope-shadow.sh:96-104 was written to fix.
 function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) {
   const trail = [];
   const closure = CLOSURES[key];
@@ -770,11 +573,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
     return { greenlit: false, reason: `unknown-key:${key}`, trail };
   }
   const want = wantGitlinks || {};
-  // A key that DECLARES submodules must have read every one of them. An
-  // unreadable pointer is a stale table or a broken checkout, not a free pass:
-  // proceeding would compare an empty set and greenlight on rule 3 alone. A
-  // key that declares none is unaffected, which is why the guard is over the
-  // declared list rather than over `want` being non-empty.
+  // A key that DECLARES submodules must have read every one of them. An unreadable pointer is a stale table or a broken checkout, not a free pass: proceeding would compare an empty set and greenlight on rule 3 alone. A key that declares none is unaffected, which is why the guard is over the declared list rather than over `want` being non-empty.
   for (const path of closure.submodules) {
     if (!want[path]) {
       return { greenlit: false, reason: 'no-local-gitlink', trail };
@@ -802,8 +601,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
 }
 
 // Hash a { path -> object-sha } map into one key. Sorted so the map's
-// iteration order cannot change the answer, and NUL-delimited so no path can
-// forge a different map's serialization by containing the delimiter.
+// iteration order cannot change the answer, and NUL-delimited so no path can forge a different map's serialization by containing the delimiter.
 function closureHashOf(shaByPath) {
   const h = createHash('sha256');
   for (const p of Object.keys(shaByPath).sort()) {
@@ -815,9 +613,7 @@ function closureHashOf(shaByPath) {
   return h.digest('hex');
 }
 
-// ---------------------------------------------------------------------------
-// IO. git for the local side, gh for the candidate side.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- IO. git for the local side, gh for the candidate side. ---------------------------------------------------------------------------
 
 function defaultRun(cmd, args, timeoutMs) {
   const { execFileSync } = require('child_process');
@@ -828,10 +624,7 @@ function defaultRun(cmd, args, timeoutMs) {
   });
 }
 
-// Concatenated JSON objects, one per --paginate page. Borrowed verbatim in
-// spirit from scope-engine.cjs:554: JSON.parse on the raw stream works for a
-// single page and throws the moment a run outgrows per_page, which is the
-// shape a growing pipeline drifts into silently.
+// Concatenated JSON objects, one per --paginate page. Borrowed verbatim in spirit from scope-engine.cjs:554: JSON.parse on the raw stream works for a single page and throws the moment a run outgrows per_page, which is the shape a growing pipeline drifts into silently.
 function parseJsonStream(text) {
   const values = [];
   let depth = 0;
@@ -866,15 +659,11 @@ function parseJsonStream(text) {
 
 // The local half: what THIS checkout is asking to be greenlit for.
 //
-// It reads HEAD, which under a pull_request is the synthetic merge commit, and
-// that is the correct subject: the merge commit's gitlink and closure are what
-// the jobs would actually run against.
+// It reads HEAD, which under a pull_request is the synthetic merge commit, and that is the correct subject: the merge commit's gitlink and closure are what the jobs would actually run against.
 function createLocalReader({ repoRoot, run = defaultRun }) {
   const git = (...args) => run('git', ['-C', repoRoot, ...args], 15000);
 
-  // `<mode> SP <type> SP <sha> TAB <path>`. Works uniformly for blobs, trees
-  // and gitlinks, which is why the closure table can mix files and
-  // directories without the caller caring which is which.
+  // `<mode> SP <type> SP <sha> TAB <path>`. Works uniformly for blobs, trees and gitlinks, which is why the closure table can mix files and directories without the caller caring which is which.
   const objectShaAt = (path) => {
     const line = git('ls-tree', 'HEAD', '--', path).split('\n')[0];
     if (!line) return null;
@@ -884,8 +673,7 @@ function createLocalReader({ repoRoot, run = defaultRun }) {
 
   return {
     // { path -> sha } for the declared submodule list. An unreadable pointer
-    // is left OUT of the map rather than recorded as null, so the caller's
-    // completeness check is a plain key presence test.
+    // is left OUT of the map rather than recorded as null, so the caller's completeness check is a plain key presence test.
     gitlinkShas: (paths) => {
       const shas = {};
       for (const p of paths) {
@@ -894,11 +682,7 @@ function createLocalReader({ repoRoot, run = defaultRun }) {
       }
       return shas;
     },
-    // Throws on a path the table declares but the tree does not have. That is
-    // a STALE TABLE, not a missing greenlight, and it must be loud: silently
-    // hashing an absent path as empty would keep matching other equally stale
-    // candidates forever. test-greenlight.sh asserts every declared path
-    // exists, so this throw is a backstop rather than the primary detector.
+    // Throws on a path the table declares but the tree does not have. That is a STALE TABLE, not a missing greenlight, and it must be loud: silently hashing an absent path as empty would keep matching other equally stale candidates forever. test-greenlight.sh asserts every declared path exists, so this throw is a backstop rather than the primary detector.
     closureHash: (paths) => {
       const shas = {};
       for (const p of paths) {
@@ -911,10 +695,7 @@ function createLocalReader({ repoRoot, run = defaultRun }) {
   };
 }
 
-// The candidate half. Every method THROWS on anything unusable, and the throw
-// is the interface: evaluateCandidate turns it into a named refusal. Returning
-// a benign-looking empty value instead would read as positive evidence of
-// absence, which is the one answer this must never fabricate.
+// The candidate half. Every method THROWS on anything unusable, and the throw is the interface: evaluateCandidate turns it into a named refusal. Returning a benign-looking empty value instead would read as positive evidence of absence, which is the one answer this must never fabricate.
 function createCandidateReader({ repo, deadline, run = defaultRun }) {
   const remaining = () => deadline - Date.now();
   const gh = (...args) => {
@@ -923,9 +704,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
     return run('gh', args, left);
   };
 
-  // Caches are keyed by head_sha, not by run id: reruns and several PRs on one
-  // commit share every content answer, and the same candidate is examined once
-  // per key requested.
+  // Caches are keyed by head_sha, not by run id: reruns and several PRs on one commit share every content answer, and the same candidate is examined once per key requested.
   const jobsCache = new Map();
   const contentsCache = new Map();
 
@@ -952,11 +731,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
     return jobsCache.get(runId);
   };
 
-  // One listing per PARENT directory rather than one call per path. The
-  // listing carries an object sha for every entry whatever its type (file,
-  // dir, submodule), so the eight-path renet closure costs four calls instead
-  // of eight and packages/shared is answerable at all: a contents call on a
-  // directory returns its entries, never its own tree sha.
+  // One listing per PARENT directory rather than one call per path. The listing carries an object sha for every entry whatever its type (file, dir, submodule), so the eight-path renet closure costs four calls instead of eight and packages/shared is answerable at all: a contents call on a directory returns its entries, never its own tree sha.
   const listDir = (ref, dir) => {
     const cacheKey = `${ref}:${dir}`;
     if (!contentsCache.has(cacheKey)) {
@@ -976,8 +751,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
     const dir = idx === -1 ? '' : path.slice(0, idx);
     const name = idx === -1 ? path : path.slice(idx + 1);
     const entry = listDir(ref, dir).get(name);
-    // Absent is a legitimate answer, not an error: the candidate commit simply
-    // did not carry that path, which makes its closure differ from ours.
+    // Absent is a legitimate answer, not an error: the candidate commit simply did not carry that path, which makes its closure differ from ours.
     return entry || null;
   };
 
@@ -1001,9 +775,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- CLI ---------------------------------------------------------------------------
 
 function usage() {
   return [
@@ -1014,8 +786,7 @@ function usage() {
     'key whose exact inputs were already executed green by another run.',
     'Prints nothing on stdout otherwise. Always exits 0.',
     '',
-    // Generated from the table rather than restated beside it, so a key added
-    // to CLOSURES can never be missing from the help.
+    // Generated from the table rather than restated beside it, so a key added to CLOSURES can never be missing from the help.
     `keys, most expensive first: ${Object.keys(CLOSURES).join(', ')}`,
   ].join('\n');
 }
@@ -1061,8 +832,7 @@ function main(argv) {
     }
   }
 
-  // The budget covers the WHOLE invocation, all keys included, because it
-  // exists to bound `initialize`, which every other job waits on. Overrunning
+  // The budget covers the WHOLE invocation, all keys included, because it exists to bound `initialize`, which every other job waits on. Overrunning
   // it stalls the pipeline; giving up early costs one full round.
   const deadline = Date.now() + Math.max(1, budgetSeconds) * 1000;
   const selfRunId = process.env.GITHUB_RUN_ID ? String(process.env.GITHUB_RUN_ID) : null;
@@ -1164,9 +934,7 @@ module.exports = {
 };
 
 if (require.main === module) {
-  // Nothing above may take the process down. A crash here would be a crash in
-  // `initialize`, which every job needs, so an engine defect would stop the
-  // pipeline rather than merely failing to shrink it.
+  // Nothing above may take the process down. A crash here would be a crash in `initialize`, which every job needs, so an engine defect would stop the pipeline rather than merely failing to shrink it.
   let code = 0;
   try {
     code = main(process.argv.slice(2));

@@ -155,9 +155,7 @@ def test_a_nonexistent_sha_is_named_as_nonexistent(gate, tmp_path: pathlib.Path)
 
 def test_a_real_but_detached_sha_still_says_detached(gate, tmp_path: pathlib.Path):
     gate.log_test("THE CONTROL THAT MATTERS: a commit that genuinely exists and is off main")
-    # If the probe were too broad -- a bare `cat-file -e` on the wrong argument, or
-    # the check applied to the tag path -- this would flip to the not-an-object
-    # message and the fix would have traded one misdiagnosis for another.
+    # If the probe were too broad -- a bare `cat-file -e` on the wrong argument, or the check applied to the tag path -- this would flip to the not-an-object message and the fix would have traded one misdiagnosis for another.
     repo = make_repo(gate, tmp_path)
     got = run_resolve(repo, SUT, INPUT_SHA=detached_sha(gate, repo))
     gate.assert_exit_code(1, got.rc, "a detached commit still fails, with the same exit code")
@@ -191,8 +189,7 @@ def test_the_tag_path_is_untouched_by_the_probe(gate, tmp_path: pathlib.Path):
 
 def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
     gate.log_test("THE `^{commit}` PEEL: a tree SHA is a real object and must still be refused")
-    # A bare `cat-file -e <sha>` waves a tree through -- it then fails reachability
-    # and gets reported as a DETACHED TAG, the same misdiagnosis one layer down.
+    # A bare `cat-file -e <sha>` waves a tree through -- it then fails reachability and gets reported as a DETACHED TAG, the same misdiagnosis one layer down.
     repo = make_repo(gate, tmp_path)
     tree_sha = _git(gate, repo, "rev-parse", "main^{tree}")
     got = run_resolve(repo, SUT, INPUT_SHA=tree_sha)
@@ -204,8 +201,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
         "with the message covering this half of the probe, not just the missing-object half",
     )
     gate.assert_not_contains(got.out, DETACHED, "and must NOT be reported as a detached tag")
-    # CONTROL: the COMMIT that owns that very tree is accepted, so the rejection
-    # above is about the object's TYPE and not about that repository.
+    # CONTROL: the COMMIT that owns that very tree is accepted, so the rejection above is about the object's TYPE and not about that repository.
     (repo / "step-output").unlink(missing_ok=True)
     commit_sha = _git(gate, repo, "rev-list", "-n1", "main")
     ok = run_resolve(repo, SUT, VERSION="v1.0.0", INPUT_SHA=commit_sha)
@@ -215,8 +211,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
 
 def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
     gate.log_test("CONTROL for the happy path, both ways in")
-    # If this broke, every case above would be asserting that a script which
-    # rejects everything is correct.
+    # If this broke, every case above would be asserting that a script which rejects everything is correct.
     repo = make_repo(gate, tmp_path)
     main_sha = _git(gate, repo, "rev-list", "-n1", "main")
     got = run_resolve(repo, SUT, VERSION="v1.0.0")
@@ -283,12 +278,9 @@ def test_the_two_failures_are_distinguishable(gate, tmp_path: pathlib.Path):
 
     # CONTROL: reproduce the PRE-FIX behaviour and require it to be reported.
     #
-    # NOT by editing the script. An earlier version of this control cut the probe
-    # block out of a copy with a regex, which coupled it to the exact spelling of
-    # one `if` header: a harmless refactor made the regex miss and the gate died
+    # NOT by editing the script. An earlier version of this control cut the probe block out of a copy with a regex, which coupled it to the exact spelling of one `if` header: a harmless refactor made the regex miss and the gate died
     # with a traceback instead of a verdict. Shimming `git` so `cat-file` cannot
-    # fail is behaviourally identical to having no probe at all, costs nothing when
-    # the script is rewritten, and exercises the REAL script rather than a mutant.
+    # fail is behaviourally identical to having no probe at all, costs nothing when the script is rewritten, and exercises the REAL script rather than a mutant.
     real_git = harness.require_tool("git", "install git; this control shims the real binary")
     nogit = tmp_path / "nogit"
     nogit.mkdir()

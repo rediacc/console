@@ -73,11 +73,7 @@ const BUILDERS: { file: string; floor: number }[] = [
 const PUSHED_KEY = /^\s+([A-Z][A-Z0-9_]*):\s*\$/gm;
 
 /** `  KEY: z.` or `  KEY: boolFromEnv` — a declared schema key. */
-// `z$` matters: prettier wraps a long chain, leaving `MIN_CLI_VERSION: z` with the
-// `.string()` on the NEXT line. Requiring `z.` on one line silently dropped that key,
-// so the gate extracted 84 of 85 and the `size < 40` floor is far too low to notice.
-// A one-key loss here is a latent FALSE POSITIVE: the day a builder pushes that name,
-// the gate calls a correct push line undeclared.
+// `z$` matters: prettier wraps a long chain, leaving `MIN_CLI_VERSION: z` with the `.string()` on the NEXT line. Requiring `z.` on one line silently dropped that key, so the gate extracted 84 of 85 and the `size < 40` floor is far too low to notice. A one-key loss here is a latent FALSE POSITIVE: the day a builder pushes that name, the gate calls a correct push line undeclared.
 const SCHEMA_KEY = /^\s{2}([A-Z][A-Z0-9_]*):\s*(?:z\.|z$|boolFromEnv)/gm;
 
 /**
@@ -143,17 +139,10 @@ export function schemaKeys(text: string): Set<string> {
     );
     process.exit(1);
   }
-  // And the ORACLE, in both directions. It replaced a hand-maintained count, so it
-  // has to be proven to (a) agree with the strict extractor on a well-formed schema
-  // and (b) DISAGREE on the exact shape that defeated the old regex -- a zod chain
-  // wrapped onto a second line. Without (b) the comparison could be trivially equal
+  // And the ORACLE, in both directions. It replaced a hand-maintained count, so it has to be proven to (a) agree with the strict extractor on a well-formed schema and (b) DISAGREE on the exact shape that defeated the old regex -- a zod chain wrapped onto a second line. Without (b) the comparison could be trivially equal
   // for a reason unrelated to the defect it is here to catch.
-  // NOTE ON THE FIXTURE: a chain wrapped as `KEY:\n    z.string()` is NOT the defect
-  // shape -- SCHEMA_KEY's `\s*` crosses the newline, so it reads that fine, and the
-  // historical `MIN_CLI_VERSION: z` case is covered by the `z$` alternative. The shape
-  // that still defeats it is a value that is neither `z.` nor `boolFromEnv`: a new
-  // helper added to env.ts. That is what this plants, because a control must plant the
-  // defect the comparison can actually catch.
+  // NOTE ON THE FIXTURE: a chain wrapped as `KEY:\n z.string()` is NOT the defect shape -- SCHEMA_KEY's `\s*` crosses the newline, so it reads that fine, and the historical `MIN_CLI_VERSION: z` case is covered by the `z$` alternative. The shape that still defeats it is a value that is neither `z.` nor `boolFromEnv`: a new helper added to env.ts. That is what this plants, because a
+  // control must plant the defect the comparison can actually catch.
   const helper =
     'export const envSchema = z.object({\n  GOOD_KEY: z.string(),\n  HELPER_KEY: portFromEnv(8080),\n    NESTED_NOT_A_KEY: z.string(),\n});';
   const strict = schemaKeys(helper);
@@ -175,9 +164,7 @@ export function schemaKeys(text: string): Set<string> {
 const schemaText = readFileSync(join(ROOT, SCHEMA), 'utf8');
 const schema = schemaKeys(schemaText);
 const schemaLines = schemaLineKeys(schemaText);
-// 80, not 40. The old floor was half the population, which is a guard against the
-// extractor finding NOTHING and nothing else -- it sat happily at 84 of 85 while a
-// prettier-wrapped chain silently dropped a key. A floor guards against finding
+// 80, not 40. The old floor was half the population, which is a guard against the extractor finding NOTHING and nothing else -- it sat happily at 84 of 85 while a prettier-wrapped chain silently dropped a key. A floor guards against finding
 // nothing; only the comparison below guards against finding ALMOST everything.
 if (schema.size < 80) {
   console.error(
@@ -185,16 +172,10 @@ if (schema.size < 80) {
   );
   process.exit(1);
 }
-// AND THE EXACT COUNT, DERIVED FROM THE FILE rather than typed into this one.
-// Measured: with the pre-2026-09-02 regex the extractor yielded 84 of 85 -- a
-// prettier-wrapped `MIN_CLI_VERSION: z` -- and sailed past a floor of 80 reporting
-// "84 schema keys" as though that were the answer.
+// AND THE EXACT COUNT, DERIVED FROM THE FILE rather than typed into this one. Measured: with the pre-2026-09-02 regex the extractor yielded 84 of 85 -- a prettier-wrapped `MIN_CLI_VERSION: z` -- and sailed past a floor of 80 reporting "84 schema keys" as though that were the answer.
 //
 // This used to be `EXPECTED_SCHEMA_KEYS = 85`, a ratchet a session was trusted to bump
-// in the same commit. That put the protection against "the extractor silently lost a
-// key" inside the reach of the session losing it: editing the number is exactly as easy
-// as editing the schema, and a red that says "expected 85, got 84" invites the wrong
-// one. Comparing against a SECOND reading of the same file removes the trust. A key
+// in the same commit. That put the protection against "the extractor silently lost a key" inside the reach of the session losing it: editing the number is exactly as easy as editing the schema, and a red that says "expected 85, got 84" invites the wrong one. Comparing against a SECOND reading of the same file removes the trust. A key
 // added on purpose moves both counts and needs no edit here; a value shape the strict
 // regex cannot read moves only one, and that is the whole defect class.
 const lost = [...schemaLines].filter((k) => !schema.has(k));

@@ -23,8 +23,7 @@ import subprocess
 from rediacc_ci.quality import e2e_coverage as e2e
 from rediacc_ci.tests import differential as diff
 
-# The twin's two sweeps, verbatim from check-e2e-coverage.sh, with the directory
-# taken from $1 so a fixture can be pointed at them.
+# The twin's two sweeps, verbatim from check-e2e-coverage.sh, with the directory taken from $1 so a fixture can be pointed at them.
 METHOD_SWEEP = (
     "grep -rn --include='*.ts' -E \"function:[[:space:]]*'[a-z0-9_]+'\" \"$1\" 2>/dev/null || true"
 )
@@ -105,9 +104,7 @@ def _harness(root: pathlib.Path) -> pathlib.Path:
     return src
 
 
-# ---------------------------------------------------------------------------
-# The oracle state machine
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The oracle state machine ---------------------------------------------------------------------------
 
 
 def test_oracle_reads_only_the_bridge_array() -> None:
@@ -141,9 +138,7 @@ def test_oracle_empty_is_reported_as_empty_not_guessed() -> None:
     assert e2e.bridge_functions("export const X = ['a'] as const;\n") == []
 
 
-# ---------------------------------------------------------------------------
-# The two sweeps, against the real greps
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two sweeps, against the real greps ---------------------------------------------------------------------------
 
 
 def test_method_sweep_matches_bash_grep(tmp_path: pathlib.Path) -> None:
@@ -196,9 +191,7 @@ def test_symlinked_directories_are_not_followed(tmp_path: pathlib.Path) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# The verb extraction, against the real seds
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The verb extraction, against the real seds ---------------------------------------------------------------------------
 
 
 def _bash_extract(sed: str, subject: str) -> str:
@@ -241,17 +234,14 @@ def test_horizontal_space_class_does_not_widen_to_unicode() -> None:
     assert e2e.METHOD_GREP_RE.search("function:\t'x'") is not None
 
 
-# ---------------------------------------------------------------------------
-# The prefix strip, which is not a relpath computation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The prefix strip, which is not a relpath computation ---------------------------------------------------------------------------
 
 
 def test_relative_is_a_prefix_strip_not_a_path_walk(tmp_path: pathlib.Path) -> None:
     root = tmp_path / "repo"
     root.mkdir()
     assert e2e._relative(root, str(root / "a" / "b.ts")) == "a/b.ts"
-    # Outside the root, bash leaves the string untouched rather than inventing
-    # a `../..` chain, and so does this.
+    # Outside the root, bash leaves the string untouched rather than inventing a `../..` chain, and so does this.
     other = str(tmp_path / "elsewhere" / "c.ts")
     assert e2e._relative(root, other) == other
 

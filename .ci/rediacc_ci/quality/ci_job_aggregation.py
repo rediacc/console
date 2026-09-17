@@ -105,26 +105,20 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
 
-# The aggregator job. Named once, here, so a rename fails loudly below rather
-# than silently matching nothing.
+# The aggregator job. Named once, here, so a rename fails loudly below rather than silently matching nothing.
 AGGREGATOR = "ci-complete"
 
 # Anti-vacuity floor. ci.yml has carried 20+ top-level jobs for its whole life;
-# a parse that returns fewer than this found a layout it does not understand,
-# and reporting "all wired" off three jobs is the failure this gate exists to
-# prevent.
+# a parse that returns fewer than this found a layout it does not understand, and reporting "all wired" off three jobs is the failure this gate exists to prevent.
 MIN_JOBS = 10
 
-# The two test seams, spelled the twin's way so a gate test driving one drives
-# both implementations.
+# The two test seams, spelled the twin's way so a gate test driving one drives both implementations.
 WORKFLOW_ENV = "CI_JOB_AGGREGATION_WORKFLOW"
 ASSERT_ENV = "CI_JOB_AGGREGATION_ASSERT"
 
 # ---------------------------------------------------------------------------
 # The exempt set. Entry = job name; reason = why ci-complete cannot or must not
-# aggregate it. Parsed and quality-checked by the shared BLOCKER validator, so a
-# "# tbd" exemption fails this gate the same way it fails every other list.
-# ---------------------------------------------------------------------------
+# aggregate it. Parsed and quality-checked by the shared BLOCKER validator, so a "# tbd" exemption fails this gate the same way it fails every other list. ---------------------------------------------------------------------------
 EXEMPT_BLOCK = """
 # BLOCKER: this IS the aggregator; a job listed in its own needs is a self-edge and GitHub rejects the workflow at parse time, so the exemption is structural rather than a judgment call
 ci-complete
@@ -143,9 +137,7 @@ build-renet
 """
 
 
-# ---------------------------------------------------------------------------
-# Parsers. All three read the real files, not a copy.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Parsers. All three read the real files, not a copy. ---------------------------------------------------------------------------
 
 
 def top_level_jobs(text: str) -> list[str]:
@@ -206,9 +198,7 @@ def job_block(text: str, job: str) -> str:
             in_job = False
         if in_job:
             out.append(line)
-    # awk's `print` appends a newline per record, so a non-empty block always
-    # ends in one. The twin then tests `[[ ! -s "$BLOCK_FILE" ]]`, which is a
-    # SIZE test: an empty block is an empty file.
+    # awk's `print` appends a newline per record, so a non-empty block always ends in one. The twin then tests `[[ ! -s "$BLOCK_FILE" ]]`, which is a SIZE test: an empty block is an empty file.
     return "".join(line + "\n" for line in out)
 
 
@@ -277,8 +267,7 @@ def tier_entries(text: str) -> list[str]:
     return out
 
 
-# `tr '[:lower:]-' '[:upper:]_'`, spelled out. See the port notes for why this is
-# a translation table rather than `.upper()`.
+# `tr '[:lower:]-' '[:upper:]_'`, spelled out. See the port notes for why this is a translation table rather than `.upper()`.
 _TR = str.maketrans("abcdefghijklmnopqrstuvwxyz-", "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
 
@@ -331,8 +320,7 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         for problem in problems:
             log.error(problem)
-        # The validator names the file it was handed, which tells the reader
-        # nothing about where to edit. Name the real one.
+        # The validator names the file it was handed, which tells the reader nothing about where to edit. Name the real one.
         log.error(
             "The offending entry lives in the EXEMPT block of "
             ".ci/rediacc_ci/quality/ci_job_aggregation.py"
@@ -375,8 +363,7 @@ def main(argv: list[str] | None = None) -> int:
     results = dict.fromkeys((r for r in result_vars(block) if r != ""), 1)
     tiers = dict.fromkeys(("RESULT_%s" % t for t in tier_entries(assert_text) if t != ""), 1)
 
-    # Anti-vacuity, one floor per input: an empty set here would make its checks
-    # pass by asserting over nothing.
+    # Anti-vacuity, one floor per input: an empty set here would make its checks pass by asserting over nothing.
     if needs_count == 0:
         log.error("%s has no 'needs:' list in %s: it aggregates nothing." % (AGGREGATOR, workflow))
         return 1
@@ -395,16 +382,12 @@ def main(argv: list[str] | None = None) -> int:
 
     is_job = set(jobs)
 
-    # ---------------------------------------------------------------------
-    # Check.
-    # ---------------------------------------------------------------------
+    # --------------------------------------------------------------------- Check. ---------------------------------------------------------------------
     missing_needs: list[str] = []
     missing_results: list[str] = []
 
     # Liveness. A BLOCKER proves a reason existed once; it cannot prove the
-    # reason is still true. An exemption for a job that no longer exists is a
-    # hole held open by nothing, and it is invisible unless something asks. See
-    # the liveness section of docs/agent-reference/suppressions.md.
+    # reason is still true. An exemption for a job that no longer exists is a hole held open by nothing, and it is invisible unless something asks. See the liveness section of docs/agent-reference/suppressions.md.
     dead_exemptions = [entry for entry in sorted(exempt) if entry not in is_job]
 
     for job in jobs:
@@ -506,14 +489,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# A workflow written by CONSTRUCTION, never by mutating the real ci.yml. A
-# substitution against real source silently yields an unmutated copy the day the
-# targeted line is reworded, which is the vacuous-plant failure
-# check-control-vacuity.sh exists for.
+# A workflow written by CONSTRUCTION, never by mutating the real ci.yml. A substitution against real source silently yields an unmutated copy the day the targeted line is reworded, which is the vacuous-plant failure check-control-vacuity.sh exists for.
 FIXTURE_WORKFLOW = """name: CI
 on:
   push:
@@ -687,9 +665,7 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        # FOUR jobs is under MIN_JOBS, so the floor fires before any check does.
-        # That is the anti-vacuity arm, and it must fire on a workflow that is
-        # otherwise perfectly wired.
+        # FOUR jobs is under MIN_JOBS, so the floor fires before any check does. That is the anti-vacuity arm, and it must fire on a workflow that is otherwise perfectly wired.
         ctl.check(
             "PLANT: a short workflow trips the job floor rather than passing",
             run(FIXTURE_WORKFLOW, FIXTURE_ASSERT),

@@ -46,8 +46,7 @@ export const e2eTestNamingConvention = {
 
     // Pattern: NN[variant]-feature-name[.negative].test.ts
     // NN: 2-digit suite number; variant: optional single letter for split suites
-    // feature-name: kebab-case (lowercase letters, numbers, hyphens)
-    // .negative: optional suffix for negative test cases
+    // feature-name: kebab-case (lowercase letters, numbers, hyphens) .negative: optional suffix for negative test cases
     const VALID_PATTERN = /^(\d{2})([a-z])?-([a-z0-9]+(?:-[a-z0-9]+)*)(\.negative)?\.test\.ts$/;
 
     return {

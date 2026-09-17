@@ -27,12 +27,9 @@ import pytest
 from rediacc_ci.quality import agent_browser_exit as abe
 from rediacc_ci.tests import differential as diff
 
-# ---------------------------------------------------------------------------
-# The `set -e` eligibility test: grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The `set -e` eligibility test: grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e' ---------------------------------------------------------------------------
 
-# Every shape of `set` this repo actually contains, plus the two that look like
-# they should qualify and do not. The comment on each line is the property it is
+# Every shape of `set` this repo actually contains, plus the two that look like they should qualify and do not. The comment on each line is the property it is
 # there for; a case with no property is a case that will be deleted the first
 # time someone tidies this file.
 SET_E_CASES = [
@@ -80,12 +77,9 @@ def test_set_o_errexit_is_a_carried_blind_spot() -> None:
     assert abe.SET_E_RE.search("set -e") is not None
 
 
-# ---------------------------------------------------------------------------
-# The line skip-list: five `case` arms, all matched against the RAW line
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The line skip-list: five `case` arms, all matched against the RAW line ---------------------------------------------------------------------------
 
-# The exact `case` from the twin, lines 35-46, with `$line` bound by the caller.
-# Prints SKIP when the line is rejected and HIT when it survives to be reported.
+# The exact `case` from the twin, lines 35-46, with `$line` bound by the caller. Prints SKIP when the line is rejected and HIT when it survives to be reported.
 _CASE = r"""
 line="$1"
 case "$line" in
@@ -101,9 +95,7 @@ esac
 echo HIT
 """
 
-# Both directions, deliberately. A table of only-HIT cases would pass against a
-# scanner that reports every line, and a table of only-SKIP cases would pass
-# against one that reports none.
+# Both directions, deliberately. A table of only-HIT cases would pass against a scanner that reports every line, and a table of only-SKIP cases would pass against one that reports none.
 LINE_CASES = [
     'agent-browser open "$URL" >/dev/null 2>&1',  # the defect itself
     '  agent-browser open "$u"',  # indented, still a call
@@ -132,20 +124,14 @@ def test_line_skip_list_matches_case(tmp_path: pathlib.Path, line: str) -> None:
     """Drive the twin's `case` block and the port's arms over the same line."""
     script = tmp_path / "c.sh"
     script.write_text(_CASE, encoding="utf-8")
-    # THE LINE ARRIVES THROUGH THE ENVIRONMENT, not through the command string.
-    # Every case in the table contains `$`, quotes, or both, and interpolating
-    # them into `bash -c` would have the OUTER shell expand them before the
-    # fragment ever saw them -- so the fragment would be judging a different line
-    # than the port is, and the two would agree for the wrong reason.
+    # THE LINE ARRIVES THROUGH THE ENVIRONMENT, not through the command string. Every case in the table contains `$`, quotes, or both, and interpolating them into `bash -c` would have the OUTER shell expand them before the fragment ever saw them -- so the fragment would be judging a different line than the port is, and the two would agree for the wrong reason.
     code, out, err = diff.bash_streams(
         'bash c.sh "$LINE"', cwd=str(tmp_path), env=diff.env_for(LINE=line)
     )
     assert code == 0, err
     bash_hit = out.strip() == "HIT"
 
-    # The port's answer for the SAME line, obtained by scanning a one-line file
-    # that is eligible. `set -e` is prepended, so the file qualifies and the only
-    # question left is the skip-list.
+    # The port's answer for the SAME line, obtained by scanning a one-line file that is eligible. `set -e` is prepended, so the file qualifies and the only question left is the skip-list.
     box = tmp_path / "box"
     box.mkdir(exist_ok=True)
     (box / "x.sh").write_text("set -e\n" + line + "\n", encoding="utf-8")
@@ -188,9 +174,7 @@ def test_unterminated_last_line_is_dropped_by_both(tmp_path: pathlib.Path) -> No
     assert len(abe.scan(str(tmp_path))) == 1
 
 
-# ---------------------------------------------------------------------------
-# The finding's printed shape
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The finding's printed shape ---------------------------------------------------------------------------
 
 REPORT_CASES = [
     'agent-browser open "$u"',
@@ -218,9 +202,7 @@ def test_report_shape_matches_printf_and_sed(tmp_path: pathlib.Path, line: str) 
     assert abe._report(str(tmp_path), str(tmp_path / "sub" / "x.sh"), 7, line) == out.rstrip("\n")
 
 
-# ---------------------------------------------------------------------------
-# The corpora
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpora ---------------------------------------------------------------------------
 
 
 def test_shell_corpus_matches_grep_rl(tmp_path: pathlib.Path) -> None:
@@ -270,9 +252,7 @@ def test_js_corpus_prunes_dist_and_the_shell_one_does_not(tmp_path: pathlib.Path
     assert len(abe._corpus(str(tmp_path), abe.SH_SUFFIXES, abe.SH_PRUNE)) == 1
 
 
-# ---------------------------------------------------------------------------
-# The gate as a whole
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gate as a whole ---------------------------------------------------------------------------
 
 
 def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> None:
@@ -287,8 +267,7 @@ def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> 
     assert len(abe.scan_js(str(tmp_path))) == 1
     assert len(abe.scan(str(tmp_path))) == 1
     # Both fire independently; main() prints only the first. That ordering is
-    # asserted by the ledger row rather than re-driven here, because main()
-    # resolves its root from the environment.
+    # asserted by the ledger row rather than re-driven here, because main() resolves its root from the environment.
 
 
 def test_selftest_is_green() -> None:

@@ -93,8 +93,7 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
     shutil.copy2(COMMON, base / "repo" / ".ci" / "scripts" / "lib" / "common.sh")
 
     # The purge step shells out to this; keep it inert but present. It RECORDS the
-    # URLs it is handed, so the purge assertions read what the script actually
-    # asked to be purged rather than a proxy for it.
+    # URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
     _write_exec(
         base / "repo" / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh",
         '#!/bin/bash\ncat >"%s"\n' % fx.purged,
@@ -190,11 +189,7 @@ def test_the_copy_is_server_side(gate, tmp_path: pathlib.Path):
     gate.assert_not_contains(
         fx.argv(), "/tmp/promote-", "no transfer stages the channel through a local tmp directory"
     )
-    # THE R2 CONSTRAINT, pinned. `aws s3 sync`/`cp` reach for object tagging on
-    # every s3-to-s3 path and R2 implements neither side of it: --copy-props
-    # default needs GetObjectTagging, and any other value sends
-    # x-amz-tagging-directive: REPLACE, which R2 answered with NotImplemented on
-    # every object of run 32465461193. s3api sends only what is named here.
+    # THE R2 CONSTRAINT, pinned. `aws s3 sync`/`cp` reach for object tagging on every s3-to-s3 path and R2 implements neither side of it: --copy-props default needs GetObjectTagging, and any other value sends x-amz-tagging-directive: REPLACE, which R2 answered with NotImplemented on every object of run 32465461193. s3api sends only what is named here.
     gate.assert_not_contains(
         fx.argv(), "--copy-props", "no --copy-props: it forces a tagging directive R2 rejects"
     )
@@ -224,10 +219,7 @@ def test_all_four_formats_are_copied(gate, tmp_path: pathlib.Path):
 
 def test_a_key_outside_the_prefix_is_REFUSED(gate, tmp_path: pathlib.Path):  # noqa: N802
     gate.log_test("a listing key outside the source prefix must be refused")
-    # A key that does not start with the source prefix would make the strip a
-    # silent no-op and write to a DOUBLED destination such as
-    # apk/edge-promoted/apt/edge/... The install tests that follow would then read
-    # a channel nobody wrote, so this must fail loudly instead.
+    # A key that does not start with the source prefix would make the strip a silent no-op and write to a DOUBLED destination such as apk/edge-promoted/apt/edge/... The install tests that follow would then read a channel nobody wrote, so this must fail loudly instead.
     fx = build_fixture(gate, tmp_path, rogue=True)
     result = run_promotion(fx)
     if result.rc == 0:
@@ -241,9 +233,7 @@ def test_a_key_outside_the_prefix_is_REFUSED(gate, tmp_path: pathlib.Path):  # n
 
 def test_cache_control_is_still_applied(gate, tmp_path: pathlib.Path):
     gate.log_test("promoted objects stay uncacheable")
-    # Channel paths reuse filenames per release, so promoted bytes must never be
-    # cacheable. Losing this in the rewrite would be silent until a stale POP
-    # served an old Packages.gz to the install tests.
+    # Channel paths reuse filenames per release, so promoted bytes must never be cacheable. Losing this in the rewrite would be silent until a stale POP served an old Packages.gz to the install tests.
     fx = build_fixture(gate, tmp_path)
     promote_or_fail(gate, fx)
     gate.assert_contains(fx.argv(), "--cache-control no-cache", "promoted objects stay uncacheable")

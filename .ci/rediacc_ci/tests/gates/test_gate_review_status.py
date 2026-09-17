@@ -97,9 +97,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-review-status.sh"
 
-# Seven cases read tracked files seam-free and every temp-world case runs the
-# real scripts off the tracked tree. The lock says `tree:repo` too. See the
-# docstring.
+# Seven cases read tracked files seam-free and every temp-world case runs the real scripts off the tracked tree. The lock says `tree:repo` too. See the docstring.
 REAL_TREE_TWIN = True
 
 REPO_ROOT = paths.repo_root()
@@ -109,10 +107,7 @@ REAL_GATE_REL = ".ci/scripts/review/claude-review-gate.sh"
 REAL_GATE = paths.from_root(*REAL_GATE_REL.split("/"))
 COMMON_REL = ".ci/scripts/lib/common.sh"
 COMMON = paths.from_root(*COMMON_REL.split("/"))
-# TWO POINTERS PER GATE, and the split is the W7 P4 pin rule. Each of these was
-# used three ways: to RUN the gate, to read it for a behavioural needle, and to
-# parse a numeric threshold out of it. After the cutover those want different
-# files. A harness that RUNS the gate takes the ENTRY POINT, because that is what
+# TWO POINTERS PER GATE, and the split is the W7 P4 pin rule. Each of these was used three ways: to RUN the gate, to read it for a behavioural needle, and to parse a numeric threshold out of it. After the cutover those want different files. A harness that RUNS the gate takes the ENTRY POINT, because that is what
 # CI invokes; one that reads the gate's own text takes the MODULE, because the
 # entry point is a three-line shim carrying no needles and no constants.
 REVIEW_COMMENTS_GATE_REL = ".ci/scripts/quality/check_review_comments.py"
@@ -131,16 +126,13 @@ REVIEW_STATUS_YML = paths.from_root(".github", "workflows", "review-status.yml")
 OLD_SHA = "1111111111111111111111111111111111111111"
 NEW_SHA = "2222222222222222222222222222222222222222"
 
-# The needle the comment gate keys off to recognise a review summary, and the
-# file that must keep emitting it. Asserted below so the two cannot drift apart.
+# The needle the comment gate keys off to recognise a review summary, and the file that must keep emitting it. Asserted below so the two cannot drift apart.
 FINDINGS_FENCE_KEY = "json:review-findings"
 # The header the pipeline writes and the report gate matches on.
 REPORT_PREFIX_KEY = "**Claude finished"
 
 
-# ---------------------------------------------------------------------------
-# Fixture scaffolding
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture scaffolding ---------------------------------------------------------------------------
 
 FAKE_GH = r"""#!/bin/bash
 # Routing fake for `gh api`. Serves fixture JSON per endpoint and applies the
@@ -530,18 +522,10 @@ def source_common(gate, snippet: str) -> harness.RunResult:
     return harness.run([bash, "-c", 'source "$1"; shift; %s' % snippet, "_", os.fspath(COMMON)])
 
 
-# ---------------------------------------------------------------------------
-# Anti-vacuity: the marker prefix must still be parseable out of the real gate
-# script, and the review cap must come from ONE shared table.
+# --------------------------------------------------------------------------- Anti-vacuity: the marker prefix must still be parseable out of the real gate script, and the review cap must come from ONE shared table.
 #
-# The cap used to be a constant sed-parsed out of the gate script. It is now
-# sized to the diff by review_cap_for() in ../lib/common.sh, which both review
-# scripts source. That is a stronger contract, not a weaker one: sed-parsing a
-# number out of a sibling file was always one edit away from the two scripts
-# disagreeing, and disagreement is precisely the deadlock this suite exists to
-# prevent. So this asserts the SHARED function exists and that both scripts see
-# identical values for it.
-# ---------------------------------------------------------------------------
+# The cap used to be a constant sed-parsed out of the gate script. It is now sized to the diff by review_cap_for() in ../lib/common.sh, which both review scripts source. That is a stronger contract, not a weaker one: sed-parsing a number out of a sibling file was always one edit away from the two scripts disagreeing, and disagreement is precisely the deadlock this suite exists to
+# prevent. So this asserts the SHARED function exists and that both scripts see identical values for it. ---------------------------------------------------------------------------
 
 
 def test_real_gate_constants_parseable(gate):
@@ -560,9 +544,7 @@ def test_real_gate_constants_parseable(gate):
     if probe.out.strip() != "yes":
         gate.log_fail("review_cap_for() is missing from %s" % COMMON_REL)
 
-    # The operator's tiers, asserted at their boundaries so an off-by-one in the
-    # comparison cannot pass. A cap that only ever returns its default would
-    # satisfy a single-value check.
+    # The operator's tiers, asserted at their boundaries so an off-by-one in the comparison cannot pass. A cap that only ever returns its default would satisfy a single-value check.
     tiers = (
         ("0", "3", "an empty diff gets the smallest budget"),
         ("10000", "3", "10k lines is still 3 reviews"),
@@ -585,9 +567,7 @@ def test_real_gate_constants_parseable(gate):
     gate.log_pass("review budget comes from one shared table and honours every tier boundary")
 
 
-# ---------------------------------------------------------------------------
-# Too loud: healthy states must not fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Too loud: healthy states must not fail ---------------------------------------------------------------------------
 
 
 def test_current_head_succeeds(gate):
@@ -641,8 +621,7 @@ def test_cancelled_review_run_is_not_a_failure(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
         # The PR handoff Claude Review now uploads; without it the resolver is
-        # correctly silent, so every workflow_run test needs it to reach the
-        # behaviour it is actually asserting.
+        # correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
         write_json(
             t / "fixtures" / "run-artifacts.json",
             {"artifacts": [{"id": 42, "name": "review-target"}]},
@@ -678,9 +657,7 @@ def test_draft_is_neutral(gate):
         gate.log_pass("draft PR => neutral")
 
 
-# ---------------------------------------------------------------------------
-# Too quiet: PLANTED DEFECTS that must FIRE
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Too quiet: PLANTED DEFECTS that must FIRE ---------------------------------------------------------------------------
 
 
 def test_stale_head_fails(gate):
@@ -723,8 +700,7 @@ def test_unreviewed_head_fails(gate):
 def test_wrong_marker_prefix_is_seen_as_unreviewed(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # A marker written under a DIFFERENT prefix must not be honoured -- this
-        # is the shape a drifted MARKER_PREFIX would take.
+        # A marker written under a DIFFERENT prefix must not be honoured -- this is the shape a drifted MARKER_PREFIX would take.
         write_json(
             t / "fixtures" / "comments.json",
             [
@@ -746,8 +722,7 @@ def test_failed_review_run_fails(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
         # The PR handoff Claude Review now uploads; without it the resolver is
-        # correctly silent, so every workflow_run test needs it to reach the
-        # behaviour it is actually asserting.
+        # correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
         write_json(
             t / "fixtures" / "run-artifacts.json",
             {"artifacts": [{"id": 42, "name": "review-target"}]},
@@ -820,10 +795,7 @@ def test_missing_hygiene_dir_hard_fails(gate):
 def test_unparseable_constants_hard_fail(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # The MARKER renamed, as a drifting refactor would leave it. The cap is
-        # no longer parsed from this file (it comes from the shared
-        # review_cap_for()), but the marker still is, and a silent default there
-        # would make the gate compare against a prefix nothing ever posts.
+        # The MARKER renamed, as a drifting refactor would leave it. The cap is no longer parsed from this file (it comes from the shared review_cap_for()), but the marker still is, and a silent default there would make the gate compare against a prefix nothing ever posts.
         (t / "fake-gate.sh").write_text("MARKER='<!-- claude-reviewed:'\n", encoding="utf-8")
         run = run_status(
             gate,
@@ -844,16 +816,10 @@ def test_unparseable_constants_hard_fail(gate):
         )
 
 
-# ---------------------------------------------------------------------------
-# The deadlock guard, driven in BOTH directions so the cap number is proven
-# load-bearing rather than incidental.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The deadlock guard, driven in BOTH directions so the cap number is proven load-bearing rather than incidental. ---------------------------------------------------------------------------
 
-# BOTH prefixes: review-status.sh parses ATTEMPT_PREFIX as well now, because the
-# cap counts posted reports PLUS spent attempts. It REFUSES TO RUN without it,
-# deliberately -- a missing prefix reads the cap LOW and silently recreates the
-# deadlock these very tests assert against. A stub carrying only MARKER_PREFIX
-# therefore exits before posting, which is exactly what this fixture used to do.
+# BOTH prefixes: review-status.sh parses ATTEMPT_PREFIX as well now, because the cap counts posted reports PLUS spent attempts. It REFUSES TO RUN without it, deliberately -- a missing prefix reads the cap LOW and silently recreates the deadlock these very tests assert against. A stub carrying only MARKER_PREFIX therefore exits before posting, which is exactly what this fixture used
+# to do.
 BOTH_PREFIXES = (
     "MARKER_PREFIX='<!-- claude-reviewed:'\nATTEMPT_PREFIX='<!-- claude-review-attempt:'\n"
 )
@@ -939,11 +905,9 @@ def test_below_cap_the_same_state_fails(gate):
             t / "fixtures" / "compare.json",
             {"files": [{"filename": "packages/cli/src/commands/repo.ts"}]},
         )
-        # Identical world, cap raised: the warning must become a failure. If it
-        # does not, the cap value is not actually being read.
+        # Identical world, cap raised: the warning must become a failure. If it does not, the cap value is not actually being read.
         (t / "gate-cap9.sh").write_text(BOTH_PREFIXES, encoding="utf-8")
-        # THE POINT OF THE TIERS: identical review count, different verdict,
-        # purely because the diff is large enough to earn a bigger budget.
+        # THE POINT OF THE TIERS: identical review count, different verdict, purely because the diff is large enough to earn a bigger budget.
         pr_size(t, 60000, 10000)  # 70,000 lines -> top tier, cap 7
 
         run_status(
@@ -966,9 +930,7 @@ def test_below_cap_the_same_state_fails(gate):
         gate.log_pass("same state with the cap raised => FAILURE (the parsed cap is load-bearing)")
 
 
-# ---------------------------------------------------------------------------
-# SHA-awareness -- the property `Review Gate` structurally cannot have
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- SHA-awareness -- the property `Review Gate` structurally cannot have ---------------------------------------------------------------------------
 
 
 def test_anchors_to_current_head_not_event_sha(gate):
@@ -1026,9 +988,7 @@ def test_existing_check_run_is_patched(gate):
         gate.log_pass("existing check-run => PATCH without head_sha (no per-comment duplicates)")
 
 
-# ---------------------------------------------------------------------------
-# ACYCLICITY -- the invariant that keeps this out of CI's dependency graph.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ACYCLICITY -- the invariant that keeps this out of CI's dependency graph. ---------------------------------------------------------------------------
 
 PLANTED_DEPENDENCY = "jobs:\n  bad:\n    if: needs.review.outputs.context == 'Review Complete'\n"
 
@@ -1071,9 +1031,7 @@ def review_complete_hits(root) -> list[str]:
 
 def test_no_ci_job_references_review_complete(gate):
     with harness.temp_dir() as t:
-        # CONTROL A, planted first: a genuine dependency on the context (a
-        # `needs` or `if` style reference, anywhere other than the two documented
-        # exceptions below) must still be caught.
+        # CONTROL A, planted first: a genuine dependency on the context (a `needs` or `if` style reference, anywhere other than the two documented exceptions below) must still be caught.
         planted_a = t / "A"
         planted_a.mkdir()
         (planted_a / "planted.yml").write_text(PLANTED_DEPENDENCY, encoding="utf-8")
@@ -1083,10 +1041,7 @@ def test_no_ci_job_references_review_complete(gate):
                 "caught by the narrowed grep below"
             )
 
-        # CONTROL B, review finding 2026-08-01 (PR #550): an EXECUTABLE line
-        # inside a file NAMED watchdog-monitor.yml must still be caught by the
-        # exact production filter chain -- the comment-line exemption below must
-        # not widen into "the whole file is exempt".
+        # CONTROL B, review finding 2026-08-01 (PR #550): an EXECUTABLE line inside a file NAMED watchdog-monitor.yml must still be caught by the exact production filter chain -- the comment-line exemption below must not widen into "the whole file is exempt".
         wf = t / "wf"
         wf.mkdir()
         (wf / "watchdog-monitor.yml").write_text(PLANTED_DEPENDENCY, encoding="utf-8")
@@ -1096,30 +1051,14 @@ def test_no_ci_job_references_review_complete(gate):
                 "was swallowed by the comment-line exemption"
             )
 
-    # The real assertion. TWO narrow, documented exceptions, both scoped to
-    # watchdog-monitor.yml specifically:
-    #   1. The WATCHDOG_EXCLUDE_PATTERNS line, which EXCLUDES 'Review Complete'
+    # The real assertion. TWO narrow, documented exceptions, both scoped to watchdog-monitor.yml specifically: 1. The WATCHDOG_EXCLUDE_PATTERNS line, which EXCLUDES 'Review Complete'
     #      from the watchdog's failure scan -- the opposite of a dependency.
-    #      Verified live 2026-07-31 (run 30660765759, raw
+    # Verified live 2026-07-31 (run 30660765759, raw
     #      `GET .../actions/runs/{id}/jobs`): the check-run this script posts is
-    #      genuinely attributed to the SAME run_id as an unrelated Console CI run
-    #      (both ride the github-actions app's shared check_suite for that head
-    #      SHA), so the watchdog's per-run job listing sees it and MUST be told
-    #      to ignore it, or a not-yet-re-reviewed head deadlocks the very run
-    #      that would re-review it.
-    #   2. Comment lines (matched by content, `# ...`, never by wording) in that
-    #      same file explaining the exclusion above. Review finding 2026-08-01
-    #      (PR #550): the first version of this gate exempted exactly ONE line by
-    #      content match, and the explanatory comment one line above it survived
-    #      only by ACCIDENT -- it happens to also contain the substring
-    #      "review-status.yml", which the OLDER, unrelated exemption above (meant
+    # genuinely attributed to the SAME run_id as an unrelated Console CI run (both ride the github-actions app's shared check_suite for that head SHA), so the watchdog's per-run job listing sees it and MUST be told to ignore it, or a not-yet-re-reviewed head deadlocks the very run that would re-review it. 2. Comment lines (matched by content, `# ...`, never by wording) in that same
+    # file explaining the exclusion above. Review finding 2026-08-01 (PR #550): the first version of this gate exempted exactly ONE line by content match, and the explanatory comment one line above it survived only by ACCIDENT -- it happens to also contain the substring "review-status.yml", which the OLDER, unrelated exemption above (meant
     #      for review-status.yml's own self-references) also matches. A comment
-    #      reword that keeps the same meaning but drops that one substring would
-    #      have flipped this gate red for no functional reason, and CONTROL A
-    #      alone could not catch it (it only plants a synthetic executable
-    #      reference, never a comment). Comments cannot create a real
-    #      `needs`/`if` coupling in GitHub Actions' dependency graph, so
-    #      exempting them by shape is sound, not just convenient.
+    # reword that keeps the same meaning but drops that one substring would have flipped this gate red for no functional reason, and CONTROL A alone could not catch it (it only plants a synthetic executable reference, never a comment). Comments cannot create a real `needs`/`if` coupling in GitHub Actions' dependency graph, so exempting them by shape is sound, not just convenient.
     # Neither exception applies outside watchdog-monitor.yml.
     hits = review_complete_hits(WORKFLOWS)
     if hits:
@@ -1140,9 +1079,7 @@ def test_no_ci_job_references_review_complete(gate):
 def test_workflow_does_not_trigger_on_pull_request(gate):
     text = REVIEW_STATUS_YML.read_text(encoding="utf-8")
     lines = text.splitlines()
-    # `pull_request` would run the PR's OWN copy of this workflow, letting a PR
-    # edit the logic that judges it. All four real triggers run the default
-    # branch copy.
+    # `pull_request` would run the PR's OWN copy of this workflow, letting a PR edit the logic that judges it. All four real triggers run the default branch copy.
     if any(line.rstrip() == "  pull_request:" for line in lines):
         gate.log_fail(
             "review-status.yml triggers on pull_request; a PR could then edit its own judge"
@@ -1160,11 +1097,7 @@ def test_workflow_does_not_trigger_on_pull_request(gate):
     gate.log_pass("workflow keeps its four default-branch triggers and never uses pull_request")
 
 
-# ---------------------------------------------------------------------------
-# workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when
-# Claude Review was itself invoked via workflow_dispatch (its head_sha is the
-# dispatch ref, e.g. main, never the PR head -- documented GitHub Actions
-# behavior). See agent/PLAN-github-actions-workflow-run-trigger-fix.md.
+# --------------------------------------------------------------------------- workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when Claude Review was itself invoked via workflow_dispatch (its head_sha is the dispatch ref, e.g. main, never the PR head -- documented GitHub Actions behavior). See agent/PLAN-github-actions-workflow-run-trigger-fix.md.
 # ---------------------------------------------------------------------------
 
 
@@ -1197,22 +1130,16 @@ def test_workflow_dispatch_resolves_pr_directly(gate):
 #
 # It was `test_workflow_run_with_unassociated_sha_reports_nothing`, and it drove
 # EVENT_NAME=workflow_run with main's SHA expecting silent success -- codifying
-# the exact no-op that left the REQUIRED `Review Complete` check unposted on
-# every PR. Its log line even argued the lookup could not be fixed and a separate
-# dispatch path was the answer. Measured 2026-08-06: that arm had never resolved
-# a PR in production, so the suite was green on a path that never worked.
+# the exact no-op that left the REQUIRED `Review Complete` check unposted on every PR. Its log line even argued the lookup could not be fixed and a separate dispatch path was the answer. Measured 2026-08-06: that arm had never resolved a PR in production, so the suite was green on a path that never worked.
 #
-# The three cases below replace it, and they split the case the old one
-# conflated: no artifact (a push to main, legitimately PR-less) must stay silent,
+# The three cases below replace it, and they split the case the old one conflated: no artifact (a push to main, legitimately PR-less) must stay silent,
 # while an artifact that exists and cannot be honoured must be LOUD.
 
 
 def test_workflow_run_without_artifact_is_silent(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # No review-target artifact: the triggering run had no PR. This is the
-        # main-push case and silence is correct -- reddening it would redden
-        # every push to main.
+        # No review-target artifact: the triggering run had no PR. This is the main-push case and silence is correct -- reddening it would redden every push to main.
         write_json(t / "fixtures" / "run-artifacts.json", {"artifacts": []})
         run = run_status(
             gate,
@@ -1306,11 +1233,7 @@ def test_workflow_dispatch_requires_pr_number(gate):
         gate.log_pass("PLANTED missing PR_NUMBER on workflow_dispatch => hard exit")
 
 
-# ---------------------------------------------------------------------------
-# F2 -- a hygiene-only failure (head genuinely reviewed, a hygiene script
-# failed) must read differently in the check-run TITLE than a never-reviewed
-# head, so the checks list communicates the right next action on its own.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- F2 -- a hygiene-only failure (head genuinely reviewed, a hygiene script failed) must read differently in the check-run TITLE than a never-reviewed head, so the checks list communicates the right next action on its own. ---------------------------------------------------------------------------
 
 
 def test_hygiene_only_failure_title_says_reviewed(gate):
@@ -1351,25 +1274,18 @@ def test_unreviewed_head_title_unchanged(gate):
 # ===========================================================================
 # check-review-comments.sh -- the TOP-LEVEL review summary.
 #
-# The cases above stub the three hygiene scripts, so nothing there had ever
-# driven the real one. That mattered: until 2026-08-05 check-review-comments.sh
+# The cases above stub the three hygiene scripts, so nothing there had ever driven the real one. That mattered: until 2026-08-05 check-review-comments.sh
 # read ONLY repos/{REPO}/pulls/{PR}/comments (the inline review threads), and the
 # review's actual verdict is posted as a TOP-LEVEL comment on
 # repos/{REPO}/issues/{PR}/comments. So the reviewer could post a full verdict
 # with findings, nobody answer it, and this gate report the PR clean.
 #
-# Live proof, PR #551: issue comment 5189236393, github-actions[bot], 8141
-# chars, opening "## Review verdict: approve with one correctness finding to
-# fix", sat unanswered while the Review Gate went green.
+# Live proof, PR #551: issue comment 5189236393, github-actions[bot], 8141 chars, opening "## Review verdict: approve with one correctness finding to fix", sat unanswered while the Review Gate went green.
 #
-# These cases drive the REAL script (no stub) against a routing fake `gh`,
-# separate from the one above so the review-status fixtures stay untouched --
-# the review-status fake maps `*/pulls/*` to the PR object, which is the wrong
-# body for the inline-comments endpoint.
+# These cases drive the REAL script (no stub) against a routing fake `gh`, separate from the one above so the review-status fixtures stay untouched -- the review-status fake maps `*/pulls/*` to the PR object, which is the wrong body for the inline-comments endpoint.
 # ===========================================================================
 
-# The fence delimiter is assembled from a variable rather than written inline:
-# three literal backticks inside a string are a parsing hazard for no benefit.
+# The fence delimiter is assembled from a variable rather than written inline: three literal backticks inside a string are a parsing hazard for no benefit.
 TICKS = "```"
 
 SUMMARY_BODY = "\n".join(
@@ -1427,16 +1343,13 @@ def setup_comments(gate, t) -> None:
     require_jq(gate)
     (t / "fixtures").mkdir(parents=True, exist_ok=True)
     write_fake_gh_comments(t)
-    # No inline threads by default: the top-level path must work on its own, and
-    # it used to be unreachable because an empty inline list exited 0 early.
+    # No inline threads by default: the top-level path must work on its own, and it used to be unreachable because an empty inline list exited 0 early.
     write_json(t / "fixtures" / "inline-comments.json", [])
     write_json(t / "fixtures" / "issue-comments.json", [])
 
 
 def run_comments_gate(gate, t, **env) -> Run:
-    # The CALL is the assertion, not the value: it proves bash exists and that
-    # the three bash subjects are on disk. The gate below is invoked by its own
-    # shebang, so nothing here needs the interpreter path any more.
+    # The CALL is the assertion, not the value: it proves bash exists and that the three bash subjects are on disk. The gate below is invoked by its own shebang, so nothing here needs the interpreter path any more.
     require_bash(gate)
     base = {
         "PATH": "%s%s%s" % (t / "bin", os.pathsep, os.environ.get("PATH", "")),
@@ -1447,16 +1360,12 @@ def run_comments_gate(gate, t, **env) -> Run:
         "NO_COLOR": "1",
     }
     base.update(env)
-    # NO `bash` PREFIX: the entry point is a `.py` with its own shebang, and
-    # bash handed a Python file reports a syntax error rather than a verdict.
+    # NO `bash` PREFIX: the entry point is a `.py` with its own shebang, and bash handed a Python file reports a syntax error rather than a verdict.
     result = harness.run([os.fspath(REVIEW_COMMENTS_GATE)], env=base)
     return Run(result.combined, result.rc)
 
 
-# ANTI-VACUITY. The gate recognises the summary by the fence the review pipeline
-# emits. If that key is ever renamed in the pipeline and not here, the gate goes
-# permanently blind while still reporting "OK" -- the original defect, regrown.
-# Assert the key still exists in BOTH producers.
+# ANTI-VACUITY. The gate recognises the summary by the fence the review pipeline emits. If that key is ever renamed in the pipeline and not here, the gate goes permanently blind while still reporting "OK" -- the original defect, regrown. Assert the key still exists in BOTH producers.
 
 
 def test_findings_fence_key_is_shared_with_the_pipeline(gate):
@@ -1489,8 +1398,7 @@ def test_unreplied_summary_blocks(gate):
         gate.assert_exit_code(1, run.rc, "an unanswered top-level review verdict must BLOCK")
         gate.assert_contains(run.out, "UNANSWERED REVIEW SUMMARY", "the block names the class")
         gate.assert_contains(run.out, "issuecomment-900", "and links the exact comment")
-        # Autofix guidance is part of the contract, not decoration: a future
-        # agent must be able to act from this output with no rediscovery.
+        # Autofix guidance is part of the contract, not decoration: a future agent must be able to act from this output with no rediscovery.
         gate.assert_contains(
             run.out,
             "gh api repos/rediacc/console/issues/42/comments -X POST",
@@ -1527,8 +1435,7 @@ def test_ordinary_chatter_is_ignored(gate):
     with harness.temp_dir() as t:
         setup_comments(gate, t)
         # CONTROL: issues/{PR}/comments carries every kind of PR chatter. None of
-        # it is a review verdict, so none of it may block. A gate that blocked
-        # here would be suppressed within a day.
+        # it is a review verdict, so none of it may block. A gate that blocked here would be suppressed within a day.
         comments_fixture(
             t,
             chatter_comment(
@@ -1567,12 +1474,7 @@ def test_ordinary_chatter_is_ignored(gate):
 def test_second_bot_comment_is_not_a_reply(gate):
     with harness.temp_dir() as t:
         setup_comments(gate, t)
-        # THE TRAP. The pipeline posts several comments in a row under one
-        # identity: on #551 the marker comment landed 14 SECONDS after the
-        # summary, and the "**Claude finished" wrapper 10 seconds after it. Both
-        # are long enough to clear every substance test. If author were ignored,
-        # the review would "answer" itself on every PR and this gate could never
-        # fire once.
+        # THE TRAP. The pipeline posts several comments in a row under one identity: on #551 the marker comment landed 14 SECONDS after the summary, and the "**Claude finished" wrapper 10 seconds after it. Both are long enough to clear every substance test. If author were ignored, the review would "answer" itself on every PR and this gate could never fire once.
         comments_fixture(
             t,
             summary_comment(900, "2026-08-05T08:06:53Z"),
@@ -1623,9 +1525,7 @@ def test_low_effort_answer_does_not_clear_the_summary(gate):
         gate.assert_exit_code(
             1, run.rc, "a stock acknowledgement does not address a multi-finding verdict"
         )
-        # NAME THE FINDING. This gate exits 1 for an unreadable API, a missing
-        # token and a failed probe as well, so a bare code cannot tell "it
-        # blocked on the unanswered summary" from "it could not look".
+        # NAME THE FINDING. This gate exits 1 for an unreadable API, a missing token and a failed probe as well, so a bare code cannot tell "it blocked on the unanswered summary" from "it could not look".
         gate.assert_contains(
             run.out,
             "UNANSWERED REVIEW SUMMARY",
@@ -1639,8 +1539,7 @@ def test_summary_check_survives_an_empty_inline_list(gate):
         setup_comments(gate, t)
         # REGRESSION GUARD for the shape of the original defect. The gate used to
         # `exit 0` the moment pulls/{PR}/comments came back empty, which is the
-        # commonest case: most reviews post a verdict and no inline comment at
-        # all. The summary check must run regardless.
+        # commonest case: most reviews post a verdict and no inline comment at all. The summary check must run regardless.
         write_json(t / "fixtures" / "inline-comments.json", [])
         comments_fixture(t, summary_comment(900, "2026-08-05T08:06:53Z"))
         run = run_comments_gate(gate, t)
@@ -1661,9 +1560,7 @@ def test_summary_check_survives_an_empty_inline_list(gate):
 def test_inline_thread_behaviour_is_unchanged(gate):
     with harness.temp_dir() as t:
         setup_comments(gate, t)
-        # The inline path is correct today and must stay bit-for-bit correct.
-        # Both directions in one case: comment 10 has a substantive reply,
-        # comment 20 has none. Only 20 may be reported.
+        # The inline path is correct today and must stay bit-for-bit correct. Both directions in one case: comment 10 has a substantive reply, comment 20 has none. Only 20 may be reported.
         write_json(
             t / "fixtures" / "inline-comments.json",
             [
@@ -1731,18 +1628,13 @@ def test_unreadable_issue_comments_fail_closed(gate):
 # ===========================================================================
 # check-review-report-replies.sh -- the pipeline's REPORT WRAPPER.
 #
-# The second half of the same blind spot. That gate matched the report by its
-# "**Claude finished" header AND-ed with "carries the findings fence or a
+# The second half of the same blind spot. That gate matched the report by its "**Claude finished" header AND-ed with "carries the findings fence or a
 # '### Review' heading". The header is a producer constant; the second clause is
-# a guess about WORDING that no producer emits. On #551 the wrapper (5189238220)
-# carried neither marker, so the gate found no report and exited 0 vacuously
+# a guess about WORDING that no producer emits. On #551 the wrapper (5189238220) carried neither marker, so the gate found no report and exited 0 vacuously
 # while an 8141-char verdict sat unanswered -- it passed that PR silently for the
 # same reason check-review-comments.sh did.
 #
-# The two gates key off two DIFFERENT producer constants (the fence vs the
-# header) and own two DIFFERENT comments, so they are complementary. What makes
-# that coverage rather than a tax is that they share one reply rule, proven by
-# test_one_reply_clears_both_gates below.
+# The two gates key off two DIFFERENT producer constants (the fence vs the header) and own two DIFFERENT comments, so they are complementary. What makes that coverage rather than a tax is that they share one reply rule, proven by test_one_reply_clears_both_gates below.
 # ===========================================================================
 
 REPORT_BODY = "\n".join(
@@ -1817,9 +1709,7 @@ def run_report_gate(gate, t, *, head_ref: str = "", publish_root: str = "", **en
     "**Claude finished" fixture does not match a per-epic header. A test must not
     depend on the tree it is running in. Callers that want the fan-out set
     `head_ref` to a branch whose snapshot they planted."""
-    # The CALL is the assertion, not the value: it proves bash exists and that
-    # the three bash subjects are on disk. The gate below is invoked by its own
-    # shebang, so nothing here needs the interpreter path any more.
+    # The CALL is the assertion, not the value: it proves bash exists and that the three bash subjects are on disk. The gate below is invoked by its own shebang, so nothing here needs the interpreter path any more.
     require_bash(gate)
     base = {
         "PATH": "%s%s%s" % (t / "bin", os.pathsep, os.environ.get("PATH", "")),
@@ -1836,8 +1726,7 @@ def run_report_gate(gate, t, *, head_ref: str = "", publish_root: str = "", **en
     return Run(result.combined, result.rc)
 
 
-# ANTI-VACUITY, same shape as the fence test: the header must still be a constant
-# BOTH the producer and this consumer carry.
+# ANTI-VACUITY, same shape as the fence test: the header must still be a constant BOTH the producer and this consumer carry.
 
 
 def test_report_prefix_is_shared_with_the_pipeline(gate):
@@ -1873,9 +1762,7 @@ def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
             encoding="utf-8",
         )
         # aaa111's report is answered; bbb222's is not. Newest-overall would look
-        # at bbb222 alone and, if it were answered, excuse aaa111 silently. Here
-        # the UNANSWERED one is newest, so the assertion that matters is that the
-        # output names the per-epic accounting rather than a single global report.
+        # at bbb222 alone and, if it were answered, excuse aaa111 silently. Here the UNANSWERED one is newest, so the assertion that matters is that the output names the per-epic accounting rather than a single global report.
         comments_fixture(
             t,
             epic_report_comment(801, "aaa111", "2026-08-26T10:00:00Z"),
@@ -1938,9 +1825,7 @@ def test_report_answered_passes(gate):
 def test_report_bot_self_reply_does_not_count(gate):
     with harness.temp_dir() as t:
         setup_comments(gate, t)
-        # On #551 the reviewed-SHA marker landed 4 SECONDS after the report and
-        # is long enough to clear every substance test. Same identity, so it must
-        # not count -- otherwise the pipeline answers itself on every PR.
+        # On #551 the reviewed-SHA marker landed 4 SECONDS after the report and is long enough to clear every substance test. Same identity, so it must not count -- otherwise the pipeline answers itself on every PR.
         comments_fixture(
             t,
             report_comment(901, "2026-08-05T08:07:03Z"),
@@ -1999,25 +1884,15 @@ def test_report_unreadable_comments_fail_closed(gate):
         gate.log_pass("PLANTED unreadable issues/{PR}/comments => FAILS CLOSED (report gate)")
 
 
-# ---------------------------------------------------------------------------
-# THE GRAPHQL FALLBACK, and why it is tested at all.
+# --------------------------------------------------------------------------- THE GRAPHQL FALLBACK, and why it is tested at all.
 #
-# On 2026-08-17 a GitHub incident made repos/<r>/issues/<n>/comments fail most
-# calls. This gate then could not RUN, and a gate that cannot run does not judge
-# a merge -- it blocks every one of them, which is what happened to a live
-# submodule land. The fix reads the same thread over GraphQL when REST fails.
+# On 2026-08-17 a GitHub incident made repos/<r>/issues/<n>/comments fail most calls. This gate then could not RUN, and a gate that cannot run does not judge a merge -- it blocks every one of them, which is what happened to a live submodule land. The fix reads the same thread over GraphQL when REST fails.
 #
 # NOTE WHAT IS *NOT* BEING ASSERTED. The endpoint's failure had nothing to do
 # with the repo being private, though it looked exactly like that at the time:
-# sampled 8 calls per repo, the private one passed ONCE and the public 8/8, and a
-# single success rules an access-level cause out. So these cases inject a
-# TRANSPORT failure and say nothing about visibility -- pinning a public/private
-# distinction here would encode a diagnosis that measurement disproved.
+# sampled 8 calls per repo, the private one passed ONCE and the public 8/8, and a single success rules an access-level cause out. So these cases inject a TRANSPORT failure and say nothing about visibility -- pinning a public/private distinction here would encode a diagnosis that measurement disproved.
 #
-# The fallback must not become a softer verdict, so all three directions are
-# pinned: it recovers, it still DETECTS, and losing both instruments still fails
-# closed.
-# ---------------------------------------------------------------------------
+# The fallback must not become a softer verdict, so all three directions are pinned: it recovers, it still DETECTS, and losing both instruments still fails closed. ---------------------------------------------------------------------------
 
 
 def graphql_comments_fixture(t, *objects: dict) -> None:
@@ -2108,23 +1983,16 @@ def test_report_both_instruments_down_fails_closed(gate):
         gate.log_pass("PLANTED REST 404 + GraphQL unreadable => FAILS CLOSED")
 
 
-# ---------------------------------------------------------------------------
-# THE PROPERTY THAT MAKES TWO GATES DEFENSIBLE.
+# --------------------------------------------------------------------------- THE PROPERTY THAT MAKES TWO GATES DEFENSIBLE.
 #
-# One review pass leaves two top-level comments, and the two gates own one each.
-# That is only worth having if answering the pass ONCE clears both -- otherwise
-# the second gate is a tax on the operator and gets suppressed. Both scripts are
-# driven here against ONE fixture in the live #551 arrangement, in both
-# directions.
+# One review pass leaves two top-level comments, and the two gates own one each. That is only worth having if answering the pass ONCE clears both -- otherwise the second gate is a tax on the operator and gets suppressed. Both scripts are driven here against ONE fixture in the live #551 arrangement, in both directions.
 # ---------------------------------------------------------------------------
 
 
 def test_one_reply_clears_both_gates(gate):
     with harness.temp_dir() as t:
         setup_comments(gate, t)
-        # The #551 arrangement: reviewer's own summary (fence), then the
-        # pipeline's wrapper (header, no fence), then the marker -- all within 14
-        # seconds.
+        # The #551 arrangement: reviewer's own summary (fence), then the pipeline's wrapper (header, no fence), then the marker -- all within 14 seconds.
         unanswered = (
             summary_comment(900, "2026-08-05T08:06:53Z"),
             report_comment(901, "2026-08-05T08:07:03Z"),
@@ -2245,12 +2113,9 @@ def review_report_count_defs(root) -> list[str]:
 
 
 def test_review_report_count_is_shared_and_unqualified(gate):
-    # The numerator in "X/Y reviews used". Two failures are pinned here because
-    # both actually happened.
+    # The numerator in "X/Y reviews used". Two failures are pinned here because both actually happened.
     #
-    # ONE DEFINITION. It existed as identical copies in claude-review-gate.sh
-    # (which counts) and review-status.sh (which reports the fraction). Two
-    # copies of a numerator drift, and the denominator already lives in common.sh
+    # ONE DEFINITION. It existed as identical copies in claude-review-gate.sh (which counts) and review-status.sh (which reports the fraction). Two copies of a numerator drift, and the denominator already lives in common.sh
     # for exactly that reason.
     defs = review_report_count_defs(paths.from_root(".ci", "scripts"))
     if defs != [os.fspath(COMMON)]:
@@ -2259,11 +2124,7 @@ def test_review_report_count_is_shared_and_unqualified(gate):
             % (COMMON_REL, ", ".join(defs) or "<nowhere>")
         )
 
-    # NO CONTENT QUALIFIER. Both copies used to AND the header with
-    # (json:review-findings OR "### Review"), a guess about the report's wording
-    # that no producer emits. Measured live when it was removed: #551 counted 0
-    # of 1 -- a completed, marked review registering as never having happened, so
-    # the cap never advanced and every push re-reviewed at full price.
+    # NO CONTENT QUALIFIER. Both copies used to AND the header with (json:review-findings OR "### Review"), a guess about the report's wording that no producer emits. Measured live when it was removed: #551 counted 0 of 1 -- a completed, marked review registering as never having happened, so the cap never advanced and every push re-reviewed at full price.
     lines = COMMON.read_text(encoding="utf-8").splitlines()
     body_lines, inside = [], False
     for line in lines:
@@ -2276,10 +2137,7 @@ def test_review_report_count_is_shared_and_unqualified(gate):
     body = "".join(line + "\n" for line in body_lines)
     if not body:
         gate.log_fail("could not extract review_report_count() from common.sh")
-    # The per-epic review PARAMETERISES the header, so the constant no longer
-    # sits literally inside startswith(). What must still hold is that the key IS
-    # the producer constant: the base needle is the bare header, the epic form
-    # EXTENDS that same header with its id, and startswith() keys on that
+    # The per-epic review PARAMETERISES the header, so the constant no longer sits literally inside startswith(). What must still hold is that the key IS the producer constant: the base needle is the bare header, the epic form EXTENDS that same header with its id, and startswith() keys on that
     # variable and nothing else. Extending by DIMENSION is allowed here; ANDing a
     # guess about the body's prose is what the next check forbids.
     if 'needle="**Claude finished"' not in body:
@@ -2330,8 +2188,7 @@ def test_this_module_is_outside_the_review_report_count_sweep(gate):
             "able to; either scope the sweep back to .ci/scripts or render those fixtures "
             "through a template." % ", ".join(seen)
         )
-    # ANTI-VACUITY for the control itself: an empty result also happens when the
-    # sweep is pointed at a directory with no files in it at all.
+    # ANTI-VACUITY for the control itself: an empty result also happens when the sweep is pointed at a directory with no files in it at all.
     scanned = len([p for p in here.rglob("*") if p.is_file()])
     if scanned == 0:
         gate.log_fail(
@@ -2353,18 +2210,10 @@ def test_review_status_has_workflow_dispatch_with_pr_number(gate):
     gate.log_pass("review-status.yml declares workflow_dispatch with a pr_number input")
 
 
-# ---------------------------------------------------------------------------
-# THE ATTEMPT BUDGET (2026-08-09). A reportless review attempt used to be
-# terminal for its head: it charged a budget unit and its marker said "push a
-# change to earn another pass". On PR #560 that stalled a fully-green,
-# autopilot-driven PR behind a human, because there was no legitimate change to
-# push. An INFRA-CLASS death now gets bounded free re-attempts on the same head.
+# --------------------------------------------------------------------------- THE ATTEMPT BUDGET (2026-08-09). A reportless review attempt used to be terminal for its head: it charged a budget unit and its marker said "push a change to earn another pass". On PR #560 that stalled a fully-green, autopilot-driven PR behind a human, because there was no legitimate change to push. An
+# INFRA-CLASS death now gets bounded free re-attempts on the same head.
 #
-# These cases live in this file, rather than beside the --apply-labels tests,
-# because the attempt marker is the SHARED STATE between claude-review-gate.sh
-# and review-status.sh, and this file already owns the budget contract that both
-# of them read. Splitting it would recreate the #553 split-numerator problem in
-# the tests instead of in the code.
+# These cases live in this file, rather than beside the --apply-labels tests, because the attempt marker is the SHARED STATE between claude-review-gate.sh and review-status.sh, and this file already owns the budget contract that both of them read. Splitting it would recreate the #553 split-numerator problem in the tests instead of in the code.
 # ---------------------------------------------------------------------------
 
 
@@ -2433,8 +2282,7 @@ def test_attempt_accounting_helpers(gate):
         "error_during_execution is the same class of failure",
     )
 
-    # CONTROL: an unknown failure keeps the old rule exactly. "We do not know why
-    # it died" is the case where retrying forever is most expensive.
+    # CONTROL: an unknown failure keeps the old rule exactly. "We do not know why it died" is the case where retrying forever is most expensive.
     gate.assert_eq(
         chargeable(gate, "aaa\t1\treview step did not succeed"),
         "1",
@@ -2635,8 +2483,7 @@ def test_gate_refuses_an_exhausted_head(gate):
         )
         gate.assert_contains(run.out, "spent all 3 attempts", "and the log says why")
 
-        # CONTROL: one attempt fewer and the same head IS reviewed. This is the
-        # whole point of the change, so it is asserted rather than assumed.
+        # CONTROL: one attempt fewer and the same head IS reviewed. This is the whole point of the change, so it is asserted rather than assumed.
         setup(gate, t)
         write_json(
             t / "fixtures" / "comments.json",

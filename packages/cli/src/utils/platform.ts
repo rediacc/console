@@ -77,10 +77,7 @@ export function isUpdateDisabled(): boolean {
   // CI environments
   if (process.env.CI === 'true') return true;
 
-  // Dev / pre-release builds. A locally-built SEA is sitting somewhere like
-  // ~/.local/share/rediacc/bin/rdc. Auto-update would clobber it with the
-  // latest stable on every invocation, making local renet/CLI iteration
-  // impossible.
+  // Dev / pre-release builds. A locally-built SEA is sitting somewhere like ~/.local/share/rediacc/bin/rdc. Auto-update would clobber it with the latest stable on every invocation, making local renet/CLI iteration impossible.
   if (isDevBuild()) return true;
 
   // Binary in build/dist/node_modules path

@@ -37,20 +37,15 @@ ROOT = Path(__file__).resolve().parents[3]
 _LSFILES = re.compile(r"\bgit\b[^\n|;&]*\bls-(?:files|tree)\b([^\n|;&]*)")
 _QUOTED = re.compile(r"""(['"])(.+?)\1""")
 
-# Floors. Measured today: 15 call sites across 12 files. Set well below so real churn
-# does not trip them, and above zero so a collapsed enumeration cannot read as clean.
+# Floors. Measured today: 15 call sites across 12 files. Set well below so real churn does not trip them, and above zero so a collapsed enumeration cannot read as clean.
 MIN_FILES = 200
 MIN_CALL_SITES = 5
 
 
-# THIS FILE EXEMPTS ITSELF, and the exemption is narrow and stated rather than quiet.
-# The gate has to SPELL the broken pattern to explain it and to test for it, so its
-# docstring and its selftest fixtures are full of exactly what it refuses. Stripping
-# `#` comments is not enough, because a module docstring is a string and its lines do
-# not start with `#`. The precedent is check-toolchain-pins.sh, whose A1 strips comments
+# THIS FILE EXEMPTS ITSELF, and the exemption is narrow and stated rather than quiet. The gate has to SPELL the broken pattern to explain it and to test for it, so its docstring and its selftest fixtures are full of exactly what it refuses. Stripping `#` comments is not enough, because a module docstring is a string and its lines do not start with `#`. The precedent is
+# check-toolchain-pins.sh, whose A1 strips comments
 # for the same reason and says so: prose ABOUT a defect is not an instance of it.
-# What keeps this honest is that the selftest exercises the matcher on synthetic lines,
-# so a matcher broken into silence fails there even though the real scan skips this file.
+# What keeps this honest is that the selftest exercises the matcher on synthetic lines, so a matcher broken into silence fails there even though the real scan skips this file.
 SELF = "/".join(Path(__file__).resolve().parts[-4:])
 
 

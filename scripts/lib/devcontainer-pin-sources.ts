@@ -105,18 +105,12 @@ export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = [
       arm64: { arg: 'BWS_SHA256_ARM64', asset: (v) => `bws-aarch64-unknown-linux-gnu-${v}.zip` },
     },
   },
-  // The Go tools below carry NO hashArgs, and that is the documented "a pin with
-  // no hashes simply omits it" case rather than an oversight: `go install`
-  // verifies every module against the Go checksum database, which is a stronger
-  // guarantee than a sha256 we recorded ourselves. .ci/scripts/lib/toolchain.sh
-  // makes the identical argument for shfmt.
+  // The Go tools below carry NO hashArgs, and that is the documented "a pin with no hashes simply omits it" case rather than an oversight: `go install` verifies every module against the Go checksum database, which is a stronger guarantee than a sha256 we recorded ourselves. .ci/scripts/lib/toolchain.sh makes the identical argument for shfmt.
   {
     base: 'gopls',
     display: 'gopls (Go language server)',
     repo: 'golang/tools',
-    // NOT "v". Every release in this repo is a gopls one, and its tag is
-    // `gopls/v0.23.0` -- the module version with a directory prefix. Stripping
-    // exactly this prefix is what yields the value the Dockerfile ARG holds.
+    // NOT "v". Every release in this repo is a gopls one, and its tag is `gopls/v0.23.0` -- the module version with a directory prefix. Stripping exactly this prefix is what yields the value the Dockerfile ARG holds.
     tagPrefix: 'gopls/v',
   },
   {
@@ -126,9 +120,7 @@ export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = [
     tagPrefix: 'v',
   },
   {
-    // GOLANGCILINT_VERSION, no underscore: parseDockerfileVersions' base is
-    // /[A-Z0-9]+/, so a GOLANGCI_LINT_VERSION ARG would not be parsed and this
-    // entry would match nothing. See the note in .devcontainer/Dockerfile.
+    // GOLANGCILINT_VERSION, no underscore: parseDockerfileVersions' base is /[A-Z0-9]+/, so a GOLANGCI_LINT_VERSION ARG would not be parsed and this entry would match nothing. See the note in .devcontainer/Dockerfile.
     base: 'golangcilint',
     display: 'golangci-lint',
     repo: 'golangci/golangci-lint',

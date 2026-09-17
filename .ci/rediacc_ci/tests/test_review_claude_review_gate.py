@@ -458,9 +458,7 @@ GATE_WR = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Controls. Without these the whole file could be green while proving nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls. Without these the whole file could be green while proving nothing. ---------------------------------------------------------------------------
 
 
 def test_both_implementations_exist_where_this_file_says_they_do() -> None:
@@ -521,9 +519,7 @@ def test_same_repo_is_enforced_by_the_workflow_not_by_either_implementation() ->
     assert "github.event.pull_request.head.repo.full_name == github.repository" in text
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, driven against the programs they replace.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, driven against the programs they replace. ---------------------------------------------------------------------------
 
 
 def _bash_sed_replacement(text: str) -> str:
@@ -663,9 +659,7 @@ def test_arith_or_die_reproduces_the_shells_unbound_variable() -> None:
     assert caught.value.code == 1
 
 
-# ---------------------------------------------------------------------------
-# GATE MODE: the go/no-go matrix.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- GATE MODE: the go/no-go matrix. ---------------------------------------------------------------------------
 
 
 def test_a_workflow_run_that_was_not_a_pr_run_is_refused() -> None:
@@ -932,9 +926,7 @@ def test_the_turn_budget_scales_continuously_with_the_diff(additions: int, turns
     assert side.outputs()["review_turns"] == turns
 
 
-# ---------------------------------------------------------------------------
-# GATE MODE: the three defects, reproduced rather than repaired.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- GATE MODE: the three defects, reproduced rather than repaired. ---------------------------------------------------------------------------
 
 
 def test_defect1_a_failed_marker_read_re_reviews_an_already_reviewed_head() -> None:
@@ -1057,9 +1049,7 @@ def test_a_failed_budget_read_stops_the_gate_instead_of_reviewing() -> None:
     assert side.output == b""
 
 
-# ---------------------------------------------------------------------------
-# --post-report
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --post-report ---------------------------------------------------------------------------
 
 
 POST_ENV = {"PR_NUMBER": "42", "HEAD_SHA": NEW_SHA}
@@ -1129,9 +1119,7 @@ def test_post_report_requires_its_two_variables() -> None:
     assert b"Required environment variable 'PR_NUMBER' is not set" in side.stderr
 
 
-# ---------------------------------------------------------------------------
-# --post-findings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --post-findings ---------------------------------------------------------------------------
 
 
 def test_post_findings_with_no_fence_skips_quietly() -> None:
@@ -1306,9 +1294,7 @@ def test_post_findings_degrades_to_a_skip_when_the_read_fails() -> None:
     assert b"no parseable review-findings block" in side.stderr
 
 
-# ---------------------------------------------------------------------------
-# --apply-labels
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --apply-labels ---------------------------------------------------------------------------
 
 
 def test_apply_labels_puts_the_mechanical_docs_floor_on_a_docs_only_diff() -> None:
@@ -1482,9 +1468,7 @@ def test_apply_labels_skips_the_floor_when_the_file_list_cannot_be_read() -> Non
     assert side.exit == 0
 
 
-# ---------------------------------------------------------------------------
-# --mark
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --mark ---------------------------------------------------------------------------
 
 
 def test_mark_records_a_spent_attempt_when_the_review_did_not_succeed() -> None:
@@ -1657,9 +1641,7 @@ def test_mark_appends_the_cost_line_from_the_execution_file() -> None:
         "mark-cost", {**POST_ENV, "REVIEW_OUTCOME": "success"}, args=["--mark"], build=build
     )
     assert b"Cost: $4.6612" in side.capture
-    # EVERY model, ordered by output-token share: `keys | first` reported one
-    # model chosen by arbitrary key order and read as "the --model flag was
-    # ignored" (issue #539).
+    # EVERY model, ordered by output-token share: `keys | first` reported one model chosen by arbitrary key order and read as "the --model flag was ignored" (issue #539).
     assert b"claude-sonnet 500out, claude-haiku 5out" in side.capture
     assert b"37 turns" in side.capture
     assert b"12m34s" in side.capture
@@ -1671,19 +1653,12 @@ def test_mark_requires_its_two_variables() -> None:
     assert b"Required environment variable 'HEAD_SHA' is not set" in side.stderr
 
 
-# ---------------------------------------------------------------------------
-# Tool preconditions.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Tool preconditions. ---------------------------------------------------------------------------
 
 
-# Everything the twin reaches for BEFORE `require_cmd gh`, plus everything either
-# side needs after it. A PATH holding only `jq` makes the twin die in its
-# `SCRIPT_DIR` line on a missing `dirname`, which looks like a gh finding and is
-# not: the control has to fail for the reason it names.
+# Everything the twin reaches for BEFORE `require_cmd gh`, plus everything either side needs after it. A PATH holding only `jq` makes the twin die in its `SCRIPT_DIR` line on a missing `dirname`, which looks like a gh finding and is not: the control has to fail for the reason it names.
 TOOLS_MINUS_GH = (
-    # `uname` is reached by common.sh:64 and :100 AT SOURCE TIME, before a single
-    # line of the gate runs, and its absence prints two `command not found`
-    # lines the port has no counterpart for (`core.common` asks `platform`).
+    # `uname` is reached by common.sh:64 and :100 AT SOURCE TIME, before a single line of the gate runs, and its absence prints two `command not found` lines the port has no counterpart for (`core.common` asks `platform`).
     "uname",
     "dirname",
     "jq",

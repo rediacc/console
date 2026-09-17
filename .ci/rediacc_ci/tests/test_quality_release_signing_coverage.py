@@ -37,8 +37,7 @@ _FORMATS_PIPELINE = (
 )
 
 # The `guarded_in` awk program, verbatim. `-v fmt=` is how the twin passes the
-# format name, so the quoting question the port has to get right is exercised
-# here rather than assumed.
+# format name, so the quoting question the port has to get right is exercised here rather than assumed.
 _GUARDED_AWK = r"""awk -v fmt="%s" '
         /^[[:space:]]*[a-z][a-z |]*\)[[:space:]]*$/ {
             arm = $0
@@ -162,9 +161,7 @@ def test_the_guard_table_exercises_both_directions() -> None:
     assert answers == {"yes", "no"}, "the guard table must contain both verdicts"
 
 
-# `gate_check` and `gate_finish`, sourced from the real library rather than
-# transcribed, because the strings ARE the output contract the shadow comparator
-# classifies on.
+# `gate_check` and `gate_finish`, sourced from the real library rather than transcribed, because the strings ARE the output contract the shadow comparator classifies on.
 _TALLY_SCRIPT = """
 source .ci/scripts/lib/gate-controls.sh
 gate_check "first" "a" "a"

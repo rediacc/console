@@ -65,10 +65,7 @@ export class RepositoryMethods {
     datastorePath?: string,
     networkId?: string
   ): Promise<ExecResult> {
-    // networkId matters for FORK mounts: without it the harness's default
-    // network-id (the parent's) rides along and the fork's docker daemon
-    // starts on the PARENT's network — which wedges the parent's daemon
-    // (13b test 7's parent counter read 0 exactly this way).
+    // networkId matters for FORK mounts: without it the harness's default network-id (the parent's) rides along and the fork's docker daemon starts on the PARENT's network — which wedges the parent's daemon (13b test 7's parent counter read 0 exactly this way).
     return this.testFunction({
       function: 'repository_mount',
       repository: name,
@@ -173,8 +170,7 @@ export class RepositoryMethods {
     });
   }
 
-  // Runtime-generic verbs (spec 01 §4.3 / 03 §5.4): the same function dispatches
-  // to the docker per-repo dockerd or the kube namespace based on the repo's
+  // Runtime-generic verbs (spec 01 §4.3 / 03 §5.4): the same function dispatches to the docker per-repo dockerd or the kube namespace based on the repo's
   // datastore placement. Exercised on docker repos here; the kube arm rides the
   // cluster suite live-run.
 
@@ -213,8 +209,7 @@ export class RepositoryMethods {
     });
   }
 
-  // repository_promote (formerly repository_takeover): swap a fork's LUKS image
-  // over its grand so the fork's data becomes the grand's (spec 06 §2).
+  // repository_promote (formerly repository_takeover): swap a fork's LUKS image over its grand so the fork's data becomes the grand's (spec 06 §2).
   async repositoryPromote(
     parent: string,
     fork: string,
@@ -228,8 +223,7 @@ export class RepositoryMethods {
     });
   }
 
-  // repository_policy_set / _get / repository_trim (renet#76): size policy the
-  // storage-maintain timer consumes + on-demand pool reclaim. `name` is a repo
+  // repository_policy_set / _get / repository_trim (renet#76): size policy the storage-maintain timer consumes + on-demand pool reclaim. `name` is a repo
   // GUID; omitting it addresses the machine-wide default (policy) / all mounted
   // repos (trim). The renet command emits --output json.
   async repositoryPolicySet(opts: RepositoryPolicySetOptions = {}): Promise<ExecResult> {

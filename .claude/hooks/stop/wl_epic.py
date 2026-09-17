@@ -114,8 +114,7 @@ def load_epics():
         prev = out.get(eid) or {}
         merged = dict(prev)
         merged.update({k: v for k, v in rec.items() if v is not None})
-        # covers ACCUMULATE across records: `--epic add` is additive, so a later
-        # line naming one more item must not drop the ones named before it.
+        # covers ACCUMULATE across records: `--epic add` is additive, so a later line naming one more item must not drop the ones named before it.
         merged["covers"] = sorted(set(prev.get("covers") or []) | set(rec.get("covers") or []))
         out[eid] = merged
     ordered = sorted(
@@ -184,8 +183,7 @@ def render(fold, heading="###"):
                 "- [%s] `#%s` %s" % (r.get("state", " "), iid, neutralize(S.brief_text(r, cap=200)))
             )
         lines.append("")
-    # An item in no epic is REPORTED, never hidden: silence here would be
-    # indistinguishable from having no such work.
+    # An item in no epic is REPORTED, never hidden: silence here would be indistinguishable from having no such work.
     orphans = [r for r in fold.items if r["id"] not in claimed and r.get("state") != "x"]
     if orphans:
         lines.append("%s Not in any epic" % heading)

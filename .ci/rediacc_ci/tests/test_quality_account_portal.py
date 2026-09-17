@@ -28,10 +28,7 @@ import pytest
 from rediacc_ci.quality import account_portal as ap
 from rediacc_ci.tests import differential as diff
 
-# A stub pair that RECORDS every invocation instead of just exiting. The gate is
-# a sequence of process launches, so the sequence is the artifact worth
-# capturing: one line per launch, holding the working directory and the whole
-# argv.
+# A stub pair that RECORDS every invocation instead of just exiting. The gate is a sequence of process launches, so the sequence is the artifact worth capturing: one line per launch, holding the working directory and the whole argv.
 _RECORDING_STUB = """#!/usr/bin/env bash
 { printf '%s' "$(basename "$0")"; printf ' %s' "$@"; printf '\\t%s\\n' "$PWD"; } >> "$TRACE"
 case "$1 $2 $3" in
@@ -145,10 +142,7 @@ def test_an_absent_node_modules_adds_the_install_first(tmp_path: pathlib.Path) -
     assert len(rows) == 7
 
 
-# Each row is (the environment variable that fails a phase, how many commands
-# should have run before the gate gave up). The count is the interesting half:
-# it is what proves the gate STOPS rather than carrying on into a build whose
-# inputs did not typecheck.
+# Each row is (the environment variable that fails a phase, how many commands should have run before the gate gave up). The count is the interesting half: it is what proves the gate STOPS rather than carrying on into a build whose inputs did not typecheck.
 STOP_CASES = [
     ("STUB_FE_RC", 1),  # phase 2 fails: nothing after it runs
     ("STUB_BE_RC", 2),  # phase 3
@@ -197,9 +191,7 @@ def test_phase_seven_refuses_a_build_that_produced_nothing(tmp_path: pathlib.Pat
     assert empty.stat().st_size == 0
 
 
-# ---------------------------------------------------------------------------
-# The exit-status conventions, against bash
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exit-status conventions, against bash ---------------------------------------------------------------------------
 
 
 def test_missing_binary_and_missing_cwd_get_bash_s_own_codes(tmp_path: pathlib.Path) -> None:
@@ -222,8 +214,7 @@ def test_missing_binary_and_missing_cwd_get_bash_s_own_codes(tmp_path: pathlib.P
     assert out.strip().split("\n")[-1] == "1"
     assert ap.run(["true"], tmp_path / "nope" / "deeper") == 1
 
-    # A cwd that exists but is a FILE. Bash says 1 as well, through a different
-    # errno, and the port must not report it as a missing binary.
+    # A cwd that exists but is a FILE. Bash says 1 as well, through a different errno, and the port must not report it as a missing binary.
     afile = tmp_path / "afile"
     afile.write_text("x", encoding="utf-8")
     code, out, err = diff.bash_streams('cd "%s"; echo $?' % afile, cwd=str(tmp_path))

@@ -65,9 +65,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-swallowed-failures.sh"
 
-# test_silent_on_the_fixed_go_deps_probe, test_real_tree_is_clean,
-# test_the_repaired_sites_stay_repaired and the added inertness control all read
-# the real tree. See the docstring.
+# test_silent_on_the_fixed_go_deps_probe, test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-swallowed-failures.sh"
@@ -91,10 +89,7 @@ OUT_OF_SCOPE = ".ci/scripts/deploy"
 #
 # AFTER A CUTOVER A ROW MUST NAME THE MODULE, NOT THE ENTRY POINT. The
 # registered `.py` for the OTLP gate is a three-line shim that imports the port;
-# the behaviour this row asserts lives in the module. Repointing it at the entry
-# point (the obvious move, and the one recommended when the cutover landed) made
-# the row grep a shim and fail with "lost its fix" against a fix that was never
-# there.
+# the behaviour this row asserts lives in the module. Repointing it at the entry point (the obvious move, and the one recommended when the cutover landed) made the row grep a shim and fail with "lost its fix" against a fix that was never there.
 REPAIRS = (
     (
         ".ci/scripts/quality/check-review-comments.sh",
@@ -190,9 +185,7 @@ def run_gate(gate, root, dirs: str = SCAN_REL) -> harness.RunResult:
     )
 
 
-# ---------------------------------------------------------------------------
-# The two historical cases. These are the reason the file exists.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two historical cases. These are the reason the file exists. ---------------------------------------------------------------------------
 
 
 def test_fires_on_the_prefix_go_deps_probe(gate):
@@ -250,9 +243,7 @@ def test_silent_on_the_fixed_go_deps_probe(gate):
     gate.assert_not_contains(
         result.combined, "$seen", "the fixed probe's emptiness guard must not be flagged"
     )
-    # Anti-vacuity for this case: the two assertions above are absences, and an
-    # absence is also what a deleted file produces. Confirm the remediated probe
-    # is still there to be silent about.
+    # Anti-vacuity for this case: the two assertions above are absences, and an absence is also what a deleted file produces. Confirm the remediated probe is still there to be silent about.
     if not GO_DEPS.is_file():
         gate.log_fail(
             "%s is gone; the fix this case asserts silence about cannot be found" % GO_DEPS_REL
@@ -266,9 +257,7 @@ def test_silent_on_the_fixed_go_deps_probe(gate):
     gate.log_pass("stays silent on the remediated check-go-deps probe (real file, not a copy)")
 
 
-# ---------------------------------------------------------------------------
-# The trigger, one shape at a time.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The trigger, one shape at a time. ---------------------------------------------------------------------------
 
 
 def test_clean_file_passes(gate):
@@ -376,9 +365,7 @@ def test_multiline_continuation_is_joined(gate):
         gate.log_pass("backslash continuations are folded before matching")
 
 
-# ---------------------------------------------------------------------------
-# The exemptions. Each one must be shown to be load-bearing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exemptions. Each one must be shown to be load-bearing. ---------------------------------------------------------------------------
 
 
 def test_distinguishable_sentinel_is_silent(gate):
@@ -509,9 +496,7 @@ def test_escalation_in_the_next_function_does_not_count(gate):
         gate.log_pass("the lookahead window stops at the enclosing function boundary")
 
 
-# ---------------------------------------------------------------------------
-# The waiver, held to the BLOCKER bar.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The waiver, held to the BLOCKER bar. ---------------------------------------------------------------------------
 
 
 def test_waiver_suppresses(gate):
@@ -582,9 +567,7 @@ def test_waiver_must_be_adjacent(gate):
         gate.log_pass("a waiver separated from its line no longer excuses it")
 
 
-# ---------------------------------------------------------------------------
-# The gate must not become the thing it polices.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The gate must not become the thing it polices. ---------------------------------------------------------------------------
 
 
 def test_empty_scope_is_blind_not_clean(gate):
@@ -631,9 +614,7 @@ def test_dead_scanner_is_not_a_clean_scan(gate):
         gate.log_pass("a scanner that cannot read its input refuses to report a verdict")
 
 
-# ---------------------------------------------------------------------------
-# The live tree.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The live tree. ---------------------------------------------------------------------------
 
 
 def test_real_tree_is_clean(gate):
@@ -714,9 +695,7 @@ def test_scope_is_gates_only(gate):
     gate.log_pass("the default scope is gates and their helpers, nothing wider")
 
 
-# ---------------------------------------------------------------------------
-# ADDED BY THE PORT.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ADDED BY THE PORT. ---------------------------------------------------------------------------
 
 
 def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):

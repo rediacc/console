@@ -41,8 +41,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-label-inventory.sh"
 
-# Two cases drive the subject over the real .github/labels.yml, and a third
-# copies the subject out of the tree to build a mutant. See the module docstring.
+# Two cases drive the subject over the real .github/labels.yml, and a third copies the subject out of the tree to build a mutant. See the module docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-label-inventory.sh"
@@ -434,9 +433,7 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
         )
         gate.assert_contains(result.combined, "reconciled", "the real run reports a reconciliation")
 
-        # Control on the real tree: drop one real label from the live list and the
-        # real gate must fire. Without this, the case above would also pass if the
-        # gate had quietly become a no-op on the real file.
+        # Control on the real tree: drop one real label from the live list and the real gate must fire. Without this, the case above would also pass if the gate had quietly become a no-op on the real file.
         dropped = names[0]
         short = d / "live-short.txt"
         short.write_text("".join(n + "\n" for n in names if n != dropped), encoding="utf-8")
@@ -505,18 +502,10 @@ def test_malformed_live_json_fails_closed(gate):
         if "all agree" in result.combined.lower():
             gate.log_fail("malformed LIVE_JSON was reported as a reconciled, agreeing tree")
 
-        # CONTROL, built by construction: restore the exact bug this test exists for
-        # (a literal string replace of the CURRENT fixed line, not a pattern over
-        # unrelated text) and require the same input to flip to a false-clean exit 0.
-        # If it does not flip, this test is not measuring anything.
+        # CONTROL, built by construction: restore the exact bug this test exists for (a literal string replace of the CURRENT fixed line, not a pattern over unrelated text) and require the same input to flip to a false-clean exit 0. If it does not flip, this test is not measuring anything.
         #
-        # The mutant is a plain copy elsewhere, so two more lines that assume the
-        # gate's OWN directory location also need patching, or it fails on those for
-        # a DIFFERENT reason (source-not-found, or "labels file not found" from
-        # get_repo_root()'s 3-levels-up walk landing nowhere) -- either of which
-        # looks identical to "control did not fire" without proving anything.
-        # Pinning both to the real, already-known repo root sidesteps that path math
-        # entirely.
+        # The mutant is a plain copy elsewhere, so two more lines that assume the gate's OWN directory location also need patching, or it fails on those for a DIFFERENT reason (source-not-found, or "labels file not found" from get_repo_root()'s 3-levels-up walk landing nowhere) -- either of which looks identical to "control did not fire" without proving anything. Pinning both to
+        # the real, already-known repo root sidesteps that path math entirely.
         mutant = d / "mutant-gate.sh"
         mutant.write_text(_mutate_subject(gate), encoding="utf-8")
         result = harness.run([bash, os.fspath(mutant)], cwd=paths.repo_root(), env=env)

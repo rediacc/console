@@ -42,9 +42,7 @@ MIXED = {
     "message": {"stop_reason": "end_turn", "content": [{"type": "tool_use", "name": "Bash"}]},
 }
 
-# A counter OBJECT rather than two module globals. `global` in a test harness
-# is the shape that lets a helper silently stop counting -- rebind the name in
-# one branch and the tally goes quiet while every case still prints PASS.
+# A counter OBJECT rather than two module globals. `global` in a test harness is the shape that lets a helper silently stop counting -- rebind the name in one branch and the tally goes quiet while every case still prints PASS.
 TALLY = {"ok": 0, "fail": 0}
 
 
@@ -160,10 +158,7 @@ def run():
         )
 
         print("== 7. the edge resolves a tail the transcript CANNOT read ==")
-        # Found by live probe, not by reasoning: a finished agent's last record
-        # was `assistant / stop_reason: None / ['text']` -- a streaming partial,
-        # which classifies as working. Without the edge it reads as working
-        # forever, which is this item's own blindness in a safer-looking hat.
+        # Found by live probe, not by reasoning: a finished agent's last record was `assistant / stop_reason: None / ['text']` -- a streaming partial, which classifies as working. Without the edge it reads as working forever, which is this item's own blindness in a safer-looking hat.
         j = make("e1", STREAM, age_min=5)
         L.idle_edge = lambda _cwd, _sid, _name: None
         check(
@@ -178,10 +173,7 @@ def run():
             L.teammate_state("/x", "sess", "e1")[0],
             "idle",
         )
-        # THE GUARD THAT MAKES TRUSTING THE EDGE SAFE. A teammate that resumes
-        # writes, so its mtime moves past the edge. Without this arm the two
-        # assertions above would pass just as well for code that ignored the
-        # resume entirely -- which is the false-death this design refuses.
+        # THE GUARD THAT MAKES TRUSTING THE EDGE SAFE. A teammate that resumes writes, so its mtime moves past the edge. Without this arm the two assertions above would pass just as well for code that ignored the resume entirely -- which is the false-death this design refuses.
         L.idle_edge = lambda _cwd, _sid, _name: edge_at - 600
         check(
             "an edge OLDER than the last write means it resumed -> working",

@@ -90,9 +90,7 @@ function policyRel(file: string): string {
     : file;
 }
 
-// ---------------------------------------------------------------------------
-// Oracles
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Oracles ---------------------------------------------------------------------------
 
 /**
  * The gate name on a two-column `.ci-parity-exempt` line, given its 1-based
@@ -145,18 +143,11 @@ function declaredPackageNames(root: string): Universe | null {
     } catch {
       continue;
     }
-    // The SCOPED spelling too, `<dir>:<package>`, for the manifests that can
-    // carry one. `.deps-upgrade-blocklist` gained that form because private/account
-    // is under an operator freeze while four of its frozen packages are ALSO
-    // console's own, and a bare entry would have blinded console's freshness check
+    // The SCOPED spelling too, `<dir>:<package>`, for the manifests that can carry one. `.deps-upgrade-blocklist` gained that form because private/account is under an operator freeze while four of its frozen packages are ALSO console's own, and a bare entry would have blinded console's freshness check
     // for them. Without this the liveness probe called every scoped entry DEAD --
     // correctly, by its own lights: no manifest declared that literal string.
     //
-    // Adding the scoped name here is STRICTER than stripping the prefix in the
-    // probe would have been. `private/account:vitest` is in the universe only if
-    // private/account's own manifest declares vitest, so a typo in EITHER half is
-    // still a dead entry, where a strip would have accepted any directory name at
-    // all as long as some manifest somewhere had the package.
+    // Adding the scoped name here is STRICTER than stripping the prefix in the probe would have been. `private/account:vitest` is in the universe only if private/account's own manifest declares vitest, so a typo in EITHER half is still a dead entry, where a strip would have accepted any directory name at all as long as some manifest somewhere had the package.
     const dirRel = path.relative(root, path.dirname(f)).split(path.sep).join('/');
     for (const field of [
       'dependencies',
@@ -274,14 +265,8 @@ function referencedActions(root: string): Universe | null {
   try {
     refs = collectActionRefs(root);
   } catch (err) {
-    // A CORPUS BELOW ITS FLOOR IS AN UNAVAILABLE ORACLE, NOT A CRASH. collectActionRefs
-    // grew a vacuity floor on 2026-09-04, which is right -- a wrong root must not read
-    // as "no actions referenced, everything is dead". But it THROWS, and this probe's
-    // contract is that `null` means "cannot tell", which the caller already handles: a
-    // run whose oracles are all unavailable while entries exist is declared vacuous and
-    // FAILS. So the floor's information is kept and its verdict is stronger, not weaker.
-    // Left unhandled it replaced the gate's own "vacuous" verdict with a stack trace and
-    // took the whole gate-test battery red (test-suppression-liveness.sh, 2026-09-05).
+    // A CORPUS BELOW ITS FLOOR IS AN UNAVAILABLE ORACLE, NOT A CRASH. collectActionRefs grew a vacuity floor on 2026-09-04, which is right -- a wrong root must not read as "no actions referenced, everything is dead". But it THROWS, and this probe's contract is that `null` means "cannot tell", which the caller already handles: a run whose oracles are all unavailable while entries
+    // exist is declared vacuous and FAILS. So the floor's information is kept and its verdict is stronger, not weaker. Left unhandled it replaced the gate's own "vacuous" verdict with a stack trace and took the whole gate-test battery red (test-suppression-liveness.sh, 2026-09-05).
     if (!(err instanceof Error) || !err.message.startsWith('VACUOUS:')) throw err;
     return null;
   }
@@ -308,9 +293,7 @@ function lockfilePackageNames(root: string): Universe | null {
   return { names, source: `${names.size} packages in package-lock.json v${lock.lockfileVersion}` };
 }
 
-// ---------------------------------------------------------------------------
-// Probes
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Probes ---------------------------------------------------------------------------
 
 const listProbe = (
   id: string,
@@ -364,10 +347,7 @@ const PROBES: Probe[] = [
       `remove line ${line} ("${entry}") from .ci/policy/.embed-assets-upgrade-blocklist, then: npm run check:ci-embed-asset-freshness`,
     ]
   ),
-  // minUniverse 1, not the 3-5 its neighbours use: this inventory deliberately
-  // holds ONE entry (see scripts/lib/devcontainer-pin-sources.ts on why glab,
-  // bottom and openvscode-server are not seeded), so any higher floor would
-  // disable the probe rather than guard it.
+  // minUniverse 1, not the 3-5 its neighbours use: this inventory deliberately holds ONE entry (see scripts/lib/devcontainer-pin-sources.ts on why glab, bottom and openvscode-server are not seeded), so any higher floor would disable the probe rather than guard it.
   listProbe(
     'devcontainer-pins',
     '.devcontainer-upgrade-blocklist',
@@ -465,9 +445,7 @@ const PROBES: Probe[] = [
     id: 'dead-bash-allowlist',
     file: policyRel('.dead-bash-allowlist'),
     tier: 'fail',
-    // Structural guard, not a count floor: universe() returns null when the
-    // shell tree is missing. A count floor would be the rejected ratio guard,
-    // and every entry CAN legitimately go stale at once.
+    // Structural guard, not a count floor: universe() returns null when the shell tree is missing. A count floor would be the rejected ratio guard, and every entry CAN legitimately go stale at once.
     minUniverse: 0,
     entries: (root) => blockeredEntries(inputPath(root, '.dead-bash-allowlist')),
     universe: (root) => {
@@ -530,9 +508,7 @@ const PROBES: Probe[] = [
     id: 'parity-exempt',
     file: policyRel('.ci-parity-exempt'),
     tier: 'fail',
-    // Structural guard, not a count floor: universe() returns null when there
-    // are no workflows to read, and every entry can legitimately go stale at
-    // once (a batch of PR-context gates being retired together).
+    // Structural guard, not a count floor: universe() returns null when there are no workflows to read, and every entry can legitimately go stale at once (a batch of PR-context gates being retired together).
     minUniverse: 0,
     // The entry lines carry a leading direction column, so the shared parser's
     // first-token rule would read "ci-only" as the entry. Split it off here;
@@ -546,16 +522,12 @@ const PROBES: Probe[] = [
             : e.entry,
       })),
     universe: (root) => {
-      // An exemption is live only while the thing it exempts is still invoked
-      // by a workflow. Once the step is deleted the entry is a permanent hole
-      // in the "a local run catches CI failures" promise, guarding nothing.
+      // An exemption is live only while the thing it exempts is still invoked by a workflow. Once the step is deleted the entry is a permanent hole in the "a local run catches CI failures" promise, guarding nothing.
       //
-      // ONLY THE ci-only DIRECTION IS ORACLED HERE. A local-only entry is live
-      // when the LOCAL gate set still runs it, which is a different question
+      // ONLY THE ci-only DIRECTION IS ORACLED HERE. A local-only entry is live when the LOCAL gate set still runs it, which is a different question
       // with a different oracle (scripts/ci-runner/manifest.ts). There are no
       // local-only entries today; the day one appears, this probe must grow the
-      // second oracle rather than judge it against the workflow tree, which
-      // would condemn it for the very asymmetry it declares.
+      // second oracle rather than judge it against the workflow tree, which would condemn it for the very asymmetry it declares.
       const dir = path.join(root, '.github', 'workflows');
       if (!fs.existsSync(dir)) return null;
       const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
@@ -568,11 +540,7 @@ const PROBES: Probe[] = [
           .filter((l) => !/^\s*#/.test(l))
           .join('\n');
         for (const m of text.matchAll(/npm run ([\w:@/-]+)/g)) names.add(m[1]);
-        // BOTH EXTENSIONS. This read `\.sh` alone, and W7 P4 is repointing these
-        // very workflow lines at Python ports: the moment a step ran
-        // `check_branch.py` the oracle stopped seeing any invocation of it and
-        // declared the gate's own exemption DEAD, telling the reader to delete the
-        // line that keeps a live gate excused. Nine entries at once on 2026-09-08.
+        // BOTH EXTENSIONS. This read `\.sh` alone, and W7 P4 is repointing these very workflow lines at Python ports: the moment a step ran `check_branch.py` the oracle stopped seeing any invocation of it and declared the gate's own exemption DEAD, telling the reader to delete the line that keeps a live gate excused. Nine entries at once on 2026-09-08.
         for (const m of text.matchAll(/(\.ci\/scripts\/[\w./-]+\.(?:sh|py))/g)) names.add(m[1]);
       }
       return { names, source: `${files.length} workflows, ${names.size} gate invocations` };
@@ -587,17 +555,12 @@ const PROBES: Probe[] = [
     id: 'content-quality',
     file: '.ci/config/content-quality-allowlist.txt',
     tier: 'fail',
-    // The oracle here is per-path existence, so a count floor would be exactly
-    // the rejected ratio guard ("all entries dead ⇒ suspicious") — and all
-    // entries CAN legitimately be dead, which is the whole point. The trust
-    // guard is instead structural: universe() returns null when the content
-    // tree is absent, so a partial checkout skips rather than condemns.
+    // The oracle here is per-path existence, so a count floor would be exactly the rejected ratio guard ("all entries dead ⇒ suspicious") — and all entries CAN legitimately be dead, which is the whole point. The trust guard is instead structural: universe() returns null when the content tree is absent, so a partial checkout skips rather than condemns.
     minUniverse: 0,
     entries: (root) => {
       const p = path.join(root, '.ci/config/content-quality-allowlist.txt');
       if (!fs.existsSync(p)) return [];
-      // Plain path-per-line list, NOT BLOCKER-gated — mirrors load_allowlist()
-      // in .ci/scripts/quality/check-content-quality.sh.
+      // Plain path-per-line list, NOT BLOCKER-gated — mirrors load_allowlist() in .ci/scripts/quality/check-content-quality.sh.
       return fs
         .readFileSync(p, 'utf-8')
         .split('\n')
@@ -626,12 +589,8 @@ const PROBES: Probe[] = [
   {
     id: 'overrides',
     file: 'package.json',
-    // WARN, never FAIL, and never auto-removed. An npm override is prophylactic
-    // as much as reactive: it constrains what npm MAY resolve tomorrow, not only
-    // what is installed today. "Absent from the lockfile right now" is therefore
-    // not proof the guard is worthless — deleting one silently re-opens the hole
-    // the next time a transitive drags the package back in. Being wrong here is
-    // a security regression, so a human decides.
+    // WARN, never FAIL, and never auto-removed. An npm override is prophylactic as much as reactive: it constrains what npm MAY resolve tomorrow, not only what is installed today. "Absent from the lockfile right now" is therefore not proof the guard is worthless — deleting one silently re-opens the hole the next time a transitive drags the package back in. Being wrong here is a
+    // security regression, so a human decides.
     tier: 'warn',
     minUniverse: 100,
     entries: (root) => {
@@ -654,9 +613,7 @@ const PROBES: Probe[] = [
     },
     universe: lockfilePackageNames,
     normalize: (entry) => {
-      // Three key shapes occur in the live file:
-      //   keyed:   "brace-expansion@^1.1.7"  -> strip the trailing @<range>
-      //   aliased: "inflight": "npm:@isaacs/inflight@^1.0.1" -> probe both names
+      // Three key shapes occur in the live file: keyed: "brace-expansion@^1.1.7" -> strip the trailing @<range> aliased: "inflight": "npm:@isaacs/inflight@^1.0.1" -> probe both names
       //   nested:  "@grpc/proto-loader": { … } -> outer key only
       const at = entry.lastIndexOf('@');
       const base = at > 0 ? entry.slice(0, at) : entry;
@@ -670,36 +627,22 @@ const PROBES: Probe[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Per-probe input floors
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Per-probe input floors ---------------------------------------------------------------------------
 //
 // WHY TOTALS ARE NOT ENOUGH. isVacuous() in scripts/lib/suppression-liveness.ts
 // keys on entriesChecked === 0 across the WHOLE run. That catches a run which
-// asserted nothing at all, and misses the failure that actually happens: ONE
-// list going empty while the other eleven stay full. The total stays healthy,
-// the report still says "every suppression entry is still load-bearing", and the
-// probe over the emptied list has silently stopped being a check.
+// asserted nothing at all, and misses the failure that actually happens: ONE list going empty while the other eleven stay full. The total stays healthy, the report still says "every suppression entry is still load-bearing", and the probe over the emptied list has silently stopped being a check.
 //
-// The way that happens is not somebody deleting a file on purpose. It is a
-// reader looking in the wrong place -- the exact hazard the .ci/policy/ move
-// creates, since every mechanism here treats "file not found" as "zero entries",
-// which is indistinguishable from "nothing is suppressed".
+// The way that happens is not somebody deleting a file on purpose. It is a reader looking in the wrong place -- the exact hazard the .ci/policy/ move creates, since every mechanism here treats "file not found" as "zero entries", which is indistinguishable from "nothing is suppressed".
 //
 // So there are two floors per probe, and they catch the two different shapes:
 //
-//   PRESENCE. The probe's declared file must EXIST. A file that has moved away
+// PRESENCE. The probe's declared file must EXIST. A file that has moved away
 //   from where its probe looks is caught here, whatever its contents were.
 //
-//   ENTRIES. If the file exists, it must yield at least minEntries entries. A
-//   list emptied IN PLACE -- truncated, or its entries commented out by a bad
-//   edit -- is caught here.
+// ENTRIES. If the file exists, it must yield at least minEntries entries. A list emptied IN PLACE -- truncated, or its entries commented out by a bad edit -- is caught here.
 //
-// minEntries is 1 for every probe whose list carries entries, and 0 for the
-// three that are DELIBERATELY empty. That zero is a policy statement ("this
-// list is allowed to hold nothing"), not a hand-typed population count, so it
-// does not fall foul of the corpus-derived-floors rule: no floor here goes red
-// when a list legitimately shrinks, only when it stops being readable at all.
+// minEntries is 1 for every probe whose list carries entries, and 0 for the three that are DELIBERATELY empty. That zero is a policy statement ("this list is allowed to hold nothing"), not a hand-typed population count, so it does not fall foul of the corpus-derived-floors rule: no floor here goes red when a list legitimately shrinks, only when it stops being readable at all.
 // Measured 2026-09-06: 12 probes, 87 entries.
 
 interface ProbeInputFloor {
@@ -783,10 +726,7 @@ function measureProbeInputs(probes: Probe[], root: string): ProbeInput[] {
   return probes.map((probe) => {
     const floor = PROBE_INPUT_FLOORS[probe.id];
     if (!floor) {
-      // A probe with no declared floor is a registration the author forgot, and
-      // it is exactly the probe that would then be free to check nothing. Treat
-      // an undeclared probe as requiring at least one entry rather than as
-      // exempt: silence is never the safe default here.
+      // A probe with no declared floor is a registration the author forgot, and it is exactly the probe that would then be free to check nothing. Treat an undeclared probe as requiring at least one entry rather than as exempt: silence is never the safe default here.
       throw new Error(
         `probe "${probe.id}" has no entry in PROBE_INPUT_FLOORS. Declare its minEntries ` +
           `(and, if 0, why holding nothing is the correct state) in scripts/gates/check-suppression-liveness.ts.`
@@ -877,8 +817,7 @@ function main(): void {
     (f) => !(f.probe === 'overrides' && preventive.has(f.entry))
   );
 
-  // Per-probe input floors. Measured BEFORE the findings are rendered so the
-  // census is visible even on a run that then fails for a stale entry.
+  // Per-probe input floors. Measured BEFORE the findings are rendered so the census is visible even on a run that then fails for a stale entry.
   const probeInputs = measureProbeInputs(probes, CONSOLE_ROOT);
   for (const i of probeInputs) {
     if (i.status === 'file-missing') {
@@ -909,9 +848,7 @@ function main(): void {
     }
   }
 
-  // Cross-cutting: a `# BLOCKER:` reason with no entries beneath it. Not
-  // dangerous, but it documents a suppression that is not actually in force —
-  // and verifyAllBlockers() cannot see it, because it walks entries.
+  // Cross-cutting: a `# BLOCKER:` reason with no entries beneath it. Not dangerous, but it documents a suppression that is not actually in force — and verifyAllBlockers() cannot see it, because it walks entries.
   const BLOCKER_FILES = [
     '.deps-upgrade-blocklist',
     '.go-deps-upgrade-blocklist',

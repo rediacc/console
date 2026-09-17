@@ -72,29 +72,21 @@ const MANIFEST_PATH = 'private/account/rotation-manifest.json';
 const TIMEOUT_MS = 5_000;
 const MAX_RETRIES = 3;
 
-// Active-region → AWS region mapping (matches
-// `private/account/scripts/rotation/lib/config.ts:ROTATION_CONFIG.awsSes`).
-// Kept in lockstep manually because this script also runs on `ubuntu-slim`
-// CI runners that don't install the account package.
+// Active-region → AWS region mapping (matches `private/account/scripts/rotation/lib/config.ts:ROTATION_CONFIG.awsSes`). Kept in lockstep manually because this script also runs on `ubuntu-slim` CI runners that don't install the account package.
 const REGION_MAPPING: Record<string, string> = {
   eu: 'eu-central-1',
   us: 'us-east-1',
   asia: 'ap-northeast-1',
 };
 
-// Regions to check MAIL FROM MX records for. `bench` shares `eu` so we skip
-// it. `asia` is kept in the set even though its SES identity isn't production-
-// approved: the MAIL FROM DNS is already published and will stay published,
-// and checking it catches drift before asia gets flipped on.
+// Regions to check MAIL FROM MX records for. `bench` shares `eu` so we skip it. `asia` is kept in the set even though its SES identity isn't production- approved: the MAIL FROM DNS is already published and will stay published, and checking it catches drift before asia gets flipped on.
 const MAIL_FROM_REGIONS: Array<{ alias: string; mxTarget: string }> = [
   { alias: 'eu', mxTarget: `feedback-smtp.${REGION_MAPPING.eu}.amazonses.com` },
   { alias: 'us', mxTarget: `feedback-smtp.${REGION_MAPPING.us}.amazonses.com` },
   { alias: 'asia', mxTarget: `feedback-smtp.${REGION_MAPPING.asia}.amazonses.com` },
 ];
 
-// Use public resolvers in CI — the runner's default resolver sometimes has
-// shorter TTL caches for recently-changed records. 1.1.1.1 and 8.8.8.8
-// are independent networks so we get a cross-check on divergent answers.
+// Use public resolvers in CI — the runner's default resolver sometimes has shorter TTL caches for recently-changed records. 1.1.1.1 and 8.8.8.8 are independent networks so we get a cross-check on divergent answers.
 const PUBLIC_RESOLVERS = ['1.1.1.1', '8.8.8.8'];
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -152,9 +144,7 @@ async function resolveMxWithRetry(
 }
 
 async function main(): Promise<number> {
-  // ANCHORED ON THIS FILE, not on cwd. process.cwd() is the workspace root
-  // under `npm run` and something else under any other caller, so the same
-  // gate would read a different manifest depending on where it was started.
+  // ANCHORED ON THIS FILE, not on cwd. process.cwd() is the workspace root under `npm run` and something else under any other caller, so the same gate would read a different manifest depending on where it was started.
   const manifestPath = path.resolve(import.meta.dirname, '..', '..', MANIFEST_PATH);
   let manifest: Manifest;
   try {
@@ -174,8 +164,7 @@ async function main(): Promise<number> {
   if (!dkim) {
     // No dkim-notify entry yet — the rotation tool hasn't been run at least
     // once. Phase 1 of the SES BYODKIM migration should seed this; until it
-    // does, the check is a no-op (otherwise CI fails before the migration
-    // even starts).
+    // does, the check is a no-op (otherwise CI fails before the migration even starts).
     process.stdout.write('SKIP: no dkim-notify credential in manifest yet (pre-migration state)\n');
     return 0;
   }

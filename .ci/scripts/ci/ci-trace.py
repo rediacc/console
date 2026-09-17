@@ -43,10 +43,7 @@ import time
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
-# THE sys.path HOP, stated rather than hidden. wl_ci lives with the Stop hook
-# because that is where it is consumed on every turn. Copying its ~200 lines of
-# rollup/classify logic here would recreate exactly the duplication this script
-# exists to end -- the nine divergent copies above. One import, one truth.
+# THE sys.path HOP, stated rather than hidden. wl_ci lives with the Stop hook because that is where it is consumed on every turn. Copying its ~200 lines of rollup/classify logic here would recreate exactly the duplication this script exists to end -- the nine divergent copies above. One import, one truth.
 sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks" / "stop"))
 import wl_ci  # noqa: E402
 
@@ -125,8 +122,7 @@ def _trace_run(root, run_id, wait, timeout, as_json):
     while True:
         status, conclusion, jobs = _run_snapshot(root, run_id)
         if status is None:
-            # A read that cannot complete is NEVER green -- the same rule the
-            # branch reader applies. Absorb a blip, then say so out loud.
+            # A read that cannot complete is NEVER green -- the same rule the branch reader applies. Absorb a blip, then say so out loud.
             read_failures += 1
             err = jobs if isinstance(jobs, str) else "unreadable"
             if not wait or read_failures >= MAX_READ_FAILURES:
@@ -136,15 +132,8 @@ def _trace_run(root, run_id, wait, timeout, as_json):
             continue
         read_failures = 0
 
-        # SAME FILTER AS ci_classify, and this path needed it independently:
-        # `--run <id>` reads the run's OWN jobs endpoint directly rather than
-        # going through wl_ci.ci_classify's GraphQL contexts, so the
-        # CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path
-        # (_snapshot below) and never touched this one -- proven live on
-        # PR #579 commit 9cbcf7d9's own rerun, which this trace called RED on
-        # a run GitHub itself scored "success" once "Review Complete" (a
-        # check-run whose own summary says it can never block Console CI) was
-        # excluded.
+        # SAME FILTER AS ci_classify, and this path needed it independently: `--run <id>` reads the run's OWN jobs endpoint directly rather than going through wl_ci.ci_classify's GraphQL contexts, so the CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path (_snapshot below) and never touched this one -- proven live on PR #579 commit 9cbcf7d9's own rerun, which this trace
+        # called RED on a run GitHub itself scored "success" once "Review Complete" (a check-run whose own summary says it can never block Console CI) was excluded.
         jobs = [j for j in jobs if j.get("name") not in wl_ci.CI_NONBLOCKING_CONTEXTS]
         failed = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
         live = [j["name"] for j in jobs if not j.get("conclusion")]
@@ -194,9 +183,7 @@ def _emit(payload, as_json):
     v = payload["verdict"]
     head = (payload.get("head") or "")[:8]
     pr = payload.get("pr")
-    # Two SOURCES, never one undifferentiated channel. A branch read and a PR
-    # read answer different questions, and a reader who cannot tell which one
-    # arrived will draw the wrong conclusion from an identical-looking line.
+    # Two SOURCES, never one undifferentiated channel. A branch read and a PR read answer different questions, and a reader who cannot tell which one arrived will draw the wrong conclusion from an identical-looking line.
     if pr:
         where = "PR #%s @ %s" % (pr, head)
     elif payload.get("source") == "branch":
@@ -211,13 +198,9 @@ def _emit(payload, as_json):
         att = (" (attempt %s)" % row["attempt"]) if row.get("attempt") else ""
         print("  %-9s %s%s%s" % (row["conclusion"], row["name"], step, att))
         if row.get("job"):
-            # --allow-escape-sequences IS REQUIRED, and its absence does not
-            # look like an error. Job logs carry ANSI colour, and without the
-            # flag `gh` writes NOTHING to stdout, exits 1, and explains itself
-            # only on stderr. Piped into a grep -- which is what anyone does
+            # --allow-escape-sequences IS REQUIRED, and its absence does not look like an error. Job logs carry ANSI colour, and without the flag `gh` writes NOTHING to stdout, exits 1, and explains itself only on stderr. Piped into a grep -- which is what anyone does
             # with a log -- that reads as "the log has no findings" rather than
-            # "the log was never fetched". Measured 2026-08-28 on job
-            # 98788324965: exit 1, 0 bytes out, the reason on stderr alone.
+            # "the log was never fetched". Measured 2026-08-28 on job 98788324965: exit 1, 0 bytes out, the reason on stderr alone.
             print(
                 "      log: gh api repos/%s/%s/actions/jobs/%s/logs"
                 " --allow-escape-sequences" % (payload["owner"], payload["name"], row["job"])
@@ -229,17 +212,10 @@ def _emit(payload, as_json):
 
     # THE FINISH SEQUENCE, NAMED AT THE MOMENT IT BECOMES POSSIBLE.
     #
-    # Green is not the finish line -- the PR still has to be flipped ready,
-    # reviewed, and its threads resolved. That step depends on the agent
-    # REMEMBERING it, and agents forget: the loop reports "CI is green", the
-    # turn ends, and the PR sits in draft with every check passing. This watch
-    # exits exactly when green lands and re-invokes the agent with its output in
-    # hand, so this is the one place the reminder cannot be missed.
+    # Green is not the finish line -- the PR still has to be flipped ready, reviewed, and its threads resolved. That step depends on the agent REMEMBERING it, and agents forget: the loop reports "CI is green", the turn ends, and the PR sits in draft with every check passing. This watch exits exactly when green lands and re-invokes the agent with its output in hand, so this is the
+    # one place the reminder cannot be missed.
     #
-    # It PRINTS, it does not act. Flipping ready triggers a real Claude review
-    # that spends budget, several watches can be armed at once and would race
-    # each other, and a PR is sometimes held in draft deliberately. An observer
-    # that silently mutates PR state is a different tool with different risks.
+    # It PRINTS, it does not act. Flipping ready triggers a real Claude review that spends budget, several watches can be armed at once and would race each other, and a PR is sometimes held in draft deliberately. An observer that silently mutates PR state is a different tool with different risks.
     if v == "green" and payload.get("pr") and payload.get("draft"):
         print()
         print("  NEXT: this PR is still a DRAFT. Green is not the finish line.")
@@ -262,8 +238,7 @@ def _snapshot(root, ref, cache, allow_branch=False):
     if state == "no-pr":
         return None, "no open PR for ref %r" % ref
     if state == "no-ref":
-        # Distinct from no-pr on purpose: a ref that does not exist is a typo or
-        # a deleted branch, not a branch that merely lacks a PR.
+        # Distinct from no-pr on purpose: a ref that does not exist is a typo or a deleted branch, not a branch that merely lacks a PR.
         return None, "no branch %r on the remote" % ref
     if state == "unreadable":
         return None, str(info)
@@ -280,11 +255,7 @@ def _snapshot(root, ref, cache, allow_branch=False):
         elif (c.get("status") or "").upper() != "COMPLETED":
             waiting += 1
 
-    # CANCELLED IS NOT A PASS, and the two shapes mean different things. A
-    # cancelled context beside a real failure is the watchdog killing the run for
-    # that failure. Cancelled with nothing failing is a gate that did NOT report:
-    # a newer push is the usual cause, but it is NOT proof of one -- on 2026-09-05
-    # a032863c7 had a cancelled Review Status while being the branch head itself.
+    # CANCELLED IS NOT A PASS, and the two shapes mean different things. A cancelled context beside a real failure is the watchdog killing the run for that failure. Cancelled with nothing failing is a gate that did NOT report: a newer push is the usual cause, but it is NOT proof of one -- on 2026-09-05 a032863c7 had a cancelled Review Status while being the branch head itself.
     # Confirm a newer head exists before concluding one does.
     cancelled = [
         c.get("name") or c.get("context") or "?"
@@ -306,13 +277,9 @@ def _snapshot(root, ref, cache, allow_branch=False):
     elif cancelled:
         verdict = "red"
         detail = (
-            # DO NOT assert a newer push here. This unconditionally said "a newer
-            # push superseded this run. Trace the newer head." -- and on 2026-09-05
-            # it said that for a032863c7, which WAS the branch head, so there was no
+            # DO NOT assert a newer push here. This unconditionally said "a newer push superseded this run. Trace the newer head." -- and on 2026-09-05 it said that for a032863c7, which WAS the branch head, so there was no
             # newer head to trace. Console CI had succeeded on attempt 2; the cancelled
-            # context was Review Status, a gate that genuinely did not report. The
-            # cause is a guess, so the message names the observation and leaves the
-            # guess to the reader.
+            # context was Review Status, a gate that genuinely did not report. The cause is a guess, so the message names the observation and leaves the guess to the reader.
             "%d context(s) CANCELLED with nothing failing -- each is a gate that did"
             " NOT report. A newer push is the usual cause; confirm one exists before"
             " assuming it." % len(cancelled)
@@ -396,26 +363,14 @@ def main(argv=None):
 
     root = REPO_ROOT
 
-    # A DISPATCHED RUN IS NOT IN THE BRANCH ROLLUP, and that is why this branch
-    # exists. Measured 2026-08-26 on Release run 32968110599 (v1.3.1, head
-    # 1c006e53): the REST check-runs API for that exact commit showed
-    # `in_progress  Tag & Release`, while the GraphQL statusCheckRollup for
-    # refs/heads/main returned 81 contexts, state SUCCESS, NONE in flight, and
-    # no Tag & Release among them. So `--wait --ref main` printed
-    # "GREEN ... every context succeeded or was skipped" and exited 0 while the
-    # release was mid-flight -- twice, including with --until-final.
+    # A DISPATCHED RUN IS NOT IN THE BRANCH ROLLUP, and that is why this branch exists. Measured 2026-08-26 on Release run 32968110599 (v1.3.1, head 1c006e53): the REST check-runs API for that exact commit showed `in_progress Tag & Release`, while the GraphQL statusCheckRollup for refs/heads/main returned 81 contexts, state SUCCESS, NONE in flight, and no Tag & Release among them.
+    # So `--wait --ref main` printed "GREEN ... every context succeeded or was skipped" and exited 0 while the release was mid-flight -- twice, including with --until-final.
     #
-    # That is the worst shape of wrong: /pr-merge step 5 tells the operator to
-    # watch the release land exactly that way, so the documented procedure could
-    # certify a release that had not run. The obvious CLI alternative is banned
-    # by block-adhoc-sanctioned.sh (it dropped 4/4 in one campaign and has
-    # exited 1 mid-run), which left NO working instrument for that step at all.
+    # That is the worst shape of wrong: /pr-merge step 5 tells the operator to watch the release land exactly that way, so the documented procedure could certify a release that had not run. The obvious CLI alternative is banned by block-adhoc-sanctioned.sh (it dropped 4/4 in one campaign and has exited 1 mid-run), which left NO working instrument for that step at all.
     if args.run:
         return _trace_run(root, args.run, args.wait, args.timeout, args.json)
 
-    # Only an EXPLICIT --ref opts into the branch fallback. On the implicit
-    # current-branch default, "no open PR yet" is a useful answer and must not be
-    # silently replaced by a branch read that looks like a verdict.
+    # Only an EXPLICIT --ref opts into the branch fallback. On the implicit current-branch default, "no open PR yet" is a useful answer and must not be silently replaced by a branch read that looks like a verdict.
     allow_branch = bool(args.ref)
     ref = args.ref or _branch(root)
     if not ref or ref == "HEAD":
@@ -441,8 +396,7 @@ def main(argv=None):
         read_failures = 0
 
         # FAILURE 3, made structural. Pin the head from the first good read; if
-        # the PR's head changes underneath us, a later push superseded what we
-        # were watching and the old verdict is meaningless.
+        # the PR's head changes underneath us, a later push superseded what we were watching and the old verdict is meaningless.
         if pinned_head is None:
             pinned_head = payload["head"]
         elif payload["head"] and payload["head"] != pinned_head:

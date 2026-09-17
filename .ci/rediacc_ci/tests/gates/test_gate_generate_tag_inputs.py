@@ -55,8 +55,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-generate-tag-inputs.sh"
 
-# Two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh` in
-# place and restore it. See the module docstring.
+# Two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh` in place and restore it. See the module docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/ci/generate-tag.sh"
@@ -64,9 +63,7 @@ GATE = paths.from_root(*GATE_REL.split("/"))
 RESOLVER_REL = ".ci/scripts/version/resolve-version.sh"
 RESOLVER = paths.from_root(*RESOLVER_REL.split("/"))
 
-# Every path in BUILD_CONFIG_FILES, in the same order, relative to the tree root.
-# Kept here so a list that grows without a test growing with it shows up in
-# `test_declared_inputs_match_the_script` rather than going unnoticed.
+# Every path in BUILD_CONFIG_FILES, in the same order, relative to the tree root. Kept here so a list that grows without a test growing with it shows up in `test_declared_inputs_match_the_script` rather than going unnoticed.
 DECLARED_INPUTS = (
     "private/renet/Dockerfile",
     "private/renet/Dockerfile.native",
@@ -132,13 +129,10 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("seed content for %s\n" % rel, encoding="utf-8")
-    # Present in the tree, as it is in the real repo, so "the tag did not change"
-    # below is about the LIST and not about a missing file.
+    # Present in the tree, as it is in the real repo, so "the tag did not change" below is about the LIST and not about a missing file.
     (root / INFRA_SIBLING).write_text("seed content for infra\n", encoding="utf-8")
 
-    # A real git repo at the submodule path: the script rev-parses it, and a
-    # fixed commit keeps the SUBMODULE_COMMIT half of the tag constant so every
-    # difference below is attributable to the build-config half.
+    # A real git repo at the submodule path: the script rev-parses it, and a fixed commit keeps the SUBMODULE_COMMIT half of the tag constant so every difference below is attributable to the build-config half.
     sub = root / "private" / "renet"
     harness.run([git, "-C", os.fspath(sub), "init", "-q", "."])
     harness.run([git, "-C", os.fspath(sub), "add", "-A"])
@@ -371,8 +365,7 @@ def test_other_modes_are_untouched(gate):
         root = tmp / "repo"
         build_fixture_tree(gate, root)
         # The nested fixture submodule makes git warn about an embedded repo; it
-        # is noise here, and the commit is only needed so --self has something to
-        # rev-parse.
+        # is noise here, and the commit is only needed so --self has something to rev-parse.
         harness.run([git, "-C", os.fspath(root), "init", "-q", "."])
         harness.run([git, "-C", os.fspath(root), "add", "-A"])
         harness.run(
@@ -492,9 +485,7 @@ def test_closure_tag_moves_when_the_released_version_moves(gate):
                 "the rdc closure tag did NOT move when the released version moved (%s): a "
                 "cached pre-release image would be served under the new version" % before_tag
             )
-        # CONTROL: without this the assertion above is satisfied by ANY
-        # nondeterminism, including a tag that changes on every invocation, which
-        # would be a different and worse bug.
+        # CONTROL: without this the assertion above is satisfied by ANY nondeterminism, including a tag that changes on every invocation, which would be a different and worse bug.
         gate.assert_eq(
             restored,
             before_tag,

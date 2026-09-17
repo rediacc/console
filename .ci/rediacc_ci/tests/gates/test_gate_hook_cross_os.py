@@ -40,20 +40,13 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# THE PLANT IS A FIXED PATH IN THE REAL TREE, so these cases cannot run beside
-# each other. One writes `__gate_test_plant.py` into `.claude/rediacc_hooks/`
+# THE PLANT IS A FIXED PATH IN THE REAL TREE, so these cases cannot run beside each other. One writes `__gate_test_plant.py` into `.claude/rediacc_hooks/`
 # and expects the gate to red on it; two others scan that same directory and
-# expect it CLEAN. Without a group `--dist loadgroup` is free to put them on
-# different workers, and measured 2026-09-15 it did:
+# expect it CLEAN. Without a group `--dist loadgroup` is free to put them on different workers, and measured 2026-09-15 it did:
 #
-#   clean tree (stderr: ✗ .claude/rediacc_hooks/__gate_test_plant.py:7 pgrep
-#   (proc-tool) is platform-sensitive ...): expected 0, got 1
+# clean tree (stderr: ✗ .claude/rediacc_hooks/__gate_test_plant.py:7 pgrep (proc-tool) is platform-sensitive ...): expected 0, got 1
 #
-# -- the clean-tree case failing on the OTHER case's plant, which reads as the
-# gate being broken rather than as two cases colliding. Same defect as the
-# deploy differentials fixed in 3ba9b417d, one directory over: the group name
-# is the mutex, and any module that writes a fixed path needs one. This plant
-# is inside the REPO rather than /tmp, which if anything makes it worse -- a
+# -- the clean-tree case failing on the OTHER case's plant, which reads as the gate being broken rather than as two cases colliding. Same defect as the deploy differentials fixed in 3ba9b417d, one directory over: the group name is the mutex, and any module that writes a fixed path needs one. This plant is inside the REPO rather than /tmp, which if anything makes it worse -- a
 # case killed between the write and its `finally` leaves a file in the tree.
 pytestmark = pytest.mark.xdist_group("hook-cross-os-plant")
 
@@ -75,21 +68,14 @@ PLANTED = (
 
 # THE GROUP IS NOT ENOUGH, and the demonstration is why this lock exists.
 # `xdist_group` serialises these cases WITHIN one pytest run; it does nothing
-# about a SECOND run in the same tree, and this repository runs concurrent gate
-# batteries as a matter of course. Measured 2026-09-15, one process looping the
-# plant case against another looping the two scanning cases:
+# about a SECOND run in the same tree, and this repository runs concurrent gate batteries as a matter of course. Measured 2026-09-15, one process looping the plant case against another looping the two scanning cases:
 #
-#     clean-tree scans that FAILED while a planter ran concurrently: 12 of 12
+# clean-tree scans that FAILED while a planter ran concurrently: 12 of 12
 #
-# Twelve out of twelve, not an occasional flake. The plant lives in the REPO
-# rather than in /tmp, so the blast radius is worse than the deploy modules'
-# `/tmp/config`: a concurrent battery reds on a file it did not create, and a
+# Twelve out of twelve, not an occasional flake. The plant lives in the REPO rather than in /tmp, so the blast radius is worse than the deploy modules' `/tmp/config`: a concurrent battery reds on a file it did not create, and a
 # case killed between the write and its `finally` leaves it in the working tree.
 #
-# Same shape as `FIXED_TMP_LOCK` in test_deploy_simulate_promotion.py, and the
-# lesson that file taught tonight is applied here rather than repeated: a lock
-# only one of two parties takes is not a lock, so BOTH the planting case and the
-# scanning cases hold it.
+# Same shape as `FIXED_TMP_LOCK` in test_deploy_simulate_promotion.py, and the lesson that file taught tonight is applied here rather than repeated: a lock only one of two parties takes is not a lock, so BOTH the planting case and the scanning cases hold it.
 PLANT_LOCK = "/tmp/rediacc-hook-cross-os-plant.lock"
 
 
@@ -118,8 +104,7 @@ def test_the_real_hook_package_is_fully_seamed(gate):
         gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
         gate.assert_contains(result.combined, "0 unclaimed, 0 dead", "set equality both ways")
         gate.assert_contains(result.combined, "Python file(s) under", "prints the corpus size")
-        # The scope table is printed on SUCCESS as well as on failure. An exemption
-        # only visible when something is already broken is an exemption nobody drains.
+        # The scope table is printed on SUCCESS as well as on failure. An exemption only visible when something is already broken is an exemption nobody drains.
         gate.assert_contains(
             result.combined, "seam proc-table ", "the scope table is always printed"
         )
@@ -179,10 +164,7 @@ def test_a_planted_platform_read_reds_on_the_real_tree(gate):
 def test_the_plant_left_the_tree_exactly_as_it_found_it(gate):
     with _plant_guard():
         gate.log_test("a second instrument is asked whether anything was left behind")
-        # `git status --porcelain` and not `git diff`: the plant was an UNTRACKED
-        # file, and `git diff` does not show untracked files at all -- it would
-        # report a clean tree whether or not the plant was cleaned up, which is a
-        # control that cannot fail.
+        # `git status --porcelain` and not `git diff`: the plant was an UNTRACKED file, and `git diff` does not show untracked files at all -- it would report a clean tree whether or not the plant was cleaned up, which is a control that cannot fail.
         proc = subprocess.run(
             ["git", "status", "--porcelain", "--", ".claude/rediacc_hooks/"],
             cwd=paths.repo_root(),

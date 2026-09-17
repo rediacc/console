@@ -28,8 +28,7 @@ export async function allocateNetworkIdInStore(configName: string): Promise<numb
     const usedIds = scanUsedNetworkIds(config);
     let nextId = config.state?.networkIds?.next;
     if (nextId === undefined || nextId < MIN_NETWORK_ID) nextId = pickInitialNetworkId(usedIds);
-    // If the forward counter is approaching the limit, scan for freed gaps
-    // (handles long-lived systems where many repos have been created + deleted).
+    // If the forward counter is approaching the limit, scan for freed gaps (handles long-lived systems where many repos have been created + deleted).
     if (nextId > MAX_NETWORK_ID) nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
     allocated = nextId;
     return {
@@ -43,10 +42,7 @@ export async function allocateNetworkIdInStore(configName: string): Promise<numb
   return allocated;
 }
 
-// Find the initial network ID when the forward counter is missing or stale.
-// Avoids `Math.max(...usedIds)` because JS engines cap function arguments
-// around 65536 while the network ID space allows ~261000 IDs — a long-lived
-// shared config can hit that cap before the MAX_NETWORK_ID ceiling.
+// Find the initial network ID when the forward counter is missing or stale. Avoids `Math.max(...usedIds)` because JS engines cap function arguments around 65536 while the network ID space allows ~261000 IDs — a long-lived shared config can hit that cap before the MAX_NETWORK_ID ceiling.
 function pickInitialNetworkId(usedIds: Set<number>): number {
   if (usedIds.size === 0) return MIN_NETWORK_ID;
   let maxId = -1;
@@ -56,9 +52,7 @@ function pickInitialNetworkId(usedIds: Set<number>): number {
   return maxId + NETWORK_ID_INCREMENT;
 }
 
-// Linear scan for the first free slot when the forward counter has walked
-// past the allowed ceiling. Thrown error is caught by the outer allocation
-// path and surfaced to the user.
+// Linear scan for the first free slot when the forward counter has walked past the allowed ceiling. Thrown error is caught by the outer allocation path and surfaced to the user.
 function findFreeNetworkIdSlot(usedIds: Set<number>, maxNetworkId: number): number {
   let candidate = MIN_NETWORK_ID;
   while (usedIds.has(candidate) && candidate <= maxNetworkId) {

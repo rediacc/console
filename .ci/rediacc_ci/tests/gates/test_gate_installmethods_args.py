@@ -231,8 +231,7 @@ def test_the_backstop_fires_on_a_zero_total_run(gate, tmp_path):
         result.combined, "Refusing to report success", "the failure must say why it refuses"
     )
 
-    # Mutation 2: the same loosened parser with the backstop removed, i.e. the
-    # code exactly as it stood on 2026-08-07. It must report the incident's
+    # Mutation 2: the same loosened parser with the backstop removed, i.e. the code exactly as it stood on 2026-08-07. It must report the incident's
     # signature -- "total 0" with EXIT=0. Without this the case above would not
     # prove that the backstop is what makes the difference.
     without = mutate(gate, tmp_path / "without-backstop.sh", drop_backstop=True)

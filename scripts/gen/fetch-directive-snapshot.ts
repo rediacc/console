@@ -62,14 +62,7 @@ function pathsForLang(lang: SupportedLang) {
 
 function eliUrl(lang: SupportedLang): string {
   // ELI URL uses the 3-letter language code in lowercase; map ISO 639-1 -> ISO 639-3-ish slug used by EUR-Lex.
-  // Examples observed:
-  //   en -> /eli/dir/2022/2555/oj/eng
-  //   de -> /eli/dir/2022/2555/oj/deu
-  //   es -> /eli/dir/2022/2555/oj/spa
-  //   fr -> /eli/dir/2022/2555/oj/fra
-  //   et -> /eli/dir/2022/2555/oj/est
-  //   it -> /eli/dir/2022/2555/oj/ita
-  //   pt -> /eli/dir/2022/2555/oj/por
+  // Examples observed: en -> /eli/dir/2022/2555/oj/eng de -> /eli/dir/2022/2555/oj/deu es -> /eli/dir/2022/2555/oj/spa fr -> /eli/dir/2022/2555/oj/fra et -> /eli/dir/2022/2555/oj/est it -> /eli/dir/2022/2555/oj/ita pt -> /eli/dir/2022/2555/oj/por
   const map: Record<SupportedLang, string> = {
     en: 'eng',
     de: 'deu',
@@ -165,9 +158,7 @@ function normalise(rawText: string): string {
   s = s.replace(/ /g, ' ');
 
   // OJ page header is "Official Journal of the European Union" in English; in
-  // other locales it is the localised equivalent ("Journal officiel de l'Union
-  // européenne", "Diario Oficial de la Unión Europea", etc.). We keep the
-  // language-specific variants narrow to avoid stripping body text.
+  // other locales it is the localised equivalent ("Journal officiel de l'Union européenne", "Diario Oficial de la Unión Europea", etc.). We keep the language-specific variants narrow to avoid stripping body text.
   s = s.replace(/Official Journal of the European Union[^\n]*\n/g, '\n');
   s = s.replace(/Amtsblatt der Europäischen Union[^\n]*\n/g, '\n'); // de
   s = s.replace(/Diario Oficial de la Unión Europea[^\n]*\n/g, '\n'); // es

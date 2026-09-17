@@ -89,9 +89,7 @@ level up.
 
 import sys
 
-# The four literals, kept as constants because the differential and the three
-# Python copies all match on them and a typo in any one of them is invisible in
-# a passing test that greps for the wrong string.
+# The four literals, kept as constants because the differential and the three Python copies all match on them and a typo in any one of them is invisible in a passing test that greps for the wrong string.
 OK_LINE = "  ok    %s"
 FAIL_LINE = "  FAIL  %s (got '%s' want '%s')"
 FLOOR_LINE = "FAIL  only %d control(s) ran; the battery is not being executed as written"

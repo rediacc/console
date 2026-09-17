@@ -52,21 +52,13 @@ import time
 
 import wl_core as C
 
-# wl_store / wl_requests / wl_report are imported LAZILY inside wait(). The
-# --nudge mode below runs on EVERY PostToolUse, and importing the whole worklist
-# stack (wl_store alone is ~53 KB) on every tool call is a cost the nudge does
-# not need: the COMMON path returns on two file stats and reaches no import at
-# all. Only the tail -- at most once per throttle window, and only when nothing
-# is listening -- reads the brief list, the harness task dir and the item fold
-# (measured together at ~22 ms against the live 1.3 MB event log).
+# wl_store / wl_requests / wl_report are imported LAZILY inside wait(). The --nudge mode below runs on EVERY PostToolUse, and importing the whole worklist stack (wl_store alone is ~53 KB) on every tool call is a cost the nudge does not need: the COMMON path returns on two file stats and reaches no import at all. Only the tail -- at most once per throttle window, and only when
+# nothing is listening -- reads the brief list, the harness task dir and the item fold (measured together at ~22 ms against the live 1.3 MB event log).
 
 TICK_S = float(os.environ.get("WORKLIST_WAIT_TICK_S", "2"))
-# 60 minutes, matching the hourly work-loop cadence this repo already runs on and
-# the ~70-minute horizon the surrounding liveness checks are calibrated against.
+# 60 minutes, matching the hourly work-loop cadence this repo already runs on and the ~70-minute horizon the surrounding liveness checks are calibrated against.
 DEFAULT_TIMEOUT_MIN = float(os.environ.get("WORKLIST_WAIT_TIMEOUT_MIN", "60"))
-# How often the waiter re-runs wl_report --scan while it is awake anyway. This is
-# what makes a report captured by neither the hook nor the previous scan still
-# reach the session, so it is a correctness path, not an optimisation.
+# How often the waiter re-runs wl_report --scan while it is awake anyway. This is what makes a report captured by neither the hook nor the previous scan still reach the session, so it is a correctness path, not an optimisation.
 SCAN_EVERY_S = float(os.environ.get("WORKLIST_WAIT_SCAN_S", "300"))
 
 
@@ -200,8 +192,7 @@ def _touch(path):
         path.write_text(C.stamp_now(), encoding="utf-8")
 
 
-# The tombstone a waiter leaves BEHIND ITSELF on exit, in place of the unlink
-# both exits used to do. See tombstone().
+# The tombstone a waiter leaves BEHIND ITSELF on exit, in place of the unlink both exits used to do. See tombstone().
 TOMBSTONE = "EXPIRED"
 
 
@@ -263,8 +254,7 @@ def wait(me, timeout_min, start):
 
     # Scan BEFORE arming, never after. The first scan on a fresh store indexes
     # every already-finished agent in the lookback window; if the baseline were
-    # taken first, all of them would read as NEW and the waiter would wake
-    # immediately with a flood of history on its very first run.
+    # taken first, all of them would read as NEW and the waiter would wake immediately with a flood of history on its very first run.
     _safe_scan(store, start)
     base = arm(worklist, store, branch, me)
 
@@ -282,19 +272,13 @@ def wait(me, timeout_min, start):
         _touch(hb)  # only a LIVE waiter keeps this fresh; see heartbeat_path
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            # ONE BOUNDED LINE, exit 0. Printing nothing would be cheaper and
-            # would match --poll's empty-inbox contract, but a check whose
-            # running you cannot see is worthless, and this is the only evidence
-            # that the waiter ran at all rather than dying silently at launch.
+            # ONE BOUNDED LINE, exit 0. Printing nothing would be cheaper and would match --poll's empty-inbox contract, but a check whose running you cannot see is worthless, and this is the only evidence that the waiter ran at all rather than dying silently at launch.
             print(
                 "INBOX-WAIT: %dm elapsed, nothing new for %s. RELAUNCH to keep "
                 "listening: python3 %s %s --timeout %d"
                 % (timeout_min, me, pathlib.Path(__file__).resolve(), me, timeout_min)
             )
-            # A TOMBSTONE, NOT AN UNLINK. See tombstone(): deleting the file
-            # made "this waiter lapsed" indistinguishable from "no waiter was
-            # ever armed", which is the state the Stop hook is most lenient
-            # about.
+            # A TOMBSTONE, NOT AN UNLINK. See tombstone(): deleting the file made "this waiter lapsed" indistinguishable from "no waiter was ever armed", which is the state the Stop hook is most lenient about.
             tombstone(hb, "timeout")
             return 0
         time.sleep(min(TICK_S, remaining))
@@ -307,11 +291,7 @@ def wait(me, timeout_min, start):
         now_rq = _stat(rq)
         if now_rq != seen["rq"]:
             seen["rq"] = now_rq
-            # THE CHEAP GATE FIRST. Any session in this repo appending to the
-            # shared log moves its size, and folding on every such change would
-            # make foreign traffic a source of empty wake-ups -- the exact cost
-            # being removed here. The signature covers only events touching THIS
-            # session, so an unmoved signature ends the tick without a fold.
+            # THE CHEAP GATE FIRST. Any session in this repo appending to the shared log moves its size, and folding on every such change would make foreign traffic a source of empty wake-ups -- the exact cost being removed here. The signature covers only events touching THIS session, so an unmoved signature ends the tick without a fold.
             sig = S.my_requests_sig(worklist, me)
             if sig != base["sig"]:
                 base["sig"] = sig
@@ -343,12 +323,7 @@ def wait(me, timeout_min, start):
                 )
             print("    read one:  python3 %s --show <id>" % RPT.__file__)
             print("    mark read: python3 %s --read %s <id> [<id>...]" % (RPT.__file__, me))
-        # THE WAITER FIRES ONCE AND IS THEN GONE. Nothing relaunches it, and a
-        # session that does not re-arm is DEAF -- worse than the cron, which at
-        # least fires again. Measured live: a waiter fired at 16:13, a peer
-        # answered at 16:16, and the answer was never seen. So the exit line
-        # carries the relaunch command, and the PostToolUse nudge below is the
-        # belt to this braces.
+        # THE WAITER FIRES ONCE AND IS THEN GONE. Nothing relaunches it, and a session that does not re-arm is DEAF -- worse than the cron, which at least fires again. Measured live: a waiter fired at 16:13, a peer answered at 16:16, and the answer was never seen. So the exit line carries the relaunch command, and the PostToolUse nudge below is the belt to this braces.
         print(
             "RELAUNCH THE WAITER NOW (background task), or you stop hearing "
             "anything: python3 %s %s --timeout %d"
@@ -407,14 +382,9 @@ what is already there). `worklist.py --reports` lists captured sub-agent reports
 """ % (pathlib.Path(__file__).resolve(), int(DEFAULT_TIMEOUT_MIN))
 
 
-# A heartbeat older than this means no waiter is listening. Six ticks of slack
-# at the 2s default, so a briefly-descheduled process is never called dead.
+# A heartbeat older than this means no waiter is listening. Six ticks of slack at the 2s default, so a briefly-descheduled process is never called dead.
 HEARTBEAT_STALE_S = float(os.environ.get("WORKLIST_WAITER_STALE_S", "60"))
-# How often the PostToolUse nudge may speak. PostToolUse fires on EVERY tool
-# call, so an unthrottled nudge is pure noise and noise is how a mechanism gets
-# switched off. Ten minutes is a few times an hour on a busy session -- and it
-# sits under BG_REPORT_MIN (15), so a session that has lost its waiter is told
-# before the pure-wait check-in would start asking about it.
+# How often the PostToolUse nudge may speak. PostToolUse fires on EVERY tool call, so an unthrottled nudge is pure noise and noise is how a mechanism gets switched off. Ten minutes is a few times an hour on a busy session -- and it sits under BG_REPORT_MIN (15), so a session that has lost its waiter is told before the pure-wait check-in would start asking about it.
 NUDGE_EVERY_S = float(os.environ.get("WORKLIST_WAITER_NUDGE_S", "600"))
 
 
@@ -505,18 +475,13 @@ def outstanding_work(worklist, session_id, transcript_path=""):
     worklist is sick.
     """
     try:
-        # Tasks first: a directory glob against a resolved path, and the
-        # transcript is consulted only on the cold path (bounded tail read,
-        # and it banks the resolution for every later process).
+        # Tasks first: a directory glob against a resolved path, and the transcript is consulted only on the cold path (bounded tail read, and it banks the resolution for every later process).
         if C.pending_tasks(session_id, transcript_path):
             return True
         import wl_store as S  # noqa: PLC0415
 
         # sync=False is load-bearing, not a default: the sync path takes a
-        # BLOCKING LOCK_EX, and this process must never hold one (see the
-        # module docstring). live_worker_ids is unavailable for the reason
-        # above, so an expired lease fails closed into an open item -- the
-        # conservative direction, and the one that keeps nudging.
+        # BLOCKING LOCK_EX, and this process must never hold one (see the module docstring). live_worker_ids is unavailable for the reason above, so an expired lease fails closed into an open item -- the conservative direction, and the one that keeps nudging.
         fold = S.load(worklist, sync=False)
         open_items, _others, _deferred, in_flight = S.classify_items(fold, session_id)
     except Exception:  # noqa: BLE001
@@ -542,20 +507,12 @@ def nudge(event):
         return  # already said recently
     hb = heartbeat_path(worklist, me)
     if _fresh(hb, HEARTBEAT_STALE_S) and not _is_tombstone(hb):
-        # A waiter is listening. DECAY the ignored-count by one -- do NOT delete
-        # it. See decay_nudges: the unlink this replaces was resettable BY THE
-        # FAILURE, so one 60-minute waiter armed every few hours kept the
-        # Stop-side backstop permanently under threshold. `_is_tombstone` is
-        # part of the same repair: a waiter's exit marker is a WRITE, so for its
-        # first HEARTBEAT_STALE_S seconds it is "fresh" while naming a process
-        # that is already gone.
+        # A waiter is listening. DECAY the ignored-count by one -- do NOT delete it. See decay_nudges: the unlink this replaces was resettable BY THE FAILURE, so one 60-minute waiter armed every few hours kept the Stop-side backstop permanently under threshold. `_is_tombstone` is part of the same repair: a waiter's exit marker is a WRITE, so for its first HEARTBEAT_STALE_S seconds
+        # it is "fresh" while naming a process that is already gone.
         decay_nudges(worklist, me)
         return
 
-    # DO NOT NUDGE WHEN THERE IS NOTHING TO LISTEN FOR. With no other live
-    # session there is nobody who could send anything, and a waiter would be
-    # pure cost. Over-firing is how this gets routed around, so the check earns
-    # its silence here rather than being tuned down later.
+    # DO NOT NUDGE WHEN THERE IS NOTHING TO LISTEN FOR. With no other live session there is nobody who could send anything, and a waiter would be pure cost. Over-firing is how this gets routed around, so the check earns its silence here rather than being tuned down later.
     import wl_store as S  # noqa: PLC0415 -- only reached past both throttles
 
     dead_min = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
@@ -569,11 +526,7 @@ def nudge(event):
 
     # AND DO NOT NUDGE A SESSION THAT IS FINISHED. The waiter is how a session
     # HEARS a peer while it still has something to do with what it hears; a
-    # drained session paid for it twice over -- a process held for up to an
-    # hour, plus this line on every single tool call telling it to relaunch.
-    # Observed live 2026-08-19 on a session with no open items, no background
-    # jobs and its VMs already torn down, still being told it was NOT
-    # LISTENING. Last of the three gates because it is the dearest of them.
+    # drained session paid for it twice over -- a process held for up to an hour, plus this line on every single tool call telling it to relaunch. Observed live 2026-08-19 on a session with no open items, no background jobs and its VMs already torn down, still being told it was NOT LISTENING. Last of the three gates because it is the dearest of them.
     if not outstanding_work(
         worklist, str(event.get("session_id") or ""), event.get("transcript_path")
     ):
@@ -611,22 +564,15 @@ def main(argv):
         print(HELP)
         return 0
     if not argv or argv[0].startswith("-"):
-        # The bare-usage path prints the SAME text. A tool whose entire value
-        # depends on how it is invoked, whose usage line does not say how to
-        # invoke it, does not get used -- which is exactly what happened: it
-        # shipped, and the session that built it kept polling instead.
+        # The bare-usage path prints the SAME text. A tool whose entire value depends on how it is invoked, whose usage line does not say how to invoke it, does not get used -- which is exactly what happened: it shipped, and the session that built it kept polling instead.
         print(HELP, file=sys.stderr)
         return 2
     me = argv[0]
     if not C.PREFIX_RE.match(me) or len(me) < C.ME_MIN_LEN:
-        # Refused rather than half-working: a short prefix does not identify one
-        # session, so the baseline would be armed against the wrong slice and the
-        # waiter would wake on other sessions' mail or miss its own.
+        # Refused rather than half-working: a short prefix does not identify one session, so the baseline would be armed against the wrong slice and the waiter would wake on other sessions' mail or miss its own.
         print("bad prefix %r: pass YOUR 8-char session-id prefix" % me, file=sys.stderr)
         return 2
-    # And the same argument one step further: a full-length prefix that is not
-    # THIS session arms the baseline against the wrong slice just as completely,
-    # and silently. This waiter blocks for minutes on the wrong inbox otherwise.
+    # And the same argument one step further: a full-length prefix that is not THIS session arms the baseline against the wrong slice just as completely, and silently. This waiter blocks for minutes on the wrong inbox otherwise.
     ok, why = C.check_me(me)
     if not ok:
         print(why, file=sys.stderr)

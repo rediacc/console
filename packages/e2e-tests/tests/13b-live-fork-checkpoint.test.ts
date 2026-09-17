@@ -56,10 +56,7 @@ test.describe
     // In raw renet, `repository fork --tag` takes the fork's FULL image name —
     // "--tag IS its image name; the rdc `name:tag` compositing is a config
     // concern" (suite 17's ledger; the bridge ParamDef describes `tag` as
-    // "Fork repository name", and rdc passes the fork's GUID here). The fork's
-    // storage therefore lives at repositories/<forkRepoName>, NOT at
-    // repositories/<parent>:<tag> — mounting the latter was this suite's
-    // original bug: fork exit 0, then "repository storage not found".
+    // "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> — mounting the latter was this suite's original bug: fork exit 0, then "repository storage not found".
     const forkRepoName = `cpfork-${timestamp}`;
     const parentContainerName = `cp-counter-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -82,8 +79,7 @@ test.describe
       criuAvailable = runner.isSuccess(criuCheck);
       // Prove-the-instrument: on the FULL_INTEGRATION CI legs (ct-tests.yml sets
       // CRIU_EXPECTED=1) a missing CRIU is a real failure, not a silent skip — a
-      // conditional skip that can quietly become permanent is the kube-registry
-      // disease in a different coat.
+      // conditional skip that can quietly become permanent is the kube-registry disease in a different coat.
       if (!criuAvailable && process.env.CRIU_EXPECTED === '1') {
         throw new Error(
           `CRIU_EXPECTED=1 but CRIU is unavailable on the worker: ${runner.getCombinedOutput(criuCheck)}`
@@ -179,8 +175,7 @@ test.describe
 
     test('4. wait for parent counter to accumulate state', async () => {
       test.skip(!criuAvailable, 'CRIU not available on worker');
-      // 15 ticks gives a restore-vs-fresh margin: a fresh container cannot
-      // reach 15 in the few seconds between fork-up and the read in step 6.
+      // 15 ticks gives a restore-vs-fresh margin: a fresh container cannot reach 15 in the few seconds between fork-up and the read in step 6.
       for (let attempt = 0; attempt < 30 && preForkCount < 15; attempt++) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         preForkCount = await counterValue(parentNetworkId);
@@ -194,11 +189,7 @@ test.describe
         `sudo renet repository fork --name "${parentRepoName}" --tag "${forkRepoName}" --datastore "${datastorePath}" --checkpoint --network-id ${parentNetworkId}`
       );
       expect(result.code).toBe(0);
-      // The cow_sync fix is what makes this dump land inside the fork's
-      // image: verify the fork's checkpoint manifest exists once mounted.
-      // Mount on the FORK's network: the harness otherwise injects its default
-      // network-id (the parent's), and a fork daemon started on the parent's
-      // network wedges the parent — test 7's "parent counter stalled (0 -> 0)".
+      // The cow_sync fix is what makes this dump land inside the fork's image: verify the fork's checkpoint manifest exists once mounted. Mount on the FORK's network: the harness otherwise injects its default network-id (the parent's), and a fork daemon started on the parent's network wedges the parent — test 7's "parent counter stalled (0 -> 0)".
       const mountResult = await runner.repositoryMount(
         forkRepoName,
         TEST_PASSWORD,

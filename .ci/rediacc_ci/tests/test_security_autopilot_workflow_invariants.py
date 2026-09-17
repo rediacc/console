@@ -167,9 +167,7 @@ def mutate(original: str, before: str, after: str, count: int = 1) -> str:
     return out
 
 
-# ---------------------------------------------------------------------------
-# The real repository
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real repository ---------------------------------------------------------------------------
 
 
 def test_the_real_repository_agrees() -> None:
@@ -182,8 +180,7 @@ def test_the_real_repository_agrees() -> None:
     old, new = run_both()
     assert_same(old, new)
     assert old[0] == 0, "the real autopilot.yml is not green:\n%s" % old[2]
-    # SEEN the verdict, not matched two empty strings. The count is in the line,
-    # so a scan that collapsed to zero jobs would be visible here.
+    # SEEN the verdict, not matched two empty strings. The count is in the line, so a scan that collapsed to zero jobs would be visible here.
     assert "autopilot workflow invariants hold: 5 jobs scanned" in old[2]
 
 
@@ -210,9 +207,7 @@ def test_an_empty_workflow_file_variable_falls_back_to_the_real_default() -> Non
     assert results[0][0] == 0
 
 
-# ---------------------------------------------------------------------------
-# Fixtures, one invariant each
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixtures, one invariant each ---------------------------------------------------------------------------
 
 
 def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
@@ -479,9 +474,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> 
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The one exempted case
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The one exempted case ---------------------------------------------------------------------------
 
 
 def test_two_token_jobs_disagree_only_on_order(tmp_path: pathlib.Path) -> None:
@@ -519,9 +512,7 @@ jobs:
     assert new[0] == 1
     assert old[1] == new[1] == ""
 
-    # Scoped to `INVARIANT-FAIL: token`, not to `token`: the settings-block and
-    # state-guard failures this synthetic file also raises mention the word, and
-    # the first version of this case counted six findings where it meant three.
+    # Scoped to `INVARIANT-FAIL: token`, not to `token`: the settings-block and state-guard failures this synthetic file also raises mention the word, and the first version of this case counted six findings where it meant three.
     def token_findings(text: str) -> list[str]:
         return [line for line in text.split("\n") if "INVARIANT-FAIL: token" in line]
 
@@ -538,9 +529,7 @@ jobs:
     )
 
 
-# ---------------------------------------------------------------------------
-# A mutation sweep over the REAL workflow
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A mutation sweep over the REAL workflow ---------------------------------------------------------------------------
 
 
 def test_a_deterministic_mutation_sweep_of_the_real_workflow(tmp_path: pathlib.Path) -> None:
@@ -598,9 +587,7 @@ def test_a_deterministic_mutation_sweep_of_the_real_workflow(tmp_path: pathlib.P
     assert greens > 0, "the sweep produced no passing workflow; it proved only the red branch"
 
 
-# ---------------------------------------------------------------------------
-# The exported helpers, driven directly (the selftest half)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The exported helpers, driven directly (the selftest half) ---------------------------------------------------------------------------
 
 
 def test_walk_reports_nothing_but_the_scan_count_on_a_conformant_file() -> None:

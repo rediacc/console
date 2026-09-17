@@ -34,8 +34,7 @@ from rediacc_ci.tests.gates import test_twin_parity
 
 REAL_LOCK = xdist_groups.lock_path()
 
-# A lock shaped exactly like the real one: a list of entries whose `run` names a
-# script under .ci/scripts/test/gates/ and which may carry `mutex` / `reads`.
+# A lock shaped exactly like the real one: a list of entries whose `run` names a script under .ci/scripts/test/gates/ and which may carry `mutex` / `reads`.
 FIXTURE_LOCK = [
     {"id": "a", "run": "bash .ci/scripts/test/gates/test-writes.sh", "mutex": ["tree:repo"]},
     {"id": "b", "run": "bash .ci/scripts/test/gates/test-scans.sh", "reads": ["tree:repo"]},
@@ -70,9 +69,7 @@ def _write(tmp_path, lock=FIXTURE_LOCK, runner=FIXTURE_RUNNER):
     return lock_file, runner_file
 
 
-# ---------------------------------------------------------------------------
-# real_tree_twins: the union, both directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- real_tree_twins: the union, both directions ---------------------------------------------------------------------------
 
 
 def test_the_union_takes_both_claims_from_the_lock_and_the_runner_arrays(tmp_path) -> None:
@@ -133,9 +130,7 @@ def test_both_sources_absent_yields_an_empty_union_rather_than_an_exception(tmp_
     assert xdist_groups.real_tree_twins(tmp_path / "no.json", tmp_path / "no.sh") == set()
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_the_real_join_is_not_empty() -> None:
@@ -193,9 +188,7 @@ def test_the_port_scan_module_still_declares_its_group() -> None:
     assert test_core_ports.XDIST_GROUP == "ports"
 
 
-# ---------------------------------------------------------------------------
-# group_for: both directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- group_for: both directions ---------------------------------------------------------------------------
 
 
 def test_an_explicit_group_attribute_is_the_group() -> None:
@@ -245,9 +238,7 @@ def test_a_non_string_group_is_ignored_rather_than_stringified() -> None:
     assert xdist_groups.group_for(_Module(XDIST_GROUP=3), set()) is None
 
 
-# ---------------------------------------------------------------------------
-# The conftest, end to end. Everything above can pass while it is never loaded.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The conftest, end to end. Everything above can pass while it is never loaded. ---------------------------------------------------------------------------
 
 
 def _collect(target: str, expr: str) -> subprocess.CompletedProcess:

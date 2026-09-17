@@ -87,22 +87,16 @@ from rediacc_ci.controls import Controls, plant
 SCRIPT_ENV = "RELEASE_DECIDE_SCRIPT"
 DEFAULT_SCRIPT = ".ci/scripts/ci/dispatch-release.sh"
 
-# The environment the subject is driven under. GITHUB_SHA is the real sha of the
-# 2026-08-26 merge the gate is written from, kept so that a reader who greps for
-# it lands on the incident rather than on a placeholder.
+# The environment the subject is driven under. GITHUB_SHA is the real sha of the 2026-08-26 merge the gate is written from, kept so that a reader who greps for it lands on the incident rather than on a placeholder.
 DRIVE_ENV = {
     "GITHUB_REPOSITORY": "rediacc/console",
     "GITHUB_SHA": "1c006e538fe3d33eeb280b809140b0d477a280db",
 }
 
-# The literal the whole gate is about. Kept as one constant because it appears as
-# both the needle of case 1 and the anti-needle of cases 2 through 5, and two
-# spellings of it would let one direction silently stop asserting.
+# The literal the whole gate is about. Kept as one constant because it appears as both the needle of case 1 and the anti-needle of cases 2 through 5, and two spellings of it would let one direction silently stop asserting.
 SKIP_SIGNAL = "release SKIPPED"
 
-# How many lines of the subject's output a failure report shows. `head -6` in the
-# twin: enough to see the decision, short enough that five failures do not bury
-# the summary.
+# How many lines of the subject's output a failure report shows. `head -6` in the twin: enough to see the decision, short enough that five failures do not bury the summary.
 FAILURE_EXCERPT_LINES = 6
 
 
@@ -146,15 +140,8 @@ def drive(work: pathlib.Path, script: pathlib.Path, rows: str) -> tuple[int, str
     )
     # `.rstrip("\n")` MIRRORS `$(...)`, and it is a fix rather than a tidy-up.
     # The twin captures with `res="$(drive "$rows")"`, and command substitution
-    # strips every trailing newline. Without this the port's `out` keeps the
-    # SUT's final newline, `out.split("\n")` yields a trailing empty element,
-    # and the failure excerpt prints one extra six-space line per driven case
-    # that the twin never prints. Measured 2026-09-07 under W7 P4 by pointing
-    # RELEASE_DECIDE_SCRIPT at a copy that could not source its own lib: both
-    # sides exited 1 with the same findings, and stderr differed by exactly
-    # five blank continuation lines. It only shows on the excerpt path, which
-    # fires when dispatch-release.sh is already broken -- the one moment the
-    # two implementations must still be readable as the same gate.
+    # strips every trailing newline. Without this the port's `out` keeps the SUT's final newline, `out.split("\n")` yields a trailing empty element, and the failure excerpt prints one extra six-space line per driven case that the twin never prints. Measured 2026-09-07 under W7 P4 by pointing RELEASE_DECIDE_SCRIPT at a copy that could not source its own lib: both sides exited 1 with
+    # the same findings, and stderr differed by exactly five blank continuation lines. It only shows on the excerpt path, which fires when dispatch-release.sh is already broken -- the one moment the two implementations must still be readable as the same gate.
     return completed.returncode, completed.stdout.rstrip("\n")
 
 
@@ -200,9 +187,7 @@ def main(argv: list[str] | None = None) -> int:
 
         log.info("release-bump-skip: driving the real decision through every branch")
 
-        # 1. The case the label exists for: the signal must be emitted, and it must
-        #    NAME the PR and the label, because "no release" without a reason is the
-        #    ambiguity this gate exists to remove.
+        # 1. The case the label exists for: the signal must be emitted, and it must NAME the PR and the label, because "no release" without a reason is the ambiguity this gate exists to remove.
         expect(
             "bump-none only -> skips, and says why",
             "576 ci,bump-none",
@@ -221,8 +206,7 @@ def main(argv: list[str] | None = None) -> int:
             SKIP_SIGNAL,
         )
 
-        # 3. Mixed: one PR asks to skip, another does not. Releasing is correct, and
-        #    the skip signal must still be withheld.
+        # 3. Mixed: one PR asks to skip, another does not. Releasing is correct, and the skip signal must still be withheld.
         expect(
             "mixed labels -> releases, still no skip signal",
             "576 ci,bump-none\n577 ci",
@@ -231,8 +215,7 @@ def main(argv: list[str] | None = None) -> int:
             SKIP_SIGNAL,
         )
 
-        # 4. Fail OPEN. An unreadable API must release rather than silently withhold
-        #    -- the script's stated doctrine -- and must not claim a skip.
+        # 4. Fail OPEN. An unreadable API must release rather than silently withhold -- the script's stated doctrine -- and must not claim a skip.
         expect(
             "API failure -> releases (fails open), no skip signal",
             "FAIL",
@@ -244,13 +227,8 @@ def main(argv: list[str] | None = None) -> int:
         # 5. No merged PR at all (direct push): releases, no skip signal.
         expect("no merged PR -> releases, no skip signal", "", "release", "", SKIP_SIGNAL)
 
-        # ANTI-VACUITY. If the shim could not drive the script at all, every
-        # `expect` above would have failed loudly -- but a future refactor could
-        # make the script exit 0 printing nothing, and the "decision: release"
-        # test would then fail rather than pass, so the suite stays honest. The
-        # control here is the opposite risk: prove the harness can still produce a
-        # SKIP, so case 2's "no skip signal" is not passing because the signal is
-        # unreachable for everyone.
+        # ANTI-VACUITY. If the shim could not drive the script at all, every `expect` above would have failed loudly -- but a future refactor could make the script exit 0 printing nothing, and the "decision: release" test would then fail rather than pass, so the suite stays honest. The control here is the opposite risk: prove the harness can still produce a SKIP, so case 2's "no
+        # skip signal" is not passing because the signal is unreachable for everyone.
         _code, control = drive(work, script, "999 bump-none")
         if SKIP_SIGNAL not in control:
             log.error(
@@ -273,12 +251,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A stand-in for `dispatch-release.sh` that decides the same way it does, used by
-# the selftest as the thing every plant mutates. Written out rather than copied
+# A stand-in for `dispatch-release.sh` that decides the same way it does, used by the selftest as the thing every plant mutates. Written out rather than copied
 # from the real script, because a fixture built by copying is a fixture that
-# stops testing the day the original is reworded -- and because mutating a REAL
-# release script on disk to prove a gate fires is exactly the kind of control
-# `check-control-vacuity.sh` refuses.
+# stops testing the day the original is reworded -- and because mutating a REAL release script on disk to prove a gate fires is exactly the kind of control `check-control-vacuity.sh` refuses.
 _FAKE_SUBJECT = r"""#!/bin/bash
 set -euo pipefail
 rows="$(gh api whatever 2>/dev/null || true)"
@@ -335,9 +310,7 @@ def selftest() -> int:
 
         ctl.check("CONTROL: a correct decision script passes", run_against(_FAKE_SUBJECT), 0)
 
-        # PLANT 1, the direction that matters most: the skip notice is emitted on
-        # every path, so a releasing commit tells its reader the opposite of what
-        # happened. Cases 2 to 5 must all fire.
+        # PLANT 1, the direction that matters most: the skip notice is emitted on every path, so a releasing commit tells its reader the opposite of what happened. Cases 2 to 5 must all fire.
         always = plant(
             _FAKE_SUBJECT,
             'else\n    echo "decision: release"',
@@ -345,16 +318,13 @@ def selftest() -> int:
         )
         ctl.check("PLANT: a skip signal on the releasing path is caught", run_against(always), 1)
 
-        # PLANT 2: the skip path goes silent. The decision is still right, so a
-        # gate that only checked `decision:` would pass -- which is the whole
-        # reason the needle exists.
+        # PLANT 2: the skip path goes silent. The decision is still right, so a gate that only checked `decision:` would pass -- which is the whole reason the needle exists.
         silent = plant(
             _FAKE_SUBJECT, "    echo \"release SKIPPED: #${number} carries 'bump-none'\"\n", ""
         )
         ctl.check("PLANT: a silent skip path is caught", run_against(silent), 1)
 
-        # PLANT 3: the signal is emitted but stops naming the PR, so "no release"
-        # loses the reason again.
+        # PLANT 3: the signal is emitted but stops naming the PR, so "no release" loses the reason again.
         unnamed = plant(
             _FAKE_SUBJECT,
             "echo \"release SKIPPED: #${number} carries 'bump-none'\"",
@@ -370,9 +340,7 @@ def selftest() -> int:
         )
         ctl.check("PLANT: failing closed on an API error is caught", run_against(closed), 1)
 
-        # PLANT 5: the subject prints nothing at all. This is the shape the twin's
-        # own anti-vacuity note calls out -- "a future refactor could make the
-        # script exit 0 printing nothing" -- and it must be a refusal, not a pass.
+        # PLANT 5: the subject prints nothing at all. This is the shape the twin's own anti-vacuity note calls out -- "a future refactor could make the script exit 0 printing nothing" -- and it must be a refusal, not a pass.
         ctl.check(
             "VACUITY: a subject that prints nothing is refused",
             run_against("#!/bin/bash\nexit 0\n"),

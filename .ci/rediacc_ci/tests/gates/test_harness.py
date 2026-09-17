@@ -48,8 +48,7 @@ def test_assert_eq_both_directions_and_argument_order(gate):
     gate.assert_eq(inner.assertions, 1, "a passing assertion is still counted")
     with pytest.raises(harness.GateAssertionError) as caught:
         inner.assert_eq("got-this", "wanted-that", "the message")
-    # ACTUAL FIRST, EXPECTED SECOND, exactly as in test-helpers.sh. A port that
-    # swapped them would still raise here, so the message is what pins the order.
+    # ACTUAL FIRST, EXPECTED SECOND, exactly as in test-helpers.sh. A port that swapped them would still raise here, so the message is what pins the order.
     gate.assert_contains(
         str(caught.value),
         "expected 'wanted-that', got 'got-this'",
@@ -77,8 +76,7 @@ def test_assert_exit_code_keeps_the_opposite_argument_order(gate):
     inner.assert_exit_code(0, 0, "a matching code passes")
     with pytest.raises(harness.GateAssertionError) as caught:
         inner.assert_exit_code(1, 77, "the message")
-    # EXPECTED FIRST for this one, the reverse of assert_eq. Normalising the pair
-    # would silently invert every existing call site, so the difference is pinned.
+    # EXPECTED FIRST for this one, the reverse of assert_eq. Normalising the pair would silently invert every existing call site, so the difference is pinned.
     gate.assert_contains(
         str(caught.value), "expected 1, got 77", "assert_exit_code(expected, actual)"
     )
@@ -128,8 +126,7 @@ def test_fake_bin_admits_only_what_the_spec_names(gate):
         gate.assert_eq(
             shutil.which("someprobe"), str(fakes.dir / "someprobe"), "a named fake is reachable"
         )
-        # THE DIRECTION THAT MATTERS. A denylist would leave this resolvable and
-        # the test would prove nothing about the binaries nobody thought to name.
+        # THE DIRECTION THAT MATTERS. A denylist would leave this resolvable and the test would prove nothing about the binaries nobody thought to name.
         gate.assert_eq(shutil.which("curl"), None, "an UNNAMED binary is absent by construction")
         harness.run([str(fakes.dir / "someprobe"), "--flag", "value"])
         gate.assert_contains(fakes.record("someprobe"), "--flag value", "the fake records its argv")
@@ -206,8 +203,7 @@ def test_run_keeps_the_two_streams_apart(gate):
 
 def test_run_overlays_the_environment_rather_than_replacing_it(gate):
     # The overlay is the half that matters: `env=` on subprocess REPLACES the whole
-    # environment, so a fixture meaning to set one variable silently drops PATH and
-    # the failure arrives as "command not found" in a test about something else.
+    # environment, so a fixture meaning to set one variable silently drops PATH and the failure arrives as "command not found" in a test about something else.
     result = harness.run(["bash", "-c", 'echo "$MY_PROBE|$PATH"'], env={"MY_PROBE": "set"})
     gate.assert_contains(result.out, "set|", "the overlay variable reaches the child")
     gate.assert_not_contains(result.out, "set|\n", "and PATH survived rather than being erased")
@@ -236,9 +232,7 @@ def test_assert_vacuous_tree_fails_accepts_a_refusing_gate_and_rejects_a_permiss
 
 
 def test_the_harness_module_is_where_the_ported_tests_think_it_is(gate):
-    # A cheap structural control: the vocabulary the ports call must all exist. A
-    # rename here is a red in every port, which is correct, but this names the
-    # missing method instead of leaving the reader with an AttributeError per file.
+    # A cheap structural control: the vocabulary the ports call must all exist. A rename here is a red in every port, which is correct, but this names the missing method instead of leaving the reader with an AttributeError per file.
     expected = [
         "log_pass",
         "log_fail",
@@ -359,8 +353,7 @@ def test_a_signal_is_named_rather_than_left_as_a_number(gate):
     gate.assert_eq(harness.describe_exit(-9), "-9 (KILLED by SIGKILL)", "and subprocess's form")
     gate.ok("control: all three encodings of a kill resolve to a name")
 
-    # THE BAND'S EDGES. 128 itself is not 128+0, and 160 is past the last real
-    # signal -- a rule without both edges renames ordinary statuses.
+    # THE BAND'S EDGES. 128 itself is not 128+0, and 160 is past the last real signal -- a rule without both edges renames ordinary statuses.
     gate.assert_eq(harness.describe_exit(128), "128", "128 is not a signal")
     gate.assert_eq(harness.describe_exit(160), "160", "nor is 160")
     gate.assert_eq(harness.describe_exit(255), "255", "nor an ordinary 255")

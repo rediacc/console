@@ -107,18 +107,12 @@ def test_the_bash_subshell_agrees_with_the_twins() -> None:
     assert (code, err) == (0, ""), err
     port = dv.run_summary(paths.repo_root(), "0", "0")
 
-    # THE ELAPSED SECONDS ARE MASKED, and only those. Each side computes its own
-    # `now - DRILL_STARTED_AT` and renders it whole-seconds, so when the two runs
-    # straddle a second boundary the twin says `failed  (1s)` and the port says
-    # `failed  (0s)`. That is a clock tick, not a disagreement about behaviour.
-    # Observed in CI job 104616780062 after five clean runs, which is what a
-    # boundary race looks like.
+    # THE ELAPSED SECONDS ARE MASKED, and only those. Each side computes its own `now - DRILL_STARTED_AT` and renders it whole-seconds, so when the two runs straddle a second boundary the twin says `failed (1s)` and the port says `failed (0s)`. That is a clock tick, not a disagreement about behaviour. Observed in CI job 104616780062 after five clean runs, which is what a boundary
+    # race looks like.
     #
-    # Masked rather than pinned because the duration is environmental: the claim
-    # this case makes is "the same shell code runs", and how long it took is no
+    # Masked rather than pinned because the duration is environmental: the claim this case makes is "the same shell code runs", and how long it took is no
     # part of it. Same stance as the `cb=<digits>` cache-buster normalisation in
-    # test_deploy_verify_edge_endpoints.py -- neither side can be made to agree
-    # and neither is supposed to.
+    # test_deploy_verify_edge_endpoints.py -- neither side can be made to agree and neither is supposed to.
     elapsed = re.compile(r"\(\d+s\)")
     assert elapsed.search(out), (
         "the twin printed no elapsed time, so the mask below would hide a real "
@@ -132,10 +126,7 @@ def test_the_byte_tail_matches_the_twins_pipeline() -> None:
     """`tr '\n' ' ' <<<"$out" | tail -c 200`, including the herestring's own
     trailing newline. Compared against the real tr and tail."""
     text = "line one\nline two\n" + "z" * 250
-    # The text arrives through the ENVIRONMENT, not through the command string.
-    # An earlier version interpolated it and doubled its own `%%s`, so the
-    # comparison ran against the literal two characters `%s` and failed for a
-    # reason that had nothing to do with the tail.
+    # The text arrives through the ENVIRONMENT, not through the command string. An earlier version interpolated it and doubled its own `%%s`, so the comparison ran against the literal two characters `%s` and failed for a reason that had nothing to do with the tail.
     code, out, err = diff.bash_streams(
         "tr '\\n' ' ' <<<\"$T\" | tail -c 200",
         env=diff.env_for(T=text),

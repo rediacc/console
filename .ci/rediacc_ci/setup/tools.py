@@ -124,18 +124,10 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 
-# THE HOP, WRITTEN BY HAND EXACTLY ONCE, and copied deliberately from
-# `.ci/rediacc_ci/check_pytest.py:88` rather than invented: this file is both a
-# module and a SCRIPT, and as a script it cannot import the module that would put
-# its own package on sys.path until its package is on sys.path. `parents[2]` is
-# `.ci`, one level deeper than check_pytest's `parents[1]` because this file sits
-# in a subpackage. Everything after this line goes through rediacc_ci.paths.
+# THE HOP, WRITTEN BY HAND EXACTLY ONCE, and copied deliberately from `.ci/rediacc_ci/check_pytest.py:88` rather than invented: this file is both a module and a SCRIPT, and as a script it cannot import the module that would put its own package on sys.path until its package is on sys.path. `parents[2]` is `.ci`, one level deeper than check_pytest's `parents[1]` because this file
+# sits in a subpackage. Everything after this line goes through rediacc_ci.paths.
 #
-# The alternative is registering the gate as `python3 -m rediacc_ci.setup.tools`
-# in package.json, and `scripts/lib/gate-header.ts` records why that is wrong: a
-# `python3` prefix makes check:ci-parity resolve the entry's leaves to
-# `[python3]`, so the manifest would then claim the interpreter as the gate's
-# file and a change to this one would select nothing.
+# The alternative is registering the gate as `python3 -m rediacc_ci.setup.tools` in package.json, and `scripts/lib/gate-header.ts` records why that is wrong: a `python3` prefix makes check:ci-parity resolve the entry's leaves to `[python3]`, so the manifest would then claim the interpreter as the gate's file and a change to this one would select nothing.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci import paths
@@ -148,10 +140,7 @@ EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_CANNOT_RUN = 77
 
-# The package managers a row may name, in the order `detect_manager` prefers
-# them. `repo` is last because it is not a system manager at all: it means a
-# script in THIS repository installs the tool at the pin, which is the strongest
-# answer available and therefore the one that must not shadow a host's own.
+# The package managers a row may name, in the order `detect_manager` prefers them. `repo` is last because it is not a system manager at all: it means a script in THIS repository installs the tool at the pin, which is the strongest answer available and therefore the one that must not shadow a host's own.
 LINUX_MANAGERS = ("apt", "dnf", "pacman", "apk")
 DARWIN_MANAGERS = ("brew",)
 REPO_MANAGER = "repo"
@@ -185,20 +174,14 @@ class Tool:
     note: str = ""
     # A python DISTRIBUTION rather than an executable on PATH. PyYAML is the only
     # one today; it is pinned, it is needed by gates that parse workflow YAML, and
-    # `shutil.which("PyYAML")` will never find it. Flagged so `--report` asks the
-    # interpreter instead of PATH, and so A4/A5 still apply to it.
+    # `shutil.which("PyYAML")` will never find it. Flagged so `--report` asks the interpreter instead of PATH, and so A4/A5 still apply to it.
     python_dist: str = ""
     aliases: tuple[str, ...] = field(default_factory=tuple)
 
 
-# ---------------------------------------------------------------------------
-# THE TABLE
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE TABLE ---------------------------------------------------------------------------
 #
-# ORDER IS THE DEPENDENCY ORDER a fresh machine needs, not alphabetical: the
-# compiler and jq come before node, node comes before anything reached through
-# npm, and the Python pair comes last because uv provisions pytest. A reader
-# following it top to bottom is following `./run.sh setup`.
+# ORDER IS THE DEPENDENCY ORDER a fresh machine needs, not alphabetical: the compiler and jq come before node, node comes before anything reached through npm, and the Python pair comes last because uv provisions pytest. A reader following it top to bottom is following `./run.sh setup`.
 TOOLS: tuple[Tool, ...] = (
     Tool(
         name="cc",
@@ -667,9 +650,7 @@ TOOLS: tuple[Tool, ...] = (
 )
 
 
-# ---------------------------------------------------------------------------
-# Host questions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Host questions ---------------------------------------------------------------------------
 
 
 def detect_manager() -> str:
@@ -750,13 +731,8 @@ def probe_version(tool: Tool) -> str | None:
         return None
     for line in (completed.stdout + "\n" + completed.stderr).splitlines():
         for word in line.split():
-            # TWO ATTEMPTS PER WORD, and the second is not padding. The ported
-            # `normalize_version` strips exactly the prefixes the bash strips
-            # (`v` then `go`), because it is a differential twin and must not
-            # invent a third. But `jq --version` prints `jq-1.8.1`, so a
-            # name-dash-version word yields nothing from it. Splitting on the
-            # LAST dash and retrying keeps this reporter useful without widening
-            # the twin's contract, which is the thing that must stay pinned.
+            # TWO ATTEMPTS PER WORD, and the second is not padding. The ported `normalize_version` strips exactly the prefixes the bash strips (`v` then `go`), because it is a differential twin and must not invent a third. But `jq --version` prints `jq-1.8.1`, so a name-dash-version word yields nothing from it. Splitting on the LAST dash and retrying keeps this reporter useful
+            # without widening the twin's contract, which is the thing that must stay pinned.
             for candidate in (word, word.rsplit("-", 1)[-1]):
                 try:
                     return toolchain.normalize_version(candidate)
@@ -765,9 +741,7 @@ def probe_version(tool: Tool) -> str | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# The audit: the part that has a verdict
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The audit: the part that has a verdict ---------------------------------------------------------------------------
 
 
 def audit(
@@ -821,9 +795,7 @@ def audit(
 
     by_name = {row.name: row for row in table}
 
-    # -- A1. One row per tool. -----------------------------------------------
-    # A duplicate name is not cosmetic: `by_name` silently keeps the LAST, so the
-    # earlier row's installers become unreachable while still reading as present.
+    # -- A1. One row per tool. ----------------------------------------------- A duplicate name is not cosmetic: `by_name` silently keeps the LAST, so the earlier row's installers become unreachable while still reading as present.
     seen: set[str] = set()
     for row in table:
         if row.name in seen:
@@ -883,8 +855,7 @@ def audit(
         if not any(m in row.install for m in (*LINUX_MANAGERS, REPO_MANAGER))
     )
 
-    # -- A6. THE pytest ROW, BY NAME. ----------------------------------------
-    # Redundant with A2 today, and deliberately so: see the module docstring. A2
+    # -- A6. THE pytest ROW, BY NAME. ---------------------------------------- Redundant with A2 today, and deliberately so: see the module docstring. A2
     # goes quiet if pytest ever leaves TOOL_KEYS; this does not.
     pytest_row = by_name.get("pytest")
     if pytest_row is None:
@@ -910,11 +881,7 @@ def audit(
                 "pipx are both absent."
             )
 
-    # -- A7. Every row cites where its knowledge came from. ------------------
-    # Shape only, and the limit is stated rather than hidden: this cannot tell a
-    # true citation from a plausible one. It exists to stop a row appearing with
-    # no citation at all, which is the difference between prose a reviewer can
-    # check and prose nobody can.
+    # -- A7. Every row cites where its knowledge came from. ------------------ Shape only, and the limit is stated rather than hidden: this cannot tell a true citation from a plausible one. It exists to stop a row appearing with no citation at all, which is the difference between prose a reviewer can check and prose nobody can.
     for row in table:
         if not row.provenance.strip():
             findings.append(
@@ -940,9 +907,7 @@ def audit(
     return findings
 
 
-# ---------------------------------------------------------------------------
-# Reporting
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Reporting ---------------------------------------------------------------------------
 
 
 def report(table: tuple[Tool, ...] = TOOLS) -> int:
@@ -974,14 +939,8 @@ def report(table: tuple[Tool, ...] = TOOLS) -> int:
         print("  %-12s %-9s %-12s %s" % (row.name, pinned, version, where or "ABSENT"))
     print()
     print("%d row(s), %d absent on this host" % (len(table), missing))
-    # ABSENT HERE MEANS "NOT ON PATH", AND FOR THE repo ROWS THAT IS NOT THE SAME
-    # AS UNAVAILABLE. `.ci/bootstrap.sh` installs uv and pytest into
-    # `.ci/cache/toolchain/`, and `toolchain_acquire` puts shfmt and shellcheck in
-    # a cache directory too, so all four can be ABSENT above while
-    # `npm run check:ci-pytest` runs perfectly. This module deliberately does not
-    # reimplement those resolvers to find out: a second copy of the resolution
-    # logic is exactly the drift this table exists to end. It names the thing that
-    # DOES know instead.
+    # ABSENT HERE MEANS "NOT ON PATH", AND FOR THE repo ROWS THAT IS NOT THE SAME AS UNAVAILABLE. `.ci/bootstrap.sh` installs uv and pytest into `.ci/cache/toolchain/`, and `toolchain_acquire` puts shfmt and shellcheck in a cache directory too, so all four can be ABSENT above while `npm run check:ci-pytest` runs perfectly. This module deliberately does not reimplement those
+    # resolvers to find out: a second copy of the resolution logic is exactly the drift this table exists to end. It names the thing that DOES know instead.
     repo_rows = [row.name for row in table if REPO_MANAGER in row.install]
     print(
         "note: %d row(s) are repo-provisioned (%s) and resolve from a cache "
@@ -1019,9 +978,7 @@ def install_plan(manager: str, table: tuple[Tool, ...] = TOOLS) -> int:
     return EXIT_OK
 
 
-# ---------------------------------------------------------------------------
-# Selftest: both directions, before any real scan
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest: both directions, before any real scan ---------------------------------------------------------------------------
 
 
 def _row(**kwargs: object) -> Tool:
@@ -1064,8 +1021,7 @@ def selftest(*, verbose: bool = True) -> int:
     good_widget = _row(name="widget", pin_key="WIDGET_VERSION")
     clean = (good_widget, good_pytest)
 
-    # The floor: the number of controls below, expressed as the length of the
-    # list they are declared in, so adding one cannot leave the floor behind.
+    # The floor: the number of controls below, expressed as the length of the list they are declared in, so adding one cannot leave the floor behind.
     cases: list[tuple[str, tuple[Tool, ...], str | None]] = [
         # (label, table, a substring that MUST appear in the findings; None = clean)
         ("MUST NOT FIRE: a complete table is clean", clean, None),
@@ -1156,15 +1112,10 @@ def selftest(*, verbose: bool = True) -> int:
         else:
             ctl.check(label, any(f.startswith(want) for f in found), True)
 
-    # THE SHIPPED TABLE IS DELIBERATELY NOT A CONTROL HERE, and it was one until a
-    # plant showed why it must not be. A control asking "does the real table audit
-    # clean" makes the instrument's health and the TREE's health the same
-    # question, so a genuine finding in the table came back as
-    # "the controls did not pass, so this gate has NOT judged the tree" -- which
-    # is false, and sends the reader to the harness instead of to the row. The
+    # THE SHIPPED TABLE IS DELIBERATELY NOT A CONTROL HERE, and it was one until a plant showed why it must not be. A control asking "does the real table audit clean" makes the instrument's health and the TREE's health the same question, so a genuine finding in the table came back as "the controls did not pass, so this gate has NOT judged the tree" -- which is false, and sends the
+    # reader to the harness instead of to the row. The
     # controls below are synthetic only; the shipped table is judged by the audit
-    # leg in `main`, which runs immediately after them, and by
-    # `test_the_shipped_table_audits_clean` in the pytest suite.
+    # leg in `main`, which runs immediately after them, and by `test_the_shipped_table_audits_clean` in the pytest suite.
 
     # Two host-shape controls that do not depend on what is installed here.
     ctl.check(
@@ -1172,12 +1123,8 @@ def selftest(*, verbose: bool = True) -> int:
         detect_manager() in (*ALL_MANAGERS, ""),
         True,
     )
-    # STDERR IS CAPTURED, not left to leak. This control makes install_plan
-    # print a refusal, and on the leg `main` runs before every real scan that
-    # refusal would land on stderr in the middle of a PASSING run -- a line that
-    # reads as a failure during a green. Capturing it also strengthens the
-    # control: the message itself is asserted, not just the exit code, so a
-    # refusal that returned the right number and said nothing would still fire.
+    # STDERR IS CAPTURED, not left to leak. This control makes install_plan print a refusal, and on the leg `main` runs before every real scan that refusal would land on stderr in the middle of a PASSING run -- a line that reads as a failure during a green. Capturing it also strengthens the control: the message itself is asserted, not just the exit code, so a refusal that returned
+    # the right number and said nothing would still fire.
     captured = io.StringIO()
     with contextlib.redirect_stderr(captured):
         refusal_rc = install_plan("yum", clean)
@@ -1191,9 +1138,7 @@ def selftest(*, verbose: bool = True) -> int:
     return EXIT_OK if ctl.report() else EXIT_FINDINGS
 
 
-# ---------------------------------------------------------------------------
-# argv dispatch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argv dispatch ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
@@ -1213,9 +1158,7 @@ def main(argv: list[str]) -> int:
     if "--selftest" in argv:
         return selftest()
 
-    # THE ONLY 77. See the module docstring: an unresolvable root means the pins
-    # corpus cannot be read, so every corpus-derived floor here is undefined and
-    # a 1 would put a green-able number on a run that scanned nothing.
+    # THE ONLY 77. See the module docstring: an unresolvable root means the pins corpus cannot be read, so every corpus-derived floor here is undefined and a 1 would put a green-able number on a run that scanned nothing.
     try:
         root = paths.repo_root()
     except paths.RootError as exc:

@@ -71,12 +71,8 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-roundlog-write.sh"
 ORDER = 9
 
-# CREATING one is not truncating one, and without this line the two halves of
-# the contract deadlock. Walking the documented path hit it head-on on
-# 2026-08-27: `worklist.py --roundlog` refuses to create a log ("This verb
-# REPLACES a STATUS block, it does not create a round log ... Write the wave
-# header first"), and this guard then refused the write it had just been told
-# to make. There was no third door.
+# CREATING one is not truncating one, and without this line the two halves of the contract deadlock. Walking the documented path hit it head-on on 2026-08-27: `worklist.py --roundlog` refuses to create a log ("This verb REPLACES a STATUS block, it does not create a round log ... Write the wave header first"), and this guard then refused the write it had just been told to make.
+# There was no third door.
 DEFECT = (
     "if not os.path.exists(file_path):\n        return hookio.ALLOW",
     "if False:\n        return hookio.ALLOW",
@@ -100,9 +96,7 @@ MESSAGE = (
     "swallow an appendix they never named."
 )
 
-# A fixed location, named by both the builder and the edge cases below. See the
-# port note in the module docstring for why it cannot be the harness's own
-# per-session temporary directory.
+# A fixed location, named by both the builder and the edge cases below. See the port note in the module docstring for why it cannot be the harness's own per-session temporary directory.
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-roundlog")
 EXISTING_LOG = "%s/reports/pr-babysit-0831-1.md" % WORLD
 MISSING_LOG = "%s/reports/pr-babysit-never-written.md" % WORLD
@@ -127,8 +121,7 @@ def _round_log_world(_unused):
 
 FIXTURES = {"roundlog-world": _round_log_world}
 
-# The variable is never read by this guard. It exists so the harness resolves
-# the token, which is what builds the world above before any case runs.
+# The variable is never read by this guard. It exists so the harness resolves the token, which is what builds the world above before any case runs.
 ENVS = [("roundlog", {"REDIACC_ROUNDLOG_WORLD": "{FIXTURE:roundlog-world}"}, {})]
 
 EDGE_CASES = [
@@ -143,8 +136,7 @@ EDGE_CASES = [
             "tool_input": {"notebook_path": EXISTING_LOG, "new_source": "x"},
         },
     ),
-    # Targeted edits are deliberately allowed: they cannot swallow an appendix
-    # they never named.
+    # Targeted edits are deliberately allowed: they cannot swallow an appendix they never named.
     (
         "an Edit on the same file",
         {"tool_name": "Edit", "tool_input": {"file_path": EXISTING_LOG, "new_string": "x"}},
@@ -187,9 +179,7 @@ def run(ev):
     if re.search(ROUND_LOG, file_path) is None:
         return hookio.ALLOW
 
-    # CREATING one is not truncating one. A file that does not exist has no appendix
-    # to swallow, and the failure this guard prevents is specifically the SILENT LOSS
-    # of an existing history.
+    # CREATING one is not truncating one. A file that does not exist has no appendix to swallow, and the failure this guard prevents is specifically the SILENT LOSS of an existing history.
     if not os.path.exists(file_path):
         return hookio.ALLOW
 

@@ -43,11 +43,7 @@ ORDER = 28
 # landing sequence.
 DEFECT = ('if branch == "main":', "if False:")
 
-# THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of
-# them inside a feature worktree. Run against this checkout it fails open on
-# every input, because no `origin/<branch>` ref exists here -- so the whole
-# corpus would have compared two constants. `test_every_guard_discriminates`
-# said so on the first run, which is what these are an answer to.
+# THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of them inside a feature worktree. Run against this checkout it fails open on every input, because no `origin/<branch>` ref exists here -- so the whole corpus would have compared two constants. `test_every_guard_discriminates` said so on the first run, which is what these are an answer to.
 ENVS = [
     ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
     ("synced", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-synced}"}, {}),
@@ -59,8 +55,7 @@ VERB = hookio.rx(r"(^|[|;&{S}])gh[{S}]+pr[{S}]+merge([{S}]|$)")
 
 EDGE_CASES = [
     ("the verb at a command position", "gh pr merge 42"),
-    # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that
-    # documents this hook are all none of its business.
+    # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that documents this hook are all none of its business.
     ("a different pr subcommand", "gh pr view 42"),
     ("a merge for another repository", "gh pr merge 42 --repo rediacc/renet"),
     ("a merge for this repository, named", "gh pr merge 42 --repo rediacc/console"),
@@ -78,22 +73,17 @@ def run(ev):
         return hookio.ALLOW
 
     # `cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0`. Reproduced as the
-    # cwd every git call below is given, rather than by changing this process's
-    # directory: a chained dispatcher runs several guards in one interpreter
-    # (see `dispatch.run_chain`), and a guard that chdir'd would move the ones
-    # after it.
+    # cwd every git call below is given, rather than by changing this process's directory: a chained dispatcher runs several guards in one interpreter (see `dispatch.run_chain`), and a guard that chdir'd would move the ones after it.
     root = ev.project_dir
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)
     if branch is None or branch == "":
         return hookio.ALLOW
-    # On `main` there is no feature branch to strand, and /pr-merge deliberately
-    # ends there.
+    # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there.
     if branch == "main":
         return hookio.ALLOW
 
-    # `--repo <other>` means the merge targets a DIFFERENT repository, so this checkout's
-    # unpushed state is irrelevant to it. Only judge a merge that could delete THIS branch.
+    # `--repo <other>` means the merge targets a DIFFERENT repository, so this checkout's unpushed state is irrelevant to it. Only judge a merge that could delete THIS branch.
     repo_arg = ""
     matches = hookio.grep_o(r"--repo[= ]+[^ ]+", cmd)
     if matches:
@@ -116,9 +106,7 @@ def run(ev):
         return hookio.ALLOW
 
     log = hookio.git_out(["log", "--oneline", "origin/%s..HEAD" % branch], cwd=root)
-    # `| sed 's/^/    /' | head -10`. sed indents every line INCLUDING an empty
-    # trailing one, which is why the substitution runs over records rather than
-    # over the joined text.
+    # `| sed 's/^/ /' | head -10`. sed indents every line INCLUDING an empty trailing one, which is why the substitution runs over records rather than over the joined text.
     indented = hookio.sed_sub(r"^", "    ", log)
     lines = indented.split("\n")[:10]
     body = "\n".join(lines)

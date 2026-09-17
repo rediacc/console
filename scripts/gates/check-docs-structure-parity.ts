@@ -173,8 +173,7 @@ for (const [doc, list] of [...byDoc].sort()) {
     );
   }
 }
-// A document that IMPROVED must lower its baseline, or the slack silently
-// becomes room for the next regression to hide in.
+// A document that IMPROVED must lower its baseline, or the slack silently becomes room for the next regression to hide in.
 for (const [doc, allowed] of Object.entries(BASELINE)) {
   const actual = byDoc.get(doc)?.length ?? 0;
   if (actual < allowed) {

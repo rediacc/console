@@ -52,8 +52,7 @@ SUT = paths.from_root("scripts", "ci-runner", "lanes.ts")
 WORKFLOW = paths.from_root(".github", "workflows", "ci-quality.yml")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
-# THE COMMENT CASE, both directions, written out here rather than built in
-# TypeScript so a reader can see exactly what separates a mention from an install.
+# THE COMMENT CASE, both directions, written out here rather than built in TypeScript so a reader can see exactly what separates a mention from an install.
 MENTION_YAML = (
     "jobs:\n  a:\n    steps:\n      # PyYAML four times and setup-go too\n      - run: echo hi\n"
 )
@@ -61,8 +60,7 @@ INSTALL_YAML = (
     'jobs:\n  a:\n    steps:\n      - run: python3 -m pip install --user "PyYAML==0.0.0-fixture"\n'
 )
 DASHED_YAML = "jobs:\n  a:\n    steps:\n      - uses: actions/setup-go@abc\n"
-# A LANE_ORDER entry whose job is GONE. Placement must refuse rather than quietly
-# narrowing the choice to whatever survived.
+# A LANE_ORDER entry whose job is GONE. Placement must refuse rather than quietly narrowing the choice to whatever survived.
 GONE_YAML = "jobs:\n  quality-static:\n    runs-on: ubuntu-slim\n"
 
 PROBE = """
@@ -175,10 +173,7 @@ process.stdout.write(JSON.stringify({
 """
 
 
-# ONE derivation per process, memoised. The twin derives once and judges thirteen
-# times off that single run, so memoising here matches it rather than strengthening
-# it, and it keeps sixteen node startups from being charged to a gate that is
-# already the slowest in the battery. The memo holds only the parsed JSON of a
+# ONE derivation per process, memoised. The twin derives once and judges thirteen times off that single run, so memoising here matches it rather than strengthening it, and it keeps sixteen node startups from being charged to a gate that is already the slowest in the battery. The memo holds only the parsed JSON of a
 # read-only probe, so nothing a case does can reach another case through it; a
 # failed probe raises before the memo is written and the next case re-derives.
 _PROBE_CACHE: dict = {}
@@ -239,9 +234,7 @@ def test_the_probe_really_ran(gate):
 
 def test_every_lane_in_lane_order_exists_in_the_workflow(gate):
     gate.log_test("LANE_ORDER and the workflow still name the same jobs")
-    # LANE_ORDER is module-private, and placeGate refuses outright when any entry
-    # is absent from the workflow (the `placeGone` case below). A lane coming back
-    # is therefore the proof that the list is complete.
+    # LANE_ORDER is module-private, and placeGate refuses outright when any entry is absent from the workflow (the `placeGone` case below). A lane coming back is therefore the proof that the list is complete.
     result = probe(gate)["placeNothing"]
     gate.assert_not_contains(
         json.dumps(result),
@@ -303,8 +296,7 @@ def test_a_job_that_only_mentions_a_tool_does_not_provide_it(gate):
 
 def test_a_job_that_installs_it_does_provide_it(gate):
     gate.log_test("THE COMMENT CASE, the other direction")
-    # Without this the case above is satisfied by a matcher that recognises
-    # nothing at all, which is the cheapest way to pass a negative assertion.
+    # Without this the case above is satisfied by a matcher that recognises nothing at all, which is the cheapest way to pass a negative assertion.
     tools = probe(gate)["install"]["a"]["tools"]
     gate.assert_contains(
         json.dumps(tools), "python-yaml", "CONTROL: a job that INSTALLS it does (got %s)" % tools
@@ -362,8 +354,7 @@ def test_an_unprovidable_need_is_an_error_not_a_silent_lane(gate):
 
 def test_a_lane_whose_job_is_gone_refuses_placement(gate):
     gate.log_test("a LANE_ORDER entry missing from the workflow")
-    # Never narrow the choice quietly: a job that vanished must red rather than
-    # silently redirect every gate that wanted it.
+    # Never narrow the choice quietly: a job that vanished must red rather than silently redirect every gate that wanted it.
     result = probe(gate)["placeGone"]
     gate.assert_contains(
         json.dumps(result),
@@ -398,13 +389,9 @@ def test_the_workflow_the_derivation_reads_is_the_one_ci_runs(gate):
     gate.log_pass("%s is present and is what was read" % paths.relative_to_root(WORKFLOW))
 
 
-# ---------------------------------------------------------------------------
-# SHARDING (T-SCHED B1). Every case below is judged on a plan the probe computed
+# --------------------------------------------------------------------------- SHARDING (T-SCHED B1). Every case below is judged on a plan the probe computed
 # from the REAL `scripts/ci-runner/gates.lock.json`, not from a fixture: twelve
-# selftest controls elsewhere in this programme passed while the feature did
-# nothing, because each one called the helper directly and nothing populated the
-# object it read.
-# ---------------------------------------------------------------------------
+# selftest controls elsewhere in this programme passed while the feature did nothing, because each one called the helper directly and nothing populated the object it read. ---------------------------------------------------------------------------
 
 
 def _home_of(plan: dict, gate_id: str) -> int:
@@ -588,8 +575,7 @@ def test_more_shards_than_gates_refuses(gate):
 
 def test_the_ceiling_is_units_not_entries(gate):
     gate.log_test("the ceiling counts INDIVISIBLE UNITS, which is the stricter threshold")
-    # 16 entries in quality-www-build are 4 units, because 13 of them are welded
-    # together by one mutex group and twelve needs edges. Counting entries would
+    # 16 entries in quality-www-build are 4 units, because 13 of them are welded together by one mutex group and twelve needs edges. Counting entries would
     # let five shards through and leave one empty.
     message = probe(gate)["refusals"]["www5"]
     gate.assert_contains(

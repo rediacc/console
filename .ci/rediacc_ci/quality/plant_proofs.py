@@ -210,19 +210,14 @@ from rediacc_ci.controls import controls_first
 BASELINE_REL = ".ci/config/plant-proof-baseline.json"
 KEY = "plants"
 
-# The Python arm, delegated and ASSERTED. Both halves are checked: the entry
-# point must exist, and package.json must still run it.
+# The Python arm, delegated and ASSERTED. Both halves are checked: the entry point must exist, and package.json must still run it.
 PYTHON_DELEGATE = ".ci/scripts/quality/check_python_control_plants.py"
 PYTHON_DELEGATE_ID = "check:ci-python-control-plants"
 
-# How far from a plant a proof may sit, in LOGICAL lines. Eight covers every
-# real shape here (the widest genuine gap measured is four) without letting an
-# unrelated grep two controls away launder a plant.
+# How far from a plant a proof may sit, in LOGICAL lines. Eight covers every real shape here (the widest genuine gap measured is four) without letting an unrelated grep two controls away launder a plant.
 PROOF_WINDOW = 8
 
-# A TypeScript control region opened by a comment gets this many lines when the
-# brace depth never rises, i.e. the marker introduces a plain statement run
-# rather than a block.
+# A TypeScript control region opened by a comment gets this many lines when the brace depth never rises, i.e. the marker introduces a plain statement run rather than a block.
 TS_FLAT_REGION = 25
 TS_MAX_REGION = 120
 
@@ -231,9 +226,7 @@ class RefusalError(Exception):
     """The gate cannot produce a verdict. Never folded into 'no findings'."""
 
 
-# ---------------------------------------------------------------------------
-# the shell lexer
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the shell lexer ---------------------------------------------------------------------------
 
 _HEREDOC = re.compile(r"<<-?\s*(\\?)(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
 
@@ -382,9 +375,7 @@ def command_segment(code, mask, at):
     return code[start:end], mask[start:end]
 
 
-# ---------------------------------------------------------------------------
-# the bash predicate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the bash predicate ---------------------------------------------------------------------------
 
 # `sed` carrying an in-place flag anywhere in its options, and `perl -...i...`.
 _SED_INPLACE = re.compile(r"(?:^|[|;&(`]|\s)sed\b[^|;&<>]*?\s-{1,2}[A-Za-z-]*i\b")
@@ -393,8 +384,7 @@ _PERL_INPLACE = re.compile(r"(?:^|[|;&(`]|\s)perl\s+-[A-Za-z]*i")
 # A prefix substitution always matches, so it cannot go vacuous.
 _PREFIX_SUB = re.compile(r"s([/@|#!,])\^\1")
 
-# The proof shapes. `test -s` is deliberately absent: a non-empty file proves
-# nothing about WHICH bytes changed.
+# The proof shapes. `test -s` is deliberately absent: a non-empty file proves nothing about WHICH bytes changed.
 _PROOF = re.compile(
     r"\bgrep\s+-[A-Za-z]*[qc]"
     r"|\bcmp\b"
@@ -433,16 +423,13 @@ def shell_plants(text):
     return out, degraded
 
 
-# Words a plant or a proof shares. Three characters is the floor: `-q`, `-i`,
-# `-E` and the `s`/`d`/`g` of a sed expression are all shorter and would
-# correlate everything with everything.
+# Words a plant or a proof shares. Three characters is the floor: `-q`, `-i`, `-E` and the `s`/`d`/`g` of a sed expression are all shorter and would correlate everything with everything.
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
 _NOISE = frozenset(
     {"sed", "perl", "grep", "cmp", "diff", "awk", "then", "fail", "echo", "exit", "local"}
 )
 
-# A whole-file comparison needs no pattern correlation: it proves the bytes
-# moved, whatever the needle was.
+# A whole-file comparison needs no pattern correlation: it proves the bytes moved, whatever the needle was.
 _WHOLE_FILE_PROOF = re.compile(
     r'\bcmp\b|\bdiff\b|\[\[ "\$[A-Za-z_][A-Za-z0-9_]*" == "\$[A-Za-z_][A-Za-z0-9_]*" \]\]'
 )
@@ -509,17 +496,12 @@ def _has_shell_proof(rows, position, target, needle_words):
     return False
 
 
-# ---------------------------------------------------------------------------
-# the typescript predicate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the typescript predicate ---------------------------------------------------------------------------
 
 
-# A `/` opens a REGEX LITERAL rather than a division when the last significant
-# character before it is one of these. Without this the lexer reads the three
+# A `/` opens a REGEX LITERAL rather than a division when the last significant character before it is one of these. Without this the lexer reads the three
 # quotes in `/^(\w+)\s*=\s*"([^"]*)"/` as a string that never closes, and every
-# line after it in the file is blanked. That is not hypothetical: it is why the
-# first version of this arm scanned `check-backup-bucket-conformance.ts` and
-# found NOTHING in the very control the arm exists for.
+# line after it in the file is blanked. That is not hypothetical: it is why the first version of this arm scanned `check-backup-bucket-conformance.ts` and found NOTHING in the very control the arm exists for.
 _REGEX_PRECEDERS = set("(,=:[!&|?{};+-*%~^<>") | {""}
 
 
@@ -634,11 +616,8 @@ def ts_rows(source):
     return out
 
 
-# A `/` opens a REGEX LITERAL rather than a division when the last significant
-# character before it is one of these, OR when the preceding word is a keyword
-# that cannot be followed by division. Without the KEYWORD half the lexer read
-# `return /['"]video['"]/.test(x)` as a division and then as an unterminated
-# string, blanking the rest of `packages/www/scripts/check-solution-videos.ts`.
+# A `/` opens a REGEX LITERAL rather than a division when the last significant character before it is one of these, OR when the preceding word is a keyword that cannot be followed by division. Without the KEYWORD half the lexer read `return /['"]video['"]/.test(x)` as a division and then as an unterminated string, blanking the rest of
+# `packages/www/scripts/check-solution-videos.ts`.
 _REGEX_PRECEDERS = set("(,=:[!&|?{};+-*%~^<>")
 _REGEX_KEYWORDS = (
     "return",
@@ -699,15 +678,10 @@ def _skip_regex(raw, cursor, code):
     return cursor
 
 
-# A DECLARATION only. `^\s*NAME\s*\(` -- a bare call at line start -- was tried
-# first and matched 482 "regions" across the 1049 tracked .ts files, which is
-# every helper invocation in the tree.
+# A DECLARATION only. `^\s*NAME\s*\(` -- a bare call at line start -- was tried first and matched 482 "regions" across the 1049 tracked .ts files, which is every helper invocation in the tree.
 _TS_NAMED_REGION = re.compile(r"\b(?:function|const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)")
 
-# THE COMMENT MUST OPEN WITH THE MARKER, not merely contain the word. Measured:
-# matching `control` anywhere in a comment turned every prose paragraph that
-# says "the control below" into a region and produced 21 false positives, all
-# of them ordinary parsing (`line.replace(/^\t+/, '')`).
+# THE COMMENT MUST OPEN WITH THE MARKER, not merely contain the word. Measured: matching `control` anywhere in a comment turned every prose paragraph that says "the control below" into a region and produced 21 false positives, all of them ordinary parsing (`line.replace(/^\t+/, '')`).
 _TS_COMMENT_REGION = re.compile(
     r"^[\s/*\u2500\u2502\u2014\-=+#]*(?:INSTRUMENT\s+)?(?:CONTROL|Control|SELFTEST|SelfTest|Selftest)\b"
 )
@@ -804,8 +778,7 @@ def ts_plants(source):
 def _has_ts_proof(rows, start, end, needle):
     """An occurrence check on the SAME needle, anywhere in the same region."""
     if not needle:
-        # A regex or inline literal needle. There is nothing to correlate, so a
-        # bare occurrence check in the region is not accepted as a proof for it.
+        # A regex or inline literal needle. There is nothing to correlate, so a bare occurrence check in the region is not accepted as a proof for it.
         return False
     checks = (
         r"\.split\(\s*%s\s*\)" % re.escape(needle),
@@ -822,9 +795,7 @@ def _has_ts_proof(rows, start, end, needle):
     return False
 
 
-# ---------------------------------------------------------------------------
-# identity
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- identity ---------------------------------------------------------------------------
 
 
 def normalise(text):
@@ -852,9 +823,7 @@ def finding_id(lang, rel, text, ordinal=0):
     return hashlib.sha256(payload.encode("utf-8", "surrogateescape")).hexdigest()[:16]
 
 
-# ---------------------------------------------------------------------------
-# the corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the corpus ---------------------------------------------------------------------------
 
 
 def tracked_files(root):
@@ -984,9 +953,7 @@ def _row(lang, rel, line, text, subject, proven, ordinal=0):
     }
 
 
-# ---------------------------------------------------------------------------
-# the delegate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the delegate ---------------------------------------------------------------------------
 
 
 def python_delegate_state(root):
@@ -1005,9 +972,7 @@ def python_delegate_state(root):
     return exists, registered
 
 
-# ---------------------------------------------------------------------------
-# the baseline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the baseline ---------------------------------------------------------------------------
 
 NOTE = (
     "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a single row. "
@@ -1128,9 +1093,7 @@ def _new_finding(row):
     )
 
 
-# ---------------------------------------------------------------------------
-# --write-baseline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --write-baseline ---------------------------------------------------------------------------
 
 
 def baseline_additions(old, new):
@@ -1237,9 +1200,7 @@ def _explain(verdict, additions, allowed, previous, current, unproven):
     )
 
 
-# ---------------------------------------------------------------------------
-# the run
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the run ---------------------------------------------------------------------------
 
 
 def run(root=None):
@@ -1316,14 +1277,9 @@ def main(argv=None):
     return 0
 
 
-# ---------------------------------------------------------------------------
-# controls
+# --------------------------------------------------------------------------- controls
 #
-# BOTH DIRECTIONS EVERYWHERE. A gate with only positive controls will happily
-# flag the whole tree, and this one has two detectors and a baseline, so each of
-# the three gets a must-fire case AND a must-not-fire case. Every mutant below
-# is built with `rediacc_ci.controls.plant`, which raises when the needle is
-# gone -- the Python spelling of the rule this file enforces on bash and .ts.
+# BOTH DIRECTIONS EVERYWHERE. A gate with only positive controls will happily flag the whole tree, and this one has two detectors and a baseline, so each of the three gets a must-fire case AND a must-not-fire case. Every mutant below is built with `rediacc_ci.controls.plant`, which raises when the needle is gone -- the Python spelling of the rule this file enforces on bash and .ts.
 # ---------------------------------------------------------------------------
 
 _SH_PLAIN = """#!/usr/bin/env bash

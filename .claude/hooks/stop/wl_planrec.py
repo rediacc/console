@@ -144,8 +144,7 @@ import wl_planfid as PFID
 import wl_planfile as PF
 import wl_proc
 
-# ---------------------------------------------------------------------------
-# Bounds and constants.
+# --------------------------------------------------------------------------- Bounds and constants.
 
 #: The two record statuses. `compacted` is a finished plan (every box attested);
 #: `parked` is a plan with live boxes whose TEXT is compacted but whose work is
@@ -189,9 +188,7 @@ def placeholder(what: str) -> str:
     return "<FILL: %s>" % what
 
 
-# ---------------------------------------------------------------------------
-# Line grammars. Every one of these is anchored: a `Status:` in the middle of a
-# sentence is prose, and reading it as a header is how a record starts lying.
+# --------------------------------------------------------------------------- Line grammars. Every one of these is anchored: a `Status:` in the middle of a sentence is prose, and reading it as a header is how a record starts lying.
 
 HEAD_FIELD_RE = re.compile(r"^([A-Za-z][A-Za-z-]*):[ \t]*(.*)$")
 
@@ -259,10 +256,7 @@ class RecordError(Exception):
     """A refusal with a reason a session can act on. Never a traceback."""
 
 
-# ---------------------------------------------------------------------------
-# git, with a return code. `wl_core._git` collapses "failed" and "succeeded with
-# no output" into the same empty string, which is exactly wrong for
-# `merge-base --is-ancestor`, whose success output IS empty.
+# --------------------------------------------------------------------------- git, with a return code. `wl_core._git` collapses "failed" and "succeeded with no output" into the same empty string, which is exactly wrong for `merge-base --is-ancestor`, whose success output IS empty.
 
 
 def _git_out(root, *args) -> str:
@@ -313,15 +307,10 @@ def sha9(s: str) -> str:
     return (s or "").strip()[:9]
 
 
-# ---------------------------------------------------------------------------
-# resolve(): one function, eight kinds, no second opinion anywhere.
+# --------------------------------------------------------------------------- resolve(): one function, eight kinds, no second opinion anywhere.
 #
-# Every kind here already had a resolver somewhere in this repo, and the point of
-# collecting them is that a record's pointers must all be checkable by ONE call
-# the gate and the CLI share. Reusing rather than reinventing is not tidiness:
-# `citation_state` in particular carries five separately-paid-for extension
-# rounds in its CITE_RE (dotfiles, .astro, .mdx, .cast, leading dots), and a
-# fresh path regex here would re-open every one of them.
+# Every kind here already had a resolver somewhere in this repo, and the point of collecting them is that a record's pointers must all be checkable by ONE call the gate and the CLI share. Reusing rather than reinventing is not tidiness: `citation_state` in particular carries five separately-paid-for extension rounds in its CITE_RE (dotfiles, .astro, .mdx, .cast, leading dots), and
+# a fresh path regex here would re-open every one of them.
 
 RESOLVE_KINDS = ("blob", "tree", "commit", "ancestor", "fileline", "gate", "plan", "trap")
 
@@ -457,19 +446,13 @@ def launder(root, text):
     sub(CK.CITE_RE, "fileline")
     sub(PLAN_REF_RE, "plan")
     sub(GATE_RE, "gate")
-    # Hex tokens resolve as EITHER a blob or a commit -- both are legitimate in a
-    # record, and demanding one would launder the other. Done by hand rather than
-    # through `sub` because it is the one kind with two acceptable answers.
+    # Hex tokens resolve as EITHER a blob or a commit -- both are legitimate in a record, and demanding one would launder the other. Done by hand rather than through `sub` because it is the one kind with two acceptable answers.
     pieces, last = [], 0
     for m in HEXTOK_RE.finditer(out):
         tok = m.group(1)
         # AN ALL-DIGIT TOKEN IS NEVER LAUNDERED, and it is the one exception worth
         # having. `[0-9a-f]{7,40}` also matches a CI run id (`100500447167`), a
-        # date and an issue number, and those are exactly the evidence shapes
-        # `wl_checks.completion_evidence` treats as first-class. Laundering a run
-        # id out of a record would destroy the most citable fact in it to defend
-        # against an all-digit git object, which does not occur. Cheap asymmetry,
-        # taken in the direction that keeps evidence.
+        # date and an issue number, and those are exactly the evidence shapes `wl_checks.completion_evidence` treats as first-class. Laundering a run id out of a record would destroy the most citable fact in it to defend against an all-digit git object, which does not occur. Cheap asymmetry, taken in the direction that keeps evidence.
         if tok.isdigit():
             continue
         if resolve(root, "blob", tok)[0] or resolve(root, "commit", tok)[0]:
@@ -484,8 +467,7 @@ def launder(root, text):
     return out, replaced
 
 
-# ---------------------------------------------------------------------------
-# Parsing a record.
+# --------------------------------------------------------------------------- Parsing a record.
 
 
 def _sections(text):
@@ -578,9 +560,7 @@ def parse(text):
     boxes, box_problems = parse_boxes(secs.get("Boxes", ""))
     problems.extend(box_problems)
 
-    # `(record)` INSIDE a box line is the shape this rule exists to refuse: it
-    # would make the annotation part of the task text, which changes the task
-    # signature and so silently breaks the ledger's A0 comparison.
+    # `(record)` INSIDE a box line is the shape this rule exists to refuse: it would make the annotation part of the task text, which changes the task signature and so silently breaks the ledger's A0 comparison.
     problems.extend(
         "the box line %r carries `(record)` inside it. The annotation belongs on "
         "its OWN 4-space line beneath the box; inside the box it becomes part of "
@@ -652,8 +632,7 @@ def is_record(text):
     return parse(text) is not None
 
 
-# ---------------------------------------------------------------------------
-# The signature.
+# --------------------------------------------------------------------------- The signature.
 
 
 def record_sig(rec):
@@ -721,9 +700,7 @@ def ledger_history(root, ledger_rel=LEDGER_REL):
         try:
             out.append((sha, json.loads(raw)))
         except ValueError:
-            # A commit whose ledger does not parse is SKIPPED, not fatal: the
-            # walk is looking for the first commit that attests a sig, and an
-            # unparseable intermediate cannot attest anything.
+            # A commit whose ledger does not parse is SKIPPED, not fatal: the walk is looking for the first commit that attests a sig, and an unparseable intermediate cannot attest anything.
             continue
     return out
 
@@ -760,8 +737,7 @@ def done_commit(history, rel, sig):
     return ""
 
 
-# ---------------------------------------------------------------------------
-# derive(): everything the record can compute about itself.
+# --------------------------------------------------------------------------- derive(): everything the record can compute about itself.
 
 
 def derive(root, rel, text=None, history=None):
@@ -805,12 +781,7 @@ def derive(root, rel, text=None, history=None):
             "pointer to record" % rel
         )
     elif not resolve(root, "blob", blob)[0]:
-        # THE ARGUMENT ABOVE, AS A TEST. `hash-object` without `-w` stores
-        # nothing, so a computed id is only a real pointer when the object is
-        # already in the database -- which it is, for a committed path. If it is
-        # not, the clean-path refusal has been bypassed somehow and the record
-        # would advertise a recovery command that returns nothing. Refuse instead
-        # of trusting the reasoning.
+        # THE ARGUMENT ABOVE, AS A TEST. `hash-object` without `-w` stores nothing, so a computed id is only a real pointer when the object is already in the database -- which it is, for a committed path. If it is not, the clean-path refusal has been bypassed somehow and the record would advertise a recovery command that returns nothing. Refuse instead of trusting the reasoning.
         problems.append(
             "the blob id for %s computes to %s, but that object is not in this "
             "repository. `git hash-object` does not STORE anything -- the pointer is only "
@@ -837,31 +808,15 @@ def derive(root, rel, text=None, history=None):
         if not m:
             continue
         body = re.sub(r"[*_`]+", "", m.group(2)).strip()
-        # DEDUPED ON THE PARSER'S OWN KEY, because `plan_tasks` dedupes on it too.
-        # Without this a plan that writes the same box twice yields two annotated
-        # lines here while `plan_boxes` still resolves one, so the record's
-        # `Boxes: N attested` trailer and the ledger's counts disagree -- and the
-        # ledger is what `check_plan_boxes.py`'s A0 compares against.
+        # DEDUPED ON THE PARSER'S OWN KEY, because `plan_tasks` dedupes on it too. Without this a plan that writes the same box twice yields two annotated lines here while `plan_boxes` still resolves one, so the record's `Boxes: N attested` trailer and the ledger's counts disagree -- and the ledger is what `check_plan_boxes.py`'s A0 compares against.
         key = PFID._norm(body)[:120]
         if key in seen:
             continue
         seen.add(key)
-        # Only lines the REAL parser resolved as tasks. A checkbox inside a fence
-        # is a code sample (`check_plan_boxes.py`'s C-FENCE control is built on
-        # exactly this distinction), and annotating one would put a phantom box
-        # into the record.
+        # Only lines the REAL parser resolved as tasks. A checkbox inside a fence is a code sample (`check_plan_boxes.py`'s C-FENCE control is built on exactly this distinction), and annotating one would put a phantom box into the record.
         if body[:300] not in open_t and body[:300] not in done_t:
-            # DROPPED, AND SAID SO. `plan_tasks` discards a task whose normalised
-            # key is under 8 characters and de-duplicates on that key, so a
-            # genuine `- [x] ok` box exists in the plan and reaches neither list.
-            # `_assert_boxes_preserved` cannot catch it -- it runs the same
-            # parser on both sides, so both sides agree the box is not there.
-            # Design property 2 is that box lines survive BYTE-IDENTICAL, so a
-            # line that does not survive has to be named rather than silently
-            # left behind. Not a refusal: the box is invisible to every other
-            # consumer in this repo too, including the ledger the record is
-            # measured against, so refusing would block compaction on a line
-            # nothing else can see either.
+            # DROPPED, AND SAID SO. `plan_tasks` discards a task whose normalised key is under 8 characters and de-duplicates on that key, so a genuine `- [x] ok` box exists in the plan and reaches neither list. `_assert_boxes_preserved` cannot catch it -- it runs the same parser on both sides, so both sides agree the box is not there. Design property 2 is that box lines survive
+            # BYTE-IDENTICAL, so a line that does not survive has to be named rather than silently left behind. Not a refusal: the box is invisible to every other consumer in this repo too, including the ledger the record is measured against, so refusing would block compaction on a line nothing else can see either.
             dropped.append(raw.strip()[:70])
             continue
         mark = m.group(1).lower()
@@ -870,10 +825,7 @@ def derive(root, rel, text=None, history=None):
             c = done_commit(history, rel, s)
             done = sha9(c) if c else "abandoned"
             if not c and current is not None and attested_at(current, rel, s):
-                # Cannot happen with a walk that includes HEAD's ledger commit,
-                # and is reported rather than assumed away: it would mean the
-                # history walk is blind, which is the vacuity shape this repo
-                # refuses to pass through silently.
+                # Cannot happen with a walk that includes HEAD's ledger commit, and is reported rather than assumed away: it would mean the history walk is blind, which is the vacuity shape this repo refuses to pass through silently.
                 problems.append(
                     "box %r is attested in the CURRENT ledger but no commit in the "
                     "ledger's history carries it. The history walk is blind." % body[:60]
@@ -909,8 +861,7 @@ def derive(root, rel, text=None, history=None):
     }
 
 
-# ---------------------------------------------------------------------------
-# Rendering.
+# --------------------------------------------------------------------------- Rendering.
 
 READ_HISTORY = "`git show %s` recovers the text; `git log --find-object=%s --all` names the commit"
 
@@ -977,8 +928,7 @@ def size_budget(n_boxes):
     return RECORD_MAX_BYTES + RECORD_PER_BOX_BYTES * max(0, int(n_boxes))
 
 
-# ---------------------------------------------------------------------------
-# The index.
+# --------------------------------------------------------------------------- The index.
 
 INDEX_HEADER = """# Compacted plan records
 
@@ -1062,37 +1012,21 @@ def index_rows(root, plan_records):
                 sum(1 for b in boxes if b["done"] == "open"),
                 sum(1 for b in boxes if b["done"] == "abandoned"),
                 rec["blob"],
-                # THE SEVENTH ELEMENT IS OPTIONAL EVERYWHERE IT IS READ, and that
-                # is not defensive coding for its own sake: `check_plan_record.py`
-                # builds six-element rows by hand in its own R8 controls, and that
-                # file has a single owner who is not this one. A render that
-                # demanded seven would red a gate's selftest to add a table.
+                # THE SEVENTH ELEMENT IS OPTIONAL EVERYWHERE IT IS READ, and that is not defensive coding for its own sake: `check_plan_record.py` builds six-element rows by hand in its own R8 controls, and that file has a single owner who is not this one. A render that demanded seven would red a gate's selftest to add a table.
                 trailer_paths(rec["trailer"].get("Touched", "")),
             )
         )
     return rows
 
 
-# ---------------------------------------------------------------------------
-# P2.1  The edge index, and why_lines(): the history, pushed at the edit.
+# --------------------------------------------------------------------------- P2.1 The edge index, and why_lines(): the history, pushed at the edit.
 #
-# WHAT THIS IS FOR. A record is only worth compacting into if somebody reads it,
-# and nobody goes looking for a record about a file they are about to change --
-# they do not know it exists. The edge index closes that: every record already
-# carries a `Touched:` trailer naming the paths its plan cited, so the reverse
-# map from PATH to RECORD is already in the tree and merely unwritten.
+# WHAT THIS IS FOR. A record is only worth compacting into if somebody reads it, and nobody goes looking for a record about a file they are about to change -- they do not know it exists. The edge index closes that: every record already carries a `Touched:` trailer naming the paths its plan cited, so the reverse map from PATH to RECORD is already in the tree and merely unwritten.
 #
-# WHY THE INDEX AND NOT THE RECORDS THEMSELVES. Answering "what is recorded about
-# this file" by opening every record is the cost P1.7 just removed from
-# SessionStart, where opening 79 plans to print 49 filenames was the measured
-# defect. The edge table is ONE file read, and only the records that actually
-# have an edge are then opened. A push that costs a directory walk on every Edit
+# WHY THE INDEX AND NOT THE RECORDS THEMSELVES. Answering "what is recorded about this file" by opening every record is the cost P1.7 just removed from SessionStart, where opening 79 plans to print 49 filenames was the measured defect. The edge table is ONE file read, and only the records that actually have an edge are then opened. A push that costs a directory walk on every Edit
 # is a push that gets turned off.
 #
-# WHY THE INDEX CAN BE TRUSTED. `agent/INDEX.md` is compared for EQUALITY against
-# `render_index` by check:ci-plan-record's R8. So the edge table is not a cache
-# that can quietly go stale: a stale one is red in CI. That is the whole reason
-# the edges live there rather than in a sidecar nothing checks.
+# WHY THE INDEX CAN BE TRUSTED. `agent/INDEX.md` is compared for EQUALITY against `render_index` by check:ci-plan-record's R8. So the edge table is not a cache that can quietly go stale: a stale one is red in CI. That is the whole reason the edges live there rather than in a sidecar nothing checks.
 
 #: How many records one answer names, and how much of each record's `## Why` it
 #: quotes. Both are caps on a PUSH -- text the reader did not ask for -- and the
@@ -1228,13 +1162,8 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
     if index is None:
         index = why_index(root)
     if not index:
-        # THE PREDICATE IS "DOES THE FILE CARRY AN EDGE TABLE", NOT "DOES THE FILE EXIST".
-        # It used to be `.is_file()`, which was correct only while agent/INDEX.md was
-        # written solely by --plan-compact. Since W12 P1.7 the same file also carries a
-        # plan CENSUS, so it exists from the first census write even when no plan has
-        # been compacted and no edge has ever been recorded. Under the old test that
-        # made --plan-why answer WHY_NO_EDGE, which states as fact that the index was
-        # read and names no path matching this one -- the confident wrong answer this
+        # THE PREDICATE IS "DOES THE FILE CARRY AN EDGE TABLE", NOT "DOES THE FILE EXIST". It used to be `.is_file()`, which was correct only while agent/INDEX.md was written solely by --plan-compact. Since W12 P1.7 the same file also carries a plan CENSUS, so it exists from the first census write even when no plan has been compacted and no edge has ever been recorded. Under the
+        # old test that made --plan-why answer WHY_NO_EDGE, which states as fact that the index was read and names no path matching this one -- the confident wrong answer this
         # function's own docstring forbids six lines above.
         try:
             has_edges = EDGE_SECTION in (root / INDEX_REL).read_text(
@@ -1251,10 +1180,7 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
         try:
             text = (root / r).read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # A record named by the index and absent from disk is REPORTED rather
-            # than skipped. Silence here would be the index quietly describing a
-            # tree it does not describe, and R8 is what normally catches that --
-            # but R8 runs in CI and this runs at the edit.
+            # A record named by the index and absent from disk is REPORTED rather than skipped. Silence here would be the index quietly describing a tree it does not describe, and R8 is what normally catches that -- but R8 runs in CI and this runs at the edit.
             lines.append("%s: named by %s but not on disk" % (r, INDEX_REL))
             continue
         rec = parse(text)
@@ -1270,27 +1196,15 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
     return lines, WHY_EDGES
 
 
-# ---------------------------------------------------------------------------
-# P2.3  The two OTHER moments the history is worth pushing, behind one function.
+# --------------------------------------------------------------------------- P2.3 The two OTHER moments the history is worth pushing, behind one function.
 #
-# The edit is the first moment (why-on-edit.py). The other two are the moments a
-# session is MOST likely to reason without history and least likely to go looking
+# The edit is the first moment (why-on-edit.py). The other two are the moments a session is MOST likely to reason without history and least likely to go looking
 # for it:
 #
-#   POSTCOMPACT   the transcript is now a summary, so whatever the session knew
-#                 about why a file is the shape it is has just been thrown away.
-#                 The files it has in flight have not changed.
-#   CI RED        wl_histfirst.py already exists because a measured session made
-#                 2,494 Bash calls debugging a red gate and ZERO `git log` calls
-#                 naming the file. The record is the same missed evidence one
-#                 layer up: the commit says what changed, the record says why the
-#                 plan wanted it that way.
+# POSTCOMPACT the transcript is now a summary, so whatever the session knew about why a file is the shape it is has just been thrown away. The files it has in flight have not changed. CI RED wl_histfirst.py already exists because a measured session made 2,494 Bash calls debugging a red gate and ZERO `git log` calls naming the file. The record is the same missed evidence one layer
+# up: the commit says what changed, the record says why the plan wanted it that way.
 #
-# ONE FUNCTION FOR BOTH, and it returns "" rather than a sentence when nothing
-# matches. Both callers APPEND to a block that is already being emitted, so an
-# empty answer must add nothing at all -- this is the opposite of `--plan-why`,
-# where a person asked and silence would read as breakage. Same distinction as
-# why-on-edit.py property 1, for the same reason.
+# ONE FUNCTION FOR BOTH, and it returns "" rather than a sentence when nothing matches. Both callers APPEND to a block that is already being emitted, so an empty answer must add nothing at all -- this is the opposite of `--plan-why`, where a person asked and silence would read as breakage. Same distinction as why-on-edit.py property 1, for the same reason.
 
 
 def why_for_paths(root, paths, limit=WHY_MAX_RECORDS):
@@ -1327,8 +1241,7 @@ def why_for_paths(root, paths, limit=WHY_MAX_RECORDS):
     return "\n".join(body)
 
 
-# ---------------------------------------------------------------------------
-# Writing. Tempfile + os.replace, and NEVER a commit.
+# --------------------------------------------------------------------------- Writing. Tempfile + os.replace, and NEVER a commit.
 
 
 def write_atomic(path, text):
@@ -1352,29 +1265,16 @@ def write_atomic(path, text):
         raise
 
 
-# ---------------------------------------------------------------------------
-# P2.6  Pointer stamps: the same idiom, applied to the two OTHER things in this
-#       repo that replace a document with a smaller one.
+# --------------------------------------------------------------------------- P2.6 Pointer stamps: the same idiom, applied to the two OTHER things in this repo that replace a document with a smaller one.
 #
-# Compaction of a plan is not the only place bytes are overwritten. Two more do
-# it routinely, and until now neither said where the replaced bytes went:
+# Compaction of a plan is not the only place bytes are overwritten. Two more do it routinely, and until now neither said where the replaced bytes went:
 #
-#   THE EVENT STORE. `wl_store.compact_store` rewrites agent/worklist/*.jsonl
-#   into one snapshot and unlinks the rest. Those files are TRACKED, so a
-#   committed one's blob is in the object database and survives the unlink --
-#   but only if somebody wrote the id down before it happened.
+# THE EVENT STORE. `wl_store.compact_store` rewrites agent/worklist/*.jsonl into one snapshot and unlinks the rest. Those files are TRACKED, so a committed one's blob is in the object database and survives the unlink -- but only if somebody wrote the id down before it happened.
 #
-#   STATE.md. `worklist.py --state` replaces the outgoing document and keeps ONE
-#   copy in a `.prev` slot under TMPDIR, which does not survive a reboot. The
-#   document itself is tracked, so the same pointer is available.
+# STATE.md. `worklist.py --state` replaces the outgoing document and keeps ONE copy in a `.prev` slot under TMPDIR, which does not survive a reboot. The document itself is tracked, so the same pointer is available.
 #
-# WHAT A STAMP IS, and what it is NOT. `git hash-object` computes an id and, with
-# no `-w`, STORES NOTHING. So the id alone is not a promise of recoverability --
-# it is one exactly when the object is already in the database, which is true for
-# a committed path and false for a dirty one. That is why this returns
-# `resolves` and why the sentence changes with it: a stamp that advertised
-# `git show` for bytes git does not have would be the same quiet lie the record
-# gate exists to refuse, one layer down.
+# WHAT A STAMP IS, and what it is NOT. `git hash-object` computes an id and, with no `-w`, STORES NOTHING. So the id alone is not a promise of recoverability -- it is one exactly when the object is already in the database, which is true for a committed path and false for a dirty one. That is why this returns `resolves` and why the sentence changes with it: a stamp that advertised
+# `git show` for bytes git does not have would be the same quiet lie the record gate exists to refuse, one layer down.
 
 
 def pointer_stamp(root, rel):
@@ -1410,8 +1310,7 @@ def is_dirty(root, rel):
     return bool(_git_out(root, "status", "--porcelain", "--", rel).strip())
 
 
-# ---------------------------------------------------------------------------
-# The model call. ONE bounded `claude -p`, in wl_shapedup.ask's shape.
+# --------------------------------------------------------------------------- The model call. ONE bounded `claude -p`, in wl_shapedup.ask's shape.
 
 WHY_SCHEMA = {
     "type": "object",
@@ -1483,8 +1382,7 @@ def ask_why(plan_text):
     env["STOPHOOK_CHILD"] = "1"
     prompt = WHY_PROMPT % {"plan": (plan_text or "")[:40000]}
 
-    # ONE PLACE THAT LAUNCHES IT, so the retry below re-runs the identical call
-    # rather than a hand-copied approximation of it.
+    # ONE PLACE THAT LAUNCHES IT, so the retry below re-runs the identical call rather than a hand-copied approximation of it.
     def call():
         return wl_proc.run(
             [
@@ -1510,17 +1408,10 @@ def ask_why(plan_text):
     if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
         return None, "plan_record model call failed: %s" % proc.stderr.strip()
 
-    # A SCHEMA EXHAUSTION IS A SAMPLE, NOT A VERDICT, and this site was the one
-    # that had not been told. `check:ci-schema-call-sites` named it, and the
-    # reason it matters here is worse than for the judge: this call writes a
-    # durable record. Refusing on one non-conforming sample would leave the
-    # compaction reporting "the model could not answer" and silently falling
-    # back to `--why auto`, which is a provenance the trailer would then have to
-    # state truthfully forever.
+    # A SCHEMA EXHAUSTION IS A SAMPLE, NOT A VERDICT, and this site was the one that had not been told. `check:ci-schema-call-sites` named it, and the reason it matters here is worse than for the judge: this call writes a durable record. Refusing on one non-conforming sample would leave the compaction reporting "the model could not answer" and silently falling back to `--why auto`,
+    # which is a provenance the trailer would then have to state truthfully forever.
     #
-    # The helper is bounded, not a loop: only the exhaustion subtype, only with
-    # budget headroom, only once, and never after a transport failure, which
-    # raises above and never reaches here.
+    # The helper is bounded, not a loop: only the exhaustion subtype, only with budget headroom, only once, and never after a transport failure, which raises above and never reaches here.
     if proc.returncode != 0:
         proc, why = wl_judge.retry_schema_exhaustion("plan_record", proc, call)
         if proc is None:
@@ -1542,8 +1433,7 @@ def ask_why(plan_text):
     return fields, ""
 
 
-# ---------------------------------------------------------------------------
-# compact() and revive(): the two transitions.
+# --------------------------------------------------------------------------- compact() and revive(): the two transitions.
 
 AUTO_SOURCES = ("author", "auto", "model")
 
@@ -1567,13 +1457,8 @@ def title_of(text, rel):
 
     Falls back to the slug, which always exists and always identifies the plan.
     """
-    # FENCED BLOCKS ARE NOT HEADINGS. `# ` opens a comment in shell, python, ruby
-    # and every config language these plans quote, so scanning raw lines takes the
-    # first COMMENT in the first code block as the plan's title. Measured
-    # 2026-09-06: PLAN-lint-rule-matrix-probe.md was compacted to a record titled
-    # `# edit line 46: 'SFTPClient' -> 'SFTPClientZZZ'`, which is a line from a
-    # shell snippet. A record's title is the one part of it every index and every
-    # reader sees first, so this is not cosmetic.
+    # FENCED BLOCKS ARE NOT HEADINGS. `# ` opens a comment in shell, python, ruby and every config language these plans quote, so scanning raw lines takes the first COMMENT in the first code block as the plan's title. Measured 2026-09-06: PLAN-lint-rule-matrix-probe.md was compacted to a record titled `# edit line 46: 'SFTPClient' -> 'SFTPClientZZZ'`, which is a line from a shell
+    # snippet. A record's title is the one part of it every index and every reader sees first, so this is not cosmetic.
     fenced = False
     for raw in (text or "").splitlines():
         stripped = raw.lstrip()
@@ -1584,26 +1469,14 @@ def title_of(text, rel):
             continue
         if raw.startswith("# "):
             body = raw[2:].strip()
-            # A heading that is itself a header FIELD is the header block wearing
-            # a hash, not a title.
+            # A heading that is itself a header FIELD is the header block wearing a hash, not a title.
             #
-            # THIS TESTS THE KEY AGAINST THE KNOWN FIELD NAMES, not the shape.
-            # It used to be `HEAD_FIELD_RE.match(body)`, which matches any
-            # `Word:` at all -- and 62 of the 83 plans in this tree are titled
-            # `# PLAN: <something>`. So `PLAN:` read as a header field, every one
-            # of those 62 fell through to the slug fallback below, and their
-            # records were titled with a slug instead of the name their author
-            # gave them. Measured 2026-09-06 during the compaction wave, which
-            # was halted because of it. The title is the one part of a record
-            # that every index and every reader sees first.
+            # THIS TESTS THE KEY AGAINST THE KNOWN FIELD NAMES, not the shape. It used to be `HEAD_FIELD_RE.match(body)`, which matches any `Word:` at all -- and 62 of the 83 plans in this tree are titled `# PLAN: <something>`. So `PLAN:` read as a header field, every one of those 62 fell through to the slug fallback below, and their records were titled with a slug instead of the
+            # name their author gave them. Measured 2026-09-06 during the compaction wave, which was halted because of it. The title is the one part of a record that every index and every reader sees first.
             key = HEAD_FIELD_RE.match(body)
             if body and not (key and key.group(1) in HEADER_FIELD_KEYS):
                 return body[:120]
-    # OFF BY ONE, fixed 2026-09-06: this read `slug[4:]`, and `len("PLAN-")` is
-    # FIVE. Every plan that fell through to the fallback was titled with a leading
-    # hyphen -- `# -lint-css-ci-wiring`, `# -greenlight-verify-at-read` -- which
-    # reads as a slug rather than a name and is what a reader sees in the index.
-    # Written as a len() so the constant and the string cannot drift apart again.
+    # OFF BY ONE, fixed 2026-09-06: this read `slug[4:]`, and `len("PLAN-")` is FIVE. Every plan that fell through to the fallback was titled with a leading hyphen -- `# -lint-css-ci-wiring`, `# -greenlight-verify-at-read` -- which reads as a slug rather than a name and is what a reader sees in the index. Written as a len() so the constant and the string cannot drift apart again.
     slug = pathlib.Path(rel).stem
     prefix = "PLAN-"
     return slug.removeprefix(prefix)
@@ -1661,16 +1534,8 @@ def _auto_prose(text):
             v = (lower.get(n) or "").strip()
             if not v:
                 continue
-            # CHECKBOX LINES ARE STRIPPED, and this is a correctness rule rather
-            # than a formatting one. `## Boxes` must be the ONLY place a box
-            # appears in a record: `wl_planfid.plan_tasks` counts a checkbox line
-            # WHEREVER it sits, so a `## Status` section lifted verbatim (which
-            # in this tree routinely quotes its own ticked boxes) would make the
-            # record parse to more tasks than the plan did. That disagreement
-            # lands in `.ci/config/plan-boxes.json` as a phantom box, and
-            # check_plan_boxes.py's A0 reports it against the wrong file.
-            # Caught by the render_preserves_boxes assertion in compact(), which
-            # is left in place as the standing control for this.
+            # CHECKBOX LINES ARE STRIPPED, and this is a correctness rule rather than a formatting one. `## Boxes` must be the ONLY place a box appears in a record: `wl_planfid.plan_tasks` counts a checkbox line WHEREVER it sits, so a `## Status` section lifted verbatim (which in this tree routinely quotes its own ticked boxes) would make the record parse to more tasks than the
+            # plan did. That disagreement lands in `.ci/config/plan-boxes.json` as a phantom box, and check_plan_boxes.py's A0 reports it against the wrong file. Caught by the render_preserves_boxes assertion in compact(), which is left in place as the standing control for this.
             kept = [ln for ln in v.splitlines() if not ANY_BOX_LINE.match(ln)]
             body = "\n".join(kept).strip()
             if body:
@@ -1705,8 +1570,7 @@ def compact(root, rel, me, why="author", park=False, now=None):
     """
     # ARGUMENTS FIRST, before anything reads or hashes a file. A bad `--why` is
     # the caller's typo and must be answered as one; validating it after the
-    # is-it-already-a-record check made `--why wishful` on a record report
-    # "already a record", which is true and is not the problem the caller has.
+    # is-it-already-a-record check made `--why wishful` on a record report "already a record", which is true and is not the problem the caller has.
     if why not in AUTO_SOURCES:
         raise RecordError("--why must be one of %s" % ", ".join(AUTO_SOURCES))
     root = pathlib.Path(root)
@@ -1714,13 +1578,8 @@ def compact(root, rel, me, why="author", park=False, now=None):
     if not p.is_file():
         raise RecordError("%s does not exist" % rel)
     text = p.read_text(encoding="utf-8", errors="replace")
-    # ALREADY-A-RECORD IS CHECKED FIRST, and the order was the other way round
-    # until it was driven. A record written by `--write` is BOTH a record and (by
-    # definition, until it is committed) a dirty path, so the dirty branch won and
-    # answered "commit or revert the path first" -- true, and the wrong advice:
-    # committing it would compact the record a second time, pointing the new blob
-    # at the old RECORD rather than at the plan. `--plan-revive` is the answer,
-    # and it is the answer whether the path is dirty or not.
+    # ALREADY-A-RECORD IS CHECKED FIRST, and the order was the other way round until it was driven. A record written by `--write` is BOTH a record and (by definition, until it is committed) a dirty path, so the dirty branch won and answered "commit or revert the path first" -- true, and the wrong advice: committing it would compact the record a second time, pointing the new blob at
+    # the old RECORD rather than at the plan. `--plan-revive` is the answer, and it is the answer whether the path is dirty or not.
     if is_record(text):
         raise RecordError(
             "%s is already a record. Use `--plan-revive <me> %s --write` to restore its "
@@ -1757,10 +1616,7 @@ def compact(root, rel, me, why="author", park=False, now=None):
         if err:
             notes.append("the model could not answer (%s); falling back to --why auto" % err)
             prose.update(_auto_prose(text))
-            # THE TRAILER MUST SAY WHAT ACTUALLY WROTE THE PROSE. It said `model`
-            # on this path, which is a record claiming a provenance it does not
-            # have -- the exact class of quiet lie the whole gate exists to
-            # refuse, inside the writer rather than the reader.
+            # THE TRAILER MUST SAY WHAT ACTUALLY WROTE THE PROSE. It said `model` on this path, which is a record claiming a provenance it does not have -- the exact class of quiet lie the whole gate exists to refuse, inside the writer rather than the reader.
             why_source = "auto (--why model degraded)"
         else:
             lessons = fields.get("lessons") or []
@@ -1778,33 +1634,16 @@ def compact(root, rel, me, why="author", park=False, now=None):
                         % (k, len(replaced), UNRESOLVED, ", ".join(replaced[:5]))
                     )
 
-    # `--park` IS AN ASSERTION BY THE CALLER, NOT A DERIVATION FROM THE BOXES.
-    # This read `park and d["n_open"]`, so a plan with NO checkbox boxes at all
-    # took the `compacted` branch however loudly the caller asked for `parked`:
-    # a SILENT no-op that handed the plan a housekeeping exemption it had not
-    # earned. agent/PLAN-renet-fetch-hardening.md is the live case found
-    # 2026-09-06 -- zero boxes, seven of its eight sites still open in prose, and
-    # `Status: compacted`.
+    # `--park` IS AN ASSERTION BY THE CALLER, NOT A DERIVATION FROM THE BOXES. This read `park and d["n_open"]`, so a plan with NO checkbox boxes at all took the `compacted` branch however loudly the caller asked for `parked`: a SILENT no-op that handed the plan a housekeeping exemption it had not earned. agent/PLAN-renet-fetch-hardening.md is the live case found 2026-09-06 -- zero
+    # boxes, seven of its eight sites still open in prose, and `Status: compacted`.
     #
-    # Honouring the flag unconditionally can only err toward MORE nagging, never
-    # less: `parked` stays on the housekeeping clock, so a plan parked by mistake
-    # keeps asking to be finished. Nothing downstream reads `parked` as implying
-    # open boxes -- checked in check_plan_record.py (R6 treats parked as exempt
+    # Honouring the flag unconditionally can only err toward MORE nagging, never less: `parked` stays on the housekeeping clock, so a plan parked by mistake keeps asking to be finished. Nothing downstream reads `parked` as implying open boxes -- checked in check_plan_record.py (R6 treats parked as exempt
     # from the placeholder rule and nothing else) and in check-plan-housekeeping.sh
     # (`parked` is deliberately absent from the exemption branch at :431).
     status = STATUS_PARKED if park else STATUS_COMPACTED
     head = "\n".join(text.splitlines()[:HEADER_LINES])
-    # THE RAW LINE, not wl_checks.plan_owner. plan_owner RESOLVES the value down
-    # to a session id, which is right for scoping the Stop hook's advisory and
-    # lossy here. Measured over this tree's 81 plans, resolving loses provenance
-    # on five of them and, worse, changes what two of them SAY:
-    #     Owner: unowned (drafted by 9d92d9b6, 2026-08-28)  -> no Owner line at all
-    #     Owner: whichever session picks it up              -> no Owner line at all
-    #     Owner: session 9d92d9b6, branch 0826-3            -> 9d92d9b6
-    # A record that silently stops saying it is unowned has changed a fact about
-    # the plan while claiming to preserve it. plan_owner still reads the record
-    # afterwards and resolves the same id it always did, so nothing downstream
-    # loses anything by keeping the sentence intact.
+    # THE RAW LINE, not wl_checks.plan_owner. plan_owner RESOLVES the value down to a session id, which is right for scoping the Stop hook's advisory and lossy here. Measured over this tree's 81 plans, resolving loses provenance on five of them and, worse, changes what two of them SAY: Owner: unowned (drafted by 9d92d9b6, 2026-08-28) -> no Owner line at all Owner: whichever session
+    # picks it up -> no Owner line at all Owner: session 9d92d9b6, branch 0826-3 -> 9d92d9b6 A record that silently stops saying it is unowned has changed a fact about the plan while claiming to preserve it. plan_owner still reads the record afterwards and resolves the same id it always did, so nothing downstream loses anything by keeping the sentence intact.
     owner = _owner_line(head)
     prior = ""
     m = re.search(r"^\*{0,2}Status\*{0,2}:[ \t]*([A-Za-z-]+)", head, re.MULTILINE)
@@ -1848,24 +1687,11 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "`done=abandoned`. If that is wrong, run `npm run check:ci-plan-boxes -- "
             "--update`, commit the ledger, and compact again." % d["n_abandoned"]
         )
-    # APPEND, NEVER ASSIGN. Rule 4 of this module's own contract says `## History`
-    # IS APPEND-ONLY, and until 2026-09-07 this line was a bare assignment, so the
-    # WRITER broke the convention the READER documents: a revive-then-re-compact
-    # replaced the single bullet instead of adding one, and every earlier bullet
-    # survived only in git. Found by the W12 P3.5 advisory census, whose C9
-    # candidate rule flags exactly this shape -- on its first run it named three
-    # records whose history had been rewritten rather than extended.
+    # APPEND, NEVER ASSIGN. Rule 4 of this module's own contract says `## History` IS APPEND-ONLY, and until 2026-09-07 this line was a bare assignment, so the WRITER broke the convention the READER documents: a revive-then-re-compact replaced the single bullet instead of adding one, and every earlier bullet survived only in git. Found by the W12 P3.5 advisory census, whose C9
+    # candidate rule flags exactly this shape -- on its first run it named three records whose history had been rewritten rather than extended.
     #
-    # The carry-forward needs no blob read: a revived record's `## History` is
-    # still in `text`, and parse() already extracts it. When `text` is a plain
-    # plan (the ordinary first compaction) the parse yields nothing and the
-    # result is byte-identical to the old behaviour.
-    # parse() returns None for a source that is not already a record, which is the
-    # ORDINARY case (a plain plan being compacted for the first time). Branch on it
-    # explicitly rather than letting the normal path fall through an exception
-    # handler: an except arm that fires on every healthy call is not a guard, it is
-    # control flow wearing a guard's clothes, and it hides the abnormal case it was
-    # written for.
+    # The carry-forward needs no blob read: a revived record's `## History` is still in `text`, and parse() already extracts it. When `text` is a plain plan (the ordinary first compaction) the parse yields nothing and the result is byte-identical to the old behaviour. parse() returns None for a source that is not already a record, which is the ORDINARY case (a plain plan being
+    # compacted for the first time). Branch on it explicitly rather than letting the normal path fall through an exception handler: an except arm that fires on every healthy call is not a guard, it is control flow wearing a guard's clothes, and it hides the abnormal case it was written for.
     parsed = parse(text)
     carried = [ln for ln in ((parsed or {}).get("history") or []) if ln.strip().startswith("-")]
     rec["history"] = [
@@ -1876,11 +1702,7 @@ def compact(root, rel, me, why="author", park=False, now=None):
     out = render(rec)
     _assert_boxes_preserved(text, out, rel)
     budget = size_budget(len(d["boxes"]))
-    # HALVE UNTIL IT FITS, bounded, and RE-CHECK. The first cut halved once with
-    # an `if` and returned whatever came out, so a record that was still over
-    # budget after one halving shipped over budget and the gate red it forever.
-    # Six halvings take any prose this module can hold (3 x 1200 chars) under
-    # 200, which is the floor each section keeps.
+    # HALVE UNTIL IT FITS, bounded, and RE-CHECK. The first cut halved once with an `if` and returned whatever came out, so a record that was still over budget after one halving shipped over budget and the gate red it forever. Six halvings take any prose this module can hold (3 x 1200 chars) under 200, which is the floor each section keeps.
     for _ in range(6):
         if len(out.encode("utf-8")) <= budget:
             break
@@ -1900,14 +1722,8 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "the prose truncated. Shorten the `## Record` trailer inputs (Touched, Gates, "
             "Epics) or compact fewer boxes at once." % (rel, len(out.encode("utf-8")), budget)
         )
-    # THE ANTI-VACUITY FLOOR, CHECKED HERE AND NOT ONLY IN CI. Module docstring
-    # property 5 says size is bounded in BOTH directions, and until this existed
-    # only the ceiling was enforced at write time. Measured 2026-09-06: a
-    # 129-byte plan compacted, with no refusal and no note, into an 823-byte
-    # record -- 6.4x BIGGER -- whose only exit was `--plan-revive`, and
-    # check:ci-plan-record then red the tree until someone found that exit. The
-    # smallest real plan here is 3,357 bytes (ratio 4.19), so this refuses a case
-    # that does not occur today and cannot be reached by accident tomorrow.
+    # THE ANTI-VACUITY FLOOR, CHECKED HERE AND NOT ONLY IN CI. Module docstring property 5 says size is bounded in BOTH directions, and until this existed only the ceiling was enforced at write time. Measured 2026-09-06: a 129-byte plan compacted, with no refusal and no note, into an 823-byte record -- 6.4x BIGGER -- whose only exit was `--plan-revive`, and check:ci-plan-record
+    # then red the tree until someone found that exit. The smallest real plan here is 3,357 bytes (ratio 4.19), so this refuses a case that does not occur today and cannot be reached by accident tomorrow.
     blob_size = len((text or "").encode("utf-8"))
     rec_size = len(out.encode("utf-8"))
     if blob_size < rec_size * BLOB_RATIO:
@@ -2055,33 +1871,24 @@ def records(root, plan_records):
     return sorted(rows)
 
 
-# ---------------------------------------------------------------------------
-# P2.5  --plan-tick: flip the box and update the ledger in ONE run.
+# --------------------------------------------------------------------------- P2.5 --plan-tick: flip the box and update the ledger in ONE run.
 #
-# WHY ONE RUN. A session that ticks a box in `agent/PLAN-x.md` with the Edit tool
-# has done HALF of a two-part change: `.ci/config/plan-boxes.json` is a committed
-# SECOND READING of the same boxes, and check:ci-plan-boxes's A0 compares the two
+# WHY ONE RUN. A session that ticks a box in `agent/PLAN-x.md` with the Edit tool has done HALF of a two-part change: `.ci/config/plan-boxes.json` is a committed SECOND READING of the same boxes, and check:ci-plan-boxes's A0 compares the two
 # for equality. So the tick alone is a red tree, the remedy is a regenerate the
-# session has no reason to remember, and the failure arrives in CI a round trip
-# later. Doing both writes from one verb removes the gap entirely.
+# session has no reason to remember, and the failure arrives in CI a round trip later. Doing both writes from one verb removes the gap entirely.
 #
-# WHY IT REFUSES A COMPACTED OR PARKED RECORD, and this is a real constraint
-# rather than a scoping decision, so it is stated where the refusal is:
+# WHY IT REFUSES A COMPACTED OR PARKED RECORD, and this is a real constraint rather than a scoping decision, so it is stated where the refusal is:
 #
 #     A record's box carries `    (record) sig=.. done=..`, and
-#     check_plan_record.py's R4 accepts exactly two shapes for a TICKED box --
+# check_plan_record.py's R4 accepts exactly two shapes for a TICKED box --
 #     `done=<commit>` whose ledger AT THAT COMMIT attests the signature, or
 #     `done=abandoned` which the CURRENT ledger must NOT attest.
 #
 # Ticking in place can satisfy neither. Writing the ledger makes `abandoned` a
 # provable lie (R4's second direction fires immediately); not writing it makes
 # A0 red instead. And `done=<commit>` cannot name the commit that will carry the
-# tick, because that commit does not exist while the file is being written, and
-# nothing here commits. The state is genuinely unrepresentable, so the verb says
-# so and hands over the sequence that IS representable: revive, tick the plan,
-# commit, compact again. That is the same sequence block-compacted-plan-edit.sh
-# prints, which is not a coincidence -- both are the same constraint seen from
-# two sides.
+# tick, because that commit does not exist while the file is being written, and nothing here commits. The state is genuinely unrepresentable, so the verb says so and hands over the sequence that IS representable: revive, tick the plan, commit, compact again. That is the same sequence block-compacted-plan-edit.sh prints, which is not a coincidence -- both are the same constraint
+# seen from two sides.
 
 #: How the evidence is spelled into the plan. Four spaces and no bullet, so
 #: `wl_planfid.BULLET_RE` (indent 0-3, marker required) cannot see it and the
@@ -2257,9 +2064,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
 
     lines = text.splitlines(keepends=True)
     eol = "\n" if lines[i].endswith("\n") else ""
-    # ONE CHARACTER, at one offset. `line.replace("[ ]", "[x]", 1)` would also
-    # rewrite a `[ ]` that appears in the task TEXT of a box about checkboxes,
-    # and this repo has plans about checkboxes.
+    # ONE CHARACTER, at one offset. `line.replace("[ ]", "[x]", 1)` would also rewrite a `[ ]` that appears in the task TEXT of a box about checkboxes, and this repo has plans about checkboxes.
     cut = BOX_LINE_RE.match(line).start(1) - 1
     flipped = line[:cut] + "[x]" + line[cut + 3 :]
     stamp = now or C.stamp_now()
@@ -2268,11 +2073,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     lines.insert(i + 1, note_line + "\n")
     out = "".join(lines)
 
-    # THE INVARIANT, checked here and not only in CI, for the same reason
-    # `_assert_boxes_preserved` is: the plan's text is in memory right now and a
-    # refusal costs a message rather than a file. The task must MOVE from open to
-    # done and the union must be unchanged -- a tick that also re-worded the box,
-    # or that made the evidence line parse as a task, is indistinguishable to
+    # THE INVARIANT, checked here and not only in CI, for the same reason `_assert_boxes_preserved` is: the plan's text is in memory right now and a refusal costs a message rather than a file. The task must MOVE from open to done and the union must be unchanged -- a tick that also re-worded the box, or that made the evidence line parse as a task, is indistinguishable to
     # check_plan_boxes.py's A1 from a box being deleted.
     before_o, before_d = PF.plan_boxes(text)
     after_o, after_d = PF.plan_boxes(out)
@@ -2333,8 +2134,7 @@ def revive(root, rel):
             "is content-addressed, so any clone that has it has the same bytes."
             % (rel, rec["blob"], why)
         )
-    # _git_raw, NEVER _git_out. See _git_raw: stripping here would restore a file
-    # that no longer hashes to the blob it came from.
+    # _git_raw, NEVER _git_out. See _git_raw: stripping here would restore a file that no longer hashes to the blob it came from.
     body = _git_raw(root, "cat-file", "blob", rec["blob"])
     if not body:
         raise RecordError("blob %s read back empty; refusing to overwrite the record" % rec["blob"])

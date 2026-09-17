@@ -21,8 +21,7 @@ export function parseMemorySize(sizeStr: string): number {
 
   const unit = (match[2] || '').toUpperCase();
 
-  // Convert to bytes based on unit
-  // Binary units (1024-based)
+  // Convert to bytes based on unit Binary units (1024-based)
   const binaryMultipliers: Record<string, number> = {
     KI: 1024,
     MI: 1024 * 1024,

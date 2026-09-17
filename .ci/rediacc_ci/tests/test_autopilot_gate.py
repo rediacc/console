@@ -134,8 +134,7 @@ def _sides(
     """Run both subjects on identical private trees and compare everything."""
     results = []
     with tempfile.TemporaryDirectory() as td:
-        # "old"/"new" rather than the subjects' stems, because a fixture path is
-        # passed relative to `cwd` and the two bases must not be the same dir.
+        # "old"/"new" rather than the subjects' stems, because a fixture path is passed relative to `cwd` and the two bases must not be the same dir.
         for side, subject in (("old", TWIN), ("new", PORT)):
             base = pathlib.Path(td) / side
             base.mkdir(parents=True)
@@ -165,9 +164,7 @@ def _decision(stdout: bytes) -> dict:
     return json.loads(stdout.decode("utf-8"))
 
 
-# ---------------------------------------------------------------------------
-# Fixture builders
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture builders ---------------------------------------------------------------------------
 
 EVENT_ARGS = ["--classify", "--event", "event.json", "--pr", "pr.json"]
 ARMED = {"AUTOPILOT_ENABLED": "true", "AUTOPILOT_AUTHOR_ALLOWLIST": "operator"}
@@ -257,9 +254,7 @@ def sig_of(text: str) -> str:
 BASE_FIXTURES = {"event.json": event_json(), "pr.json": pr_json()}
 
 
-# ---------------------------------------------------------------------------
-# Controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 
 def test_the_gate_never_reaches_the_network() -> None:
@@ -286,9 +281,7 @@ def test_the_gate_never_reaches_the_network() -> None:
         assert log.read_text(encoding="utf-8") == "api\tgraphql\n"
 
 
-# ---------------------------------------------------------------------------
-# Exits 1-7: the LOUD ones. A wiring bug must never read as a quiet no-go.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exits 1-7: the LOUD ones. A wiring bug must never read as a quiet no-go. ---------------------------------------------------------------------------
 
 
 def test_usage_when_the_mode_is_not_classify() -> None:
@@ -381,9 +374,7 @@ def test_an_event_missing_its_run_identity() -> None:
     assert b"event payload lacks workflow_run.conclusion or .id" in err
 
 
-# ---------------------------------------------------------------------------
-# Exit 8: the master stage flag
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exit 8: the master stage flag ---------------------------------------------------------------------------
 
 
 def test_the_stage_flag_is_closed_by_default_and_by_anything_but_true() -> None:
@@ -427,9 +418,7 @@ def test_push_allowed_is_reported_but_does_not_arm() -> None:
     assert _decision(out)["push_allowed"] is False
 
 
-# ---------------------------------------------------------------------------
-# Exits 9-10: the fork guard, in BOTH records
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exits 9-10: the fork guard, in BOTH records ---------------------------------------------------------------------------
 
 
 def test_the_fork_guard_reads_the_run_record() -> None:
@@ -457,9 +446,7 @@ def test_the_fork_guard_reads_the_pr_record() -> None:
         assert _decision(out)["reason"].startswith("fork-pr: PR head repo "), label
 
 
-# ---------------------------------------------------------------------------
-# Exit 11: the escalation latch, and its ORDER
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exit 11: the escalation latch, and its ORDER ---------------------------------------------------------------------------
 
 
 def test_the_blocked_label_beats_every_arming_path() -> None:
@@ -503,9 +490,7 @@ def test_the_blocked_label_is_found_at_index_zero() -> None:
     assert _decision(out)["armed_by"] == "label"
 
 
-# ---------------------------------------------------------------------------
-# Exit 12 and the three arming paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exit 12 and the three arming paths ---------------------------------------------------------------------------
 
 
 def test_not_armed_names_what_it_looked_for() -> None:
@@ -538,12 +523,8 @@ def test_a_dispatch_arms_round_one_on_its_own() -> None:
     decision = _decision(out)
     assert decision["armed_by"] == "dispatch"
     assert decision["round"] == 1
-    # AND THE ARM THAT SURPRISES: this dispatch lands in mode `done` (CI is
-    # already green, nothing outstanding), and the `done` arm is tested FIRST in
-    # `emit`, so the campaign is NOT opened. Correct -- there is nothing for a
-    # campaign to carry -- and worth pinning, because "a dispatch opens the
-    # campaign" is the sentence a reader takes from the header and it is only
-    # true of a dispatch that buys a round.
+    # AND THE ARM THAT SURPRISES: this dispatch lands in mode `done` (CI is already green, nothing outstanding), and the `done` arm is tested FIRST in `emit`, so the campaign is NOT opened. Correct -- there is nothing for a campaign to carry -- and worth pinning, because "a dispatch opens the campaign" is the sentence a reader takes from the header and it is only true of a dispatch
+    # that buys a round.
     assert decision["campaign"] == "none"
     fixtures["event.json"] = event_json("failure", dispatch={"actor": "operator", "pr_input": "5"})
     _, out, _, _ = _sides("dispatch-arms-fix", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -571,17 +552,14 @@ def test_an_open_campaign_carries_the_loop_without_a_label() -> None:
     _, out, _, _ = _sides("campaign-closed", argv, fixtures=fixtures, env=ARMED)
     assert _decision(out)["reason"].startswith("not-armed:")
     assert "campaign: closed, rounds done: 2/9" in _decision(out)["reason"]
-    # An open campaign with the cap already reached does not re-arm either, and
-    # says `not-armed` rather than `round-cap`, because arming runs first.
+    # An open campaign with the cap already reached does not re-arm either, and says `not-armed` rather than `round-cap`, because arming runs first.
     fixtures["state.md"] = state_body(rounds=9, campaign="open", rounds_max="9")
     _code, out, _, _ = _sides("campaign-spent", argv, fixtures=fixtures, env=ARMED)
     assert _decision(out)["reason"].startswith("not-armed:")
     assert "rounds done: 9/9" in _decision(out)["reason"]
 
 
-# ---------------------------------------------------------------------------
-# Exits 13-14: the two trust checks, and the order between them
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exits 13-14: the two trust checks, and the order between them ---------------------------------------------------------------------------
 
 
 def test_the_author_allowlist_fails_closed_when_empty() -> None:
@@ -626,8 +604,7 @@ def test_the_applier_is_a_separate_trust_decision_from_the_author() -> None:
     assert _decision(out)["reason"] == (
         "applier-not-allowlisted: label applier 'drive-by' is not allowlisted"
     )
-    # AUTOPILOT_APPLIER_ALLOWLIST OVERRIDES the author list rather than adding
-    # to it, so an author-allowlisted applier is refused once it is set.
+    # AUTOPILOT_APPLIER_ALLOWLIST OVERRIDES the author list rather than adding to it, so an author-allowlisted applier is refused once it is set.
     env = dict(ARMED)
     env["AUTOPILOT_APPLIER_ALLOWLIST"] = "someone-else"
     _, out, _, _ = _sides("applier-override", EVENT_ARGS, fixtures=BASE_FIXTURES, env=env)
@@ -681,9 +658,7 @@ def test_the_campaign_path_has_no_further_trust_check() -> None:
     assert decision["decision"] == "go"
 
 
-# ---------------------------------------------------------------------------
-# Exits 15-17: dedup, the round cap, the watchdog
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exits 15-17: dedup, the round cap, the watchdog ---------------------------------------------------------------------------
 
 
 def test_a_duplicate_of_an_already_handled_run() -> None:
@@ -696,8 +671,7 @@ def test_a_duplicate_of_an_already_handled_run() -> None:
     fixtures["event.json"] = event_json(attempt=2)
     _, out, _, _ = _sides("dedup-attempt-2", argv, fixtures=fixtures, env=ARMED)
     assert _decision(out)["decision"] == "go"
-    # And `4242/1` must not match `42420/1`: the trailing `([^0-9]|$)` is what
-    # stops a shorter run id matching a longer one's prefix.
+    # And `4242/1` must not match `42420/1`: the trailing `([^0-9]|$)` is what stops a shorter run id matching a longer one's prefix.
     fixtures["event.json"] = event_json(run_id=424)
     _code, out, _, _ = _sides("dedup-prefix", argv, fixtures=fixtures, env=ARMED)
     assert _decision(out)["decision"] == "go"
@@ -754,9 +728,7 @@ def test_the_watchdog_deferral() -> None:
     assert _decision(out)["decision"] == "go"
 
 
-# ---------------------------------------------------------------------------
-# Exits 18-27: mode selection, one case per conclusion arm
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Exits 18-27: mode selection, one case per conclusion arm ---------------------------------------------------------------------------
 
 
 def test_a_failed_run_buys_a_fix_round() -> None:
@@ -961,9 +933,7 @@ def test_an_unhandled_conclusion() -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# Model resolution and the campaign hand-off
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Model resolution and the campaign hand-off ---------------------------------------------------------------------------
 
 
 def test_model_resolution_in_the_designs_order() -> None:
@@ -999,8 +969,7 @@ def test_model_resolution_in_the_designs_order() -> None:
         b"model 'gpt-9' is not one of claude-sonnet-5,claude-opus-5; falling back to "
         b"claude-sonnet-5" in err
     ), err
-    # And the warning fires even on a path that ends in a refusal, because it is
-    # emitted before the fork guard.
+    # And the warning fires even on a path that ends in a refusal, because it is emitted before the fork guard.
     fixtures["pr.json"] = pr_json(labels=[], head_repo="attacker/console")
     _code, out, err, _ = _sides("model-typo-refused", argv, fixtures=fixtures, env=ARMED)
     assert b"falling back to claude-sonnet-5" in err
@@ -1063,9 +1032,7 @@ def test_round_cap_resolution_order() -> None:
     assert _decision(out)["rounds_max"] == 13
 
 
-# ---------------------------------------------------------------------------
-# Bash arithmetic, both halves
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Bash arithmetic, both halves ---------------------------------------------------------------------------
 
 
 def test_the_campaign_cap_cannot_carry_an_octal_because_jq_launders_it() -> None:
@@ -1147,9 +1114,7 @@ def test_an_invalid_octal_round_cap() -> None:
     assert decision["round"] == 11
 
 
-# ---------------------------------------------------------------------------
-# The two preserved hazards
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two preserved hazards ---------------------------------------------------------------------------
 
 
 def test_a_mistyped_state_path_is_silently_no_state() -> None:
@@ -1196,8 +1161,7 @@ def test_the_allowlist_strips_interior_whitespace() -> None:
     env = {"AUTOPILOT_ENABLED": "true", "AUTOPILOT_AUTHOR_ALLOWLIST": "a b"}
     _, out, _, _ = _sides("interior-space", EVENT_ARGS, fixtures=fixtures, env=env)
     assert _decision(out)["decision"] == "go", "the twin admits 'ab' from an entry of 'a b'"
-    # CONTROL, so the case is not simply "everything is admitted": the entry as
-    # written still does not admit the string with the space in it.
+    # CONTROL, so the case is not simply "everything is admitted": the entry as written still does not admit the string with the space in it.
     fixtures["pr.json"] = pr_json(author="a b", label_applier="a b")
     _code, out, _, _ = _sides("interior-space-control", EVENT_ARGS, fixtures=fixtures, env=env)
     assert _decision(out)["reason"].startswith("author-not-allowlisted:")
@@ -1216,9 +1180,7 @@ def test_a_multi_line_allowlist_stops_at_the_first_line() -> None:
     assert _decision(out)["decision"] == "go"
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, driven directly and in BOTH directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, driven directly and in BOTH directions ---------------------------------------------------------------------------
 
 
 def test_bash_arith_reproduces_bashs_literal_grammar() -> None:

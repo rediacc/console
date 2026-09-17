@@ -72,8 +72,7 @@ export function buildRepositoryEnvironment(options: {
 
   const fullRepoPath = `${datastore}${repositoryPath}`;
 
-  // For fork composite names like "gitlab:1", derive the tag from the suffix
-  // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
+  // For fork composite names like "gitlab:1", derive the tag from the suffix so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
   const resolvedTag = tag ?? repoTagFromName(repositoryName, 'latest');
 
   return {

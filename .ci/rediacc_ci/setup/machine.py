@@ -47,9 +47,7 @@ from rediacc_ci.setup.ctx import Ctx
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
 
-# `--help` for this verb, byte for byte the heredoc at
-# `.ci/legacy/run-legacy.sh:564-574`. A person who has memorised the old output
-# should see no diff, and a gate test can compare the two while both exist.
+# `--help` for this verb, byte for byte the heredoc at `.ci/legacy/run-legacy.sh:564-574`. A person who has memorised the old output should see no diff, and a gate test can compare the two while both exist.
 HELP = """Usage: ./run.sh setup [OPTIONS]
 
   --check      Report what is missing and change nothing
@@ -59,15 +57,12 @@ HELP = """Usage: ./run.sh setup [OPTIONS]
 
 Related: ./run.sh devbox [up|status|stop|remove|shell|logs]"""
 
-# `return 2` for an unknown option, `.ci/legacy/run-legacy.sh:578`. Named because
-# 2 is this repository's usage-error code everywhere else too
-# (`rediacc_ci/__main__.py:55`, `core/env.py`, `core/ports.py`).
+# `return 2` for an unknown option, `.ci/legacy/run-legacy.sh:578`. Named because 2 is this repository's usage-error code everywhere else too (`rediacc_ci/__main__.py:55`, `core/env.py`, `core/ports.py`).
 EXIT_USAGE = 2
 
 # The seven questions `setup_check()` asks `devbox.sh`, as ONE shell program.
 # See `_devbox_facts` for why they are batched; held here as a constant so the
-# program is readable next to the bash it mirrors and nothing can interpolate
-# into it.
+# program is readable next to the bash it mirrors and nothing can interpolate into it.
 DEVBOX_FACTS = """printf "worktree=%s\\n" "$(devbox_worktree 2>/dev/null || echo "")"
 if devbox_image_present; then printf "image=1\\n"; else printf "image=0\\n"; fi
 printf "base_port=%s\\n" "$(devbox_base_port 2>/dev/null || echo "")"
@@ -112,9 +107,7 @@ def parse_args(argv: list[str]) -> Options:
     return Options(check=check, pull=pull, start=start)
 
 
-# ---------------------------------------------------------------------------
-# the docker-group re-exec
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the docker-group re-exec ---------------------------------------------------------------------------
 
 
 def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str, str]) -> None:
@@ -150,8 +143,7 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
     user = env.get("USER", "")
     if not user or user not in [m for m in members.split(",") if m]:
         return
-    # Prove it actually helps before re-executing, so a broken daemon does not
-    # send us round a pointless loop.
+    # Prove it actually helps before re-executing, so a broken daemon does not send us round a pointless loop.
     if probe.run(["sg", "docker", "-c", "docker version"], timeout=30).rc != 0:
         return
 
@@ -161,9 +153,7 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
     os.execvp("sg", ["sg", "docker", "-c", command])  # noqa: S606
 
 
-# ---------------------------------------------------------------------------
-# the report
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the report ---------------------------------------------------------------------------
 
 
 def _devbox_facts(root: pathlib.Path, env: dict[str, str]) -> dict[str, str]:
@@ -235,8 +225,7 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
         )
         pending += 1
 
-    # NOT COUNTED. Go is only installed when docker is missing, so a machine
-    # without it is not a machine with work pending.
+    # NOT COUNTED. Go is only installed when docker is missing, so a machine without it is not a machine with work pending.
     if ctx.which("go"):
         raw = ctx.run(["go", "version"], timeout=30).out.split()
         ctx.say("  go          %s" % (raw[2] if len(raw) > 2 else ""))
@@ -264,8 +253,7 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
 
     email = host._git_global(ctx, "user.email")
     if email:
-        # NOTE THE COLUMN. The bash writes `'  git identity %s\n'`, two spaces
-        # narrower than every other row because the label is two characters
+        # NOTE THE COLUMN. The bash writes `' git identity %s\n'`, two spaces narrower than every other row because the label is two characters
         # longer. It looks like a typo and it is the existing output; changing it
         # would be a diff in a gate's input for no reason.
         ctx.say("  git identity %s" % email)
@@ -316,9 +304,7 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# the verb
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the verb ---------------------------------------------------------------------------
 
 
 def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
@@ -331,12 +317,8 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     the order harder to read, not easier. `phases.plan()` is the machine-readable
     statement of the same order and the tests compare the two.
     """
-    # THE CONDITIONALS COME FROM `phases.plan`, NOT FROM A SECOND COPY HERE.
-    # `.gitmodules` and the credential-drift pair were written out twice while
-    # this function was first drafted, which is two predicates that can disagree
-    # about the same question: the table would then describe a run nobody
-    # performs, and `check:ci-setup-port-parity` A1 would still pass because it
-    # compares NAMES and not conditions. One evaluation, consulted twice.
+    # THE CONDITIONALS COME FROM `phases.plan`, NOT FROM A SECOND COPY HERE. `.gitmodules` and the credential-drift pair were written out twice while this function was first drafted, which is two predicates that can disagree about the same question: the table would then describe a run nobody performs, and `check:ci-setup-port-parity` A1 would still pass because it compares NAMES
+    # and not conditions. One evaluation, consulted twice.
     selected = set(phases.plan(ctx.root, ctx.env, start=options.start))
 
     ctx.step("Rediacc console setup")
@@ -356,15 +338,10 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
         return 1
     ctx.say()
 
-    # SUBMODULES BEFORE THE FIRST PHASE THAT READS ONE, and `setup_go_toolchain`
-    # below is that phase: it reads `private/renet/go.mod`. Getting this edge
-    # wrong resurrects "Cannot determine the required Go version" on a fresh
-    # clone, a message that never mentions submodules.
-    # `check:ci-setup-idempotency` check G is the gate that refuses it.
+    # SUBMODULES BEFORE THE FIRST PHASE THAT READS ONE, and `setup_go_toolchain` below is that phase: it reads `private/renet/go.mod`. Getting this edge wrong resurrects "Cannot determine the required Go version" on a fresh clone, a message that never mentions submodules. `check:ci-setup-idempotency` check G is the gate that refuses it.
     if "init-submodules.sh" in selected:
         ctx.step("Initializing submodules")
-        # Best effort, `|| true`: a developer without access to every private
-        # submodule should still get a working devbox.
+        # Best effort, `|| true`: a developer without access to every private submodule should still get a working devbox.
         ctx.run(
             ["bash", str(ctx.root / ".devcontainer" / "init-submodules.sh"), "--quiet"],
             timeout=1800,
@@ -379,17 +356,14 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
         return 1
     ctx.say()
 
-    # KEPT, not replaced by `system_tools`. `ensure_host_tools` also checks
-    # zstd, curl and git, which none of the installers cover, so deleting it
-    # would quietly narrow the preflight while looking like a simplification.
+    # KEPT, not replaced by `system_tools`. `ensure_host_tools` also checks zstd, curl and git, which none of the installers cover, so deleting it would quietly narrow the preflight while looking like a simplification.
     if bridge.call("ensure_host_tools", ctx.root, ctx.env) != 0:
         return 1
     bridge.call("ensure_bashcov_sup", ctx.root, ctx.env)
     ctx.say()
 
     ctx.step("Git and GitHub account")
-    # NOT FATAL, and the bash is the same: `setup_git_identity` is called
-    # without `|| return 1` while the credential check on the next line has it.
+    # NOT FATAL, and the bash is the same: `setup_git_identity` is called without `|| return 1` while the credential check on the next line has it.
     host.git_identity(ctx)
     if host.git_credentials(ctx) != 0:
         return 1
@@ -417,8 +391,7 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     if bridge.call("devbox_up", ctx.root, ctx.env) != 0:
         return 1
 
-    # THE URLS ARE THE DELIVERABLE. `devbox_up` has already printed the probed
-    # route table, so these two lines are the bookmark, not the report.
+    # THE URLS ARE THE DELIVERABLE. `devbox_up` has already printed the probed route table, so these two lines are the bookmark, not the report.
     _, url = bridge.capture("devbox_url", ctx.root, ctx.env)
     _, term = bridge.capture("devbox_url term", ctx.root, ctx.env)
     ctx.say()
@@ -475,11 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     reexec_with_docker_group(root, args, env)
 
     options = parse_args(args)
-    # NAMED `printer`, NOT `logger`, and the reason is a lint rule rather than a
-    # style: ruff's flake8-logging family (G002, G010) recognises a `logger`
-    # binding as a STDLIB logging.Logger and objects to `%` formatting and to a
-    # `warn` method. `rediacc_ci.log.Logger` is neither of those things, and the
-    # honest fix is to stop calling it by the stdlib's name.
+    # NAMED `printer`, NOT `logger`, and the reason is a lint rule rather than a style: ruff's flake8-logging family (G002, G010) recognises a `logger` binding as a STDLIB logging.Logger and objects to `%` formatting and to a `warn` method. `rediacc_ci.log.Logger` is neither of those things, and the honest fix is to stop calling it by the stdlib's name.
     printer = log.Logger()
     if options.error:
         printer.emit("error", "Unknown option for setup: %s" % options.error)
@@ -492,14 +461,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         constants = bridge.constants(root, env)
     except bridge.BridgeError as exc:
-        # A HARNESS FAULT, NAMED AS ONE. Without this the first symptom is an
-        # empty Node floor deep inside `host.node_toolchain`, which reports the
-        # wrong subject entirely.
+        # A HARNESS FAULT, NAMED AS ONE. Without this the first symptom is an empty Node floor deep inside `host.node_toolchain`, which reports the wrong subject entirely.
         printer.emit("error", str(exc))
         return 1
-    # The floor and the major reach `host.py` through the env, which is how the
-    # bash passes them too: `constants.sh` exports them and the functions read
-    # `$NODE_VERSION_MIN`. One mechanism, not two.
+    # The floor and the major reach `host.py` through the env, which is how the bash passes them too: `constants.sh` exports them and the functions read `$NODE_VERSION_MIN`. One mechanism, not two.
     env.update(constants)
 
     if options.check:

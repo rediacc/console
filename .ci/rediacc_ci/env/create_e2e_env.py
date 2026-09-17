@@ -160,8 +160,7 @@ DEFAULT_VM_WORKERS = "11 12"  # twin :74
 DEFAULT_VM_CEPH_NODES = "21 22 23"  # twin :71
 DEFAULT_VM_IMAGE = "ubuntu-24.04"  # twin :80
 
-# `$(get_repo_root)/private/renet/bin/renet` (twin :50). A STRING, never probed:
-# nothing here runs `command -v renet`, stats the path, or shells out to it.
+# `$(get_repo_root)/private/renet/bin/renet` (twin :50). A STRING, never probed: nothing here runs `command -v renet`, stats the path, or shells out to it.
 RENET_RELATIVE_PATH = "private/renet/bin/renet"
 
 # The budget, twin :106-109. The bridge is fixed by the kvm driver; the ceiling
@@ -170,14 +169,10 @@ BRIDGE_RAM_MB = 1024
 FALLBACK_ROLE_RAM_MB = "4096"  # renet's VMRAM, as a STRING: the twin's `${X:-4096}`
 CEILING_MB = 14848
 
-# The expression the twin evaluates at :116, verbatim. Kept as source text
-# rather than as Python arithmetic because Defect A is a property of PARSING
-# it, and a Python expression cannot fail the way bash's does.
+# The expression the twin evaluates at :116, verbatim. Kept as source text rather than as Python arithmetic because Defect A is a property of PARSING it, and a Python expression cannot fail the way bash's does.
 BUDGET_EXPRESSION = "bridge_ram + worker_count * worker_ram + ceph_count * ceph_ram"
 
-# Line numbers bash prints inside its own diagnostics, pinned so a drift in the
-# twin is a test failure rather than a silent text change. Re-derived by
-# `test_the_pinned_twin_line_numbers_still_point_at_the_right_lines`.
+# Line numbers bash prints inside its own diagnostics, pinned so a drift in the twin is a test failure rather than a silent text change. Re-derived by `test_the_pinned_twin_line_numbers_still_point_at_the_right_lines`.
 ARITH_LINE = 116  # `local total=$((...))`
 HEREDOC_LINE = 132  # `cat >"$OUTPUT" <<EOF`
 PRINTF_LINE = 333  # common.sh's `printf -v "$key"`, inside parse_args
@@ -223,9 +218,7 @@ class RefusalError(Exception):
         self.code = code
 
 
-# ---------------------------------------------------------------------------
-# `dirname`, as coreutils implements it (twin :127)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- `dirname`, as coreutils implements it (twin :127) ---------------------------------------------------------------------------
 
 
 def dirname(path: str) -> str:
@@ -247,12 +240,9 @@ def dirname(path: str) -> str:
     return head or "/"
 
 
-# ---------------------------------------------------------------------------
-# `echo $VALUE | wc -w` (twin :112 and :114) -- see DEFECT B
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- `echo $VALUE | wc -w` (twin :112 and :114) -- see DEFECT B ---------------------------------------------------------------------------
 
-# What bash's pathname expansion looks for before it touches the filesystem. A
-# word with none of these is passed through untouched and costs no syscall.
+# What bash's pathname expansion looks for before it touches the filesystem. A word with none of these is passed through untouched and costs no syscall.
 _GLOB_METACHARACTERS = ("*", "?", "[")
 
 # `echo`'s option words: any run of n/e/E after a single dash, and only while
@@ -339,9 +329,7 @@ def word_count(value: str) -> int:
     return len(text.split())
 
 
-# ---------------------------------------------------------------------------
-# `$((...))` (twin :116) -- see DEFECT A
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- `$((...))` (twin :116) -- see DEFECT A ---------------------------------------------------------------------------
 
 
 class ArithError(Exception):
@@ -378,8 +366,7 @@ _ARITH_TOKEN = re.compile(
     r"|(?P<op>\*\*|[-+*/%()]))"
 )
 
-# The characters that can begin ANY bash arithmetic token, used only to pick
-# between bash's two leftover-input messages. A leftover starting with one of
+# The characters that can begin ANY bash arithmetic token, used only to pick between bash's two leftover-input messages. A leftover starting with one of
 # these is "syntax error in expression"; anything else is "invalid arithmetic
 # operator" (driven: `4096)` gives the first, `1;ls` the second).
 _TOKEN_START = re.compile(r"[0-9A-Za-z_(){}\[\]+\-*/%<>=!~^&|?:,]")
@@ -735,8 +722,7 @@ def settings(args: dict[str, str]) -> dict[str, str]:
             _shell_var(args, "ARG_CEPH_OSD_MEMORY_TARGET")
             or os.environ.get("CEPH_OSD_MEMORY_TARGET", "")
         ),
-        # Twin :90-97: written EXPLICITLY rather than left to renet's inference,
-        # because renet also sources a parent-directory .env.
+        # Twin :90-97: written EXPLICITLY rather than left to renet's inference, because renet also sources a parent-directory .env.
         "PROVISION_CEPH_CLUSTER": "true" if vm_ceph_nodes else "false",
     }
 
@@ -746,8 +732,7 @@ def _write(path: str, body: str, prog: str) -> None:
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(body)
     except OSError as failure:
-        # `bash: line 132: <path>: Is a directory` / `Permission denied`. Bash
-        # reports the redirection's strerror, so this does too.
+        # `bash: line 132: <path>: Is a directory` / `Permission denied`. Bash reports the redirection's strerror, so this does too.
         _bash_diagnostic(prog, HEREDOC_LINE, "%s: %s" % (path, failure.strerror))
         raise RefusalError(1) from None
 
@@ -757,8 +742,7 @@ def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
     except common.RefusalError as failure:
-        # common.sh:333, and the path bash prints is the twin's unnormalised
-        # `$SCRIPT_DIR/../lib/common.sh`. Reproduced verbatim so the bytes match.
+        # common.sh:333, and the path bash prints is the twin's unnormalised `$SCRIPT_DIR/../lib/common.sh`. Reproduced verbatim so the bytes match.
         _bash_diagnostic(
             "%s/%s/../lib/common.sh" % (common.repo_root(), TWIN_RELATIVE_DIR),
             PRINTF_LINE,
@@ -777,8 +761,7 @@ def main(argv: list[str]) -> int:
     except RefusalError as refusal:
         return refusal.code
 
-    # `mkdir -p "$OUTPUT_DIR"` under `set -e`: the twin exits with mkdir's own
-    # status and lets mkdir's own message reach stderr untouched.
+    # `mkdir -p "$OUTPUT_DIR"` under `set -e`: the twin exits with mkdir's own status and lets mkdir's own message reach stderr untouched.
     completed = subprocess.run(["mkdir", "-p", dirname(scope["OUTPUT"])], check=False)
     if completed.returncode != 0:
         return completed.returncode

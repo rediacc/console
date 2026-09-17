@@ -34,8 +34,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 
 export const LOCKFILE = path.join(CONSOLE_ROOT, 'private/renet/embed-assets.lock.json');
-// Output paths. The env overrides exist so the gate test can point the staleness
-// check at fixtures instead of mutating the tracked artifacts.
+// Output paths. The env overrides exist so the gate test can point the staleness check at fixtures instead of mutating the tracked artifacts.
 export const CREDITS_GO =
   process.env.EMBED_CREDITS_GO_FILE ??
   path.join(CONSOLE_ROOT, 'private/renet/pkg/embed/credits_data.go');

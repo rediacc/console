@@ -188,8 +188,7 @@ SUBMODULE_REPOS = {
     "private/elite": "rediacc/elite",
 }
 
-# The iteration ORDER the twin uses in both of its loops, written out rather
-# than taken from the mapping above. Bash's associative-array order is a hash
+# The iteration ORDER the twin uses in both of its loops, written out rather than taken from the mapping above. Bash's associative-array order is a hash
 # order and is NOT this list; the two loops both hard-code this sequence, so a
 # port that iterated the mapping would print its findings in a different order.
 SUBMODULE_ORDER = (
@@ -199,9 +198,7 @@ SUBMODULE_ORDER = (
     "private/elite",
 )
 
-# Patterns for low-effort replies that don't count as real responses.
-# These are case-insensitive and match the entire reply (with optional
-# punctuation).
+# Patterns for low-effort replies that don't count as real responses. These are case-insensitive and match the entire reply (with optional punctuation).
 LOW_EFFORT_PATTERNS = (
     "acknowledged",
     "ack",
@@ -234,8 +231,7 @@ LOW_EFFORT_PATTERNS = (
     "applied",
 )
 
-# Anything shorter than this, after normalisation, is low-effort whatever it
-# says. The twin's number, kept as a name so the two uses of it agree.
+# Anything shorter than this, after normalisation, is low-effort whatever it says. The twin's number, kept as a name so the two uses of it agree.
 MIN_SUBSTANTIVE_LENGTH = 10
 
 # The prefix the automated reviewer's top-level report starts with.
@@ -694,9 +690,7 @@ def main(argv: list[str] | None = None) -> int:
     if branch == "main":
         return check_on_main(root)
 
-    # Fetch origin/main for comparison. Failure is ignored: an offline run still
-    # has something to compare against, and the pointer test below treats a
-    # missing origin/main as "no pointer changes".
+    # Fetch origin/main for comparison. Failure is ignored: an offline run still has something to compare against, and the pointer test below treats a missing origin/main as "no pointer changes".
     _run(["git", "fetch", "origin", "main", "--quiet"], cwd=str(root))
 
     pr_number = os.environ.get("PR_NUMBER", "")
@@ -730,8 +724,7 @@ def main(argv: list[str] | None = None) -> int:
                 warnings += 1
             continue
 
-        # Pointer changed. An ancestor of origin/main is a bump to already-merged
-        # work and needs no coordinated branch or PR.
+        # Pointer changed. An ancestor of origin/main is a bump to already-merged work and needs no coordinated branch or PR.
         sm_commit = gitlink_at(root, "HEAD", sm_path)
         ancestor = _run(
             ["git", "-C", sm_path, "merge-base", "--is-ancestor", sm_commit, "origin/main"],

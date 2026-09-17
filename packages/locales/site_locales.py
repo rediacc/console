@@ -194,9 +194,7 @@ def _selftest() -> int:
     except ValueError:
         chk("assert_site_locale raises", True)
 
-    # assert_covered_by_site must accept a real category B list (12 codes, no `et`) and
-    # reject a typo. If the first of these ever fails, someone has coupled a capability
-    # list to the site set.
+    # assert_covered_by_site must accept a real category B list (12 codes, no `et`) and reject a typo. If the first of these ever fails, someone has coupled a capability list to the site set.
     try:
         assert_covered_by_site(
             "capability", ["en", "de", "es", "fr", "ja", "ru", "zh", "ko", "pt", "it", "tr", "ar"]

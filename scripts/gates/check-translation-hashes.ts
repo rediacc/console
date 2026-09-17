@@ -139,8 +139,7 @@ function loadOldEnglishFlat(
     }
   }
 
-  // For directory-based locales, we need to know which files existed at that commit.
-  // Simplified: try the same files that exist now.
+  // For directory-based locales, we need to know which files existed at that commit. Simplified: try the same files that exist now.
   const enDir = path.join(config.dir, 'en');
   if (!fs.existsSync(enDir)) return null;
 
@@ -282,11 +281,7 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
 function main(): void {
   const errors: string[] = [];
 
-  // Declared-set assertion: every configured locale tree MUST exist. Skipping
-  // missing dirs silently (the previous behaviour) meant a tree that was moved,
-  // renamed or deleted dropped out of hash validation while the gate still
-  // printed "up-to-date". The set of validated trees must equal the set of
-  // declared trees.
+  // Declared-set assertion: every configured locale tree MUST exist. Skipping missing dirs silently (the previous behaviour) meant a tree that was moved, renamed or deleted dropped out of hash validation while the gate still printed "up-to-date". The set of validated trees must equal the set of declared trees.
   for (const config of LOCALE_CONFIGS) {
     if (!fs.existsSync(config.dir)) {
       errors.push(
@@ -307,11 +302,7 @@ function main(): void {
   if (errors.length > 0) {
     console.error('Translation hash check FAILED:\n');
     errors.forEach((e) => console.error(e));
-    // The ORDER below is the whole point, and the previous version of this text
-    // had it backwards. Generating hashes FIRST stamps the stale translations as
-    // current, which is precisely the drift this gate exists to catch: the
-    // non-English values still say what the old English said, and nothing would
-    // ever report it again. Re-translate, THEN re-hash.
+    // The ORDER below is the whole point, and the previous version of this text had it backwards. Generating hashes FIRST stamps the stale translations as current, which is precisely the drift this gate exists to catch: the non-English values still say what the old English said, and nothing would ever report it again. Re-translate, THEN re-hash.
     console.error('\nTo fix, IN THIS ORDER:');
     console.error('  1. Re-translate the changed keys in the NON-ENGLISH locales of the surface');
     console.error('     named above. Values only -- these files are alphabetically sorted and');

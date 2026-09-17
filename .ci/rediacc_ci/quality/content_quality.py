@@ -115,27 +115,22 @@ def _joined(*rows: str) -> str:
 PATTERNS_FILE = ".ci/config/content-quality-patterns.conf"
 ALLOWLIST_FILE = ".ci/config/content-quality-allowlist.txt"
 
-# The scanned roots, in the twin's order. A directory that does not exist is
-# skipped silently, which is how the twin behaves and is also how this gate can
+# The scanned roots, in the twin's order. A directory that does not exist is skipped silently, which is how the twin behaves and is also how this gate can
 # go quiet; see the anti-vacuity note on `main`.
 CONTENT_DIRS = (
     "packages/www/src/content/docs",
     "packages/www/src/content/blog",
 )
 
-# The severity switches, matched EXACTLY as whole lines. `# [ERROR]` with a
-# trailing space is not a switch, it is a comment, and the twin agrees because
+# The severity switches, matched EXACTLY as whole lines. `# [ERROR]` with a trailing space is not a switch, it is a comment, and the twin agrees because
 # it uses `==` on the whole line rather than a prefix test.
 ERROR_MARKER = "# [ERROR]"
 WARN_MARKER = "# [WARN]"
 
-# The inline suppression token and the fence opener, both matched the way awk
-# matches them: the token anywhere in the line, the fence anchored at column 1.
+# The inline suppression token and the fence opener, both matched the way awk matches them: the token anywhere in the line, the fence anchored at column 1.
 SLOP_OK = "<!-- slop-ok -->"
 
-# How long a reported line may be before it is cut, and where the cut lands.
-# Two numbers, not one, because the twin's are 120 and 117 and the three-byte
-# difference is the "..." it appends.
+# How long a reported line may be before it is cut, and where the cut lands. Two numbers, not one, because the twin's are 120 and 117 and the three-byte difference is the "..." it appends.
 MAX_LINE_BYTES = 120
 CUT_LINE_BYTES = 117
 
@@ -347,11 +342,7 @@ class Report:
         else:
             log.warn("%s:%d" % (rel_file, lineno))
             self.warnings += 1
-        # NINE SPACES, matching the twin's `echo "         Pattern: ..."`. The
-        # indent is not decoration: `scripts/lib/shadow-gate.ts` attaches an
-        # INDENTED unmarked line to the finding above it, so a port that
-        # un-indented these would emit two lines of chatter and one finding
-        # where the twin emits three findings.
+        # NINE SPACES, matching the twin's `echo " Pattern: ..."`. The indent is not decoration: `scripts/lib/shadow-gate.ts` attaches an INDENTED unmarked line to the finding above it, so a port that un-indented these would emit two lines of chatter and one finding where the twin emits three findings.
         print('         Pattern: "%s"' % pattern)
         print("         Line:    %s" % body)
 
@@ -394,12 +385,7 @@ def scan_file(
             continue
         report.violation("WARN", rel_file, lineno, identify_pattern(line, warn_patterns), line)
 
-    # NOTE: Double-dash ( -- ) detection was removed because ` -- ` is a
-    # legitimate CLI argument separator (e.g., `renet compose -- up -d`,
-    # `npm run dev -- --host`). Detecting it requires understanding whether
-    # the context is prose or a command, which grep cannot distinguish
-    # reliably. The em dash pattern (U+2014) in the patterns file catches
-    # the actual AI tell.
+    # NOTE: Double-dash ( -- ) detection was removed because ` -- ` is a legitimate CLI argument separator (e.g., `renet compose -- up -d`, `npm run dev -- --host`). Detecting it requires understanding whether the context is prose or a command, which grep cannot distinguish reliably. The em dash pattern (U+2014) in the patterns file catches the actual AI tell.
 
 
 def discover(root: pathlib.Path) -> list[pathlib.Path]:
@@ -445,8 +431,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Byte-exact output. The gate prints content it read from disk, so its own
     # streams must be able to carry every byte back out; without this a
-    # surrogate from `surrogateescape` raises UnicodeEncodeError in the middle
-    # of a failure report, which is the worst place for a traceback.
+    # surrogate from `surrogateescape` raises UnicodeEncodeError in the middle of a failure report, which is the worst place for a traceback.
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
@@ -470,9 +455,7 @@ def main(argv: list[str] | None = None) -> int:
         "Loaded %d error patterns, %d warn patterns" % (len(error_patterns), len(warn_patterns))
     )
 
-    # ARGUMENTS OVERRIDE THE DISCOVERY, exactly as the twin's
-    # `if [[ $# -gt 0 ]]` does: a caller naming files scans those and only
-    # those, and the two content roots are not consulted at all.
+    # ARGUMENTS OVERRIDE THE DISCOVERY, exactly as the twin's `if [[ $# -gt 0 ]]` does: a caller naming files scans those and only those, and the two content roots are not consulted at all.
     files = [pathlib.Path(a) for a in args] if args else discover(root)
 
     log.info("Scanning %d content files..." % len(files))
@@ -480,10 +463,7 @@ def main(argv: list[str] | None = None) -> int:
     report = Report()
     for path in files:
         # `${file#"$REPO_ROOT/"}` is a PREFIX strip, not a relative-path
-        # computation: a path that is not under the root keeps its full text and
-        # is compared against the allowlist in that form. Reproduced literally,
-        # because `os.path.relpath` would invent `../..` segments the twin never
-        # produces and would then fail to match an allowlist entry.
+        # computation: a path that is not under the root keeps its full text and is compared against the allowlist in that form. Reproduced literally, because `os.path.relpath` would invent `../..` segments the twin never produces and would then fail to match an allowlist entry.
         text = str(path)
         prefix = str(root) + os.sep
         rel_file = text.removeprefix(prefix)
@@ -507,8 +487,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A patterns file with one pattern per severity, short enough to reason about
-# and shaped like the real one (a header comment, the two markers, blanks).
+# A patterns file with one pattern per severity, short enough to reason about and shaped like the real one (a header comment, the two markers, blanks).
 _PATTERNS = _joined(
     "# Content quality patterns",
     "",
@@ -558,8 +537,7 @@ def selftest() -> int:
     )
     ctl.check("helper: the alternation is joined with a pipe", build_regex(["a", "b"]), "a|b")
 
-    # The exemption map, every rule and its mirror. Line numbers are 1-based and
-    # written out so a reader can count them in the fixture text.
+    # The exemption map, every rule and its mirror. Line numbers are 1-based and written out so a reader can count them in the fixture text.
     doc = _joined(
         "---",  # 1 frontmatter open
         "title: in the world of x",  # 2 frontmatter body
@@ -662,9 +640,7 @@ def selftest() -> int:
             0,
         )
 
-        # THE VACUITY CASE, and it is a REPORTED TWIN DEFECT rather than a
-        # behaviour to be proud of: with the content directories absent the gate
-        # scans zero files and exits 0. Asserted here so the port's agreement
+        # THE VACUITY CASE, and it is a REPORTED TWIN DEFECT rather than a behaviour to be proud of: with the content directories absent the gate scans zero files and exits 0. Asserted here so the port's agreement
         # with the twin is deliberate and visible, not accidental.
         empty = root / "empty"
         (empty / ".ci" / "config").mkdir(parents=True)
@@ -675,8 +651,7 @@ def selftest() -> int:
         os.environ[paths.ROOT_ENV] = str(empty)
         try:
             ctl.check("TWIN DEFECT: zero content files still exits 0", main([]), 0)
-            # A missing patterns file IS a refusal, which is the one input the
-            # twin does treat as a failure.
+            # A missing patterns file IS a refusal, which is the one input the twin does treat as a failure.
             (empty / ".ci" / "config" / "content-quality-patterns.conf").unlink()
             ctl.check("REFUSAL: an absent patterns file exits 1", main([]), 1)
         finally:

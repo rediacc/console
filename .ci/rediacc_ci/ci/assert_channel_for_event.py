@@ -54,8 +54,7 @@ from rediacc_ci import log
 
 # `^pr-[0-9]+$` from the twin, as a fullmatch. `[0-9]` is ASCII-only in both
 # engines (the twin runs under LC_ALL=C in CI), and fullmatch rather than
-# `re.match(... + "$")` because Python's `$` also matches before a trailing
-# newline while bash's does not -- `pr-1\n` must fail on both sides.
+# `re.match(... + "$")` because Python's `$` also matches before a trailing newline while bash's does not -- `pr-1\n` must fail on both sides.
 PR_CHANNEL = re.compile(r"pr-[0-9]+")
 
 # The two events that must produce NO R2 bytes at all. `workflow_dispatch` is

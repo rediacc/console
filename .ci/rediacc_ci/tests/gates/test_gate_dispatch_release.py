@@ -374,9 +374,7 @@ def test_decide_only_fail_open_paths_never_signal_skip(gate, tmp_path):
     )
     gate.assert_contains(fx.out, "decision: release", "it decides to release")
 
-    # CONTROL, in this same function: the recorder and the output file DO work.
-    # Without it, all three assertions above would also pass against a script that
-    # never wrote $GITHUB_OUTPUT under any circumstances.
+    # CONTROL, in this same function: the recorder and the output file DO work. Without it, all three assertions above would also pass against a script that never wrote $GITHUB_OUTPUT under any circumstances.
     fx.setup()
     fx.pulls_for(SHA, merged_pr(570, "bump-none"))
     fx.run("--decide-only")
@@ -438,8 +436,7 @@ def test_an_unknown_flag_is_a_wiring_bug(gate, tmp_path):
 
 # --- ci.yml wiring ---------------------------------------------------------
 #
-# The two predicates below take JOB TEXT rather than reading ci.yml themselves, which
-# is the whole reason a control is possible.
+# The two predicates below take JOB TEXT rather than reading ci.yml themselves, which is the whole reason a control is possible.
 
 
 def ordering_violations(job: str) -> list[str]:
@@ -450,12 +447,8 @@ def ordering_violations(job: str) -> list[str]:
         (i + 1 for i, ln in enumerate(lines) if "write-release-sentinel.sh" in ln), None
     )
     if decide_line is None:
-        # NO DECIDE STEP HERE IS NOW CORRECT, and that is the 2026-08-26 fix rather
-        # than a regression: the decision moved to initialize.sh (step 6b) because
-        # this job `needs: ci-complete` and is therefore DOWNSTREAM of stage-artifacts,
-        # the job that writes R2. Deciding here arrived after the uploader had already
-        # advanced the channel pointer. "Absent" must not be confused with "unguarded",
-        # so absence is acceptable only when the job demonstrably READS the decision.
+        # NO DECIDE STEP HERE IS NOW CORRECT, and that is the 2026-08-26 fix rather than a regression: the decision moved to initialize.sh (step 6b) because this job `needs: ci-complete` and is therefore DOWNSTREAM of stage-artifacts, the job that writes R2. Deciding here arrived after the uploader had already advanced the channel pointer. "Absent" must not be confused with
+        # "unguarded", so absence is acceptable only when the job demonstrably READS the decision.
         if "needs.initialize.outputs.skip_release" in job:
             return []
         return [
@@ -520,9 +513,7 @@ def test_ci_yml_wires_the_script(gate):
         "and the inline dispatch is gone, so there is only ONE place the decision can be made",
     )
     gate.assert_contains(job, "GH_TOKEN", "the script still gets its token")
-    # THE DECISION MOVED OUT OF THIS JOB (2026-08-26). The invariant that replaces
-    # "the decide step exists" is strictly stronger: this job must NOT decide and
-    # must read the one shared output. One evaluation, five readers.
+    # THE DECISION MOVED OUT OF THIS JOB (2026-08-26). The invariant that replaces "the decide step exists" is strictly stronger: this job must NOT decide and must read the one shared output. One evaluation, five readers.
     gate.assert_not_contains(
         job,
         "--decide-only",

@@ -59,9 +59,7 @@ type Flat = Record<string, string>;
 function flatten(node: unknown, prefix = '', out: Flat = {}): Flat {
   if (node === null || node === undefined) return out;
   if (Array.isArray(node)) {
-    // Arrays are the reason this gate exists in the shape it does: the
-    // fabricated pricing values lived at `...features.1` and `...rows.2`, and
-    // an earlier ad-hoc sweep missed every one of them by walking objects only.
+    // Arrays are the reason this gate exists in the shape it does: the fabricated pricing values lived at `...features.1` and `...rows.2`, and an earlier ad-hoc sweep missed every one of them by walking objects only.
     node.forEach((v, i) => flatten(v, prefix ? `${prefix}.${i}` : String(i), out));
   } else if (typeof node === 'object') {
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
@@ -234,8 +232,7 @@ function main(argv: string[]): number {
 
   const base = resolveBase(explicitBase);
   if (!base) {
-    // Fail rather than skip. A diff gate with no baseline measures nothing, and
-    // "measured nothing" must never be reported as "found nothing".
+    // Fail rather than skip. A diff gate with no baseline measures nothing, and "measured nothing" must never be reported as "found nothing".
     process.stderr.write(
       'check-locale-only-edits: could not resolve a base ref (tried origin/main, HEAD).\n' +
         'Pass one explicitly with --base <ref>. Refusing to run without a baseline.\n'
@@ -253,11 +250,7 @@ function main(argv: string[]): number {
   const enNow = flatten(JSON.parse(enNowRaw));
   const enBase = flatten(JSON.parse(enBaseRaw));
 
-  // The ledger nests under `languages`, alongside a `$meta` block. Reading the
-  // top level directly yields undefined for every locale, which silently makes
-  // the protected set EMPTY and the gate incapable of firing. That is exactly
-  // what happened on the first draft of this file, and only a planted control
-  // caught it, so the shape is asserted rather than assumed.
+  // The ledger nests under `languages`, alongside a `$meta` block. Reading the top level directly yields undefined for every locale, which silently makes the protected set EMPTY and the gate incapable of firing. That is exactly what happened on the first draft of this file, and only a planted control caught it, so the shape is asserted rather than assumed.
   let ledger: Record<string, Record<string, unknown>> = {};
   try {
     const raw = JSON.parse(fs.readFileSync(LEDGER, 'utf8')) as {
@@ -306,25 +299,15 @@ function main(argv: string[]): number {
       if (englishChanged) continue; // the whole point of a re-naturalization
       if (!(key in naturalized)) continue; // backlog catch-up, allowed
 
-      // Backlog catch-up the LEDGER lied about. A key whose base value is byte-identical
-      // to its base English was never actually translated, whatever the ledger claims,
-      // and the ledger does make that claim: 369 keys across 12 locales were stamped
-      // naturalized while still holding the English string. Trusting the stamp over the
-      // data turns "translate the untranslated" into a gate failure, which is the exact
-      // opposite of this gate's stated allowance two paragraphs up.
+      // Backlog catch-up the LEDGER lied about. A key whose base value is byte-identical to its base English was never actually translated, whatever the ledger claims, and the ledger does make that claim: 369 keys across 12 locales were stamped naturalized while still holding the English string. Trusting the stamp over the data turns "translate the untranslated" into a gate
+      // failure, which is the exact opposite of this gate's stated allowance two paragraphs up.
       //
-      // This cannot hide a fabrication. A fabricated rewrite replaces a REAL translation,
-      // so its base value is not English and this check does not apply to it. Proven on
-      // the run that motivated it: 411 genuine rewrites were still reported and reverted
+      // This cannot hide a fabrication. A fabricated rewrite replaces a REAL translation, so its base value is not English and this check does not apply to it. Proven on the run that motivated it: 411 genuine rewrites were still reported and reverted
       // while these passed.
       if (was[key] === enBase[key]) continue;
 
-      // An edit that ONLY removes an em dash is required by check:ci-em-dash-surfaces,
-      // which is a blocking gate in the same chain. Without this the two gates are
-      // mutually unsatisfiable: one demands the dash go, the other calls its removal an
-      // unjustified rewrite. Deliberately narrow -- the values must be identical once the
-      // dash and its surrounding spaces are normalised away, so a rewrite that also
-      // changes wording is still reported.
+      // An edit that ONLY removes an em dash is required by check:ci-em-dash-surfaces, which is a blocking gate in the same chain. Without this the two gates are mutually unsatisfiable: one demands the dash go, the other calls its removal an unjustified rewrite. Deliberately narrow -- the values must be identical once the dash and its surrounding spaces are normalised away, so a
+      // rewrite that also changes wording is still reported.
       if (isRefMarkerRepair(was[key], now[key], enNow[key] ?? '')) {
         refMarkerRepairs.push(`  ${loc}  ${key}`);
         continue;
@@ -344,8 +327,7 @@ function main(argv: string[]): number {
   }
 
   if (refMarkerRepairs.length > 0) {
-    // Printed for the same reason the em-dash advisory is: an exemption nobody can see
-    // is how an exemption becomes a blind spot.
+    // Printed for the same reason the em-dash advisory is: an exemption nobody can see is how an exemption becomes a blind spot.
     process.stdout.write(
       `check-locale-only-edits: ${refMarkerRepairs.length} locale value(s) exempted as ` +
         'reference-marker repairs\n(a locale-only `[n]` that English does not carry was ' +

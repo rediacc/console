@@ -230,18 +230,11 @@ def record(argv: list[str] | None = None) -> dict | None:
         "scope": _scope(),
         "run_delay_ns": _run_delay_ns(),
         "avail": {
-            # PROBED, not read from the sysctl, and that correction is measured.
-            # kernel.sched_schedstats is 0 on this kernel and field 2 of
-            # /proc/<pid>/schedstat is live anyway: two burners pinned to one core
+            # PROBED, not read from the sysctl, and that correction is measured. kernel.sched_schedstats is 0 on this kernel and field 2 of /proc/<pid>/schedstat is live anyway: two burners pinned to one core
             # read run_delay=752ms while a third alone on its own core read 0. The
-            # old line reported a working instrument as dead, which is the mirror
-            # image of trusting a flag over a measurement -- and run-delay is the
-            # counter-signal that stops a "parallelise this" verdict on a box that
-            # is already oversubscribed, so throwing it away was expensive.
+            # old line reported a working instrument as dead, which is the mirror image of trusting a flag over a measurement -- and run-delay is the counter-signal that stops a "parallelise this" verdict on a box that is already oversubscribed, so throwing it away was expensive.
             #
-            # Read it on an IDLE process and it is 0, which looks exactly like the
-            # sysctl being right. The probe asks whether the FIELD PARSES, never
-            # whether this particular process happened to wait.
+            # Read it on an IDLE process and it is 0, which looks exactly like the sysctl being right. The probe asks whether the FIELD PARSES, never whether this particular process happened to wait.
             "run_delay": _run_delay_ns() is not None,
             "delayacct": _sysctl_on("task_delayacct"),
         },
@@ -322,8 +315,7 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(roll, fh, indent=1, sort_keys=True)
         os.replace(tmp, t1)
-        # NOT truncated any more: the day folder IS the corpus (operator ruling, see
-        # stats_root). The rollup remembers how far it has folded via `cursor`.
+        # NOT truncated any more: the day folder IS the corpus (operator ruling, see stats_root). The rollup remembers how far it has folded via `cursor`.
     except OSError:
         return None
     return roll
@@ -370,9 +362,7 @@ def install() -> None:
             return
         # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a
         # minimal recorder in EVERY python3 at interpreter startup; this module is
-        # the richer one and runs only where wl_core is imported. The marker tells
-        # the minimal handler to stand down at exit, so a hook process writes one
-        # record, not two.
+        # the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two.
         os.environ["_WL_SITEPROFILE"] = "super"
         for name in ("cpu", "io"):
             v = _psi_some_total(name)

@@ -134,14 +134,10 @@ class Sandbox:
         ):
             for entry in sorted(source_dir.iterdir()):
                 (target_dir / entry.name).symlink_to(entry)
-        # constants.sh resolves .devcontainer/toolchain.env RELATIVE TO THE ROOT
-        # it is sourced from and hard-fails without it. Omitting this link made
-        # every mutant die during startup, which the controls then read as "the
-        # planted defect was detected".
+        # constants.sh resolves .devcontainer/toolchain.env RELATIVE TO THE ROOT it is sourced from and hard-fails without it. Omitting this link made every mutant die during startup, which the controls then read as "the planted defect was detected".
         (self.root / ".devcontainer").symlink_to(paths.from_root(".devcontainer"))
 
-        # Fixture artifacts. Two binaries plus a manifest is the shape
-        # stage-artifacts hands the uploader.
+        # Fixture artifacts. Two binaries plus a manifest is the shape stage-artifacts hands the uploader.
         (self.root / "dist/cli/rdc-linux-x64").write_text("ELF-ish\n", encoding="utf-8")
         (self.root / "dist/cli/rdc-darwin-arm64").write_text("ELF-ish\n", encoding="utf-8")
         (self.root / "dist/cli/manifest.json").write_text(
@@ -159,8 +155,7 @@ class Sandbox:
             )
 
         self._write_exec(self.bin / "aws", FAKE_AWS % {"awslog": self.awslog})
-        # upload-repos-to-r2.sh calls cf-purge-urls.sh by a repo-relative path
-        # after cd'ing to get_repo_root().
+        # upload-repos-to-r2.sh calls cf-purge-urls.sh by a repo-relative path after cd'ing to get_repo_root().
         self._write_exec(
             self.root / ".ci/scripts/deploy/cf-purge-urls.sh",
             FAKE_PURGE % {"purgelog": self.purgelog},
@@ -316,10 +311,7 @@ def sandbox(tmp_path_factory):
     return Sandbox(tmp_path_factory.mktemp("skip-release"))
 
 
-# --- the six properties. Each returns the problems it found, empty when the
-# property HOLDS. They are called twice: once against the real script (must
-# hold) and once against the mutant that breaks exactly that property (must be
-# violated).
+# --- the six properties. Each returns the problems it found, empty when the property HOLDS. They are called twice: once against the real script (must hold) and once against the mutant that breaks exactly that property (must be violated).
 
 
 def case_skip_writes_nothing(box: Sandbox, script: pathlib.Path) -> list[str]:
@@ -412,9 +404,7 @@ def case_repos_pr_unaffected(box: Sandbox, script: pathlib.Path) -> list[str]:
 
 def must_hold(gate, box: Sandbox, case, script: pathlib.Path, label: str) -> None:
     problems = case(box, script)
-    # The recorder count is read AFTER the case runs, never before: a count
-    # captured first reports the PREVIOUS case's log and would hide exactly the
-    # collapse anti-vacuity exists to expose.
+    # The recorder count is read AFTER the case runs, never before: a count captured first reports the PREVIOUS case's log and would hide exactly the collapse anti-vacuity exists to expose.
     observed = len(box.calls())
     if problems:
         gate.log_fail("%s [%d aws call(s)]\n    %s" % (label, observed, "\n    ".join(problems)))
@@ -551,8 +541,7 @@ def test_control_r_guard_ignores_channel(gate, sandbox):
 
 
 def test_the_fixture_shape_is_non_trivial(gate, sandbox):
-    # The twin's closing line, which is a control and not a summary: it names the
-    # numbers a reader would notice collapsing.
+    # The twin's closing line, which is a control and not a summary: it names the numbers a reader would notice collapsing.
     if sandbox.fixture_binaries == 0:
         gate.log_fail("the fixture yielded zero rdc-* binaries")
     if len(sandbox.mutants) != 6:

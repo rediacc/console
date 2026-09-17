@@ -383,8 +383,7 @@ def test_no_return_inside_the_errexit_relaxed_region(gate, tmp_path):
     if found:
         gate.log_fail("cleanup_r2 leaves its set +e region early: %s" % "; ".join(found))
 
-    # CONTROL: plant the exact defect on a COPY under tmp_path and require a report.
-    # The real subject is never written to.
+    # CONTROL: plant the exact defect on a COPY under tmp_path and require a report. The real subject is never written to.
     lines = UNDER_TEST.read_text(encoding="utf-8").split("\n")
     start = next(i for i, ln in enumerate(lines) if ln.strip() == "set +e")
     end = next(i for i, ln in enumerate(lines) if i > start and ln.strip() == "set -e")

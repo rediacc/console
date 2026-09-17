@@ -91,9 +91,7 @@ class ConfigService extends ConfigServiceBase {
     const sshContent = state.getSSH();
     let sshPrivateKey = sshContent?.privateKey;
     let sshPublicKey = sshContent?.publicKey;
-    // Fall back to the standard local SSH key when none is configured (e.g. a
-    // config auto-created without `rdc config init --ssh-key`). Keeps the
-    // common case zero-config: if ~/.ssh/id_rsa (or id_ed25519) exists, use it.
+    // Fall back to the standard local SSH key when none is configured (e.g. a config auto-created without `rdc config init --ssh-key`). Keeps the common case zero-config: if ~/.ssh/id_rsa (or id_ed25519) exists, use it.
     if (!sshPrivateKey) {
       const sshDir = path.join(os.homedir(), '.ssh');
       for (const name of ['id_rsa', 'id_ed25519']) {
@@ -164,9 +162,7 @@ class ConfigService extends ConfigServiceBase {
     machines[name] = config;
     await state.setMachines(machines);
     try {
-      // Report the path actually written, never a hardcoded ~/.ssh/config_rediacc:
-      // under WSL getSSHHome() deliberately resolves to the WINDOWS home (see its
-      // doc comment), so the old message sent WSL users to the wrong file.
+      // Report the path actually written, never a hardcoded ~/.ssh/config_rediacc: under WSL getSSHHome() deliberately resolves to the WINDOWS home (see its doc comment), so the old message sent WSL users to the wrong file.
       const path = addMachineSSHConfigEntry({
         machineName: name,
         host: config.ip,
@@ -426,8 +422,7 @@ class ConfigService extends ConfigServiceBase {
     const { name: originalName, deletedAt, ...repoConfig } = archived;
     void originalName;
     void deletedAt;
-    // This write bypasses addRepository, but the record it makes LIVE is subject
-    // to the same GUID-keyed credential map.
+    // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
     assertNoCredentialCollision(repos, restoredName, repoConfig);
     repos[restoredName] = repoConfig;
     await state.setRepositories(repos);
@@ -574,8 +569,7 @@ class ConfigService extends ConfigServiceBase {
 
   // ============================================================================
   // Cluster CRUD (non-secret SSH-reachable inventory; members materialize into
-  // resources.machines). Cluster records are non-secret so they live in the
-  // plain config like cloudProviders, not the encrypted resource state.
+  // resources.machines). Cluster records are non-secret so they live in the plain config like cloudProviders, not the encrypted resource state.
   // ============================================================================
 
   async addCluster(name: string, config: ClusterConfig): Promise<void> {

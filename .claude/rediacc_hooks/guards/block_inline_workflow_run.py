@@ -45,18 +45,14 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-inline-workflow-run.sh"
 ORDER = 5
 
-# The comment skip inside the block scalar. Without it every `#` line in a
-# `run: |` counts toward the limit, so a well-annotated 6-line step is refused
+# The comment skip inside the block scalar. Without it every `#` line in a `run: |` counts toward the limit, so a well-annotated 6-line step is refused
 # for being 9 lines long -- the exact "logic lines" distinction the CI rule and
 # this guard's own header are stated in terms of.
 DEFECT = ('if rest[:1] != "#":', "if True:")
 
 MAX = 8
 
-# `case "$FILE" in *.github/workflows/*.yml | *.github/workflows/*.yaml)`. A
-# shell glob, so the leading `*` makes the path test suffix-relative rather
-# than anchored at the repo root, and a file merely NAMED like a workflow
-# elsewhere in the tree does not match.
+# `case "$FILE" in *.github/workflows/*.yml | *.github/workflows/*.yaml)`. A shell glob, so the leading `*` makes the path test suffix-relative rather than anchored at the repo root, and a file merely NAMED like a workflow elsewhere in the tree does not match.
 WORKFLOW_GLOBS = ("*.github/workflows/*.yml", "*.github/workflows/*.yaml")
 
 BLANK_LINE = hookio.rx(r"^[{S}]*$")
@@ -88,14 +84,12 @@ EDGE_CASES = [
         "nine logic lines in one block",
         {"tool_input": {"file_path": ".github/workflows/ci.yml", "new_string": _FAT}},
     ),
-    # The comment skip, and the reason this guard counts LOGIC lines: nine
-    # indented lines, six of them logic.
+    # The comment skip, and the reason this guard counts LOGIC lines: nine indented lines, six of them logic.
     (
         "comments inside the block are not logic",
         {"tool_input": {"file_path": ".github/workflows/ci.yaml", "new_string": _ANNOTATED}},
     ),
-    # The glob's job: a workflow-shaped fragment in a file that is not a
-    # workflow is the CI gate's business, not this hook's.
+    # The glob's job: a workflow-shaped fragment in a file that is not a workflow is the CI gate's business, not this hook's.
     (
         "the same fragment outside .github/workflows",
         {"tool_input": {"file_path": "docs/example.yml", "new_string": _FAT}},
@@ -153,8 +147,7 @@ def _worst(content):
                 if rest[:1] != "#":
                     n += 1
                 continue
-            # flush(): the running block ends here, and `n` deliberately keeps
-            # its value until the next `run:` resets it.
+            # flush(): the running block ends here, and `n` deliberately keeps its value until the next `run:` resets it.
             biggest = max(biggest, n)
             inblock = False
         if re.search(RUN_BLOCK, line):

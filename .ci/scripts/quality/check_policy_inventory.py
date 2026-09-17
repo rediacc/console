@@ -131,15 +131,10 @@ TS_SEAM = "scripts/lib/policy-paths.ts"
 PY_SEAM = ".ci/rediacc_ci/policy_paths.py"
 SEAMS = (TS_SEAM, PY_SEAM)
 
-# The one non-dotfile in `.ci/policy/`. Exempt BY NAME with its reason, and
-# counted in the success line, because a silent exemption is how a directory
-# listing quietly stops meaning what the gate says it means.
+# The one non-dotfile in `.ci/policy/`. Exempt BY NAME with its reason, and counted in the success line, because a silent exemption is how a directory listing quietly stops meaning what the gate says it means.
 DIRECTORY_EXEMPT = {"README.md": "the directory's own predicate and move record, not policy"}
 
-# Exempt BY NAME, printed on every run with the offending lines. `paths:` in the
-# manifest is a repo-RELATIVE change-selector consumed by `--changed`, not a
-# read: `policyPath()` answers an ABSOLUTE path, so routing this through the seam
-# would break gate selection rather than harden it.
+# Exempt BY NAME, printed on every run with the offending lines. `paths:` in the manifest is a repo-RELATIVE change-selector consumed by `--changed`, not a read: `policyPath()` answers an ABSOLUTE path, so routing this through the seam would break gate selection rather than harden it.
 NAMED_EXEMPT = {
     "scripts/ci-runner/manifest.ts": (
         "a `paths:` change-selector, repo-relative by contract; the seam answers "
@@ -149,21 +144,12 @@ NAMED_EXEMPT = {
 
 # ---- direction 7: the refusal W4 P5 recorded ---------------------------------
 #
-# `.ci/policy/README.md` section 6 REFUSES `.ci/config/bws-secret-map.json` entry
-# to this directory, on three of the four section 1 clauses. A refusal that lives
-# only in prose is a refusal nobody re-derives, so the three clauses are asserted
-# here every run. Each one is mechanical, and each one can flip:
+# `.ci/policy/README.md` section 6 REFUSES `.ci/config/bws-secret-map.json` entry to this directory, on three of the four section 1 clauses. A refusal that lives only in prose is a refusal nobody re-derives, so the three clauses are asserted here every run. Each one is mechanical, and each one can flip:
 #
-#   1. the file EXISTS. A refusal about a file that is gone is a stale paragraph,
-#      not a decision, and it must stop being asserted rather than pass vacuously.
-#   2. it is NOT here. Not under POLICY_DIR, and its name is in neither seam.
-#   3. it carries ZERO `BLOCKER:` lines. This is the live one: writing reasons
-#      into it is exactly what would make clause 2 of the section 1 predicate stop
-#      failing, at which point the refusal is no longer complete and a human has
-#      to re-run the predicate.
+# 1. the file EXISTS. A refusal about a file that is gone is a stale paragraph, not a decision, and it must stop being asserted rather than pass vacuously. 2. it is NOT here. Not under POLICY_DIR, and its name is in neither seam. 3. it carries ZERO `BLOCKER:` lines. This is the live one: writing reasons into it is exactly what would make clause 2 of the section 1 predicate stop
+# failing, at which point the refusal is no longer complete and a human has to re-run the predicate.
 #
-# The fix for a red here is never to widen this gate. It is to re-run section 1
-# against the file and rewrite section 6 with whatever the new answer is.
+# The fix for a red here is never to widen this gate. It is to re-run section 1 against the file and rewrite section 6 with whatever the new answer is.
 REFUSED_FILE = ".ci/config/bws-secret-map.json"
 REFUSED_RECORD = ".ci/policy/README.md section 6"
 
@@ -171,8 +157,7 @@ CODE_EXTS = (".py", ".ts", ".js", ".cjs", ".mjs")
 SHELL_EXTS = (".sh",)
 SCANNED_EXTS = CODE_EXTS + SHELL_EXTS
 
-# Directories a walk must not descend into. Only reached when `git ls-files` is
-# unavailable (a scratch tree extracted with `git archive`).
+# Directories a walk must not descend into. Only reached when `git ls-files` is unavailable (a scratch tree extracted with `git archive`).
 WALK_SKIP = {".git", "node_modules", "private", "dist", "build", "__pycache__", "cache"}
 
 # Present-tense assertions of a value. `was`, `went from` and `still read` are
@@ -450,10 +435,7 @@ def _strip_comment(rel: str, line: str) -> str:
     because `"http://x"` is not a comment and `# "` does not open a string.
     """
     stripped = line.lstrip()
-    # No shell arm here: a `#` at column 0 or after whitespace is already caught
-    # by the loop below, and a mutant that deleted an early return for it changed
-    # nothing measurable, so the line is not carried. The C-style arm IS needed:
-    # a jsdoc continuation ` * text` carries no `//` for the loop to find.
+    # No shell arm here: a `#` at column 0 or after whitespace is already caught by the loop below, and a mutant that deleted an early return for it changed nothing measurable, so the line is not carried. The C-style arm IS needed: a jsdoc continuation ` * text` carries no `//` for the loop to find.
     if not rel.endswith(SHELL_EXTS) and stripped.startswith(("//", "/*", "*")):
         return ""
     quote = ""
@@ -683,10 +665,7 @@ def policy_dir_claims(text: str) -> list[tuple[int, str]]:
     lowered = text.lower()
     out = []
     for m in _POLICY_DIR_CLAIM.finditer(text):
-        # WHITESPACE-NORMALISED, because prose WRAPS. This gate's own docstring
-        # quotes the hook sentence as "still\nread", and an unnormalised window
-        # does not contain "still read" at all -- so the gate reported itself for
-        # explaining the exemption it was implementing.
+        # WHITESPACE-NORMALISED, because prose WRAPS. This gate's own docstring quotes the hook sentence as "still\nread", and an unnormalised window does not contain "still read" at all -- so the gate reported itself for explaining the exemption it was implementing.
         prefix = re.sub(r"\s+", " ", lowered[max(0, m.start() - 160) : m.start()])
         if any(marker in prefix for marker in _PAST_MARKERS):
             continue
@@ -761,12 +740,8 @@ def refusal_findings(
         )
         return findings, -1
 
-    # TWO WAYS THE "not here" CLAUSE CAN STOP HOLDING, and both are reachable, which
-    # is why neither is written as a comparison against a literal. A COPY landing in
-    # the directory is the likely one (somebody tidies, the original stays where its
-    # readers expect it, and two files disagree). POLICY_DIR moving on top of the
-    # config directory is the other, and it is what makes `startswith` here a real
-    # test rather than a restatement of the constant above.
+    # TWO WAYS THE "not here" CLAUSE CAN STOP HOLDING, and both are reachable, which is why neither is written as a comparison against a literal. A COPY landing in the directory is the likely one (somebody tidies, the original stays where its readers expect it, and two files disagree). POLICY_DIR moving on top of the config directory is the other, and it is what makes `startswith`
+    # here a real test rather than a restatement of the constant above.
     if (root / policy_dir / name).is_file() or REFUSED_FILE.startswith(policy_dir + "/"):
         findings.append(
             "%s is now reachable under %s/, which is the move %s refuses. Re-run the "
@@ -928,11 +903,7 @@ def scan(root: pathlib.Path) -> Report:
         r.comment_lines += swept
 
     # NO `candidates == 0` REFUSAL, and the absence is deliberate. Both seams are
-    # in the corpus by construction (scan() has already read them) and both
-    # mention policy names, so the arm could never fire -- an unreachable refusal
-    # is a line that looks like a guarantee and is not one. The count is PRINTED
-    # instead, and the comment-line refusal below is the reachable arm: a corpus
-    # the pre-filter emptied has no comments in it either.
+    # in the corpus by construction (scan() has already read them) and both mention policy names, so the arm could never fire -- an unreachable refusal is a line that looks like a guarantee and is not one. The count is PRINTED instead, and the comment-line refusal below is the reachable arm: a corpus the pre-filter emptied has no comments in it either.
     if r.comment_lines == 0:
         raise RefusalError(
             "ZERO comment lines swept across %d file(s); the prose rules asserted nothing" % r.files
@@ -942,21 +913,10 @@ def scan(root: pathlib.Path) -> Report:
 
 # ---- controls ---------------------------------------------------------------
 #
-# EVERY PREDICATE IS DRIVEN IN BOTH DIRECTIONS, and the fixtures below are real
-# lines from this tree rather than invented ones, because the two defects this
-# gate's own first run produced were both cases where an invented fixture had a
-# shape the tree does not have:
+# EVERY PREDICATE IS DRIVEN IN BOTH DIRECTIONS, and the fixtures below are real lines from this tree rather than invented ones, because the two defects this gate's own first run produced were both cases where an invented fixture had a shape the tree does not have:
 #
-#   * `_HISTORY_BLOCK` is `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:26-27`.
-#     The first draft handed the predicate both lines glued into one string, the
-#     extractor handed it one line at a time, and the gate reported the
-#     repository's own record of the 2026-09-06 half-landed move as a stale
-#     claim. The control passed the whole time.
-#   * `_SH_TRAILING_SENTENCE` is `audit.sh:256`, and `_SH_WRAPPED_JOIN` is
-#     `check-plan-housekeeping.sh:87`. The first tokenizer anchored on end of
-#     line, so it called the first a join (it is a message) and missed the
-#     second (it is a join). Both errors are invisible to a fixture that ends
-#     the line right after the path.
+# * `_HISTORY_BLOCK` is `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:26-27`. The first draft handed the predicate both lines glued into one string, the extractor handed it one line at a time, and the gate reported the repository's own record of the 2026-09-06 half-landed move as a stale claim. The control passed the whole time. * `_SH_TRAILING_SENTENCE` is
+# `audit.sh:256`, and `_SH_WRAPPED_JOIN` is `check-plan-housekeeping.sh:87`. The first tokenizer anchored on end of line, so it called the first a join (it is a message) and missed the second (it is a join). Both errors are invisible to a fixture that ends the line right after the path.
 
 _PY_WHOLE_JOIN = """
 X = ".ci/policy/.audit-allowlist"
@@ -989,11 +949,7 @@ _SH_PARENTHESISED_SENTENCE = (
     'ci_warn "Allowed production vulnerabilities: $n (see .ci/policy/.audit-allowlist)"\n'
 )
 _SH_COMMENT = "# the entries live in .ci/policy/.audit-allowlist, one per line\n"
-# A SENTENCE ENDING IN A SLASH-PREFIXED PATH. The pair below differs from
-# `_SH_ASSIGNMENT_JOIN` only by the words around an identical tail, which is the
-# one shape where dropping the "no whitespace inside the quotes" requirement
-# still reds: `t.endswith("/" + tail)` matches the last word of the sentence.
-# Written because a mutant that deleted that requirement survived every other
+# A SENTENCE ENDING IN A SLASH-PREFIXED PATH. The pair below differs from `_SH_ASSIGNMENT_JOIN` only by the words around an identical tail, which is the one shape where dropping the "no whitespace inside the quotes" requirement still reds: `t.endswith("/" + tail)` matches the last word of the sentence. Written because a mutant that deleted that requirement survived every other
 # control on this tree.
 _SH_SENTENCE_ENDING_IN_PATH = (
     'ci_warn "add a BLOCKER above the entry in $REPO_ROOT/.ci/policy/.audit-allowlist"\n'
@@ -1002,9 +958,7 @@ _SH_SENTENCE_ENDING_IN_PATH = (
 _TS_WHOLE_JOIN = "const F = '.ci/policy/.audit-allowlist';\n"
 _TS_SENTENCE = "  `remove line ${l} from .ci/policy/.audit-allowlist, then: npm run x`\n"
 _TS_COMMENT = "// Actions can be blocklisted in .ci/policy/.audit-allowlist to prevent\n"
-# `scripts/gates/check-actions.ts:378-384`, trimmed: help text inside a template
-# literal that OPENS on an earlier line. A per-line tokenizer sees no quote
-# character on the offending line and reads the prose as bare code.
+# `scripts/gates/check-actions.ts:378-384`, trimmed: help text inside a template literal that OPENS on an earlier line. A per-line tokenizer sees no quote character on the offending line and reads the prose as bare code.
 _TS_MULTILINE_HELP = """const usage = `
 DESCRIPTION
   Checks for outdated GitHub Actions in workflow files and fails if any
@@ -1014,22 +968,18 @@ DESCRIPTION
 """
 _TS_MULTILINE_JOIN = """const f = `.ci/policy/.audit-allowlist`;
 """
-# A JSDOC CONTINUATION LINE, which carries no `//` of its own. This is the shape
-# that needs the ` * ` arm of `_strip_comment`: without it the line reads as bare
-# code and its prose becomes a join.
+# A JSDOC CONTINUATION LINE, which carries no `//` of its own. This is the shape that needs the ` * ` arm of `_strip_comment`: without it the line reads as bare code and its prose becomes a join.
 _TS_JSDOC = """/**
  * Eleven of the fifteen are read here, .ci/policy/.audit-allowlist among them.
  */
 """
 
-# `.ci/scripts/test/gates/test-policy-path.sh:21`, verbatim: the CURRENT value,
-# in backticks, in a comment that must stay clean.
+# `.ci/scripts/test/gates/test-policy-path.sh:21`, verbatim: the CURRENT value, in backticks, in a comment that must stay clean.
 _CURRENT_CLAIM = (
     "# THE MOVE LANDED 2026-09-06 at b80552370: POLICY_DIR is `.ci/policy` and all\n"
     "# fifteen are there. `.ci-trigger` stayed at root with its own recorded reason.\n"
 )
-# `scripts/gates/check-suppression-liveness.ts:61-63`, verbatim: the finding this box
-# exists to absorb.
+# `scripts/gates/check-suppression-liveness.ts:61-63`, verbatim: the finding this box exists to absorb.
 _STALE_BLOCK = (
     " * Today POLICY_DIR is '' and this is a provable no-op: the paths it returns are\n"
     " * byte-identical to the joins it replaced, which is what keeps the seam\n"
@@ -1041,9 +991,7 @@ _HISTORY_BLOCK = (
     "#     `const POLICY_DIR = '';` -- the exact half-landed state that seam exists\n"
 )
 _ROOT_CITATION = "# reads $ROOT_DIR/.audit-allowlist on every run\n"
-# THE SAME PAST-TENSE EXEMPTION WITH THE MARKER WRAPPED across a line break,
-# which is what prose does. This gate's own docstring is written this way, and an
-# unnormalised lookbehind reported it.
+# THE SAME PAST-TENSE EXEMPTION WITH THE MARKER WRAPPED across a line break, which is what prose does. This gate's own docstring is written this way, and an unnormalised lookbehind reported it.
 _WRAPPED_HISTORY = (
     "# the sentence in the hook says the seam still\n"
     "# read `const POLICY_DIR = '';` while HEAD held the new paths\n"
@@ -1072,14 +1020,11 @@ def _fixture_tree(tmp: pathlib.Path, ts_list: list[str], py_list: list[str], dis
         encoding="utf-8",
     )
     for name in disk:
-        # THROUGH THE SEAM, in the gate's own fixtures: if `policy_path` and this
-        # gate ever disagree about where a policy file goes, every fixture below
-        # is built in the wrong place and the controls say so.
+        # THROUGH THE SEAM, in the gate's own fixtures: if `policy_path` and this gate ever disagree about where a policy file goes, every fixture below is built in the wrong place and the controls say so.
         p = policy_path(name, tmp)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("# BLOCKER: fixture\n", encoding="utf-8")
-    # Direction 7's subject. Present and clean in every fixture, so a fixture-based
-    # control that DOES flip a clause is measuring the flip and not the fixture.
+    # Direction 7's subject. Present and clean in every fixture, so a fixture-based control that DOES flip a clause is measuring the flip and not the fixture.
     refused = tmp / REFUSED_FILE
     refused.parent.mkdir(parents=True, exist_ok=True)
     refused.write_text(
@@ -1129,9 +1074,7 @@ def selftest(verbose: bool = False) -> int:
         [],
     )
 
-    # -- direction 4, shell. The bash twins have no seam, so this arm only
-    #    DISCLOSES -- but a disclosure built on a broken predicate is a number
-    #    nobody can read, so it is asserted in both directions like the rest.
+    # -- direction 4, shell. The bash twins have no seam, so this arm only DISCLOSES -- but a disclosure built on a broken predicate is a number nobody can read, so it is asserted in both directions like the rest.
     c.check(
         "a shell assignment join is a finding",
         text_join_sites("x.sh", _SH_ASSIGNMENT_JOIN, _NAMES, ".ci/policy"),
@@ -1211,12 +1154,9 @@ def selftest(verbose: bool = False) -> int:
         [(1, ".audit-allowlist")],
     )
 
-    # -- directions 5 and 6, driven through prose_findings() -- the COMPOSITION,
-    #    not the helpers. The helpers were all correct when the composition was
+    # -- directions 5 and 6, driven through prose_findings() -- the COMPOSITION, not the helpers. The helpers were all correct when the composition was
     #    wrong; see this section's header.
-    # ONE call, and no indexing into a list a mutation can empty. A control that
-    # raises IndexError takes every control after it down with it, which turns
-    # one visible regression into a suite that stopped running.
+    # ONE call, and no indexing into a list a mutation can empty. A control that raises IndexError takes every control after it down with it, which turns one visible regression into a suite that stopped running.
     stale = _prose("x.ts", _STALE_BLOCK)
     c.check("the stale claim in check-suppression-liveness.ts is caught", len(stale), 1)
     c.truthy(
@@ -1275,8 +1215,7 @@ def selftest(verbose: bool = False) -> int:
         base = [".audit-allowlist", ".ci-parity-exempt"]
         drifted = [*base, ".deps-upgrade-blocklist"]
 
-        # THE HISTORICAL SHAPE, reconstructed: one more file on disk than the
-        # TypeScript list knows about, reached by a hardcoded join. This is
+        # THE HISTORICAL SHAPE, reconstructed: one more file on disk than the TypeScript list knows about, reached by a hardcoded join. This is
         # 19c45c78e in miniature; the real tree was driven by hand at authoring
         # time, see the module docstring.
         drift = pathlib.Path(td) / "drift"
@@ -1288,9 +1227,7 @@ def selftest(verbose: bool = False) -> int:
             rep.named_policy_files() if isinstance(rep, Report) else rep,
             {".deps-upgrade-blocklist"},
         )
-        # THE TWO DIRECTIONS ARE ASSERTED SEPARATELY, not counted. Deleting
-        # either one leaves a length-based control passing at the wrong number
-        # only by luck, and passing for the wrong reason is the class this whole
+        # THE TWO DIRECTIONS ARE ASSERTED SEPARATELY, not counted. Deleting either one leaves a length-based control passing at the wrong number only by luck, and passing for the wrong reason is the class this whole
         # gate is about; each arm is named by the text only it produces.
         inv = rep.inventory if isinstance(rep, Report) else [str(rep)]
         c.check(
@@ -1342,10 +1279,7 @@ def selftest(verbose: bool = False) -> int:
             isinstance(rep, Report) and any("ZERO entries" in f for f in rep.inventory),
         )
 
-        # -- direction 7, all four arms plus the anti-silencer. Fixture-based and
-        #    end to end, because the unit these arms compose over is a whole tree:
-        #    one of them reads the seams, one reads the policy directory and two
-        #    read the refused file itself.
+        # -- direction 7, all four arms plus the anti-silencer. Fixture-based and end to end, because the unit these arms compose over is a whole tree: one of them reads the seams, one reads the policy directory and two read the refused file itself.
         keep = pathlib.Path(td) / "refusal-holds"
         keep.mkdir()
         _fixture_tree(keep, base, base, base)
@@ -1395,10 +1329,7 @@ def selftest(verbose: bool = False) -> int:
 
         seamed = pathlib.Path(td) / "refusal-seamed"
         seamed.mkdir()
-        # The name goes in BOTH seams and NOT on disk: `policy_path` refuses to build
-        # a path for a name it does not know, so the fixture writer cannot place it,
-        # and placing it is not what this arm is about. The inventory direction also
-        # reds here, which is correct and is why this control reads `rep.refusal`.
+        # The name goes in BOTH seams and NOT on disk: `policy_path` refuses to build a path for a name it does not know, so the fixture writer cannot place it, and placing it is not what this arm is about. The inventory direction also reds here, which is correct and is why this control reads `rep.refusal`.
         _fixture_tree(seamed, [*base, "bws-secret-map.json"], [*base, "bws-secret-map.json"], base)
         rep = _scan_or_refusal(seamed)
         c.truthy(
@@ -1407,8 +1338,7 @@ def selftest(verbose: bool = False) -> int:
             and any("says it does not belong there" in f for f in rep.refusal),
         )
 
-        # THE REFUSALS, each reached on its own so that deleting any one arm
-        # fails a control no other arm answers.
+        # THE REFUSALS, each reached on its own so that deleting any one arm fails a control no other arm answers.
         empty_dir = pathlib.Path(td) / "emptydir"
         empty_dir.mkdir()
         _fixture_tree(empty_dir, base, base, [])
@@ -1525,10 +1455,7 @@ def selftest(verbose: bool = False) -> int:
             isinstance(rep, Report) and rep.comment_lines >= 1,
         )
 
-        # THE GIT ENUMERATOR, which every fixture above bypasses. Without this the
-        # `git ls-files` branch is a live line no control reaches: a mutant that
-        # made it return nothing passed the whole suite, because the walk
-        # fallback quietly answered instead.
+        # THE GIT ENUMERATOR, which every fixture above bypasses. Without this the `git ls-files` branch is a live line no control reaches: a mutant that made it return nothing passed the whole suite, because the walk fallback quietly answered instead.
         tracked = pathlib.Path(td) / "tracked"
         tracked.mkdir()
         _fixture_tree(tracked, base, base, base)
@@ -1550,17 +1477,12 @@ def selftest(verbose: bool = False) -> int:
             1,
         )
 
-        # THE PROSE CORPUS REFUSAL, reached by removing the one comment
-        # `_fixture_tree` writes. Without a case here the arm is a claim nobody
-        # has watched fail.
+        # THE PROSE CORPUS REFUSAL, reached by removing the one comment `_fixture_tree` writes. Without a case here the arm is a claim nobody has watched fail.
         no_prose = pathlib.Path(td) / "noprose"
         no_prose.mkdir()
         _fixture_tree(no_prose, base, base, base)
         seam_py = no_prose / PY_SEAM
-        # plant(), not str.replace: the first draft of this line targeted a
-        # comma the fixture does not write, replaced nothing, and the control
-        # passed against the CLEAN fixture. plant() raises on a needle it
-        # cannot find, which is the entire reason it exists.
+        # plant(), not str.replace: the first draft of this line targeted a comma the fixture does not write, replaced nothing, and the control passed against the CLEAN fixture. plant() raises on a needle it cannot find, which is the entire reason it exists.
         seam_py.write_text(
             plant(
                 seam_py.read_text(encoding="utf-8"),
@@ -1600,10 +1522,7 @@ def selftest(verbose: bool = False) -> int:
         lines = pathlib.Path(td) / "lines"
         lines.mkdir()
         _fixture_tree(lines, base, base, base)
-        # TWO SEPARATE comment runs. If contiguous runs are not broken into
-        # blocks, the whole file reads as one block and every finding is
-        # reported at the FIRST comment's line, which sends the reader to the
-        # wrong place with total confidence.
+        # TWO SEPARATE comment runs. If contiguous runs are not broken into blocks, the whole file reads as one block and every finding is reported at the FIRST comment's line, which sends the reader to the wrong place with total confidence.
         (lines / "gate.py").write_text(
             "# an unrelated note\nX = 1\nY = 2\n# Today POLICY_DIR is '' so nothing moved\nZ = 3\n",
             "utf-8",
@@ -1642,8 +1561,7 @@ def selftest(verbose: bool = False) -> int:
 
 def main(argv: list[str]) -> int:
     verbose = "--verbose" in argv
-    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls
-    # run only when asked is a gate whose controls do not run in CI.
+    # CONTROLS FIRST, ALWAYS, not only under --selftest: a gate whose controls run only when asked is a gate whose controls do not run in CI.
     rc = selftest(verbose)
     if rc != 0:
         print(

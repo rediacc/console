@@ -71,16 +71,10 @@ VENDORED = (
 BASH = shutil.which("bash") or "/bin/bash"
 
 # `dirname`/`uname` because sourcing common.sh runs `detect_os`/`detect_arch`;
-# `mkdir`/`mv`/`rm`/`id`/`wc`/`cat`/`sed`/`sha256sum` because the twin genuinely
-# calls them and their behaviour is deterministic, so they are REAL rather than
-# faked. Anything not listed is ABSENT, including `docker`, `sudo` and `shasum`.
+# `mkdir`/`mv`/`rm`/`id`/`wc`/`cat`/`sed`/`sha256sum` because the twin genuinely calls them and their behaviour is deterministic, so they are REAL rather than faked. Anything not listed is ABSENT, including `docker`, `sudo` and `shasum`.
 #
-# `id` is on the list for a reason worth writing down. Leaving it off made the
-# twin's `$(id -u)` expand to the empty string, so it ran `sudo chown -R :` while
-# the port -- which cannot lose `os.getuid()` -- ran `sudo chown -R 1000:1000`.
-# That is the exact divergence the port's docstring names, and it showed up here
-# as a MISMATCH that had nothing to do with the port's logic. The fixture
-# supplies `id` so the comparison is about the script.
+# `id` is on the list for a reason worth writing down. Leaving it off made the twin's `$(id -u)` expand to the empty string, so it ran `sudo chown -R :` while the port -- which cannot lose `os.getuid()` -- ran `sudo chown -R 1000:1000`. That is the exact divergence the port's docstring names, and it showed up here as a MISMATCH that had nothing to do with the port's logic. The
+# fixture supplies `id` so the comparison is about the script.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -320,9 +314,7 @@ def _docker_argv(calls: str) -> list[str]:
     return lines[0].split("\t")
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker_or_sudo(tmp_path) -> None:
@@ -340,9 +332,7 @@ def test_the_scratch_path_cannot_reach_a_real_docker_or_sudo(tmp_path) -> None:
     assert shutil.which("shasum", path=dropped) is None
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
 
 
 def test_no_arguments_refuses_naming_the_missing_flag(tmp_path) -> None:
@@ -389,9 +379,7 @@ def test_a_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
         _agree(old_t, new_t, flag)
 
 
-# ---------------------------------------------------------------------------
-# --dry-run, including DEFECT 1
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --dry-run, including DEFECT 1 ---------------------------------------------------------------------------
 
 
 def test_dry_run_previews_and_executes_nothing(tmp_path) -> None:
@@ -431,9 +419,7 @@ def test_a_missing_docker_refuses_through_require_cmd(tmp_path) -> None:
     _agree(old_t, new_t, "no-docker")
 
 
-# ---------------------------------------------------------------------------
-# The release seam
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The release seam ---------------------------------------------------------------------------
 
 
 def test_release_build_without_a_version_refuses_before_docker(tmp_path) -> None:
@@ -482,9 +468,7 @@ def test_a_rejected_version_stops_the_build(tmp_path) -> None:
     _agree(old_t, new_t, "release-refused")
 
 
-# ---------------------------------------------------------------------------
-# The build itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The build itself ---------------------------------------------------------------------------
 
 
 def test_the_success_path_builds_renames_and_checksums(tmp_path) -> None:
@@ -520,8 +504,7 @@ def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
     )
     # The fake escapes newlines so a multi-line argument (the container script,
     # which is the LAST one) survives a line-oriented call log; the expectation
-    # is escaped the same way rather than the log being made multi-line, because
-    # `shadow-gate.ts` reads findings line by line too.
+    # is escaped the same way rather than the log being made multi-line, because `shadow-gate.ts` reads findings line by line too.
     assert recorded == ["FAKEBIN docker", *(a.replace("\n", "\\n") for a in expected[1:])]
     assert expected[expected.index("--platform") + 1] == "linux/arm64"
     assert "%s:/workspace" % root in expected
@@ -630,9 +613,7 @@ def test_sudo_repairs_ownership_of_the_container_written_directory(tmp_path) -> 
     _agree(old_t, new_t, "sudo-chown")
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, and the planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, and the planted defect ---------------------------------------------------------------------------
 
 
 def test_parse_args_is_exercised_directly_in_both_directions(tmp_path) -> None:

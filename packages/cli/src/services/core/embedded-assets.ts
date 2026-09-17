@@ -208,8 +208,7 @@ function hostRenetTarget(): {
     arch,
     dir,
     localPath: path.join(dir, `renet${ext}`),
-    // Metadata keys (prepare-cli-assets.sh binary_to_meta_key): linux drops
-    // the platform prefix ("amd64"), darwin/windows keep it ("darwin-arm64").
+    // Metadata keys (prepare-cli-assets.sh binary_to_meta_key): linux drops the platform prefix ("amd64"), darwin/windows keep it ("darwin-arm64").
     metaKey: platform === 'linux' ? arch : `${platform}-${arch}`,
   };
 }
@@ -301,9 +300,7 @@ export async function extractRenetToLocal(): Promise<string> {
 
   const binary = getEmbeddedRenetBinary(platform, arch);
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-  // mkdir's `mode` applies only when it creates the directory. An extraction dir
-  // left over from an earlier release (or widened by a permissive umask) keeps
-  // its old permissions, so narrow it explicitly rather than assuming.
+  // mkdir's `mode` applies only when it creates the directory. An extraction dir left over from an earlier release (or widened by a permissive umask) keeps its old permissions, so narrow it explicitly rather than assuming.
   if (platform !== 'windows') {
     await fs.chmod(dir, 0o700);
   }

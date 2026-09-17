@@ -37,9 +37,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-binary-deploy.sh"
 ORDER = 7
 
-# Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27
-# change removed: every scp is a deploy again, downloads included. It is the
-# one line that separates "uploading a binary" from "pulling a log back".
+# Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
     "if not hookio.grep_q(HOST_SPEC, dest):\n            continue",
     "if False:\n            continue",
@@ -50,25 +48,19 @@ MESSAGE = (
     "handles provisioning automatically."
 )
 
-# The renet binary specifically, however it gets there.
-# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
-# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
-# means a doc line, a worklist note or an `echo` explaining the rule is refused
-# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
-# below still blocks the real command, at line start and after a separator.
+# The renet binary specifically, however it gets there. ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still
+# blocks the real command, at line start and after a separator.
 SUDO_CP = hookio.rx(r"(^|[;&|(])[{B}]*sudo cp[^;&|]*/usr/local/bin/renet")
 
 SCP_CLAUSE = hookio.rx(r"(^|[{B}])scp[{B}]")
 
-# A host spec: a hostname (optionally user@) followed by a colon. A local
-# path containing a colon has a slash before it, so it cannot match here.
+# A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
 
 EDGE_CASES = [
     ("an upload names a host as its destination", "scp bin/renet host:/usr/local/bin/renet"),
     ("user@host is still a host", "scp bin/renet root@10.0.0.1:/usr/local/bin/renet"),
-    # The case the 2026-08-27 change exists for, and the reason a block-only
-    # corpus would have missed it entirely.
+    # The case the 2026-08-27 change exists for, and the reason a block-only corpus would have missed it entirely.
     ("a DOWNLOAD is not a deploy", "scp host:/var/log/renet.log ./logs/"),
     ("a local copy is not a deploy", "scp a.txt b.txt"),
     ("a local path with a colon has a slash first", "scp x ./a:b/c"),
@@ -92,8 +84,7 @@ def run(ev):
         return hookio.DENY
 
     # Each scp clause, judged by where it is sending things. `tr ';&|' '\n\n\n'`
-    # is a byte map, not a split: the separator becomes a newline, so a clause
-    # never carries the character that ended it.
+    # is a byte map, not a split: the separator becomes a newline, so a clause never carries the character that ended it.
     clauses = cmd
     for sep in ";&|":
         clauses = hookio._tr(clauses, sep, "\n")

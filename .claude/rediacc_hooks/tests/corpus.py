@@ -35,11 +35,7 @@ import pathlib
 import re
 
 
-# The repo root, found by looking for what only the root has, rather than by
-# counting `parents[N]`. `.ci/rediacc_ci/paths.py` makes the argument at length:
-# a depth constant still resolves after the file moves, silently, to the wrong
-# tree. That module is not imported here on purpose -- these hooks run from
-# `.claude/settings.json` with no pytest ini and no `pythonpath`, so a hook
+# The repo root, found by looking for what only the root has, rather than by counting `parents[N]`. `.ci/rediacc_ci/paths.py` makes the argument at length: a depth constant still resolves after the file moves, silently, to the wrong tree. That module is not imported here on purpose -- these hooks run from `.claude/settings.json` with no pytest ini and no `pythonpath`, so a hook
 # package that needs `.ci` on sys.path to find itself would be a new coupling.
 def repo_root():
     here = pathlib.Path(__file__).resolve()
@@ -53,15 +49,9 @@ def repo_root():
 SUITE = repo_root() / ".claude" / "hooks" / "test-hooks.sh"
 LIB = repo_root() / ".claude" / "hooks" / "pre-bash" / "lib" / "command-scan.sh"
 
-# The floor the harvest must clear. Corpus-derived floors are the rule
-# (driver contract section 6), and this one is: it is a fraction of the
-# `bash_json` call sites counted in the same pass, so adding cases to the
-# suite raises it and a broken parser that recovers three payloads reds
-# instead of quietly proving the port against three inputs.
+# The floor the harvest must clear. Corpus-derived floors are the rule (driver contract section 6), and this one is: it is a fraction of the `bash_json` call sites counted in the same pass, so adding cases to the suite raises it and a broken parser that recovers three payloads reds instead of quietly proving the port against three inputs.
 HARVEST_RATIO_FLOOR = 0.9
-# Below this the suite itself has been gutted and the ratio above is
-# meaningless -- the same base-case argument `.ci/rediacc_ci/check_pytest.py`
-# makes for MIN_TESTS.
+# Below this the suite itself has been gutted and the ratio above is meaningless -- the same base-case argument `.ci/rediacc_ci/check_pytest.py` makes for MIN_TESTS.
 MIN_COMMANDS = 300
 
 _ANSI_C = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", "'": "'", '"': '"', "0": "\0"}
@@ -225,8 +215,7 @@ def harvest():
             word = names[bare.group(1)]
         if word == "":
             continue
-        # The differential streams results back framed by these two control
-        # characters, so a payload containing one would corrupt the frame
+        # The differential streams results back framed by these two control characters, so a payload containing one would corrupt the frame
         # rather than fail a comparison. None does today; the check is here so
         # that a future one is dropped loudly instead of silently mis-parsed.
         if "\x1e" in word or "\x1f" in word:
@@ -242,11 +231,7 @@ def harvest():
     return distinct, stats
 
 
-# The cases the six rounds of findings in command-scan.sh's header describe,
-# plus the empty-command contract. These are the ones most likely to diverge,
-# because each one is a shape the bash was CHANGED to handle -- so a port that
-# reproduced only the current code's obvious behaviour would fail here first.
-# They are labelled, and the labels name the round, so a failure report says
+# The cases the six rounds of findings in command-scan.sh's header describe, plus the empty-command contract. These are the ones most likely to diverge, because each one is a shape the bash was CHANGED to handle -- so a port that reproduced only the current code's obvious behaviour would fail here first. They are labelled, and the labels name the round, so a failure report says
 # which finding regressed rather than only which string differed.
 EDGE_CASES = [
     # -- rounds 39-40: the -c selector is a token, not a flag shape --------
@@ -339,14 +324,8 @@ EDGE_CASES = [
 ]
 
 
-# TWO CASES THAT MUST BE BUILT, NOT WRITTEN DOWN, and the reason is an
-# anti-vacuity one rather than a convenience. `hook_target_root` only returns a
-# non-empty answer when a hint resolves to a git worktree that is NOT the root
-# it was handed, and no payload in the suite carries an absolute `cd` into a
-# real checkout. Measured over the whole corpus before these were added: the
-# field comparing `target_root` against a deliberately absent root took exactly
-# ONE value, the empty string, on every one of 385 cases -- a comparison that
-# could not have failed. These two give it something to disagree about.
+# TWO CASES THAT MUST BE BUILT, NOT WRITTEN DOWN, and the reason is an anti-vacuity one rather than a convenience. `hook_target_root` only returns a non-empty answer when a hint resolves to a git worktree that is NOT the root it was handed, and no payload in the suite carries an absolute `cd` into a real checkout. Measured over the whole corpus before these were added: the field
+# comparing `target_root` against a deliberately absent root took exactly ONE value, the empty string, on every one of 385 cases -- a comparison that could not have failed. These two give it something to disagree about.
 def _absolute_cd_cases():
     root = repo_root()
     cases = [("absolute cd into this checkout", "cd %s && git status" % root)]
@@ -358,10 +337,7 @@ def _absolute_cd_cases():
 
 EDGE_CASES.extend(_absolute_cd_cases())
 
-# `hook_init` payloads. The interesting half is not the happy path: `jq -r`
-# prints the four characters `null` for an absent key, so three of these
-# produce a scan of the literal string "null" rather than the early return a
-# reader expects. See shellscan.hook_init's comment.
+# `hook_init` payloads. The interesting half is not the happy path: `jq -r` prints the four characters `null` for an absent key, so three of these produce a scan of the literal string "null" rather than the early return a reader expects. See shellscan.hook_init's comment.
 JSON_PAYLOADS = [
     ("plain command", '{"tool_input":{"command":"gh pr merge 1 --admin"}}'),
     ("empty command", '{"tool_input":{"command":""}}'),

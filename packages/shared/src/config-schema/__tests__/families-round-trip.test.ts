@@ -186,9 +186,7 @@ describe('resource families round trip', () => {
     const config = allFamiliesConfig();
     expect(() => RdcConfigSchema.parse(config)).not.toThrow();
 
-    // If this fails, a NEW family was added to ResourcesSchema: populate it in
-    // this fixture AND carry it in toFullConfig / fullConfigToRdcConfig /
-    // SENSITIVE_FIELDS, or it will be silently dropped by config sync.
+    // If this fails, a NEW family was added to ResourcesSchema: populate it in this fixture AND carry it in toFullConfig / fullConfigToRdcConfig / SENSITIVE_FIELDS, or it will be silently dropped by config sync.
     const missing = resourceFamilyKeys().filter(
       (key) => (config.resources as Record<string, unknown>)[key] === undefined
     );
@@ -208,10 +206,7 @@ describe('resource families round trip', () => {
 
   it('every top-level section is classified envelope, carried, or host-local', () => {
     const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
-    // If this fails, a NEW top-level section was added to RdcConfigSchema:
-    // decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS +
-    // both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and
-    // make sure none of its leaves are committed in sensitivity.ts).
+    // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
     expect([...Object.keys(RdcConfigSchema.shape)].sort()).toEqual([...classified].sort());
   });
 
@@ -236,9 +231,7 @@ describe('resource families round trip', () => {
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);
 
-    // Host-local sections must NOT be resurrected from the blob: a pulled
-    // config must never overwrite this host's store pointer, runtime state, or
-    // at-rest settings with another host's.
+    // Host-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this host's store pointer, runtime state, or at-rest settings with another host's.
     expect(rebuilt.remote).toBeUndefined();
     expect(rebuilt.state).toBeUndefined();
     expect(rebuilt.renetPath).toBeUndefined();
@@ -246,10 +239,7 @@ describe('resource families round trip', () => {
   });
 
   it('a re-push after pull commits exactly the pointer set the server stored', async () => {
-    // THE anti-downgrade property that broke: the editor re-pushes the rebuilt
-    // config, so pathsToCommit(rebuilt) is what the next push commits. Any
-    // committed-but-not-carried section makes this set smaller than the
-    // original's and the server rejects the push as a conflict.
+    // THE anti-downgrade property that broke: the editor re-pushes the rebuilt config, so pathsToCommit(rebuilt) is what the next push commits. Any committed-but-not-carried section makes this set smaller than the original's and the server rejects the push as a conflict.
     const original = allFamiliesConfig();
     const before = pathsToCommit(original);
     const after = pathsToCommit(await pushPullRoundTrip(original));
@@ -268,11 +258,7 @@ describe('resource families round trip', () => {
 });
 
 describe('datastore fork keys', () => {
-  // `datastore fork` records the fork as a FLAT `name:tag` entry with a
-  // `parent` backref (mirroring renet's machine-side registry key), so the
-  // datastores record key must admit the colon that repository family keys
-  // deliberately forbid. Regression: the drill's `drill-ds:remeter` entry
-  // made every subsequent config load fail with "Invalid key in record".
+  // `datastore fork` records the fork as a FLAT `name:tag` entry with a `parent` backref (mirroring renet's machine-side registry key), so the datastores record key must admit the colon that repository family keys deliberately forbid. Regression: the drill's `drill-ds:remeter` entry made every subsequent config load fail with "Invalid key in record".
   it('accepts a name:tag datastores key in resources and state', () => {
     const config = allFamiliesConfig();
     const resources = config.resources as { datastores: Record<string, unknown> };

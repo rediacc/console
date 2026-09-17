@@ -75,16 +75,14 @@ from rediacc_ci import paths
 
 SELF = "page-density.py"
 
-# The gate the launcher launches, and its one argument. A list rather than a
-# string so neither side can disagree about word splitting.
+# The gate the launcher launches, and its one argument. A list rather than a string so neither side can disagree about word splitting.
 GATE_ARGS = ("scripts/gates/check-page-density.ts", "--selftest")
 
 NO_DOCKER_ENV = "REDIACC_SMOKE_NO_DOCKER"
 
 NOTE_NO_DOCKER = "note: docker not found, running the gate directly (needs a local Chromium)"
 
-# The registry the twin names, kept as a constant so the derivation is readable
-# at a glance: only the VERSION comes from the installed package.
+# The registry the twin names, kept as a constant so the derivation is readable at a glance: only the VERSION comes from the installed package.
 IMAGE_TEMPLATE = "mcr.microsoft.com/playwright:v%s-noble"
 
 PW_VERSION_EXPR = "require('playwright/package.json').version"

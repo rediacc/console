@@ -68,9 +68,7 @@ export function judgeSource(file: string, src: string): Verdict {
         `that produced the dead end in six forms. Use ${GUARD}.`
     );
   }
-  // The recovery has two halves and both are load-bearing: knowing it failed, and
-  // offering the way out. A component with `.failed` but no `.retry` tells the visitor
-  // what went wrong and still strands them.
+  // The recovery has two halves and both are load-bearing: knowing it failed, and offering the way out. A component with `.failed` but no `.retry` tells the visitor what went wrong and still strands them.
   if (!/captcha\.failed/.test(src)) {
     problems.push('never reads `captcha.failed`, so it cannot tell "unsolved" from "never loaded"');
   }
@@ -154,8 +152,7 @@ function main(): void {
     .map((f) => ({ f, src: readFileSync(f, 'utf8') }))
     .filter(({ src }) => src.includes(TURNSTILE_IMPORT));
 
-  // FLOOR. If the scan finds no consumers the loop below is vacuous and would report a
-  // confident green having verified nothing -- the exact failure this repo gates against.
+  // FLOOR. If the scan finds no consumers the loop below is vacuous and would report a confident green having verified nothing -- the exact failure this repo gates against.
   if (consumers.length === 0) {
     console.error(`\x1b[31m✗\x1b[0m no ${TURNSTILE_IMPORT} consumers found under ${SRC}`);
     console.error('    the scan is broken, or the import moved: this green would be vacuous');

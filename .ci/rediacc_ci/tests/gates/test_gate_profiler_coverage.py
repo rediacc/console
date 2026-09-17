@@ -55,19 +55,14 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-profiler-coverage.sh"
 
-# test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage,
-# test_wrapper_that_lost_the_profiler_refuses and the added control all read the
-# real tree, and the lock declares `reads: ["tree:repo"]`. See the docstring.
+# test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage, test_wrapper_that_lost_the_profiler_refuses and the added control all read the real tree, and the lock declares `reads: ["tree:repo"]`. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-profiler-coverage.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
-# The reason string the stale-allowlist case reuses. Long enough to clear the
-# shared BLOCKER validator's bar, which is the point: these three sub-cases are
-# about STALENESS, and a reason that failed validation would red them for the
-# wrong reason.
+# The reason string the stale-allowlist case reuses. Long enough to clear the shared BLOCKER validator's bar, which is the point: these three sub-cases are about STALENESS, and a reason that failed validation would red them for the wrong reason.
 GOOD_REASON = (
     "# BLOCKER: the runner this job requests is chosen at dispatch time, so there is "
     "no single label to arm the HOST_LEAK check with"
@@ -420,8 +415,7 @@ def test_undeclared_input_fails(gate):
 
 def test_runner_label_problems_fail(gate):
     with harness.temp_dir() as d:
-        # A label that disagrees with runs-on: the HOST_LEAK check would be armed
-        # against the wrong runner, which is worse than not arming it.
+        # A label that disagrees with runs-on: the HOST_LEAK check would be armed against the wrong runner, which is worse than not arming it.
         wf, allow = write_workflow(
             gate,
             d,
@@ -635,8 +629,7 @@ def test_wrapper_that_lost_the_profiler_refuses(gate):
             result.combined, "Linux job(s) profiled", "must not print a success line"
         )
 
-        # A wrapper directory that is not there at all is the same failure one step
-        # earlier, and must refuse rather than silently cover nothing.
+        # A wrapper directory that is not there at all is the same failure one step earlier, and must refuse rather than silently cover nothing.
         result = run_gate(
             gate,
             wf,
@@ -649,8 +642,7 @@ def test_wrapper_that_lost_the_profiler_refuses(gate):
         gate.assert_exit_code(1, result.rc, "a wrapper directory with no action.yml must refuse")
         gate.assert_contains(result.combined, "has no action.yml", "names the missing contract")
 
-        # CONTROL: the REAL wrapper, named explicitly, is accepted -- so the two
-        # refusals above are the verification working, not the seam being unusable.
+        # CONTROL: the REAL wrapper, named explicitly, is accepted -- so the two refusals above are the verification working, not the seam being unusable.
         result = run_gate(
             gate,
             wf,
@@ -812,9 +804,7 @@ def test_real_tree_seam_free(gate):
     gate.log_pass("the real tree passes seam-free, and no fixture leaks into it")
 
 
-# ---------------------------------------------------------------------------
-# ADDED BY THE PORT.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ADDED BY THE PORT. ---------------------------------------------------------------------------
 
 
 def test_this_module_plants_no_workflow_the_real_sweep_can_see(gate):

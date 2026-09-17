@@ -215,18 +215,13 @@ VERIFY_ALLOWLIST_ENV = "LABEL_INVENTORY_VERIFY_ALLOWLIST"
 
 DEFAULT_LABELS_FILE = ".github/labels.yml"
 
-# "Anti-vacuity on the declaration side. A parse that yields almost nothing is a
-# broken parse (reindent, quoting change, wrong path), and treating it as a
-# nearly-empty declaration set would make direction (b) scream about every live
-# label while direction (a) stayed silent. Refuse instead."
+# "Anti-vacuity on the declaration side. A parse that yields almost nothing is a broken parse (reindent, quoting change, wrong path), and treating it as a nearly-empty declaration set would make direction (b) scream about every live label while direction (a) stayed silent. Refuse instead."
 DEFAULT_MIN_DECLARED = 5
 
 # GitHub's create-time cap.
 DESC_CAP = 100
 
-# "<label>|<script that creates it>". Absence is forgiven for these and ONLY
-# these. Keep it this short. Each entry's BLOCKER reason is in the module
-# docstring, where a reviewer reads it.
+# "<label>|<script that creates it>". Absence is forgiven for these and ONLY these. Keep it this short. Each entry's BLOCKER reason is in the module docstring, where a reviewer reads it.
 CREATE_ON_DEMAND = (
     "nightly-red|.ci/scripts/ci/report-nightly-status.cjs",
     "ci|.ci/scripts/review/claude-review-gate.sh",
@@ -664,8 +659,7 @@ def selftest() -> int:
         ("double quotes are stripped", '- name: "alpha"\n', ["alpha"]),
         ("single quotes are stripped", "- name: 'alpha'\n", ["alpha"]),
         ("trailing whitespace is stripped", "- name: alpha   \n", ["alpha"]),
-        # THE UNQUOTING ORDER BUG, CARRIED. The trailing-space strip runs AFTER
-        # the unquote, so the anchors fail and the quotes survive.
+        # THE UNQUOTING ORDER BUG, CARRIED. The trailing-space strip runs AFTER the unquote, so the anchors fail and the quotes survive.
         ("quotes plus trailing space keep the quotes", '- name: "alpha"  \n', ['"alpha"']),
         # NEGATIVES: an indented name is not a declaration, and neither is prose.
         ("an indented name is not a declaration", "  - name: alpha\n", []),
@@ -714,8 +708,7 @@ def selftest() -> int:
             [],
         ),
         (
-            # ABSENCE IS SECTION (a)'S JOB. Reporting it here too would double every
-            # finding on a label that does not exist.
+            # ABSENCE IS SECTION (a)'S JOB. Reporting it here too would double every finding on a label that does not exist.
             "a declared label absent from the live list is not a drift",
             "[]",
             "- name: a\n  description: x\n",
@@ -733,8 +726,7 @@ def selftest() -> int:
     for label, live_json, labels_text, want in drift_cases:
         ctl.check("drift: %s" % label, drift(live_json, labels_text), want)
 
-    # AN UNREADABLE COMPARISON IS NEVER A CLEAN TREE. This is the assertion the
-    # twin's separate `drift_rc` capture exists to make possible.
+    # AN UNREADABLE COMPARISON IS NEVER A CLEAN TREE. This is the assertion the twin's separate `drift_rc` capture exists to make possible.
     ctl.raises(
         "drift: malformed JSON raises rather than returning []",
         DriftUnreadableError,

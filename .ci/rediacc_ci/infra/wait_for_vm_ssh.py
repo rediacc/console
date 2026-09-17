@@ -80,8 +80,7 @@ from rediacc_ci import log
 SELF = "wait-for-vm-ssh.py"
 
 # The twin's hardcoded budget: 36 attempts x 5s = 180s per VM. Named so the
-# failure message and the loop cannot drift apart the way they would if 36 and
-# "180s" were two independent literals.
+# failure message and the loop cannot drift apart the way they would if 36 and "180s" were two independent literals.
 ATTEMPTS = 36
 RETRY_SLEEP = "5"
 BUDGET_LABEL = "180s"
@@ -110,8 +109,7 @@ def _load_line() -> str:
     def _sub(argv: list[str], fallback: str) -> str:
         try:
             # stdout=PIPE plus stderr=DEVNULL, never capture_output: the two
-            # cannot be combined (subprocess raises), and the twin's `2>/dev/null`
-            # is a DISCARD rather than a capture.
+            # cannot be combined (subprocess raises), and the twin's `2>/dev/null` is a DISCARD rather than a capture.
             proc = subprocess.run(
                 argv,
                 stdout=subprocess.PIPE,
@@ -163,8 +161,7 @@ def main(argv: list[str]) -> int:
             return 1
         ssh_as = os.environ["USER"]
 
-    # `mkdir -p ~/.ssh`. `expanduser` is `$HOME` with the same passwd fallback
-    # bash's tilde expansion uses.
+    # `mkdir -p ~/.ssh`. `expanduser` is `$HOME` with the same passwd fallback bash's tilde expansion uses.
     ssh_dir = pathlib.Path(os.path.expanduser("~")) / ".ssh"
     ssh_dir.mkdir(parents=True, exist_ok=True)
     known_hosts = ssh_dir / "known_hosts"
@@ -173,10 +170,7 @@ def main(argv: list[str]) -> int:
         log.info(f"Waiting for {vm} as {ssh_as}...")
         ready = False
         for i in range(1, ATTEMPTS + 1):
-            # `2>/dev/null` on the ssh call, stdout NOT redirected: the guest's
-            # `ready` reaches this process's stdout exactly as it does the
-            # twin's, and ssh's "Connection refused" chatter is dropped exactly
-            # as the twin drops it.
+            # `2>/dev/null` on the ssh call, stdout NOT redirected: the guest's `ready` reaches this process's stdout exactly as it does the twin's, and ssh's "Connection refused" chatter is dropped exactly as the twin drops it.
             probe = subprocess.run(
                 [
                     "ssh",
@@ -201,9 +195,7 @@ def main(argv: list[str]) -> int:
                         check=False,
                     )
                 if scan.returncode != 0:
-                    # HAZARD 2, reproduced: `set -e` kills the run here, after
-                    # the "SSH-ready" line and before any remaining VM, with
-                    # ssh-keyscan's own status and no message of its own.
+                    # HAZARD 2, reproduced: `set -e` kills the run here, after the "SSH-ready" line and before any remaining VM, with ssh-keyscan's own status and no message of its own.
                     return scan.returncode
                 ready = True
                 break

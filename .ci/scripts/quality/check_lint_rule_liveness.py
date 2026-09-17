@@ -79,8 +79,7 @@ DRIVER = "lint-rule-liveness.mjs"
 
 # Checked BEFORE node starts. Without eslint.config.js there is no rule set to
 # resolve, and without node_modules/eslint there is nothing to resolve it with;
-# either way the gate would otherwise report that zero enabled rules are
-# unhealthy, which is exactly what a healthy repo looks like.
+# either way the gate would otherwise report that zero enabled rules are unhealthy, which is exactly what a healthy repo looks like.
 REQUIRED = (
     ("eslint.config.js", "no rule set can be resolved"),
     ("node_modules/eslint", "there is no ESLint to resolve it with"),
@@ -88,9 +87,7 @@ REQUIRED = (
 
 
 def main(argv=None):
-    # No --selftest flag: the controls are not a separate mode, they run inline
-    # on EVERY invocation (see lint-rule-liveness.mjs). A mode nobody remembers
-    # to run is how a control stops controlling anything.
+    # No --selftest flag: the controls are not a separate mode, they run inline on EVERY invocation (see lint-rule-liveness.mjs). A mode nobody remembers to run is how a control stops controlling anything.
     argparse.ArgumentParser(description=__doc__).parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -103,9 +100,7 @@ def main(argv=None):
             )
             return 1
 
-    # cwd is the repo root on purpose: several rules resolve their paths against
-    # process.cwd() rather than against the linted file, and a wrong cwd makes
-    # some of them throw and others silently no-op -- i.e. look dead.
+    # cwd is the repo root on purpose: several rules resolve their paths against process.cwd() rather than against the linted file, and a wrong cwd makes some of them throw and others silently no-op -- i.e. look dead.
     return subprocess.run(
         ["node", str(pathlib.Path(__file__).resolve().parent / DRIVER)],
         cwd=str(root),

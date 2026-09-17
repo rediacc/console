@@ -59,9 +59,7 @@ MODULE = "rediacc_ci.ci.generate_tag"
 # `YYYYMMDD-HHMMSS`, the shape both sides must produce in the default mode.
 TIME_TAG = re.compile(r"^[0-9]{8}-[0-9]{6}$")
 
-# `git init` in a tree whose owner's global config may sign, template, or hook.
-# Every fixture repo is built with these, so a developer's own git config
-# cannot change what the differential measures.
+# `git init` in a tree whose owner's global config may sign, template, or hook. Every fixture repo is built with these, so a developer's own git config cannot change what the differential measures.
 GIT_FLAGS = [
     "-c",
     "user.email=w7p6@example.invalid",
@@ -173,9 +171,7 @@ def strip_program(text: str) -> str:
     return "\n".join(out)
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixtures ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -206,8 +202,7 @@ def closure_repo(tmp_path: pathlib.Path) -> pathlib.Path:
     """A git repo holding every `rdc` closure path, and NO tags."""
     files = {}
     for path in port.CLOSURE_PATHS["rdc"]:
-        # A directory entry is created as a directory with one file in it, so
-        # the tree oid the twin reads is a real tree.
+        # A directory entry is created as a directory with one file in it, so the tree oid the twin reads is a real tree.
         if path.endswith((".json", ".sh", ".ts", ".yml")):
             files[path] = "%s content\n" % path
         else:
@@ -215,9 +210,7 @@ def closure_repo(tmp_path: pathlib.Path) -> pathlib.Path:
     return make_repo(tmp_path / "closure", files)
 
 
-# ---------------------------------------------------------------------------
-# Time-based mode (the default)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Time-based mode (the default) ---------------------------------------------------------------------------
 
 
 def test_the_default_mode_mints_a_utc_timestamp_tag() -> None:
@@ -258,9 +251,7 @@ def test_the_iso_week_bucket_is_percent_g_percent_v_not_percent_y_percent_w() ->
     assert port.iso_week_bucket() == live, "the port and `date -u +%G%V` disagree"
 
 
-# ---------------------------------------------------------------------------
-# --self
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --self ---------------------------------------------------------------------------
 
 
 def test_self_mode_is_the_repos_short_head() -> None:
@@ -287,9 +278,7 @@ def test_self_mode_outside_a_repository_fails_on_both_sides(
     assert "not a git repository" in old[2].lower()
 
 
-# ---------------------------------------------------------------------------
-# --submodule
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --submodule ---------------------------------------------------------------------------
 
 
 def test_submodule_mode_combines_the_commit_with_a_build_config_hash(
@@ -409,9 +398,7 @@ def test_defect_i_the_bare_commit_arm_is_unreachable() -> None:
         assert 'CI_TAG="${SUBMODULE_COMMIT}-${CONFIG_SHORT}"' in fh.read()
 
 
-# ---------------------------------------------------------------------------
-# --closure
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- --closure ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("closure", ["web", "rdc"])
@@ -501,9 +488,7 @@ def test_the_closure_path_lists_are_the_twins_lists_in_order() -> None:
         assert in_twin == list(paths), closure
 
 
-# ---------------------------------------------------------------------------
-# Output sinks
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Output sinks ---------------------------------------------------------------------------
 
 
 def test_output_writes_the_tag_and_says_so(tmp_path: pathlib.Path) -> None:
@@ -567,9 +552,7 @@ def test_an_unwritable_output_path_fails_on_both_sides(tmp_path: pathlib.Path) -
     assert old[1] == new[1] == ""
 
 
-# ---------------------------------------------------------------------------
-# Argument handling
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
 def test_help_is_the_twins_help_modulo_the_program_name() -> None:
@@ -626,9 +609,7 @@ def test_a_repeated_value_option_takes_the_last_one() -> None:
     assert old[1].startswith("rdc-")
 
 
-# ---------------------------------------------------------------------------
-# Colour, and the module entry point
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Colour, and the module entry point ---------------------------------------------------------------------------
 
 
 def test_colour_on_a_terminal_is_byte_identical() -> None:

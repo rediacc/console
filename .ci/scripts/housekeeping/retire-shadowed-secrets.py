@@ -41,10 +41,7 @@ ROOT = Path(os.environ.get("RETIRE_ROOT") or Path(__file__).resolve().parents[3]
 COMPARE_STEP = "Compare shadow secrets against GitHub"
 
 
-# A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script
-# performs is then a silent no-op that still reports "already retired?" -- which is this
-# script's own entry in the WHY block of scripts/gates/check-enumeration-vacuity.ts. Measured
-# 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
+# A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script performs is then a silent no-op that still reports "already retired?" -- which is this script's own entry in the WHY block of scripts/gates/check-enumeration-vacuity.ts. Measured 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
 MIN_WORKFLOWS = int(os.environ.get("RETIRE_MIN_WORKFLOWS", "20"))
 
 
@@ -143,9 +140,7 @@ def retire_in_text(text: str, names: set[str]) -> tuple[str, list[str]]:
                     if lines[k].strip() and len(lines[k]) - len(lines[k].lstrip()) < ind
                 ]
                 if "secrets:" in anc[:2] and "workflow_call:" in anc[:4]:
-                    # The declaration owns its indented body (`required: true`), so the
-                    # span runs to the next line at or above this indent. step_span is
-                    # the wrong tool here: this is not a step.
+                    # The declaration owns its indented body (`required: true`), so the span runs to the next line at or above this indent. step_span is the wrong tool here: this is not a step.
                     j = i + 1
                     while j < len(lines) and (
                         not lines[j].strip() or len(lines[j]) - len(lines[j].lstrip()) > ind
@@ -207,9 +202,7 @@ def selftest() -> int:
 
     # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A
     # selftest proves the INSTRUMENT on planted text; whether the anchor still matches
-    # the real tree is a fact about the tree, and main() owns that verdict. With both,
-    # a renamed step exited 2 with "control failed" and never reached the message that
-    # explains what actually happened -- one check made the clearer one unreachable.
+    # the real tree is a fact about the tree, and main() owns that verdict. With both, a renamed step exited 2 with "control failed" and never reached the message that explains what actually happened -- one check made the clearer one unreachable.
 
     # A caller's passthrough goes; a same-shaped line NOT under `secrets:` does not.
     call = (
@@ -249,13 +242,9 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 1
 
-    # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by
-    # matching one literal step name, so a rename of that step turns the whole tool
-    # into a silent no-op -- and its own --selftest would keep passing, because that
-    # runs against planted fixtures rather than the tree.
+    # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by matching one literal step name, so a rename of that step turns the whole tool into a silent no-op -- and its own --selftest would keep passing, because that runs against planted fixtures rather than the tree.
     #
-    # This is the difference between "already retired" and "I can no longer see the
-    # thing I edit", which the report used to collapse into one ambiguous line. The
+    # This is the difference between "already retired" and "I can no longer see the thing I edit", which the report used to collapse into one ambiguous line. The
     # operator runs this against production secrets; the two answers must not look
     # alike.
     anchors = sum(
@@ -284,12 +273,8 @@ def main(argv: list[str]) -> int:
             print("      - %s" % c)
         if apply:
             f.write_text(new, encoding="utf-8")
-    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from
-    # the argument list. This tool exists to stop a deletion from blanking a live read,
-    # and it was printing three delete lines while TWO of the names still had one:
-    # breakpoint.yml's app-token (that job hands a human a shell, so it deliberately
-    # never fetches from Bitwarden) and watchdog-monitor.yml's tier-1 classifier (its
-    # fetch cannot move ahead of the monitor without `continue-on-error`, which
+    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from the argument list. This tool exists to stop a deletion from blanking a live read, and it was printing three delete lines while TWO of the names still had one: breakpoint.yml's app-token (that job hands a human a shell, so it deliberately never fetches from Bitwarden) and watchdog-monitor.yml's
+    # tier-1 classifier (its fetch cannot move ahead of the monitor without `continue-on-error`, which
     # check-workflows.sh bans). Both survivals are correct and documented; printing
     # `gh secret delete` for them was not.
     live = {}
@@ -321,10 +306,7 @@ def main(argv: list[str]) -> int:
             "are not. That is a clean answer, not a broken scan."
             % (", ".join(sorted(names)), anchors)
         )
-        # STILL SAY WHICH NAMES ARE FREE. "Nothing to rewrite" is exactly the state
-        # after a successful --apply, and it is the moment somebody reaches for the
-        # delete commands -- so this path must answer the deletion question rather
-        # than only reporting that the edit is done.
+        # STILL SAY WHICH NAMES ARE FREE. "Nothing to rewrite" is exactly the state after a successful --apply, and it is the moment somebody reaches for the delete commands -- so this path must answer the deletion question rather than only reporting that the edit is done.
         if free:
             print("\nFree to delete now (CI green first):")
             for n in free:

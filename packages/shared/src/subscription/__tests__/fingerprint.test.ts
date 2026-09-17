@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computePublicKeyId, isValidPublicKeyId, PUBLIC_KEY_ID_PATTERN } from '../fingerprint.js';
 
-// Cross-language fixture — MUST stay byte-identical to the Go side
-// (private/renet/pkg/subscription/fingerprint_test.go) and the account
-// integration copy. A divergence here vs. Go produces an infinite license
-// reissue loop in production.
+// Cross-language fixture — MUST stay byte-identical to the Go side (private/renet/pkg/subscription/fingerprint_test.go) and the account integration copy. A divergence here vs. Go produces an infinite license reissue loop in production.
 const FIXTURE = {
   spki: 'MCowBQYDK2VwAyEAlNAlNC16kCqsgeublscCu3MrLEELek5uszZN9ikM0Zw=',
   raw: 'lNAlNC16kCqsgeublscCu3MrLEELek5uszZN9ikM0Zw=',

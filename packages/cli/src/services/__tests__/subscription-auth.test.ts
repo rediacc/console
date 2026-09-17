@@ -181,8 +181,7 @@ describe('subscription-auth', () => {
     it('reports a hard mismatch when the config team differs from the token team', () => {
       expect(
         getSubscriptionScopeMismatch(
-          // The signature narrowed to Pick<StoredSubscriptionToken, 'teamName'>:
-          // the scope check reads nothing else.
+          // The signature narrowed to Pick<StoredSubscriptionToken, 'teamName'>: the scope check reads nothing else.
           { teamName: 'Platform' },
           'Infra'
         )

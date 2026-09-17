@@ -114,8 +114,7 @@ def test_port_and_twin_agree_byte_for_byte(
     assert new_out == old_out
     assert new_err == old_err
     assert must_contain in old_err
-    # ANTI-VACUITY FOR THE TEST ITSELF: two silent implementations agree about
-    # nothing, so every case must have produced output on the compared stream.
+    # ANTI-VACUITY FOR THE TEST ITSELF: two silent implementations agree about nothing, so every case must have produced output on the compared stream.
     assert old_err.strip() != ""
 
 
@@ -142,9 +141,7 @@ def test_the_twin_prints_a_doubled_glyph_and_the_port_reproduces_it(
     assert "✓ ✓ CLI bundle: no literal credentials" in new_err
 
 
-# ---------------------------------------------------------------------------
-# The decision functions, driven directly. Both directions for every rule.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -183,8 +180,7 @@ def test_renet_binaries_finds_both_locations(tmp_path: pathlib.Path) -> None:
     (tmp_path / "private" / "renet" / "bin" / "renet").write_text("x", encoding="utf-8")
     (tmp_path / "private" / "bin").mkdir(parents=True)
     (tmp_path / "private" / "bin" / "renet-linux-amd64").write_text("x", encoding="utf-8")
-    # MIRROR: `-name 'renet-*'` is a glob on the basename, so a neighbour with a
-    # different prefix is not a renet binary.
+    # MIRROR: `-name 'renet-*'` is a glob on the basename, so a neighbour with a different prefix is not a renet binary.
     (tmp_path / "private" / "bin" / "middleware").write_text("x", encoding="utf-8")
     names = sorted(p.name for p in gate.renet_binaries(tmp_path))
     assert names == ["renet", "renet-linux-amd64"]

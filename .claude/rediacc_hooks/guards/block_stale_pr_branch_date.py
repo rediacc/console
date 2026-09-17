@@ -65,9 +65,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-stale-pr-branch-date.sh"
 ORDER = 24
 
-# The escape hatch. Without it a deliberately long-lived branch (resuming a
-# multi-day wave onto its existing PR) can never file its PR, which is the
-# shape that gets a guard bypassed rather than obeyed.
+# The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
 DEFECT = ('if ev.env("PR_BRANCH_DATE_OK") != "":', "if False:")
 
 HEAD_FLAG = hookio.rx(r"(--head|-H)[{S}=]+[A-Za-z0-9._/-]+")
@@ -83,8 +81,7 @@ EDGE_CASES = [
     ("gh pr edit is not gh pr create", "gh pr edit 42 --add-label ci"),
     ("prose naming the verb", "echo 'then gh pr create --draft'"),
     ("a wrapper payload is still at a command position", "sh -c 'gh pr create --head 0825-2'"),
-    # THE TWO CLOCKS, and these two cases exist because a defect lived between
-    # them. One head carries UTC's today, the other carries the machine's local
+    # THE TWO CLOCKS, and these two cases exist because a defect lived between them. One head carries UTC's today, the other carries the machine's local
     # today; on any machine whose offset is not zero they are DIFFERENT strings
     # for part of every day, so an implementation that hard-codes UTC and one
     # that honours TZ answer differently on at least one of them. Computed at
@@ -107,22 +104,15 @@ ENVS = [
     ("escape-hatch", {"PR_BRANCH_DATE_OK": "1"}, {}),
     # TWO EXTREME TIME ZONES, and they are the control for the clock defect the
     # module docstring records. `_base_env` pins `TZ=UTC` for both sides, which
-    # is right for determinism and is exactly what made a UTC-hardcoded port
-    # indistinguishable from a TZ-honouring twin: the harness had removed the
-    # only input that told them apart. `env.update(extra)` runs after that pin,
-    # so a module can put the variable back, and these two put it as far either
-    # side of the line as real zones go (UTC+14 and UTC-12). With the two
-    # today-cases above, one of these four combinations always straddles a date
-    # boundary, so the differential can see the class rather than being blind to
-    # it by construction.
+    # is right for determinism and is exactly what made a UTC-hardcoded port indistinguishable from a TZ-honouring twin: the harness had removed the only input that told them apart. `env.update(extra)` runs after that pin, so a module can put the variable back, and these two put it as far either side of the line as real zones go (UTC+14 and UTC-12). With the two today-cases above,
+    # one of these four combinations always straddles a date boundary, so the differential can see the class rather than being blind to it by construction.
     ("tz-far-east", {"TZ": "Etc/GMT-14"}, {}),
     ("tz-far-west", {"TZ": "Etc/GMT+12"}, {}),
 ]
 
 
 def run(ev):
-    # `jq -r '.tool_input.command // empty'`: an absent command is "" here, not
-    # the four characters "null", because this guard spells the `// empty` form.
+    # `jq -r '.tool_input.command // empty'`: an absent command is "" here, not the four characters "null", because this guard spells the `// empty` form.
     cmd = ev.field("tool_input", "command")
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
@@ -132,9 +122,7 @@ def run(ev):
     if ev.env("PR_BRANCH_DATE_OK") != "":
         return hookio.ALLOW
 
-    # Fall back to $PWD rather than bailing: a hook already runs with the project
-    # as its cwd, and bailing on a missing .cwd would be a FAIL-OPEN -- the payload
-    # that omits it is exactly the one a bypass would use.
+    # Fall back to $PWD rather than bailing: a hook already runs with the project as its cwd, and bailing on a missing .cwd would be a FAIL-OPEN -- the payload that omits it is exactly the one a bypass would use.
     cwd = ev.field("cwd")
     if not (cwd != "" and pathlib.Path(cwd).is_dir()):
         cwd = os.environ.get("PWD") or os.getcwd()
@@ -151,23 +139,19 @@ def run(ev):
     if branch == "":
         return hookio.ALLOW
 
-    # Only police the MMDD-N convention. A differently-shaped branch name is out of
-    # scope here: this guard answers "is the date stale", not "is the name legal",
-    # and conflating the two would make it fire on every non-wave branch.
+    # Only police the MMDD-N convention. A differently-shaped branch name is out of scope here: this guard answers "is the date stale", not "is the name legal", and conflating the two would make it fire on every non-wave branch.
     shape = hookio.grep_o(r"^([0-9]{4})-([0-9]+)$", branch)
     if not shape:
         return hookio.ALLOW
     br_date = branch.split("-", 1)[0]
     # LOCAL, not UTC. The twin is a bare `date +%m%d`, which is local time
     # honouring TZ; `datetime.now(tz=UTC)` ignores TZ and was wrong by a day for
-    # two hours every night east of Greenwich. See the clock note in the module
-    # docstring for the measurement.
+    # two hours every night east of Greenwich. See the clock note in the module docstring for the measurement.
     today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- see above
     if br_date == today:
         return hookio.ALLOW
 
-    # Pick the next free N for today, against the remote AND local, so the suggested
-    # command cannot collide with a wave another session already filed.
+    # Pick the next free N for today, against the remote AND local, so the suggested command cannot collide with a wave another session already filed.
     nxt = 1
     while (
         hookio.run_rc(

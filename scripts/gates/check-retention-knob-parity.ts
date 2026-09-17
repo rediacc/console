@@ -82,34 +82,22 @@ const LAYERS: Layer[] = [
     name: 'account DTO (what PUT /retention accepts)',
     file: 'private/account/src/dto/backup.dto.ts',
     // `${k}:` is NOT specific enough: every knob also appears in the RESPONSE
-    // schema, so dropping one from the REQUEST left the bare token present and
-    // the gate green. Match the request spelling exactly.
+    // schema, so dropping one from the REQUEST left the bare token present and the gate green. Match the request spelling exactly.
     spell: (k) => `${k}: retentionKnob`,
   },
   {
     name: 'account sweep (what actually gets ENFORCED)',
     file: 'private/account/src/services/backup-gc.service.ts',
-    // NOT a bare `includes(knob)`. The first draft of this gate did exactly
-    // that and DID NOT FIRE when the sweep stopped honouring keepWeekly,
-    // because the identifier still appears in the RetentionPolicy interface
-    // whether or not anything reads it. A gate that cannot fail on its own
-    // headline defect is worse than no gate.
+    // NOT a bare `includes(knob)`. The first draft of this gate did exactly that and DID NOT FIRE when the sweep stopped honouring keepWeekly, because the identifier still appears in the RetentionPolicy interface whether or not anything reads it. A gate that cannot fail on its own headline defect is worse than no gate.
     //
-    // Enforcement has two shapes here and both are matched literally:
-    // the five time buckets are entries in the BUCKETS table, and keepLast is
-    // applied directly as a slice of the sorted rows.
-    // keepLast is matched on the line that APPLIES it, not on any mention:
-    // `policy.keepLast` also appears in the all-null probe above it, so a
-    // bare mention stayed present when the application was disabled and the
-    // gate went green on a knob that no longer did anything.
+    // Enforcement has two shapes here and both are matched literally: the five time buckets are entries in the BUCKETS table, and keepLast is applied directly as a slice of the sorted rows. keepLast is matched on the line that APPLIES it, not on any mention: `policy.keepLast` also appears in the all-null probe above it, so a bare mention stayed present when the application was
+    // disabled and the gate went green on a knob that no longer did anything.
     spell: (k) => (k === 'keepLast' ? 'sorted.slice(0, policy.keepLast)' : `knob: '${k}'`),
   },
   {
     name: 'CLI flags (how the operator sets it)',
     file: 'packages/cli/src/commands/backup-storage.ts',
-    // keepLast -> '--keep-last <n>'. The trailing argument placeholder and the
-    // quote are load-bearing: a bare `--keep-last` is a SUBSTRING of a renamed
-    // `--keep-lastXX`, so renaming a flag left the gate green.
+    // keepLast -> '--keep-last <n>'. The trailing argument placeholder and the quote are load-bearing: a bare `--keep-last` is a SUBSTRING of a renamed `--keep-lastXX`, so renaming a flag left the gate green.
     spell: (k) => `'--${k.replace(/([A-Z])/g, '-$1').toLowerCase()} <n>'`,
   },
 ];
@@ -137,8 +125,7 @@ function missingIn(root: string, layer: Layer, knobs: readonly string[]): string
     );
     process.exit(1);
   }
-  // A synthetic layer missing exactly one knob must be reported, and a
-  // complete one must not.
+  // A synthetic layer missing exactly one knob must be reported, and a complete one must not.
   const tmpLayer: Layer = { name: 'control', file: 'package.json', spell: () => '"name"' };
   if (missingIn(ROOT, tmpLayer, KNOBS).length !== 0) {
     console.error('✗ instrument control over-reports: a present token was called missing.');

@@ -71,8 +71,7 @@ export const extractBlock = (body: string): string | null => {
 /** The `PR-TASK: <id>` ids a rendered section declares, in order. */
 export const taskIds = (text: string): string[] => {
   const out: string[] = [];
-  // Backticked and bare both accepted: the renderer emits backticks, but a human
-  // reading the body will reasonably retype it without them.
+  // Backticked and bare both accepted: the renderer emits backticks, but a human reading the body will reasonably retype it without them.
   const re = /^`?PR-TASK:\s*([0-9a-f]{6,32})`?\s*$/gim;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) out.push(m[1]);
@@ -112,8 +111,7 @@ const selftest = (): number => {
     'reads several, in order',
     taskIds('`PR-TASK: aaa111`\nx\n`PR-TASK: bbb222`').join(',') === 'aaa111,bbb222'
   );
-  // CONTROL: prose mentioning the token is not a declaration. Without this a
-  // gate would count any sentence about PR-TASK as a section.
+  // CONTROL: prose mentioning the token is not a declaration. Without this a gate would count any sentence about PR-TASK as a section.
   check(
     'prose mentioning it is not a declaration',
     taskIds('we use PR-TASK: ids for this').length === 0

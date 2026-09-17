@@ -140,9 +140,7 @@ def test_assert_bijection_matches_the_bash_function(
     """
     nofloor = str(tmp_path / "no-such-floor.txt")
     # `|| rc=$?` IS LOAD-BEARING. `common.sh` sets `-euo pipefail`, so a bare
-    # call to an assertion that returns 1 kills the harness before it can print
-    # the exit code, and every drift case then looks like a broken test rather
-    # than a caught defect. The `||` is what suspends errexit for that command.
+    # call to an assertion that returns 1 kills the harness before it can print the exit code, and every drift case then looks like a broken test rather than a caught defect. The `||` is what suspends errexit for that command.
     script = """
         source .ci/scripts/lib/common.sh
         source .ci/scripts/lib/release-state-validator.sh
@@ -264,8 +262,7 @@ v1.0.1"
     code, out, err = diff.bash_streams(script)
     assert code == 0, err
     assert out == "  2 cli sentinelsv1.0.0\nv1.0.1"
-    # The port's own formatting, spelled the way the module spells it, so the
-    # two are compared rather than one being restated.
+    # The port's own formatting, spelled the way the module spells it, so the two are compared rather than one being restated.
     versions = ["v1.0.0", "v1.0.1"]
     assert "  %d cli sentinels%s" % (len(versions), "\n".join(versions)) == out
 

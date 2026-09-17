@@ -46,9 +46,7 @@ describe('buildKeyDeploymentScript', () => {
   it('produces the exact legacy deployment script (byte-identical snapshot)', () => {
     const script = buildKeyDeploymentScript('myrepo', PUB_KEY, 'guid-123');
 
-    // This literal mirrors the script previously built inline in deployRepoKey
-    // (pre-shared-connection). It must never drift: the remote authorized_keys
-    // surgery is load-bearing for sandbox-gateway isolation.
+    // This literal mirrors the script previously built inline in deployRepoKey (pre-shared-connection). It must never drift: the remote authorized_keys surgery is load-bearing for sandbox-gateway isolation.
     const expected = [
       'set -e',
       'SSH_DIR="$HOME/.ssh"',

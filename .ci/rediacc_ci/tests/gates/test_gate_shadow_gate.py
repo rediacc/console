@@ -122,8 +122,7 @@ echo "→ $n rejected reason(s)"
 [ "$n" -eq 0 ] || exit 1
 """
 
-# The vendored SUBSET. Never edited -- it is drift-locked by
-# check-breakpoint-drift.sh and vendored into other repositories. READ ONLY.
+# The vendored SUBSET. Never edited -- it is drift-locked by check-breakpoint-drift.sh and vendored into other repositories. READ ONLY.
 GATE_BP = """#!/bin/bash
 set -uo pipefail
 LIB="$1"; CORPUS="$2"; COMMON="$3"
@@ -145,10 +144,7 @@ echo "→ $n rejected reason(s)"
 [ "$n" -eq 0 ] || exit 1
 """
 
-# The TypeScript twin, in gate shape. DELIBERATELY DIFFERENT on every axis a port is
-# allowed to differ on: `::error::` instead of the cross, stdout instead of stderr,
-# reverse order, and a different progress line. If the comparator scores this as a
-# mismatch it is comparing bytes, and every real port would be red.
+# The TypeScript twin, in gate shape. DELIBERATELY DIFFERENT on every axis a port is allowed to differ on: `::error::` instead of the cross, stdout instead of stderr, reverse order, and a different progress line. If the comparator scores this as a mismatch it is comparing bytes, and every real port would be red.
 GATE_TS = """import fs from 'node:fs';
 async function main(): Promise<number> {
   const [lib, corpus] = process.argv.slice(2);
@@ -167,8 +163,7 @@ async function main(): Promise<number> {
 main().then((c) => process.exit(c));
 """
 
-# A two-implementation "gate" that agrees: one reports with the cross on stderr, the
-# other with `::error::` on stdout in reverse order.
+# A two-implementation "gate" that agrees: one reports with the cross on stderr, the other with `::error::` on stdout in reverse order.
 TINY_GATE = """#!/bin/bash
 set -uo pipefail
 FIX="$1"; SIDE="$2"
@@ -189,9 +184,7 @@ fi
 FP_RE = re.compile(r"fp=[0-9a-f]*")
 RATIO_RE = re.compile(r"ratio=0\.[0-8]")
 
-# The fixture identity used by .ci/scripts/test/lib/git-fixture.sh. `-c` rather than a
-# config write, so nothing depends on the developer's identity and
-# .claude/hooks/pre-bash/block-unlinked-commit-author.sh has a recognised address.
+# The fixture identity used by .ci/scripts/test/lib/git-fixture.sh. `-c` rather than a config write, so nothing depends on the developer's identity and .claude/hooks/pre-bash/block-unlinked-commit-author.sh has a recognised address.
 GIT_IDENTITY = (
     "-c",
     "user.email=fixture@example.invalid",
@@ -252,8 +245,7 @@ class Fixtures:
         rows = corpus_rows(gate)
         self.corpus = directory / "corpus.txt"
         self.corpus.write_text("\n".join(rows) + "\n", encoding="utf-8")
-        # The accepting subset: nothing for either side to find. This is the tree a
-        # blind port gets blessed on, which is why rule 2 has to refuse it.
+        # The accepting subset: nothing for either side to find. This is the tree a blind port gets blessed on, which is why rule 2 has to refuse it.
         clean = [r for r in rows if r.startswith(("real-", "len-30"))]
         self.corpus_clean = directory / "corpus-clean.txt"
         self.corpus_clean.write_text("\n".join(clean) + "\n", encoding="utf-8")
@@ -286,8 +278,7 @@ def test_selftest_battery(gate):
     result = sg(gate, "--selftest")
     gate.assert_exit_code(0, result.rc, "the module selftest must pass")
     controls = count_prefix(result.out, "PASS: ")
-    # A FLOOR, not an exact count, so new cases may be added -- but a selftest that
-    # quietly shrinks to two cases is the shape this whole file distrusts.
+    # A FLOOR, not an exact count, so new cases may be added -- but a selftest that quietly shrinks to two cases is the shape this whole file distrusts.
     if controls < 20:
         gate.log_fail("the selftest made %d assertion(s); the recorded floor is 20" % controls)
     if result.err:
@@ -327,8 +318,7 @@ def assert_mutation_is_caught(
 
 
 def test_mutation_controls(gate, tmp_path):
-    # Rule 2. With the vacuity branch dead, both-empty falls through to the equality
-    # test and is scored EQUIVALENT -- the exact laundering this module prevents.
+    # Rule 2. With the vacuity branch dead, both-empty falls through to the equality test and is scored EQUIVALENT -- the exact laundering this module prevents.
     assert_mutation_is_caught(
         gate,
         tmp_path,
@@ -337,8 +327,7 @@ def test_mutation_controls(gate, tmp_path):
         "if (false) {",
         "RULE 2",
     )
-    # Rule 3. With the blindness branch dead, a port that sees nothing is filed under
-    # MISMATCH_EXIT, where a reviewer reads it as a numeric quibble.
+    # Rule 3. With the blindness branch dead, a port that sees nothing is filed under MISMATCH_EXIT, where a reviewer reads it as a numeric quibble.
     assert_mutation_is_caught(
         gate,
         tmp_path,
@@ -364,8 +353,7 @@ def test_real_pair_is_equivalent(gate, tmp_path):
     gate.assert_exit_code(0, result.rc, "the two live implementations must be EQUIVALENT")
     gate.assert_contains(result.out, "EQUIVALENT", "the verdict")
     gate.assert_contains(result.out, "agreeing finding(s)", "the summary names the agreeing set")
-    # Both fingerprints equal is the strong form: identical normalized sets, not merely
-    # sets the diff happened not to separate.
+    # Both fingerprints equal is the strong form: identical normalized sets, not merely sets the diff happened not to separate.
     fingerprints = len(set(FP_RE.findall(result.out)))
     if fingerprints != 1:
         gate.log_fail("EQUIVALENT was reported with %d distinct fingerprints" % fingerprints)
@@ -378,8 +366,7 @@ def test_real_pair_divergence_is_named(gate, tmp_path):
     if result.rc != 1:
         gate.log_fail("a real divergence must exit 1, got %d" % result.rc)
     gate.assert_contains(result.out, "MISMATCH_FINDINGS", "the verdict")
-    # The five recorded divergences: three where the vendored subset rejects for a
-    # different REASON, and two where it accepts what the canonical validator rejects.
+    # The five recorded divergences: three where the vendored subset rejects for a different REASON, and two where it accepts what the canonical validator rejects.
     only_old = count_prefix(result.out, "  only-old ")
     only_new = count_prefix(result.out, "  only-new ")
     if only_old != 5:
@@ -402,14 +389,8 @@ def test_planted_dropped_finding(gate, tmp_path):
     fx = Fixtures(gate, tmp_path)
     # ONE banned substring removed from the port. Nothing else.
     #
-    # RETARGETED 2026-09-09, and the twin carries the same note. This used to
-    # delete a literal line from the port's own `LOW_EFFORT_BLOCKER_SUBSTRINGS`
-    # array. That array is gone: the port reads the table from
-    # `rediacc_ci.core.allowlist`, which is also what the bash OLD side reads, so
-    # a plant in the shared table would move BOTH sides and produce no divergence
-    # at all. The plant therefore sits in the part of the port that is still the
-    # port's, the loop that consumes the table. Behaviourally identical defect,
-    # unchanged assertions below.
+    # RETARGETED 2026-09-09, and the twin carries the same note. This used to delete a literal line from the port's own `LOW_EFFORT_BLOCKER_SUBSTRINGS` array. That array is gone: the port reads the table from `rediacc_ci.core.allowlist`, which is also what the bash OLD side reads, so a plant in the shared table would move BOTH sides and produce no divergence at all. The plant
+    # therefore sits in the part of the port that is still the port's, the loop that consumes the table. Behaviourally identical defect, unchanged assertions below.
     anchor = "  for (const pattern of c.substrings) {"
     source = TS_VALIDATOR.read_text(encoding="utf-8")
     if source.count(anchor) != 1:
@@ -424,9 +405,7 @@ def test_planted_dropped_finding(gate, tmp_path):
         encoding="utf-8",
     )
 
-    # REDIACC_CI_ROOT because the planted COPY lives in tmp_path and the port
-    # resolves the canonical package relative to its own file. Without it the copy
-    # would refuse to run, which is a divergence for the wrong reason.
+    # REDIACC_CI_ROOT because the planted COPY lives in tmp_path and the port resolves the canonical package relative to its own file. Without it the copy would refuse to run, which is a divergence for the wrong reason.
     result = sg(
         gate,
         "--pair",
@@ -444,8 +423,7 @@ def test_planted_dropped_finding(gate, tmp_path):
         "only-old  [error] corpus.txt: defer-dedicated rejected as deferral",
         "the exact finding the plant removed",
     )
-    # THE ARGUMENT FOR COMPARING FINDINGS AT ALL. Both sides still exit 1 here, so an
-    # exit-code-only comparator blesses this port.
+    # THE ARGUMENT FOR COMPARING FINDINGS AT ALL. Both sides still exit 1 here, so an exit-code-only comparator blesses this port.
     gate.assert_contains(result.out, "exit codes agree at 1", "the exit codes still agree")
     gate.log_pass("a one-line plant is caught and named, while the exit codes still agree")
 
@@ -482,9 +460,7 @@ def test_planted_blindness_is_new_side_true(gate, tmp_path):
 
 
 def test_both_empty_refuses_to_bless(gate, tmp_path):
-    # THE SCENARIO THIS RULE EXISTS FOR, run on real code: the same totally blind port,
-    # over a corpus with nothing to find. Exit 0 on both sides, no output on either.
-    # Every equality-based comparator calls this equivalence.
+    # THE SCENARIO THIS RULE EXISTS FOR, run on real code: the same totally blind port, over a corpus with nothing to find. Exit 0 on both sides, no output on either. Every equality-based comparator calls this equivalence.
     fx = Fixtures(gate, tmp_path)
     blind = blind_port(gate, tmp_path)
     result = sg(
@@ -505,9 +481,7 @@ def test_both_empty_refuses_to_bless(gate, tmp_path):
 
 
 def test_refusal_suspends_the_comparison(gate, tmp_path):
-    # A gate that could not run exits non-zero with zero findings, which is the same
-    # shape as a clean run. Filing that under either heading sends the reader to the
-    # wrong problem.
+    # A gate that could not run exits non-zero with zero findings, which is the same shape as a clean run. Filing that under either heading sends the reader to the wrong problem.
     fx = Fixtures(gate, tmp_path)
     result = sg(
         gate,
@@ -530,9 +504,7 @@ def test_refusal_suspends_the_comparison(gate, tmp_path):
 
 
 def test_comment_ratio_is_recorded(gate, tmp_path):
-    # Driver contract 5c: the differential artifact carries the comment-byte ratio, and
-    # a port below 0.90 is refused. The two live implementations sit at roughly 0.63
-    # today, so this pair also demonstrates the floor biting.
+    # Driver contract 5c: the differential artifact carries the comment-byte ratio, and a port below 0.90 is refused. The two live implementations sit at roughly 0.63 today, so this pair also demonstrates the floor biting.
     fx = Fixtures(gate, tmp_path)
     result = sg(
         gate,
@@ -554,9 +526,7 @@ def test_comment_ratio_is_recorded(gate, tmp_path):
     gate.log_pass("the differential carries the comment-byte ratio and flags the 0.90 floor")
 
 
-# ---------------------------------------------------------------------------
-# The ledger: rule 4, and K distinct trees
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The ledger: rule 4, and K distinct trees ---------------------------------------------------------------------------
 
 
 def tgit(repo: pathlib.Path, *argv: str) -> harness.RunResult:
@@ -679,9 +649,7 @@ def test_k_counts_distinct_trees_not_runs(gate, tmp_path):
 def test_reshaded_trees_do_not_count(gate, tmp_path):
     repo, tiny = setup_k_repo(gate, tmp_path, "reshade")
     record_tree(gate, repo, tiny, "alpha", "t1")
-    # A new commit, a new TREE ID, and the gate's behaviour is untouched: the only
-    # change is a file the comparison never reads. This is invariant 5 defeated by
-    # whitespace, and the distinct-evidence rule is what refuses it.
+    # A new commit, a new TREE ID, and the gate's behaviour is untouched: the only change is a file the comparison never reads. This is invariant 5 defeated by whitespace, and the distinct-evidence rule is what refuses it.
     (repo / "README.md").write_text("unrelated\n", encoding="utf-8")
     record_tree(gate, repo, tiny, "alpha", "t2")
     (repo / "README.md").write_text("unrelated\nunrelated again\n", encoding="utf-8")

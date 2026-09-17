@@ -87,26 +87,21 @@ CASES = [
         1,
     ),
     (
-        # THE EXEMPTION, POSITIVE HALF. `unlink` is cleanup-only, so a probe that
-        # purges instead is parity. Without this case the exemption could be
-        # deleted and every test would still pass.
+        # THE EXEMPTION, POSITIVE HALF. `unlink` is cleanup-only, so a probe that purges instead is parity. Without this case the exemption could be deleted and every test would still pass.
         "exemption: a cleanup-only verb is forgiven",
         "execFileSync('keyctl', ['add', k]);\nexecFileSync('keyctl', ['unlink', k]);\n",
         "keyctl add @u\nkeyctl purge user x\n",
         0,
     ),
     (
-        # THE EXEMPTION, NEGATIVE HALF. `search` is NOT on the list, so the same
-        # shape must still fire. A blanket exemption would pass the case above
-        # and fail this one.
+        # THE EXEMPTION, NEGATIVE HALF. `search` is NOT on the list, so the same shape must still fire. A blanket exemption would pass the case above and fail this one.
         "exemption: a non-cleanup verb is not forgiven",
         "execFileSync('keyctl', ['add', k]);\nexecFileSync('keyctl', ['search', k]);\n",
         "keyctl add @u\n",
         1,
     ),
     (
-        # THE FOUNDING DEFECT. A verb named only in the preflight's own comment
-        # must not count as exercised.
+        # THE FOUNDING DEFECT. A verb named only in the preflight's own comment must not count as exercised.
         "prose: a verb mentioned in a comment does not count as probed",
         "execFileSync('keyctl', ['add', k]);\nexecFileSync('keyctl', ['pipe', k]);\n",
         "keyctl add @u\n# then we would keyctl pipe it back\n",

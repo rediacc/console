@@ -249,8 +249,7 @@ function selftest(): boolean {
     }
   };
 
-  // ---- PLANT 1: an `&` heading. github-slugger keeps one hyphen, stringToSlug leaves a
-  // doubled one, so the href misses the id by a single character.
+  // ---- PLANT 1: an `&` heading. github-slugger keeps one hyphen, stringToSlug leaves a doubled one, so the href misses the id by a single character.
   const AMP = `<h2 id="backup-restore">Backup &amp; Restore</h2>
     <a href="#backup--restore" class="sidebar-link toc-link">Backup &amp; Restore</a>`;
   const amp = scanPage(AMP, 'amp.html');
@@ -260,9 +259,7 @@ function selftest(): boolean {
     JSON.stringify(amp.dead)
   );
 
-  // ---- PLANT 2: a duplicate heading. One slugger numbers the repeat, the other does not,
-  // so the TOC points at the same fragment several times: dead for all but the first, and
-  // ambiguous even where it resolves.
+  // ---- PLANT 2: a duplicate heading. One slugger numbers the repeat, the other does not, so the TOC points at the same fragment several times: dead for all but the first, and ambiguous even where it resolves.
   const DUP = `<h3 id="set">set</h3><h3 id="set-1">set</h3>
     <a href="#set" class="sidebar-link toc-link">set</a>
     <a href="#set" class="sidebar-link toc-link">set</a>`;
@@ -285,8 +282,7 @@ function selftest(): boolean {
     JSON.stringify(scanPage(DUP_REORDERED, 'dup2.html').dead)
   );
 
-  // Non-ASCII: the actual mechanism behind the non-English failures. The id is the real
-  // Unicode slug, the href is what `[^\w\s-]` left of it.
+  // Non-ASCII: the actual mechanism behind the non-English failures. The id is the real Unicode slug, the href is what `[^\w\s-]` left of it.
   const UNICODE = `<h2 id="مقدمة">مقدمة</h2><a href="#" class="x">skip</a><a href="#-">مقدمة</a>`;
   check(
     'a non-ASCII heading whose href was ASCII-stripped is reported',
@@ -383,8 +379,7 @@ function main(): void {
 
   // REFUSE, never self-skip. check:ci-seo's built-HTML link scan self-skipped on a missing
   // dist and was therefore vacuous on every developer machine for its whole life; this
-  // gate declares `needs: ['build:www']` in the manifest instead, so the build is a
-  // prerequisite rather than an excuse.
+  // gate declares `needs: ['build:www']` in the manifest instead, so the build is a prerequisite rather than an excuse.
   if (!fs.existsSync(dist)) {
     console.error(
       `✗ Refusing to run: no build output at ${dist}.\n` +

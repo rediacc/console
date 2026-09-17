@@ -4,14 +4,8 @@ import { compareVersions } from '../update/updater.js';
 
 // Declared via vi.hoisted so they exist BEFORE the vi.mock factories below.
 //
-// vitest hoists every vi.mock call above the module body, so a factory that
-// closes over a plain `const` only works while nothing imports the mocked module
-// during the hoisted import phase. This file imports ../update/updater.js at the
-// top, and the moment updater's import graph reached node:fs/promises the
-// factory at line ~55 ran before these bindings initialised and the whole file
-// failed to load with "Cannot access 'readFileMock' before initialization" —
-// taking all of its tests with it while the suite still looked green.
-// vi.hoisted removes the ordering dependency entirely.
+// vitest hoists every vi.mock call above the module body, so a factory that closes over a plain `const` only works while nothing imports the mocked module during the hoisted import phase. This file imports ../update/updater.js at the top, and the moment updater's import graph reached node:fs/promises the factory at line ~55 ran before these bindings initialised and the whole file
+// failed to load with "Cannot access 'readFileMock' before initialization" — taking all of its tests with it while the suite still looked green. vi.hoisted removes the ordering dependency entirely.
 const {
   readFileMock,
   writeFileMock,
@@ -58,8 +52,7 @@ class MockSFTPClient {
   connect = vi.fn(() => connectDelegate());
   // The mocked signature returns Promise<string> but these bodies are sync lookup tables.
   // `async` satisfies tsc and then trips @typescript-eslint/require-await, which is right:
-  // there is no await. So the body stays sync and is wrapped at the boundary, which is the
-  // pattern already used at remote/sync/__tests__/sftp-fallback.test.ts:31.
+  // there is no await. So the body stays sync and is wrapped at the boundary, which is the pattern already used at remote/sync/__tests__/sftp-fallback.test.ts:31.
   exec = vi.fn<(command: string) => Promise<string>>((command: string) =>
     Promise.resolve(
       ((): string => {
@@ -605,10 +598,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('gives a lock timeout its own exit status and marker', async () => {
-    // Without `-E`, flock's timeout exits 1, which the install body can also
-    // produce: a machine busy with someone else's provision was reported as
-    // "Unexpected provisioning result: (empty output)" and read as a broken
-    // install rather than as contention.
+    // Without `-E`, flock's timeout exits 1, which the install body can also produce: a machine busy with someone else's provision was reported as "Unexpected provisioning result: (empty output)" and read as a broken install rather than as contention.
     const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const command = (
       renetProvisioner as unknown as {

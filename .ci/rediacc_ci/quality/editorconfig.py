@@ -104,22 +104,17 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The extensions that must always be text. Carried byte for byte from the twin's
-# `TEXT_EXTENSIONS_RE`, including the anchor, because the twin's own comment says
-# the bash ERE and Python's syntax agree for this pattern and it compiles the
-# string as-is on both sides.
+# The extensions that must always be text. Carried byte for byte from the twin's `TEXT_EXTENSIONS_RE`, including the anchor, because the twin's own comment says the bash ERE and Python's syntax agree for this pattern and it compiles the string as-is on both sides.
 TEXT_EXTENSIONS_RE = (
     r"\.(sh|ts|tsx|js|jsx|cjs|mjs|json|jsonc|yml|yaml|md|mdx|go|py|css|html|toml|txt)$"
 )
 
-# The one extension exempted from the three byte-exact checks. Hash sidecars are
-# generated, single-line and deliberately newline-free.
+# The one extension exempted from the three byte-exact checks. Hash sidecars are generated, single-line and deliberately newline-free.
 HASH_SUFFIX = ".hash"
 
 # How many paths go into one `file` invocation. xargs sizes its batches by the
 # kernel's argument limit; the exact number is invisible in the result because
-# the awk classifier strips `file`'s padding, so a round number is honest here
-# rather than a reverse-engineered ARG_MAX.
+# the awk classifier strips `file`'s padding, so a round number is honest here rather than a reverse-engineered ARG_MAX.
 BATCH = 2000
 
 
@@ -139,9 +134,7 @@ def classify_binary(lines: list[str]) -> list[str]:
     for line in lines:
         if line == "":
             continue
-        # `-F': '` splits on the two-character string, so $NF is everything after
-        # the LAST ": ". A line with no ": " at all has $NF equal to the whole
-        # line, which is awk's behaviour and not a special case here.
+        # `-F': '` splits on the two-character string, so $NF is everything after the LAST ": ". A line with no ": " at all has $NF equal to the whole line, which is awk's behaviour and not a special case here.
         last_field = line.split(": ")[-1]
         if "binary" in last_field:
             out.append(re.sub(r": [^:]*$", "", line, count=1))
@@ -159,8 +152,7 @@ def mime_encodings(root: pathlib.Path, rel_paths: list[str]) -> list[str]:
         return []
     if shutil.which("file") is None:
         # The NUL control has already refused in this case; reaching here means
-        # a caller drove this function directly. An empty list is the same shape
-        # `xargs -r` produces with nothing to run.
+        # a caller drove this function directly. An empty list is the same shape `xargs -r` produces with nothing to run.
         return []
     out: list[str] = []
     for start in range(0, len(rel_paths), BATCH):
@@ -207,17 +199,12 @@ def scan(root: pathlib.Path, paths_list: list[str], binary: set[str]) -> list[tu
 
     for path in paths_list:
         full = root / path
-        # Symlinks are SKIPPED, deliberately and unlike the old `[[ -f ]]` test
-        # which followed them: checking a symlink's dereferenced target for a
-        # final newline or CRLF reports on a file that is checked in its own
-        # right anyway, and a symlink pointing outside the repo is not ours to
-        # police.
+        # Symlinks are SKIPPED, deliberately and unlike the old `[[ -f ]]` test which followed them: checking a symlink's dereferenced target for a final newline or CRLF reports on a file that is checked in its own right anyway, and a symlink pointing outside the repo is not ours to police.
         if not full.is_file() or full.is_symlink():
             continue
 
         if path in binary:
-            # Only corruption matters here: a file `file` calls binary whose
-            # extension says it must be text.
+            # Only corruption matters here: a file `file` calls binary whose extension says it must be text.
             if text_ext.search(path):
                 try:
                     with open(full, "rb") as handle:
@@ -249,9 +236,7 @@ def scan(root: pathlib.Path, paths_list: list[str], binary: set[str]) -> list[tu
     return findings
 
 
-# The four report headers, in the twin's order. A tuple of (kind, header) rather
-# than four if-blocks, because the four blocks are identical apart from these
-# strings and a divergence between them would be invisible.
+# The four report headers, in the twin's order. A tuple of (kind, header) rather than four if-blocks, because the four blocks are identical apart from these strings and a divergence between them would be invisible.
 SECTIONS: tuple[tuple[str, str], ...] = (
     ("NEWLINE", "Files missing final newline"),
     ("BOM", "Files with UTF-8 BOM"),
@@ -259,8 +244,7 @@ SECTIONS: tuple[tuple[str, str], ...] = (
     ("NUL", "Text source files with an embedded NUL byte"),
 )
 
-# The extra line the NUL section prints after its list. Written with an explicit
-# escape because the twin passes it through `echo -e`, which turns the source's
+# The extra line the NUL section prints after its list. Written with an explicit escape because the twin passes it through `echo -e`, which turns the source's
 # `\\\\0` into a literal backslash-zero on the wire; a Python `"\0"` here would
 # emit an actual NUL byte into the gate's own output.
 NUL_ADVICE = (
@@ -287,9 +271,7 @@ def nul_control(tmpdir: pathlib.Path) -> bool:
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    # `grep -q "binary"` over the WHOLE line, which is the shape the second
-    # control exists to forbid in the scanner. It is correct HERE because the
-    # path is a fresh mktemp name that cannot contain the word.
+    # `grep -q "binary"` over the WHOLE line, which is the shape the second control exists to forbid in the scanner. It is correct HERE because the path is a fresh mktemp name that cannot contain the word.
     said_binary = b"binary" in proc.stdout
     has_nul = b"\0" in target.read_bytes()
     return said_binary and has_nul
@@ -365,11 +347,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         log.error("%s (%d):" % (header, len(hits)))
         for path in hits:
-            # STDOUT, deliberately. The twin uses a bare `echo "  $f"` for the
-            # list while the header goes through log_error to stderr, and
-            # `scripts/lib/shadow-gate.ts` attaches these indented lines to the
-            # header above them as individual findings. Un-indenting or moving
-            # them would turn N findings into one.
+            # STDOUT, deliberately. The twin uses a bare `echo " $f"` for the list while the header goes through log_error to stderr, and `scripts/lib/shadow-gate.ts` attaches these indented lines to the header above them as individual findings. Un-indenting or moving them would turn N findings into one.
             print("  %s" % path)
         if kind == "NUL":
             log.error(NUL_ADVICE)
@@ -474,10 +452,7 @@ def selftest() -> int:
             [],
         )
 
-        # A BINARY-FLAGGED FILE SKIPS CHECKS 1-3 ENTIRELY, which is the exemption
-        # the second inline control exists to keep honest. `corrupt.ts` ends
-        # without a newline problem but does carry a CRLF, and neither is
-        # reported: only the NUL is.
+        # A BINARY-FLAGGED FILE SKIPS CHECKS 1-3 ENTIRELY, which is the exemption the second inline control exists to keep honest. `corrupt.ts` ends without a newline problem but does carry a CRLF, and neither is reported: only the NUL is.
         crlf_binary = write("both.ts", b"a\r\n\x00")
         both = scan(root, [crlf_binary], {crlf_binary})
         ctl.check(
@@ -491,9 +466,7 @@ def selftest() -> int:
             [("NEWLINE", crlf_binary), ("CRLF", crlf_binary)],
         )
 
-        # A binary file whose extension is NOT in the text list is invisible to
-        # check 4. This is the property that makes the check unable to
-        # false-positive on assets, and it is asserted rather than trusted.
+        # A binary file whose extension is NOT in the text list is invisible to check 4. This is the property that makes the check unable to false-positive on assets, and it is asserted rather than trusted.
         blob = write("data.bin", b"\x00\x01\x02")
         ctl.check(
             "MIRROR: a NUL in a non-text extension is not corruption",
@@ -501,8 +474,7 @@ def selftest() -> int:
             [],
         )
 
-        # SYMLINKS ARE SKIPPED. Both halves: the link is not reported, and its
-        # target still is when the target is itself enumerated.
+        # SYMLINKS ARE SKIPPED. Both halves: the link is not reported, and its target still is when the target is itself enumerated.
         link = "link.ts"
         (root / link).symlink_to(root / no_newline)
         ctl.check("MIRROR: a symlink is skipped", scan(root, [link], set()), [])
@@ -512,8 +484,7 @@ def selftest() -> int:
             [("NEWLINE", no_newline)],
         )
 
-        # A path that does not exist at all is skipped rather than crashing: git
-        # can list a file a concurrent checkout has just removed.
+        # A path that does not exist at all is skipped rather than crashing: git can list a file a concurrent checkout has just removed.
         ctl.check(
             "MIRROR: a vanished path is skipped, not a crash", scan(root, ["gone.ts"], set()), []
         )
@@ -523,8 +494,7 @@ def selftest() -> int:
         root = pathlib.Path(tmp)
 
         def run(files: dict[str, bytes]) -> int:
-            # EVERY CASE STARTS FROM AN EMPTY WORKING TREE. Without this the
-            # fixtures accumulate and a later case reds because of an earlier
+            # EVERY CASE STARTS FROM AN EMPTY WORKING TREE. Without this the fixtures accumulate and a later case reds because of an earlier
             # case's plant, which reads as the port being wrong about the input
             # it was actually given. Found exactly that way.
             for stale in root.iterdir():
@@ -560,25 +530,16 @@ def selftest() -> int:
 
         ctl.check("CONTROL: a compliant tracked tree passes", run({"ok.ts": b"const x = 1;\n"}), 0)
         ctl.check("PLANT: an offending tracked file reds", run({"bad.ts": b"const x = 1;"}), 1)
-        # A TWIN BLIND SPOT, MEASURED HERE AND REPORTED RATHER THAN REPAIRED.
-        # `file --mime-encoding` calls a very short text file BINARY -- a
+        # A TWIN BLIND SPOT, MEASURED HERE AND REPORTED RATHER THAN REPAIRED. `file --mime-encoding` calls a very short text file BINARY -- a
         # one-byte `x` comes back `binary` while `const x = 1;` comes back
-        # `us-ascii` -- so a tiny tracked text file is silently exempted from
-        # checks 1 to 3 and can carry a missing newline, a BOM or a CRLF
-        # forever. The port reproduces it because it uses the same oracle with
-        # the same flags, and the control below pins the behaviour so a future
-        # reader meets it as a decision instead of as a surprise.
+        # `us-ascii` -- so a tiny tracked text file is silently exempted from checks 1 to 3 and can carry a missing newline, a BOM or a CRLF forever. The port reproduces it because it uses the same oracle with the same flags, and the control below pins the behaviour so a future reader meets it as a decision instead of as a surprise.
         ctl.check(
             "TWIN BLIND SPOT: a one-byte text file is classified binary and skips checks 1-3",
             run({"tiny.ts": b"x"}),
             0,
         )
 
-        # ZERO TRACKED FILES. The twin exits 0 here, which is a REPORTED DEFECT
-        # rather than a design: a gate that enumerated nothing has verified
-        # nothing, and its green is indistinguishable from a clean tree. The
-        # port agrees with the twin on purpose, and the disagreement is recorded
-        # here so it is a decision rather than an oversight.
+        # ZERO TRACKED FILES. The twin exits 0 here, which is a REPORTED DEFECT rather than a design: a gate that enumerated nothing has verified nothing, and its green is indistinguishable from a clean tree. The port agrees with the twin on purpose, and the disagreement is recorded here so it is a decision rather than an oversight.
         bare = pathlib.Path(tmp) / "bare"
         bare.mkdir()
         subprocess.run(

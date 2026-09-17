@@ -47,14 +47,10 @@ import pathlib
 import re
 import sys
 
-# A checked-out submodule always has this much. A directory that exists but
-# holds only these is an uninitialised placeholder, which is exactly the state
-# `submodules: false` leaves behind.
+# A checked-out submodule always has this much. A directory that exists but holds only these is an uninitialised placeholder, which is exactly the state `submodules: false` leaves behind.
 MIN_ENTRIES = 2
 
-# Vacuity floor: this repo declares several submodules. Finding none means
-# .gitmodules moved or the parse broke, and every check below would be over an
-# empty set -- indistinguishable from full coverage.
+# Vacuity floor: this repo declares several submodules. Finding none means .gitmodules moved or the parse broke, and every check below would be over an empty set -- indistinguishable from full coverage.
 MIN_SUBMODULES = 2
 
 

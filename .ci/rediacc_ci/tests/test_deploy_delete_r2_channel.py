@@ -46,8 +46,7 @@ CHANNEL = "pr-fixture"
 BUCKET = "bucket-fixture"
 ENDPOINT = "https://r2.example.invalid"
 
-# THE STDOUT LINE IS DELIBERATELY CONSTANT. See the module docstring: it is what
-# makes the call log the only witness to WHICH prefix was removed.
+# THE STDOUT LINE IS DELIBERATELY CONSTANT. See the module docstring: it is what makes the call log the only witness to WHICH prefix was removed.
 FAKE_AWS = """#!/usr/bin/python3
 import os
 import sys
@@ -67,9 +66,7 @@ if os.environ.get("FAKE_AWS_RC") or (fail_on and call_index == int(fail_on)):
 sys.stdout.write("delete: s3://redacted/object\\n")
 """
 
-# common.sh needs `dirname` at source time (SCRIPT_DIR) and `uname`/`tr` in its
-# detection helpers. Nothing else is on the scratch PATH, so a tool leaking in
-# would be visible as a behaviour change rather than as a silent convenience.
+# common.sh needs `dirname` at source time (SCRIPT_DIR) and `uname`/`tr` in its detection helpers. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
 PATH_MINIMUM = ("dirname", "uname", "tr")
 
 

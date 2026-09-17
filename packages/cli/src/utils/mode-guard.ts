@@ -116,8 +116,7 @@ function buildInlineSubcommandDetails(parentCmd: Command): string {
 
 /** Recursively apply the help config to a command and all its descendants. */
 function applyHelpConfig(cmd: Command): void {
-  // Hide the legacy parent-scoping options (--team, --region) from help — they're
-  // accepted for scripting compatibility but carry no meaning for the local adapter.
+  // Hide the legacy parent-scoping options (--team, --region) from help — they're accepted for scripting compatibility but carry no meaning for the local adapter.
   for (const opt of cmd.options) {
     if (opt.long === '--team' || opt.long === '--region') {
       (opt as { hidden?: boolean }).hidden = true;
@@ -132,8 +131,7 @@ function applyHelpConfig(cmd: Command): void {
 
   if (cmd.commands.length > 0) {
     if (_extendedHelp && cmd.parent) {
-      // Agent mode on subcommands: inline all subcommand details (hop 2)
-      // Skip root command — its long descriptions are enough for group selection (hop 1)
+      // Agent mode on subcommands: inline all subcommand details (hop 2) Skip root command — its long descriptions are enough for group selection (hop 1)
       cmd.addHelpText('after', buildInlineSubcommandDetails(cmd));
     } else if (!_extendedHelp) {
       // Human mode: hint about --help-all

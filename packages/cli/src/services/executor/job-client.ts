@@ -267,13 +267,9 @@ export function isTerminalState(state: JobStatus['state']): boolean {
 
 // --- remote command builders -------------------------------------------------
 //
-// Pure string builders for the `renet job ...` invocations. They live here, in
-// the dependency-free half, so both callers can reach them without an import
-// cycle: local-executor drives a detached execution, and the `rdc job` commands
-// drive the operator-facing ones.
+// Pure string builders for the `renet job ...` invocations. They live here, in the dependency-free half, so both callers can reach them without an import cycle: local-executor drives a detached execution, and the `rdc job` commands drive the operator-facing ones.
 //
-// Every builder that takes an id validates it first. A job id arrives as JSON
-// FROM the machine and is then interpolated into a remote shell command, so an
+// Every builder that takes an id validates it first. A job id arrives as JSON FROM the machine and is then interpolated into a remote shell command, so an
 // id the machine made up (`j1-deadbeef; rm -rf /`) must never reach a shell.
 
 /**
@@ -380,9 +376,7 @@ export function createEventLineReader(
     buffered = lines.pop() ?? '';
 
     for (const line of lines) {
-      // Advance for EVERY complete line, blank or not, so the ordinal tracks the
-      // same newline count JobLogCursor does. The two must stay in lockstep for a
-      // resume to dedupe against the right line.
+      // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
       lineNumber += 1;
       const trimmed = line.trim();
       if (!trimmed) continue;
@@ -530,9 +524,7 @@ export function jobStatusToExecuteResult(
     error: success ? undefined : (status.error ?? `job ${status.state}`),
     durationMs: wallMs,
     operationDurationMs,
-    // A detached run reconstructs its output from the event stream (the spool is
-    // always NDJSON), so every parseCapturedJson caller sees the same stdout a
-    // synchronous run would have handed back.
+    // A detached run reconstructs its output from the event stream (the spool is always NDJSON), so every parseCapturedJson caller sees the same stdout a synchronous run would have handed back.
     ...(output
       ? {
           stdout: output.stdout,

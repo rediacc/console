@@ -41,9 +41,7 @@ const TEST_CONFIG: RdcConfig = {
   account: { userEmail: 'admin@example.com' },
   resources: {
     machines: { prod: { ip: '10.0.0.1', user: 'rediacc' } },
-    // v3 families: rotation re-encrypts through fullConfigToRdcConfig, which
-    // silently dropped these before the family-drop fix. Carried here so the
-    // rotation path itself pins the round trip, not just the push/pull tests.
+    // v3 families: rotation re-encrypts through fullConfigToRdcConfig, which silently dropped these before the family-drop fix. Carried here so the rotation path itself pins the round trip, not just the push/pull tests.
     datastores: { ds1: { backend: { kind: 'local', machine: 'prod', path: '/mnt/pool' } } },
     clusters: {
       c1: { provider: 'kvm', pools: [{ name: 'p', role: 'hyperconverged', count: 1 }] },
@@ -160,8 +158,7 @@ describe('CEK rotation', () => {
     });
     expect(memberView.teamId).toBe('team-1');
 
-    // The committed account section and the v3 families made it through the
-    // re-encryption intact.
+    // The committed account section and the v3 families made it through the re-encryption intact.
     expect(memberView.account).toEqual(TEST_CONFIG.account);
     expect(memberView.datastores).toEqual(TEST_CONFIG.resources?.datastores);
     expect(memberView.clusters).toEqual(TEST_CONFIG.resources?.clusters);

@@ -57,8 +57,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-mode-selection.sh"
 SELECT = paths.from_root(".ci", "breakpoint", "scripts", "select-mode.sh")
 PREFLIGHT = paths.from_root(".ci", "breakpoint", "scripts", "preflight-breakpoint.sh")
 
-# Credentials that make named mode configurable. The zone comes from breakpoint.conf,
-# so only these two are environment-supplied.
+# Credentials that make named mode configurable. The zone comes from breakpoint.conf, so only these two are environment-supplied.
 FAKE_TOKEN = {"CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN": "not-a-real-token"}
 FAKE_ACCOUNT = {"CLOUDFLARE_ACCOUNT_ID": "0000000000000000000000000000dead"}
 FAKE_BOTH = {**FAKE_TOKEN, **FAKE_ACCOUNT}
@@ -87,13 +86,9 @@ def test_named_without_credentials_fails_hard(gate):
         run = select_mode(gate, tmp, "--mode", "named")
         gate.assert_exit_code(3, run.rc, "named mode with no credentials must fail")
         gate.assert_eq(run.out, "", "a failed selection must put NOTHING on stdout")
-        # Lowercased in the helper so this catches the real message too, which shouts
-        # "FALLING BACK TO QUICK MODE" in capitals.
+        # Lowercased in the helper so this catches the real message too, which shouts "FALLING BACK TO QUICK MODE" in capitals.
         gate.assert_not_contains(run.err, "falling back", "named mode must not fall back silently")
-        # The message must EXPLAIN, not just exit non-zero. Asserting on
-        # "unauthenticated" rather than the old "refusing to fall back" wording: there
-        # is no fallback to refuse any more, so the reason is now the property that
-        # makes downgrading wrong in the first place.
+        # The message must EXPLAIN, not just exit non-zero. Asserting on "unauthenticated" rather than the old "refusing to fall back" wording: there is no fallback to refuse any more, so the reason is now the property that makes downgrading wrong in the first place.
         gate.assert_contains(
             run.err,
             "unauthenticated",
@@ -146,8 +141,7 @@ def test_quick_with_credentials_is_not_upgraded(gate):
         gate.assert_eq(
             run.out, "quick", "credentials being present must not silently upgrade to named"
         )
-        # It should still SAY the credentials went unused, or a run in the wrong mode is
-        # indistinguishable in the log from one that asked for it.
+        # It should still SAY the credentials went unused, or a run in the wrong mode is indistinguishable in the log from one that asked for it.
         gate.assert_contains(
             run.err, "unused", "the log must note that named credentials were ignored"
         )
@@ -197,8 +191,7 @@ def test_repeated_mode_flag_is_last_wins(gate):
         gate.assert_exit_code(0, run.rc, "a repeated flag must not be an error")
         gate.assert_eq(run.out, "quick", "repeated flags are LAST-WINS, not accumulate")
 
-        # ...and in the other order, so this is a real ordering pin and not a test that
-        # would pass on any single-valued behaviour.
+        # ...and in the other order, so this is a real ordering pin and not a test that would pass on any single-valued behaviour.
         run = select_mode(gate, tmp, "--mode", "quick", "--mode", "named", env=FAKE_BOTH)
         gate.assert_eq(run.out, "named", "last-wins holds in both orders")
     gate.log_pass("repeated --mode is last-wins in both orders")
@@ -250,9 +243,7 @@ def test_named_never_falls_back_to_quick(gate):
             "the words 'falling back' must not appear: there is no fallback",
         )
 
-        # ...and passing the removed flag must not resurrect the behaviour. Whether it
-        # errors on the unknown flag or ignores it, what it must NEVER do is print
-        # "quick" and exit 0.
+        # ...and passing the removed flag must not resurrect the behaviour. Whether it errors on the unknown flag or ignores it, what it must NEVER do is print "quick" and exit 0.
         run = select_mode(gate, tmp, "--mode", "named", "--allow-fallback")
         gate.assert_eq(run.out, "", "the removed flag must not produce a mode on stdout")
         if run.rc == 0:
@@ -301,8 +292,7 @@ def test_named_refuses_too_short_a_duration(gate):
             run_pre(tmp, "named", "15"),
             "named mode must accept the documented 15-minute minimum",
         )
-        # Quick mode has NO login step, so a short session is legitimate there. If this
-        # ever fails the guard has been applied too broadly.
+        # Quick mode has NO login step, so a short session is legitimate there. If this ever fails the guard has been applied too broadly.
         gate.assert_exit_code(
             0,
             run_pre(tmp, "quick", "5"),

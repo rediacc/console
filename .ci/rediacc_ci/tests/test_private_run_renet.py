@@ -56,9 +56,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "run_renet.py"
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/run-renet.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/run_renet.py")
 
-# The recording `ci.sh`, standing in for the renet submodule's entire CI. It
-# records the one environment variable the subject exports, which is the only
-# way that export is observable at all.
+# The recording `ci.sh`, standing in for the renet submodule's entire CI. It records the one environment variable the subject exports, which is the only way that export is observable at all.
 FAKE_CI_SH = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -77,10 +75,7 @@ sys.stderr.flush()
 sys.exit(RC)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather
-# than derived: a PATH built by copying "everything except X" is a PATH nobody
-# can state, and the first tool it forgot would look like a divergence in the
-# subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except X" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -174,9 +169,7 @@ def _run(
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the
-        # COPY under the fixture is what runs, so the package has to come from
-        # the real checkout. This is the only thing the fixture borrows from
-        # outside itself.
+        # COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

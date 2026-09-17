@@ -168,12 +168,8 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/setup/shadow_driver.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": ("758c2fce7c63",),
-    # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control
-    #    was allowed to make: all three were UNCOMMITTED work belonging to a writer
-    #    running concurrently with it, and editing another writer's live files is
-    #    how a tree with no safety net loses work. Sorted in place rather than
-    #    grouped, so the table stays regenerable and a reader diffing it sees a
-    #    stable order.
+    # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control was allowed to make: all three were UNCOMMITTED work belonging to a writer running concurrently with it, and editing another writer's live files is how a tree with no safety net loses work. Sorted in place rather than grouped, so the table stays regenerable and a reader diffing it sees a stable
+    # order.
     ".ci/rediacc_ci/tests/test_wl_proc.py": ("a885259827b2",),  # FRESH
     ".ci/rediacc_ci/tests/test_worklist_state_stdin.py": ("a885259827b2",),  # FRESH
     ".ci/scripts/ci/ci-trace.py": ("aab727b40885",),
@@ -371,8 +367,7 @@ def test_the_corpus_is_real_and_fully_read() -> None:
     found = scan(paths.repo_root(), files)
     print("SHAPE  " + _shape(files, found))
     for rel in sorted(FRESH):
-        # PRINTED, ALWAYS, and separately from the historical debt it would
-        # otherwise disappear into.
+        # PRINTED, ALWAYS, and separately from the historical debt it would otherwise disappear into.
         print(f"FRESH DEBT, DRAIN FIRST  {rel}  (arrived after PRE-A1)")
 
 
@@ -498,8 +493,7 @@ def test_the_floor_fires_when_the_corpus_collapses() -> None:
         "the floor's report does not name the entries it lost, which is what makes it "
         "readable as a collapse rather than as a clean tree"
     )
-    # And the mirror: the real corpus must NOT report a collapse, or the two
-    # directions of this control would both be satisfied by a permanently red floor.
+    # And the mirror: the real corpus must NOT report a collapse, or the two directions of this control would both be satisfied by a permanently red floor.
     assert vanished(scan(paths.repo_root(), _corpus())) == []
 
 

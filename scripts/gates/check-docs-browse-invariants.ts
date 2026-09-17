@@ -176,13 +176,9 @@ const selftest = (astro: string, css: string): number => {
     'a SECOND rule spacing the results heading alone is caught',
     headingFaults(`${css}\n.docs-browse-group-title { margin-block-end: 1rem; }`).length > 0
   );
-  // THE CONTROL FOR THE NEW HALF: losing the shared rule is the drift this prevents, and
-  // a check that only looked for extra rules would call that state clean.
+  // THE CONTROL FOR THE NEW HALF: losing the shared rule is the drift this prevents, and a check that only looked for extra rules would call that state clean.
   //
-  // OCCURRENCE-CHECKED, the way `check-guard-mutations.ts:193-199` does it. A bare
-  // `.replace()` whose needle has gone returns the stylesheet UNCHANGED, and the control
-  // below then asserts that an UNMODIFIED tree has the fault -- a plant that landed
-  // nowhere, reported as a control. Count the needle first.
+  // OCCURRENCE-CHECKED, the way `check-guard-mutations.ts:193-199` does it. A bare `.replace()` whose needle has gone returns the stylesheet UNCHANGED, and the control below then asserts that an UNMODIFIED tree has the fault -- a plant that landed nowhere, reported as a control. Count the needle first.
   const RAIL_NEEDLE = `${RAIL},`;
   const railHits = css.split(RAIL_NEEDLE).length - 1;
   check(`the shared-rule control has exactly one needle to remove (${railHits})`, railHits === 1);
@@ -233,8 +229,7 @@ const main = (): number => {
   console.log(
     '✓ docs browse invariants hold: the tally is sr-only, the two headings are styled by one shared rule, and the category group is decided before first paint.'
   );
-  // The caveat rides the SUCCESS line, not just the failure path: a green is the only
-  // output most readers of a CI log will ever see, and this one is structural.
+  // The caveat rides the SUCCESS line, not just the failure path: a green is the only output most readers of a CI log will ever see, and this one is structural.
   console.log(
     '  STRUCTURAL ONLY -- nothing was rendered, measured or compared. Pixel-level regressions with correct selectors and valid CSS pass this gate; that is wave D gate 2.'
   );

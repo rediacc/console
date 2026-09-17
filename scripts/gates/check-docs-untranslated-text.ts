@@ -79,8 +79,7 @@ const ENGLISH_PATTERNS = [
 
   // Common instruction patterns
   /\b(Click|Select|Enter|Choose|Pick|Use|Find|See|Watch|Review|Check)\s+the\s+\*\*/i,
-  // NOTE: "option"/"section" dropped — cross-language cognates (FR/ES/IT/DE "Option",
-  // "section"/"sezione") false-positived on correctly-translated non-English docs.
+  // NOTE: "option"/"section" dropped — cross-language cognates (FR/ES/IT/DE "Option", "section"/"sezione") false-positived on correctly-translated non-English docs.
   /\*\*\s*(button|field|menu|tab|link|icon|checkbox|dropdown|list|panel|window|dialog|modal|form|input|label|setting|configuration)\b/i,
 
   // Instruction endings
@@ -128,12 +127,9 @@ const ALLOWED_ENGLISH = [
   /\{\{t:[^}]+\}\}/, // Translation keys
   /\*\*{{t:[^}]+}}\*\*/, // Bold translation keys
   /`[^`]+`/, // Inline code
-  // A bold subcommand label, e.g. `**list:**`. These are COMMAND NAMES, not prose:
-  // the generated CLI docs emit one per leaf, and `rdc backup list` is spelled "list"
-  // in every language. Its siblings in the same file (**pull:**, **push:**, **status:**,
+  // A bold subcommand label, e.g. `**list:**`. These are COMMAND NAMES, not prose: the generated CLI docs emit one per leaf, and `rdc backup list` is spelled "list" in every language. Its siblings in the same file (**pull:**, **push:**, **status:**,
   // **restore:**, **purge:**) already pass; only **list:** ever tripped, and solely
-  // because "list" also happens to be an English instruction word. Translating it would
-  // document a command that does not exist.
+  // because "list" also happens to be an English instruction word. Translating it would document a command that does not exist.
   /^\*\*[a-z][a-z0-9-]*:\*\*$/,
   /\b(JSON|CSV|API|URL|SSH|HTTP|HTTPS|SQL|HTML|CSS|JS|TS|UUID|ID|IP|DNS|TLS|SSL|VPN|VM|OS|CPU|RAM|GB|MB|KB|TB|GHz|MHz)\b/i, // Technical acronyms
   /\b(docker|git|npm|node|bash|linux|windows|macos)\b/i, // Technical product names
@@ -309,8 +305,7 @@ function detectUntranslatedText(line: string): string | null {
 function analyzeFile(filePath: string, lang: string): UntranslatedLine[] {
   const issues: UntranslatedLine[] = [];
   const content = fs.readFileSync(filePath, 'utf-8');
-  // Allow opting out of untranslated-text checks for starter/placeholder files
-  // by adding `untranslated: true` to the frontmatter. Use sparingly.
+  // Allow opting out of untranslated-text checks for starter/placeholder files by adding `untranslated: true` to the frontmatter. Use sparingly.
   if (/^untranslated:\s*true\b/m.test(content.split(/^---$/m)[1] ?? '')) {
     return issues;
   }
@@ -753,8 +748,7 @@ function analyzeProseBlocks(filePath: string, lang: string): ForeignBlockIssue[]
     if (!id || id.lang === lang || id.score < MIN_FOREIGN_SCORE) continue;
 
     if (native) {
-      // Any of the locale's own script in the block means the block is in that locale,
-      // whatever Latin technical vocabulary it also carries.
+      // Any of the locale's own script in the block means the block is in that locale, whatever Latin technical vocabulary it also carries.
       if (native.test(text)) continue;
     } else {
       const words = new Set(norm(text).split(/[^a-z]+/));
@@ -839,8 +833,7 @@ function controlLayer3(): void {
     ).length,
     'some'
   );
-  // FALSE-POSITIVE CONTROLS. Each of these is a shape that exists in the real tree and
-  // must never be reported, or the gate gets suppressed instead of fixed.
+  // FALSE-POSITIVE CONTROLS. Each of these is a shape that exists in the real tree and must never be reported, or the gate gets suppressed instead of fixed.
   expect(
     'a fenced English code block inside a German document is not reported',
     analyzeProseBlocks(
@@ -884,9 +877,7 @@ function main(): void {
   // CONTROL FIRST. If layer 3 cannot see the planted defect, nothing below is evidence.
   controlLayer3();
 
-  // REFUSE, never skip. This used to print a warning and exit 0, which is root pattern 2
-  // of .ci/scripts/test/gates/test-gate-anti-vacuity.sh: an assertion disabled when its
-  // input is absent is indistinguishable in the output from an assertion that passed.
+  // REFUSE, never skip. This used to print a warning and exit 0, which is root pattern 2 of .ci/scripts/test/gates/test-gate-anti-vacuity.sh: an assertion disabled when its input is absent is indistinguishable in the output from an assertion that passed.
   if (!fs.existsSync(DOCS_DIR)) {
     console.error(
       `\x1b[31m✗\x1b[0m Refusing to run: the docs tree is missing (${DOCS_DIR}).\n` +
@@ -942,10 +933,7 @@ function main(): void {
       if (langBlockErrors > 0) parts.push(`${langBlockErrors} foreign-language paragraph(s)`);
       console.log(`  \x1b[31m\u2717\x1b[0m ${lang}: ${parts.join(', ')}`);
     } else {
-      // State the FLOOR alongside the pass. A clean line that does not say what
-      // it could not have seen is how a passing single-sentence plant gets read
-      // as proof the gate is dead again, which is precisely the mistake that
-      // was made against this gate once already.
+      // State the FLOOR alongside the pass. A clean line that does not say what it could not have seen is how a passing single-sentence plant gets read as proof the gate is dead again, which is precisely the mistake that was made against this gate once already.
       console.log(
         `  \x1b[32m\u2713\x1b[0m ${lang}: No untranslated text detected ` +
           `\x1b[2m(layer 3 floor: blocks under ${MIN_BLOCK_CONTENT_WORDS} words are not language-checked)\x1b[0m`
@@ -1035,9 +1023,7 @@ function main(): void {
     console.log('');
   }
 
-  // FLOOR. A run that opened no files is not a pass. The docs tree exists (checked
-  // above), so zero files means the glob or the locale set has gone wrong, and "found
-  // nothing" would be indistinguishable from "checked nothing".
+  // FLOOR. A run that opened no files is not a pass. The docs tree exists (checked above), so zero files means the glob or the locale set has gone wrong, and "found nothing" would be indistinguishable from "checked nothing".
   const MIN_FILES = 100;
   if (filesScanned < MIN_FILES) {
     console.error(

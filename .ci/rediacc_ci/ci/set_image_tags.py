@@ -141,8 +141,7 @@ def main(argv: list[str]) -> int:
 
     status = derive_image_tag.main(derive_argv(os.environ.get("IMAGE_TAG", "")))
     if status != 0:
-        # `set -e` on the sibling. The twin prints nothing further, and neither
-        # does this: the sibling has already said what went wrong.
+        # `set -e` on the sibling. The twin prints nothing further, and neither does this: the sibling has already said what went wrong.
         return status
 
     github_env = os.environ.get("GITHUB_ENV", "")

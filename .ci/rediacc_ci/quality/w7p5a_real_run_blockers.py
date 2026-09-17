@@ -45,11 +45,7 @@ from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_path
 
 ALLOWLIST_NAME = ".w7p5a-real-run-blocklist"
-# T-SCHED W7P5-a Section 4, 2026-09-15. Blocks a `ledger`-status path's REAL-RUN
-# leg specifically, distinct from ALLOWLIST_NAME above (which blocks a whole
-# path's port). Kept in a separate file because the STALE check below reds any
-# ALLOWLIST_NAME entry whose path has graduated to "ledger" -- correct for that
-# file, wrong for this one, whose entries are ledger-status by definition.
+# T-SCHED W7P5-a Section 4, 2026-09-15. Blocks a `ledger`-status path's REAL-RUN leg specifically, distinct from ALLOWLIST_NAME above (which blocks a whole path's port). Kept in a separate file because the STALE check below reds any ALLOWLIST_NAME entry whose path has graduated to "ledger" -- correct for that file, wrong for this one, whose entries are ledger-status by definition.
 LEG_ALLOWLIST_NAME = ".w7p5a-real-run-leg-blocklist"
 REAL_RUN_PHRASE = "real run each done directly"
 
@@ -126,8 +122,7 @@ def run(root: pathlib.Path) -> tuple[list[str], dict[str, int]]:
 
     findings: list[str] = []
 
-    # Duplicate detection: parse_text does not itself refuse a repeated entry,
-    # and a duplicate would let a later BLOCKER silently shadow an earlier one.
+    # Duplicate detection: parse_text does not itself refuse a repeated entry, and a duplicate would let a later BLOCKER silently shadow an earlier one.
     by_path: dict[str, allowlist.Entry] = {}
     for e in entries:
         if e.entry in by_path:
@@ -163,8 +158,7 @@ def run(root: pathlib.Path) -> tuple[list[str], dict[str, int]]:
         for p in sorted(allow_paths & ledgered_in_status)
     )
 
-    # THE THIRD STATE, direction one: the box's tracker says "blocked" and
-    # this file says nothing at all.
+    # THE THIRD STATE, direction one: the box's tracker says "blocked" and this file says nothing at all.
     findings.extend(
         ".ci/shadow/w7p5a-status.json marks %s 'blocked' but %s carries no "
         "entry for it. That is the third state W7P5-a's acceptance forbids "
@@ -172,19 +166,14 @@ def run(root: pathlib.Path) -> tuple[list[str], dict[str, int]]:
         for p in sorted(blocked_in_status - allow_paths)
     )
 
-    # Direction two: an entry here that the tracker does not know about at all
-    # (neither blocked nor ledgered) is a claim with no corresponding box state.
+    # Direction two: an entry here that the tracker does not know about at all (neither blocked nor ledgered) is a claim with no corresponding box state.
     findings.extend(
         "%s names %s, which .ci/shadow/w7p5a-status.json does not track "
         "at all (neither 'blocked' nor 'ledger')" % (ALLOWLIST_NAME, p)
         for p in sorted(allow_paths - blocked_in_status - ledgered_in_status)
     )
 
-    # FIFTH CHECK (Section 4). A `ledger`-status path's REAL-RUN leg is a separate
-    # claim from its dry-run parity, which is all the checks above verify. Every
-    # `ledger` row must either confirm the real run in its own `note`, or be
-    # registered in LEG_ALLOWLIST_NAME -- otherwise it is the third state, wearing
-    # the ledger bucket's clothes instead of the blocked bucket's.
+    # FIFTH CHECK (Section 4). A `ledger`-status path's REAL-RUN leg is a separate claim from its dry-run parity, which is all the checks above verify. Every `ledger` row must either confirm the real run in its own `note`, or be registered in LEG_ALLOWLIST_NAME -- otherwise it is the third state, wearing the ledger bucket's clothes instead of the blocked bucket's.
     leg_file = policy_path(LEG_ALLOWLIST_NAME, root)
     leg_by_path: dict[str, allowlist.Entry] = {}
     if leg_file.is_file():
@@ -227,9 +216,7 @@ def run(root: pathlib.Path) -> tuple[list[str], dict[str, int]]:
         for p in sorted(leg_paths & confirmed)
     )
 
-    # STALE (leg), the other direction: an entry naming a path that is not (or no
-    # longer) `ledger`-status at all -- either it was never ledgered, or it
-    # regressed, and either way this file is the wrong place for it.
+    # STALE (leg), the other direction: an entry naming a path that is not (or no longer) `ledger`-status at all -- either it was never ledgered, or it regressed, and either way this file is the wrong place for it.
     findings.extend(
         "%s names %s, which .ci/shadow/w7p5a-status.json does not record as "
         "'ledger' (a real-run-LEG block only makes sense for a path whose dry-run "
@@ -385,9 +372,7 @@ def selftest() -> bool:
             any("does not track at all" in f for f in findings),
         )
 
-    # T-SCHED W7P5-a Section 4: the fifth check, a ledger row's real-run leg.
-    # The main allowlist must exist and be non-empty regardless (both are their own
-    # VACUITY refusals), so these fixtures give it an unrelated, correctly-'blocked'
+    # T-SCHED W7P5-a Section 4: the fifth check, a ledger row's real-run leg. The main allowlist must exist and be non-empty regardless (both are their own VACUITY refusals), so these fixtures give it an unrelated, correctly-'blocked'
     # entry rather than allow_text=None, keeping it out of x.sh's way.
     unrelated_allow = (
         "# BLOCKER: real reason naming curl against a real endpoint, thirty chars easily\n"

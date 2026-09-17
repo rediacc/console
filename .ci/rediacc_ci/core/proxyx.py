@@ -220,14 +220,9 @@ class Proxy:
         return 0
 
 
-# ---------------------------------------------------------------------------
-# The shared selftest, mirroring `proxy_lib_selftest` in the bash twin.
+# --------------------------------------------------------------------------- The shared selftest, mirroring `proxy_lib_selftest` in the bash twin.
 #
-# Same shape, same reason: a REAL PATH removal (env -i with PATH pointing at an
-# empty directory), not a simulated "pretend it is missing" flag, and BOTH
-# directions -- something that must exit 0, something that must exit 77
-# (toolchain gone), something that must exit 1 (zero checks), something that
-# must exit 2 (zero declared requirements).
+# Same shape, same reason: a REAL PATH removal (env -i with PATH pointing at an empty directory), not a simulated "pretend it is missing" flag, and BOTH directions -- something that must exit 0, something that must exit 77 (toolchain gone), something that must exit 1 (zero checks), something that must exit 2 (zero declared requirements).
 # ---------------------------------------------------------------------------
 
 
@@ -263,13 +258,8 @@ def run_selftest() -> int:
     fails = 0
     cases = 0
     module = __name__
-    # `.ci`, the directory a caller normally puts on PYTHONPATH to reach the
-    # `rediacc_ci` package. Computed from this file's own location (three
-    # parents up from `.ci/rediacc_ci/core/proxyx.py`) rather than trusted from
-    # the CALLING process's environment, because that environment is not
-    # guaranteed to carry it -- a pytest run of this module directly does not,
-    # and the child subprocess below would then fail to import `rediacc_ci` at
-    # all rather than exercising the case it is meant to prove.
+    # `.ci`, the directory a caller normally puts on PYTHONPATH to reach the `rediacc_ci` package. Computed from this file's own location (three parents up from `.ci/rediacc_ci/core/proxyx.py`) rather than trusted from the CALLING process's environment, because that environment is not guaranteed to carry it -- a pytest run of this module directly does not, and the child subprocess
+    # below would then fail to import `rediacc_ci` at all rather than exercising the case it is meant to prove.
     ci_dir = str(pathlib.Path(__file__).resolve().parents[2])
 
     def _case(want: int, label: str, env: dict[str, str] | None, func: str) -> None:
@@ -305,11 +295,7 @@ def run_selftest() -> int:
     _case(1, "zero checks -> 1, never 0", os.environ.copy(), "_probe_vacuous")
     _case(2, "zero declared requirements -> 2", os.environ.copy(), "_probe_noreqs")
 
-    # "proxy-lib", not "proxyx": every ported proxy's `--selftest` output must
-    # stay byte-identical to its bash twin's, and the bash twin's own selftest
-    # (`proxy_lib_selftest` in `proxy-lib.sh`) prints that literal name. Caught
-    # by `test_proxies_cli_manifest.py::test_selftest_is_byte_identical` the
-    # first time this said "proxyx selftest" instead.
+    # "proxy-lib", not "proxyx": every ported proxy's `--selftest` output must stay byte-identical to its bash twin's, and the bash twin's own selftest (`proxy_lib_selftest` in `proxy-lib.sh`) prints that literal name. Caught by `test_proxies_cli_manifest.py::test_selftest_is_byte_identical` the first time this said "proxyx selftest" instead.
     if fails:
         print(f"proxy-lib selftest: {fails} of {cases} case(s) FAILED", file=sys.stderr)
         return 1

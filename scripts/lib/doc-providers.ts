@@ -233,12 +233,8 @@ export const gatesProvider: Provider = {
 export const gatesSummaryProvider: Provider = {
   id: 'gates-summary',
   scans: `${GATES_LOCK}, folded to one row per CI lane`,
-  // "IS a gate test", not "has one", and the distinction was got wrong once here before the
-  // table was read against the lock. `qualityGateTest` marks an entry that IS one of the
-  // on-disk gate tests -- manifest.ts says so outright, and every one of the 144 rows carrying
-  // it has an id beginning `gate-test:`, with no `gate-test:` entry lacking it. A column headed
-  // "Has a gate test" would have told every reader that 86 quality-code gates are untested,
-  // which is a different and false claim.
+  // "IS a gate test", not "has one", and the distinction was got wrong once here before the table was read against the lock. `qualityGateTest` marks an entry that IS one of the on-disk gate tests -- manifest.ts says so outright, and every one of the 144 rows carrying it has an id beginning `gate-test:`, with no `gate-test:` entry lacking it. A column headed "Has a gate test" would
+  // have told every reader that 86 quality-code gates are untested, which is a different and false claim.
   columns: ['Where it runs', 'Registered', '`gate: true`', 'Slow', 'Is a gate test'],
   rows: (root) => {
     const lanes = new Map<string, { n: number; gate: number; slow: number; test: number }>();
@@ -301,18 +297,9 @@ const wiredHooks = (root: string): WiredHook[] => {
   for (const [event, matchers] of Object.entries(parsed.hooks ?? {})) {
     for (const m of matchers) {
       for (const h of m.hooks ?? []) {
-        // The command is a shell line: `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"` or
-        // `python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/y.py" --flag`. Pull every hook path out
-        // of it rather than assuming one shape, so a wrapper that runs two guards is not
-        // silently reported as running one.
-        // BOTH hook trees, and the alternation is load-bearing rather than tidy. This
-        // pattern was `\.claude\/hooks\/`, which cannot match `.claude/rediacc_hooks/`:
-        // measured 2026-09-07 it found 14 of the 15 hook paths in the wiring and missed
-        // exactly `.claude/rediacc_hooks/dispatch.py`. That one miss is the whole problem,
-        // because the dispatcher is the ONLY edge from settings.json into the 64 guard
-        // modules, so widening the FILE LIST without fixing this pattern would seed the
-        // closure without its single entry point and report all 64 live guards as dead code.
-        // Captures repo-relative now, so a key names a real path from the repo root.
+        // The command is a shell line: `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"` or `python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/y.py" --flag`. Pull every hook path out of it rather than assuming one shape, so a wrapper that runs two guards is not silently reported as running one. BOTH hook trees, and the alternation is load-bearing rather than tidy. This pattern was
+        // `\.claude\/hooks\/`, which cannot match `.claude/rediacc_hooks/`: measured 2026-09-07 it found 14 of the 15 hook paths in the wiring and missed exactly `.claude/rediacc_hooks/dispatch.py`. That one miss is the whole problem, because the dispatcher is the ONLY edge from settings.json into the 64 guard modules, so widening the FILE LIST without fixing this pattern would
+        // seed the closure without its single entry point and report all 64 live guards as dead code. Captures repo-relative now, so a key names a real path from the repo root.
         for (const hit of (h.command ?? '').matchAll(
           /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+/g
         )) {
@@ -345,8 +332,7 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
   const text = new Map<string, string>();
   for (const rel of files) {
     try {
-      // REPO-RELATIVE. This used to join `.claude/hooks` back on, which quietly made that
-      // one directory the only thing this closure could ever read.
+      // REPO-RELATIVE. This used to join `.claude/hooks` back on, which quietly made that one directory the only thing this closure could ever read.
       text.set(rel, fs.readFileSync(path.join(root, rel), 'utf-8'));
     } catch {
       text.set(rel, '');
@@ -355,19 +341,12 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
   const reached = new Map<string, string>();
   for (const w of wired) reached.set(w, 'settings.json');
 
-  // TWO KINDS OF EDGE THIS TEXTUAL CLOSURE CANNOT SEE, both of which would otherwise be
-  // reported as dead code. The comment above promises that over-admitting is the safe
+  // TWO KINDS OF EDGE THIS TEXTUAL CLOSURE CANNOT SEE, both of which would otherwise be reported as dead code. The comment above promises that over-admitting is the safe
   // direction and that this table "never invents a false accusation"; without these two
   // seeds it does exactly that, and the accusation lands on live guards.
   //
-  // 1. GLOB DISCOVERY. `.claude/rediacc_hooks/dispatch.py` does not name a single guard.
-  //    It globs `block_*.py`, `warn_*.py` and `require_*.py` under `guards/` and keeps the
-  //    modules declaring a matching `CHAIN`. Measured 2026-09-07:
-  //    `python3 .claude/rediacc_hooks/dispatch.py --list` prints
-  //    `pre-bash warn_submodule_deletions ...`, while the closure reported that same file as
-  //    reached by nothing, because no reached file contains its name.
-  // 2. PYTEST COLLECTION. `pyproject.toml:237-241` names `.claude/rediacc_hooks/tests` in
-  //    `testpaths`, so a `test_*.py` there is run by the suite, not by the wiring.
+  // 1. GLOB DISCOVERY. `.claude/rediacc_hooks/dispatch.py` does not name a single guard. It globs `block_*.py`, `warn_*.py` and `require_*.py` under `guards/` and keeps the modules declaring a matching `CHAIN`. Measured 2026-09-07: `python3 .claude/rediacc_hooks/dispatch.py --list` prints `pre-bash warn_submodule_deletions ...`, while the closure reported that same file as reached
+  // by nothing, because no reached file contains its name. 2. PYTEST COLLECTION. `pyproject.toml:237-241` names `.claude/rediacc_hooks/tests` in `testpaths`, so a `test_*.py` there is run by the suite, not by the wiring.
   for (const rel of files) {
     if (reached.has(rel)) continue;
     const base = path.basename(rel);
@@ -420,25 +399,15 @@ export const hookGuardsProvider: Provider = {
 
     // BOTH HOOK TREES, and why .claude/oracles is NOT a third.
     //
-    // Until 2026-09-07 this scanned `.claude/hooks` alone, which made this region's own promise
-    // unkeepable: it says a tracked file nothing reaches is dead code sitting beside live
-    // guards, while 64 tracked modules under `.claude/rediacc_hooks` were not in the set at all,
-    // so they could never be reported in either direction. The parity gate could not catch it,
-    // because it compares this generator against itself: both sides were equally blind and the
-    // document was wrong while the gate was green.
+    // Until 2026-09-07 this scanned `.claude/hooks` alone, which made this region's own promise unkeepable: it says a tracked file nothing reaches is dead code sitting beside live guards, while 64 tracked modules under `.claude/rediacc_hooks` were not in the set at all, so they could never be reported in either direction. The parity gate could not catch it, because it compares
+    // this generator against itself: both sides were equally blind and the document was wrong while the gate was green.
     //
-    // `.claude/oracles` is excluded ON PURPOSE and must stay excluded. Those 50 files are the
-    // bash twins the Python guards are differentially compared against
-    // (`test_guards_differential`). They are deliberately wired to NO event, so a reachability
-    // closure would correctly find nothing reaching them and report all 50 as dead code. That is
-    // precisely the reading that gets a differential corpus "simplified" away, which is the
-    // failure this region exists to prevent rather than to cause. Their coverage is the
-    // differential test, not the wiring.
+    // `.claude/oracles` is excluded ON PURPOSE and must stay excluded. Those 50 files are the bash twins the Python guards are differentially compared against (`test_guards_differential`). They are deliberately wired to NO event, so a reachability closure would correctly find nothing reaching them and report all 50 as dead code. That is precisely the reading that gets a
+    // differential corpus "simplified" away, which is the failure this region exists to prevent rather than to cause. Their coverage is the differential test, not the wiring.
     const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
     const members = present
       .filter((f) => /\.(sh|py)$/.test(f))
-      // State snapshots and byte-compiled caches are not hooks. Both are per-session litter that
-      // would make this record differ between two machines looking at the same commit.
+      // State snapshots and byte-compiled caches are not hooks. Both are per-session litter that would make this record differ between two machines looking at the same commit.
       .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
 
     const reached = reachability(root, new Set(events.keys()), members);
@@ -492,16 +461,11 @@ export const hookSummaryProvider: Provider = {
       byEvent.set(w.event, row);
     }
 
-    // Same two trees as hook-guards, for the same reason its comment gives: this row set and
-    // that one must describe the same tree, or the summary and the reference disagree. Before
-    // 2026-09-07 both were scoped to `.claude/hooks`, so the residue count below counted the
-    // unreached files of ONE tree while calling itself "tracked hook files nothing reaches".
+    // Same two trees as hook-guards, for the same reason its comment gives: this row set and that one must describe the same tree, or the summary and the reference disagree. Before 2026-09-07 both were scoped to `.claude/hooks`, so the residue count below counted the unreached files of ONE tree while calling itself "tracked hook files nothing reaches".
     const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
     const members = present
       .filter((f) => /\.(sh|py)$/.test(f))
-      // Identical exclusions to hook-guards, and they must stay identical: state snapshots and
-      // byte-compiled caches are per-session litter, so counting them here and not there would
-      // make the summary and the reference disagree about the same tree.
+      // Identical exclusions to hook-guards, and they must stay identical: state snapshots and byte-compiled caches are per-session litter, so counting them here and not there would make the summary and the reference disagree about the same tree.
       .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
     const reached = reachability(root, new Set(wired.map((w) => w.file)), members);
     const unreached = members.filter((f) => !reached.has(f)).length;
@@ -584,20 +548,13 @@ const NOT_A_MECHANISM = new Set([
  */
 const commentForm = (rel: string, text: string): string => {
   const lines = text.split('\n');
-  // ORDER IS THE WHOLE ALGORITHM, and it was wrong on the first pass. A naive "does any quoted
-  // string contain BLOCKER:" test classified `.runner-advice-allowlist` and
-  // `.ci/breakpoint/.breakpoint-drift-accept` as JSON, because both are shell-comment files whose
-  // HEADER PROSE quotes the format (`a "# BLOCKER: <reason>" comment block`). Real forms are
-  // therefore tested first, from most specific anchor to least, and documentation-only mentions
-  // fall through to a state that says so instead of being guessed at.
+  // ORDER IS THE WHOLE ALGORITHM, and it was wrong on the first pass. A naive "does any quoted string contain BLOCKER:" test classified `.runner-advice-allowlist` and `.ci/breakpoint/.breakpoint-drift-accept` as JSON, because both are shell-comment files whose HEADER PROSE quotes the format (`a "# BLOCKER: <reason>" comment block`). Real forms are therefore tested first, from most
+  // specific anchor to least, and documentation-only mentions fall through to a state that says so instead of being guessed at.
   if (lines.some((l) => /^\s*#\s*BLOCKER:/.test(l))) return '# comment';
   if (lines.some((l) => /^\s*\/\/\s*BLOCKER:/.test(l))) return '// comment';
   if (/\.jsonc?$/.test(rel) && lines.some((l) => /"[^"]*BLOCKER:/.test(l))) return 'JSON value';
   if (lines.some((l) => /^\s*[^#/\s].*#\s*BLOCKER:/.test(l))) return 'inline';
-  // Every BLOCKER: in the file is in its own documentation, so nothing is suppressed through one
-  // right now. An empty allowlist is a legitimate and desirable state -- `.breakpoint-drift-accept`
-  // says outright that empty is correct for this repo -- and reporting it as a comment style
-  // would hide that.
+  // Every BLOCKER: in the file is in its own documentation, so nothing is suppressed through one right now. An empty allowlist is a legitimate and desirable state -- `.breakpoint-drift-accept` says outright that empty is correct for this repo -- and reporting it as a comment style would hide that.
   return 'prose only (no live entry)';
 };
 
@@ -609,15 +566,8 @@ export const suppressionsProvider: Provider = {
     const { present } = presentFiles(root, lsFiles(root, '.'));
     const rows: ProviderRow[] = [];
     for (const f of present) {
-      // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests
-      // directory are byte copies of real allow/block lists, recorded so a port can be
-      // proved to agree with the reader it replaces, and they carry BLOCKER: for the same
-      // reason the originals do. The predicate below is "carries BLOCKER: and is not
-      // source or prose", which cannot tell a recording from the thing recorded: when
-      // W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39,
-      // and all 15 additions were copies of lists already counted once. A census that
-      // double-counts its own fixtures overstates the escape hatches in the tree, which
-      // is the one number this table exists to keep honest.
+      // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
+      // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
       if (/(^|\/)tests\/goldens\//.test(f)) continue;
       if (NOT_A_MECHANISM.has(path.extname(f))) continue;
       let text: string;
@@ -661,8 +611,7 @@ export const ciTreeProvider: Provider = {
           hist.set(e, (hist.get(e) ?? 0) + 1);
         }
         const exts = [...hist.entries()]
-          // Count descending, then extension ascending: a stable total order, so two runs on
-          // the same tree render the same string even when two extensions tie.
+          // Count descending, then extension ascending: a stable total order, so two runs on the same tree render the same string even when two extensions tie.
           .sort((a, b) => b[1] - a[1] || byCodePoint(a[0], b[0]))
           .map(([e, n]) => `${e} ${n}`)
           .join(', ');
@@ -778,10 +727,7 @@ export const policyProvider: Provider = {
         return { key: name, cells: [`\`${name}\``, 'unreadable', '-', '-', seams] };
       }
       const blockers = text.split('\n').filter((l) => l.includes('BLOCKER:')).length;
-      // A `.json` policy file holds a table, not one name per line, so the
-      // line-counting entry rule would report its punctuation. Reported as `-`
-      // rather than as a wrong number: `.ci/policy/README.md` section 5 explains
-      // why the two JSON members are shaped differently from their neighbours.
+      // A `.json` policy file holds a table, not one name per line, so the line-counting entry rule would report its punctuation. Reported as `-` rather than as a wrong number: `.ci/policy/README.md` section 5 explains why the two JSON members are shaped differently from their neighbours.
       const json = name.endsWith('.json');
       return {
         key: name,
@@ -858,20 +804,11 @@ export const testSplitProvider: Provider = {
     };
 
     const rows: ProviderRow[] = [];
-    // THE RESIDUE IS ONE ROW PER FILE, NOT A COUNT, and that is the whole reason
-    // this provider was worth writing. A count cannot see one file leaving as
-    // another arrives -- the composition trap this program has already been bitten
-    // by once, in a baseline drain that printed a smaller total while quietly
-    // absorbing a brand-new finding. Keyed rows make a set diff possible.
+    // THE RESIDUE IS ONE ROW PER FILE, NOT A COUNT, and that is the whole reason this provider was worth writing. A count cannot see one file leaving as another arrives -- the composition trap this program has already been bitten by once, in a baseline drain that printed a smaller total while quietly absorbing a brand-new finding. Keyed rows make a set diff possible.
     const residue: string[] = [];
 
-    // NEAREST DECLARED ROOT WINS, because two of these roots NEST. `testpaths`
-    // names `.ci/rediacc_ci/tests` and `.ci/rediacc_ci/tests/gates` separately,
-    // and `git ls-files` on the parent returns the child's files too: the first
-    // render of this table reported 169 and 78 against a real population of 169,
-    // counting 78 files twice and inflating the split by 46%. A file is attributed
-    // to the LONGEST declared root that contains it, so every row is disjoint and
-    // the column sums to the tree.
+    // NEAREST DECLARED ROOT WINS, because two of these roots NEST. `testpaths` names `.ci/rediacc_ci/tests` and `.ci/rediacc_ci/tests/gates` separately, and `git ls-files` on the parent returns the child's files too: the first render of this table reported 169 and 78 against a real population of 169, counting 78 files twice and inflating the split by 46%. A file is attributed to
+    // the LONGEST declared root that contains it, so every row is disjoint and the column sums to the tree.
     const owner = (rel: string): string =>
       declared.filter((d) => rel.startsWith(`${d}/`)).sort((a, b) => b.length - a.length)[0] ?? '';
 
@@ -897,10 +834,7 @@ export const testSplitProvider: Provider = {
       });
     }
 
-    // A root that is DECLARED and EMPTY is rendered above with a 0, deliberately:
-    // `.ci/tests/gates` was arbitrated into existence by
-    // docs/ci-overhaul/08-driver-contract.md and holds nothing, and a table that
-    // dropped empty rows would report that as agreement.
+    // A root that is DECLARED and EMPTY is rendered above with a 0, deliberately: `.ci/tests/gates` was arbitrated into existence by docs/ci-overhaul/08-driver-contract.md and holds nothing, and a table that dropped empty rows would report that as agreement.
     for (const f of residue.sort(byCodePoint)) {
       rows.push({
         key: `(unregistered) ${f}`,
@@ -1065,10 +999,7 @@ export const bootstrapProvider: Provider = {
     const ported = portedVerbs(router);
     const legacyArms = topVerbs(legacy).filter((v) => v !== 'help');
 
-    // ONE ROW PER ENTRY POINT, with the members spelled out in the last cell rather than
-    // counted. A count alone cannot see one verb leaving as another arrives, which is the
-    // exact shape a port produces: `--changed` selection and the router's own gate test both
-    // key on the SET, so the document has to as well.
+    // ONE ROW PER ENTRY POINT, with the members spelled out in the last cell rather than counted. A count alone cannot see one verb leaving as another arrives, which is the exact shape a port produces: `--changed` selection and the router's own gate test both key on the SET, so the document has to as well.
     const rows: ProviderRow[] = [
       {
         key: 'run.sh',
@@ -1109,8 +1040,7 @@ export const bootstrapProvider: Provider = {
     ];
 
     // THE UNION, NOT EACH ROW. Zero ported verbs is the tree's real state; zero verbs
-    // ANYWHERE means the two dispatchers were both misparsed, and rendering that would
-    // publish "this repository has no entry points".
+    // ANYWHERE means the two dispatchers were both misparsed, and rendering that would publish "this repository has no entry points".
     if (routerArms.length + ported.length + legacyArms.length === 0) {
       throw new Error(
         `${ROUTER_SEAM} and ${LEGACY_SEAM} between them yielded no verbs. One dispatcher can ` +
@@ -2018,10 +1948,7 @@ export const readEnvManifest = (root: string): EnvManifest => {
     ? (parsed.tombstone_proof_sites as Record<string, string[]>)
     : {};
 
-  // A RESIDUE ENTRY ABOUT A NAME NO SHARD HOLDS IS AN ANNOTATION NOTHING CAN SHOW. This
-  // table hangs the collision, the note and the proof site off the variable's own row, so a
-  // key outside the shards is not merely unrendered, it is invisible: the reader is never
-  // told the manifest had something to say. Refused by name, with the two ways out.
+  // A RESIDUE ENTRY ABOUT A NAME NO SHARD HOLDS IS AN ANNOTATION NOTHING CAN SHOW. This table hangs the collision, the note and the proof site off the variable's own row, so a key outside the shards is not merely unrendered, it is invisible: the reader is never told the manifest had something to say. Refused by name, with the two ways out.
   const dangling: string[] = [];
   for (const c of collisions) {
     if (typeof c?.name !== 'string' || !seen.has(c.name)) dangling.push(`collisions: ${c?.name}`);

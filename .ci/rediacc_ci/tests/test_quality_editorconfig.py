@@ -22,8 +22,7 @@ from rediacc_ci import paths
 from rediacc_ci.quality import editorconfig as ec
 from rediacc_ci.tests import differential as diff
 
-# The classifier, verbatim from check-editorconfig.sh:56 and :94 (the same
-# program appears twice in the twin, once in its control and once in the scan).
+# The classifier, verbatim from check-editorconfig.sh:56 and :94 (the same program appears twice in the twin, once in its control and once in the scan).
 AWK_CLASSIFY = "awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, \"\", $0); print }'"
 
 

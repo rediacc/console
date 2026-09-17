@@ -122,22 +122,18 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The file whose function is the subject. Spelled as the twin spells it, because
-# the spelling lands in every refusal message.
+# The file whose function is the subject. Spelled as the twin spells it, because the spelling lands in every refusal message.
 GATE_SRC_REL = ".ci/scripts/review/claude-review-gate.sh"
 
-# The measured starvation point and the budget that failed it. Both are facts
-# about PR #553 on 2026-08-07, not tuning knobs.
+# The measured starvation point and the budget that failed it. Both are facts about PR #553 on 2026-08-07, not tuning knobs.
 STARVED_LINES = 2802
 STARVED_TURNS = 50
 
-# Default worst-case density a bounded tier must clear. Overridable, as in the
-# twin, so a future measurement can raise it without editing the file.
+# Default worst-case density a bounded tier must clear. Overridable, as in the twin, so a future measurement can raise it without editing the file.
 MIN_TURNS_PER_KLOC_ENV = "MIN_TURNS_PER_KLOC"
 DEFAULT_MIN_TURNS_PER_KLOC = 22
 
-# "Deliberately includes every boundary neighbourhood plus the two measured PRs,
-# so a moved threshold cannot slip between samples."
+# "Deliberately includes every boundary neighbourhood plus the two measured PRs, so a moved threshold cannot slip between samples."
 PROBE_SIZES = (
     0,
     1,
@@ -211,8 +207,7 @@ def harness(fn: str) -> str:
         'gh() { echo "$FAKE_SIZE"; }\n'
         "%s\n"
         "emit_review_turns 1\n"
-        # `|| true`: see the module docstring. An empty result must reach the
-        # caller as empty, where TOTAL reports it, rather than aborting here.
+        # `|| true`: see the module docstring. An empty result must reach the caller as empty, where TOTAL reports it, rather than aborting here.
         'grep -o "review_turns=[0-9]*" "$GITHUB_OUTPUT" | head -1 | cut -d= -f2 || true\n'
         'rm -f "$GITHUB_OUTPUT"\n'
     ) % fn
@@ -229,11 +224,9 @@ def turns_for(size: int, fn: str) -> str:
     """
     env = dict(os.environ)
     env["FAKE_SIZE"] = str(size)
-    # THROUGH THE SHARED RUNNER: this is `bash -c` around a harness that stubs
-    # `gh` and calls the real function, so the child spawns children. With
+    # THROUGH THE SHARED RUNNER: this is `bash -c` around a harness that stubs `gh` and calls the real function, so the child spawns children. With
     # `subprocess.run(capture_output=True, timeout=...)` a stub that never
-    # returns kills bash and then blocks in communicate() on a pipe the stub
-    # still holds -- the port hangs where the twin would have timed out.
+    # returns kills bash and then blocks in communicate() on a pipe the stub still holds -- the port hangs where the twin would have timed out.
     result = ci_proc.run(["bash", "-c", harness(fn)], env=env, timeout=60)
     if result.timed_out or result.returncode == ci_proc.SPAWN_FAILED_RC:
         return "0"
@@ -269,8 +262,7 @@ def evaluate(fn: str, min_per_kloc: int) -> list[str]:
 
     # 4. REGRESSION -- the measured starvation point must be strictly better
     # resourced now. Numbered 4 in the twin's code and 5 in its header; the
-    # discrepancy is carried rather than silently renumbered, because the header
-    # is what a reader quotes.
+    # discrepancy is carried rather than silently renumbered, because the header is what a reader quotes.
     turns = turns_for(STARVED_LINES, fn)
     if NUMERIC.match(turns) and int(turns) <= STARVED_TURNS:
         findings.append(
@@ -278,18 +270,13 @@ def evaluate(fn: str, min_per_kloc: int) -> list[str]:
             "PR #553" % (STARVED_LINES, turns, STARVED_TURNS)
         )
     elif not NUMERIC.match(turns):
-        # `[[ "$turns" -le "$STARVED_TURNS" ]]` on a non-numeric value is a bash
-        # ARITHMETIC context, which evaluates an unset name as 0 and therefore
-        # takes the branch. Reproduced rather than corrected.
+        # `[[ "$turns" -le "$STARVED_TURNS" ]]` on a non-numeric value is a bash ARITHMETIC context, which evaluates an unset name as 0 and therefore takes the branch. Reproduced rather than corrected.
         findings.append(
             "REGRESSION: %d lines still routes to %s turns; %d is the budget that starved "
             "PR #553" % (STARVED_LINES, turns, STARVED_TURNS)
         )
 
-    # 3. DENSITY, split honestly at the point where the cost ceiling makes it
-    # impossible. The ceiling is DERIVED from the function's own largest observed
-    # budget, never hard-coded, "so raising or lowering MAX_TURNS moves the split
-    # automatically".
+    # 3. DENSITY, split honestly at the point where the cost ceiling makes it impossible. The ceiling is DERIVED from the function's own largest observed budget, never hard-coded, "so raising or lowering MAX_TURNS moves the split automatically".
     ceiling = 0
     for size in PROBE_SIZES:
         turns = turns_for(size, fn)
@@ -378,8 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "%s✗%s review turn budget can starve a review it routes:" % (RED, NC), file=sys.stderr
         )
-        # ONLY THE FIRST LINE IS INDENTED, because the twin passes one multi-line
-        # argument to a single `%s`. See the port notes.
+        # ONLY THE FIRST LINE IS INDENTED, because the twin passes one multi-line argument to a single `%s`. See the port notes.
         print("  %s" % "\n".join(real_out), file=sys.stderr)
         print(file=sys.stderr)
         print(
@@ -409,12 +395,8 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A budget function written here rather than read, for the selftest ONLY. It is
-# never used against the real tree: the whole argument of this gate is that it
-# must read the file it names, and a copy pasted into the gate is exactly what
-# the anchor-based extraction exists to prevent. This one is a FIXTURE, and it is
-# labelled as such so a future reader does not mistake it for a second source of
-# truth.
+# A budget function written here rather than read, for the selftest ONLY. It is never used against the real tree: the whole argument of this gate is that it must read the file it names, and a copy pasted into the gate is exactly what the anchor-based extraction exists to prevent. This one is a FIXTURE, and it is labelled as such so a future reader does not mistake it for a second
+# source of truth.
 _FIXTURE_HEALTHY = """emit_review_turns() {
     local changed
     changed=$(gh) || changed=0
@@ -450,11 +432,9 @@ def selftest() -> int:
     ]
     # (label, function text, must produce findings)
     properties = [
-        # THE NEGATIVE HALF. A healthy continuous budget must be SILENT, or the
-        # gate is a blanket refusal and its red says nothing.
+        # THE NEGATIVE HALF. A healthy continuous budget must be SILENT, or the gate is a blanket refusal and its red says nothing.
         ("a healthy continuous budget passes every property", _FIXTURE_HEALTHY, False),
-        # THE POSITIVE HALF, and it is the founding defect: the pre-incident
-        # density.
+        # THE POSITIVE HALF, and it is the founding defect: the pre-incident density.
         (
             "the pre-incident density is caught",
             plant(_FIXTURE_HEALTHY, "per_kloc=25", "per_kloc=8"),
@@ -495,11 +475,7 @@ def selftest() -> int:
     for label, text, want in properties:
         ctl.check("evaluate: %s" % label, bool(evaluate(text, DEFAULT_MIN_TURNS_PER_KLOC)), want)
 
-    # THE ONE-OFF PROOF IS GONE, and deliberately: `plant()` now refuses a
-    # mutation that would not change the fixture, for EVERY site above rather
-    # than for the single one this check covered. Keeping it would assert what
-    # the constructor has already made impossible.
-    # THE MEASURED FACTS ARE NOT TUNING KNOBS.
+    # THE ONE-OFF PROOF IS GONE, and deliberately: `plant()` now refuses a mutation that would not change the fixture, for EVERY site above rather than for the single one this check covered. Keeping it would assert what the constructor has already made impossible. THE MEASURED FACTS ARE NOT TUNING KNOBS.
     ctl.check("the starvation point is PR #553's diff size", STARVED_LINES, 2802)
     ctl.check("the starving budget is 50 turns", STARVED_TURNS, 50)
 

@@ -44,9 +44,7 @@ import sys
 import time
 from pathlib import Path
 
-# The STATUS heading, and any level-2 heading. Level 2 exactly: the block's own
-# `### Round N fixes` subsections belong TO the block, and a boundary that
-# stopped at `###` would leave them stranded above the replacement.
+# The STATUS heading, and any level-2 heading. Level 2 exactly: the block's own `### Round N fixes` subsections belong TO the block, and a boundary that stopped at `###` would leave them stranded above the replacement.
 STATUS_RE = re.compile(r"^## STATUS\b.*$", re.MULTILINE)
 H2_RE = re.compile(r"^## .*$", re.MULTILINE)
 ROUND_RE = re.compile(r"^## STATUS\s*\(\s*round\s+(\d+)", re.MULTILINE | re.IGNORECASE)
@@ -103,8 +101,7 @@ def shape(body):
     if len(body.strip()) < MIN_BODY_CHARS:
         return "too-short", "%d chars, floor %d" % (len(body.strip()), MIN_BODY_CHARS)
     if STATUS_RE.search(body):
-        # The tool writes the heading. A body carrying its own would produce two,
-        # and the second would silently become the boundary for the NEXT splice.
+        # The tool writes the heading. A body carrying its own would produce two, and the second would silently become the boundary for the NEXT splice.
         return "own-heading", "the body carries its own '## STATUS' heading"
     return "ok", ""
 
@@ -118,9 +115,7 @@ def splice(current, body, round_no=None, now=None):
     """
     head, status, tail = split(current)
     if head + status + tail != current:
-        # Not an assert: `python -O` strips those, and this is the one invariant
-        # the whole module exists to uphold. If the parse ever loses a byte, the
-        # caller must hear about it instead of silently writing the loss to disk.
+        # Not an assert: `python -O` strips those, and this is the one invariant the whole module exists to uphold. If the parse ever loses a byte, the caller must hear about it instead of silently writing the loss to disk.
         raise RuntimeError(
             "roundlog split lost bytes: %d + %d + %d != %d"
             % (len(head), len(status), len(tail), len(current))
@@ -174,9 +169,7 @@ def _selftest():
     check("exactly one STATUS heading", new.count("## STATUS") == 1)
     check("the tail is reported, not just preserved", rep["tail_bytes"] > 0, rep)
 
-    # The naive splice, kept here as a CONTROL: this is what the verb replaced,
-    # and it must still visibly destroy the appendix, or this test is measuring
-    # nothing.
+    # The naive splice, kept here as a CONTROL: this is what the verb replaced, and it must still visibly destroy the appendix, or this test is measuring nothing.
     i = doc.index("## STATUS")
     naive = doc[:i] + "## STATUS (round 8)\n\nfresh body\n"
     check(
@@ -185,8 +178,7 @@ def _selftest():
         "if this fails the fixture no longer reproduces the bug",
     )
 
-    # No STATUS block yet: it belongs directly under the wave header, and
-    # whatever follows must still survive.
+    # No STATUS block yet: it belongs directly under the wave header, and whatever follows must still survive.
     doc2 = "# t\n\n## Wave header\n\nintent.\n\n## Round 1\n\nKEEP ME.\n"
     new2, rep2 = splice(doc2, "first status")
     check(

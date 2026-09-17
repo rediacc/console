@@ -61,9 +61,7 @@ const LINT_ROOTS = [
   '.github/actions',
 ];
 
-// Extensions any config block in this repo can attach a language or parser to.
-// .mts and .cts are in this list because they were MISSING from the first draft,
-// and the omission was found by reconciling this corpus against the file list a
+// Extensions any config block in this repo can attach a language or parser to. .mts and .cts are in this list because they were MISSING from the first draft, and the omission was found by reconciling this corpus against the file list a
 // real `eslint` run reports: packages/www/src/plugins/heading-anchors.d.mts is
 // tracked, is linted, and was invisible here.
 const LINTABLE = new Set([
@@ -110,8 +108,7 @@ function corpus() {
   return [...seen].sort();
 }
 
-// Deterministic serialization. Object keys are emitted in sorted order so two
-// runs cannot differ merely because a spread produced a different insertion
+// Deterministic serialization. Object keys are emitted in sorted order so two runs cannot differ merely because a spread produced a different insertion
 // order; cycles become a marker rather than a throw.
 const memo = new WeakMap();
 let circularHits = 0;
@@ -144,8 +141,7 @@ function ser(value, seen) {
     for (const key of Object.keys(value).sort()) out[key] = ser(value[key], seen);
   }
   seen.delete(value);
-  // A subtree that hit a cycle serialized differently depending on WHERE it was
-  // reached from, so caching it would leak one path's placeholder into another.
+  // A subtree that hit a cycle serialized differently depending on WHERE it was reached from, so caching it would leak one path's placeholder into another.
   if (circularHits === hitsBefore) memo.set(value, out);
   return out;
 }
@@ -284,9 +280,7 @@ function firstDelta(before, after) {
 
 const argv = process.argv.slice(2);
 if (argv[0] === '--out' && argv[1]) {
-  // `--config` points the run at a DIFFERENT flat config file, which is how the
-  // before side of a config refactor stays reachable once the file it lived in
-  // has been rewritten.
+  // `--config` points the run at a DIFFERENT flat config file, which is how the before side of a config refactor stays reachable once the file it lived in has been rewritten.
   const configFlag = argv.indexOf('--config');
   await snapshot(path.resolve(argv[1]), configFlag === -1 ? undefined : path.resolve(argv[configFlag + 1]));
 } else if (argv[0] === '--compare' && argv[1] && argv[2]) {

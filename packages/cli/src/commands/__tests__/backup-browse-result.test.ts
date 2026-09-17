@@ -18,11 +18,7 @@ describe('parseBrowseResult', () => {
     expect(got?.entries).toHaveLength(2);
   });
 
-  // THE CASE THIS WAVE ALREADY PAID FOR. `renet functions once` swallows a
-  // verb's stdout and re-emits it on STDERR inside its own log line, with the
-  // quotes escaped. A parser that accepts only the bare form reports "no
-  // listing" for a listing that was produced perfectly, and the failure reads
-  // as a broken product rather than a broken parser.
+  // THE CASE THIS WAVE ALREADY PAID FOR. `renet functions once` swallows a verb's stdout and re-emits it on STDERR inside its own log line, with the quotes escaped. A parser that accepts only the bare form reports "no listing" for a listing that was produced perfectly, and the failure reads as a broken product rather than a broken parser.
   it('reads a listing wrapped in a log line with escaped quotes', () => {
     const wrapped = `time="2026-08-16T06:36:28Z" level=info msg="[backup_browse] ${JSON.stringify(
       listing
@@ -32,12 +28,8 @@ describe('parseBrowseResult', () => {
     expect(got?.entries.map((e) => e.path)).toEqual(['/app', '/readme.txt']);
   });
 
-  // THE REVIEW'S NIT, kept as a test rather than a comment. The wrapped form was
-  // unescaped with replaceAll('\\"', '"'), which handled escaped QUOTES and
-  // nothing else -- so a filename containing a newline or a backslash, both
-  // legal on Linux, decoded into invalid JSON. It failed safe, but "safe" there
-  // meant refusing a repository that was perfectly fine, and an operator could
-  // not tell that from a real fault.
+  // THE REVIEW'S NIT, kept as a test rather than a comment. The wrapped form was unescaped with replaceAll('\\"', '"'), which handled escaped QUOTES and nothing else -- so a filename containing a newline or a backslash, both legal on Linux, decoded into invalid JSON. It failed safe, but "safe" there meant refusing a repository that was perfectly fine, and an operator could not
+  // tell that from a real fault.
   it('decodes a wrapped payload whose filenames contain backslashes and newlines', () => {
     const awkward = {
       source: 'repository demo',
@@ -84,8 +76,7 @@ describe('parseBrowseResult', () => {
     expect(parseBrowseResult('{"broken":')).toBeUndefined();
   });
 
-  // A verify verdict and a browse listing travel the same pipe. Accepting a
-  // verdict as a listing would print an empty table and call it a repository
+  // A verify verdict and a browse listing travel the same pipe. Accepting a verdict as a listing would print an empty table and call it a repository
   // with no files, which is the same wrong answer as a truncation that does
   // not admit itself.
   it('does not mistake another verb’s JSON for a listing', () => {

@@ -105,30 +105,17 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "concurrent_fork_isolation_test
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/concurrent-fork-isolation-test.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/concurrent_fork_isolation_test.py")
 
-# The four tools whose real behaviour needs hardware or a network. Each returns
-# canned bytes chosen by the FIRST rule whose `match` is a substring of its
-# NUL-joined argv, and each rule's `responses` are consumed in order with the
-# last one repeating, which is how the counter-wait loop is driven to a value.
+# The four tools whose real behaviour needs hardware or a network. Each returns canned bytes chosen by the FIRST rule whose `match` is a substring of its NUL-joined argv, and each rule's `responses` are consumed in order with the last one repeating, which is how the counter-wait loop is driven to a value.
 CANNED_TOOLS = ("ssh", "rdc", "sleep", "whoami")
 
-# The tools whose real behaviour is hermetic and IS wanted: a passthrough
-# records the argv and then `execv`s the real binary, so `grep -q` still returns
-# a real status and `tee` still writes a real file. Recording a fake here would
-# make the pipeline arms untestable, and stubbing them would make the file
-# contents unobservable.
+# The tools whose real behaviour is hermetic and IS wanted: a passthrough records the argv and then `execv`s the real binary, so `grep -q` still returns a real status and `tee` still writes a real file. Recording a fake here would make the pipeline arms untestable, and stubbing them would make the file contents unobservable.
 PASSTHROUGH_TOOLS = ("cat", "sort", "head", "tail", "grep", "tee", "rm")
 
-# Everything both subjects need once PATH is rebuilt from scratch. NAMED rather
-# than derived, because a PATH built by copying "everything except the fakes" is
-# a PATH nobody can state, and the first tool it forgot would look like a
-# divergence in the subject rather than a hole in the harness.
+# Everything both subjects need once PATH is rebuilt from scratch. NAMED rather than derived, because a PATH built by copying "everything except the fakes" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 #
 # `uname` IS DELIBERATELY REAL AND UNRECORDED. `common.sh:509` runs
 # `CI_OS="$(detect_os)"` at source time, which is the library probing its host;
-# the port does not source common.sh and so does not probe. A recording fake
-# would turn that into a call-log divergence about something neither subject
-# does on purpose, and a MISSING `uname` would put two `command not found`
-# lines on the twin's stderr that the port has no way to produce.
+# the port does not source common.sh and so does not probe. A recording fake would turn that into a call-log divergence about something neither subject does on purpose, and a MISSING `uname` would put two `command not found` lines on the twin's stderr that the port has no way to produce.
 NEEDED = ("bash", "sh", "python3", "uname", "env", "dirname", "ls", "cut")
 
 FAKE_CANNED = """#!/usr/bin/env python3
@@ -158,10 +145,7 @@ sys.stderr.flush()
 sys.exit(rc)
 """
 
-# `rdc repo sync upload --local <dir>` is the ONLY moment the two sidecar files
-# are observable: the twin `rm -rf`s the directory on the very next line. The
-# fake snapshots them so the differential can compare the bytes that would have
-# reached the VM, which is the whole point of writing them through `cat`.
+# `rdc repo sync upload --local <dir>` is the ONLY moment the two sidecar files are observable: the twin `rm -rf`s the directory on the very next line. The fake snapshots them so the differential can compare the bytes that would have reached the VM, which is the whole point of writing them through `cat`.
 RDC_UPLOAD_SNAPSHOT = """
 if "upload" in sys.argv and "--local" in sys.argv:
     src = pathlib.Path(sys.argv[sys.argv.index("--local") + 1])
@@ -179,12 +163,9 @@ with pathlib.Path(%(log)r).open("a", encoding="utf-8") as fh:
 os.execv(%(real)r, [%(name)r, *sys.argv[1:]])
 """
 
-# `mktemp` and `mktemp -d`, made deterministic. A real one returns a fresh
-# random path per call, and the twin then puts it into `rdc repo sync upload
+# `mktemp` and `mktemp -d`, made deterministic. A real one returns a fresh random path per call, and the twin then puts it into `rdc repo sync upload
 # --local <path>` and `rm -rf <path>`; two subjects would record two different
-# absolute paths and the differential would fail on the randomness.
-# `%(missing)s` makes it print a path it did NOT create, which is the only way
-# to reach the heredoc-redirection failure arm.
+# absolute paths and the differential would fail on the randomness. `%(missing)s` makes it print a path it did NOT create, which is the only way to reach the heredoc-redirection failure arm.
 FAKE_MKTEMP = """#!/usr/bin/env python3
 import pathlib, sys
 with pathlib.Path(%(log)r).open("a", encoding="utf-8") as fh:
@@ -201,17 +182,12 @@ else:
 print(target)
 """
 
-# The rules every case starts from: a run in which all four assertions hold.
-# The counter reaches 20 on the parent's SECOND reading (so the wait loop is
-# exercised rather than short-circuited), the fork's restored counter is 25, and
-# the parent's two post-fork readings advance 30 -> 40.
+# The rules every case starts from: a run in which all four assertions hold. The counter reaches 20 on the parent's SECOND reading (so the wait loop is exercised rather than short-circuited), the fork's restored counter is 25, and the parent's two post-fork readings advance 30 -> 40.
 HEALTHY_RULES: dict[str, list[dict]] = {
     "ssh": [
         {"match": "ss -Hltnp4", "responses": [{"out": "127.0.1.1:5432\n127.0.2.1:5432\n"}]},
         {"match": "com.docker.compose.project", "responses": [{"out": "0\n"}]},
-        # MATCHED ON `grep counter`, not `grep -q counter`: counter_sockets was
-        # converted to the `[ -n "$(... | grep ...)" ]` form on 2026-09-16 when
-        # `docker` joined SCALING_PRODUCERS. Still unique -- the only other remote
+        # MATCHED ON `grep counter`, not `grep -q counter`: counter_sockets was converted to the `[ -n "$(... | grep ...)" ]` form on 2026-09-16 when `docker` joined SCALING_PRODUCERS. Still unique -- the only other remote
         # payload using grep is counter_value, whose pattern is `count=[0-9]*`.
         {
             "match": "grep counter",
@@ -235,12 +211,8 @@ HEALTHY_RULES: dict[str, list[dict]] = {
     "whoami": [{"match": "", "responses": [{"out": "harness-user\n"}]}],
 }
 
-# The four right-hand pipeline members. In THIS script each of these tools is
-# invoked in exactly one place and always as the receiving end of a pipe:
-#   printf ... | sort -u          counter_sockets | head -1
-#   grep -iE ... | tail -20       rdc repo up ... | tee "$log"
-# See the module docstring: their position in the log is a scheduling outcome,
-# so they are compared as a multiset instead of in sequence.
+# The four right-hand pipeline members. In THIS script each of these tools is invoked in exactly one place and always as the receiving end of a pipe: printf ... | sort -u counter_sockets | head -1 grep -iE ... | tail -20 rdc repo up ... | tee "$log" See the module docstring: their position in the log is a scheduling outcome, so they are compared as a multiset instead of in
+# sequence.
 DRIFTING_TOOLS = ("sort", "head", "tail", "tee")
 
 # A recorded call starts with one of these names followed by a TAB or a line
@@ -262,8 +234,7 @@ def _records(raw: str) -> list[str]:
     naive `splitlines()` would shred five of the eight remote scripts."""
     records: list[str] = []
     current: str | None = None
-    # ONE trailing newline is the last record's TERMINATOR, not part of it. Any
-    # newline INSIDE a record is kept, because `PROJECTS_CMD` genuinely ends
+    # ONE trailing newline is the last record's TERMINATOR, not part of it. Any newline INSIDE a record is kept, because `PROJECTS_CMD` genuinely ends
     # with one and the empty continuation line it leaves is real.
     raw = raw.removesuffix("\n")
     for line in raw.split("\n"):
@@ -413,8 +384,7 @@ def _run(
         "USER": "harness-user",
         "PYTHONDONTWRITEBYTECODE": "1",
         # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the
-        # only thing the fixture borrows from outside itself.
+        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     for name, value in (env_extra or {}).items():
@@ -735,11 +705,9 @@ def test_every_external_is_reached_in_order_on_the_passing_run(tmp_path):
 
     names = [line.split("\t")[0] for line in out["calls"]]
     assert len(out["calls"]) == 41, names
-    # Nine remote payloads: binds, projects, two `counter_sockets`, and five
-    # `counter_value` readings (two while waiting, one on the fork, two after).
+    # Nine remote payloads: binds, projects, two `counter_sockets`, and five `counter_value` readings (two while waiting, one on the fork, two after).
     assert names.count("ssh") == 9, names
-    # Twenty-three CLI calls: three in phase 0, twelve across the two cleanups,
-    # and eight doing the actual work.
+    # Twenty-three CLI calls: three in phase 0, twelve across the two cleanups, and eight doing the actual work.
     assert names.count("rdc") == 23, names
     assert names.count("cat") == 2, "the two sidecar files are written by a real cat"
     assert names.count("sleep") == 2, "one 2s wait in the counter loop, one 3s after the fork"
@@ -747,9 +715,7 @@ def test_every_external_is_reached_in_order_on_the_passing_run(tmp_path):
     assert names.count("rm") == 2, "the sidecar directory and the debug log"
     assert names.count("grep") == 1, "the one `grep -q restored from checkpoint`"
 
-    # The three drifting members that a passing run reaches, by exact argv, so
-    # the multiset comparison in the parametrized cases is not merely discarding
-    # them. `tail -20` belongs to the console#440 FAILURE report and is absent.
+    # The three drifting members that a passing run reaches, by exact argv, so the multiset comparison in the parametrized cases is not merely discarding them. `tail -20` belongs to the console#440 FAILURE report and is absent.
     drifting = [line.split("\t") for line in out["drifting"]]
     assert [line[:2] for line in drifting] == [
         ["head", "-1"],
@@ -946,8 +912,7 @@ def test_the_drift_is_real_and_the_split_survives_repetition(tmp_path):
         new = _run(PORT_REL, root, tmp_path, binder)
         assert new["calls"] == old["calls"], "the ordered spine diverged"
         assert new["drifting"] == old["drifting"], "the drifting multiset diverged"
-        # All four right-hand members are reached on this path: the console#440
-        # failure report is what brings `tail -20` in beside the other three.
+        # All four right-hand members are reached on this path: the console#440 failure report is what brings `tail -20` in beside the other three.
         assert [line.split("\t")[0] for line in old["drifting"]] == [
             "head",
             "sort",
@@ -979,8 +944,7 @@ def test_the_record_splitter_keeps_multiline_ssh_payloads_whole():
         "ssh\t-i\tk\tsudo bash -c '\n  for x; do\n  done\n'",
         "sleep\t2",
     ]
-    # A payload whose own last character is a newline (PROJECTS_CMD is one)
-    # leaves an empty continuation line, and that line is part of the record.
+    # A payload whose own last character is a newline (PROJECTS_CMD is one) leaves an empty continuation line, and that line is part of the record.
     assert _records("ssh\tpayload\n\nrm\t-f\tx\n") == ["ssh\tpayload\n", "rm\t-f\tx"]
 
 
@@ -1019,12 +983,9 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
         assert "mktemp: command not found" in text, "%s said %r" % (name, text)
 
 
-# ---------------------------------------------------------------------------
-# The arithmetic helper, exercised directly. These are the eight shapes the
+# --------------------------------------------------------------------------- The arithmetic helper, exercised directly. These are the eight shapes the
 # module docstring names as the driven boundary; each was measured against bash
-# 5 on 2026-09-14 and the parametrized cases above drive five of them through
-# both subjects end to end.
-# ---------------------------------------------------------------------------
+# 5 on 2026-09-14 and the parametrized cases above drive five of them through both subjects end to end. ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(

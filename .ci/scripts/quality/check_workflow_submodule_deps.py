@@ -51,8 +51,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# A job running one of these sweeps a package's test files, so those files are
-# reachable from the job even though no step names them.
+# A job running one of these sweeps a package's test files, so those files are reachable from the job even though no step names them.
 TEST_RUNNERS = re.compile(r"\b(vitest|jest|playwright)\b")
 
 # Bounded, because a cycle in npm scripts would otherwise spin forever.
@@ -85,8 +84,7 @@ def npm_scripts() -> dict[str, str]:
         except json.JSONDecodeError:
             continue
         for key, cmd in (data.get("scripts") or {}).items():
-            # Root wins on a collision: that is the one `npm run <key>` from the
-            # repo root resolves to, which is what a workflow step does.
+            # Root wins on a collision: that is the one `npm run <key>` from the repo root resolves to, which is what a workflow step does.
             out.setdefault(key, cmd)
     return out
 
@@ -107,10 +105,7 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
     ]
 
 
-# Build OUTPUTS are not source. A bundler inlines the paths it read at build
-# time, so dist/cli-bundle.cjs contains the string "private/renet/..." without
-# the job ever opening that file. Flagging those would train a reader to ignore
-# this gate, which is worse than not having it.
+# Build OUTPUTS are not source. A bundler inlines the paths it read at build time, so dist/cli-bundle.cjs contains the string "private/renet/..." without the job ever opening that file. Flagging those would train a reader to ignore this gate, which is worse than not having it.
 GENERATED = re.compile(r"(^|/)(dist|build|out|coverage|node_modules|\.cache)(/|$)")
 
 
@@ -118,10 +113,7 @@ def referenced_repo_files(text: str) -> list[pathlib.Path]:
     """Repo-relative paths named in a command that actually exist on disk."""
     out: list[pathlib.Path] = []
     for token in re.findall(r"[\w./-]+\.(?:sh|ts|tsx|js|mjs|cjs|py)", text):
-        # NOT lstrip("./"): that strips a CHARACTER SET, so ".ci/scripts/x.sh"
-        # became "ci/scripts/x.sh", resolved to nothing, and the whole
-        # reachability walk stopped at the step text. The gate then passed a
-        # replay of the very bug it was written for.
+        # NOT lstrip("./"): that strips a CHARACTER SET, so ".ci/scripts/x.sh" became "ci/scripts/x.sh", resolved to nothing, and the whole reachability walk stopped at the step text. The gate then passed a replay of the very bug it was written for.
         rel = token.removeprefix("./")
         if GENERATED.search(rel):
             continue
@@ -143,10 +135,7 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
     out: list[tuple[str, str]] = []
     swept_tests = False
 
-    # The queue carries the scannable flag with each entry. Without it a script
-    # BODY popped off the queue was relabelled "<step run:>" and scanned as
-    # though the job had typed it, which put every false positive straight back
-    # after they had just been removed.
+    # The queue carries the scannable flag with each entry. Without it a script BODY popped off the queue was relabelled "<step run:>" and scanned as though the job had typed it, which put every false positive straight back after they had just been removed.
     queue = [(c, 0, True) for c in commands]
     while queue:
         cmd, depth, scannable = queue.pop()
@@ -155,32 +144,16 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
         seen_cmds.add(cmd)
         out.append(("<step run:>" if scannable else "<script body>", cmd, scannable))
 
-        # DEPTH-CAPPED. scripts/ci-runner/manifest.ts lists `npm run <key>` for
-        # every gate in the repo as DATA, so walking it once pulled in every
-        # gate and attributed account-config-auth to quality-static, which does
-        # not run it -- quality-go does, and that job checks out its submodules.
+        # DEPTH-CAPPED. scripts/ci-runner/manifest.ts lists `npm run <key>` for every gate in the repo as DATA, so walking it once pulled in every gate and attributed account-config-auth to quality-static, which does not run it -- quality-go does, and that job checks out its submodules.
         # A step and the script it runs are within two hops; a manifest reached
         # through another script is further out and is a catalogue, not a call.
         if depth <= NPM_RESOLVE_DEPTH:
-            # An npm script IS executed, so its text is scannable -- BUT ONLY IF
-            # THE THING THAT NAMED IT WAS. `scannable`, not `True`, and the
-            # literal `True` here re-opened the exact hole the queue's own
-            # scannable flag was added to close.
+            # An npm script IS executed, so its text is scannable -- BUT ONLY IF THE THING THAT NAMED IT WAS. `scannable`, not `True`, and the literal `True` here re-opened the exact hole the queue's own scannable flag was added to close.
             #
-            # A referenced FILE body is queued non-scannable because naming a
-            # path is not reading one. It then arrived here and promoted every
-            # `npm run` inside it back to scannable, so a job that merely NAMES a
-            # script which happens to mention `npm run test:unit` was treated as
-            # running the tests. That triggered the whole-package test sweep and
-            # attributed packages/cli/src/commands/__tests__/datastore-prune-parser.test.ts
-            # -- which really does read private/renet/pkg/prune/datastore.go -- to
-            # `quality-static`, a job that runs no tests at all. The test's own
-            # header names the lane it belongs to: L6 PACKAGES, which does check
-            # out submodules.
+            # A referenced FILE body is queued non-scannable because naming a path is not reading one. It then arrived here and promoted every `npm run` inside it back to scannable, so a job that merely NAMES a script which happens to mention `npm run test:unit` was treated as running the tests. That triggered the whole-package test sweep and attributed
+            # packages/cli/src/commands/__tests__/datastore-prune-parser.test.ts -- which really does read private/renet/pkg/prune/datastore.go -- to `quality-static`, a job that runs no tests at all. The test's own header names the lane it belongs to: L6 PACKAGES, which does check out submodules.
             #
-            # The intended hop still works, because it starts scannable: a STEP
-            # running `npm run test:unit` reaches `vitest` with the flag True the
-            # whole way down.
+            # The intended hop still works, because it starts scannable: a STEP running `npm run test:unit` reaches `vitest` with the flag True the whole way down.
             queue.extend(
                 (scripts[key], depth + 1, scannable)
                 for key in re.findall(r"npm run ([\w:.-]+)", cmd)
@@ -195,32 +168,16 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
                 body = path.read_text(errors="replace")
             except OSError:
                 continue
-            # WALKED, NOT SCANNED. A shell library names paths as constants and is
-            # sourced almost everywhere: .ci/config/constants.sh defines a
-            # private/renet Dockerfile path and is reachable from ten jobs that
-            # never open it. Treating a definition as a read produced ten false
-            # positives at once, and a gate that cries wolf gets ignored the one
-            # time it is right. Bodies are still WALKED for further commands,
-            # which is how `npm run test:unit` reaches `vitest`, and that hop is
-            # what catches the real defect.
+            # WALKED, NOT SCANNED. A shell library names paths as constants and is sourced almost everywhere: .ci/config/constants.sh defines a private/renet Dockerfile path and is reachable from ten jobs that never open it. Treating a definition as a read produced ten false positives at once, and a gate that cries wolf gets ignored the one time it is right. Bodies are still WALKED
+            # for further commands, which is how `npm run test:unit` reaches `vitest`, and that hop is what catches the real defect.
             out.append((str(path.relative_to(REPO)), body, False))
             queue.append((body, depth + 1, False))
 
-        # THE HOP THAT MATTERS. A test runner reaches files no step names.
-        # Only a command the job RUNS triggers the sweep. Letting a walked
-        # script body trigger it made every job that transitively mentions
-        # vitest sweep all 227 test files, which flagged eight jobs that never
-        # run a test.
+        # THE HOP THAT MATTERS. A test runner reaches files no step names. Only a command the job RUNS triggers the sweep. Letting a walked script body trigger it made every job that transitively mentions vitest sweep all 227 test files, which flagged eight jobs that never run a test.
         if not swept_tests and scannable and TEST_RUNNERS.search(cmd):
             swept_tests = True
-            # Scope to the workspace the job named, if it named one. The -w flag
-            # may sit on the invoking command rather than the resolved script, so
-            # look across everything walked so far.
-            # EVERY workspace named, not the first one found. seen_cmds is a
-            # SET, so picking one was nondeterministic: run-unit.sh names
-            # @rediacc/shared and @rediacc/cli, and whenever the set yielded
-            # shared first the CLI's tests went unswept and the gate passed a
-            # replay of the exact bug it was written for.
+            # Scope to the workspace the job named, if it named one. The -w flag may sit on the invoking command rather than the resolved script, so look across everything walked so far. EVERY workspace named, not the first one found. seen_cmds is a SET, so picking one was nondeterministic: run-unit.sh names @rediacc/shared and @rediacc/cli, and whenever the set yielded shared
+            # first the CLI's tests went unswept and the gate passed a replay of the exact bug it was written for.
             workspaces = sorted(
                 {
                     m.group(1)
@@ -241,11 +198,9 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
     return out
 
 
-# A path NAMED is not a path READ. check-locale-sources.ts explains itself with
-# the sentence "the ONE deliberate copy: private/account/Dockerfile compiles this
+# A path NAMED is not a path READ. check-locale-sources.ts explains itself with the sentence "the ONE deliberate copy: private/account/Dockerfile compiles this
 # package in isolation", and nothing there opens anything. Flagging prose would
-# make this gate noise, so a hit only counts when the same line also carries
-# something that actually reaches the filesystem or executes the file.
+# make this gate noise, so a hit only counts when the same line also carries something that actually reaches the filesystem or executes the file.
 ACCESS = re.compile(
     r"readFileSync|readFile|existsSync|statSync|createReadStream|"
     r"path\.resolve|path\.join|fileURLToPath|"
@@ -254,15 +209,11 @@ ACCESS = re.compile(
 )
 
 
-# The window is LINES, not one line, and that is the whole difference between a
-# gate that works and one that ships green. The defect this exists for looks like
+# The window is LINES, not one line, and that is the whole difference between a gate that works and one that ships green. The defect this exists for looks like
 #     const RENET_PRUNE_GO = path.resolve(
-#       path.dirname(fileURLToPath(import.meta.url)),
-#       '../../../../../private/renet/pkg/prune/datastore.go'
+# path.dirname(fileURLToPath(import.meta.url)), '../../../../../private/renet/pkg/prune/datastore.go'
 #     );
-# where the path literal sits alone on its line and every access verb is above
-# it. A one-line window read straight past the real bug: replaying it against
-# the gate was the only reason this was caught before shipping.
+# where the path literal sits alone on its line and every access verb is above it. A one-line window read straight past the real bug: replaying it against the gate was the only reason this was caught before shipping.
 ACCESS_WINDOW = 4
 
 # An existence check next to the read means the caller already handles absence.
@@ -306,12 +257,8 @@ def first_read(text: str, sub_pattern: re.Pattern) -> re.Match | None:
         lo = max(0, idx - ACCESS_WINDOW)
         hi = min(len(lines), idx + ACCESS_WINDOW + 1)
         window = "\n".join(lines[lo:hi])
-        # A GUARDED read is not a dependency. crypto.test.ts wraps its
-        # cross-language fixtures in describe.skipIf(!existsSync(...)) precisely
-        # so the suite still runs without the account submodule, and flagging
-        # that would punish the correct pattern. The datastore-prune test throws
-        # on purpose instead, and says so in its own comment, which is what makes
-        # it a real dependency rather than an optional one.
+        # A GUARDED read is not a dependency. crypto.test.ts wraps its cross-language fixtures in describe.skipIf(!existsSync(...)) precisely so the suite still runs without the account submodule, and flagging that would punish the correct pattern. The datastore-prune test throws on purpose instead, and says so in its own comment, which is what makes it a real dependency rather
+        # than an optional one.
         if GUARDED.search(window):
             continue
         if ACCESS.search(window):
@@ -320,11 +267,7 @@ def first_read(text: str, sub_pattern: re.Pattern) -> re.Match | None:
 
 
 def job_takes_submodules(job: dict) -> bool:
-    # A job may init its submodules with an explicit `git submodule update`
-    # instead of actions/checkout's flag, and housekeeping.yml does exactly that.
-    # Recognising only the actions/checkout form would report a job that is
-    # perfectly correct, and a gate that cries wolf gets ignored the one time it
-    # is right.
+    # A job may init its submodules with an explicit `git submodule update` instead of actions/checkout's flag, and housekeeping.yml does exactly that. Recognising only the actions/checkout form would report a job that is perfectly correct, and a gate that cries wolf gets ignored the one time it is right.
     for step in job.get("steps") or []:
         if isinstance(step, dict) and re.search(
             r"git submodule (update|init)", str(step.get("run") or "")
@@ -355,12 +298,8 @@ def scan(workflow_files: list[pathlib.Path], subs: list[str], scripts: dict[str,
     """Returns (findings, jobs_scanned)."""
     findings = []
     jobs_scanned = 0
-    # The lookbehind rejects a WORD character only. It must NOT reject a
-    # preceding slash: the defect this gate exists for names its file as
-    # '../../../../../private/renet/pkg/prune/datastore.go', and excluding a
-    # leading slash made the rule blind to every relative reference -- which is
-    # most of them. The gate ran green against a replay of the real bug until
-    # this was found, so the replay, not the green, is what proved it.
+    # The lookbehind rejects a WORD character only. It must NOT reject a preceding slash: the defect this gate exists for names its file as '../../../../../private/renet/pkg/prune/datastore.go', and excluding a leading slash made the rule blind to every relative reference -- which is most of them. The gate ran green against a replay of the real bug until this was found, so the
+    # replay, not the green, is what proved it.
     sub_pattern = (
         re.compile(r"(?<![\w])(" + "|".join(re.escape(s) for s in subs) + r")/[\w./-]+")
         if subs
@@ -393,8 +332,7 @@ def scan(workflow_files: list[pathlib.Path], subs: list[str], scripts: dict[str,
                     continue
                 hit = first_read(text, sub_pattern)
                 if hit:
-                    # The controls scan a planted file outside the repo, so this
-                    # must not assume the path is relative to it.
+                    # The controls scan a planted file outside the repo, so this must not assume the path is relative to it.
                     try:
                         where = str(wf.relative_to(REPO))
                     except ValueError:

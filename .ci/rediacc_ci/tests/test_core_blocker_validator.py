@@ -47,8 +47,7 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/lib/blocker-validator.sh"
 PORT = ".ci/rediacc_ci/core/blocker_validator.py"
 
-# The two drivers. Both take a list path and an optional comment character, both
-# render the two tables the same way, and both exit with the function's rc.
+# The two drivers. Both take a list path and an optional comment character, both render the two tables the same way, and both exit with the function's rc.
 #
 # `printf '%s\n' "${!A[@]}" | sort` and NOT `${!A[@]}` in file order: the bash
 # table has no order worth comparing, so both sides sort before printing and the
@@ -56,17 +55,12 @@ PORT = ".ci/rediacc_ci/core/blocker_validator.py"
 # the two sorts agree byte for byte.
 #
 # AND `while IFS= read -r k` RATHER THAN `for k in $(...)`, which is not style.
-# The corpus below deliberately contains an entry token of `*`, the twin stores
-# it correctly, and an unquoted command substitution in a `for` header then
-# PATHNAME-EXPANDS it against the driver's cwd: the first cut of this driver
-# exited 127 with `A[$k]: unbound variable` on that one case, which reads as a
-# defect in the library and was a defect in the harness.
+# The corpus below deliberately contains an entry token of `*`, the twin stores it correctly, and an unquoted command substitution in a `for` header then PATHNAME-EXPANDS it against the driver's cwd: the first cut of this driver exited 127 with `A[$k]: unbound variable` on that one case, which reads as a defect in the library and was a defect in the harness.
 #
 # `[[ -n "$k" ]] || continue` is the second harness-only guard, for the opposite
 # end: `printf '%s\n' "${!A[@]}"` on an EMPTY table prints one blank line, and
 # `${A[]}` is `bad array subscript` and another 127. No real entry token can be
-# empty, because `allowlist.parse_text` drops a zero-length token, so the guard
-# discards nothing the corpus can produce.
+# empty, because `allowlist.parse_text` drops a zero-length token, so the guard discards nothing the corpus can produce.
 BASH_PAIRS = (
     """
 set -uo pipefail
@@ -122,9 +116,7 @@ def _sh(text: str) -> str:
     return "'" + text.replace("'", "'\\''") + "'"
 
 
-# ---------------------------------------------------------------------------
-# The corpus
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The corpus ---------------------------------------------------------------------------
 
 # (id, comment_char, text). Every list a real gate could hand either reader.
 LISTS = [
@@ -143,19 +135,16 @@ LISTS = [
     ("empty-file", "#", ""),
     ("comments-only", "#", "# nothing here\n"),
     ("slash-comment-char", "//", "// BLOCKER: %s\nA-1\n" % GOOD),
-    # The `#` in a `//` list is DATA, not a comment. A reader that hard-coded the
-    # comment character parses this as one entry named `A` and no reason.
+    # The `#` in a `//` list is DATA, not a comment. A reader that hard-coded the comment character parses this as one entry named `A` and no reason.
     ("slash-with-hash-in-entry", "//", "// BLOCKER: %s\nA#1\n" % GOOD),
-    # Shell-hostile entry tokens. Every one of these crosses a `read`, an
-    # associative-array subscript and a `printf` on the bash side.
+    # Shell-hostile entry tokens. Every one of these crosses a `read`, an associative-array subscript and a `printf` on the bash side.
     ("hostile-entry-glob", "#", "# BLOCKER: %s\n*\n" % GOOD),
     ("hostile-entry-at", "#", "# BLOCKER: %s\n@\n" % GOOD),
     ("hostile-entry-quote", "#", "# BLOCKER: %s\nit's-a-pkg\n" % GOOD),
     ("hostile-entry-dollar", "#", "# BLOCKER: %s\n$HOME\n" % GOOD),
     # A reason with an interior tab. The twin transports rows as `entry<TAB>reason`
     # and reads them back with `IFS=$'\t' read -r key value`; TAB is IFS
-    # WHITESPACE in bash, so this is the shape that would collapse if the reason
-    # could ever begin or end with one. It cannot: `parse_text` strips.
+    # WHITESPACE in bash, so this is the shape that would collapse if the reason could ever begin or end with one. It cannot: `parse_text` strips.
     ("reason-with-interior-tab", "#", "# BLOCKER: %s\tand\tmore words here\nA-1\n" % GOOD),
     ("unicode-reason", "#", "# BLOCKER: %s (éèü 中文)\nA-1\n" % GOOD),
     ("trailing-whitespace-entry", "#", "# BLOCKER: %s\nA-1   \n" % GOOD),
@@ -199,9 +188,7 @@ def both_verify(path: str, comment_char: str = "#"):
     return old, new
 
 
-# ---------------------------------------------------------------------------
-# 1. parse_blockered_list, byte for byte
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. parse_blockered_list, byte for byte ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(("case", "cc", "text"), LISTS, ids=[c[0] for c in LISTS])
@@ -236,9 +223,7 @@ def test_a_directory_is_also_empty_tables_and_success(tmp_path):
     assert old == (0, "", "")
 
 
-# ---------------------------------------------------------------------------
-# 2. verify_all_blockers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. verify_all_blockers ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(("case", "cc", "text"), LISTS, ids=[c[0] for c in LISTS])
@@ -294,9 +279,7 @@ def test_an_empty_table_passes_without_calling_the_validator(listfile):
     assert bv.verify_all_blockers("irrelevant", tables.blocker) is True
 
 
-# ---------------------------------------------------------------------------
-# 3. validate_blocker_quality
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. validate_blocker_quality ---------------------------------------------------------------------------
 
 REASONS = [
     ("good", GOOD),
@@ -348,17 +331,13 @@ def test_the_port_carries_no_phrase_table():
     )
     assert hits < 10, "the port carries %d canonical phrase(s) as quoted literals" % hits
     # PROSE MAY NAME THE MIRROR; CODE MAY NOT RE-DECLARE IT. The port's docstring
-    # explains at length why the twin keeps `LOW_EFFORT_BLOCKER_PATTERNS` and why
-    # that argument does not travel, so a bare substring test fails on the
-    # explanation. What must not exist is an ASSIGNMENT.
+    # explains at length why the twin keeps `LOW_EFFORT_BLOCKER_PATTERNS` and why that argument does not travel, so a bare substring test fails on the explanation. What must not exist is an ASSIGNMENT.
     for name in ("LOW_EFFORT_BLOCKER_PATTERNS", "LOW_EFFORT_BLOCKER_SUBSTRINGS"):
         assert ("%s = " % name) not in text, "the port re-declares %s" % name
         assert ("%s: " % name) not in text, "the port re-declares %s" % name
 
 
-# ---------------------------------------------------------------------------
-# 4. The RS frame, which is a control and not a formatting detail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. The RS frame, which is a control and not a formatting detail ---------------------------------------------------------------------------
 
 
 def test_frame_writes_exactly_what_the_canonical_verify_rows_writes(tmp_path):
@@ -443,9 +422,7 @@ def test_the_zero_frame_message_is_unreachable_on_both_sides(tmp_path, capsys):
     assert "emitted no message" not in out.out + out.err
 
 
-# ---------------------------------------------------------------------------
-# 5. The two divergences, asserted AS divergences
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. The two divergences, asserted AS divergences ---------------------------------------------------------------------------
 
 
 def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
@@ -472,8 +449,7 @@ def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
 
     # The refusal itself, which is the part a caller reads, is identical apart
     # from the parenthetical: the twin reports the CHILD'S EXIT CODE and the port
-    # has no child, so it reports the exception type instead of claiming an exit
-    # code that never happened.
+    # has no child, so it reports the exception type instead of claiming an exit code that never happened.
     assert "could not parse %s (exit 1)" % target in old[2]
     assert "could not parse %s (UnicodeDecodeError)" % target in new[2]
     tail = "  This is a broken reader, not an empty allowlist. Refusing to report zero entries."
@@ -495,9 +471,7 @@ def test_the_broken_reader_raises_rather_than_returning_empty_tables(tmp_path):
         bv.parse_blockered_list(target)
 
 
-# ---------------------------------------------------------------------------
-# 6. The planted defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 6. The planted defects ---------------------------------------------------------------------------
 
 
 def _digest(rel: str) -> str:
@@ -529,18 +503,14 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path):
     """
     before = _digest(PORT)
 
-    # PLANT 1: the missing-file contract inverted, which is how a port turns an
-    # absent allowlist into a refusal five gates do not expect.
+    # PLANT 1: the missing-file contract inverted, which is how a port turns an absent allowlist into a refusal five gates do not expect.
     m1 = _load_mutated(tmp_path, "if not path.is_file():", "if path.is_file() and False:", "bv_p1")
     assert bv.parse_blockered_list(tmp_path / "nope") == bv.Tables({}, {})
-    # `ListNotFoundError` is a `FileNotFoundError`, so the port's own broken-reader
-    # arm catches it and re-raises. The type is named rather than `Exception`:
-    # a blind `raises` would also pass on an AttributeError from a mis-edited plant.
+    # `ListNotFoundError` is a `FileNotFoundError`, so the port's own broken-reader arm catches it and re-raises. The type is named rather than `Exception`: a blind `raises` would also pass on an AttributeError from a mis-edited plant.
     with pytest.raises(m1.BrokenReaderError):
         m1.parse_blockered_list(tmp_path / "nope")
 
-    # PLANT 2: the RS reader stops counting and treats every line as a header,
-    # which is precisely the forgery the counted frame exists to prevent.
+    # PLANT 2: the RS reader stops counting and treats every line as a header, which is precisely the forgery the counted frame exists to prevent.
     m2 = _load_mutated(tmp_path, "count = int(count_text)", "count = 0", "bv_p2")
     good_stream = bv.frame(["alpha\nbeta"])
     assert bv.replay_frames(good_stream) is True
@@ -549,8 +519,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path):
         "unframed line must refuse; it did not, so the frame is not being read"
     )
 
-    # PLANT 3: an entry with NO reason silently passes, which is the exact hole
-    # `verify_all_blockers` exists to close.
+    # PLANT 3: an entry with NO reason silently passes, which is the exact hole `verify_all_blockers` exists to close.
     m3 = _load_mutated(
         tmp_path,
         "        if not reason:\n            failures.append(allowlist.missing_reason(entry, file))\n            continue",

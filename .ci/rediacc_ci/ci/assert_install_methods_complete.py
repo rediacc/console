@@ -50,14 +50,10 @@ from rediacc_ci import log
 
 UNSET = "<unset>"
 
-# Where the twin writes when Actions has given it nowhere: `/dev/null`, so the
-# table is discarded rather than mixed into stdout. Reproduced exactly, because
-# a port that fell back to stdout would put table rows into a stream callers
-# read as data.
+# Where the twin writes when Actions has given it nowhere: `/dev/null`, so the table is discarded rather than mixed into stdout. Reproduced exactly, because a port that fell back to stdout would put table rows into a stream callers read as data.
 DEFAULT_SUMMARY = "/dev/null"
 
-# label|env-var-suffix, in the twin's order. The order is load-bearing: it is
-# the order of the rows in the rendered job-summary table.
+# label|env-var-suffix, in the twin's order. The order is load-bearing: it is the order of the rows in the rendered job-summary table.
 PLATFORMS = (
     ("Linux x64 (Binary, Docker, APT, DNF, APK, Pacman, Quick, Linuxbrew)", "LINUX_X64"),
     ("Linux arm64 (Binary, Docker, Quick)", "LINUX_ARM64"),

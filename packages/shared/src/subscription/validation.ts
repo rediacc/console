@@ -152,9 +152,7 @@ export function isInGracePeriod(
   const grace = typeof gracePeriodEnds === 'string' ? new Date(gracePeriodEnds) : gracePeriodEnds;
   const checkIn = typeof lastCheckIn === 'string' ? new Date(lastCheckIn) : lastCheckIn;
 
-  // Grace period is active if:
-  // 1. Current time is past the check-in interval
-  // 2. Current time is before grace period ends
+  // Grace period is active if: 1. Current time is past the check-in interval 2. Current time is before grace period ends
   const checkInAge = now.getTime() - checkIn.getTime();
   const checkInIntervalMs = SUBSCRIPTION_CONFIG.checkInIntervalHours * 60 * 60 * 1000;
 

@@ -159,9 +159,7 @@ def test_normal_profile_renders(gate, tmp_path):
 
 
 def test_per_minute_rows_are_per_minute(gate, tmp_path):
-    # Shape check: 37 samples at 10s is ~6 minutes, so there must be 6-7 rows, not
-    # 1 and not 37. A bucketer that collapsed everything into one row would still
-    # "render a table" and pass a substring assertion.
+    # Shape check: 37 samples at 10s is ~6 minutes, so there must be 6-7 rows, not 1 and not 37. A bucketer that collapsed everything into one row would still "render a table" and pass a substring assertion.
     sample = tmp_path / "s.tsv"
     write_meta(sample)
     write_samples(sample, 37, 10, 420, 1200)
@@ -183,9 +181,7 @@ def test_short_sample_file_fails_the_floor(gate, tmp_path):
 
 
 def test_starved_sampler_fails_the_ratio(gate, tmp_path):
-    # Above the hard floor of 3, below 0.8x expected: the sampler ran but was
-    # starved or died mid-job. CONTROL: the same count with a matching wall clock
-    # passes, so the failure is the RATIO and not the count.
+    # Above the hard floor of 3, below 0.8x expected: the sampler ran but was starved or died mid-job. CONTROL: the same count with a matching wall clock passes, so the failure is the RATIO and not the count.
     starved = tmp_path / "s.tsv"
     write_meta(starved)
     write_samples(starved, 10, 10, 420, 1200)
@@ -218,8 +214,7 @@ def test_all_zero_cpu_fails(gate, tmp_path):
     gate.assert_exit_code(1, result.rc, "an all-zero CPU series must fail")
     gate.assert_contains(result.combined, "degenerate CPU series", "names the degenerate series")
 
-    # CONTROL: one single non-zero CPU sample in an otherwise identical file must
-    # pass. Without this, a checker that failed EVERYTHING would look right.
+    # CONTROL: one single non-zero CPU sample in an otherwise identical file must pass. Without this, a checker that failed EVERYTHING would look right.
     idle = tmp_path / "ok.tsv"
     write_meta(idle)
     with open(idle, "a", encoding="utf-8") as handle:
@@ -281,10 +276,7 @@ def test_host_leak_fails(gate, tmp_path):
 
 
 def test_proc_host_tier_advises_only_when_the_label_disambiguates(gate, tmp_path):
-    # The direction that matters most, and the one easiest to get backwards.
-    # PROC_HOST on a real VM is TRUSTWORTHY (ubuntu-latest jobs own the whole VM,
-    # so host-wide and job-wide are the same numbers) and muting the advisor there
-    # would silence it across the entire population this tool exists to triage.
+    # The direction that matters most, and the one easiest to get backwards. PROC_HOST on a real VM is TRUSTWORTHY (ubuntu-latest jobs own the whole VM, so host-wide and job-wide are the same numbers) and muting the advisor there would silence it across the entire population this tool exists to triage.
     vm = tmp_path / "vm.tsv"
     write_meta(vm, "PROC_HOST", "ubuntu-latest")
     write_samples(vm, 37, 10, 420, 1200)
@@ -326,9 +318,7 @@ def test_proc_host_tier_advises_only_when_the_label_disambiguates(gate, tmp_path
 
 
 def test_mislabelled_container_is_caught(gate, tmp_path):
-    # The most dangerous shape of all, and the one a label-armed guard cannot see:
-    # a slim job whose label WRONGLY says ubuntu-latest. HOST_LEAK is armed off the
-    # label so it never fires, and before this check the report answered with a
+    # The most dangerous shape of all, and the one a label-armed guard cannot see: a slim job whose label WRONGLY says ubuntu-latest. HOST_LEAK is armed off the label so it never fires, and before this check the report answered with a
     # confident "MOVE TO ubuntu-slim". Missing labels go mute; wrong labels lie.
     mislabelled = tmp_path / "mislabelled.tsv"
     write_meta(
@@ -356,8 +346,7 @@ def test_mislabelled_container_is_caught(gate, tmp_path):
         result.combined, "MOVE TO ubuntu-slim", "must not recommend a move on host numbers"
     )
 
-    # CONTROL: byte-identical except the fingerprint says HOST. A genuine VM must
-    # still get its advice, or the check would just be a blanket mute on PROC_HOST.
+    # CONTROL: byte-identical except the fingerprint says HOST. A genuine VM must still get its advice, or the check would just be a blanket mute on PROC_HOST.
     genuine = tmp_path / "genuine-vm.tsv"
     write_meta(
         genuine,
@@ -381,9 +370,7 @@ def test_mislabelled_container_is_caught(gate, tmp_path):
 
 
 def test_advisory_states_its_assumption_not_a_fact(gate, tmp_path):
-    # The caveat used to assert "valid because 'X' is a full VM the job owns", a
-    # claim whose only evidence was the label, i.e. the exact input that is wrong
-    # in the case above. It must state the assumption instead.
+    # The caveat used to assert "valid because 'X' is a full VM the job owns", a claim whose only evidence was the label, i.e. the exact input that is wrong in the case above. It must state the assumption instead.
     vm = tmp_path / "vm.tsv"
     write_meta(vm, "PROC_HOST", "ubuntu-latest")
     write_samples(vm, 37, 10, 420, 1200)
@@ -396,8 +383,7 @@ def test_advisory_states_its_assumption_not_a_fact(gate, tmp_path):
 
 
 def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
-    # The label is only load-bearing when the cgroup read FAILED. When it
-    # succeeded, the enforced quota IS the box.
+    # The label is only load-bearing when the cgroup read FAILED. When it succeeded, the enforced quota IS the box.
     slim_sized = tmp_path / "slimsized.tsv"
     write_meta(slim_sized, "CGROUP_V2", "unknown")
     write_samples(slim_sized, 37, 10, 420, 1200)
@@ -416,9 +402,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
         result.combined, "MOVE TO ubuntu-slim", "must not tell a slim job to move to slim"
     )
 
-    # A WRONG label must lose to the enforced quota exactly as a missing one does.
-    # This was live: a job under a kernel-enforced 1-core/5GB quota, labelled
-    # ubuntu-latest, was told it was "on a 4-vCPU VM" and should move to slim,
+    # A WRONG label must lose to the enforced quota exactly as a missing one does. This was live: a job under a kernel-enforced 1-core/5GB quota, labelled ubuntu-latest, was told it was "on a 4-vCPU VM" and should move to slim,
     # where it already was. A label is a claim; a quota is a fact.
     mislabelled = tmp_path / "mislabelled.tsv"
     write_meta(mislabelled, "CGROUP_V2", "ubuntu-latest", 10, "CONTAINER")
@@ -441,8 +425,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
         result.combined, "4x the core-minutes", "must not claim a 4-vCPU VM for a 1-core quota"
     )
 
-    # CONTROL: same missing label, but a 4-core/16GB quota. The ceiling now says
-    # this is NOT a slim box, so the advisor must recommend the move instead.
+    # CONTROL: same missing label, but a 4-core/16GB quota. The ceiling now says this is NOT a slim box, so the advisor must recommend the move instead.
     big = tmp_path / "vmsized.tsv"
     write_meta(
         big, "CGROUP_V2", "unknown", 10, "UNKNOWN", ceil_cpu=4000, ceil_mem=16 * 1024 * 1024 * 1024
@@ -483,9 +466,7 @@ def test_long_job_buckets_to_five_minutes(gate, tmp_path):
 
 
 def test_step_shorter_than_interval_is_unsampled_not_zero(gate, tmp_path):
-    # The single most dangerous rendering: a 4-second step at a 10s interval has
-    # nothing to sample, and printing "0.00 cores" would read as "this job is free"
-    # to anyone deciding where to put it.
+    # The single most dangerous rendering: a 4-second step at a 10s interval has nothing to sample, and printing "0.00 cores" would read as "this job is free" to anyone deciding where to put it.
     sample = tmp_path / "s.tsv"
     write_meta(sample)
     result = run_panel(gate, sample, 4, "true")
@@ -518,8 +499,7 @@ def test_missing_sample_file_says_so(gate, tmp_path):
 
 
 def test_strict_flag_is_the_only_difference(gate, tmp_path):
-    # The strict input is the whole failure policy, so prove it flips BOTH ways on
-    # one identical input. `continue-on-error` being banned is why this seam exists.
+    # The strict input is the whole failure policy, so prove it flips BOTH ways on one identical input. `continue-on-error` being banned is why this seam exists.
     sample = tmp_path / "s.tsv"
     write_meta(sample)
     write_samples(sample, 2, 10, 420, 1200)
@@ -534,8 +514,7 @@ def test_strict_flag_is_the_only_difference(gate, tmp_path):
 
 
 def test_sampler_rejects_host_leak(gate, tmp_path):
-    # The sampler's own hard failure, driven through PROFILER_CGROUP_ROOT against a
-    # fake cgroup tree: a slim label plus host-sized limits must EXIT, not warn.
+    # The sampler's own hard failure, driven through PROFILER_CGROUP_ROOT against a fake cgroup tree: a slim label plus host-sized limits must EXIT, not warn.
     if not SAMPLER.is_file():
         gate.log_fail("sampler not found at %s" % paths.relative_to_root(SAMPLER))
     cgroup = tmp_path / "cg"
@@ -562,8 +541,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
         "writes a HOST_LEAK meta line for the panel",
     )
 
-    # CONTROL: identical tree, non-slim label -> the leak check must not fire,
-    # because a 4-core VM legitimately reports 4 cores.
+    # CONTROL: identical tree, non-slim label -> the leak check must not fire, because a 4-core VM legitimately reports 4 cores.
     control = harness.run(
         ["bash", str(SAMPLER), "--out", str(tmp_path / "ok.tsv"), "--interval", "1"],
         env={
@@ -582,9 +560,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
 
 
 def test_sampler_produces_a_real_profile(gate, tmp_path):
-    # End-to-end on THIS machine: prove the sampler writes a meta line and real,
-    # varying samples that the aggregator accepts. Without this the whole suite only
-    # proves the aggregator can read files this file wrote.
+    # End-to-end on THIS machine: prove the sampler writes a meta line and real, varying samples that the aggregator accepts. Without this the whole suite only proves the aggregator can read files this file wrote.
     if not SAMPLER.is_file():
         gate.log_fail("sampler not found at %s" % paths.relative_to_root(SAMPLER))
     sample = tmp_path / "s.tsv"
@@ -599,11 +575,7 @@ def test_sampler_produces_a_real_profile(gate, tmp_path):
     if lines < 4:
         gate.log_fail("expected at least 4 real samples in 6s at 1s, got %d" % lines)
     gate.assert_contains(text.splitlines()[0], "#META", "first line is the meta record")
-    # STRICT on purpose. A healthy 6-second capture must not trip the starvation
-    # ratio: the first sample lands one interval IN, so a W-second run yields
-    # int(W/interval) samples and not one more. The off-by-one version of that
-    # arithmetic flagged this exact capture as "starved or died early", and a false
-    # alarm is how an anti-vacuity check ends up switched off.
+    # STRICT on purpose. A healthy 6-second capture must not trip the starvation ratio: the first sample lands one interval IN, so a W-second run yields int(W/interval) samples and not one more. The off-by-one version of that arithmetic flagged this exact capture as "starved or died early", and a false alarm is how an anti-vacuity check ends up switched off.
     result = run_panel(gate, sample, 7, "true")
     gate.assert_exit_code(
         0,
@@ -632,10 +604,7 @@ def _live_memory_max() -> str:
 
 
 def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
-    # THE PREMISE THE WHOLE ADVISOR RESTS ON, proven against a real kernel rather
-    # than a fixture. Every other cgroup case in this file writes its own
-    # /sys/fs/cgroup files, so together they only prove the sampler can read files
-    # this file wrote. This one puts it inside a container the kernel is enforcing.
+    # THE PREMISE THE WHOLE ADVISOR RESTS ON, proven against a real kernel rather than a fixture. Every other cgroup case in this file writes its own /sys/fs/cgroup files, so together they only prove the sampler can read files this file wrote. This one puts it inside a container the kernel is enforcing.
     #
     # Measured on this machine 2026-08-05, `docker run --memory=5g --cpus=1` reports
     # memory.max=5368709120 and cpu.max=100000 100000, while nproc says 20 and
@@ -643,12 +612,8 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
     if not SAMPLER.is_file():
         gate.log_fail("sampler not found at %s" % paths.relative_to_root(SAMPLER))
 
-    # NATIVE BRANCH FIRST, and it matters more than the docker one. If THIS
-    # environment is itself quota-constrained then it IS the container, and the
-    # premise can be proven directly against the kernel enforcing it. The docker
-    # branch is self-defeating in the success case: ubuntu-slim has no docker, so
-    # the day this suite moves to the runner the whole project aims at, the
-    # strongest proof would silently become a SKIP.
+    # NATIVE BRANCH FIRST, and it matters more than the docker one. If THIS environment is itself quota-constrained then it IS the container, and the premise can be proven directly against the kernel enforcing it. The docker branch is self-defeating in the success case: ubuntu-slim has no docker, so the day this suite moves to the runner the whole project aims at, the strongest
+    # proof would silently become a SKIP.
     live_mem = _live_memory_max()
     if live_mem:
         native = tmp_path / "native.tsv"
@@ -678,8 +643,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
                 "a quota is enforced here (memory.max=%s) but the sampler resolved %r"
                 % (live_mem, tier)
             )
-        # The whole thesis in one assertion: when the kernel enforces a ceiling,
-        # the sampler reports THAT and never the machine behind it.
+        # The whole thesis in one assertion: when the kernel enforces a ceiling, the sampler reports THAT and never the machine behind it.
         if int(ceiling) != int(live_mem):
             gate.log_fail(
                 "sampler reported %s but the enforced ceiling is %s (it read the host)"
@@ -732,8 +696,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
     # check globbed for *"cores=20"* | *"cores=1[0-9]"*, which could never fire for
     # two independent reasons: the brackets sit inside quotes so they are literal
     # text, and the meta line is TSV that contains no "cores=" anywhere. Three dead
-    # arms reading as a passing host-leak guard is precisely the vacuous green this
-    # whole file exists to refuse.
+    # arms reading as a passing host-leak guard is precisely the vacuous green this whole file exists to refuse.
     meta = next((line for line in result.combined.splitlines() if line.startswith("#META")), "")
     if not meta:
         gate.log_fail("no #META line came back from the container: %s" % result.combined[:300])
@@ -741,8 +704,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
     tier = fields[1]
     cpu_ceiling = int(fields[2])
     mem_ceiling = int(fields[3])
-    # A cgroup tier is required: PROC_HOST here would mean it fell back to the very
-    # files that lie inside a container.
+    # A cgroup tier is required: PROC_HOST here would mean it fell back to the very files that lie inside a container.
     if tier not in ("CGROUP_V2", "CGROUP_V1"):
         gate.log_fail(
             "expected a cgroup tier inside a real container, got %r (meta: %s)" % (tier, meta)

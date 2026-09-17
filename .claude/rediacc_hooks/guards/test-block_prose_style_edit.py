@@ -32,16 +32,12 @@ import sys
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_edit"]
 
-# Assembled rather than written, so this harness is not itself a tripwire for the
-# rule it is testing. The guard reads the JSON payload, not this source, but the
-# CI gate `check:ci-prose-style` DOES read this file's comments, and a literal
-# violation here would be a finding in the gate's own corpus.
+# Assembled rather than written, so this harness is not itself a tripwire for the rule it is testing. The guard reads the JSON payload, not this source, but the CI gate `check:ci-prose-style` DOES read this file's comments, and a literal violation here would be a finding in the gate's own corpus.
 Y = "y" + "ou"
 EYE = "I"
 
 CASES = [
-    # (name, tool_input, expect_blocked)
-    # ---- the block direction ------------------------------------------
+    # (name, tool_input, expect_blocked) ---- the block direction ------------------------------------------
     (
         "a markdown write addressing the reader",
         {"file_path": "docs/probe.md", "content": "Did %s run the tests?\n" % Y},
@@ -141,12 +137,8 @@ CASES = [
         {"file_path": "scripts/probe.ts", "content": 'const u = "https://x/%s";\n' % Y},
         False,
     ),
-    # THE CWD PIN. Measured 2026-09-16: with `os.path.abspath` resolving against
-    # the INTERPRETER's directory, running this harness from /tmp reported
-    # "22 case(s), 0 blocked, 22 allowed / FAILURES: 6" -- six refusals silently
-    # became passes because every relative path landed outside the tree. The
-    # absolute form cannot be fooled by a working directory at all, so it pins
-    # the block from the other side.
+    # THE CWD PIN. Measured 2026-09-16: with `os.path.abspath` resolving against the INTERPRETER's directory, running this harness from /tmp reported "22 case(s), 0 blocked, 22 allowed / FAILURES: 6" -- six refusals silently became passes because every relative path landed outside the tree. The absolute form cannot be fooled by a working directory at all, so it pins the block from
+    # the other side.
     (
         "an ABSOLUTE in-tree path blocks regardless of the working directory",
         {
@@ -192,8 +184,7 @@ for name, payload, want in CASES:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 
 print()
-# ANTI-VACUITY. A suite where nothing blocked, or where everything did, has
-# compared the guard against a constant. `test_every_guard_discriminates` makes
+# ANTI-VACUITY. A suite where nothing blocked, or where everything did, has compared the guard against a constant. `test_every_guard_discriminates` makes
 # the same argument for the differential's corpus; it is made here too because
 # this harness is the ONLY control for a guard with no oracle.
 if blocked == 0 or blocked == len(CASES):

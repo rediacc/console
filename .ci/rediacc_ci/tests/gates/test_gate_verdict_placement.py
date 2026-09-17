@@ -136,8 +136,7 @@ def test_the_detector_still_discriminates(gate):
     gate.assert_eq(stranded_controls(_NO_VERDICT), [], "no verdict, no rule to break")
     gate.ok("control: a suite with no tally verdict is out of scope")
 
-    # THE ONE A TEXT MATCH WOULD GET WRONG. `if Tally.fails:` that does not exit
-    # decides nothing, so what follows it is still counted and still fails the run.
+    # THE ONE A TEXT MATCH WOULD GET WRONG. `if Tally.fails:` that does not exit decides nothing, so what follows it is still counted and still fails the run.
     gate.assert_eq(
         stranded_controls(_IF_WITHOUT_EXIT), [], "an if that does not exit strands nothing"
     )
@@ -174,10 +173,7 @@ def test_no_suite_strands_a_control_below_its_verdict(gate):
                 % (paths.relative_to_root(path), len(stranded), stranded[0])
             )
 
-    # THE SECOND REFUSAL, and it is the one this gate most needs. If the idiom is
-    # ever renamed, every file reads as "no verdict", every file is skipped, and a
-    # green here would mean the gate found nothing to check rather than nothing
-    # wrong. Six suites carry it today.
+    # THE SECOND REFUSAL, and it is the one this gate most needs. If the idiom is ever renamed, every file reads as "no verdict", every file is skipped, and a green here would mean the gate found nothing to check rather than nothing wrong. Six suites carry it today.
     if with_verdict == 0:
         gate.log_fail(
             "scanned %d suite(s) and NONE carries an `if Tally.fails: ... sys.exit()` "
@@ -202,23 +198,14 @@ def test_no_suite_strands_a_control_below_its_verdict(gate):
 
 # ---- the same defect in the pytest tree, which has a DIFFERENT mechanism ------
 #
-# THE SCRIPT-SUITE RULE DOES NOT TRANSFER, and measuring that was the point. A
-# control placed below `gate.tally_finish()` in a pytest module is NOT stranded:
-# planted as `gate.log_fail(...)` after the verdict in
-# `test_gate_positional_detector.py` it raised `GateAssertionError` and the test
-# went red. There is no exit code to take the success branch of, so that half of
-# the class cannot exist here and a rule about it would be a rule with no failure
-# mode.
+# THE SCRIPT-SUITE RULE DOES NOT TRANSFER, and measuring that was the point. A control placed below `gate.tally_finish()` in a pytest module is NOT stranded: planted as `gate.log_fail(...)` after the verdict in `test_gate_positional_detector.py` it raised `GateAssertionError` and the test went red. There is no exit code to take the success branch of, so that half of the class
+# cannot exist here and a rule about it would be a rule with no failure mode.
 #
-# WHAT CAN HAPPEN HERE is plain unreachability: a `return` or `pytest.skip()`
-# above the controls. Planted as a bare `return` before `tally_finish` in that
-# same file, the ENTIRE verdict and every control below it became dead and
-# `pytest` reported `1 passed`. `ruff` did not flag it either, despite
+# WHAT CAN HAPPEN HERE is plain unreachability: a `return` or `pytest.skip()` above the controls. Planted as a bare `return` before `tally_finish` in that same file, the ENTIRE verdict and every control below it became dead and `pytest` reported `1 passed`. `ruff` did not flag it either, despite
 # `select = ["ALL"]` -- measured 2026-09-08. So the shape is real, silent, and
 # ungated, which is what earns a rule rather than a comment.
 #
-# ZERO TODAY. A sweep of all 212 files under `.ci/rediacc_ci/tests` found none,
-# so this lands as a ratchet rather than a cleanup.
+# ZERO TODAY. A sweep of all 212 files under `.ci/rediacc_ci/tests` found none, so this lands as a ratchet rather than a cleanup.
 
 _TERMINAL = frozenset(
     {"sys.exit", "pytest.skip", "pytest.fail", "pytest.xfail", "pytest.exit", "os._exit"}
@@ -320,8 +307,7 @@ def test_the_unreachable_detector_still_discriminates(gate):
     gate.assert_eq(len(unreachable_controls(_PY_AFTER_SKIP)), 1, "so does pytest.skip()")
     gate.ok("control: pytest.skip() is a terminator too")
 
-    # THE GUARD CLAUSE. `if cond: return` ends only its own branch, and a rule
-    # that read it as ending the function would fire on most of this tree.
+    # THE GUARD CLAUSE. `if cond: return` ends only its own branch, and a rule that read it as ending the function would fire on most of this tree.
     gate.assert_eq(unreachable_controls(_PY_GUARD_CLAUSE), [], "a guard clause strands nothing")
     gate.ok("control: the rule is per-BLOCK, not per-function")
 
@@ -358,8 +344,7 @@ def test_no_pytest_module_strands_a_control_below_a_terminator(gate):
                 % (paths.relative_to_root(path), len(dead), dead[0])
             )
 
-    # THE SECOND REFUSAL. If the glob ever stops reaching test modules every file
-    # is trivially clean and the green means nothing.
+    # THE SECOND REFUSAL. If the glob ever stops reaching test modules every file is trivially clean and the green means nothing.
     if with_tests == 0:
         gate.log_fail(
             "scanned %d module(s) under %s and NONE defines a `test_` function. The tree "

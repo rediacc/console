@@ -52,9 +52,7 @@ def _repo(tmp_path: pathlib.Path) -> pathlib.Path:
     (repo / "f.txt").write_text("base\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "base")
-    # A local "origin/main" the twin's `git rev-parse --verify` can resolve
-    # without a real remote: a plain branch ref of that exact name works
-    # because `git rev-parse` does not care whether it looks like a remote.
+    # A local "origin/main" the twin's `git rev-parse --verify` can resolve without a real remote: a plain branch ref of that exact name works because `git rev-parse` does not care whether it looks like a remote.
     _git(repo, "branch", "origin/main")
     return repo
 

@@ -96,19 +96,11 @@ from rediacc_ci import paths
 ROOT = pathlib.Path(
     os.environ.get("PLAN_CITATIONS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
 )
-# The hop onto the Stop hook's directory, through the package's own resolver.
-# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
-# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
-# lives, so the move planned for that program is a one-line change there rather
-# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
-# its own PLAN_CITATIONS_ROOT override, which the resolver's default root does not read.
+# The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
+# honours its own PLAN_CITATIONS_ROOT override, which the resolver's default root does not read.
 #
-# THIS IS THE GATE THAT GAINED A PACKAGE DEPENDENCY TO LOSE ITS HOP, and it is
-# the only one of the five: the other four already imported `rediacc_ci`. Said
-# out loud because it is a real trade, not a free tidy -- `.ci/rediacc_ci` must
-# now be present for this gate to start. Every harness that runs it already
-# copies that directory (`test-gate-anti-vacuity.sh` names it explicitly), and a
-# missing package fails loudly at the import rather than skipping a check.
+# THIS IS THE GATE THAT GAINED A PACKAGE DEPENDENCY TO LOSE ITS HOP, and it is the only one of the five: the other four already imported `rediacc_ci`. Said out loud because it is a real trade, not a free tidy -- `.ci/rediacc_ci` must now be present for this gate to start. Every harness that runs it already copies that directory (`test-gate-anti-vacuity.sh` names it explicitly), and
+# a missing package fails loudly at the import rather than skipping a check.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
 try:
@@ -276,11 +268,7 @@ def added_lines(base):
     for line in raw.split("\n"):
         if line.startswith("+++ "):
             path = line[4:].strip()
-            # A PATH CONTAINING A SPACE IS QUOTED by git in the diff header, and
-            # an unstripped quote makes the `.md` suffix test false -- so the
-            # file would be silently skipped rather than judged. Silence is the
-            # one failure mode this gate cannot afford, since it is
-            # indistinguishable from a clean file.
+            # A PATH CONTAINING A SPACE IS QUOTED by git in the diff header, and an unstripped quote makes the `.md` suffix test false -- so the file would be silently skipped rather than judged. Silence is the one failure mode this gate cannot afford, since it is indistinguishable from a clean file.
             if len(path) > 1 and path[0] == '"' and path[-1] == '"':
                 path = path[1:-1]
             rel = None if path == "/dev/null" else path.removeprefix("b/")
@@ -347,8 +335,7 @@ def citations(text):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
         tok = m.group(1)
-        # See the docstring: an all-digit token is a run id, a date or an issue
-        # number far more often than it is a git object, and it is never judged.
+        # See the docstring: an all-digit token is a run id, a date or an issue number far more often than it is a git object, and it is never judged.
         if tok.isdigit() or len(tok) < OBJECT_MIN:
             continue
         # The trailing group of a UUID, not a git object. See UUID_TAIL_RE.
@@ -357,18 +344,10 @@ def citations(text):
         # A container image digest, not a git object. See DIGEST_RE.
         if (m.start(1), m.end(1)) in digest_spans:
             continue
-        # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex
-        # characters, which this gate judges as an abbreviated sha and can never resolve.
-        # `check:ci-shape-duplication` prints these and tells the reader to cite them --
-        # "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining
-        # WHY a shape was accepted has to name it, and every such plan line was an
-        # unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and
-        # `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d`
-        # passed only because it happens to prefix a real object in this clone -- so the
-        # gate was already wrong here and was being saved by coincidence.
+        # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex characters, which this gate judges as an abbreviated sha and can never resolve. `check:ci-shape-duplication` prints these and tells the reader to cite them -- "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining WHY a shape was accepted has to name it, and every such
+        # plan line was an unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d` passed only because it happens to prefix a real object in this clone -- so the gate was already wrong here and was being saved by coincidence.
         #
-        # The seed file is the authority, not a pattern: a token is a fingerprint only if
-        # the corpus actually carries it, which cannot silence a typo'd sha.
+        # The seed file is the authority, not a pattern: a token is a fingerprint only if the corpus actually carries it, which cannot silence a typo'd sha.
         if tok in shape_fingerprints(ROOT):
             continue
         out.append(("object", tok))
@@ -496,14 +475,9 @@ def unresolved(root, kind, token):
     if ok:
         return False, why
     if kind == "fileline":
-        # A SUBMODULE-RELATIVE PATH IS STILL A FINDING, but not the one the plain
-        # message describes. A plan about renet naturally writes
-        # `pkg/chunkstore/uploader.go:71`, which is a real file -- inside
-        # private/renet, and unreachable from the console root where every reader
-        # of the plan is standing. "Does not exist" sends them looking for a
+        # A SUBMODULE-RELATIVE PATH IS STILL A FINDING, but not the one the plain message describes. A plan about renet naturally writes `pkg/chunkstore/uploader.go:71`, which is a real file -- inside private/renet, and unreachable from the console root where every reader of the plan is standing. "Does not exist" sends them looking for a
         # deleted file; naming the submodule turns the same red into a one-word
-        # fix. Measured 2026-09-06 over the whole plan corpus: 40 of the
-        # unresolvable file:line citations, and this class is most of them.
+        # fix. Measured 2026-09-06 over the whole plan corpus: 40 of the unresolvable file:line citations, and this class is most of them.
         head = token.split(":", 1)[0]
         for sub in submodule_paths(root):
             if (pathlib.Path(root) / sub / head).is_file():
@@ -539,14 +513,11 @@ def absent_submodules(root):
     anti-hallucination check to wave through exactly the claims it exists to catch.
     So the filter lives here, in the caller, and the resolver keeps failing closed.
     """
-    # `-f <root>/.gitmodules`, NOT the bare relative name. `_git` anchors every
-    # call to the module-level ROOT, so a bare `.gitmodules` reads the real repo's
+    # `-f <root>/.gitmodules`, NOT the bare relative name. `_git` anchors every call to the module-level ROOT, so a bare `.gitmodules` reads the real repo's
     # while the `root / path` below reads the caller's -- the two agree in
     # production (root IS ROOT) and diverge in any fixture, which is how a control
     # for this function came back naming three submodules the fixture never had.
-    # A helper whose two halves read different trees is a helper that cannot be
-    # tested, and an untestable filter that excuses a whole directory is the last
-    # thing this gate should carry.
+    # A helper whose two halves read different trees is a helper that cannot be tested, and an untestable filter that excuses a whole directory is the last thing this gate should carry.
     out = []
     manifest = pathlib.Path(root) / ".gitmodules"
     if not manifest.is_file():
@@ -556,9 +527,7 @@ def absent_submodules(root):
         if len(parts) != 2:
             continue
         path = pathlib.Path(root) / parts[1]
-        # Populated means "has content". An uninitialised submodule is an empty
-        # directory, not a missing one, so `is_dir()` alone answers yes and would
-        # make this filter inert in precisely the case it is written for.
+        # Populated means "has content". An uninitialised submodule is an empty directory, not a missing one, so `is_dir()` alone answers yes and would make this filter inert in precisely the case it is written for.
         if not path.is_dir() or not any(path.iterdir()):
             out.append(parts[1])
     return sorted(out)
@@ -573,8 +542,7 @@ def problems_for(root, rows, skip_prefixes=()):
         if lineno in fences[rel]:
             continue
         for kind, token in citations(text):
-            # Only a PATH citation can point into a submodule. An object or gate
-            # token that happens to start with those characters is not excused.
+            # Only a PATH citation can point into a submodule. An object or gate token that happens to start with those characters is not excused.
             if kind in ("fileline", "plan") and any(
                 token.startswith(p + "/") for p in skip_prefixes
             ):
@@ -605,9 +573,7 @@ def corpus_citations(root):
     return len(files), n
 
 
-# ---------------------------------------------------------------------------
-# CONTROL FIRST. Against the REAL repository rather than a fixture, deliberately:
-# every oracle here is a property of THIS tree (a plan on disk, a gate in
+# --------------------------------------------------------------------------- CONTROL FIRST. Against the REAL repository rather than a fixture, deliberately: every oracle here is a property of THIS tree (a plan on disk, a gate in
 # package.json, a commit in this history), so a fixture would prove that the
 # resolvers work on a fixture. What must be true is that they work here.
 
@@ -655,19 +621,10 @@ def selftest(root):
         got, why = unresolved(root, kind, token)
         ck(f"CONTROL: a real {kind} citation is SILENT ({token[:44]})", not got, why)
 
-    # THE ANCESTRY RULE FOR COMMITS, both directions. An ORPHAN IS CONSTRUCTED
-    # rather than borrowed from this clone's reflog: the whole point is that a
-    # fresh CI checkout has no orphans, so a control that relied on finding one
-    # would silently stop testing anything there -- which is the exact failure
-    # mode this rule exists to close.
+    # THE ANCESTRY RULE FOR COMMITS, both directions. An ORPHAN IS CONSTRUCTED rather than borrowed from this clone's reflog: the whole point is that a fresh CI checkout has no orphans, so a control that relied on finding one would silently stop testing anything there -- which is the exact failure mode this rule exists to close.
     tree = _git("rev-parse", "HEAD^{tree}").strip()
-    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one:
-    # "Author identity unknown -- Please tell me who you are". A GitHub runner
-    # configures no git identity at any scope, so this control built its orphan
-    # fine on every developer machine and FAILED on the runner -- the exact
-    # environment-dependence it exists to catch, in the control itself.
-    # `-c` rather than env vars: it is scoped to this one command and cannot
-    # leak into anything else the gate runs.
+    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one: "Author identity unknown -- Please tell me who you are". A GitHub runner configures no git identity at any scope, so this control built its orphan fine on every developer machine and FAILED on the runner -- the exact environment-dependence it exists to catch, in the control itself. `-c` rather than env vars:
+    # it is scoped to this one command and cannot leak into anything else the gate runs.
     orphan = _git(
         "-c",
         "user.name=plan-citations control",
@@ -723,9 +680,7 @@ def selftest(root):
         len(problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/zzz",)))
         == 1,
     )
-    # An OBJECT token is not a path, so a prefix that looks like one must not
-    # excuse it. Without this, "private/renet" in the skip set could be read as
-    # licence to drop any citation whose text begins with those bytes.
+    # An OBJECT token is not a path, so a prefix that looks like one must not excuse it. Without this, "private/renet" in the skip set could be read as licence to drop any citation whose text begins with those bytes.
     ck(
         "CONTROL: a dead OBJECT citation is never excused by the submodule skip",
         len(
@@ -735,10 +690,7 @@ def selftest(root):
         )
         == 1,
     )
-    # THE DETECTOR ITSELF, on a fixture, because its first version read
-    # `.gitmodules` from the real repo while testing paths under the root it was
-    # handed -- agreeing in production and answering nonsense anywhere else, which
-    # is exactly the shape that cannot be controlled and so never is.
+    # THE DETECTOR ITSELF, on a fixture, because its first version read `.gitmodules` from the real repo while testing paths under the root it was handed -- agreeing in production and answering nonsense anywhere else, which is exactly the shape that cannot be controlled and so never is.
     with tempfile.TemporaryDirectory() as td:
         fx = pathlib.Path(td)
         (fx / ".gitmodules").write_text(
@@ -756,15 +708,11 @@ def selftest(root):
         )
     # ON THE REAL TREE, and phrased so it holds in BOTH environments -- which the
     # first version did not. It asserted `absent_submodules(root) == []`, i.e. that
-    # every submodule is populated. That is true on a developer checkout and FALSE
-    # in `quality-branch`, the very lane this filter exists for, so the commit that
-    # added the filter shipped a control that could only pass where the filter was
-    # unnecessary. CI failed it immediately and was right to.
+    # every submodule is populated. That is true on a developer checkout and FALSE in `quality-branch`, the very lane this filter exists for, so the commit that added the filter shipped a control that could only pass where the filter was unnecessary. CI failed it immediately and was right to.
     #
     # What is actually invariant is AGREEMENT with the filesystem: whatever the
     # function returns must be a declared submodule, and must really be missing or
-    # empty. That catches a filter inventing a skip -- the direction that matters --
-    # without asserting anything about which lane is running it.
+    # empty. That catches a filter inventing a skip -- the direction that matters -- without asserting anything about which lane is running it.
     declared = []
     manifest = pathlib.Path(root) / ".gitmodules"
     if manifest.is_file():
@@ -778,18 +726,11 @@ def selftest(root):
         all(p in declared for p in reported),
         (reported, declared),
     )
-    # DELIBERATELY ONLY ONE ASSERTION HERE. The two obvious companions -- "everything
-    # reported really is empty on disk" and "every empty one is reported" -- restate
-    # `absent_submodules`'s own definition back at it, so they cannot fail unless the
+    # DELIBERATELY ONLY ONE ASSERTION HERE. The two obvious companions -- "everything reported really is empty on disk" and "every empty one is reported" -- restate `absent_submodules`'s own definition back at it, so they cannot fail unless the
     # function contradicts itself line to line. Controls that cannot fail are what
-    # this whole gate estate keeps getting caught by, and adding two of them to look
-    # thorough would be the same mistake in a new place. The independent check is the
-    # SUBSET one above (a path it invents would not be declared) and the tempdir
-    # fixture, whose expectation is built without calling the function at all.
+    # this whole gate estate keeps getting caught by, and adding two of them to look thorough would be the same mistake in a new place. The independent check is the SUBSET one above (a path it invents would not be declared) and the tempdir fixture, whose expectation is built without calling the function at all.
 
-    # The EXTRACTOR, separately from the resolvers: a line carrying all four
-    # shapes must yield all four. A resolver that works over an extractor that
-    # sees nothing is a gate that cannot fail.
+    # The EXTRACTOR, separately from the resolvers: a line carrying all four shapes must yield all four. A resolver that works over an extractor that sees nothing is a gate that cannot fail.
     probe = f"see {plans[0]}:12 and {plans[0]} plus check:ci-plan-record at {head[:12]}"
     kinds = {k for k, _t in citations(probe)}
     ck(
@@ -828,18 +769,14 @@ def selftest(root):
         "CONTROL: one more character IS",
         any(k == "object" for k, _t in citations("session d1589e0bc wrote this")),
     )
-    # THE SCOPE PREDICATE, both directions. A narrowed scope is the one change
-    # that can quietly turn a working gate into one that reads nothing, so the
-    # boundary is pinned rather than described.
+    # THE SCOPE PREDICATE, both directions. A narrowed scope is the one change that can quietly turn a working gate into one that reads nothing, so the boundary is pinned rather than described.
     ck("a plan is in scope", in_scope(plans[0]))
     ck("...and so is the index", in_scope("agent/INDEX.md"))
     ck("CONTROL: a per-session STATE.md is NOT", not in_scope("agent/d1589e0b/STATE.md"))
     ck("CONTROL: a generated PR body is NOT", not in_scope("agent/pr/some-branch.md"))
     ck("CONTROL: a file outside agent/ is NOT", not in_scope("docs/agent-reference/TRAPS.md"))
 
-    # The submodule advice, both directions. Skipped rather than failed when the
-    # submodules are not checked out, because a shallow CI checkout is a real
-    # environment and a control that cannot run must say so instead of reding.
+    # The submodule advice, both directions. Skipped rather than failed when the submodules are not checked out, because a shallow CI checkout is a real environment and a control that cannot run must say so instead of reding.
     subs = submodule_paths(root)
     if subs:
         probe = ""
@@ -882,8 +819,7 @@ def main(argv):
 
     base = base_ref()
     if base is None:
-        # NOT a failure and not a pass-by-default. With no base there is no set
-        # of ADDED lines, which is the only thing this gate judges. Saying so is
+        # NOT a failure and not a pass-by-default. With no base there is no set of ADDED lines, which is the only thing this gate judges. Saying so is
         # the honest answer; inventing a base would judge the whole corpus and
         # red on the 37 dead pointers this gate deliberately does not own.
         print(
@@ -894,9 +830,7 @@ def main(argv):
         return 0
 
     rows = added_lines(base)
-    # PRINTED EVERY RUN, whether or not anything was skipped, so an exclusion can
-    # never become invisible debt: a reader of a green run sees exactly which
-    # citations this process was not in a position to judge.
+    # PRINTED EVERY RUN, whether or not anything was skipped, so an exclusion can never become invisible debt: a reader of a green run sees exactly which citations this process was not in a position to judge.
     absent = absent_submodules(root)
     if absent:
         print(

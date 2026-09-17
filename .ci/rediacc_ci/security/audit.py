@@ -205,16 +205,12 @@ from rediacc_ci import paths
 from rediacc_ci.core import advisory, age, blocker_validator, release_age
 from rediacc_ci.policy_paths import policy_rel
 
-# THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and
-# byte equality is the whole claim of this file, but the repo's house rule bans
-# the literal character from authored text and `check:ci-em-dash-surfaces` scans
-# `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the
+# THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and byte equality is the whole claim of this file, but the repo's house rule bans the literal character from authored text and `check:ci-em-dash-surfaces` scans `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the
 # same way; this is that decision, not a new one.
 EM = "\u2014"
 
 # `ADVISORY_CACHE_DIR=".audit-advisory-cache"` (audit.sh:50). RELATIVE, and it
-# stays relative: the twin `cd`s to the repo root first and .gitignore lists the
-# path from the root.
+# stays relative: the twin `cd`s to the repo root first and .gitignore lists the path from the root.
 ADVISORY_CACHE_DIR = ".audit-advisory-cache"
 
 # The two reports, both written into the repo root and both gitignored.
@@ -223,15 +219,10 @@ ADVISORY_CACHE_DIR = ".audit-advisory-cache"
 PROD_REPORT = "audit-prod.json"
 ALL_REPORT = "audit-report.json"
 
-# The two allowlists, by the paths the twin passes -- which appear verbatim in
-# error messages, so the STRING must not change.
+# The two allowlists, by the paths the twin passes -- which appear verbatim in error messages, so the STRING must not change.
 #
-# `policy_rel`, not `policy_path`: check:ci-policy-inventory refuses a hand-built
-# policy path so the directory is written down once, and the seam satisfies that.
-# But `policy_path` answers an ABSOLUTE path, which would rewrite every message
-# these appear in and diverge from the twin -- the same reason manifest.ts's
-# `paths:` selector is exempt by name. `policy_rel` is the repo-relative form,
-# and it returns these three byte-for-byte (driven, not assumed).
+# `policy_rel`, not `policy_path`: check:ci-policy-inventory refuses a hand-built policy path so the directory is written down once, and the seam satisfies that. But `policy_path` answers an ABSOLUTE path, which would rewrite every message these appear in and diverge from the twin -- the same reason manifest.ts's `paths:` selector is exempt by name. `policy_rel` is the
+# repo-relative form, and it returns these three byte-for-byte (driven, not assumed).
 PROD_ALLOWLIST = policy_rel(".audit-prod-allowlist")
 DEV_ALLOWLIST = policy_rel(".audit-allowlist")
 DEPS_BLOCKLIST = policy_rel(".deps-upgrade-blocklist")
@@ -248,15 +239,10 @@ SIGNATURE_RETRY_SLEEP = "10"
 FETCH_PARALLELISM = 8
 
 # The GHSA shape `[[ "$url" =~ (GHSA-...) ]]` looks for, lower-case only exactly
-# as the twin spells it: a capital-letter GHSA slug does not match on either
-# side, and neither side invents one.
+# as the twin spells it: a capital-letter GHSA slug does not match on either side, and neither side invents one.
 GHSA_RE = re.compile(r"(GHSA-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+)")
 
-# `date -u -d "$t" +%s` / `date -u -d "@$epoch" +%Y-%m-%d`. Spawned rather than
-# re-implemented: GNU date's parser accepts far more than ISO 8601 and a Python
-# approximation would disagree with the twin on exactly the malformed input that
-# matters. Same argument `release-age.sh:31` makes when it calls the round-up
-# GNU-only.
+# `date -u -d "$t" +%s` / `date -u -d "@$epoch" +%Y-%m-%d`. Spawned rather than re-implemented: GNU date's parser accepts far more than ISO 8601 and a Python approximation would disagree with the twin on exactly the malformed input that matters. Same argument `release-age.sh:31` makes when it calls the round-up GNU-only.
 DATE_BIN = "date"
 
 
@@ -277,9 +263,7 @@ class Die(Exception):  # noqa: N818 -- not an Error; it is bash's `set -e`, name
         self.status = status
 
 
-# ---------------------------------------------------------------------------
-# bash and jq primitives
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- bash and jq primitives ---------------------------------------------------------------------------
 
 
 def _flush() -> None:
@@ -373,9 +357,7 @@ def bash_read_fields(line: str, count: int) -> list[str]:
     """
     body = line.strip("\t")
     fields = [part for part in body.split("\t") if part != ""] if body else []
-    # The last variable takes the rest, tabs and all. Rebuilding it from the
-    # ORIGINAL text rather than from the split parts is the only way to keep an
-    # interior run of tabs that belongs to the final field.
+    # The last variable takes the rest, tabs and all. Rebuilding it from the ORIGINAL text rather than from the split parts is the only way to keep an interior run of tabs that belongs to the final field.
     if len(fields) > count:
         head = fields[: count - 1]
         rest = body
@@ -575,9 +557,7 @@ def jq_empty(path: str) -> bool:
     return True
 
 
-# ---------------------------------------------------------------------------
-# the twin's jq programs, one function each
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the twin's jq programs, one function each ---------------------------------------------------------------------------
 
 
 def program_advisories(document: object) -> list[str]:
@@ -701,9 +681,7 @@ def _jq_equal(value: object, number: float) -> bool:
     return float(value) == number
 
 
-# ---------------------------------------------------------------------------
-# the gate
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the gate ---------------------------------------------------------------------------
 
 
 class Audit:
@@ -715,12 +693,10 @@ class Audit:
     """
 
     def __init__(self) -> None:
-        # `declare -A ADV_URL ADV_TITLE ADV_SEVERITY ADV_GHSA` plus the three
-        # enriched tables, held in the shape `core.advisory` reads them.
+        # `declare -A ADV_URL ADV_TITLE ADV_SEVERITY ADV_GHSA` plus the three enriched tables, held in the shape `core.advisory` reads them.
         self.adv = advisory.Advisories()
         # ADV_GHSA is read back by name (`"${ADV_GHSA[@]}"`, `"${!ADV_GHSA[@]}"`)
-        # rather than only written, so it needs its own dict as well as its cell
-        # in the emitter's table.
+        # rather than only written, so it needs its own dict as well as its cell in the emitter's table.
         self.ghsa: dict[str, str] = {}
         # `DEFER_REASON`, a global the twin sets as an out-parameter.
         self.defer_reason = ""
@@ -752,9 +728,7 @@ class Audit:
         audit_exit = proc.returncode
 
         if not jq_empty(output):
-            # A KILLED AUDIT IS NOT A REGISTRY PROBLEM. 128+n means a signal, and
-            # the twin's older wording sent the reader to the network when the
-            # cause was a local timeout or OOM.
+            # A KILLED AUDIT IS NOT A REGISTRY PROBLEM. 128+n means a signal, and the twin's older wording sent the reader to the network when the cause was a local timeout or OOM.
             if 128 < audit_exit < 160:
                 advisory.log_error(
                     "npm audit was KILLED by signal %d (raw %d) before it finished writing JSON"
@@ -813,20 +787,17 @@ class Audit:
                 except JqError as exc:
                     # jq CONTINUES with the next input value after a runtime
                     # error rather than aborting the program; measured on jq
-                    # 1.8.1 with a two-document file whose first document
-                    # errored and whose second still printed.
+                    # 1.8.1 with a two-document file whose first document errored and whose second still printed.
                     print(jq_error(audit_json, end_line, str(exc)), file=sys.stderr, flush=True)
                     continue
         except (ValueError, OSError, UnicodeDecodeError):
-            # `jq empty` already accepted this file, so a parse failure here
-            # means it changed underneath the run. The twin would print jq's
+            # `jq empty` already accepted this file, so a parse failure here means it changed underneath the run. The twin would print jq's
             # parse diagnostic; both sides then read zero rows.
             lines = []
 
         for raw in lines:
             source, severity, url, title = bash_read_fields(raw, 4)
-            # `[[ -z "$source" ]] && continue`: a row whose first field collapsed
-            # away is dropped rather than keyed on the empty string.
+            # `[[ -z "$source" ]] && continue`: a row whose first field collapsed away is dropped rather than keyed on the empty string.
             if not source:
                 continue
             self.adv.set("url", source, url)
@@ -915,12 +886,9 @@ class Audit:
             except (JqError, ValueError, OSError, UnicodeDecodeError) as exc:
                 # THE UNGUARDED ASSIGNMENT, AND THE SECOND HALF OF DEFECT 6.
                 # `details=$(jq -r '...' "$cache" 2>/dev/null)` is a plain
-                # command in a function reached plainly from `main`, so jq's
-                # exit 5 IS the gate's exit 5. The `2>/dev/null` means nothing
-                # is printed, on either stream, about why.
+                # command in a function reached plainly from `main`, so jq's exit 5 IS the gate's exit 5. The `2>/dev/null` means nothing is printed, on either stream, about why.
                 raise Die(5) from exc
-            # `<<<"$details"` feeds `read` one line: the FIRST. A cache file
-            # holding two documents therefore contributes only its first row.
+            # `<<<"$details"` feeds `read` one line: the FIRST. A cache file holding two documents therefore contributes only its first row.
             first = details.split("\n")[0] if details else ""
             vuln_range, patched, desc = bash_read_fields(first, 3)
             self.adv.set("range", source, vuln_range)
@@ -1065,9 +1033,7 @@ class Audit:
         for advisory_id in list(allowed):
             info = self.get_advisory_fix_info(advisory_id, audit_json)
             if not info:
-                # The COMMON form of staleness: the advisory is gone from the
-                # report entirely. This branch used to `continue` in silence,
-                # which is how 101 dead entries accumulated across the two lists.
+                # The COMMON form of staleness: the advisory is gone from the report entirely. This branch used to `continue` in silence, which is how 101 dead entries accumulated across the two lists.
                 if _arith_gt(total_vulns, 0):
                     advisory.log_error(
                         "Stale allowlist entry: %s does not appear in %s"
@@ -1084,8 +1050,7 @@ class Audit:
             is_major = _field(info, "isMajor", default="null")
             fix_version = _field(info, "fixVersion", empty=True)
             fix_value = _field(info, "fixValue", default="null")
-            # A BARE `.pkg`, with no `//` fallback: jq -r prints `null` for a
-            # missing key, and that word would reach the advisory header.
+            # A BARE `.pkg`, with no `//` fallback: jq -r prints `null` for a missing key, and that word would reach the advisory header.
             pkg = _field(info, "pkg", default="null")
 
             if fix_type == "boolean" and fix_value == "false":
@@ -1125,11 +1090,7 @@ class Audit:
             warn_days = int(os.environ.get("AGE_WARN_DAYS") or age.DEFAULT_WARN_DAYS)
             fail_days = int(os.environ.get("AGE_FAIL_DAYS") or age.DEFAULT_FAIL_DAYS)
         except ValueError:
-            # A NON-INTEGER WINDOW IS A REFUSAL ON BOTH SIDES, WITH DIFFERENT
-            # BYTES, AND THAT IS SAID HERE RATHER THAN DISCOVERED. The twin runs
-            # the verdict in a SUBPROCESS, so `int("later")` there is a Python
-            # traceback on stderr, an exit 1, an empty line read back, and then
-            # the shim's own `unreadable verdict` refusal. This side cannot
+            # A NON-INTEGER WINDOW IS A REFUSAL ON BOTH SIDES, WITH DIFFERENT BYTES, AND THAT IS SAID HERE RATHER THAN DISCOVERED. The twin runs the verdict in a SUBPROCESS, so `int("later")` there is a Python traceback on stderr, an exit 1, an empty line read back, and then the shim's own `unreadable verdict` refusal. This side cannot
             # produce the traceback; it produces the refusal and the same
             # `age_fail=1`, so the exit code and the loop behaviour match and
             # the stderr text does not. No differential case claims otherwise.
@@ -1169,8 +1130,7 @@ class Audit:
             prod = blocker_validator.parse_blockered_list(PROD_ALLOWLIST)
             dev = blocker_validator.parse_blockered_list(DEV_ALLOWLIST)
         except blocker_validator.BrokenReaderError:
-            # The twin's `parse_blockered_list` returns 1 having said so, and the
-            # call is unguarded, so `set -e` ends the run right here.
+            # The twin's `parse_blockered_list` returns 1 having said so, and the call is unguarded, so `set -e` ends the run right here.
             return 1
 
         blockers_ok = 0
@@ -1214,8 +1174,7 @@ class Audit:
         signatures_ok = False
         self.clean_tuf_cache()
         while attempt < SIGNATURE_ATTEMPTS and not signatures_ok:
-            # `npm audit signatures 2>&1`: the child's stderr joins the SCRIPT's
-            # stdout, so everything npm says lands on one stream.
+            # `npm audit signatures 2>&1`: the child's stderr joins the SCRIPT's stdout, so everything npm says lands on one stream.
             proc = spawn(
                 ["npm", "audit", "signatures"],
                 line=395,
@@ -1263,8 +1222,7 @@ class Audit:
             ]
 
             if prod_unallowed:
-                # Partition: defer what no `npm audit fix` could install today,
-                # fail the rest.
+                # Partition: defer what no `npm audit fix` could install today, fail the rest.
                 prod_failing = []
                 for advisory_id in prod_unallowed:
                     if self.should_defer_advisory(advisory_id, PROD_REPORT):

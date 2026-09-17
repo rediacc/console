@@ -134,8 +134,7 @@ DOCKERFILE_REL = ".devcontainer/Dockerfile"
 ROOT_PKG_REL = "package.json"
 CLI_PKG_REL = "packages/cli/package.json"
 
-# The escapes. The twin computes them only when stdout is a tty and NO_COLOR is
-# unset, so under a pipe they are empty strings on both sides.
+# The escapes. The twin computes them only when stdout is a tty and NO_COLOR is unset, so under a pipe they are empty strings on both sides.
 _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 
 
@@ -214,9 +213,7 @@ def engines_node(path: pathlib.Path) -> str:
     if not isinstance(engines, dict):
         return ""
     node = engines.get("node")
-    # `String(v)` in the twin's node snippet, so a numeric value becomes its
-    # text. `|| ""` first, so a false-y value is the empty string rather than
-    # the string "None" or "False".
+    # `String(v)` in the twin's node snippet, so a numeric value becomes its text. `|| ""` first, so a false-y value is the empty string rather than the string "None" or "False".
     return "" if not node else str(node)
 
 
@@ -355,13 +352,8 @@ def run_controls(report: Report) -> None:
 
         # --- NODE_VERSION_MIN controls --------------------------------------
         #
-        # BY CONSTRUCTION, and note the fixture floor is 22.44.0 rather than the
-        # real one. That is not squeamishness: check-toolchain-pins.sh's A1 greps
-        # every .ci/**/*.sh for a literal copy of any value in toolchain.env, so
-        # writing the true floor into a fixture here would make THIS file report
-        # as a second definition of it. A control that breaks another gate gets
-        # deleted. The same reasoning applies to this Python file, which that
-        # gate's corpus does not currently include but may.
+        # BY CONSTRUCTION, and note the fixture floor is 22.44.0 rather than the real one. That is not squeamishness: check-toolchain-pins.sh's A1 greps every .ci/**/*.sh for a literal copy of any value in toolchain.env, so writing the true floor into a fixture here would make THIS file report as a second definition of it. A control that breaks another gate gets deleted. The same
+        # reasoning applies to this Python file, which that gate's corpus does not currently include but may.
         floor_env = tmpdir / "floor.env"
         floor_env.write_text("NODE_VERSION_MIN=22.44.0\n", encoding="utf-8")
         root_json = tmpdir / "root.json"
@@ -377,8 +369,7 @@ def run_controls(report: Report) -> None:
         else:
             report.fail("control: agreeing manifests were wrongly flagged -- %s" % out)
 
-        # CONTROL: the exact bug this pair was added for -- a floor of 22.0.0 in
-        # the manifests under a stricter pin. Both manifests are stale together,
+        # CONTROL: the exact bug this pair was added for -- a floor of 22.0.0 in the manifests under a stricter pin. Both manifests are stale together,
         # which is what the composed "${NODE_VERSION}.0.0" line used to produce.
         root_old = tmpdir / "root-old.json"
         cli_old = tmpdir / "cli-old.json"
@@ -390,11 +381,7 @@ def run_controls(report: Report) -> None:
         else:
             report.fail("control: a planted stale engines.node was NOT detected -- %s" % out)
 
-        # CONTROL: ONLY packages/cli drifts. The root manifest is what a
-        # developer reads, so a check that stopped at the first match, or that
-        # only ever looked at the root, would call this tree clean while the
-        # PUBLISHED CLI advertised the wrong floor. The message must also name
-        # the file that is wrong.
+        # CONTROL: ONLY packages/cli drifts. The root manifest is what a developer reads, so a check that stopped at the first match, or that only ever looked at the root, would call this tree clean while the PUBLISHED CLI advertised the wrong floor. The message must also name the file that is wrong.
         out = probe(
             check_engines_pair, "NODE_VERSION_MIN", floor_env, "CONTROL", root_json, cli_old
         )
@@ -405,8 +392,7 @@ def run_controls(report: Report) -> None:
 
         # CONTROL: a `"node"` key OUTSIDE engines must not decide the verdict.
         # This is why engines_node parses instead of grepping; a first-match grep
-        # would read the volta pin here and report a mismatch against a correct
-        # manifest.
+        # would read the volta pin here and report a mismatch against a correct manifest.
         decoy = tmpdir / "decoy.json"
         decoy.write_text(
             '{"volta":{"node":"18.0.0"},"engines":{"node":">=22.44.0"}}\n', encoding="utf-8"
@@ -417,10 +403,7 @@ def run_controls(report: Report) -> None:
         else:
             report.fail("control: a decoy node key outside engines changed the verdict -- %s" % out)
 
-        # CONTROL: a manifest with no engines block is a failure, not a silent
-        # skip -- the same direction the missing-ARG case above fails in.
-        # Deleting engines.node is exactly how someone would "fix" a red floor
-        # check.
+        # CONTROL: a manifest with no engines block is a failure, not a silent skip -- the same direction the missing-ARG case above fails in. Deleting engines.node is exactly how someone would "fix" a red floor check.
         bare = tmpdir / "bare.json"
         bare.write_text('{"name":"no-engines-here"}\n', encoding="utf-8")
         out = probe(check_engines_pair, "NODE_VERSION_MIN", floor_env, "CONTROL", bare)

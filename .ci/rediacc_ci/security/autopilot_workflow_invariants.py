@@ -94,8 +94,7 @@ import sys
 from rediacc_ci import log, paths
 
 # POSIX [[:space:]] under LC_ALL=C. Spelled out rather than reusing Python's
-# `\s`, which also matches \x1c-\x1f and (under re.UNICODE, the default for str
-# patterns) a long tail of Unicode separators that awk's C locale does not.
+# `\s`, which also matches \x1c-\x1f and (under re.UNICODE, the default for str patterns) a long tail of Unicode separators that awk's C locale does not.
 SP = "[ \t\n\v\f\r]"
 
 # --- the one-pass walker's rules, in the twin's own order (`:75-155`) --------
@@ -124,8 +123,7 @@ RE_ANY_JOB = re.compile("^  [A-Za-z_][A-Za-z0-9_-]*:")
 RE_MODEL_IF = re.compile("^    if:")
 RE_SETTINGS_PIPE = re.compile(r"settings: \|")
 
-# The three tools the model round's allowlist must carry, in the twin's order.
-# `grep -qF`, so these are fixed strings including their quotes.
+# The three tools the model round's allowlist must carry, in the twin's order. `grep -qF`, so these are fixed strings including their quotes.
 REQUIRED_TOOLS = ('"Edit"', '"Write"', '"Read"')
 
 
@@ -203,10 +201,7 @@ def walk(text: str) -> list[tuple[str, str, str]]:
             in_run = True
             run_indent = indent
 
-        # A checkout that asks for submodules needs a credential for four
-        # PRIVATE repos. This sits BEFORE the pending-checkout block on purpose:
-        # that block `next`s over every line of a with-block, so a check placed
-        # after it never sees the inputs it is meant to police.
+        # A checkout that asks for submodules needs a credential for four PRIVATE repos. This sits BEFORE the pending-checkout block on purpose: that block `next`s over every line of a with-block, so a check placed after it never sees the inputs it is meant to police.
         if (
             not is_comment
             and RE_SUBMODULES.match(line)
@@ -215,8 +210,7 @@ def walk(text: str) -> list[tuple[str, str, str]]:
         ):
             submodule_checkout[job] = nr
 
-        # A pending checkout is judged the moment its STEP ends: any new step
-        # marker, or any dedent to at or above the marker indent.
+        # A pending checkout is judged the moment its STEP ends: any new step marker, or any dedent to at or above the marker indent.
         if pending and not RE_BLANK.match(line) and not is_comment:
             if indent > step_ind and not stripped.startswith("- "):
                 if RE_PERSIST_FALSE.search(line):
@@ -232,8 +226,7 @@ def walk(text: str) -> list[tuple[str, str, str]]:
                 out.append(("trusted-checkout-not-first", str(checkout_line), checkout_job))
             pending = False
 
-        # Checkout steps: first one per job must be the trusted ref, and every
-        # one must carry persist-credentials: false within its with-block.
+        # Checkout steps: first one per job must be the trusted ref, and every one must carry persist-credentials: false within its with-block.
         if not is_comment and RE_CHECKOUT.search(line):
             seen_checkout[job] = seen_checkout.get(job, 0) + 1
             checkout_line = nr
@@ -341,8 +334,7 @@ def main(argv: list[str]) -> int:
         root_dir, ".github", "workflows", "autopilot.yml"
     )
 
-    # Anti-vacuity: a missing workflow means the gate checked nothing, and that
-    # must never read as green.
+    # Anti-vacuity: a missing workflow means the gate checked nothing, and that must never read as green.
     if not os.path.isfile(workflow_file):
         log.error(
             "INVARIANT-FAIL: workflow-missing: no file at %s (nothing to check cannot pass)"
@@ -376,8 +368,7 @@ def main(argv: list[str]) -> int:
             continue
         fail("%s: %s:%s (%s)" % (kind, workflow_file, line, where))
 
-    # The Wall 4 comment is required IN the file: the trusted-first-checkout
-    # rule above must stay explained at the point of use, not by folklore.
+    # The Wall 4 comment is required IN the file: the trusted-first-checkout rule above must stay explained at the point of use, not by folklore.
     if "WALL 4" not in text:
         fail(
             "wall4-comment-missing: no 'WALL 4' comment explains the trusted checkout (%s)"
@@ -386,8 +377,7 @@ def main(argv: list[str]) -> int:
 
     model_if = model_if_block(text)
     if not model_if:
-        # Anti-vacuity: an unfindable `if:` means this invariant checked
-        # nothing, which must never read as green.
+        # Anti-vacuity: an unfindable `if:` means this invariant checked nothing, which must never read as green.
         fail(
             "model-without-state-guard: no job-level 'if:' found for the model job in %s "
             "(an unparsed guard cannot pass)" % workflow_file
@@ -399,13 +389,8 @@ def main(argv: list[str]) -> int:
             "counter" % workflow_file
         )
 
-    # -----------------------------------------------------------------------
-    # model-round-file-tools: the handoff CONTRACT requires the model to edit
-    # files and write handoff.json, and with a permissions allowlist present
-    # everything unlisted is DENIED. The first two live rounds (2026-08-09)
-    # burned 41 turns with 21 permission denials because Edit/Write were simply
-    # absent, an OMISSION every other permission check passes by construction.
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- model-round-file-tools: the handoff CONTRACT requires the model to edit files and write handoff.json, and with a permissions allowlist present everything unlisted is DENIED. The first two live rounds (2026-08-09) burned 41 turns with 21 permission denials because Edit/Write were simply absent, an OMISSION
+    # every other permission check passes by construction. -----------------------------------------------------------------------
     model_settings = model_settings_block(text)
     if not model_settings:
         fail(

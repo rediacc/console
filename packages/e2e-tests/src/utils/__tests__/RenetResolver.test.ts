@@ -155,12 +155,10 @@ describe('getRenetBinaryPath fallback', () => {
     // Import fresh to avoid cached resolver
     const { getRenetBinaryPath } = await import('../renetPath.js');
 
-    // Create new resolver instance that hasn't been initialized
-    // The getRenetBinaryPath should fall back to env var
+    // Create new resolver instance that hasn't been initialized The getRenetBinaryPath should fall back to env var
     const result = getRenetBinaryPath();
 
-    // Should either return the env var path or the cached resolver path
-    // In CI mode with no resolver init, it should return the env var path
+    // Should either return the env var path or the cached resolver path In CI mode with no resolver init, it should return the env var path
     expect(result).toBe('/ci/path/renet');
   });
 });

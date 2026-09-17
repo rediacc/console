@@ -72,9 +72,7 @@ DEFAULT_MAX_AGE_HOURS = 48
 DEFAULT_MAX_ATTEMPT = 3
 DEFAULT_MAX_RETRIES_PER_RUN = 5
 
-# `EXCLUDED_PATHS` (:74-76). BY PATH, NEVER BY DISPLAY NAME: watchdog-monitor's
-# name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is
-# unwritable, and without this entry 63 of 64 candidates are noise.
+# `EXCLUDED_PATHS` (:74-76). BY PATH, NEVER BY DISPLAY NAME: watchdog-monitor's name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable, and without this entry 63 of 64 candidates are noise.
 EXCLUDED_PATHS = (".github/workflows/watchdog-monitor.yml",)
 
 # `gh api ... --jq` (:91) and (:97-98), and the `jq -r` record splitter (:153).
@@ -297,9 +295,7 @@ def main(argv: list[str]) -> int:
 
     out.step("Nightly retry: failed runs in %s (last %dh)" % (repo, max_age_hours))
 
-    # FAIL CLOSED (:88-95). Without the branch tips a superseded run is
-    # indistinguishable from a current one, and retrying a superseded run is the
-    # expensive mistake, so an unreadable listing exits 0 having done nothing.
+    # FAIL CLOSED (:88-95). Without the branch tips a superseded run is indistinguishable from a current one, and retrying a superseded run is the expensive mistake, so an unreadable listing exits 0 having done nothing.
     live_heads = _gh_or_empty(
         ["api", "repos/%s/branches?per_page=100" % repo, "--paginate", "--jq", BRANCHES_JQ], ""
     )
@@ -370,8 +366,7 @@ def main(argv: list[str]) -> int:
             out.info("reran %s (%s, was attempt %s)" % (run_id, name, attempt))
             retried += 1
         else:
-            # A run still winding down answers 403 "already running" -- not an
-            # error worth failing the job over, and tomorrow picks it up.
+            # A run still winding down answers 403 "already running" -- not an error worth failing the job over, and tomorrow picks it up.
             out.warn("could not rerun %s (%s); likely still in progress" % (run_id, name))
 
     out.info(

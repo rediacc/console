@@ -90,33 +90,23 @@ DEFAULT_REPO = "rediacc/console"
 # Python's `\s` is not the same set.
 SPACE = "[ \t\n\v\f\r]"
 
-# The four alternatives of the twin's CLAUDE_PATTERN, one per line, in its
-# order. Assembled rather than written as one literal for the reason in the port
-# notes: the trailer cannot appear in a shell command in this repository.
+# The four alternatives of the twin's CLAUDE_PATTERN, one per line, in its order. Assembled rather than written as one literal for the reason in the port notes: the trailer cannot appear in a shell command in this repository.
 _TRAILER = "Co-" + "Authored-By"
 _GENERATED = "Generated with"
 _ROBOT = "\U0001f916"
 _NOREPLY = "noreply@anthropic\\.com"
 
-# Pattern to match Claude attribution (case-insensitive).
-# Matches: the co-author trailer naming Claude, "Generated with Claude", the
-# robot marker, and the anthropic noreply address.
-# Note: We specifically match attribution markers, not general mentions of Claude
-# as a tool.
+# Pattern to match Claude attribution (case-insensitive). Matches: the co-author trailer naming Claude, "Generated with Claude", the robot marker, and the anthropic noreply address. Note: We specifically match attribution markers, not general mentions of Claude as a tool.
 CLAUDE_PATTERN = re.compile(
     "(%s%s*:%s*Claude|%s%s+\\[?Claude|%s%s*Generated|%s)"
     % (_TRAILER, SPACE, SPACE, _GENERATED, SPACE, _ROBOT, SPACE, _NOREPLY),
     re.IGNORECASE,
 )
 
-# The author check is deliberately broader than the attribution pattern: any
-# author whose NAME or EMAIL mentions either brand is an attribution regardless
-# of how the message is worded.
+# The author check is deliberately broader than the attribution pattern: any author whose NAME or EMAIL mentions either brand is an attribution regardless of how the message is worded.
 AUTHOR_PATTERN = re.compile("(claude|anthropic)", re.IGNORECASE)
 
-# The retry schedule, from common.sh's `_gh_probe`. Three attempts, backing off
-# 3 then 6 seconds. See the port notes: dropping the sleeps stops it being a
-# retry past a rate limit.
+# The retry schedule, from common.sh's `_gh_probe`. Three attempts, backing off 3 then 6 seconds. See the port notes: dropping the sleeps stops it being a retry past a rate limit.
 GH_ATTEMPTS = 3
 
 
@@ -215,9 +205,7 @@ def is_blank(payload: str) -> bool:
 
 # ONE READ, NOT 3N. The compare payload already carries the message and the
 # author name and address, so the `repos/{r}/commits/{sha}` calls the loops used
-# to make were re-fetching data already in hand: THREE per commit, 762 of them on
-# a 254-commit PR, ~3.5 minutes of a 12-minute job. Every one of them was also a
-# chance for a rate limit to refuse a PR that is fine.
+# to make were re-fetching data already in hand: THREE per commit, 762 of them on a 254-commit PR, ~3.5 minutes of a 12-minute job. Every one of them was also a chance for a rate limit to refuse a PR that is fine.
 COMMIT_PROJECTION = (
     ".commits[] | {sha: .sha, message: .commit.message, "
     "name: .commit.author.name, email: .commit.author.email}"
@@ -240,9 +228,7 @@ def parse_rows(payload: str) -> list[dict]:
             value = json.loads(line)
         except ValueError:
             continue
-        # `.sha // empty` then `[[ -z "$SHA" ]] && continue`: a row with no
-        # usable sha is skipped on both sides rather than reported as commit
-        # "".
+        # `.sha // empty` then `[[ -z "$SHA" ]] && continue`: a row with no usable sha is skipped on both sides rather than reported as commit "".
         if isinstance(value, dict) and str(value.get("sha") or "") != "":
             out.append(value)
     return out
@@ -296,15 +282,9 @@ def main(argv: list[str] | None = None) -> int:
     # Check commit messages
     print("  Checking commit messages...")
     # NOT `pulls/{n}/commits`: that endpoint caps at 250 EVEN WITH --paginate,
-    # and it caps SILENTLY -- no error, no marker, just a short list. Measured
-    # 2026-09-15 on rediacc/console#589, a 254-commit PR: this gate read 250 and
-    # reported "No Claude attribution found - OK" over the four NEWEST commits,
-    # which it had never seen. That is the exact shape this gate was repaired for
-    # in the first place: inspect nothing, print a checkmark.
+    # and it caps SILENTLY -- no error, no marker, just a short list. Measured 2026-09-15 on rediacc/console#589, a 254-commit PR: this gate read 250 and reported "No Claude attribution found - OK" over the four NEWEST commits, which it had never seen. That is the exact shape this gate was repaired for in the first place: inspect nothing, print a checkmark.
     #
-    # The compare endpoint paginates properly, and the PR's own `.commits` count
-    # is an INDEPENDENT number to check the read against -- so a short read now
-    # refuses instead of passing, at any size rather than at one threshold.
+    # The compare endpoint paginates properly, and the PR's own `.commits` count is an INDEPENDENT number to check the read against -- so a short read now refuses instead of passing, at any size rather than at one threshold.
     ok, meta = gh_retry(
         "PR metadata for #%s" % pr_number,
         [
@@ -318,8 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         return probe_failed()
 
     fields = meta.split()
-    # `read -r base head total` puts the ENTIRE remainder in the last variable,
-    # so a fourth field makes the count non-numeric rather than being dropped.
+    # `read -r base head total` puts the ENTIRE remainder in the last variable, so a fourth field makes the count non-numeric rather than being dropped.
     base = fields[0] if len(fields) > 0 else ""
     head = fields[1] if len(fields) > 1 else ""
     total = " ".join(fields[2:])
@@ -343,9 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     if not ok:
         return probe_failed()
 
-    # A PR always has at least one commit. An empty list here means the call
-    # succeeded but returned nothing usable, which is not a PR this gate can
-    # clear.
+    # A PR always has at least one commit. An empty list here means the call succeeded but returned nothing usable, which is not a PR this gate can clear.
     if is_blank(commits):
         print("  ERROR: the commit list for PR #%s came back empty." % pr_number, file=sys.stderr)
         print(
@@ -369,9 +346,7 @@ def main(argv: list[str] | None = None) -> int:
 
     rows = parse_rows(commits)
 
-    # TWO PASSES, NOT ONE, and the order is load-bearing: every message finding
-    # is reported before every author finding, which is the order the old
-    # two-loop shape produced.
+    # TWO PASSES, NOT ONE, and the order is load-bearing: every message finding is reported before every author finding, which is the order the old two-loop shape produced.
     for row in rows:
         sha = str(row.get("sha") or "")
         message = str(row.get("message") or "")
@@ -425,15 +400,9 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# Bodies that MUST match, one per branch of the pattern, and bodies that must
-# NOT. The negative set is the important half: the twin's own note says this
-# pattern deliberately matches attribution markers and not "general mentions of
-# Claude as a tool", and a pattern that swallowed the second would red every PR
-# whose description mentions the assistant at all.
+# Bodies that MUST match, one per branch of the pattern, and bodies that must NOT. The negative set is the important half: the twin's own note says this pattern deliberately matches attribution markers and not "general mentions of Claude as a tool", and a pattern that swallowed the second would red every PR whose description mentions the assistant at all.
 MUST_MATCH = (
     _TRAILER + ": Claude Opus 5 <noreply@anthropic.com>",
     _TRAILER.lower() + ":Claude",
@@ -511,9 +480,7 @@ def selftest() -> int:
 
     # -- the completeness check, both directions ----------------------------
     # The defect it closes was SILENT: `pulls/{n}/commits` returned 250 of 254
-    # and the gate cleared the PR over four commits it never read. A control in
-    # one direction only would not have caught that, because the truncated read
-    # was itself a perfectly well-formed list.
+    # and the gate cleared the PR over four commits it never read. A control in one direction only would not have caught that, because the truncated read was itself a perfectly well-formed list.
     ctl.check("a complete read counts every line", read_count("a\nb\nc\n"), 3)
     ctl.check("PLANT: 250 lines is not 254, so the read is short", read_count("x\n" * 250), 250)
     ctl.check("a blank payload counts zero, never the declared total", read_count(""), 0)

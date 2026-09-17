@@ -76,8 +76,7 @@ function privateIpFor(cidr: string, hostIndex: number): string {
   return octets.join('.');
 }
 
-// SSH key injection — inline on each instance for inline_list providers, or one
-// shared key resource for the whole cluster for resource_id providers.
+// SSH key injection — inline on each instance for inline_list providers, or one shared key resource for the whole cluster for resource_id providers.
 function injectSshKey(
   attrs: Record<string, unknown>,
   member: Member,
@@ -118,12 +117,8 @@ function buildInstanceAttrs(
 
   // L2 inline interface (e.g. Linode VLAN): the private LAN is defined by the
   // interface label; no separate network resource exists. Linode config-profile
-  // interfaces are POSITIONAL — the first entry is eth0 — so a public interface
-  // must lead to keep the node reachable over SSH for bootstrap, and the VLAN
-  // follows as eth1. Neither `device` nor `mtu` is a valid config-interface
-  // argument (verified against linode provider v3): NIC ordering is positional,
-  // and MTU is stamped in-guest by the renet bootstrap from the network_mtu
-  // output (Linode VLANs cap at MTU 1500, the provider default).
+  // interfaces are POSITIONAL — the first entry is eth0 — so a public interface must lead to keep the node reachable over SSH for bootstrap, and the VLAN follows as eth1. Neither `device` nor `mtu` is a valid config-interface argument (verified against linode provider v3): NIC ordering is positional, and MTU is stamped in-guest by the renet bootstrap from the network_mtu output
+  // (Linode VLANs cap at MTU 1500, the provider default).
   const net = mapping.network;
   if (net?.attachVia === 'interface') {
     attrs.interface = [

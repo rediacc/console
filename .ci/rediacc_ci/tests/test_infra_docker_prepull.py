@@ -59,12 +59,8 @@ from rediacc_ci.infra import docker_prepull as dp
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "docker-prepull.sh"
-# FROM THE MODULE, not spelled out. This port shares its BASENAME with
-# `rediacc_ci.proxies.docker_prepull`, and `check:ci-dead-python`'s `mentioned`
-# route matches by basename on purpose ("a bare basename admits every corpus
-# file with that name"), so writing the literal here admits that OTHER file and
-# its `MANUAL_ENTRY_POINTS` exemption is then reported as no longer true.
-# Measured: the literal reddened that gate with one extra finding.
+# FROM THE MODULE, not spelled out. This port shares its BASENAME with `rediacc_ci.proxies.docker_prepull`, and `check:ci-dead-python`'s `mentioned` route matches by basename on purpose ("a bare basename admits every corpus file with that name"), so writing the literal here admits that OTHER file and its `MANUAL_ENTRY_POINTS` exemption is then reported as no longer true. Measured:
+# the literal reddened that gate with one extra finding.
 PORT = pathlib.Path(dp.__file__).resolve()
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -76,10 +72,7 @@ NOWHERE_DAEMON = "unix:///nonexistent/rediacc-docker-prepull-fixture.sock"
 
 # What the twin needs on PATH before `require_cmd docker` can speak: `dirname`
 # for its own SCRIPT_DIR, and `uname` because common.sh calls detect_os and
-# detect_arch at SOURCE time (common.sh:64, :100). Measured by running the case
-# without them and reading the two `uname: command not found` lines bash
-# printed -- a curated PATH that is missing one of these makes the twin noisy
-# in a way that has nothing to do with the subject.
+# detect_arch at SOURCE time (common.sh:64, :100). Measured by running the case without them and reading the two `uname: command not found` lines bash printed -- a curated PATH that is missing one of these makes the twin noisy in a way that has nothing to do with the subject.
 CURATED = ("dirname", "uname")
 
 FAKE_DOCKER = """#!/usr/bin/python3
@@ -151,8 +144,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str], extra: dict
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "FAKE_LOG": str(log),
-        # A leaked real docker has no daemon to talk to. Fixed, not per-case:
-        # see the module docstring.
+        # A leaked real docker has no daemon to talk to. Fixed, not per-case: see the module docstring.
         "DOCKER_HOST": NOWHERE_DAEMON,
     }
     env.update(extra)
@@ -188,9 +180,7 @@ def _sides(name: str, argv: list[str], **extra: str):
     return old
 
 
-# ---------------------------------------------------------------------------
-# The controls, first: a fake that is not reached proves nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls, first: a fake that is not reached proves nothing. ---------------------------------------------------------------------------
 
 
 def test_the_fake_docker_is_the_docker() -> None:
@@ -211,9 +201,7 @@ def test_the_twin_parses_under_bash() -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# The grammar, driven against bash's own parameter expansion.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The grammar, driven against bash's own parameter expansion. ---------------------------------------------------------------------------
 
 
 def _bash_split(spec: str) -> tuple[str, str]:
@@ -258,9 +246,7 @@ def test_pull_argv_omits_the_platform_flag_when_there_is_none() -> None:
     ]
 
 
-# ---------------------------------------------------------------------------
-# The differential.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential. ---------------------------------------------------------------------------
 
 
 def test_no_arguments_is_refused_with_the_usage_line() -> None:
@@ -284,8 +270,7 @@ def test_no_arguments_is_refused_with_the_usage_line() -> None:
     assert new_lines[1].endswith(" <ref>[=<platform>] ...   e.g. ubuntu:24.04=linux/amd64")
     assert str(TWIN) in old_lines[1] or "docker-prepull.sh" in old_lines[1]
     assert PORT.name in new_lines[1]
-    # `✗ Usage: <path> <rest...>`: drop the three leading tokens and the
-    # remainder must be identical, so the path is the ONLY thing that differs.
+    # `✗ Usage: <path> <rest...>`: drop the three leading tokens and the remainder must be identical, so the path is the ONLY thing that differs.
     assert old_lines[1].split(" ", 3)[:2] == new_lines[1].split(" ", 3)[:2] == ["✗", "Usage:"]
     assert old_lines[1].split(" ", 3)[3] == new_lines[1].split(" ", 3)[3]
     assert len(old_lines) == len(new_lines) == 2

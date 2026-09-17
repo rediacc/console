@@ -228,10 +228,7 @@ export class RepositoryHelpers {
     intervalMs = 1000
   ): Promise<boolean> {
     for (let i = 0; i < maxAttempts; i++) {
-      // Use actual query instead of pg_isready - this verifies the database
-      // is fully operational, not just that the socket accepts connections.
-      // This avoids race conditions where pg_isready passes but init scripts
-      // are still running or the database is restarting.
+      // Use actual query instead of pg_isready - this verifies the database is fully operational, not just that the socket accepts connections. This avoids race conditions where pg_isready passes but init scripts are still running or the database is restarting.
       const result = await this.executeViaBridge(
         `sudo docker -H unix:///var/run/rediacc/docker-${networkId}.sock exec ${containerName} psql -U postgres -d testdb -c "SELECT 1" -t -q 2>/dev/null`
       );

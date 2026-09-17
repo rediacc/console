@@ -32,10 +32,7 @@ from rediacc_ci.tests import differential as diff
 
 SHIM = ".ci/scripts/lib/age-check.sh"
 
-# Ambient git configuration is switched OFF, not merely overridden: /dev/null is
-# a valid empty config file to git. Without this the fixture inherits the
-# developer's init.defaultBranch, commit template and gpg signing, and passes or
-# fails per machine.
+# Ambient git configuration is switched OFF, not merely overridden: /dev/null is a valid empty config file to git. Without this the fixture inherits the developer's init.defaultBranch, commit template and gpg signing, and passes or fails per machine.
 ISOLATED = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_SYSTEM": "/dev/null",
@@ -73,9 +70,7 @@ def _fixture(path, age_days: int, content: str, extra_commit: bool = False):
         {"GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp},
     )
     if extra_commit:
-        # A RECENT second commit, so `clone --depth 1` grafts above the commit
-        # that added the line. Without it the shallow clone still contains it
-        # and the truncation case proves nothing.
+        # A RECENT second commit, so `clone --depth 1` grafts above the commit that added the line. Without it the shallow clone still contains it and the truncation case proves nothing.
         (path / "other").write_text("later\n")
         _git(["add", "other"], path)
         _git(["commit", "-q", "-m", "recent"], path)
@@ -125,9 +120,7 @@ def test_truncated_history_cannot_verify(tmp_path) -> None:
         (0, False, "ok"),
         (180, False, "ok"),
         (181, False, "warn"),
-        # 365 is WARN, not ok: the bash was `if ((age > FAIL)) ... elif ((age >
-        # WARN))`, so the fail threshold does not cancel the warn one. Writing
-        # "ok" here was the first draft's mistake and the table caught it.
+        # 365 is WARN, not ok: the bash was `if ((age > FAIL)) ... elif ((age > WARN))`, so the fail threshold does not cancel the warn one. Writing "ok" here was the first draft's mistake and the table caught it.
         (365, False, "warn"),
         (366, False, "error"),
         (-1, False, "warn"),

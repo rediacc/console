@@ -47,24 +47,16 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-stale-index.sh"
 ORDER = 22
 
-# `git commit <pathspec>` and `-a` both take the WORKING TREE for those paths,
-# so the staleness this guard is about cannot arise for them. Dropping the test
-# makes the advisory fire on the one commit form that is provably NOT at risk,
-# which is how a warning stops being read.
+# `git commit <pathspec>` and `-a` both take the WORKING TREE for those paths, so the staleness this guard is about cannot arise for them. Dropping the test makes the advisory fire on the one commit form that is provably NOT at risk, which is how a warning stops being read.
 DEFECT = ("if hookio.grep_q(WORKING_TREE_FORM, scan):", "if False:")
 
-# COMMAND POSITION, not mere mention. The first draft of this guard matched
-# `git commit` after ANY whitespace, so `echo do not run git commit here` warned
-# -- prose read as a command. That is the same mention-vs-target defect fixed in
-# block-bash-write-to-running-script.sh and block-roundlog-truncate.sh on
-# 2026-08-28, reintroduced here within the hour, which is why it is anchored
+# COMMAND POSITION, not mere mention. The first draft of this guard matched `git commit` after ANY whitespace, so `echo do not run git commit here` warned -- prose read as a command. That is the same mention-vs-target defect fixed in block-bash-write-to-running-script.sh and block-roundlog-truncate.sh on 2026-08-28, reintroduced here within the hour, which is why it is anchored
 # rather than remembered. hook_scan_target strips QUOTED spans and extracts
 # `sh -c` payloads; unquoted prose survives it, so the anchor is what separates
 # a command from a sentence.
 COMMIT_AT_COMMAND_POS = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit")
 
-# `-a` / `--all`: the index is not what gets committed, so there is nothing to
-# be stale.
+# `-a` / `--all`: the index is not what gets committed, so there is nothing to be stale.
 WORKING_TREE_FORM = hookio.rx(r"git +commit[^|;&]*(-a[{S}]|--all\b)")
 
 
@@ -130,10 +122,7 @@ def _disjoint_tree(path):
 
 FIXTURES = {"stale-index": _stale_tree, "disjoint-index": _disjoint_tree}
 
-# BOTH variables, not just GIT_WORK_TREE. This guard's `git diff` calls take no
-# `-C` and run in whatever directory the harness invoked it in, so leaving
-# GIT_DIR to discovery would diff THIS checkout's index against the fixture's
-# work tree -- a comparison of two unrelated trees, and a very large one.
+# BOTH variables, not just GIT_WORK_TREE. This guard's `git diff` calls take no `-C` and run in whatever directory the harness invoked it in, so leaving GIT_DIR to discovery would diff THIS checkout's index against the fixture's work tree -- a comparison of two unrelated trees, and a very large one.
 ENVS = [
     (
         "stale",
@@ -178,8 +167,7 @@ def run(ev):
     if hookio.grep_q(WORKING_TREE_FORM, scan):
         return hookio.ALLOW
 
-    # An unreadable probe is never a pass, but this is an ADVISORY: it must never
-    # fail a command because git was unavailable. Stay silent instead.
+    # An unreadable probe is never a pass, but this is an ADVISORY: it must never fail a command because git was unavailable. Stay silent instead.
     staged = hookio.git_out(["diff", "--cached", "--name-only"], want_rc=True)
     if staged is None:
         return hookio.ALLOW
@@ -201,7 +189,7 @@ def run(ev):
         "⚠️  STALE INDEX: %d path(s) were staged and then EDITED. This commit takes the "
         "STAGED version, not what is on disk:" % n
     )
-    # `printf '%s\n' "$stale" | sed 's/^/      /'`
+    # `printf '%s\n' "$stale" | sed 's/^/ /'`
     for path in stale:
         ev.warn("      %s" % path)
     ev.warn("   If the message describes the edits, re-stage first: git add -- <those paths>")

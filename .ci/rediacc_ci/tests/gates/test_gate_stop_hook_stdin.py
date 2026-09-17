@@ -142,8 +142,7 @@ def drive(hook: str, mode: str, budget: float) -> str:
         if mode in ("late", "garbage"):
             time.sleep(0.3)  # arrive AFTER the first read attempt
             body = payload if mode == "late" else "{not json at all"
-            # The hook may already have exited (the `garbage` payload is refused
-            # fast), and a write to a pipe with no reader is then EPIPE. That is the
+            # The hook may already have exited (the `garbage` payload is refused fast), and a write to a pipe with no reader is then EPIPE. That is the
             # case succeeding, not failing, so it is suppressed rather than raised --
             # `contextlib.suppress` because ruff's SIM105 is right that a bare
             # try/except/pass hides which exception was expected.
@@ -165,10 +164,7 @@ def drive(hook: str, mode: str, budget: float) -> str:
     if write_end is not None:
         os.close(write_end)
 
-    # BOTH STREAMS, unlike the twin. See the module docstring: the real hook turns
-    # every crash into a block object on STDOUT, so a stderr-only predicate is blind
-    # to the one subject this file exists to watch. The stand-in the control uses has
-    # no such handler and still reports through stderr, so both shapes are covered.
+    # BOTH STREAMS, unlike the twin. See the module docstring: the real hook turns every crash into a block object on STDOUT, so a stderr-only predicate is blind to the one subject this file exists to watch. The stand-in the control uses has no such handler and still reports through stderr, so both shapes are covered.
     haystack = out + err
     crashed = (
         "Traceback" in haystack or "BlockingIOError" in haystack or "Stop hook CRASHED" in haystack
@@ -177,10 +173,7 @@ def drive(hook: str, mode: str, budget: float) -> str:
 
 
 def test_the_harness_can_actually_detect_a_crash(gate, tmp_path):
-    # CONTROL. Without this, every assertion below could be passing because the
-    # driver never reports a crash rather than because the hook never has one. Point
-    # it at a stand-in that reproduces the ORIGINAL defect and require it to be
-    # caught.
+    # CONTROL. Without this, every assertion below could be passing because the driver never reports a crash rather than because the hook never has one. Point it at a stand-in that reproduces the ORIGINAL defect and require it to be caught.
     broken = tmp_path / "broken.py"
     broken.write_text(BROKEN_STAND_IN, encoding="utf-8")
     observed = drive(str(broken), "never", 20)
@@ -214,8 +207,7 @@ def test_never_written_payload_does_not_crash_or_hang(gate):
 
 
 def test_late_payload_is_still_read(gate):
-    # Bounding the wait must not cost us the normal case: a payload written after the
-    # first read attempt still has to be picked up.
+    # Bounding the wait must not cost us the normal case: a payload written after the first read attempt still has to be picked up.
     observed = drive(_require_hook(gate), "late", BUDGET)
     gate.assert_contains(
         observed, "hung=0", "a late payload must not hang the hook (%s)" % observed

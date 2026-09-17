@@ -103,18 +103,14 @@ CF_PAGES_PROJECT = "rediacc"
 CF_API_BASE = "https://api.cloudflare.com/client/v4"
 
 # `per_page=25` in the query and `-lt 25` in the loop guard (:66, :80). ONE
-# constant, because a page size that disagreed with the termination test would
-# either stop after page 1 or never stop at all.
+# constant, because a page size that disagreed with the termination test would either stop after page 1 or never stop at all.
 PAGE_SIZE = 25
 
-# The two `|| echo` fallbacks (:66, :104). Note they are DIFFERENT shapes: the
-# listing's has no `success` key at all (so `.success // false` is false), the
-# delete's says so explicitly.
+# The two `|| echo` fallbacks (:66, :104). Note they are DIFFERENT shapes: the listing's has no `success` key at all (so `.success // false` is false), the delete's says so explicitly.
 LIST_FALLBACK = '{"result":[]}'
 DELETE_FALLBACK = '{"success":false}'
 
-# The defect named in the module docstring, as a constant so a test can assert
-# it by name instead of restating the sentence.
+# The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
 API_FAILURE_READS_AS_NOTHING_TO_DO = True
 
 
@@ -268,14 +264,11 @@ def _sweep(branch: str, dry_run: str, token: str, account: str) -> int:
 
         success = jq(["-r", ".success // false"], response)
         if success != "true":
-            # THE DEFECT. This is one warning line on stderr, and the run
-            # continues to a green "nothing to clean up". See the module
-            # docstring.
+            # THE DEFECT. This is one warning line on stderr, and the run continues to a green "nothing to clean up". See the module docstring.
             log.warn("CF API request failed on page %d" % page)
             break
 
-        # Computed BEFORE the length below, which is why a `result`-less body
-        # dies here rather than reporting zero.
+        # Computed BEFORE the length below, which is why a `result`-less body dies here rather than reporting zero.
         page_results = jq(
             [
                 "--arg",
@@ -289,9 +282,7 @@ def _sweep(branch: str, dry_run: str, token: str, account: str) -> int:
             response,
         )
         all_results = jq([".result | length"], response)
-        # The jq PROGRAM is built by interpolating one jq output into another,
-        # exactly as the twin does at :78. Kept as string interpolation rather
-        # than `--argjson` so a malformed accumulator fails the same way.
+        # The jq PROGRAM is built by interpolating one jq output into another, exactly as the twin does at :78. Kept as string interpolation rather than `--argjson` so a malformed accumulator fails the same way.
         all_deployments = jq([". + %s" % page_results], all_deployments)
 
         if int(all_results) < PAGE_SIZE:
@@ -324,9 +315,7 @@ def _sweep(branch: str, dry_run: str, token: str, account: str) -> int:
             log.debug("Deleted: %s" % dep_id)
             deleted += 1
         else:
-            # "the latest deployment cannot be deleted" is the expected one, and
-            # the script keeps going: a branch's newest preview is Cloudflare's
-            # to hold, and refusing over it would leave the older ones behind.
+            # "the latest deployment cannot be deleted" is the expected one, and the script keeps going: a branch's newest preview is Cloudflare's to hold, and refusing over it would leave the older ones behind.
             error_msg = jq(["-r", '.errors[0].message // "unknown error"'], del_response)
             log.warn("Could not delete %s: %s" % (dep_id, error_msg))
 

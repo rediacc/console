@@ -126,8 +126,7 @@ def test_a_longer_version_no_longer_satisfies_the_field_check(gate, tmp_path):
         "'%s' must NOT satisfy a '%s' check" % (longer, version),
     )
 
-    # The control. Both old idioms accept it, which is what made them worth
-    # replacing even at low severity.
+    # The control. Both old idioms accept it, which is what made them worth replacing even at low severity.
     old_deb = bash(
         gate,
         tmp_path,
@@ -223,16 +222,14 @@ def test_the_old_idiom_is_gone_from_the_target(gate):
         "the unanchored rpm grep must be gone from the code",
     )
 
-    # Discrimination: count() must be able to find something, or the three zeros
-    # above would be satisfied by a broken matcher.
+    # Discrimination: count() must be able to find something, or the three zeros above would be satisfied by a broken matcher.
     gate.assert_eq(
         count('assert_version_field "$info" "Version"'),
         2,
         "both metadata validators must use assert_version_field",
     )
 
-    # And all four container checks use the exact-match regex. Counted, not
-    # merely present: three of four converted would otherwise look identical.
+    # And all four container checks use the exact-match regex. Counted, not merely present: three of four converted would otherwise look identical.
     gate.assert_eq(
         count("grep -qE '${TEST_VERSION_RE}'"),
         4,

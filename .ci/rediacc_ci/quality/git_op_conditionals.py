@@ -157,17 +157,14 @@ from rediacc_ci.controls import Controls, plant
 # can never participate in a match; it is present so the class is the same set.
 SPACE = r"[ \t\n\v\f\r]"
 
-# The two pathspecs, handed to git unchanged. See the port notes on why the two
-# spellings differ and why neither is a typo.
+# The two pathspecs, handed to git unchanged. See the port notes on why the two spellings differ and why neither is a typo.
 SCAN_GLOBS = (".claude/hooks/**/*.sh", ".ci/scripts/quality/*.sh")
 
 # THE ONE EXEMPTION, BY NAME AND WITH ITS REASON, PRINTED EVERY RUN.
 #
-# The bash twin quotes the risky shapes verbatim in its header and plants them
-# in heredoc control fixtures, so it matches its own extraction regex. The twin
+# The bash twin quotes the risky shapes verbatim in its header and plants them in heredoc control fixtures, so it matches its own extraction regex. The twin
 # exempts itself with `${BASH_SOURCE[0]#"$ROOT"/}`; a Python port has no such
-# line to inherit, so the path is written out. DELETE THIS ENTRY IN THE SAME
-# CHANGE THAT DELETES THE TWIN.
+# line to inherit, so the path is written out. DELETE THIS ENTRY IN THE SAME CHANGE THAT DELETES THE TWIN.
 EXEMPT_PATHS = {
     ".ci/scripts/quality/check-git-op-conditionals.sh": (
         "the bash twin of this gate: its header quotes the risky shapes as examples "
@@ -176,11 +173,7 @@ EXEMPT_PATHS = {
 }
 
 # Every `VAR=$(git ... rev-parse|symbolic-ref|branch ...)` capture. `git` and its
-# subcommand are NOT required to be adjacent: `git -C "$dir" rev-parse ...` is
-# the ACTUAL shape of the real defect, and an adjacency-requiring pattern missed
-# it silently on the real tree while the synthetic control fixture, written
-# without `-C`, still passed -- a gate proving its own harness works and nothing
-# about the tree it was supposed to be reading.
+# subcommand are NOT required to be adjacent: `git -C "$dir" rev-parse ...` is the ACTUAL shape of the real defect, and an adjacency-requiring pattern missed it silently on the real tree while the synthetic control fixture, written without `-C`, still passed -- a gate proving its own harness works and nothing about the tree it was supposed to be reading.
 _CAPTURE = re.compile(
     r"[A-Za-z_][A-Za-z0-9_]*=\$\(git\b[^)]*\b(?:rev-parse|symbolic-ref|branch)\b[^)]*\)"
 )
@@ -199,15 +192,9 @@ _GUARD_HANDLER = re.compile(r"\|\|%s*(exit|return|continue|true|:)(%s|$)" % (SPA
 # checkout; it prints the literal string "HEAD".
 _ABBREV_REF = re.compile(r"rev-parse%s+--abbrev-ref%s+HEAD" % (SPACE, SPACE))
 
-# SECOND SHAPE: a BARE statement, not an assignment at all --
-# `git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main"` as a function's
-# last line, its stdout becoming the function's de facto return value at the
+# SECOND SHAPE: a BARE statement, not an assignment at all -- `git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main"` as a function's last line, its stdout becoming the function's de facto return value at the
 # CALL SITE (`current_branch="$(get_current_branch)"`). The `|| echo <fallback>`
-# reads as a guard but is not one: it fires only when git itself FAILS, and this
-# command SUCCEEDS on a detached checkout, printing "HEAD" straight past it.
-# Found 2026-08-28 in check-submodule-branches.sh's get_current_branch() and
-# get_submodule_branch(), where two independently-detached checkouts (the
-# superproject and a submodule) would both return "HEAD" and compare EQUAL,
+# reads as a guard but is not one: it fires only when git itself FAILS, and this command SUCCEEDS on a detached checkout, printing "HEAD" straight past it. Found 2026-08-28 in check-submodule-branches.sh's get_current_branch() and get_submodule_branch(), where two independently-detached checkouts (the superproject and a submodule) would both return "HEAD" and compare EQUAL,
 # reporting a branch match that was not real.
 _BARE = re.compile(
     r"git\b[^|;&]*\brev-parse\b[^|;&]*--abbrev-ref[^|;&]*\bHEAD\b[^|;&]*\|\|%s*echo\b" % SPACE
@@ -253,8 +240,7 @@ def scan_text(body: str, label: str) -> list[str]:
             if _GUARD_HANDLER.search(line):
                 continue
             if _ABBREV_REF.search(line):
-                # Checked BEFORE the general empty-check guard: emptiness alone
-                # does not catch the detached-HEAD sentinel this command returns.
+                # Checked BEFORE the general empty-check guard: emptiness alone does not catch the detached-HEAD sentinel this command returns.
                 if head_literal_guard(varname).search(body):
                     continue
                 findings.append("%s:%s" % (label, varname))
@@ -269,94 +255,53 @@ def scan_text(body: str, label: str) -> list[str]:
     return findings
 
 
-# ---------------------------------------------------------------------------
-# THE PYTHON HALF.
+# --------------------------------------------------------------------------- THE PYTHON HALF.
 #
-# WHY IT EXISTS. W7 is porting this repo's bash gates to Python, and a tool that
-# identifies its subject by a `.sh` NAME stops seeing that subject the moment it
-# is ported -- silently, because a matcher that stops matching reports nothing
-# and still exits 0. Widening only the GLOB would be worse than the gap: the scan
-# would look widened, read 186 Python files, and find nothing, because every
-# pattern below the glob is spelled in bash. So the PREDICATE is ported too.
+# WHY IT EXISTS. W7 is porting this repo's bash gates to Python, and a tool that identifies its subject by a `.sh` NAME stops seeing that subject the moment it is ported -- silently, because a matcher that stops matching reports nothing and still exits 0. Widening only the GLOB would be worse than the gap: the scan would look widened, read 186 Python files, and find nothing,
+# because every pattern below the glob is spelled in bash. So the PREDICATE is ported too.
 #
 # THE MAPPING, shape for shape. The bash subject is `VAR=$(git ... rev-parse ...)`
 # with the status dropped. The Python subject is the same capture written three
-# ways, all of them present in this tree: the repo helper
-# `hookio.git_out(["rev-parse", ...])`, a varargs helper `_git(root, "rev-parse",
-# ...)`, and an explicit argv `subprocess.run(["git", "rev-parse", ...])`.
-# `hookio.run_out` is the exact analogue of the bash shape and says so at its
-# definition: the default "returns the (possibly empty) output and drops the
+# ways, all of them present in this tree: the repo helper `hookio.git_out(["rev-parse", ...])`, a varargs helper `_git(root, "rev-parse", ...)`, and an explicit argv `subprocess.run(["git", "rev-parse", ...])`. `hookio.run_out` is the exact analogue of the bash shape and says so at its definition: the default "returns the (possibly empty) output and drops the
 # status, which is the `x=$(cmd 2>/dev/null)` shape."
 #
-#   bash                                python
-#   ----                                ------
+# bash python ---- ------
 #   VAR=$(git ...)                      var = git_out([...])
 #   || exit / || return / || true       check=True / check_output / check_call
 #   if ! VAR=$(...); then               if/elif/while heading the statement
-#   -z "$VAR" / -n "$VAR"               not var / if var / var and / var is None
+# -z "$VAR" / -n "$VAR" not var / if var / var and / var is None
 #   "$VAR" == "HEAD"                    var == "HEAD" / var != "HEAD"
-#   bare `... || echo <fallback>`       return git_out([...]) or "<fallback>"
+# bare `... || echo <fallback>` return git_out([...]) or "<fallback>"
 #
-# THE BACKWARD LOOK IS NOT A FLOURISH. Black splits a call so that the `git`
-# token and the identity token land on DIFFERENT physical lines:
+# THE BACKWARD LOOK IS NOT A FLOURISH. Black splits a call so that the `git` token and the identity token land on DIFFERENT physical lines:
 #
 #     remote = hookio.git_out(
 #         ["rev-parse", "-q", "--verify", "origin/%s" % branch], cwd=root
-#     )
+# )
 #
 # That is real, at warn_remote_drift.py:209. A line-oriented scanner sees a line
 # with `rev-parse` and no assignment, and a line with an assignment and no
-# `rev-parse`, and reports neither. So a line carrying an identity token walks
-# BACK up to three lines through lines that END in an open bracket, and the
-# `git` test is applied to the WINDOW rather than to the line -- in that order,
-# because testing for `git` first drops the shape before the window is built.
+# `rev-parse`, and reports neither. So a line carrying an identity token walks BACK up to three lines through lines that END in an open bracket, and the `git` test is applied to the WINDOW rather than to the line -- in that order, because testing for `git` first drops the shape before the window is built.
 #
-# AND WHY NOT A BRACKET-DEPTH JOINER, which was written first and thrown away.
-# Counting `(`/`[` per line ignores string literals, and this tree is full of
+# AND WHY NOT A BRACKET-DEPTH JOINER, which was written first and thrown away. Counting `(`/`[` per line ignores string literals, and this tree is full of
 # regex constants like `ALLOW_EMPTY = (r"(^|[;&|(]|&&" + ...)`: the depth never
-# returns to zero, the joiner swallows every statement below, and an identity
-# token from far downstream gets attributed to the constant. It reported FOUR
-# module-level constants that way -- ALLOW_EMPTY, DEFECT, COMMIT_AT_COMMAND_POS
-# and _ENV_PREFIX -- none of which contains a git identity call at all. The
-# bounded backward look has no such failure mode and mirrors into awk in ten
+# returns to zero, the joiner swallows every statement below, and an identity token from far downstream gets attributed to the constant. It reported FOUR module-level constants that way -- ALLOW_EMPTY, DEFECT, COMMIT_AT_COMMAND_POS and _ENV_PREFIX -- none of which contains a git identity call at all. The bounded backward look has no such failure mode and mirrors into awk in ten
 # lines, which the twin needs.
 #
-# CONTROL AND FIXTURE BODIES ARE OUT OF SCOPE, and this is the twin's own
-# reasoning rather than a new concession. The twin exempts ITS OWN FILE because
-# "its header quotes the risky shapes as examples and its controls plant them in
-# heredocs". A ported gate carries its controls INSIDE the module, so the same
+# CONTROL AND FIXTURE BODIES ARE OUT OF SCOPE, and this is the twin's own reasoning rather than a new concession. The twin exempts ITS OWN FILE because "its header quotes the risky shapes as examples and its controls plant them in heredocs". A ported gate carries its controls INSIDE the module, so the same
 # exemption cannot be done by path; it is done by function. The names are
-# measured, not guessed: across the 386 tracked `.ci/**/*.py` files the top-level
-# control entry points are `selftest` (114), `run_controls` (10), `controls` (7)
-# and `control` (5). Bodies end at the first non-blank line back in column 0, NOT
-# at end of file, so a `main()` defined after the controls is still judged.
+# measured, not guessed: across the 386 tracked `.ci/**/*.py` files the top-level control entry points are `selftest` (114), `run_controls` (10), `controls` (7) and `control` (5). Bodies end at the first non-blank line back in column 0, NOT at end of file, so a `main()` defined after the controls is still judged.
 #
-# TEST FILES ARE OUT OF SCOPE for the same reason, and the basename pattern
-# accepts BOTH separators on purpose: this tree spells one
-# `guards/test-block_unverified_push.py` with a HYPHEN, and a `test_` -only
-# pattern would have missed it while looking correct.
+# TEST FILES ARE OUT OF SCOPE for the same reason, and the basename pattern accepts BOTH separators on purpose: this tree spells one `guards/test-block_unverified_push.py` with a HYPHEN, and a `test_` -only pattern would have missed it while looking correct.
 #
-# THE GUARD SEARCHES ARE FILE-WIDE AND TEXTUAL, over-clearing exactly as the bash
-# half does and for the same stated reason: this gate's expensive error is the
-# false POSITIVE, which gets it suppressed and then it protects nothing.
-# `if head_path and pathlib.Path(head_path).is_file():` is a real guard written
-# as a compound condition, and a narrower `if var:` spelling reported it, plus
-# two more, as unguarded.
-# ---------------------------------------------------------------------------
+# THE GUARD SEARCHES ARE FILE-WIDE AND TEXTUAL, over-clearing exactly as the bash half does and for the same stated reason: this gate's expensive error is the false POSITIVE, which gets it suppressed and then it protects nothing. `if head_path and pathlib.Path(head_path).is_file():` is a real guard written as a compound condition, and a narrower `if var:` spelling reported it, plus
+# two more, as unguarded. ---------------------------------------------------------------------------
 
-# The two Python pathspecs. FLAT SPELLINGS ON BOTH, and neither is a typo: git's
-# default pathspec is wildmatch WITHOUT pathname mode, so `*` crosses `/` and
-# `.claude/rediacc_hooks/*.py` matches the nested `guards/` and `tests/` files
-# too. The `**` spelling is the one that is wrong here -- measured 2026-09-08,
-# `.claude/rediacc_hooks/**/*.py` returns 58 files and `.claude/rediacc_hooks/*.py`
-# returns 64, because `**/*.py` still demands a literal slash and therefore drops
-# the SIX top-level modules. One of the six is `hookio.py`, which defines
-# `git_out` and `run_out` -- the helpers every finding below flows through. The
-# same trap already cost this gate a silent zero once, on the bash side.
+# The two Python pathspecs. FLAT SPELLINGS ON BOTH, and neither is a typo: git's default pathspec is wildmatch WITHOUT pathname mode, so `*` crosses `/` and `.claude/rediacc_hooks/*.py` matches the nested `guards/` and `tests/` files too. The `**` spelling is the one that is wrong here -- measured 2026-09-08, `.claude/rediacc_hooks/**/*.py` returns 58 files and
+# `.claude/rediacc_hooks/*.py` returns 64, because `**/*.py` still demands a literal slash and therefore drops the SIX top-level modules. One of the six is `hookio.py`, which defines `git_out` and `run_out` -- the helpers every finding below flows through. The same trap already cost this gate a silent zero once, on the bash side.
 PY_SCAN_GLOBS = (".claude/rediacc_hooks/*.py", ".ci/scripts/quality/*.py")
 
-# `git` as a WHOLE word, so it matches `"git"`, `git_out`, `_git` and `run_git`
-# but not `github_api` or `gitlab`.
+# `git` as a WHOLE word, so it matches `"git"`, `git_out`, `_git` and `run_git` but not `github_api` or `gitlab`.
 _PY_GIT_TOKEN = re.compile(r"(?<![0-9A-Za-z])git(?![0-9A-Za-z])")
 
 # The identity subcommands. `rev-parse` and `symbolic-ref` carry a hyphen and so
@@ -375,8 +320,7 @@ _PY_CONTROL_DEF = re.compile(
 )
 _PY_TEST_FILE = re.compile(r"(?:^|/)test[-_][^/]*\.py$")
 
-# How far back to look for the head of a split call. Three lines covers every
-# split shape in this tree and bounds the cost.
+# How far back to look for the head of a split call. Three lines covers every split shape in this tree and bounds the cost.
 _PY_LOOKBACK = 3
 
 
@@ -436,9 +380,7 @@ def scan_python_text(body: str, label: str) -> list[str]:
         if not _PY_IDENTITY.search(line):
             continue
 
-        # WINDOW FIRST, `git` TEST SECOND. See the section header: the head line
-        # carries `git_out` and the continuation carries `rev-parse`, so testing
-        # the line for `git` before joining drops the split shape silently.
+        # WINDOW FIRST, `git` TEST SECOND. See the section header: the head line carries `git_out` and the continuation carries `rev-parse`, so testing the line for `git` before joining drops the split shape silently.
         window = line
         head = _PY_ASSIGN.match(line)
         for back in range(1, _PY_LOOKBACK + 1):
@@ -456,10 +398,7 @@ def scan_python_text(body: str, label: str) -> list[str]:
         if head is None:
             # THE BARE SHAPE: a `return` whose value IS the command's stdout,
             # with no name to hang a guard on. Banned outright for the abbrev-ref
-            # spelling, exactly as the bash half bans `... || echo <fallback>`,
-            # and for the identical reason -- `or "main"` fires only when git
-            # FAILS, and this command succeeds on a detached checkout, printing
-            # the literal "HEAD" straight past it.
+            # spelling, exactly as the bash half bans `... || echo <fallback>`, and for the identical reason -- `or "main"` fires only when git FAILS, and this command succeeds on a detached checkout, printing the literal "HEAD" straight past it.
             if _PY_RETURN.match(line) and _PY_ABBREV.search(window):
                 findings.append("%s:bare-statement-line-%d" % (label, index + 1))
             continue
@@ -470,8 +409,7 @@ def scan_python_text(body: str, label: str) -> list[str]:
         if _PY_FAIL_LOUD.search(window):
             continue
         if _PY_ABBREV.search(window):
-            # Before the general empty check: emptiness does not catch the
-            # detached-HEAD sentinel this command returns.
+            # Before the general empty check: emptiness does not catch the detached-HEAD sentinel this command returns.
             if py_head_literal_guard(varname).search(body):
                 continue
             findings.append("%s:%s" % (label, varname))
@@ -495,8 +433,7 @@ def scan_file(path: pathlib.Path, label: str) -> list[str]:
         body = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
-    # ROUTED BY EXTENSION, because the two predicates are spelled in different
-    # languages and neither one finds anything in the other's syntax.
+    # ROUTED BY EXTENSION, because the two predicates are spelled in different languages and neither one finds anything in the other's syntax.
     if label.endswith(".py") or path.name.endswith(".py"):
         return scan_python_text(body, label)
     return scan_text(body, label)
@@ -526,8 +463,7 @@ def scan_files(root: pathlib.Path, globs: tuple[str, ...] = SCAN_GLOBS) -> list[
 
 # --- the control fixtures, byte for byte from the twin's heredocs -----------
 #
-# Each one is a shape that broke this gate, or the mirror that proves the fix
-# did not break the correct shape. The `-C` and bare-statement fixtures are the
+# Each one is a shape that broke this gate, or the mirror that proves the fix did not break the correct shape. The `-C` and bare-statement fixtures are the
 # two REAL defects; the rest are their mirrors.
 _CONTROLS: tuple[tuple[str, str, bool, str], ...] = (
     (
@@ -635,10 +571,7 @@ _BARE_PASS_LINES = (
 
 # --- the python control fixtures -------------------------------------------
 #
-# Every bash fixture above has a Python counterpart in the SAME shape, plus the
-# two the port needed that bash never could: the split call (`bad-multiline.py`)
-# and the fail-loud helper (`good-checked.py`). BOTH DIRECTIONS throughout -- a
-# gate carrying only positive controls will happily flag the whole tree.
+# Every bash fixture above has a Python counterpart in the SAME shape, plus the two the port needed that bash never could: the split call (`bad-multiline.py`) and the fail-loud helper (`good-checked.py`). BOTH DIRECTIONS throughout -- a gate carrying only positive controls will happily flag the whole tree.
 _PY_CONTROLS: tuple[tuple[str, str, bool, str], ...] = (
     (
         "bad.py",
@@ -722,9 +655,7 @@ _PY_CONTROLS: tuple[tuple[str, str, bool, str], ...] = (
         "CONTROL FAILED: a fail-loud `check=True` python capture WAS flagged.",
     ),
     (
-        # THE `git` TOKEN TEST, WHICH NOTHING WATCHED UNTIL A MUTATION SAID SO.
-        # Disabling the token test was measured on 2026-09-08 to change NOTHING
-        # on the real tree and to fail NO control -- so the test was live code
+        # THE `git` TOKEN TEST, WHICH NOTHING WATCHED UNTIL A MUTATION SAID SO. Disabling the token test was measured on 2026-09-08 to change NOTHING on the real tree and to fail NO control -- so the test was live code
         # with no proof it was doing anything. `github_api` carries the letters
         # `git` and must not be read as the git CLI.
         "no-git.py",
@@ -783,8 +714,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- controls first: a gate nobody has watched fail is not a gate -------
     #
-    # INLINE, on every invocation, exactly as the twin runs them. A control
-    # failure is fatal and immediate: everything after it would be a verdict
+    # INLINE, on every invocation, exactly as the twin runs them. A control failure is fatal and immediate: everything after it would be a verdict
     # from an instrument that has just been shown not to work.
     with tempfile.TemporaryDirectory() as ctl_dir:
         ctl_root = pathlib.Path(ctl_dir)
@@ -801,9 +731,7 @@ def main(argv: list[str] | None = None) -> int:
     for line in _BARE_PASS_LINES:
         ok(line)
 
-    # THE PYTHON CONTROLS, run inline on every invocation exactly like the bash
-    # ones. A widened glob whose predicate has not been watched fire is the
-    # confident green this whole change exists to avoid.
+    # THE PYTHON CONTROLS, run inline on every invocation exactly like the bash ones. A widened glob whose predicate has not been watched fire is the confident green this whole change exists to avoid.
     with tempfile.TemporaryDirectory() as py_ctl_dir:
         py_root = pathlib.Path(py_ctl_dir)
         for name, text, must_fire, message in _PY_CONTROLS:
@@ -817,11 +745,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- the real scan ------------------------------------------------------
     #
-    # THE TWO CORPORA ARE COUNTED AND REFUSED SEPARATELY. One combined count
-    # cannot tell "186 Python files and 116 shell files" from "302 shell files
-    # and a Python glob that matches nothing", and the second is exactly how a
-    # widening manufactures a confident green. This gate has already been bitten
-    # once by a pathspec that matched ZERO while the total still looked healthy.
+    # THE TWO CORPORA ARE COUNTED AND REFUSED SEPARATELY. One combined count cannot tell "186 Python files and 116 shell files" from "302 shell files and a Python glob that matches nothing", and the second is exactly how a widening manufactures a confident green. This gate has already been bitten once by a pathspec that matched ZERO while the total still looked healthy.
     shell_files = scan_files(root, SCAN_GLOBS)
     python_files = scan_files(root, PY_SCAN_GLOBS)
     for label, found, globs in (
@@ -838,15 +762,13 @@ def main(argv: list[str] | None = None) -> int:
     findings: list[str] = []
     for rel in shell_files + python_files:
         if rel in EXEMPT_PATHS:
-            # VISIBLE, EVERY RUN. A quiet exemption is how a gate stops meaning
-            # what its name says.
+            # VISIBLE, EVERY RUN. A quiet exemption is how a gate stops meaning what its name says.
             ok("exempt: %s -- %s" % (rel, EXEMPT_PATHS[rel]))
             continue
         findings.extend(scan_file(root / rel, rel))
 
     if not findings:
-        # PRINT THE SHAPE, NOT JUST THE VERDICT: two numbers, so a reader can
-        # see either half collapse.
+        # PRINT THE SHAPE, NOT JUST THE VERDICT: two numbers, so a reader can see either half collapse.
         ok(
             "%d shell file(s) under %s and %d python file(s) under %s scanned, "
             "no unguarded git-identity conditional found"
@@ -870,9 +792,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(file=sys.stderr)
     log.error("%d unguarded git-identity assignment(s)." % len(findings))
-    # ACTIONABLE IN THE LANGUAGE THE FINDING IS IN. The fix text used to be bash
-    # only, which since the python widening would have sent half its readers to a
-    # `[[ -z ]]` that their file cannot contain.
+    # ACTIONABLE IN THE LANGUAGE THE FINDING IS IN. The fix text used to be bash only, which since the python widening would have sent half its readers to a `[[ -z ]]` that their file cannot contain.
     print(
         '  Fix, in shell: check emptiness before use, `[[ -z "$VAR" ]] && exit 0`.', file=sys.stderr
     )
@@ -931,8 +851,7 @@ def selftest() -> int:
             scan_text("sha=$(git rev-parse HEAD) %s\n" % handler, "f"),
             [],
         )
-    # ITS MIRROR: `|| echo` is NOT a failure handler, and that is the whole
-    # point of the second real defect.
+    # ITS MIRROR: `|| echo` is NOT a failure handler, and that is the whole point of the second real defect.
     ctl.check(
         "GUARD 1 MIRROR: `|| echo main` is not a handler",
         scan_text('sha=$(git rev-parse HEAD) || echo "main"\n', "f"),
@@ -950,8 +869,7 @@ def selftest() -> int:
         scan_text('B=$(git symbolic-ref --short HEAD)\n[ -n "$B" ] || exit 0\n', "f"),
         [],
     )
-    # THE SPECIAL CASE: an empty check does NOT clear `--abbrev-ref HEAD`,
-    # because that command returns the literal "HEAD" rather than failing.
+    # THE SPECIAL CASE: an empty check does NOT clear `--abbrev-ref HEAD`, because that command returns the literal "HEAD" rather than failing.
     ctl.check(
         "SPECIAL: an empty check alone does NOT clear --abbrev-ref HEAD",
         scan_text('B=$(git rev-parse --abbrev-ref HEAD)\n[ -z "$B" ] && exit 0\n', "f"),
@@ -1016,10 +934,7 @@ def selftest() -> int:
         got = bool(scan_python_text(text, name))
         ctl.check("PY FIXTURE %s: fires=%s" % (name, must_fire), got, must_fire)
 
-    # THE SPLIT-CALL SHAPE, asserted on the exact real-tree spelling rather than
-    # only on the fixture. warn_remote_drift.py:209 is where a line-oriented
-    # scanner reads a `rev-parse` with no assignment and an assignment with no
-    # `rev-parse`, and reports neither.
+    # THE SPLIT-CALL SHAPE, asserted on the exact real-tree spelling rather than only on the fixture. warn_remote_drift.py:209 is where a line-oriented scanner reads a `rev-parse` with no assignment and an assignment with no `rev-parse`, and reports neither.
     ctl.check(
         "PY LOOKBACK: a split call is attributed to the variable on the head line",
         scan_python_text(
@@ -1040,8 +955,7 @@ def selftest() -> int:
         ),
         [],
     )
-    # AND THE BOUND IS REAL: past the lookback the head is not found, so there is
-    # no variable to blame. Stated as a KNOWN limit rather than discovered later.
+    # AND THE BOUND IS REAL: past the lookback the head is not found, so there is no variable to blame. Stated as a KNOWN limit rather than discovered later.
     ctl.check(
         "PY LOOKBACK: beyond three lines the head is not reached",
         scan_python_text(
@@ -1099,8 +1013,7 @@ def selftest() -> int:
         ["f:b"],
     )
 
-    # -- the scope exclusions, BOTH DIRECTIONS. An exclusion nobody has watched
-    # -- suppress a finding is indistinguishable from an exclusion that is inert.
+    # -- the scope exclusions, BOTH DIRECTIONS. An exclusion nobody has watched -- suppress a finding is indistinguishable from an exclusion that is inert.
     _plant = (
         "def selftest():\n"
         '    b = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
@@ -1111,16 +1024,11 @@ def selftest() -> int:
     )
     ctl.check(
         "PY SCOPE MIRROR: the same plant under a non-control def IS flagged",
-        # `plant()` AND NOT `str.replace`: if `_plant` above ever stops containing
-        # `def selftest(`, a raw replace returns it UNCHANGED and this mirror control
-        # then scans the identical text as the control above it, asserting the opposite
-        # verdict about the same input and passing for free. `plant` raises
-        # VacuousPlantError instead. Flagged by check:ci-python-control-plants.
+        # `plant()` AND NOT `str.replace`: if `_plant` above ever stops containing `def selftest(`, a raw replace returns it UNCHANGED and this mirror control then scans the identical text as the control above it, asserting the opposite verdict about the same input and passing for free. `plant` raises VacuousPlantError instead. Flagged by check:ci-python-control-plants.
         scan_python_text(plant(_plant, "def selftest(", "def emit("), "f.py"),
         ["f.py:b"],
     )
-    # AND THE BODY ENDS AT COLUMN 0, so a function defined AFTER the controls is
-    # still judged. A to-EOF skip would swallow it and look identical.
+    # AND THE BODY ENDS AT COLUMN 0, so a function defined AFTER the controls is still judged. A to-EOF skip would swallow it and look identical.
     ctl.check(
         "PY SCOPE: a def AFTER the control body is still judged",
         scan_python_text(
@@ -1180,15 +1088,11 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        # THE VACUITY CASE. No files in scope must be a refusal, never a clean
-        # verdict: a gate whose subject is absent has checked nothing.
+        # THE VACUITY CASE. No files in scope must be a refusal, never a clean verdict: a gate whose subject is absent has checked nothing.
         ctl.check("VACUITY: zero files in scope is refused", run(), 1)
 
         (hooks / "clean.sh").write_text(_CONTROLS[1][1], encoding="utf-8")
-        # STILL REFUSED: the shell half is populated and the python half is not.
-        # THIS IS THE POINT OF COUNTING THE TWO CORPORA SEPARATELY. A single
-        # combined count would go green here, which is exactly how a widened glob
-        # that matches nothing buys a confident green.
+        # STILL REFUSED: the shell half is populated and the python half is not. THIS IS THE POINT OF COUNTING THE TWO CORPORA SEPARATELY. A single combined count would go green here, which is exactly how a widened glob that matches nothing buys a confident green.
         ctl.check("VACUITY: a populated shell half does NOT excuse an empty python half", run(), 1)
 
         pyhooks = root / ".claude" / "rediacc_hooks" / "guards"
@@ -1203,9 +1107,7 @@ def selftest() -> int:
         (hooks / "dirty.sh").unlink()
         ctl.check("PLANT REMOVED: green returns", run(), 0)
 
-        # THE SAME PLANT IN THE OTHER LANGUAGE. Without this the python glob
-        # could match 186 files, run a predicate that finds nothing, and look
-        # exactly like this.
+        # THE SAME PLANT IN THE OTHER LANGUAGE. Without this the python glob could match 186 files, run a predicate that finds nothing, and look exactly like this.
         (pyhooks / "dirty.py").write_text(_PY_CONTROLS[0][1], encoding="utf-8")
         ctl.check("PLANT: an unguarded PYTHON hook reds", run(), 1)
         (pyhooks / "dirty.py").unlink()

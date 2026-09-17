@@ -56,11 +56,7 @@ import tempfile
 
 import _cipath  # noqa: F401
 
-# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py:
-# the CI step that runs this installs the pinned PyYAML immediately before it, and a
-# gate that quietly degrades when its parser is missing is the vacuity this tree has
-# rules about. A bare ImportError traceback names the missing module, which is the
-# right failure.
+# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py: the CI step that runs this installs the pinned PyYAML immediately before it, and a gate that quietly degrades when its parser is missing is the vacuity this tree has rules about. A bare ImportError traceback names the missing module, which is the right failure.
 import yaml
 from rediacc_ci import controls
 from rediacc_ci import proc as ci_proc
@@ -85,8 +81,7 @@ def toolchain_names(root: pathlib.Path = ROOT) -> set[str]:
     # Through the shared runner: `toolchain.sh` is a shell script that spawns
     # children of its own, and a plain `subprocess.run(capture_output=True,
     # timeout=...)` kills only the script and then blocks in communicate() on
-    # pipes a grandchild still holds. A spawn failure comes back as rc 127 with
-    # empty stdout, which yields the same empty set the OSError arm returned.
+    # pipes a grandchild still holds. A spawn failure comes back as rc 127 with empty stdout, which yields the same empty set the OSError arm returned.
     r = ci_proc.run(
         [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
         cwd=str(root),
@@ -190,8 +185,7 @@ def selftest() -> int:
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
 
-    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY
-    # (written to $GITHUB_ENV by build-renet.sh) becomes nine false findings.
+    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY (written to $GITHUB_ENV by build-renet.sh) becomes nine false findings.
     hop = ROOT / ".ci/scripts/infra/build-renet.sh"
     check(
         "CONTROL: the one-hop script resolver finds a real $GITHUB_ENV writer",

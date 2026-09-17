@@ -338,17 +338,14 @@ SCOPE_REL = "scripts/data/hook-audit-scope.json"
 INV_REL = "scripts/data/hook-inventory-baseline.json"
 COV_REL = "scripts/data/hook-coverage-baseline.json"
 
-# A guard file's name prefix, both spellings. `block[-_]*` in the twin: a Python
-# port of a guard turns the hyphen into an underscore, and a reader anchored on
-# the hyphen would drop it from section B while still inventorying it.
+# A guard file's name prefix, both spellings. `block[-_]*` in the twin: a Python port of a guard turns the hyphen into an underscore, and a reader anchored on the hyphen would drop it from section B while still inventorying it.
 GUARD_PREFIXES = ("block-", "block_")
 GUARD_SUFFIXES = (".sh", ".py")
 
 # A fold of a VARIABLE count into the harness's own PASS total.
 FOLD_RE = re.compile(r"PASS=\$\(\(PASS \+ ([A-Za-z_][A-Za-z0-9_]*)\)\)")
 
-# Some count refusal standing between the count and the addition. A named
-# `floor`, a literal minimum, or a zero-count refusal: all three are floors.
+# Some count refusal standing between the count and the addition. A named `floor`, a literal minimum, or a zero-count refusal: all three are floors.
 GUARD_RE = re.compile(r"-lt[ \t]+(\"?\$?\{?floor|[0-9])|-gt[ \t]+0|-eq[ \t]+0|-le[ \t]+0")
 
 # How far back a fold's refusal may sit. Twelve lines, INCLUDING the fold line
@@ -404,9 +401,7 @@ def mkspec(root: str, sources: list[str], dirs: list[str]) -> dict:
     """
     return {
         "sources": [os.path.join(root, s) for s in sources],
-        # KEY -> absolute directory. The key is whatever the caller declared, so
-        # the real run keys by repo-relative path and the fixtures key by chain
-        # name.
+        # KEY -> absolute directory. The key is whatever the caller declared, so the real run keys by repo-relative path and the fixtures key by chain name.
         "dirs": {d: os.path.join(root, d) for d in dirs},
     }
 
@@ -435,10 +430,7 @@ def covmap(spec: dict) -> list[tuple[str, int, int]]:
         except OSError:
             pass
 
-    # The suite names a guard by its directory's LAST SEGMENT plus its filename,
-    # because that is how it joins $DIR. The key is the caller's declared path,
-    # and the two are related here rather than by any assumption about a root. A
-    # duplicate segment is refused before this runs.
+    # The suite names a guard by its directory's LAST SEGMENT plus its filename, because that is how it joins $DIR. The key is the caller's declared path, and the two are related here rather than by any assumption about a root. A duplicate segment is refused before this runs.
     segs = sorted({os.path.basename(k.rstrip("/")) for k in dirs})
     chain_re = "|".join(re.escape(c) for c in segs)
     # EXTENSION-AGNOSTIC for the same reason the disk globs are; see the header.
@@ -456,9 +448,7 @@ def covmap(spec: dict) -> list[tuple[str, int, int]]:
 
     # 2. Helper wrappers. A shell function whose body names exactly ONE guard
     #    under $DIR is a case wrapper for it; its call sites take the expected rc
-    #    first, the same shape `check` uses. `check` and `check_out` themselves
-    #    name their guard through a VARIABLE, so they cannot match here and do not
-    #    need excluding by name.
+    # first, the same shape `check` uses. `check` and `check_out` themselves name their guard through a VARIABLE, so they cannot match here and do not need excluding by name.
     for match in re.finditer(
         r"^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{(.*?)^\}", src, re.MULTILINE | re.DOTALL
     ):
@@ -477,10 +467,7 @@ def covmap(spec: dict) -> list[tuple[str, int, int]]:
             continue
         seg = os.path.basename(key.rstrip("/"))
         for name in sorted(os.listdir(directory)):
-            # Same prefix and extension rule as the on-disk glob below, including
-            # the underscore spelling a Python port produces. splitext rather than
-            # name[:-3], which only happens to be right while every extension is
-            # three characters long.
+            # Same prefix and extension rule as the on-disk glob below, including the underscore spelling a Python port produces. splitext rather than name[:-3], which only happens to be right while every extension is three characters long.
             if not (name.startswith(GUARD_PREFIXES) and name.endswith(GUARD_SUFFIXES)):
                 continue
             block, allow = counts.get("%s/%s" % (seg, name), (0, 0))
@@ -539,9 +526,7 @@ def inv_missing(listed: list[str], root: pathlib.Path) -> list[str]:
     return [want for want in listed if want and not (root / want).is_file()]
 
 
-# ---------------------------------------------------------------------------
-# The fixtures every control is built from, written LITERALLY.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixtures every control is built from, written LITERALLY. ---------------------------------------------------------------------------
 
 FIXTURE_SUITE = """check 2 pre-bash/block-fixture-both.sh "x" "blocks"
 check 0 pre-bash/block-fixture-both.sh "y" "allows"
@@ -559,11 +544,7 @@ fx_case 0 "wrapped allow"
 FIXTURE_INV_FULL = ["pre-bash/block-a.sh", "pre-bash/block-b.sh"]
 FIXTURE_INV_SHORT = ["pre-bash/block-a.sh"]
 
-# THE FIRST fold is the SAME-LINE spelling, folded into this fixture rather than
-# given its own control so the check gains coverage without gaining an output
-# line. IT HAS TO COME FIRST: placed after the multi-line fold it proved nothing,
-# because the 12-line lookbehind reached that fold's `-lt "$floor"` and passed
-# the same-line fold on someone else's floor.
+# THE FIRST fold is the SAME-LINE spelling, folded into this fixture rather than given its own control so the check gains coverage without gaining an output line. IT HAS TO COME FIRST: placed after the multi-line fold it proved nothing, because the 12-line lookbehind reached that fold's `-lt "$floor"` and passed the same-line fold on someone else's floor.
 FIXTURE_FLOORED = """m=$(count)
 if [[ "$m" -lt "$floor" ]]; then FAIL=$((FAIL + 1)); else PASS=$((PASS + m)); fi
 n=$(count)
@@ -746,8 +727,7 @@ def main(argv: list[str] | None = None) -> int:
             fail("B. guard(s) newly missing a direction: %s" % " ".join(newly))
             note("     A guard with only block-cases cannot detect OVER-blocking, and an")
             note("     over-blocking guard is one that gets deleted. Add the missing case.")
-        # Shrink-only: a baselined guard that now has both directions must be
-        # drained.
+        # Shrink-only: a baselined guard that now has both directions must be drained.
         drained = []
         for guard in known:
             if not guard or not (root / guard).is_file():
@@ -789,8 +769,7 @@ def main(argv: list[str] | None = None) -> int:
                 "CONTROL DID NOT FIRE: a block-only fixture read as covered, so B proves "
                 "nothing (block=%d allow=%d)" % (block, allow)
             )
-        # The pre-edit chain, and the check_out spelling, both of which the old
-        # reader was blind to. Its blindness is the reason this control exists.
+        # The pre-edit chain, and the check_out spelling, both of which the old reader was blind to. Its blindness is the reason this control exists.
         block, allow = lookup(fixture, "pre-edit/block-fixture-editchain.sh")
         if block > 0 and allow > 0:
             ok("control: a pre-edit guard covered via check_out is seen")
@@ -800,8 +779,7 @@ def main(argv: list[str] | None = None) -> int:
                 "(block=%d allow=%d), which is exactly the hole this gate was widened to close"
                 % (block, allow)
             )
-        # A helper-wrapped guard. Counting only the literal `check N <guard>`
-        # reported two well-covered guards as gaps for months.
+        # A helper-wrapped guard. Counting only the literal `check N <guard>` reported two well-covered guards as gaps for months.
         block, allow = lookup(fixture, "pre-bash/block-fixture-helper.sh")
         if block > 0 and allow > 0:
             ok("control: cases routed through a helper function are counted")
@@ -810,9 +788,7 @@ def main(argv: list[str] | None = None) -> int:
                 "CONTROL DID NOT FIRE: helper-driven cases read as absent (block=%d allow=%d)"
                 % (block, allow)
             )
-        # NEGATIVE control: a guard with no case anywhere must read 0/0, or the
-        # three controls above would pass over a reader that simply says yes to
-        # everything.
+        # NEGATIVE control: a guard with no case anywhere must read 0/0, or the three controls above would pass over a reader that simply says yes to everything.
         (tmpdir / "hooks" / "pre-bash" / "block-fixture-uncovered.sh").write_text(
             "#!/usr/bin/env bash\nexit 0\n", encoding="utf-8"
         )
@@ -837,8 +813,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             fail("CONTROL DID NOT FIRE: a dedicated test file was not counted")
 
-        # A's second arm needs its own control, or "everything on disk is listed"
-        # is a sentence nothing tests.
+        # A's second arm needs its own control, or "everything on disk is listed" is a sentence nothing tests.
         if not inv_unlisted(FIXTURE_INV_FULL, FIXTURE_INV_FULL):
             ok("control: a complete inventory reports nothing unlisted")
         else:
@@ -851,8 +826,7 @@ def main(argv: list[str] | None = None) -> int:
                 "proves nothing"
             )
 
-        # A's FIRST arm, built the same way: fixture inventory + fixture hooks
-        # dir, never the real ones. block-b.sh is deliberately absent.
+        # A's FIRST arm, built the same way: fixture inventory + fixture hooks dir, never the real ones. block-b.sh is deliberately absent.
         inv_hooks = tmpdir / "inv-hooks"
         (inv_hooks / "pre-bash").mkdir(parents=True, exist_ok=True)
         (inv_hooks / "pre-bash" / "block-a.sh").write_text(
@@ -923,9 +897,7 @@ def main(argv: list[str] | None = None) -> int:
                 "proves nothing"
             )
 
-        # CONTROL, by construction: strip the floor from a copy and require the
-        # check to notice. Built by DELETION of a line that is present, not by
-        # pattern substitution, so it cannot silently produce an identical copy.
+        # CONTROL, by construction: strip the floor from a copy and require the check to notice. Built by DELETION of a line that is present, not by pattern substitution, so it cannot silently produce an identical copy.
         for _source, text in harnesses:
             stripped = "\n".join(line for line in text.split("\n") if FLOOR_LINE not in line)
             if FLOOR_LINE in stripped:
@@ -947,9 +919,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------
-# Selftest
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 
 def selftest() -> int:
@@ -992,8 +962,7 @@ def selftest() -> int:
             (0, 0),
         )
 
-        # A guard file that EXISTS with no cases must appear in the map at 0/0,
-        # which is different from being absent from it.
+        # A guard file that EXISTS with no cases must appear in the map at 0/0, which is different from being absent from it.
         (tmpdir / "hooks" / "pre-bash" / "block-fixture-uncovered.sh").write_text(
             "#!/usr/bin/env bash\nexit 0\n", encoding="utf-8"
         )
@@ -1020,8 +989,7 @@ def selftest() -> int:
         )
 
         # THE UNDERSCORE SPELLING a Python port produces. `block[-_]*` covers it;
-        # a reader anchored on the hyphen would inventory it and never ask it for
-        # a direction.
+        # a reader anchored on the hyphen would inventory it and never ask it for a direction.
         (tmpdir / "hooks" / "pre-bash" / "block_ported.py").write_text("", encoding="utf-8")
         fixture = {key: (b, a) for key, b, a in covmap(spec)}
         ctl.truthy(

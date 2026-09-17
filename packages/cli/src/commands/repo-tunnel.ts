@@ -55,8 +55,7 @@ function filterRepoContainers(
   }
   const repoGuid = repoGuidOverride ?? nameToGuid.get(repoName);
 
-  // The container's "repository" field may be a GUID, a resolved name, or
-  // a name with duplicated tag (e.g. "repo:tag:tag" from renet fork labeling).
+  // The container's "repository" field may be a GUID, a resolved name, or a name with duplicated tag (e.g. "repo:tag:tag" from renet fork labeling).
   return allContainers.filter((c) => {
     const repo = c.repository;
     const resolvedName = resolve(repo);
@@ -218,8 +217,7 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
   await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
   await deployRepoKeyIfNeeded(repoName, machineName);
 
-  // Open the forward over the shared repo-tunnel primitive (port pre-check,
-  // ssh -N -L, readiness poll) and hold it until Ctrl+C.
+  // Open the forward over the shared repo-tunnel primitive (port pre-check, ssh -N -L, readiness poll) and hold it until Ctrl+C.
   const tunnel = await openRepoTunnel({
     connectionDetails,
     localPort: target.localPort,
@@ -229,8 +227,7 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
 
   try {
     if (options.urlOnly) {
-      // Machine-readable contract (e.g. browser-scene urlFromCommand):
-      // exactly one URL line on stdout, then hold the tunnel.
+      // Machine-readable contract (e.g. browser-scene urlFromCommand): exactly one URL line on stdout, then hold the tunnel.
       outputService.print(`http://localhost:${target.localPort}`);
     } else {
       outputService.print(

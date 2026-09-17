@@ -126,23 +126,16 @@ import re
 import wl_core as C
 import wl_planfid as P
 
-# ---------------------------------------------------------------------------
-# Bounds. Every one of these exists so a pathological file cannot turn the Stop
+# --------------------------------------------------------------------------- Bounds. Every one of these exists so a pathological file cannot turn the Stop
 # hook into a slow path; none of them may silently drop a finding without the
 # render saying it did.
 
-# In-scope plans whose BODY is read per stop, newest mtime first. Applied AFTER
-# the status and ownership filters, and the remainder is REPORTED rather than
-# dropped: a cap that hides the plan you needed reads exactly like a clean run,
-# which is the failure this whole module exists to stop. Measured on this repo:
-# 62 plans, 36 in scope by status, ~10 ms to read them all, so the cap is
+# In-scope plans whose BODY is read per stop, newest mtime first. Applied AFTER the status and ownership filters, and the remainder is REPORTED rather than dropped: a cap that hides the plan you needed reads exactly like a clean run, which is the failure this whole module exists to stop. Measured on this repo: 62 plans, 36 in scope by status, ~10 ms to read them all, so the cap is
 # headroom against a pathological directory and not a routine truncation.
 PLAN_MAX_READ = int(os.environ.get("WORKLIST_PLANFILE_MAX_READ", "40"))
 # Untracked tasks QUOTED. The rest are counted. See design note 2.
 PLAN_TASK_SHOW = int(os.environ.get("WORKLIST_PLANFILE_SHOW", "3"))
-# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was
-# about quoted lines being a wall -- so the number moves and the reason is kept by
-# making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan
+# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was about quoted lines being a wall -- so the number moves and the reason is kept by making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan
 # allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
 PLAN_PLANS_SHOW = int(os.environ.get("WORKLIST_PLANFILE_PLANS_SHOW", "3"))
 # Stale-box examples quoted in the reverse direction.
@@ -151,11 +144,9 @@ PLAN_STALE_SHOW = int(os.environ.get("WORKLIST_PLANFILE_STALE_SHOW", "2"))
 PLAN_MAX_BYTES = int(os.environ.get("WORKLIST_PLANFILE_MAX_BYTES", str(400 * 1024)))
 TASK_QUOTE_CHARS = 96
 
-# Statuses that put a plan OUT of scope. See design note 4: this is a blocklist
-# on purpose, so an unrecognised status is noisy rather than invisible.
+# Statuses that put a plan OUT of scope. See design note 4: this is a blocklist on purpose, so an unrecognised status is noisy rather than invisible.
 #
-# FINISHED -- history. Demanding that history stay in step with a live worklist
-# is how a check earns its way into being ignored.
+# FINISHED -- history. Demanding that history stay in step with a live worklist is how a check earns its way into being ignored.
 FINISHED_STATES = frozenset(
     {
         "done",
@@ -175,19 +166,13 @@ FINISHED_STATES = frozenset(
         "withdrawn",
         "archived",
         "historical",
-        # W12: a COMPACTED plan is finished by construction. `--plan-compact`
-        # refuses open boxes without `--park`, so every box in a `compacted`
+        # W12: a COMPACTED plan is finished by construction. `--plan-compact` refuses open boxes without `--park`, so every box in a `compacted`
         # record carries a `done=` the ledger attests -- which is a stronger
-        # claim than any other word in this set makes. It belongs here for the
-        # ordinary reason too: the record's boxes are history, and demanding
-        # that history stay in step with a live worklist is how a check earns
-        # its way into being ignored. See wl_planrec.py.
+        # claim than any other word in this set makes. It belongs here for the ordinary reason too: the record's boxes are history, and demanding that history stay in step with a live worklist is how a check earns its way into being ignored. See wl_planrec.py.
         "compacted",
     }
 )
-# NOT STARTED -- a proposal. Its boxes are a sketch of work nobody has taken
-# on, and demanding worklist items for a sketch is the "18 legitimately
-# not-yet-started tasks" wall this check must not become.
+# NOT STARTED -- a proposal. Its boxes are a sketch of work nobody has taken on, and demanding worklist items for a sketch is the "18 legitimately not-yet-started tasks" wall this check must not become.
 NOT_STARTED_STATES = frozenset(
     {
         "draft",
@@ -201,23 +186,16 @@ NOT_STARTED_STATES = frozenset(
         "exploratory",
         "deferred",
         "rejected",
-        # W12: `parked` is a plan whose TEXT is compacted while its work is not
-        # finished. Not-started rather than finished, and the difference is
-        # load-bearing in three places: the census tier counts its open boxes
-        # instead of hiding them, check_plan_boxes.py's A3 (a finished Status
-        # may not sit over open boxes) does not fire on it, and
-        # check-plan-housekeeping.sh keeps it ON the clock. A parked record buys
-        # a smaller file, never an exemption. See wl_planrec.py.
+        # W12: `parked` is a plan whose TEXT is compacted while its work is not finished. Not-started rather than finished, and the difference is load-bearing in three places: the census tier counts its open boxes instead of hiding them, check_plan_boxes.py's A3 (a finished Status may not sit over open boxes) does not fire on it, and check-plan-housekeeping.sh keeps it ON the
+        # clock. A parked record buys a smaller file, never an exemption. See wl_planrec.py.
         "parked",
     }
 )
 
-# The two checkbox shapes, spelled here ONLY to delete lines before handing the
-# text back to the real parser. Nothing downstream reads them as tasks.
+# The two checkbox shapes, spelled here ONLY to delete lines before handing the text back to the real parser. Nothing downstream reads them as tasks.
 OPEN_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[ \]\s+\S")
 DONE_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[xX]\]\s+\S")
-# A worklist state that means the item is no longer outstanding. ' ', '?' and
-# '>' are the open three (wl_checks uses the same triple).
+# A worklist state that means the item is no longer outstanding. ' ', '?' and '>' are the open three (wl_checks uses the same triple).
 CLOSED_STATES = frozenset({"x"})
 
 
@@ -273,9 +251,7 @@ def item_rows(fold):
     """
     rows = []
     for r in list(getattr(fold, "items", None) or []):
-        # Typed rather than try/except-guarded: a record that is not a mapping
-        # is skipped, while a genuine bug in the three lines below still raises
-        # into the caller's one wrapper instead of being swallowed per record.
+        # Typed rather than try/except-guarded: a record that is not a mapping is skipped, while a genuine bug in the three lines below still raises into the caller's one wrapper instead of being swallowed per record.
         if not isinstance(r, dict):
             continue
         base = str(r.get("basetext") or "").strip()
@@ -410,17 +386,9 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     text plainly holds, and is a FINDING rather than a skip.
     """
     rows = item_rows(fold)
-    # Status first because it is free (plan_records already parsed it), then
-    # ownership, which costs a header read. Only what survives both is capped,
-    # so the cap counts plans this session actually had a reason to open.
-    # S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that
-    # history stay in step with a live worklist is how a check earns its way into
-    # being ignored, and design note 4 is right about that half. NOT_STARTED is no
-    # longer EXEMPT though: it becomes a one-line census row with no quotes and no
-    # recipes. The premise that made it an exemption ("a proposal's boxes are a
-    # sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's
-    # default header on plans under ACTIVE execution, and six of eight box-carrying
-    # files carried it, hiding 72 of 88 open boxes. One line each is the price of
+    # Status first because it is free (plan_records already parsed it), then ownership, which costs a header read. Only what survives both is capped, so the cap counts plans this session actually had a reason to open. S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that history stay in step with a live worklist is how a check earns its way into being
+    # ignored, and design note 4 is right about that half. NOT_STARTED is no longer EXEMPT though: it becomes a one-line census row with no quotes and no recipes. The premise that made it an exemption ("a proposal's boxes are a sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's default header on plans under ACTIVE execution, and six of eight
+    # box-carrying files carried it, hiding 72 of 88 open boxes. One line each is the price of
     # seeing them; the full treatment stays for plans that claim to be running.
     owned = [
         rec
@@ -462,9 +430,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
                 "blind": blind,
             }
         )
-    # The census tier. Counts only, and only when the plan HAS open boxes -- a
-    # not-started plan with nothing open is silent, or every prose sketch in the
-    # tree grows a line.
+    # The census tier. Counts only, and only when the plan HAS open boxes -- a not-started plan with nothing open is silent, or every prose sketch in the tree grows a line.
     for rec in census_only[:PLAN_MAX_READ]:
         rel, status = rec[0], rec[1]
         text = _read(pathlib.Path(root) / rel)
@@ -512,8 +478,7 @@ def render(row, n_more_plans=0, unread=0, budget=None):
     if not row:
         return ""
     if row.get("census"):
-        # S3's third tier: one line, no quotes, no recipes. It exists to make a
-        # not-started plan's boxes VISIBLE, not to demand anything about them.
+        # S3's third tier: one line, no quotes, no recipes. It exists to make a not-started plan's boxes VISIBLE, not to demand anything about them.
         return (
             "PLAN FILE (census) -- %s [Status: %s], %d open box(es), %d ticked.\n"
             "  Not-started plans are exempt from the checks above, so this is the only\n"
@@ -602,7 +567,4 @@ def render_all(rows, unread=0):
     return "\n".join(out)
 
 
-# ---------------------------------------------------------------------------
-# CONTROLS live in test-planfile.py beside this file, and are run by
-# .claude/hooks/test-hooks.sh. Keeping them out of here keeps the import that
-# every Stop pays for free of fixtures.
+# --------------------------------------------------------------------------- CONTROLS live in test-planfile.py beside this file, and are run by .claude/hooks/test-hooks.sh. Keeping them out of here keeps the import that every Stop pays for free of fixtures.

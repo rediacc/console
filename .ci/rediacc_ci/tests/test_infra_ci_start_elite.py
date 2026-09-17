@@ -94,9 +94,7 @@ if argv[:1] == ["logs"]:
 sys.exit(0)
 """
 
-# A curl that fails the first FAIL_TIMES probes and then succeeds, counting in a
-# file so the count survives across processes exactly as a real service coming
-# up slowly would.
+# A curl that fails the first FAIL_TIMES probes and then succeeds, counting in a file so the count survives across processes exactly as a real service coming up slowly would.
 FAKE_CURL = """#!/usr/bin/env python3
 import os, sys
 LOG = %(log)r
@@ -230,10 +228,7 @@ def _run(
     env.update(DETERMINISTIC_SECRETS)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
-    # PREPENDED, not replaced: the subjects need the system's real bash, env,
-    # grep and nproc. The fakes come first, so a real docker or curl on this
-    # host is shadowed and never reached -- asserted by
-    # `test_the_fakes_are_actually_reached`.
+    # PREPENDED, not replaced: the subjects need the system's real bash, env, grep and nproc. The fakes come first, so a real docker or curl on this host is shadowed and never reached -- asserted by `test_the_fakes_are_actually_reached`.
     env.pop("GITHUB_ACTIONS", None)
     env.pop("GITHUB_ENV", None)
     if which == "old":
@@ -247,7 +242,7 @@ def _run(
 
 
 CASES = [
-    # name,                             kwargs
+    # name, kwargs
     ("happy-web-ready-first-probe", {}),
     ("web-slow-two-failed-probes", {"curl_fail_times": 2}),
     ("run-sh-up-fails", {"up_rc": 3}),
@@ -405,9 +400,7 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
         assert results[0][0] == 0, "both sides failed: %r" % (results,)
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:

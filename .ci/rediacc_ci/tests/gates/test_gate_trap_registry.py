@@ -61,8 +61,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-trap-registry.sh"
 
-# The real-tree case runs the subject seam-free, and every scan resolves pointers
-# against the live manifest, dispatcher, hook suite and settings. See the docstring.
+# The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-trap-registry.sh"
@@ -74,9 +73,7 @@ STOP_DIR = paths.hooks_stop_dir()
 # `trap registry OK: 78 entries (floor 78), 12 JUDGMENT-ONLY, ...`
 SHAPE_RE = re.compile(r"(\d+) entries \(floor (\d+)\)")
 
-# The subject reads the whole tree per scan, and the seam-free run also drives ~20
-# fixture controls. Comfortably over the 63s measured on 2026-09-08, and well under
-# the parity driver's 600s ceiling for the module as a whole.
+# The subject reads the whole tree per scan, and the seam-free run also drives ~20 fixture controls. Comfortably over the 63s measured on 2026-09-08, and well under the parity driver's 600s ceiling for the module as a whole.
 GATE_TIMEOUT = 300
 
 
@@ -370,11 +367,9 @@ def test_an_unchanged_copy_is_green(gate):
         gate.log_pass("CONTROL: an unmodified copy of the corpus is green")
 
 
-# ---------------------------------------------------------------------------
-# The stop hook's parser. wl_store.trap_headings was a bare startswith("## ")
+# --------------------------------------------------------------------------- The stop hook's parser. wl_store.trap_headings was a bare startswith("## ")
 # with no fence state: latent while no trap body carried a fenced heading, and
-# activated the moment the registry required an id per entry.
-# ---------------------------------------------------------------------------
+# activated the moment the registry required an id per entry. ---------------------------------------------------------------------------
 
 
 def test_stop_hook_parser_ignores_fenced_headings(gate):
@@ -398,8 +393,7 @@ def test_stop_hook_parser_ignores_fenced_headings(gate):
             "~~~\n",
             encoding="utf-8",
         )
-        # The SAME line unfenced must be seen, or the case above proves only that
-        # the parser ignores things.
+        # The SAME line unfenced must be seen, or the case above proves only that the parser ignores things.
         (d / "plain" / "docs" / "agent-reference" / "TRAPS.md").write_text(
             "# Traps\n"
             "\n"

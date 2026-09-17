@@ -1,37 +1,15 @@
 #!/usr/bin/env node
 // The exfiltration bound for an autopilot round (03-v2-autonomy.md section 6).
 //
-// THE THREAT: private submodule source is checked out on the runner, console
-// is public, and a code-writing model can encode private bytes into a staged
-// file on the public branch. That channel is inherent to the design, so it is
-// BOUNDED rather than wished away:
-//   rule 1  added bytes OUTSIDE the round's implicated paths > 32 KB trips.
-//   rule 2  any single NEW file adding > 8 KB trips REGARDLESS of prefix.
-//   rule 3  total diff > 256 KB trips.
-// On a trip: no commit, no push, escalate. The tripped diff is NEVER uploaded
-// as an artifact: console artifacts are publicly downloadable, so uploading
-// the very diff suspected of exfiltration would complete the exfiltration.
-// This tool therefore prints byte counts and paths only, never diff content.
+// THE THREAT: private submodule source is checked out on the runner, console is public, and a code-writing model can encode private bytes into a staged file on the public branch. That channel is inherent to the design, so it is BOUNDED rather than wished away: rule 1 added bytes OUTSIDE the round's implicated paths > 32 KB trips. rule 2 any single NEW file adding > 8 KB trips
+// REGARDLESS of prefix. rule 3 total diff > 256 KB trips. On a trip: no commit, no push, escalate. The tripped diff is NEVER uploaded as an artifact: console artifacts are publicly downloadable, so uploading the very diff suspected of exfiltration would complete the exfiltration. This tool therefore prints byte counts and paths only, never diff content.
 //
-// THE IMPLICATED SET, three hops, first two reused from the scope engine:
-//   hop 1  failed job display name -> plan key: EXPECTED_JOB_NAMES +
-//          matchJobName from ../ci/skip-plan-reconcile.cjs (imported).
-//   hop 2  plan key -> modules: JOB_SURFACES from ../ci/scope-map.cjs.
-//   hop 3  module -> path prefixes: scope-map's RULES matchers are opaque
-//          closures, so path->module CANNOT be inverted. MODULE_PREFIXES
-//          below is a small declarative mirror in the module->path direction,
-//          drift-checked by test-autopilot-harness.sh against the exported
-//          classify() as an oracle (every (module, prefix) pair must classify
-//          back to that module, and every JOB_SURFACES module must have at
-//          least one prefix here).
-// A failed job that maps to NO plan key (a quality lane, a build job)
+// THE IMPLICATED SET, three hops, first two reused from the scope engine: hop 1 failed job display name -> plan key: EXPECTED_JOB_NAMES + matchJobName from ../ci/skip-plan-reconcile.cjs (imported). hop 2 plan key -> modules: JOB_SURFACES from ../ci/scope-map.cjs. hop 3 module -> path prefixes: scope-map's RULES matchers are opaque closures, so path->module CANNOT be inverted.
+// MODULE_PREFIXES below is a small declarative mirror in the module->path direction, drift-checked by test-autopilot-harness.sh against the exported classify() as an oracle (every (module, prefix) pair must classify back to that module, and every JOB_SURFACES module must have at least one prefix here). A failed job that maps to NO plan key (a quality lane, a build job)
 // contributes nothing to the implicated set; with an empty set every added
 // byte is out-of-scope, which fails in the tighter direction on purpose.
 //
-// Usage:
-//   exfil-tripwire.cjs --diff <unified-diff-file> [--failed-jobs <file>]
-//     --failed-jobs: one failed job display name per line.
-// Exit: 0 quiet, 1 tripped (reasons on stderr), 2 usage error.
+// Usage: exfil-tripwire.cjs --diff <unified-diff-file> [--failed-jobs <file>] --failed-jobs: one failed job display name per line. Exit: 0 quiet, 1 tripped (reasons on stderr), 2 usage error.
 
 'use strict';
 
@@ -47,8 +25,7 @@ const OUT_OF_SCOPE_BYTES_MAX = 32 * 1024;
 const NEW_FILE_BYTES_MAX = 8 * 1024;
 const TOTAL_DIFF_BYTES_MAX = 256 * 1024;
 
-// Hop 3: module -> path prefixes, the declarative mirror described above.
-// Every module named by any JOB_SURFACES entry must appear here.
+// Hop 3: module -> path prefixes, the declarative mirror described above. Every module named by any JOB_SURFACES entry must appear here.
 const MODULE_PREFIXES = {
   cli: ['packages/cli/'],
   shared: ['packages/shared/'],

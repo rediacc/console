@@ -68,8 +68,7 @@ def test_parser_matches_the_twins_awk(tmp_path: pathlib.Path, corpus: str) -> No
     for line in proc.stdout.split("\n"):
         if line == "":
             continue
-        # US (0x1f), not TAB: tab is IFS whitespace in bash, so a run of two
-        # tabs COLLAPSES and an empty Residue silently reads as no Residue LINE.
+        # US (0x1f), not TAB: tab is IFS whitespace in bash, so a run of two tabs COLLAPSES and an empty Residue silently reads as no Residue LINE.
         fields = line.split("\x1f")
         expected.append((int(fields[0]), fields[1], fields[2], fields[3], fields[4] == "1"))
     got = [

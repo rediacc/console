@@ -87,8 +87,7 @@ ESLINT_EXEMPT = {
     ),
 }
 
-# Suffix-matched exemptions, same contract: each is a claim that the file is not
-# executable source, and each is reviewable.
+# Suffix-matched exemptions, same contract: each is a claim that the file is not executable source, and each is reviewable.
 ESLINT_EXEMPT_SUFFIX = {
     ".d.ts": (
         "type declarations only -- no executable code for a rule to have an "
@@ -96,9 +95,7 @@ ESLINT_EXEMPT_SUFFIX = {
     ),
 }
 
-# Whole-file exemptions, for files that ARE source but that a GLOBAL ignore
-# pattern blocks. A `files:` block cannot override a global `ignores` entry in
-# flat config, so bringing these in means editing the ignore itself.
+# Whole-file exemptions, for files that ARE source but that a GLOBAL ignore pattern blocks. A `files:` block cannot override a global `ignores` entry in flat config, so bringing these in means editing the ignore itself.
 ESLINT_EXEMPT_EXACT = {
     "eslint.config.js": (
         "blocked by the global '*.config.js' ignore, which also covers the vite, "
@@ -110,23 +107,17 @@ ESLINT_EXEMPT_EXACT = {
 }
 
 # The npm scripts that carry eslint's ROOT LIST. All three must agree about the
-# FILES they reach: widening check:lint while `lint` and `fix:lint` keep the old
-# list gives a developer a clean local run over a narrower tree than CI enforces,
-# which is the same invisible-scope failure one script down.
+# FILES they reach: widening check:lint while `lint` and `fix:lint` keep the old list gives a developer a clean local run over a narrower tree than CI enforces, which is the same invisible-scope failure one script down.
 LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
 
 # The one of them CI runs. Its roots are the authority; the other two are compared
-# against it, because a developer script that is NARROWER than CI is the failure
-# and a developer script that is WIDER is a different one (a clean local run over
-# files CI never lints is still a lie about scope).
+# against it, because a developer script that is NARROWER than CI is the failure and a developer script that is WIDER is a different one (a clean local run over files CI never lints is still a lie about scope).
 LINT_CI_SCRIPT = "check:lint"
 
-# The wrapper the roots are positional arguments to. Its first argument is a heap
-# size in MB, so the roots begin two tokens later.
+# The wrapper the roots are positional arguments to. Its first argument is a heap size in MB, so the roots begin two tokens later.
 ESLINT_RUNNER = "eslint-heap.sh"
 
-# `npm run <key>` inside a lint script. See script_roots() for why the links are
-# followed rather than treated as opaque.
+# `npm run <key>` inside a lint script. See script_roots() for why the links are followed rather than treated as opaque.
 NPM_RUN = re.compile(r"\bnpm\s+run\s+([^\s&|;]+)")
 
 # Roots whose load-bearingness this gate CANNOT measure, each with the reason.
@@ -141,9 +132,7 @@ ROOT_UNMEASURABLE = {
     ),
 }
 
-# A path that MUST be outside biome's includes. If biome starts processing it,
-# the allowlist has been discarded -- which is exactly what a stray comment in
-# the `files` object does, silently.
+# A path that MUST be outside biome's includes. If biome starts processing it, the allowlist has been discarded -- which is exactly what a stray comment in the `files` object does, silently.
 BIOME_CANARY = "packages/www/src/i18n/translations/.translation-hashes.json"
 # A path that MUST be inside it, so "everything is out of scope" cannot pass.
 BIOME_ANCHOR = "packages/cli/src/index.ts"
@@ -245,8 +234,7 @@ def script_roots(scripts, name, seen=None):
     roots, calls, dangling, chain = [], 0, [], [name]
     for segment in body.split("&&"):
         # The eslint call is one `&&`-joined segment; the rest of the script may be
-        # biome, whose scope is biome.json's allowlist and not these arguments, or
-        # a link to another script, which is followed.
+        # biome, whose scope is biome.json's allowlist and not these arguments, or a link to another script, which is followed.
         if ESLINT_RUNNER in segment:
             calls += 1
             roots.extend(segment_roots(segment))
@@ -423,10 +411,7 @@ def main(argv=None):
         )
         return 1
 
-    # ---- CONTROL: biome's allowlist must be demonstrably IN FORCE -----------
-    # Both directions, because one alone is satisfiable by a broken config: an
-    # allowlist that admits everything passes the anchor, and one that admits
-    # nothing passes the canary.
+    # ---- CONTROL: biome's allowlist must be demonstrably IN FORCE ----------- Both directions, because one alone is satisfiable by a broken config: an allowlist that admits everything passes the anchor, and one that admits nothing passes the canary.
     try:
         anchor_in = biome_processes(root, BIOME_ANCHOR)
         canary_in = biome_processes(root, BIOME_CANARY)
@@ -496,8 +481,7 @@ def main(argv=None):
 
     roots = by_script[LINT_CI_SCRIPT].roots
 
-    # VACUITY: no roots at all would make every file "uncovered" and report a
-    # scope catastrophe when the truth is that the parse failed.
+    # VACUITY: no roots at all would make every file "uncovered" and report a scope catastrophe when the truth is that the parse failed.
     if not roots:
         print(
             "VACUOUS: parsed an EMPTY root list out of the lint scripts. eslint would\n"
@@ -530,11 +514,7 @@ def main(argv=None):
         )
         return 1
 
-    # ---- CONTROL: the assertion above must have TEETH ------------------------
-    # "Everything is covered" is satisfied just as well by a root list that is too
-    # WIDE, and a passing coverage check says nothing about whether removing a
-    # root would be noticed. So mutate: drop each root in turn and require the
-    # very same uncovered_by() call to come back non-empty. A root whose removal
+    # ---- CONTROL: the assertion above must have TEETH ------------------------ "Everything is covered" is satisfied just as well by a root list that is too WIDE, and a passing coverage check says nothing about whether removing a root would be noticed. So mutate: drop each root in turn and require the very same uncovered_by() call to come back non-empty. A root whose removal
     # changes nothing is a root this gate would let someone delete in silence.
     for dropped in roots:
         if uncovered_by(candidates, [r for r in roots if r != dropped]):

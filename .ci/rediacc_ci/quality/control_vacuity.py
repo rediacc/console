@@ -121,14 +121,11 @@ def _joined(*rows: str) -> str:
     return "\n".join(rows)
 
 
-# POSIX [[:space:]] and [[:punct:]], written out. `\s` and `\w` are wider in
-# Python than in a POSIX bracket expression, and the difference is exactly the
-# kind that makes a port quietly see more or less than its twin.
+# POSIX [[:space:]] and [[:punct:]], written out. `\s` and `\w` are wider in Python than in a POSIX bracket expression, and the difference is exactly the kind that makes a port quietly see more or less than its twin.
 SPACE = r"[ \t\n\v\f\r]"
 PUNCT = r"[!-/:-@\[-`{-~]"
 
-# Does this file run a control at all? Five spellings, measured across the gate
-# directory by the twin and carried unchanged.
+# Does this file run a control at all? Five spellings, measured across the gate directory by the twin and carried unchanged.
 HAS_CONTROL = re.compile(
     r"CONTROL DID NOT FIRE|control could not plant|CONTROL IS VACUOUS|"
     r"control_must_fail|^control\(\)",
@@ -145,17 +142,15 @@ SUBSTITUTION = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*%ss[/@|#]|sed 
 
 # Either shape counts as proof the plant landed:
 #   [[ "$MUTANT" == "$SRC" ]]   -- substitution produced an identical copy
-#   grep -q '<marker>' <mutant> -- the planted marker is present
+# grep -q '<marker>' <mutant> -- the planted marker is present
 PROVES_IDENTICAL = re.compile(r'\[\[ "\$[A-Za-z_][A-Za-z0-9_]*" == "\$[A-Za-z_][A-Za-z0-9_]*" \]\]')
 PROVES_MARKER = re.compile(r"grep -[a-z]*q[a-z]* .+(\$TMP|\$MUTANT|mutant|broken)")
 
-# The gate the CONTROL mutilates, and the guard line it removes. Named as
-# constants so the failure message and the strip cannot drift apart.
+# The gate the CONTROL mutilates, and the guard line it removes. Named as constants so the failure message and the strip cannot drift apart.
 CONTROL_GATE = "check-review-turn-capacity.sh"
 CONTROL_GUARD = re.compile(r'\[\[ "\$MUTANT" == "\$FN" \]\]')
 
-# The substitution the stripped copy must still carry. Without this the control
-# would "fire" against a copy that had lost the thing being tested.
+# The substitution the stripped copy must still carry. Without this the control would "fire" against a copy that had lost the thing being tested.
 CONTROL_STILL_SUBSTITUTES = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*//")
 
 # This file is not its own subject.
@@ -290,8 +285,7 @@ def audit(gate_dir: pathlib.Path, failures: Failures) -> tuple[int, int]:
                 "%s builds its control by pattern substitution but never proves "
                 "the plant landed." % base
             )
-            # STDERR, indented, so `scripts/lib/shadow-gate.ts` attaches these
-            # four lines to the finding above them. The twin prints them with
+            # STDERR, indented, so `scripts/lib/shadow-gate.ts` attaches these four lines to the finding above them. The twin prints them with
             # bare `echo ... >&2`; the indent is the contract.
             print(
                 "      Reword the targeted line and its control passes against UNMUTATED source,",
@@ -324,9 +318,7 @@ def main(argv: list[str] | None = None) -> int:
 
     problem = self_prose_control()
     if problem is not None:
-        # STDERR, unmarked, exactly as the twin prints it. Not a log.error: the
-        # twin uses a bare `echo ... >&2` here and the missing glyph is what
-        # makes this line chatter rather than a finding on both sides.
+        # STDERR, unmarked, exactly as the twin prints it. Not a log.error: the twin uses a bare `echo ... >&2` here and the missing glyph is what makes this line chatter rather than a finding on both sides.
         print(problem, file=sys.stderr)
         return 1
 
@@ -335,9 +327,7 @@ def main(argv: list[str] | None = None) -> int:
     failures = Failures()
     checked, exempt = audit(gate_dir, failures)
 
-    # ANTI-VACUITY, per .claude/skills/testing/gates.md: discovering zero inputs
-    # must FAIL. A corpus that silently collapses to nothing is exactly how this
-    # check would stop protecting anything while still printing a tick.
+    # ANTI-VACUITY, per .claude/skills/testing/gates.md: discovering zero inputs must FAIL. A corpus that silently collapses to nothing is exactly how this check would stop protecting anything while still printing a tick.
     if checked == 0:
         failures.fail(
             "no pattern-substitution controls found at all \u2014 the corpus collapsed to zero."
@@ -350,11 +340,7 @@ def main(argv: list[str] | None = None) -> int:
             "      builds_by_substitution stopped recognising the shapes in use.", file=sys.stderr
         )
 
-    # -----------------------------------------------------------------------
-    # CONTROL: strip a real gate's vacuity guard and require this check to catch
-    # it. Without this, a green above could mean "every gate complies" OR "the
-    # detector stopped recognising the guard shape", and those look identical.
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- CONTROL: strip a real gate's vacuity guard and require this check to catch it. Without this, a green above could mean "every gate complies" OR "the detector stopped recognising the guard shape", and those look identical. -----------------------------------------------------------------------
     control_src = gate_dir / CONTROL_GATE
     if control_src.is_file():
         stripped = strip_guard(read_lines(control_src))
@@ -382,15 +368,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # STATE THE SCOPE, do not leave it to the glob. A future `.py` gate that
-    # mutates its own source by substitution would escape this check with
-    # nothing said, so the number of unscanned gates is part of the green line.
+    # STATE THE SCOPE, do not leave it to the glob. A future `.py` gate that mutates its own source by substitution would escape this check with nothing said, so the number of unscanned gates is part of the green line.
     py_unscanned = sum(1 for p in glob.glob(str(gate_dir / "check_*.py")) if os.path.isfile(p))
 
     # STDOUT, NOT log.info. The twin's last line is
     # `echo "${GREEN}\u2713${NC} $checked ..."`, which lands on stdout, and
-    # `rediacc_ci.log` writes every message to stderr by design. Both spellings
-    # are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would
+    # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would
     # score the two as equivalent either way; that is exactly why it has to be
     # got right by reading the twin rather than by watching the comparator.
     print(
@@ -401,8 +384,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# The four shapes the detector must rule on, as one-line fixtures. Named rather
-# than inlined so a reader can see the whole decision table at once.
+# The four shapes the detector must rule on, as one-line fixtures. Named rather than inlined so a reader can see the whole decision table at once.
 _SUBSTITUTES = 'MUTANT="${SRC//needle/repl}"'
 _SUBSTITUTES_SED = 'sed \'s/needle/repl/\' "$SRC" >"$TMP/broken.sh"'
 _SUBSTITUTES_SED_I = 'sed -i "$expr" "$TMP/broken.sh"'
@@ -530,8 +512,7 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        # The control gate the CONTROL block strips. It must carry BOTH the
-        # substitution and the guard, or the control cannot fire.
+        # The control gate the CONTROL block strips. It must carry BOTH the substitution and the guard, or the control cannot fire.
         write(
             CONTROL_GATE,
             _joined(

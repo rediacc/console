@@ -89,17 +89,12 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-compacted-plan-edit.sh"
 ORDER = 11
 
-# The blob VALUE test, and the reason the value tests exist at all. Reproduced
-# 2026-09-06 against this hook with real payloads: four of five spine-destroying
-# edits passed the line-anchored patterns, including `old_string: "<40 hex>"` --
-# which is the SHORTEST unique string in a record and therefore the one the Edit
-# tool's "minimal unique old_string" advice leads you straight to.
+# The blob VALUE test, and the reason the value tests exist at all. Reproduced 2026-09-06 against this hook with real payloads: four of five spine-destroying edits passed the line-anchored patterns, including `old_string: "<40 hex>"` -- which is the SHORTEST unique string in a record and therefore the one the Edit tool's "minimal unique old_string" advice leads you straight to.
 DEFECT = ("hookio.grep_q(blob, fragments, fixed=True)", "False")
 
 PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md")
 
-# The same 10-line header window every status regex in this repo reads
-# (wl_checks.PLAN_HEADER_LINES).
+# The same 10-line header window every status regex in this repo reads (wl_checks.PLAN_HEADER_LINES).
 HEADER_LINES = 10
 
 RECORD_STATUS = hookio.rx(r"^Status:[{S}]*(compacted|parked)[{S}]*$")
@@ -161,16 +156,10 @@ WHAT TO DO INSTEAD.
   correcting it costs nothing and needs no re-derivation.
 """
 
-# ---------------------------------------------------------------------------
-# The fixture world
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
-# Every branch of this guard is behind `[ -f "$FILE" ]` and reads the record out
-# of the file on disk, so the differential cannot reach any of them without a
-# real record at a path the payload names literally. Same deterministic-temp-dir
-# arrangement as block_roundlog_write.py, and for the same reason: the repo's
-# own agent/PLAN-*.md files would make the answer depend on which plans happen
-# to be compacted today.
+# Every branch of this guard is behind `[ -f "$FILE" ]` and reads the record out of the file on disk, so the differential cannot reach any of them without a real record at a path the payload names literally. Same deterministic-temp-dir arrangement as block_roundlog_write.py, and for the same reason: the repo's own agent/PLAN-*.md files would make the answer depend on which plans
+# happen to be compacted today.
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-records")
 RECORD = "%s/agent/PLAN-a-compacted-record.md" % WORLD
 PLAIN = "%s/agent/PLAN-not-a-record.md" % WORLD
@@ -234,8 +223,7 @@ EDGE_CASES = [
             },
         },
     ),
-    # The 2026-09-06 reproduction: a MINIMAL unique old_string with no line
-    # prefix at all, which every line-anchored pattern above misses.
+    # The 2026-09-06 reproduction: a MINIMAL unique old_string with no line prefix at all, which every line-anchored pattern above misses.
     (
         "the bare 40-hex blob as old_string",
         {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": BLOB}},
@@ -357,9 +345,7 @@ def run(ev):
     except OSError:
         return hookio.ALLOW
 
-    # IS IT A RECORD? Both halves are required: a plan may legitimately say
-    # `parked` in prose, and a `Full-Text-Blob:` with no record status is not a
-    # record either.
+    # IS IT A RECORD? Both halves are required: a plan may legitimately say `parked` in prose, and a `Full-Text-Blob:` with no record status is not a record either.
     head10 = hookio._command_substitution(
         "".join(file_text.splitlines(keepends=True)[:HEADER_LINES])
     )
@@ -372,9 +358,7 @@ def run(ev):
 
     tool = ev.field("tool_name")
 
-    # The four-tool payload union: `content` is Write, `new_string`/`old_string` are
-    # Edit, `new_source` is NotebookEdit, `edits[]` is MultiEdit. old_string is in
-    # here deliberately -- an Edit that DELETES the header names it only there.
+    # The four-tool payload union: `content` is Write, `new_string`/`old_string` are Edit, `new_source` is NotebookEdit, `edits[]` is MultiEdit. old_string is in here deliberately -- an Edit that DELETES the header names it only there.
     fragments = ev.texts(
         ("tool_input", "content"),
         ("tool_input", "new_string"),
@@ -388,8 +372,7 @@ def run(ev):
 
     # TWO KINDS OF TEST, and the first version had only the first kind. The
     # line-anchored patterns catch an edit that quotes a WHOLE line; the VALUES
-    # are tested by substring, read out of the FILE rather than pattern-matched
-    # out of the payload, which is what makes them exact.
+    # are tested by substring, read out of the FILE rather than pattern-matched out of the payload, which is what makes them exact.
     if tool == "Write":
         spine = SPINE_WRITE
     elif hookio.grep_q(HEADER_FIELD, fragments):
@@ -404,9 +387,7 @@ def run(ev):
         spine = SPINE_BOX
     elif hookio.grep_q(RECORD_LINE, fragments):
         spine = SPINE_RECORD
-    # THE BOX BODIES, by substring, for the same reason as the blob above:
-    # rewriting a box's TEXT moves its ledger signature, and
-    # check_plan_boxes.py's A1 reports a moved signature as a box that VANISHED.
+    # THE BOX BODIES, by substring, for the same reason as the blob above: rewriting a box's TEXT moves its ledger signature, and check_plan_boxes.py's A1 reports a moved signature as a box that VANISHED.
     elif _box_body_hit(file_text, fragments):
         spine = SPINE_BODY
     else:

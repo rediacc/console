@@ -173,9 +173,7 @@ resetGhCliTokenMemo();
 // ── The REAL spawn path, whatever this box has ─────────────────────────────
 resetGhCliTokenMemo();
 {
-  // Machine-dependent RESULT, machine-independent REQUIREMENT: logged in, logged
-  // out, or no `gh` at all, the default reader must return and never throw. This
-  // is the only case that exercises the actual execFileSync options.
+  // Machine-dependent RESULT, machine-independent REQUIREMENT: logged in, logged out, or no `gh` at all, the default reader must return and never throw. This is the only case that exercises the actual execFileSync options.
   let threw = false;
   try {
     ghCliToken();

@@ -79,9 +79,7 @@ from rediacc_ci import paths
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
-# The tools the no-jq shim symlinks, in the twin's own order
-# (`test-install-script.sh:150`). `jq` is deliberately NOT among them: hiding it
-# is the point of the case.
+# The tools the no-jq shim symlinks, in the twin's own order (`test-install-script.sh:150`). `jq` is deliberately NOT among them: hiding it is the point of the case.
 NOJQ_TOOLS = (
     "grep",
     "sed",
@@ -191,17 +189,14 @@ class Shell:
             check=False,
         )
         if completed.returncode != 0:
-            # `set -e` in the twin: the sourced shell dying takes the run with
-            # it, with the child's own diagnostics already on stderr.
+            # `set -e` in the twin: the sourced shell dying takes the run with it, with the child's own diagnostics already on stderr.
             sys.stderr.write(completed.stderr)
             sys.stderr.flush()
             raise CaseFailedError
         return completed.stdout
 
 
-# ---------------------------------------------------------------------------
-# The fourteen cases, in the twin's order
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fourteen cases, in the twin's order ---------------------------------------------------------------------------
 
 
 def test_detect_platform(sh: Shell) -> None:
@@ -266,8 +261,7 @@ def test_write_install_config_channel_only(sh: Shell) -> None:
         log_fail("updateChannel field not edge: %s" % body)
     if '"accountServer":"https://www.rediacc.com"' not in body:
         log_fail("accountServer should default to production: %s" % body)
-    # The absent-file branch must produce a valid minimal v3 config, not a bare
-    # account blob -- the CLI parses this file directly.
+    # The absent-file branch must produce a valid minimal v3 config, not a bare account blob -- the CLI parses this file directly.
     if '"schemaVersion":3' not in body:
         log_fail("minimal config must carry schemaVersion 3: %s" % body)
     if '"encryption":{"mode":"plaintext"}' not in body:
@@ -372,10 +366,7 @@ def test_no_versions_constant(sh: Shell) -> None:
     log_pass("legacy VERSIONS_DIR / MAX_VERSIONS constants removed")
 
 
-# Channel resolution (env > rediacc.json::account.updateChannel > 'stable').
-# Asymmetry between install.sh defaulting to stable and `rdc update` reading the
-# config caused a real user-visible bug: stable install followed by an immediate
-# "update" jumping to edge. These four cases pin the unified contract.
+# Channel resolution (env > rediacc.json::account.updateChannel > 'stable'). Asymmetry between install.sh defaulting to stable and `rdc update` reading the config caused a real user-visible bug: stable install followed by an immediate "update" jumping to edge. These four cases pin the unified contract.
 
 
 def _channel(sh: Shell, home: pathlib.Path, prelude: str) -> str:

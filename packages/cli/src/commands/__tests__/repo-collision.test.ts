@@ -147,8 +147,7 @@ describe('repo replicate / canary: keyed by the repo ref (spec §4.4)', () => {
   });
 
   it('the actionable parent declares NO requiredOption (it would fire on subcommands)', () => {
-    // _checkForMissingMandatoryOptions walks up the parent chain, so a mandatory
-    // flag here would make `replicate status <ref>` demand --replicas.
+    // _checkForMissingMandatoryOptions walks up the parent chain, so a mandatory flag here would make `replicate status <ref>` demand --replicas.
     const parent = find(repoProgram(), 'repo', 'replicate');
     expect(parent?.options.filter((o) => o.mandatory)).toEqual([]);
   });

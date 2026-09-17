@@ -42,9 +42,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "cf_purge_urls.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
 ZONE = "zone-fixture"
-# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a
-# constant called TOKEN is "a hardcoded password" to the linter even when its
-# value is visibly a fixture.
+# Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a constant called TOKEN is "a hardcoded password" to the linter even when its value is visibly a fixture.
 BEARER = "tok-fixture"
 
 FAKE_CURL = """#!/usr/bin/python3
@@ -78,10 +76,7 @@ if fail_on and call_index == int(fail_on):
 sys.stdout.write(json.dumps({"success": True, "errors": [], "result": {"id": "purge"}}) + "\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides (the port shells out to the same
-# binary, for the reasons in its docstring) and `sed` is what the twin's --help
-# is made of. Nothing else is on the scratch PATH, so a tool leaking in would be
-# visible as a behaviour change rather than as a silent convenience.
+# `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring) and `sed` is what the twin's --help is made of. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
 PATH_MINIMUM = ("jq", "sed")
 
 
@@ -213,8 +208,7 @@ def test_help_is_byte_identical(tmp_path: pathlib.Path) -> None:
     _assert_agree(short_old, short_new, "help-short", None, None)
     assert short_old.stdout == old.stdout
 
-    # `--help` AFTER other arguments still wins, because the loop acts the
-    # moment it reaches the token.
+    # `--help` AFTER other arguments still wins, because the loop acts the moment it reaches the token.
     late_old, late_new, _loc, _lnc = run_both(tmp_path, ["https://a", "--help"])
     assert late_old.stdout == old.stdout
     _assert_agree(late_old, late_new, "help-late", None, None)

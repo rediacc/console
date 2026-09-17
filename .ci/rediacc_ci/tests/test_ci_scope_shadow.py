@@ -144,10 +144,7 @@ if (require.main === module) {
 """
 )
 
-# A trail that reaches every arm of the digest: the two skipped header shapes,
-# a closure line, the `run id` header, several trail rows, a VERDICT, the
-# redundant one-liner, a blank line, an UNRECOGNISED `greenlight[...]` line that
-# must both re-key and be echoed, and a keyless line that must survive verbatim.
+# A trail that reaches every arm of the digest: the two skipped header shapes, a closure line, the `run id` header, several trail rows, a VERDICT, the redundant one-liner, a blank line, an UNRECOGNISED `greenlight[...]` line that must both re-key and be echoed, and a keyless line that must survive verbatim.
 TRAIL = (
     "greenlight[e2e_workers] jobs=5\n"
     "greenlight[e2e_workers] pins=3\n"
@@ -284,9 +281,7 @@ def assert_same(old: tuple[int, str, str, str], new: tuple[int, str, str, str]) 
     assert new[3] == old[3], "artifacts"
 
 
-# ---------------------------------------------------------------------------
-# Layer 1: the five carried node programs
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 1: the five carried node programs ---------------------------------------------------------------------------
 
 
 def _twin_node_bodies() -> list[str]:
@@ -326,9 +321,7 @@ def test_the_numbers_the_twin_argues_for_are_still_the_numbers() -> None:
     assert "head -c %d" % scope_shadow.NARROW_HEAD_BYTES in text
 
 
-# ---------------------------------------------------------------------------
-# Layer 2: greenlight_digest against the REAL awk, running the REAL program
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 2: greenlight_digest against the REAL awk, running the REAL program ---------------------------------------------------------------------------
 
 
 def _twin_awk_program() -> str:
@@ -409,9 +402,7 @@ def test_shallow_report_says_so_when_rev_parse_disagrees_with_the_grafts() -> No
     assert "false (empty graft list; rev-parse says true)" in TWIN.read_text(encoding="utf-8")
 
 
-# ---------------------------------------------------------------------------
-# Layer 3: the whole script, seven branches
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 3: the whole script, seven branches ---------------------------------------------------------------------------
 
 
 def test_reduced_baseline_with_a_greenlight_grant(tmp_path: pathlib.Path) -> None:
@@ -570,9 +561,7 @@ def test_the_classify_branch_over_a_real_git_merge(tmp_path: pathlib.Path) -> No
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# A PLANTED DEFECT, on a throwaway copy, never on the file on disk
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- A PLANTED DEFECT, on a throwaway copy, never on the file on disk ---------------------------------------------------------------------------
 
 
 def test_a_planted_sort_in_the_digest_is_caught(tmp_path: pathlib.Path) -> None:
@@ -591,11 +580,7 @@ def test_a_planted_sort_in_the_digest_is_caught(tmp_path: pathlib.Path) -> None:
     anchor = "    for k in order:\n"
     assert source.count(anchor) == 1
     planted = source.replace(anchor, "    for k in sorted(order):\n", 1)
-    # THE CONTROL HAD TO BE FIXED BEFORE THE PLANT COULD FIRE. `TRAIL`'s
-    # first-seen order is e2e_workers then renet, which is ALSO alphabetical, so
-    # the first version of this test sorted a list that was already sorted and
-    # reported a plant that could not fail. This trail is deliberately
-    # reverse-alphabetical in first-seen order.
+    # THE CONTROL HAD TO BE FIXED BEFORE THE PLANT COULD FIRE. `TRAIL`'s first-seen order is e2e_workers then renet, which is ALSO alphabetical, so the first version of this test sorted a list that was already sorted and reported a plant that could not fail. This trail is deliberately reverse-alphabetical in first-seen order.
     reversed_trail = (
         "greenlight[renet] closure=1111111111111111 f=1\n"
         "   run id   sha        verdict\n"

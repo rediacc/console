@@ -24,9 +24,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-ssh-docker.sh"
 ORDER = 9
 
-# The bridge-VM carve-out. Without it every `ssh 192.168.111.x docker ...` is
-# refused, and that address range is the one machine where raw docker over ssh
-# is the sanctioned thing to do.
+# The bridge-VM carve-out. Without it every `ssh 192.168.111.x docker ...` is refused, and that address range is the one machine where raw docker over ssh is the sanctioned thing to do.
 DEFECT = ("and not hookio.grep_q(BRIDGE, scan)", "and True")
 
 SSH_DOCKER = hookio.rx(r"\bssh\b[{S}][^|;&]*\bdocker\b")

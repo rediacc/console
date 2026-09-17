@@ -49,8 +49,7 @@ export function paritySurface(repoRoot: string): string[] {
   const seen = new Set<string>();
   const queue: string[] = [];
 
-  // job id -> reusable workflow it calls (or '' when it has its own steps), for
-  // the jobs of ci.yml only.
+  // job id -> reusable workflow it calls (or '' when it has its own steps), for the jobs of ci.yml only.
   const calls = new Map<string, string>();
   let job = '';
   for (const raw of fs.readFileSync(entryPath, 'utf-8').split('\n')) {

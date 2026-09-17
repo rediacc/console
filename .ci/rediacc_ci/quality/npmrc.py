@@ -102,8 +102,7 @@ NPMRC = ".npmrc"
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
 SPACE = r"[ \t\n\v\f\r]"
 
-# The forbidden settings, as ONE alternation so the compiled pattern matches the
-# twin's `(legacy-peer-deps|force)` exactly. Case insensitive, matching `-i`.
+# The forbidden settings, as ONE alternation so the compiled pattern matches the twin's `(legacy-peer-deps|force)` exactly. Case insensitive, matching `-i`.
 FORBIDDEN_RE = re.compile(r"^%s*(legacy-peer-deps|force)%s*=" % (SPACE, SPACE), re.IGNORECASE)
 
 # The required settings and their exact expected values. A TUPLE in bash's
@@ -114,10 +113,7 @@ REQUIRED: tuple[tuple[str, str], ...] = (
     ("ignore-scripts", "true"),
 )
 
-# The rationale pointer the twin prints on the missing-settings path. It names an
-# absolute path from a DIFFERENT checkout (`/workspace/console`), which does not
-# exist on this machine or in CI. Carried byte for byte because the port's job is
-# to keep the verdict, and reported as a finding instead of quietly repaired.
+# The rationale pointer the twin prints on the missing-settings path. It names an absolute path from a DIFFERENT checkout (`/workspace/console`), which does not exist on this machine or in CI. Carried byte for byte because the port's job is to keep the verdict, and reported as a finding instead of quietly repaired.
 RATIONALE_LINE = "See /workspace/console/.npmrc header for the rationale behind each setting."
 
 
@@ -133,8 +129,7 @@ def forbidden_matches(text: str) -> list[tuple[int, str]]:
     for index, line in enumerate(text.split("\n"), start=1):
         if FORBIDDEN_RE.match(line):
             out.append((index, line))
-    # grep's last "line" after a trailing newline is not a line. `split` produces
-    # a final empty string for a file ending in \n, and the empty string cannot
+    # grep's last "line" after a trailing newline is not a line. `split` produces a final empty string for a file ending in \n, and the empty string cannot
     # match a pattern that requires `=`, so no guard is needed -- stated because
     # the absence of one looks like an oversight.
     return out
@@ -156,8 +151,7 @@ def setting_value(text: str, key: str) -> str:
     stripped = re.sub(r"^%s*%s%s*=%s*" % (SPACE, re.escape(key), SPACE, SPACE), "", last)
     # sed stage 2: strip a trailing comment, from optional space before the `#`.
     stripped = re.sub(r"%s*#.*" % SPACE, "", stripped)
-    # tr -d: delete EVERY remaining space character, inner ones included, so
-    # `true false` becomes `truefalse` and is reported as a wrong value.
+    # tr -d: delete EVERY remaining space character, inner ones included, so `true false` becomes `truefalse` and is reported as a wrong value.
     return re.sub(SPACE, "", stripped)
 
 
@@ -194,10 +188,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log.step("Checking .npmrc for supply-chain hardening settings...")
 
-    # THE ABSENT FILE IS A FAILURE, NOT AN ABSTENTION. A gate whose subject is
-    # missing has verified nothing, and the twin says so in four lines that
-    # double as the fix, so they are carried as four lines rather than folded
-    # into one paragraph.
+    # THE ABSENT FILE IS A FAILURE, NOT AN ABSTENTION. A gate whose subject is missing has verified nothing, and the twin says so in four lines that double as the fix, so they are carried as four lines rather than folded into one paragraph.
     if not npmrc.is_file():
         log.error(".npmrc is missing")
         log.error("Supply-chain hardening requires .npmrc at the repo root with:")
@@ -212,9 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         log.error(".npmrc contains legacy-peer-deps or force=true")
         log.error("These settings hide dependency problems that should be fixed properly.")
-        # STDOUT, deliberately. The twin uses bare `echo` for these three, not
-        # log_error, so they land on stdout while the two lines above land on
-        # stderr. `rediacc_ci.log` refuses to write messages to stdout, which is
+        # STDOUT, deliberately. The twin uses bare `echo` for these three, not log_error, so they land on stdout while the two lines above land on stderr. `rediacc_ci.log` refuses to write messages to stdout, which is
         # correct for messages; this is DATA the twin prints for copy-paste, so
         # it goes through print() and the split is preserved.
         print()
@@ -235,10 +224,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A `.npmrc` that satisfies every rule. The base every plant below mutates, and
-# asserted to be CLEAN first: without that, each plant would "fire" against a
-# fixture that was already failing and the suite would be green while testing
-# nothing.
+# A `.npmrc` that satisfies every rule. The base every plant below mutates, and asserted to be CLEAN first: without that, each plant would "fire" against a fixture that was already failing and the suite would be green while testing nothing.
 _CLEAN = "ignore-scripts=true\nallow-git=none\nminimum-release-age=1440\n"
 
 
@@ -263,9 +249,7 @@ def selftest() -> int:
                     target.unlink()
             else:
                 target.write_text(content, encoding="utf-8")
-            # REDIACC_CI_ROOT is the package-wide override named once in
-            # rediacc_ci.paths. Set through the mapping the module reads rather
-            # than through a private seam invented for the test.
+            # REDIACC_CI_ROOT is the package-wide override named once in rediacc_ci.paths. Set through the mapping the module reads rather than through a private seam invented for the test.
             saved = os.environ.get(paths.ROOT_ENV)
             os.environ[paths.ROOT_ENV] = str(root)
             try:
@@ -278,8 +262,7 @@ def selftest() -> int:
 
         ctl.check("CONTROL: a hardened .npmrc passes", run(_CLEAN), 0)
 
-        # THE VACUITY CASE. No file at all must be a refusal, never a clean
-        # verdict: a gate whose subject is absent has checked nothing.
+        # THE VACUITY CASE. No file at all must be a refusal, never a clean verdict: a gate whose subject is absent has checked nothing.
         ctl.check("VACUITY: an absent .npmrc is refused", run(None), 1)
         ctl.check("VACUITY: an EMPTY .npmrc is refused", run(""), 1)
 
@@ -296,22 +279,18 @@ def selftest() -> int:
             run(_CLEAN + "   force = 1\n"),
             1,
         )
-        # ITS MIRROR: `force` inside a longer key is not `force`, and a
-        # commented-out line is not a setting. A gate that fired on these would
-        # be unusable.
+        # ITS MIRROR: `force` inside a longer key is not `force`, and a commented-out line is not a setting. A gate that fired on these would be unusable.
         ctl.check("MIRROR: force-something is not force", run(_CLEAN + "force-cache=true\n"), 0)
         ctl.check("MIRROR: a commented force is not force", run(_CLEAN + "#force=true\n"), 0)
 
-        # PLANT 2: each required key removed in turn. Three plants, because a
-        # loop that stopped checking one key looks identical to a clean file.
+        # PLANT 2: each required key removed in turn. Three plants, because a loop that stopped checking one key looks identical to a clean file.
         for key, _expected in REQUIRED:
             without = "".join(
                 line + "\n" for line in _CLEAN.strip().split("\n") if not line.startswith(key)
             )
             ctl.check("PLANT: a missing %s is caught" % key, run(without), 1)
 
-        # PLANT 3: present but WRONG. The distinction the twin draws between
-        # "missing" and "has X, expected Y" is the whole reason it re-reads the
+        # PLANT 3: present but WRONG. The distinction the twin draws between "missing" and "has X, expected Y" is the whole reason it re-reads the
         # value instead of grepping for the literal `ignore-scripts=true`.
         ctl.check(
             "PLANT: a wrong value is caught",
@@ -324,8 +303,7 @@ def selftest() -> int:
             run(plant(_CLEAN, "allow-git=none", "allow-git=")),
             1,
         )
-        # PLANT 5: last-one-wins. An earlier good line does not rescue a later
-        # bad one, which is npm's own semantics and the reason for `tail -n1`.
+        # PLANT 5: last-one-wins. An earlier good line does not rescue a later bad one, which is npm's own semantics and the reason for `tail -n1`.
         ctl.check(
             "PLANT: a later line overriding a good one is caught",
             run(_CLEAN + "allow-git=always\n"),
@@ -338,9 +316,7 @@ def selftest() -> int:
             0,
         )
 
-        # PLANT 6: case. The required half is case SENSITIVE, so a capitalised
-        # key does not satisfy it. This is the direction that would silently
-        # invert if someone "unified" the two greps onto `-i`.
+        # PLANT 6: case. The required half is case SENSITIVE, so a capitalised key does not satisfy it. This is the direction that would silently invert if someone "unified" the two greps onto `-i`.
         ctl.check(
             "PLANT: a capitalised required key does not satisfy it",
             run(plant(_CLEAN, "ignore-scripts=true", "Ignore-Scripts=true")),

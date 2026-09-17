@@ -61,8 +61,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 TOKEN = "fixture-cloudflare-token"  # noqa: S105 -- a throwaway fixture value that authenticates nowhere
 ACCOUNT = "fixture-account-id"
 
-# Far in the past and far in the future, so no selection can turn on the
-# sub-second gap between the two sides' clocks. See the module docstring.
+# Far in the past and far in the future, so no selection can turn on the sub-second gap between the two sides' clocks. See the module docstring.
 OLD = "2000-01-01T00:00:00.000Z"
 NEW = "2099-01-01T00:00:00.000Z"
 
@@ -103,11 +102,7 @@ sys.stderr.write("fixture npx: unexpected argv %r\\n" % (argv,))
 sys.exit(70)
 """
 
-# What the twin needs on PATH before its `require_cmd`s can speak. `tr` is here
-# because `parse_args` -> `to_upper` forks it once PER FLAG (common.sh:302), and
-# a curated PATH without it kills the twin at 127 before any validation runs --
-# measured while porting the sibling `docker-pull-ghcr.sh`, where its absence
-# made a perfectly good port look like it had lost `require_cmd`.
+# What the twin needs on PATH before its `require_cmd`s can speak. `tr` is here because `parse_args` -> `to_upper` forks it once PER FLAG (common.sh:302), and a curated PATH without it kills the twin at 127 before any validation runs -- measured while porting the sibling `docker-pull-ghcr.sh`, where its absence made a perfectly good port look like it had lost `require_cmd`.
 CURATED = ("dirname", "uname", "tr", "sed", "date", "wc", "cat")
 
 
@@ -172,9 +167,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str], extra: dict
     return proc.returncode, proc.stdout, proc.stderr, calls
 
 
-# The `Cutoff: ...` line is the one place a clock reaches the output, and the
-# two sides compute theirs milliseconds apart. Masked for comparison and
-# asserted separately.
+# The `Cutoff: ...` line is the one place a clock reaches the output, and the two sides compute theirs milliseconds apart. Masked for comparison and asserted separately.
 def _mask_cutoff(stderr: bytes) -> bytes:
     out = []
     for line in stderr.split(b"\n"):
@@ -212,9 +205,7 @@ def _listing(*rows: tuple[str, str], banner: str = "") -> str:
     return banner + payload + "\n"
 
 
-# ---------------------------------------------------------------------------
-# The controls, first: a fake that is not reached proves nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls, first: a fake that is not reached proves nothing. ---------------------------------------------------------------------------
 
 
 def test_neither_side_can_reach_a_real_wrangler() -> None:
@@ -240,9 +231,7 @@ def test_the_twin_parses_under_bash() -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# The pure halves, driven against the real sed and the real jq.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure halves, driven against the real sed and the real jq. ---------------------------------------------------------------------------
 
 
 def _real_sed(text: str) -> str:
@@ -263,9 +252,7 @@ def test_sed_from_first_bracket_agrees_with_the_real_sed() -> None:
         "",
         # ANCHORED: a `[` that is not at the start of a line does not open it.
         "prefix [ not anchored\n[1]\n",
-        # The range runs to END OF INPUT, so trailing banner text is INCLUDED
-        # and then fails validation. That is the twin's behaviour, not a bug in
-        # this helper.
+        # The range runs to END OF INPUT, so trailing banner text is INCLUDED and then fails validation. That is the twin's behaviour, not a bug in this helper.
         "[1]\ntrailing banner\n",
         "[1]\n[2]\n",
     ):
@@ -316,9 +303,7 @@ def test_parse_databases_refuses_anything_that_is_not_a_json_array() -> None:
     assert csd.parse_databases("[]") == []
 
 
-# ---------------------------------------------------------------------------
-# The differential.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential. ---------------------------------------------------------------------------
 
 
 def test_a_missing_token_is_refused_before_wrangler_is_reached() -> None:
@@ -552,8 +537,7 @@ def test_the_cutoff_line_is_the_only_clock_dependent_output() -> None:
     old, new = results
     strip = lambda b: [x for x in b.decode().splitlines() if "Cutoff: " not in x]  # noqa: E731
     assert strip(old[2]) == strip(new[2])
-    # And the cutoff line itself is present on both, so the strip is not hiding
-    # an absence.
+    # And the cutoff line itself is present on both, so the strip is not hiding an absence.
     assert any("Cutoff: " in x for x in old[2].decode().splitlines())
     assert any("Cutoff: " in x for x in new[2].decode().splitlines())
 

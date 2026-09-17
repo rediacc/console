@@ -181,8 +181,7 @@ from rediacc_ci.core import release_state_validator as rsv
 # =============================================================================
 
 # `RETENTION_DAYS="${ARG_DAYS:-14}"` / `KEEP_VERSIONS="${ARG_VERSIONS:-20}"`.
-# Held as STRINGS because that is what bash holds: they reach `date` as text and
-# `[[ -lt ]]` as an arithmetic word, and both of those care about the spelling.
+# Held as STRINGS because that is what bash holds: they reach `date` as text and `[[ -lt ]]` as an arithmetic word, and both of those care about the spelling.
 DEFAULT_RETENTION_DAYS = "14"
 DEFAULT_KEEP_VERSIONS = "20"
 
@@ -193,16 +192,14 @@ DEPLOYMENT_REPOS = ("console",)
 BRANCH_REPOS = ("console", "renet", "account", "elite", "homebrew-tap", "sql")
 
 # `BRANCH_MAX_AGE_DAYS="${BRANCH_MAX_AGE_DAYS:-30}"`. A TESTING SEAM, in the
-# twin's own words: there is no workflow_dispatch input for it and there should
-# not be one, because a gate cannot fabricate a 30-day-old branch.
+# twin's own words: there is no workflow_dispatch input for it and there should not be one, because a gate cannot fabricate a 30-day-old branch.
 DEFAULT_BRANCH_MAX_AGE_DAYS = "30"
 
 RELEASE_REPO = "rediacc/console"
 CF_PAGES_PROJECT = "rediacc"
 
 # `R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. constants.sh has already
-# defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-`
-# defaults are the same value twice.
+# defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-` defaults are the same value twice.
 DEFAULT_R2_BUCKET = "rediacc-releases"
 R2_RETENTION_DAYS = 7
 R2_FORMAT_DIRS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
@@ -237,8 +234,7 @@ TURNSTILE_GRACE_SECONDS = 24 * 60 * 60
 # Phase 8e's `mpu_max_age=$((24 * 3600))`.
 MULTIPART_MAX_AGE_SECONDS = 24 * 3600
 
-# The consecutive-failure circuit breaker, spelled `-ge 5` in Phases 3, 10, 11
-# and 12.
+# The consecutive-failure circuit breaker, spelled `-ge 5` in Phases 3, 10, 11 and 12.
 CONSECUTIVE_FAILURE_LIMIT = 5
 
 
@@ -531,13 +527,9 @@ def now_epoch_local() -> str:
 # =============================================================================
 # JQ FILTERS
 #
-# Every function here is one filter the twin applies to a SHELL VARIABLE. The
-# filters the twin passes to `gh api --jq` are NOT here: those run inside gh, on
-# both sides, because the port issues the same argv.
+# Every function here is one filter the twin applies to a SHELL VARIABLE. The filters the twin passes to `gh api --jq` are NOT here: those run inside gh, on both sides, because the port issues the same argv.
 #
-# `test_jq_filters_agree_with_the_real_jq` drives each of these against the real
-# binary over a corpus that includes the empty stream, a missing key and a null,
-# so the docstrings below are checked rather than believed.
+# `test_jq_filters_agree_with_the_real_jq` drives each of these against the real binary over a corpus that includes the empty stream, a missing key and a null, so the docstrings below are checked rather than believed.
 # =============================================================================
 
 
@@ -572,8 +564,7 @@ def _jq_or_die(blob: str, filter_text: str) -> None:
     except FileNotFoundError:
         sys.stderr.write("jq: command not found\n")
         raise SystemExit(127) from None
-    # A jq that somehow SUCCEEDED here would mean this port's parser is stricter
-    # than jq's, which is a defect in the port and must not be silently green.
+    # A jq that somehow SUCCEEDED here would mean this port's parser is stricter than jq's, which is a defect in the port and must not be silently green.
     raise SystemExit(proc.returncode if proc.returncode != 0 else 5)
 
 
@@ -767,15 +758,13 @@ def jq_get(value: object, *path: str) -> object:
 # =============================================================================
 # SMALL SHELL SHAPES
 #
-# The one-liners the twin spells with `grep`, `awk`, `sed`, `sort` or a bash
-# parameter expansion. Each carries the exact text it stands for.
+# The one-liners the twin spells with `grep`, `awk`, `sed`, `sort` or a bash parameter expansion. Each carries the exact text it stands for.
 # =============================================================================
 
 # `[[ "$env" =~ ^pr-([0-9]+)$ ]]` (Phase 4) and the identical test in Phase 5b.
 _PR_ENV_RE = re.compile(r"^pr-([0-9]+)$")
 
-# `select(.name | test("^pr-[0-9]+$"))` (Phase 6). jq's `test` is a SEARCH with
-# whatever anchors the pattern carries, which is why this is `.search` and not
+# `select(.name | test("^pr-[0-9]+$"))` (Phase 6). jq's `test` is a SEARCH with whatever anchors the pattern carries, which is why this is `.search` and not
 # `.match`; the anchors are in the pattern.
 _PR_NAME_RE = re.compile(r"^pr-[0-9]+$")
 
@@ -791,8 +780,7 @@ _STRICT_SEMVER_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 # `[[ "$open_prs" =~ ^[0-9]+$ ]]` (Phase 9).
 _DIGITS_RE = re.compile(r"^[0-9]+$")
 
-# A word `arith` will read as a plain decimal, used to keep a `null` size out of
-# the arithmetic in Phase 12. See `arith` for why a bare identifier is not one.
+# A word `arith` will read as a plain decimal, used to keep a `null` size out of the arithmetic in Phase 12. See `arith` for why a bare identifier is not one.
 _INT_RE = re.compile(r"^[+-]?[0-9]+$")
 
 # The three awk line filters in Phase 8. `[[:space:]]` and the literal `PRE` are
@@ -1182,9 +1170,7 @@ class Housekeeping:
     """
 
     def __init__(self, argv: list[str]) -> None:
-        # `parse_args "$@"` (:19). Refusals propagate: the twin exits 2 from
-        # parse_args on a flag that is not a shell identifier, and `main` turns
-        # the exception back into that exit code.
+        # `parse_args "$@"` (:19). Refusals propagate: the twin exits 2 from parse_args on a flag that is not a shell identifier, and `main` turns the exception back into that exit code.
         args = common.parse_args(argv)
 
         # :21-23. `${ARG_X:-default}` -- EMPTY falls back too, which is why this
@@ -1193,17 +1179,14 @@ class Housekeeping:
         self.keep_versions = args.get("ARG_VERSIONS") or DEFAULT_KEEP_VERSIONS
         self.dry_run_text = args.get("ARG_DRY_RUN") or "false"
 
-        # :58, :49, :124. Read HERE because the twin reads them here, at source
-        # time: a caller that exports one of these after sourcing gets the old
-        # value in bash, and must get the old value here too.
+        # :58, :49, :124. Read HERE because the twin reads them here, at source time: a caller that exports one of these after sourcing gets the old value in bash, and must get the old value here too.
         self.r2_bucket = os.environ.get("RELEASES_BUCKET") or DEFAULT_R2_BUCKET
         self.branch_max_age_days = (
             os.environ.get("BRANCH_MAX_AGE_DAYS") or DEFAULT_BRANCH_MAX_AGE_DAYS
         )
         self.max_deletes = os.environ.get("MAX_DELETES_PER_RUN") or DEFAULT_MAX_DELETES_PER_RUN
 
-        # :130-134, IN THE TWIN'S ORDER, which is observable: a host with no
-        # `aws` and no GH_TOKEN is told about aws, not about the token.
+        # :130-134, IN THE TWIN'S ORDER, which is observable: a host with no `aws` and no GH_TOKEN is told about aws, not about the token.
         common.require_cmd("gh")
         common.require_cmd("jq")
         common.require_cmd("curl")
@@ -1353,9 +1336,7 @@ class Housekeeping:
         deleted = 0
 
         # `index` is the twin's `index=$((index + 1))` at the tail of the loop.
-        # It is `enumerate` here and not a counter because the only other exit is
-        # `break`, which the twin also takes before incrementing. Phase 5 keeps a
-        # hand-rolled counter: it increments in two places and is not this shape.
+        # It is `enumerate` here and not a counter because the only other exit is `break`, which the twin also takes before incrementing. Phase 5 keeps a hand-rolled counter: it increments in two places and is not this shape.
         for index, release in enumerate(blob_array(releases)):
             tag = jq_text(jq_get(release, "tagName"))
             created_at = jq_text(jq_get(release, "createdAt"))
@@ -1563,8 +1544,7 @@ class Housekeeping:
                     raw_page = ""
 
                 # `[[ -z ... ]] || ! jq -e 'type == "array"'` -- both streams of
-                # the jq are discarded, so malformed bytes are a soft failure
-                # here and nowhere else in the file.
+                # the jq are discarded, so malformed bytes are a soft failure here and nowhere else in the file.
                 parsed = try_json_values(raw_page) if raw_page != "" else None
                 if parsed is None or len(parsed) != 1 or not isinstance(parsed[0], list):
                     page_ok = False
@@ -1739,8 +1719,7 @@ class Housekeeping:
             total = len(deployments)
             log.debug("  Found %d deployments" % total)
 
-            # `jq -r '[.[].environment] | unique | .[]'`, then an UNQUOTED
-            # `for env in $environments`. See HAZARD 5.
+            # `jq -r '[.[].environment] | unique | .[]'`, then an UNQUOTED `for env in $environments`. See HAZARD 5.
             environments_text = "\n".join(
                 jq_text(v) for v in jq_unique([jq_get(d, "environment") for d in deployments])
             )
@@ -1893,8 +1872,7 @@ class Housekeeping:
             branch = jq_text(deployment.get("branch"))
 
             # `jq --arg id "$dep_id" 'index($id) != null'`: `$id` is always a
-            # STRING, so a numeric id in the array would not match. jq equality,
-            # not Python's.
+            # STRING, so a numeric id in the array would not match. jq equality, not Python's.
             is_branch_latest = any(_ord(v) == _ord(dep_id) for v in branch_latest)
 
             if is_branch_latest:
@@ -1998,8 +1976,7 @@ class Housekeeping:
             log.warn("  Worker list API request failed, skipping Worker cleanup")
             return
 
-        # `jq -r '.result[]?.id // empty'`: the `?` swallows a non-iterable
-        # `.result`, and `// empty` drops an id that is null or false.
+        # `jq -r '.result[]?.id // empty'`: the `?` swallows a non-iterable `.result`, and `// empty` drops an id that is null or false.
         names_list = []
         for entry in _iterate_result_optional(response):
             value = jq_get(entry, "id") if isinstance(entry, dict) else None
@@ -2430,9 +2407,7 @@ class Housekeeping:
                 os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
             ]
         )
-        # The status is DISCARDED, exactly as `|| true` discards it: an
-        # unreachable bucket and an empty prefix are the same empty listing to
-        # every caller. That is HAZARD 1's shape again, in R2 rather than GitHub.
+        # The status is DISCARDED, exactly as `|| true` discards it: an unreachable bucket and an empty prefix are the same empty listing to every caller. That is HAZARD 1's shape again, in R2 rather than GitHub.
         return out
 
     def r2_prefix_last_modified(self, prefix: str) -> str:
@@ -2654,9 +2629,7 @@ class Housekeeping:
             )
 
         directory = "cli"
-        # The twin calls `rsv_list_sentinels "$dir"` a SECOND time here rather
-        # than reusing the list it just fetched, which is a second aws call per
-        # run. Reproduced: the call log is part of the comparison.
+        # The twin calls `rsv_list_sentinels "$dir"` a SECOND time here rather than reusing the list it just fetched, which is a second aws call per run. Reproduced: the call log is part of the comparison.
         sentinel_set = {s for s in rsv.list_sentinels(directory) if s != ""}
 
         for line in _stream_lines(self.r2_ls_prefix("%s/" % directory)):
@@ -2687,8 +2660,7 @@ class Housekeeping:
                 last = self.r2_prefix_last_modified("%s/%s/" % (directory, ver))
                 last_epoch = arith(date_epoch_utc(last))
                 if last_epoch == 0 or now_epoch - last_epoch <= orphan_ver_max_age:
-                    # The twin's line carries a U+2014 EM DASH. Spelled as an
-                    # escape so this file holds no em dash byte (house rule)
+                    # The twin's line carries a U+2014 EM DASH. Spelled as an escape so this file holds no em dash byte (house rule)
                     # while the OUTPUT stays byte-identical, which is the whole
                     # point of the comparison.
                     log.info(
@@ -2761,8 +2733,7 @@ class Housekeeping:
                         os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
                     ]
                 )
-                # Same discard as `r2_ls_prefix`: the twin pipes `aws ... 2>/dev/null`
-                # straight into awk and never looks at the status.
+                # Same discard as `r2_ls_prefix`: the twin pipes `aws ... 2>/dev/null` straight into awk and never looks at the status.
                 listing = _awk_channel_listing(raw)
                 if listing == "":
                     continue
@@ -2770,8 +2741,7 @@ class Housekeeping:
                 for record in records(listing):
                     fields = record.split("|")
                     # `IFS='|' read -r ts semver is_dev key`: a key containing a
-                    # `|` would land in `key` whole, because read assigns the
-                    # REMAINDER to the last name.
+                    # `|` would land in `key` whole, because read assigns the REMAINDER to the last name.
                     ts = fields[0] if len(fields) > 0 else ""
                     semver = fields[1] if len(fields) > 1 else ""
                     is_dev = fields[2] if len(fields) > 2 else ""
@@ -2822,10 +2792,7 @@ class Housekeeping:
         )
         if code != 0:
             uploads = "[]"
-        # SOFT `jq 'length'`: this is inside the twin's `set +e` region, and the
-        # `--query` above renders `null` when there are no uploads, which jq
-        # cannot take a length of. The twin's variable ends up EMPTY and the
-        # `-eq 0` below reads it as zero.
+        # SOFT `jq 'length'`: this is inside the twin's `set +e` region, and the `--query` above renders `null` when there are no uploads, which jq cannot take a length of. The twin's variable ends up EMPTY and the `-eq 0` below reads it as zero.
         mpu_count = _soft_length_text(uploads)
         if arith_cmp(mpu_count, "eq", 0):
             log.info("  8e: no ongoing multipart uploads")
@@ -2927,9 +2894,7 @@ class Housekeeping:
 
         now_epoch = arith(now_epoch_local())
         # `local max_age_seconds=$((BRANCH_MAX_AGE_DAYS * 86400))`. A refused word
-        # here does not just skip the phase: bash unwinds the whole call stack
-        # out to the top level, so Phases 10, 11 and 12 and the final summary
-        # never run and the script still exits 0. See HAZARD 8 in the module
+        # here does not just skip the phase: bash unwinds the whole call stack out to the top level, so Phases 10, 11 and 12 and the final summary never run and the script still exits 0. See HAZARD 8 in the module
         # docstring; `ExpansionAbortError` reproduces the unwind.
         try:
             max_age_seconds = arith(self.branch_max_age_days) * 86400
@@ -2982,8 +2947,7 @@ class Housekeeping:
                 if code != 0:
                     open_prs = "0"
                 # `[[ "$open_prs" =~ ^[0-9]+$ ]] || open_prs=0` -- a 403 body
-                # leaks to stdout even though gh exits non-zero, and the `-gt`
-                # below would blow up on it in a tight loop.
+                # leaks to stdout even though gh exits non-zero, and the `-gt` below would blow up on it in a tight loop.
                 if not _DIGITS_RE.match(open_prs):
                     open_prs = "0"
 
@@ -3114,8 +3078,7 @@ class Housekeeping:
         for wf in workflows:
             wf_id = jq_text(jq_get(wf, "id"))
             wf_name = jq_text(jq_get(wf, "name"))
-            # Keyed by PATH, never by name: the watchdog's display name is
-            # generated per run, so a name match is unwritable.
+            # Keyed by PATH, never by name: the watchdog's display name is generated per run, so a name match is unwritable.
             wf_path_value = jq_get(wf, "path")
             wf_path = jq_text(wf_path_value) if wf_path_value is not None else ""
             wf_retention_days = GH_RUNS_RETENTION_DAYS
@@ -3393,15 +3356,8 @@ class Housekeeping:
                 ),
             ]
         )
-        # `gh ... | jq -s 'sort_by(...)' || echo "[]"`. THE `||` COVERS THE WHOLE
-        # PIPELINE under pipefail, and `echo` APPENDS to whatever the pipeline
-        # already wrote -- so a gh that fails AFTER emitting rows leaves the
-        # variable holding TWO json values: the sorted array, then an empty one.
-        # Every downstream jq then answers twice ("3\n0"), which is why `total`
-        # and `total_bytes` are carried as TEXT here and read through the bash
-        # arithmetic rules rather than as Python ints. A port that collapsed this
-        # to `[]` would take a completely different branch from the twin on the
-        # one input where gh half-fails.
+        # `gh ... | jq -s 'sort_by(...)' || echo "[]"`. THE `||` COVERS THE WHOLE PIPELINE under pipefail, and `echo` APPENDS to whatever the pipeline already wrote -- so a gh that fails AFTER emitting rows leaves the variable holding TWO json values: the sorted array, then an empty one. Every downstream jq then answers twice ("3\n0"), which is why `total` and `total_bytes` are
+        # carried as TEXT here and read through the bash arithmetic rules rather than as Python ints. A port that collapsed this to `[]` would take a completely different branch from the twin on the one input where gh half-fails.
         stream = [
             jq_sort_by(
                 json_values(caches_blob, "sort_by(.last_accessed_at)"),
@@ -3494,10 +3450,7 @@ class Housekeeping:
                     )
                     break
 
-        # THE TWO BRANCHES DIFFER BY MORE THAN THE VERB: the dry-run arm says
-        # "freeING", the real arm says "freeD". Spelled out in full rather than
-        # assembled from a verb variable, because the first version of this port
-        # did assemble it and printed "freed" in a dry run. The differential
+        # THE TWO BRANCHES DIFFER BY MORE THAN THE VERB: the dry-run arm says "freeING", the real arm says "freeD". Spelled out in full rather than assembled from a verb variable, because the first version of this port did assemble it and printed "freed" in a dry run. The differential
         # caught it; a reader would not have.
         if self.dry_run:
             log.info(
@@ -3613,10 +3566,7 @@ def main(argv: list[str]) -> int:
     except ExpansionAbortError:
         # bash unwinds to the top level on an expansion error, abandoning every
         # function frame, and then looks for the NEXT top-level command. In this
-        # script `run_all_phases` is the last one, so the shell ends carrying the
-        # failed expansion's status, which is 1. Measured, both ways: with a
-        # trailing `echo` after the call the same script exits 0, because the
-        # echo succeeded. See HAZARD 8.
+        # script `run_all_phases` is the last one, so the shell ends carrying the failed expansion's status, which is 1. Measured, both ways: with a trailing `echo` after the call the same script exits 0, because the echo succeeded. See HAZARD 8.
         return 1
 
 

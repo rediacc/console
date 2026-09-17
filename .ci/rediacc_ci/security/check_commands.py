@@ -76,9 +76,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# (command, alternative) -- ORDER MATTERS: the narrow per-line check tries
-# these in this exact order and reports (then breaks on) the FIRST one whose
-# narrow regex matches a given line and is not skipped.
+# (command, alternative) -- ORDER MATTERS: the narrow per-line check tries these in this exact order and reports (then breaks on) the FIRST one whose narrow regex matches a given line and is not skipped.
 DISALLOWED: list[tuple[str, str]] = [
     ("bc", "awk 'BEGIN {printf \"%.2f\", x/y}'"),
     ("dc", "awk for calculations"),
@@ -190,9 +188,7 @@ def main(argv: list[str]) -> int:
         try:
             text = path.read_text(encoding="utf-8", errors="surrogateescape")
         except OSError:
-            # `2>/dev/null` on the per-file grep in the twin: an unreadable or
-            # missing file (e.g. `./run.sh` when it does not exist) yields no
-            # matches, not an error.
+            # `2>/dev/null` on the per-file grep in the twin: an unreadable or missing file (e.g. `./run.sh` when it does not exist) yields no matches, not an error.
             continue
 
         lines = text.split("\n")

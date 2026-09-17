@@ -84,8 +84,7 @@ def job(name: str, status: str, conclusion: str | None) -> dict:
     return {"name": name, "status": status, "conclusion": conclusion}
 
 
-# Mirrors a real run: the six platform legs plus the aggregator, which downloads
-# no binary and reports skipped once its needs fail.
+# Mirrors a real run: the six platform legs plus the aggregator, which downloads no binary and reports skipped once its needs fail.
 ALL_FAILED = [
     job("Validate Install Methods / Linux (x64)", "completed", "failure"),
     job("Validate Install Methods / Linux (arm64)", "completed", "failure"),
@@ -166,15 +165,9 @@ def test_module_still_callable_from_github_script(gate):
 
 def test_deferred_job_is_not_marked_handled(gate):
     gate.log_test("a deferred job must stay in newFailures for the next poll")
-    # The guard can only work if a deferred job is left UNHANDLED: marking it
-    # handled drops it from newFailures forever, so the matrix never gets
-    # re-evaluated and the corrupt build slips through on a retry. That lives in
-    # the monitor's closure, out of reach of the guard unit tests, so it is
-    # pinned at the source level.
+    # The guard can only work if a deferred job is left UNHANDLED: marking it handled drops it from newFailures forever, so the matrix never gets re-evaluated and the corrupt build slips through on a retry. That lives in the monitor's closure, out of reach of the guard unit tests, so it is pinned at the source level.
     #
-    # The window is awk's RANGE form, reimplemented literally: from the first
-    # line matching the opening pattern through the first later line matching
-    # the closing one. An approximation here would change a COUNT silently.
+    # The window is awk's RANGE form, reimplemented literally: from the first line matching the opening pattern through the first later line matching the closing one. An approximation here would change a COUNT silently.
     lines = WATCHDOG.read_text(encoding="utf-8").splitlines()
     open_re = re.compile(r"if \(guard\?\.defer\)")
     close_re = re.compile(r"^      \}")

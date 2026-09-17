@@ -35,8 +35,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh"
 WORKFLOW = paths.from_root(".github", "workflows", "cd-v2.yml")
 STEP_NAME = "Assert artifact version matches promotion target"
 
-# The twin's awk program, verbatim, so the equivalence control below drives the
-# real thing rather than a paraphrase of it.
+# The twin's awk program, verbatim, so the equivalence control below drives the real thing rather than a paraphrase of it.
 AWK = """
         index($0, "- name: " name) { p = 1; print; next }
         p && /^      - / { exit }
@@ -98,15 +97,9 @@ def test_workers_only_still_skips_it(gate):
         "workers_only != 'true'",
         "workers-only promotes no artifacts, so it stays excluded",
     )
-    # `skip_release` WAS REMOVED FROM cd-v2 (2026-08-26) and asserting it here
-    # would now pin a condition that cannot exist. decide-release-mode.sh wrote
-    # that output `false` on all three of its paths, so every guard reading it was
-    # permanently true -- a condition that cannot be false is a claim, not a guard.
+    # `skip_release` WAS REMOVED FROM cd-v2 (2026-08-26) and asserting it here would now pin a condition that cannot exist. decide-release-mode.sh wrote that output `false` on all three of its paths, so every guard reading it was permanently true -- a condition that cannot be false is a claim, not a guard.
     #
-    # Match the CONDITION (`outputs.skip_release`), not the bare word: cd-v2 now
-    # carries a comment explaining why the clause was removed, and asserting on
-    # the word alone flagged that prose. A gate that cannot survive being written
-    # about is too broad.
+    # Match the CONDITION (`outputs.skip_release`), not the bare word: cd-v2 now carries a comment explaining why the clause was removed, and asserting on the word alone flagged that prose. A gate that cannot survive being written about is too broad.
     gate.assert_not_contains(
         block,
         "outputs.skip_release",
@@ -116,10 +109,7 @@ def test_workers_only_still_skips_it(gate):
 
 
 def test_version_env_covers_retry_mode(gate):
-    # A step that runs in retry mode but reads only the normal-mode version output
-    # would receive an EMPTY VERSION there, which assert-artifact-version.sh rejects
-    # outright -- a hard failure on every retry. The env must cover both paths, in
-    # the same precedence the job's own next_version output uses.
+    # A step that runs in retry mode but reads only the normal-mode version output would receive an EMPTY VERSION there, which assert-artifact-version.sh rejects outright -- a hard failure on every retry. The env must cover both paths, in the same precedence the job's own next_version output uses.
     gate.log_test("VERSION is wired for both the retry and normal paths")
     block = step_block(WORKFLOW)
     gate.assert_contains(
@@ -132,15 +122,11 @@ def test_version_env_covers_retry_mode(gate):
 
 
 def test_planted_old_condition_is_caught(gate, tmp_path):
-    # THE CONTROL. Plant the old condition in a copy and prove the checks above go
-    # red on it. Without this, "no retry_mode found" could just as easily mean the
-    # extractor matched nothing.
+    # THE CONTROL. Plant the old condition in a copy and prove the checks above go red on it. Without this, "no retry_mode found" could just as easily mean the extractor matched nothing.
     gate.log_test("control: the pre-fix condition is detected")
     # THE PLANT ANCHOR MOVED (2026-08-26). It used to substitute on the
     # `skip_release != 'true' &&` line, which no longer exists -- that guard was
-    # permanently true and was removed. The control caught its own plant failing
-    # to land rather than passing over an unmutated fixture, which is exactly
-    # what it is for. Re-anchored on the condition that IS still there.
+    # permanently true and was removed. The control caught its own plant failing to land rather than passing over an unmutated fixture, which is exactly what it is for. Re-anchored on the condition that IS still there.
     anchor = "        if: steps.skip-check.outputs.workers_only != 'true'"
     replacement = (
         "        if: >-\n"

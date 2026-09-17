@@ -93,23 +93,15 @@ import tempfile
 
 from rediacc_ci.controls import Controls, plant
 
-# The POSIX space class, written out. `\s` on a Python str additionally matches
-# U+00A0, U+2028 and friends, so a builder line indented with a non-breaking
-# space would be seen by the port and not by sed or awk. See the same note in
-# `rediacc_ci.quality.npmrc`, where it was written first.
+# The POSIX space class, written out. `\s` on a Python str additionally matches U+00A0, U+2028 and friends, so a builder line indented with a non-breaking space would be seen by the port and not by sed or awk. See the same note in `rediacc_ci.quality.npmrc`, where it was written first.
 SPACE = r"[ \t\n\v\f\r]"
 
-# The builder, relative to the root. `$SIGNING_COVERAGE_BUILDER` overrides it,
-# which is how the twin's own controls point it at a scratch copy.
+# The builder, relative to the root. `$SIGNING_COVERAGE_BUILDER` overrides it, which is how the twin's own controls point it at a scratch copy.
 BUILDER_REL = ".ci/scripts/build/build-linux-pkg.sh"
 
-# Formats that ship UNSIGNED on purpose, in bash's measured hash order. Each
-# needs a reason, and the gate refuses an entry whose format IS guarded, so an
-# exemption cannot outlive its cause.
+# Formats that ship UNSIGNED on purpose, in bash's measured hash order. Each needs a reason, and the gate refuses an entry whose format IS guarded, so an exemption cannot outlive its cause.
 #
-# The reasons are carried BYTE FOR BYTE from the twin. They are long, they name
-# an upstream issue and a manual page, and shortening them is how the archlinux
-# reason became wrong the first time.
+# The reasons are carried BYTE FOR BYTE from the twin. They are long, they name an upstream issue and a manual page, and shortening them is how the archlinux reason became wrong the first time.
 UNSIGNED_ON_PURPOSE: tuple[tuple[str, str], ...] = (
     (
         "archlinux",
@@ -143,8 +135,7 @@ MIN_FORMATS = 4
 
 # The control floor handed to `gate_finish`. Four formats plus two exemptions
 # times two controls each, plus the parse control, is nine today; six is the
-# twin's number and is carried unchanged rather than tightened, because a floor
-# that tracks the current count fires on every legitimate addition.
+# twin's number and is carried unchanged rather than tightened, because a floor that tracks the current count fires on every legitimate addition.
 MIN_CONTROLS = 6
 
 # The subject line the verdict names.
@@ -155,11 +146,10 @@ MIN_REASON_LEN = 30
 
 # The validation case arm: `    deb | rpm | apk | archlinux) ;;`. BRE
 # `^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$` with the class spelled
-# out. Only lowercase letters, spaces and pipes are inside the group, which is
-# what stops it matching an arm whose pattern contains a glob or a variable.
+# out. Only lowercase letters, spaces and pipes are inside the group, which is what stops it matching an arm whose pattern contains a glob or a variable.
 _CASE_ONELINE = re.compile(r"^%s*([a-z |]*)\)%s*;;%s*$" % (SPACE, SPACE, SPACE))
 
-# A multi-line case arm header: `    rpm | deb)` with nothing after it. The awk
+# A multi-line case arm header: ` rpm | deb)` with nothing after it. The awk
 # program requires a leading `[a-z]`, so `) ;;`-style continuations and the
 # `*)` default arm are both excluded.
 _ARM_HEADER = re.compile(r"^%s*[a-z][a-z |]*\)%s*$" % (SPACE, SPACE))
@@ -306,9 +296,7 @@ def resolve_root() -> str:
             check=False,
         )
     except OSError:
-        # `git` absent behaves as `git` failing: the twin's `2>/dev/null ||`
-        # swallows both, and a port that raised here would turn a fallback into
-        # a stack trace.
+        # `git` absent behaves as `git` failing: the twin's `2>/dev/null ||` swallows both, and a port that raised here would turn a fallback into a stack trace.
         return "."
     top = proc.stdout.strip()
     return top if proc.returncode == 0 and top else "."
@@ -327,10 +315,7 @@ def main(argv: list[str] | None = None) -> int:
     root = resolve_root()
     builder = os.environ.get("SIGNING_COVERAGE_BUILDER") or os.path.join(root, BUILDER_REL)
 
-    # THE ABSENT BUILDER IS A REFUSAL, NOT AN ABSTENTION. A gate whose subject
-    # is missing has verified nothing, and the twin says so in one line that is
-    # deliberately not a log_error: plain `echo ... >&2`, no colour helper, so
-    # the port prints it the same way.
+    # THE ABSENT BUILDER IS A REFUSAL, NOT AN ABSTENTION. A gate whose subject is missing has verified nothing, and the twin says so in one line that is deliberately not a log_error: plain `echo ... >&2`, no colour helper, so the port prints it the same way.
     if not os.path.isfile(builder):
         print("✗ %s not found -- nothing was verified" % builder, file=sys.stderr)
         return 1
@@ -341,9 +326,7 @@ def main(argv: list[str] | None = None) -> int:
     tally = GateTally()
     exempt = dict(UNSIGNED_ON_PURPOSE)
 
-    # ANTI-VACUITY, recorded as a CONTROL first and then acted on. Recording it
-    # as a control matters: a run that dies at the floor still prints a tally
-    # line, so the reader can see the gate reached this point.
+    # ANTI-VACUITY, recorded as a CONTROL first and then acted on. Recording it as a control matters: a run that dies at the floor still prints a tally line, so the reader can see the gate reached this point.
     tally.check("the builder's format list parses", 1 if len(formats) >= MIN_FORMATS else 0, 1)
     if len(formats) < MIN_FORMATS:
         print(
@@ -359,8 +342,7 @@ def main(argv: list[str] | None = None) -> int:
     for fmt in formats:
         guard = guarded_in(fmt, text)
         if exempt.get(fmt):
-            # A stale exemption is worse than none: it hides a format that got
-            # fixed, and it does it while looking like coverage.
+            # A stale exemption is worse than none: it hides a format that got fixed, and it does it while looking like coverage.
             tally.check(
                 "CONTROL: exemption for '%s' still describes an UNguarded format" % fmt,
                 guard,
@@ -371,8 +353,7 @@ def main(argv: list[str] | None = None) -> int:
                 "'%s' refuses to ship unsigned when signing is required" % fmt, guard, "yes"
             )
 
-    # Every exemption must name a format the builder actually accepts, or it
-    # excuses nothing and sits forever looking like coverage.
+    # Every exemption must name a format the builder actually accepts, or it excuses nothing and sits forever looking like coverage.
     for fmt, reason in UNSIGNED_ON_PURPOSE:
         hit = "yes" if fmt in formats else "no"
         tally.check("exemption '%s' names a real format" % fmt, hit, "yes")
@@ -395,10 +376,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A builder whose validation case lists the four real formats and whose deb/rpm
-# arm carries the guard. The base every plant below mutates, and asserted CLEAN
-# first: without that, each plant would "fire" against a fixture that was
-# already failing and the suite would be green while testing nothing.
+# A builder whose validation case lists the four real formats and whose deb/rpm arm carries the guard. The base every plant below mutates, and asserted CLEAN first: without that, each plant would "fire" against a fixture that was already failing and the suite would be green while testing nothing.
 _CLEAN_BUILDER = """#!/usr/bin/env bash
 case "$FORMAT" in
     deb | rpm | apk | archlinux) ;;
@@ -457,8 +435,7 @@ def selftest() -> int:
 
         ctl.check("CONTROL: the reference builder passes", run(_CLEAN_BUILDER), 0)
 
-        # THE VACUITY CASES. A missing subject and an empty subject are both
-        # refusals, never clean verdicts.
+        # THE VACUITY CASES. A missing subject and an empty subject are both refusals, never clean verdicts.
         ctl.check("VACUITY: an absent builder is refused", run(None), 1)
         ctl.check("VACUITY: an EMPTY builder is refused", run(""), 1)
         ctl.check(
@@ -472,8 +449,7 @@ def selftest() -> int:
             1,
         )
 
-        # PLANT 1: a format that neither refuses nor is exempt. This is the
-        # 2026-09-05 shape itself, one format over.
+        # PLANT 1: a format that neither refuses nor is exempt. This is the 2026-09-05 shape itself, one format over.
         ctl.check(
             "PLANT: an unguarded, unexempt format is caught",
             run(plant(_CLEAN_BUILDER, "rpm | deb)", "rpm)")),
@@ -491,9 +467,7 @@ def selftest() -> int:
             ),
             1,
         )
-        # PLANT 3: a stale exemption. archlinux grows the guard, so the
-        # exemption now describes a format that got fixed, and the CONTROL line
-        # must fire rather than quietly bless it.
+        # PLANT 3: a stale exemption. archlinux grows the guard, so the exemption now describes a format that got fixed, and the CONTROL line must fire rather than quietly bless it.
         ctl.check(
             "PLANT: an exemption that outlived its cause is caught",
             run(
@@ -516,8 +490,7 @@ def selftest() -> int:
             1,
         )
 
-        # MIRRORS. Each is a shape that must stay GREEN, and each is a
-        # direction a "tidier" rewrite of the parser would invert.
+        # MIRRORS. Each is a shape that must stay GREEN, and each is a direction a "tidier" rewrite of the parser would invert.
         ctl.check(
             "MIRROR: extra spacing in the validation case still parses",
             run(plant(_CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb|rpm|apk|archlinux)")),
@@ -531,9 +504,7 @@ def selftest() -> int:
 
     # -- the pure helpers, driven directly ---------------------------------
     #
-    # The end-to-end cases above cannot distinguish "the parser is right" from
-    # "the parser is wrong in a way the controls happen not to see", so the two
-    # functions that decide everything are exercised on their own.
+    # The end-to-end cases above cannot distinguish "the parser is right" from "the parser is wrong in a way the controls happen not to see", so the two functions that decide everything are exercised on their own.
 
     ctl.check(
         "formats_of: the reference builder",

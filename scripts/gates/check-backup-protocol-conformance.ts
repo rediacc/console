@@ -73,9 +73,7 @@ const LEGS: Leg[] = [
     path: '/session',
     requestSchema: 'backupSessionRequest',
     responseSchema: 'backupSessionResponse',
-    // `intent` splits the session in two ('backup' | 'restore'). A restore
-    // session is the only credential a lapsed-but-retained subscription can
-    // get, so a client that cannot spell the field cannot restore at all.
+    // `intent` splits the session in two ('backup' | 'restore'). A restore session is the only credential a lapsed-but-retained subscription can get, so a client that cannot spell the field cannot restore at all.
     requestKeys: ['license', 'machineId', 'intent'],
     responseKeys: ['token', 'subscriptionId', 'dataPlaneUrl', 'grantKind'],
   },
@@ -215,8 +213,7 @@ function read(rel: string): string {
 function zodKeys(source: string, schema: string): string[] | null {
   const at = source.indexOf(`export const ${schema} = z.object({`);
   if (at === -1) return null;
-  // Walk braces from the opening of the object literal so nested objects and
-  // unions do not truncate the scan early.
+  // Walk braces from the opening of the object literal so nested objects and unions do not truncate the scan early.
   const open = source.indexOf('{', source.indexOf('z.object(', at));
   let depth = 0;
   let end = open;

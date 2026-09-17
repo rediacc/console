@@ -60,11 +60,7 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/lib/release-state-validator.sh"
 PORT = ".ci/rediacc_ci/core/release_state_validator.py"
 
-# The versions every case is built from. Deliberately mixed:
-#   * two that straddle the real ratchet floor (v1.2.21),
-#   * a pair whose STRING order and VERSION order disagree (v1.3.0 / v1.10.0),
-#   * a pre-release tag, which the contract excludes rather than judges,
-#   * a non-version and the empty string, which every loop must skip.
+# The versions every case is built from. Deliberately mixed: * two that straddle the real ratchet floor (v1.2.21), * a pair whose STRING order and VERSION order disagree (v1.3.0 / v1.10.0), * a pre-release tag, which the contract excludes rather than judges, * a non-version and the empty string, which every loop must skip.
 CORPUS = (
     "v1.0.0",
     "v1.2.21",
@@ -78,8 +74,7 @@ CORPUS = (
     "",
 )
 
-# A floor that is NOT the repository's own, so a case cannot pass by accident
-# because the real ratchet happened to agree with it.
+# A floor that is NOT the repository's own, so a case cannot pass by accident because the real ratchet happened to agree with it.
 FLOORS = {
     "empty": "",
     "one": "v1.2.21\n",
@@ -119,8 +114,7 @@ class Deck:
         return [pool.pop(self.below(len(pool))) for _ in range(min(count, len(pool)))]
 
 
-# Credentials for the DEFECT 1 driver below. Pointed at `example.invalid`, so
-# nothing here can reach a real endpoint even if the probe were to run.
+# Credentials for the DEFECT 1 driver below. Pointed at `example.invalid`, so nothing here can reach a real endpoint even if the probe were to run.
 FAKE_R2_ENV = {
     "CLOUDFLARE_R2_ENDPOINT": "https://example.invalid",
     "AWS_ACCESS_KEY_ID": "x",
@@ -159,9 +153,7 @@ def _joined(lines: list[str]) -> str:
     return "".join(line + "\n" for line in lines)
 
 
-# ---------------------------------------------------------------------------
-# The differential: bijection
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential: bijection ---------------------------------------------------------------------------
 
 
 def _bijection_cases() -> list[tuple[str, str, str, str | None]]:
@@ -174,13 +166,11 @@ def _bijection_cases() -> list[tuple[str, str, str, str | None]]:
     """
     rng = Deck(20260910)
     cases: list[tuple[str, str, str, str | None]] = []
-    # Exhaustive over the small, interesting shapes first: these are the ones a
-    # reviewer can check by hand.
+    # Exhaustive over the small, interesting shapes first: these are the ones a reviewer can check by hand.
     for cli, tag in itertools.product(("", "v1.3.0", "v1.3.0\nv1.10.0"), repeat=2):
         cases.append((cli, tag, "", None))
         cases.append((cli, tag, "v1.10.0", None))
-    # Then a seeded sample over the whole corpus, which is where the version
-    # ordering and the pre-release filter get exercised together.
+    # Then a seeded sample over the whole corpus, which is where the version ordering and the pre-release filter get exercised together.
     cases.extend(
         (
             "\n".join(rng.sample(CORPUS, rng.below(6))),
@@ -235,9 +225,7 @@ def test_the_bijection_corpus_is_not_trivial() -> None:
     assert len(BIJECTION_CASES) >= 100
 
 
-# ---------------------------------------------------------------------------
-# The differential: the channel pointer
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential: the channel pointer ---------------------------------------------------------------------------
 
 
 def _pointer_cases() -> list[tuple[str, str, str, str, str]]:
@@ -249,10 +237,7 @@ def _pointer_cases() -> list[tuple[str, str, str, str, str]]:
     cases.append(("stable", "v1.3.1", "v1.3.0", "v1.3.1\nv1.3.0", ""))  # torn write
     cases.append(("edge", "v1.3.1", "v1.3.1", "v1.3.0", ""))  # named, untagged
     cases.append(("edge", "v1.3.1", "v1.3.1", "v1.3.0", "v1.3.1"))  # in-flight
-    # AND THE CLEAN ONE, hand-picked rather than hoped for. The seeded sample
-    # below happened to produce zero of these, and `test_the_pointer_corpus_is
-    # _not_trivial` caught it: a corpus that only ever reaches the four FINDING
-    # branches proves nothing about the branch that says a pointer is fine.
+    # AND THE CLEAN ONE, hand-picked rather than hoped for. The seeded sample below happened to produce zero of these, and `test_the_pointer_corpus_is _not_trivial` caught it: a corpus that only ever reaches the four FINDING branches proves nothing about the branch that says a pointer is fine.
     cases.append(("stable", "v1.3.0", "v1.3.0", "v1.3.0\nv1.10.0", ""))  # tagged, clean
     cases.extend(
         (
@@ -305,9 +290,7 @@ def test_the_pointer_corpus_is_not_trivial() -> None:
     assert seen == {"unreadable", "torn", "untagged", "in-flight", "ok"}, sorted(seen)
 
 
-# ---------------------------------------------------------------------------
-# The differential: the pre-contract floor
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential: the pre-contract floor ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("floor_name", sorted(FLOORS))
@@ -338,13 +321,9 @@ def test_pre_contract_floor_matches_the_twin(
     assert out == rsv.pre_contract_floor(rsv.records(cli), env=env) + "\n"
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to FAIL
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to FAIL ---------------------------------------------------------------------------
 
-# Each mutation is (a name, the text to find, the text to put there). They are
-# chosen to be INVISIBLE to a reader skimming the diff and fatal to the verdict,
-# which is what a real regression looks like.
+# Each mutation is (a name, the text to find, the text to put there). They are chosen to be INVISIBLE to a reader skimming the diff and fatal to the verdict, which is what a real regression looks like.
 MUTATIONS = (
     (
         "drift direction flipped",
@@ -416,13 +395,9 @@ def test_a_planted_defect_makes_the_differential_fail(
         encoding="utf-8",
     )
 
-    # THE POINTER ARGUMENTS VARY, and that is not decoration. The first draft
-    # held them at ('v1.3.1', 'v1.3.1') for every case, so the
-    # "an unreadable pointer becomes a pass" mutation flipped a branch NO CASE
-    # EVER ENTERED and the control reported that the mutation "changed nothing
+    # THE POINTER ARGUMENTS VARY, and that is not decoration. The first draft held them at ('v1.3.1', 'v1.3.1') for every case, so the "an unreadable pointer becomes a pass" mutation flipped a branch NO CASE EVER ENTERED and the control reported that the mutation "changed nothing
     # the differential can see". The mutation was fine; the probe was blind. A
-    # control that cannot fire is a claim about the control before it is a claim
-    # about the code, so the empty-pointer shapes are here explicitly.
+    # control that cannot fire is a claim about the control before it is a claim about the code, so the empty-pointer shapes are here explicitly.
     cases = [
         ["v1.3.0", "v1.10.0", "", "v1.3.1", "v1.3.1"],
         ["v1.3.0\nv1.10.0", "v1.3.0", "", "", "v1.3.1"],
@@ -471,9 +446,7 @@ def test_a_planted_defect_makes_the_differential_fail(
     assert real.read_text(encoding="utf-8").count(find) == 1
 
 
-# ---------------------------------------------------------------------------
-# The three-state probes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The three-state probes ---------------------------------------------------------------------------
 
 
 def test_probe_is_not_an_int() -> None:
@@ -633,9 +606,7 @@ def test_get_sentinel_payload_fails_open_exactly_as_the_twin_does() -> None:
     assert "2>/dev/null" in body
 
 
-# ---------------------------------------------------------------------------
-# The twin's defects, pinned so they cannot rot
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The twin's defects, pinned so they cannot rot ---------------------------------------------------------------------------
 
 
 def test_defect_1_the_twin_still_calls_an_undefined_log_error() -> None:
@@ -668,11 +639,7 @@ def test_defect_1_is_live_when_the_library_is_sourced_alone() -> None:
     )
     rc, out, err = diff.bash_streams(
         script,
-        # Built as a dict and splatted rather than written as keyword literals,
-        # because ruff's S106 flags any literal assigned to an argument whose
-        # NAME looks like a secret, and it is right to: the exception belongs
-        # here, in a harness pointed at example.invalid, and nowhere a reader
-        # might copy from.
+        # Built as a dict and splatted rather than written as keyword literals, because ruff's S106 flags any literal assigned to an argument whose NAME looks like a secret, and it is right to: the exception belongs here, in a harness pointed at example.invalid, and nowhere a reader might copy from.
         env=diff.env_for(**FAKE_R2_ENV),
     )
     assert "log_error: command not found" in err
@@ -749,9 +716,7 @@ def test_the_bash_4_precondition_is_still_in_the_twin() -> None:
     assert "needs bash 4.0 or newer" in text
 
 
-# ---------------------------------------------------------------------------
-# The duplicate, named so the collapse is a decision and not a discovery
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The duplicate, named so the collapse is a decision and not a discovery ---------------------------------------------------------------------------
 
 
 def test_the_known_duplicate_still_exists_and_still_lacks_the_probes() -> None:
@@ -781,9 +746,7 @@ def test_the_known_duplicate_still_exists_and_still_lacks_the_probes() -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# The CLI
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The CLI ---------------------------------------------------------------------------
 
 
 def _cli(args: list[str], stdin: str = "") -> tuple[int, str, str]:

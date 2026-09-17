@@ -142,8 +142,7 @@ def main(argv: list[str]) -> int:
             with open(summary_path, "a", encoding="utf-8", errors="surrogateescape") as fh:
                 fh.write(text)
         else:
-            # SUMMARY defaults to /dev/stdout: `tee -a /dev/stdout` writes to
-            # the SAME fd a second time, duplicating the output.
+            # SUMMARY defaults to /dev/stdout: `tee -a /dev/stdout` writes to the SAME fd a second time, duplicating the output.
             sys.stdout.write(text)
             sys.stdout.flush()
 

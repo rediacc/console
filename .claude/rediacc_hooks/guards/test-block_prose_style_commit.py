@@ -26,15 +26,13 @@ import sys
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_commit"]
 
-# Assembled rather than written, so this harness is not a finding in the corpus
-# of the CI gate that reads its comments.
+# Assembled rather than written, so this harness is not a finding in the corpus of the CI gate that reads its comments.
 Y = "y" + "ou"
 EYE = "I"
 COMMIT = "git " + "commit"
 
 CASES = [
-    # (name, command, expect_blocked)
-    # ---- the block direction ------------------------------------------
+    # (name, command, expect_blocked) ---- the block direction ------------------------------------------
     ("a subject addressing the reader", '%s -m "Did %s run the tests?"' % (COMMIT, Y), True),
     (
         "a body in the first person",

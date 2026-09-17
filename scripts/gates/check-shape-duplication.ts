@@ -86,42 +86,18 @@ export const WINDOW = 5;
 /** A file saying it deliberately stands apart is not a copy to collapse. */
 const OPT_OUT = 'NOT ROUTED THROUGH';
 
-// THE PYTHON HALF IS MISSING, MEASURED, AND DELIBERATELY NOT ADDED HERE YET.
-// On 2026-09-08 `.ci/scripts/quality/` held 77 `check-*.sh` and 120 `check_*.py`,
-// and 45 of those gates existed ONLY as Python -- no `.sh` twin left to catch
-// their shape by proxy -- so a ported gate can be the third or twenty-first copy
-// of a scaffold and this counter never sees it. Silent by construction, too:
-// `refuseIfEmpty` in `tracked()` is satisfied forever by the ~150-file
-// `scripts/gates/check-*.ts` family, so an empty `.ci` half never refuses.
+// THE PYTHON HALF IS MISSING, MEASURED, AND DELIBERATELY NOT ADDED HERE YET. On 2026-09-08 `.ci/scripts/quality/` held 77 `check-*.sh` and 120 `check_*.py`, and 45 of those gates existed ONLY as Python -- no `.sh` twin left to catch their shape by proxy -- so a ported gate can be the third or twenty-first copy of a scaffold and this counter never sees it. Silent by construction,
+// too: `refuseIfEmpty` in `tracked()` is satisfied forever by the ~150-file `scripts/gates/check-*.ts` family, so an empty `.ci` half never refuses.
 //
-// WIDENING IS A WAVE, NOT A LINE. Adding
-// `.ci/scripts/quality/check_*.py` and `.ci/rediacc_ci/tests/gates/test_gate_*.py`
-// was driven that day and the counter reported 62 NEW shapes at 3+ copies -- one
-// of them 16 copies of the same five lines, across every ported gate, which is
-// the shared `sys.path` hop and entry-point scaffold rather than 62 separate
-// defects. Landing that red on a tree several sessions share, or seeding 62
-// hashes into the baseline in one go, are both worse than tracking it: the
-// drain is the work, and the widening lands with it.
-// A FAMILY CARRIES ITS OWN FLOOR, and per-family non-emptiness is not enough. Measured
-// 2026-09-08: `.claude/hooks/pre-bash/block-*.sh` had fallen to ONE tracked file while
-// `.claude/rediacc_hooks/guards/block_*.py` held 42, because W5 ported the guards and
-// this list still named only the bash spelling. That family is the one the docstring
-// above calls 52% comments carrying the incident histories the guards exist for, and the
-// gate scanned 1 of 43 and printed a confident tick every run. `refuseIfEmpty` in
-// `tracked()` could not see it: it guards the WHOLE corpus, which the ~150-file
-// `scripts/gates/check-*.ts` family satisfies forever. One file is not empty and was still a
-// dead family, so the floor is a COUNT.
+// WIDENING IS A WAVE, NOT A LINE. Adding `.ci/scripts/quality/check_*.py` and `.ci/rediacc_ci/tests/gates/test_gate_*.py` was driven that day and the counter reported 62 NEW shapes at 3+ copies -- one of them 16 copies of the same five lines, across every ported gate, which is the shared `sys.path` hop and entry-point scaffold rather than 62 separate defects. Landing that red on a
+// tree several sessions share, or seeding 62 hashes into the baseline in one go, are both worse than tracking it: the drain is the work, and the widening lands with it. A FAMILY CARRIES ITS OWN FLOOR, and per-family non-emptiness is not enough. Measured 2026-09-08: `.claude/hooks/pre-bash/block-*.sh` had fallen to ONE tracked file while `.claude/rediacc_hooks/guards/block_*.py`
+// held 42, because W5 ported the guards and this list still named only the bash spelling. That family is the one the docstring above calls 52% comments carrying the incident histories the guards exist for, and the gate scanned 1 of 43 and printed a confident tick every run. `refuseIfEmpty` in `tracked()` could not see it: it guards the WHOLE corpus, which the ~150-file
+// `scripts/gates/check-*.ts` family satisfies forever. One file is not empty and was still a dead family, so the floor is a COUNT.
 //
 // W7 P5 will delete the 77 `check-*.sh`, which is 6709 windows. With a floor on that
 // family the deletion must update this table in the same change or go red; without one it
-// leaves silently, exactly as family D did.
-// THE QUALITY AND GATE-TEST PYTHON FAMILIES ARE NOT HERE YET, deliberately and with the
-// cost measured. Adding `.ci/scripts/quality/check_*.py` and
-// `.ci/rediacc_ci/tests/gates/test_gate_*.py` on 2026-09-08, once the coordinate fix made
-// the corpus visible, reported 76 new shapes -- headed by a FORTY-FOUR copy span that is
-// the shared `sys.path` hop every ported entry point carries. That is one scaffold to
-// extract, not 76 defects, and extracting it before widening is what makes the widening
-// land at about eleven rather than seventy-six. The sequence is written down in
+// leaves silently, exactly as family D did. THE QUALITY AND GATE-TEST PYTHON FAMILIES ARE NOT HERE YET, deliberately and with the cost measured. Adding `.ci/scripts/quality/check_*.py` and `.ci/rediacc_ci/tests/gates/test_gate_*.py` on 2026-09-08, once the coordinate fix made the corpus visible, reported 76 new shapes -- headed by a FORTY-FOUR copy span that is the shared
+// `sys.path` hop every ported entry point carries. That is one scaffold to extract, not 76 defects, and extracting it before widening is what makes the widening land at about eleven rather than seventy-six. The sequence is written down in
 // `agent/PLAN-extension-shaped-matchers.md`; this table gains those two rows in its
 // commit 3, after the extraction.
 interface Family {
@@ -134,12 +110,8 @@ const FAMILIES: readonly Family[] = [
   { pathspec: '.ci/scripts/quality/check-*.sh', floor: 50 },
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 100 },
   // FLOOR 1 IS A SCAR, NOT A TARGET. This family held 43 guards; W5 ported 42 of them
-  // to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate
-  // has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new
-  // shapes -- the guards carry a shared scaffold of their own -- so the widening is an
-  // extraction job like the quality half above, not a line, and it belongs in the same
-  // commit 3. What this row buys TODAY is that the number is written down where the
-  // next reader sees it, instead of being a silent 1.
+  // to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new shapes -- the guards carry a shared scaffold of their own -- so the widening is an extraction job like the quality half above, not a line, and it belongs in the same commit 3. What this row buys TODAY is that
+  // the number is written down where the next reader sees it, instead of being a silent 1.
   { pathspec: '.claude/hooks/pre-bash/block-*.sh', floor: 1 },
 ];
 
@@ -284,8 +256,7 @@ export function regexEnd(s: string, i: number): number {
  */
 export function stripNoise(s: string, kind: 'ts' | 'sh' | 'py'): string {
   const out: string[] = [];
-  // The code emitted so far on THIS line, for the regex heuristic. Kept short on purpose:
-  // only the last token matters, and carrying the whole prefix would be quadratic.
+  // The code emitted so far on THIS line, for the regex heuristic. Kept short on purpose: only the last token matters, and carrying the whole prefix would be quadratic.
   let tail = '';
   // Whether any non-blank character has been emitted on this line, for the `#` rule.
   let code = false;
@@ -312,8 +283,7 @@ export function stripNoise(s: string, kind: 'ts' | 'sh' | 'py'): string {
     }
     if (kind === 'ts' && c === '/' && s[i + 1] === '/' && s[i - 1] !== ':') {
       // `s[i - 1] !== ':'` is the old `(^|[^:])` guard, kept: a `://` in bare code (a URL in
-      // an unquoted position) is not a comment. Inside a string it can no longer reach here
-      // at all, which is one more thing the single pass fixes for free.
+      // an unquoted position) is not a comment. Inside a string it can no longer reach here at all, which is one more thing the single pass fixes for free.
       const j = toEol(i);
       blank(s.slice(i, j));
       i = j;
@@ -327,29 +297,18 @@ export function stripNoise(s: string, kind: 'ts' | 'sh' | 'py'): string {
       continue;
     }
     if (kind !== 'ts' && c === '#' && !code) {
-      // A LEADING-HASH LINE ONLY, and that is deliberate rather than lazy. A trailing
-      // `# ...` in shell can live inside a string or a regex, and guessing wrong changes
-      // the code rather than the comment. The single pass has already consumed the strings
-      // it can see, but shell quoting is context-sensitive enough that this stays cautious.
+      // A LEADING-HASH LINE ONLY, and that is deliberate rather than lazy. A trailing `# ...` in shell can live inside a string or a regex, and guessing wrong changes the code rather than the comment. The single pass has already consumed the strings it can see, but shell quoting is context-sensitive enough that this stays cautious.
       const j = toEol(i);
       blank(s.slice(i, j));
       i = j;
       continue;
     }
     if (kind === 'py' && (s.startsWith('"""', i) || s.startsWith("'''", i))) {
-      // PYTHON'S TRIPLE-QUOTED LITERAL IS A LITERAL, and until 2026-09-08 this function did
-      // not know it -- which meant the gate's FIRST stated exclusion did not apply to Python
-      // at all. The docstring at the top of this file says comments are deliberately not
-      // counted, because "any raw-similarity metric ranks prose first and creates pressure
-      // to delete exactly the lines that make a green mean something". For shell and
-      // TypeScript the marker is `#` and `//` and both are stripped. Python's documentation
-      // idiom is the DOCSTRING, which is a string literal, so it reached the one-quote arms
-      // and was chewed into fragments: `.ci/scripts/quality/check_gate_id_convention.py` is
-      // 126 lines of which 115 are one docstring, and the gate reported five entry points as
+      // PYTHON'S TRIPLE-QUOTED LITERAL IS A LITERAL, and until 2026-09-08 this function did not know it -- which meant the gate's FIRST stated exclusion did not apply to Python at all. The docstring at the top of this file says comments are deliberately not counted, because "any raw-similarity metric ranks prose first and creates pressure to delete exactly the lines that make a
+      // green mean something". For shell and TypeScript the marker is `#` and `//` and both are stripped. Python's documentation idiom is the DOCSTRING, which is a string literal, so it reached the one-quote arms and was chewed into fragments: `.ci/scripts/quality/check_gate_id_convention.py` is 126 lines of which 115 are one docstring, and the gate reported five entry points as
       // sharing a shape whose content was their gate headers.
       //
-      // It must be consumed WHOLE and BEFORE the one-quote arm, which would otherwise match
-      // the empty string `""` and then walk into the body.
+      // It must be consumed WHOLE and BEFORE the one-quote arm, which would otherwise match the empty string `""` and then walk into the body.
       const q = s.slice(i, i + 3);
       const close = s.indexOf(q, i + 3);
       const j = close < 0 ? s.length : close + 3;
@@ -360,9 +319,7 @@ export function stripNoise(s: string, kind: 'ts' | 'sh' | 'py'): string {
     }
     if (c === "'" || c === '"' || c === '`') {
       const allowNewline = c === '`' && kind === 'ts';
-      // SHELL SINGLE QUOTES TAKE NO ESCAPES: inside them a backslash is a backslash and the
-      // only terminator is the next quote. Treating `\` as an escape there turns the `'\''`
-      // idiom into an unterminated literal.
+      // SHELL SINGLE QUOTES TAKE NO ESCAPES: inside them a backslash is a backslash and the only terminator is the next quote. Treating `\` as an escape there turns the `'\''` idiom into an unterminated literal.
       const escapes = !(kind === 'sh' && c === "'");
       let closed = -1;
       for (let j = i + 1; j < s.length; j++) {
@@ -406,17 +363,10 @@ export function stripNoise(s: string, kind: 'ts' | 'sh' | 'py'): string {
 
 export function normalise(src: string, kind: 'ts' | 'sh' | 'py'): NormLine[] {
   const s = stripNoise(src, kind);
-  // THE LINE NUMBER IS CARRIED, and its absence was a real bug rather than a nicety.
-  // Comment-stripping blanks a line and the filter below then DROPS it, so the index into
-  // this array is not the index into the file -- every earlier `file:line` this gate
-  // emitted was a normalised-array position wearing a file line's clothes. Measured
-  // 2026-09-01 on `.ci/scripts/test/gates/test-watchdog-log-capture.sh`: a finding
-  // reported at `:17` actually sits at file line 46. A finding whose coordinate points
-  // somewhere else is a finding nobody can act on.
+  // THE LINE NUMBER IS CARRIED, and its absence was a real bug rather than a nicety. Comment-stripping blanks a line and the filter below then DROPS it, so the index into this array is not the index into the file -- every earlier `file:line` this gate emitted was a normalised-array position wearing a file line's clothes. Measured 2026-09-01 on
+  // `.ci/scripts/test/gates/test-watchdog-log-capture.sh`: a finding reported at `:17` actually sits at file line 46. A finding whose coordinate points somewhere else is a finding nobody can act on.
   //
-  // Comment-stripping must therefore preserve the LINE COUNT, so a multi-line `/* */`
-  // block cannot swallow the newlines that separate the code after it from the code
-  // before it.
+  // Comment-stripping must therefore preserve the LINE COUNT, so a multi-line `/* */` block cannot swallow the newlines that separate the code after it from the code before it.
   return s
     .split('\n')
     .map(
@@ -432,13 +382,9 @@ const hash = (s: string) => createHash('sha1').update(s).digest('hex').slice(0, 
 
 /** An import, a require, or a shell `source` -- the line that USES a shared module. */
 export function isImportish(line: string): boolean {
-  // `from X import Y` IS AN IMPORT, and its absence was a gap rather than a choice. The
-  // docstring above says an import block is ADOPTION, not duplication -- files agreeing
-  // on what they depend on is the point of a shared module. That reasoning is
-  // language-neutral, but the pattern only ever knew TypeScript's `import` / `export …
+  // `from X import Y` IS AN IMPORT, and its absence was a gap rather than a choice. The docstring above says an import block is ADOPTION, not duplication -- files agreeing on what they depend on is the point of a shared module. That reasoning is language-neutral, but the pattern only ever knew TypeScript's `import` / `export …
   // from`, CommonJS `require`, and shell `source` / `.`. Python's other spelling went
-  // uncounted, so a run of `from rediacc_ci.quality import …` lines read as copied code.
-  // Added 2026-09-08, when the corpus stopped being bash-and-TypeScript.
+  // uncounted, so a run of `from rediacc_ci.quality import …` lines read as copied code. Added 2026-09-08, when the corpus stopped being bash-and-TypeScript.
   return /^(import\b|from \S+ import\b|export .*\bfrom\b|const .*=\s*require\(|source |\. )/.test(
     line
   );
@@ -464,20 +410,13 @@ export function isImportish(line: string): boolean {
  * genuine shared span that happens to contain one echo still registers.
  */
 export function isMessageish(line: string): boolean {
-  // The `>&2` redirect is part of the idiom, so `&` cannot be excluded wholesale -- the
-  // first cut did that and matched nothing, which is why this carries a control.
+  // The `>&2` redirect is part of the idiom, so `&` cannot be excluded wholesale -- the first cut did that and matched nothing, which is why this carries a control.
   //
-  // `sys.stderr.write` AND `sys.stdout.write` ARE THE PYTHON SPELLING of `echo … >&2`,
-  // and their absence was the same language gap `isImportish` had. Probed 2026-09-08:
+  // `sys.stderr.write` AND `sys.stdout.write` ARE THE PYTHON SPELLING of `echo … >&2`, and their absence was the same language gap `isImportish` had. Probed 2026-09-08:
   // `print("S", file=sys.stderr)` already matched through the `print` alternative, but
-  // `sys.stderr.write("S")` matched NOTHING -- so half the Python report idiom was
-  // excluded and half was counted as copied code. A gate that reports anything has one
-  // of these lines, so the miss was systematic rather than occasional.
+  // `sys.stderr.write("S")` matched NOTHING -- so half the Python report idiom was excluded and half was counted as copied code. A gate that reports anything has one of these lines, so the miss was systematic rather than occasional.
   //
-  // DELIBERATELY NOT WIDENED to `gate.log_fail` and its siblings: a repeated call to an
-  // already-shared helper is a different exclusion with a different argument -- the seed
-  // entry `98b21fa52e5d` states that case and says outright it is not excluded yet -- and
-  // folding it in here would silence a class this predicate was never reasoned about.
+  // DELIBERATELY NOT WIDENED to `gate.log_fail` and its siblings: a repeated call to an already-shared helper is a different exclusion with a different argument -- the seed entry `98b21fa52e5d` states that case and says outright it is not excluded yet -- and folding it in here would silence a class this predicate was never reasoned about.
   return /^(echo|printf|print|sys\.(stderr|stdout)\.write|console\.(log|error|warn))\b[^|;]*$/.test(
     line
   );
@@ -549,9 +488,7 @@ export function sharedHelperNames(files: string[]): ReadonlySet<string> {
 
 /** `name() {` in a `.sh` library two or more corpus files `source`. */
 function shellHelperNames(files: string[]): Set<string> {
-  // Which library each scanned file sources. Only a path is taken, never a variable: a
-  // `source "$LIB"` we cannot resolve is left out rather than guessed at, because a wrong
-  // guess here silences real code.
+  // Which library each scanned file sources. Only a path is taken, never a variable: a `source "$LIB"` we cannot resolve is left out rather than guessed at, because a wrong guess here silences real code.
   const sourcedBy = new Map<string, Set<string>>();
   for (const f of files) {
     let src: string;
@@ -616,12 +553,8 @@ function shellHelperNames(files: string[]): Set<string> {
  */
 export function importedModules(src: string): string[] {
   const out: string[] = [];
-  // `[A-Za-z_][\w.]*` AND NOT `[\w.]+`, and the difference is the whole relative-import
-  // exclusion: `[\w.]+` happily matches the leading dot, so `from . import sibling` yielded
-  // the module `.` and `from .pkg import thing` yielded `.pkg`. Both are unresolvable, so
-  // nothing was silenced -- but a module list containing `.` is a parser reporting garbage
-  // and being saved by the next stage, which is not the same as a parser that is right.
-  // Caught by the control below on its first run.
+  // `[A-Za-z_][\w.]*` AND NOT `[\w.]+`, and the difference is the whole relative-import exclusion: `[\w.]+` happily matches the leading dot, so `from . import sibling` yielded the module `.` and `from .pkg import thing` yielded `.pkg`. Both are unresolvable, so nothing was silenced -- but a module list containing `.` is a parser reporting garbage and being saved by the next stage,
+  // which is not the same as a parser that is right. Caught by the control below on its first run.
   for (const m of src.matchAll(/^[ \t]*import[ \t]+([A-Za-z_][\w.]*)/gm)) out.push(m[1]);
   for (const m of src.matchAll(/^[ \t]*from[ \t]+([A-Za-z_][\w.]*)[ \t]+import[ \t]+(.+)$/gm)) {
     const base = m[1];
@@ -677,9 +610,7 @@ function pythonHelperNames(files: string[]): Set<string> {
   const names = new Set<string>();
   const seen = new Set<string>();
   for (const [mod, users] of importedBy) {
-    // TWO USERS IS THE THRESHOLD, for the reason the shell arm states: a module one file
-    // imports is that file's private helper, and excluding its calls would hide a genuine
-    // copy made inside a single file's own library.
+    // TWO USERS IS THE THRESHOLD, for the reason the shell arm states: a module one file imports is that file's private helper, and excluding its calls would hide a genuine copy made inside a single file's own library.
     if (users.size < 2) continue;
     for (const hit of resolveModule(mod, allTracked())) {
       if (seen.has(hit)) continue;
@@ -690,11 +621,7 @@ function pythonHelperNames(files: string[]): Set<string> {
       } catch {
         continue;
       }
-      // A METHOD IS A HELPER TOO, and that is not a widening for its own sake: the shape
-      // this arm exists to excuse is `gate.assert_contains(...)`, where `gate` is an
-      // instance of a class defined in the shared module. An indented `def` inside a
-      // `class` is exactly as shared as a module-level one, so the pattern is not
-      // anchored to column zero.
+      // A METHOD IS A HELPER TOO, and that is not a widening for its own sake: the shape this arm exists to excuse is `gate.assert_contains(...)`, where `gate` is an instance of a class defined in the shared module. An indented `def` inside a `class` is exactly as shared as a module-level one, so the pattern is not anchored to column zero.
       for (const d of body.matchAll(/^[ \t]*def[ \t]+([A-Za-z_]\w*)[ \t]*\(/gm)) names.add(d[1]);
     }
   }
@@ -753,9 +680,7 @@ export function windows(
     if (slice.filter((l) => isImportish(l.text)).length * 2 > WINDOW) continue;
     if (slice.filter((l) => isMessageish(l.text)).length * 2 > WINDOW) continue;
     if (slice.filter((l) => isContentFree(l.text)).length * 2 > WINDOW) continue;
-    // DEFAULTS TO EMPTY so every existing caller -- and every control below -- keeps the
-    // behaviour it was written against. Only `scan` passes the real set, which is what
-    // makes the corpus measurement attributable to this predicate alone.
+    // DEFAULTS TO EMPTY so every existing caller -- and every control below -- keeps the behaviour it was written against. Only `scan` passes the real set, which is what makes the corpus measurement attributable to this predicate alone.
     if (slice.filter((l) => isSharedHelperCall(l.text, helpers)).length * 2 > WINDOW) continue;
     // The window's line is the REAL file line its first row came from.
     out.push({
@@ -856,9 +781,7 @@ function trackedIn(pathspec: string): string[] {
 }
 
 function tracked(): string[] {
-  // THE FLOOR IS PER FAMILY AND IT IS A COUNT, for the reason recorded at FAMILIES.
-  // A family that emptied is invisible to a whole-corpus check, and one that shrank to a
-  // single file is invisible to a non-emptiness check. Both happened here.
+  // THE FLOOR IS PER FAMILY AND IT IS A COUNT, for the reason recorded at FAMILIES. A family that emptied is invisible to a whole-corpus check, and one that shrank to a single file is invisible to a non-emptiness check. Both happened here.
   const short = FAMILIES.map((f) => ({
     f,
     n: trackedIn(f.pathspec).length,
@@ -898,15 +821,12 @@ function tracked(): string[] {
 
 function scan(files: string[]): Map<string, { h: string; line: number }[]> {
   const m = new Map<string, { h: string; line: number }[]>();
-  // Computed ONCE over the whole corpus, not per file: "already shared" is a property of
-  // the library's user count across the corpus, which no single file can see.
+  // Computed ONCE over the whole corpus, not per file: "already shared" is a property of the library's user count across the corpus, which no single file can see.
   const helpers = sharedHelperNames(files);
   for (const f of files) {
-    // `.py` SHARES THE `#` COMMENT ARM WITH SHELL AND ADDS ONE OF ITS OWN. It was
-    // normalised as 'sh' outright until 2026-09-08, on the argument that the two
+    // `.py` SHARES THE `#` COMMENT ARM WITH SHELL AND ADDS ONE OF ITS OWN. It was normalised as 'sh' outright until 2026-09-08, on the argument that the two
     // languages have the same lexical shape; they do not, because Python has a
-    // triple-quoted literal and its documentation lives inside one. See the `py` arm
-    // in `normalise`. Only `.ts` needs the `//` and `/* */` handling.
+    // triple-quoted literal and its documentation lives inside one. See the `py` arm in `normalise`. Only `.ts` needs the `//` and `/* */` handling.
     const kind = f.endsWith('.ts') ? 'ts' : f.endsWith('.py') ? 'py' : 'sh';
     m.set(f, windows(normalise(readFileSync(path.join(ROOT, f), 'utf8'), kind), helpers));
   }
@@ -957,17 +877,14 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: normalise('# a\n# b\n# c\n# d\n# e\nx=1', 'sh').length === 1,
     },
     {
-      // The Python spelling, which nothing exercised until 2026-09-08. An import block
-      // is adoption rather than duplication, and a run of `from rediacc_ci.quality
+      // The Python spelling, which nothing exercised until 2026-09-08. An import block is adoption rather than duplication, and a run of `from rediacc_ci.quality
       // import <mod>` lines used to read as copied code because isImportish only knew
       // TypeScript's and shell's forms.
       name: 'a Python `from X import Y` counts as an import, not as copied code',
       ok: isImportish('from rediacc_ci.quality import npmrc'),
     },
     {
-      // The other direction, and it is not decoration: a pattern of `^from ` alone would
-      // swallow ordinary assignments, and an import exclusion that eats real code is a
-      // silencer.
+      // The other direction, and it is not decoration: a pattern of `^from ` alone would swallow ordinary assignments, and an import exclusion that eats real code is a silencer.
       name: 'CONTROL: an identifier merely starting with `from` is not an import',
       ok: !isImportish('from_here = 1') && !isImportish('fromage = 2'),
     },
@@ -985,15 +902,12 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         isContentFree(')'),
     },
     {
-      // The direction that stops it being a silencer. An exclusion that eats real code
-      // would make the whole gate vacuous, and a majority rule cannot save it.
+      // The direction that stops it being a silencer. An exclusion that eats real code would make the whole gate vacuous, and a majority rule cannot save it.
       name: 'CONTROL: a line with actual code is never content-free',
       ok: !isContentFree('return 1') && !isContentFree('x = 1') && !isContentFree('assert_eq a b'),
     },
     {
-      // The Python half of the report idiom. `echo "S" >&2` was excluded and
-      // `sys.stderr.write("S")` was not, so half of every ported gate's report counted
-      // as copied code. Same language gap isImportish had, one predicate over.
+      // The Python half of the report idiom. `echo "S" >&2` was excluded and `sys.stderr.write("S")` was not, so half of every ported gate's report counted as copied code. Same language gap isImportish had, one predicate over.
       name: 'a Python `sys.stderr.write` report is a message, not a copy',
       ok: isMessageish('sys.stderr.write("S")') && isMessageish('sys.stdout.write("S")'),
     },
@@ -1006,9 +920,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: !isMessageish('gate.log_fail("S")') && !isMessageish('x = sys.stderr'),
     },
     {
-      // The coordinate fix, pinned. A multi-line string literal must not renumber the
-      // code after it -- the same property the block-comment control above asserts, and
-      // the one whose absence put `check_npmrc.py:66` at line 4.
+      // The coordinate fix, pinned. A multi-line string literal must not renumber the code after it -- the same property the block-comment control above asserts, and the one whose absence put `check_npmrc.py:66` at line 4.
       name: 'CONTROL: a multi-line string literal does not renumber the code after it',
       ok: normalise("x = 'a\nb\nc\nd'\ny = 1", 'sh').slice(-1)[0]?.line === 5,
     },
@@ -1035,10 +947,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: checkAccepted({ abc123: 'BLOCKER: tbd' }).ok.length === 0,
     },
     {
-      // The reason here is deliberately LONG and substantive, so the only rule that can
-      // reject it is the prefix rule. The first version of this control used a 28-char
-      // reason, which `validateBlockerQuality` rejects for length alone -- it passed with
-      // the prefix check deleted, which is a control that cannot fail.
+      // The reason here is deliberately LONG and substantive, so the only rule that can reject it is the prefix rule. The first version of this control used a 28-char reason, which `validateBlockerQuality` rejects for length alone -- it passed with the prefix check deleted, which is a control that cannot fail.
       name: 'CONTROL: a reason without the BLOCKER: prefix buys no silence',
       ok:
         checkAccepted({
@@ -1047,9 +956,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         }).ok.length === 0,
     },
     {
-      // THE COORDINATE MUST BE A FILE LINE. Comment-stripping drops lines, so the index
-      // into the normalised array is not the index into the file. Before this, a finding
-      // in `test-watchdog-log-capture.sh` reported `:17` for code sitting at line 46.
+      // THE COORDINATE MUST BE A FILE LINE. Comment-stripping drops lines, so the index into the normalised array is not the index into the file. Before this, a finding in `test-watchdog-log-capture.sh` reported `:17` for code sitting at line 46.
       name: 'a finding names the REAL file line, not the normalised index',
       ok: (() => {
         const src =
@@ -1062,19 +969,13 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: normalise('/* a\n b\n c */\nconst z = 1;', 'ts')[0].line === 4,
     },
     {
-      // THE `\s` THAT ATE A LINE. `^\s*#` matches a NEWLINE inside `\s*`, so a comment with
-      // a blank line above it consumed that blank line's terminator and every coordinate
-      // below shifted up by one. Measured 2026-09-08: `if __name__` sits at line 208 of
-      // `.ci/scripts/quality/check_e2e_case_blind_assertions.py` and this function reported
-      // 207. Text and hashes are unaffected, which is exactly why nothing caught it.
+      // THE `\s` THAT ATE A LINE. `^\s*#` matches a NEWLINE inside `\s*`, so a comment with a blank line above it consumed that blank line's terminator and every coordinate below shifted up by one. Measured 2026-09-08: `if __name__` sits at line 208 of `.ci/scripts/quality/check_e2e_case_blind_assertions.py` and this function reported 207. Text and hashes are unaffected, which is
+      // exactly why nothing caught it.
       name: 'CONTROL: a blank line above a hash comment is not swallowed',
       ok: normalise('x=1\n\n# c\ny=2', 'sh').slice(-1)[0]?.line === 4,
     },
     {
-      // PYTHON'S COMMENT IDIOM IS THE DOCSTRING, and the gate's first stated exclusion is
-      // comments. Before this arm the two single-quote arms paired quotes across the prose
-      // and emitted the middle of a docstring as though it were three lines of code, which
-      // in a tree whose entry points are 90% docstring is not an edge case.
+      // PYTHON'S COMMENT IDIOM IS THE DOCSTRING, and the gate's first stated exclusion is comments. Before this arm the two single-quote arms paired quotes across the prose and emitted the middle of a docstring as though it were three lines of code, which in a tree whose entry points are 90% docstring is not an edge case.
       name: 'a Python docstring is prose: one token, and the code after it keeps its line',
       ok: (() => {
         const src =
@@ -1086,8 +987,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       // THE DIRECTION THAT KEEPS THE SEED VALID. The 275 seeded shapes were measured over a
       // ts-and-sh corpus; if the triple-quote arm reached `sh` it would rewrite what those
-      // files hash to and silently re-seed the gate. Bash has no triple-quoted string, so
-      // the arm is `py` only, and this asserts it.
+      // files hash to and silently re-seed the gate. Bash has no triple-quoted string, so the arm is `py` only, and this asserts it.
       name: 'CONTROL: the triple-quote arm is Python-only, so the shell corpus is untouched',
       ok: (() => {
         const src = '"""Doc.\n\nProse with "quoted" words.\n"""\nx = 1';
@@ -1095,9 +995,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       })(),
     },
     {
-      // THE ANTI-SILENCER DIRECTION. An arm that swallowed a triple-quoted literal's
-      // NEIGHBOURS would make every Python file look shorter than it is and hide real
-      // copies. Real code either side of a docstring is still counted, and still fires.
+      // THE ANTI-SILENCER DIRECTION. An arm that swallowed a triple-quoted literal's NEIGHBOURS would make every Python file look shorter than it is and hide real copies. Real code either side of a docstring is still counted, and still fires.
       name: 'CONTROL: real Python code around a docstring is still counted, and still fires',
       ok: (() => {
         const body =
@@ -1116,12 +1014,9 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       })(),
     },
     {
-      // THE GATE CAUGHT ITS AUTHOR ON THIS. String literals normalise to "S", so four
-      // consecutive stderr messages hash identically no matter what they SAY. It reported
-      // check-control-vacuity.sh, block-untagged-commit.sh and block-unverified-push.sh as
+      // THE GATE CAUGHT ITS AUTHOR ON THIS. String literals normalise to "S", so four consecutive stderr messages hash identically no matter what they SAY. It reported check-control-vacuity.sh, block-untagged-commit.sh and block-unverified-push.sh as
       // one shape; they share only the ACT of printing, and consolidating them would
-      // delete three unrelated explanations -- the findings report this gate's own
-      // docstring promises never to count.
+      // delete three unrelated explanations -- the findings report this gate's own docstring promises never to count.
       name: 'CONTROL: four stderr messages are a report, not a shared shape',
       ok: (() => {
         const body =
@@ -1146,9 +1041,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         !isMessageish('const a = 1;'),
     },
     {
-      // THE PREDICATE THE SEED ASKED FOR, in the shape it asked for it. `98b21fa52e5d`'s
-      // BLOCKER is five lines of `assert_exit_code` / `assert_contains` shared by three
-      // gate tests, and it ends "repeated CALLS to an already-shared helper are the same
+      // THE PREDICATE THE SEED ASKED FOR, in the shape it asked for it. `98b21fa52e5d`'s BLOCKER is five lines of `assert_exit_code` / `assert_contains` shared by three gate tests, and it ends "repeated CALLS to an already-shared helper are the same
       // case and are simply not excluded yet". Measured 2026-09-08 against an empty seed:
       // that fingerprint is reported without this predicate and gone with it.
       name: 'a window of calls to an already-shared helper is adoption, not a copy',
@@ -1168,9 +1061,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         ).length === 0,
     },
     {
-      // THE ANTI-SILENCER DIRECTION, and it is the half that makes the exclusion safe. An
-      // exclusion keyed on a name set must not eat code merely because it sits beside a
-      // helper call: the same five lines, with the helper set EMPTY, are still counted.
+      // THE ANTI-SILENCER DIRECTION, and it is the half that makes the exclusion safe. An exclusion keyed on a name set must not eat code merely because it sits beside a helper call: the same five lines, with the helper set EMPTY, are still counted.
       name: 'CONTROL: the same window with no shared helper in scope is still counted',
       ok:
         windows(
@@ -1187,16 +1078,13 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         ).length > 0,
     },
     {
-      // A library ONE file sources is that file's private helper, not a shared one, and
-      // excluding its calls would hide a genuine copy made inside a single file's own lib.
-      // The threshold is a definition, so it gets a control rather than a comment.
+      // A library ONE file sources is that file's private helper, not a shared one, and excluding its calls would hide a genuine copy made inside a single file's own lib. The threshold is a definition, so it gets a control rather than a comment.
       name: 'CONTROL: a library only one corpus file sources yields no shared helpers',
       ok: sharedHelperNames(['.claude/hooks/pre-bash/block-pathspecless-git-commit.ts']).size === 0,
     },
     // --- the Python arm of the same exclusion -------------------------------------
     {
-      // `from A.B import c` is ambiguous between "the name c in module A.B" and "the
-      // SUBMODULE A.B.c", and only the filesystem knows which. Both candidates are
+      // `from A.B import c` is ambiguous between "the name c in module A.B" and "the SUBMODULE A.B.c", and only the filesystem knows which. Both candidates are
       // emitted; resolution decides.
       name: 'a Python `from A.B import c, d` offers A.B and both submodule candidates',
       ok:
@@ -1213,8 +1101,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: JSON.stringify(importedModules('import rediacc_ci.paths')) === '["rediacc_ci.paths"]',
     },
     {
-      // Dropped rather than resolved, and the docstring says why: the widened corpus has
-      // ZERO of them, so resolution code for it would be untested by construction.
+      // Dropped rather than resolved, and the docstring says why: the widened corpus has ZERO of them, so resolution code for it would be untested by construction.
       name: 'CONTROL: a RELATIVE import offers nothing, rather than a bogus module',
       ok: importedModules('from . import sibling\nfrom .pkg import thing').length === 0,
       detail: JSON.stringify(importedModules('from . import sibling\nfrom .pkg import thing')),
@@ -1234,15 +1121,12 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ),
     },
     {
-      // The anti-silencer half: an unresolvable module contributes NO names, so a typo or
-      // a third-party import cannot widen the exclusion set.
+      // The anti-silencer half: an unresolvable module contributes NO names, so a typo or a third-party import cannot widen the exclusion set.
       name: 'CONTROL: a module with no tracked file resolves to nothing',
       ok: resolveModule('os.path', ['a/b.py']).length === 0,
     },
     {
-      // The shape that motivated the whole arm: a formatter-wrapped
-      // `gate.assert_contains(...)` is a CALL to a shared helper, and the leading word is
-      // the receiver rather than the helper.
+      // The shape that motivated the whole arm: a formatter-wrapped `gate.assert_contains(...)` is a CALL to a shared helper, and the leading word is the receiver rather than the helper.
       name: 'a Python `recv.helper(` attribute call counts as a shared-helper call',
       ok: isSharedHelperCall('gate.assert_contains(', new Set(['assert_contains'])),
     },
@@ -1251,8 +1135,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: !isSharedHelperCall('gate.something_else(', new Set(['assert_contains'])),
     },
     {
-      // THE TIGHTENING'S OWN CONTROL. `harness.py` defines `def result(` and `def record(`,
-      // so once the two languages share one name set the loose leading-word test matched
+      // THE TIGHTENING'S OWN CONTROL. `harness.py` defines `def result(` and `def record(`, so once the two languages share one name set the loose leading-word test matched
       // the ASSIGNMENT `result = run_gate(...)`. An exclusion that eats an assignment is a
       // silencer, so a call must be a name followed by `(`, by an argument, or by nothing.
       name: 'CONTROL: an assignment whose LHS is a helper NAME is not a helper call',
@@ -1262,9 +1145,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         isSharedHelperCall('result(1)', new Set(['result'])),
     },
     {
-      // CORPUS-DERIVED, not typed: two real tracked gate tests import
-      // `rediacc_ci.tests.gates.harness`, so its `def assert_contains(` is shared BY
-      // OBSERVATION. If the harness moves or the import spelling changes, this fails.
+      // CORPUS-DERIVED, not typed: two real tracked gate tests import `rediacc_ci.tests.gates.harness`, so its `def assert_contains(` is shared BY OBSERVATION. If the harness moves or the import spelling changes, this fails.
       name: 'two corpus files importing one module make its defs shared helpers',
       ok: sharedHelperNames([
         '.ci/rediacc_ci/tests/gates/test_gate_age_check.py',
@@ -1272,8 +1153,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ]).has('assert_contains'),
     },
     {
-      // The Python half of the two-user threshold, stated as a control for the same
-      // reason the shell half is: the threshold is a definition, not a knob.
+      // The Python half of the two-user threshold, stated as a control for the same reason the shell half is: the threshold is a definition, not a knob.
       name: 'CONTROL: ONE corpus file importing it does not make them shared',
       ok: !sharedHelperNames(['.ci/rediacc_ci/tests/gates/test_gate_age_check.py']).has(
         'assert_contains'
@@ -1282,10 +1162,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       // THE ANTI-SILENCER THAT MATTERS MOST HERE. Every Python gate defines its OWN
       // `main`, and the `if __name__ == "__main__": sys.exit(main())` tail is one of the
-      // duplicated shapes this gate is supposed to REPORT. If `main` ever entered the
-      // harvested set -- because some shared module defined it and two corpus files
-      // imported that module -- the gate would silence the very class it exists to find.
-      // Measured 2026-09-08 over the widened corpus: 334 names, `main` not among them.
+      // duplicated shapes this gate is supposed to REPORT. If `main` ever entered the harvested set -- because some shared module defined it and two corpus files imported that module -- the gate would silence the very class it exists to find. Measured 2026-09-08 over the widened corpus: 334 names, `main` not among them.
       name: 'CONTROL: `main` is not a harvested helper, so the entry-point tail stays visible',
       ok: !sharedHelperNames([
         '.ci/rediacc_ci/tests/gates/test_gate_age_check.py',
@@ -1341,10 +1218,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         );
       })(),
     },
-    // THE TOKENIZER CASES, all six written from a real corpus file and all six RED under
-    // the four-regex normaliser this replaced on 2026-09-09. The old spelling is quoted in
-    // each name so a reader can tell a fixture that would have passed anyway from one that
-    // is actually holding the fix down.
+    // THE TOKENIZER CASES, all six written from a real corpus file and all six RED under the four-regex normaliser this replaced on 2026-09-09. The old spelling is quoted in each name so a reader can tell a fixture that would have passed anyway from one that is actually holding the fix down.
     {
       // `const m = "don't";` … 243 lines … `"won't"`. The finding as written.
       name: 'an apostrophe in a double-quoted message does not eat the code after it',
@@ -1354,14 +1228,12 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
           'ts'
         );
         // The count is the catastrophe (the old arms returned TWO rows for this input); the
-        // text is the ordering, which is what actually fixes it -- the `"` opened first, so
-        // the apostrophe inside it is a character and not a quote.
+        // text is the ordering, which is what actually fixes it -- the `"` opened first, so the apostrophe inside it is a character and not a quote.
         return n.length === 5 && n[0].text === 'const m = "S";' && n[4].line === 5;
       })(),
     },
     {
-      // `scripts/gates/check-unverified-downloads.ts:60`. The worst real case: the apostrophe is
-      // in a character class, and the file normalised to 21 of its 318 lines.
+      // `scripts/gates/check-unverified-downloads.ts:60`. The worst real case: the apostrophe is in a character class, and the file normalised to 21 of its 318 lines.
       name: 'a quote inside a REGEX literal does not open a string',
       ok:
         normalise(
@@ -1370,8 +1242,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         ).length === 5,
     },
     {
-      // `scripts/gates/check-e2e-coverage.ts:233`: the `*` `/` in a GLOB closed a `/*` opened
-      // inside a template literal 27 lines earlier, and the two together cost 139 lines.
+      // `scripts/gates/check-e2e-coverage.ts:233`: the `*` `/` in a GLOB closed a `/*` opened inside a template literal 27 lines earlier, and the two together cost 139 lines.
       name: 'a comment marker inside a string is not a comment',
       ok:
         normalise(
@@ -1380,23 +1251,17 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         ).length === 5,
     },
     {
-      // `.ci/scripts/quality/check-trap-registry.sh:140`, which cost that file 296 of its
-      // 394 lines the moment the apostrophe arm stopped eating the region first.
+      // `.ci/scripts/quality/check-trap-registry.sh:140`, which cost that file 296 of its 394 lines the moment the apostrophe arm stopped eating the region first.
       name: 'a backtick inside a multi-line shell single-quoted block does not eat the file',
       ok: normalise("awk '\n  /^(```+)/ { print }\n' f\na=1\nb=2\nc=`date`", 'sh').length === 6,
     },
     {
-      // A LITERAL THAT NEVER CLOSES IS ABANDONED, which is the rule that bounds the blast
-      // radius to one line. Let it run past the newline and the next quote four lines down
-      // closes it over all the code between, which is the 36582 swallowed newlines.
+      // A LITERAL THAT NEVER CLOSES IS ABANDONED, which is the rule that bounds the blast radius to one line. Let it run past the newline and the next quote four lines down closes it over all the code between, which is the 36582 swallowed newlines.
       name: 'an unterminated quote is abandoned at the newline, not run to the next one',
       ok: normalise('echo "a\nx=1\ny=2\nz=3\necho "b"', 'sh').length === 5,
     },
     {
-      // Shell is the one language here where a backslash inside single quotes is a
-      // backslash, so `'a\'` is a complete literal followed by a bare `\`. Reading the
-      // backslash as an escape swallows the closing quote and pairs it with the NEXT one,
-      // which is a different span of the line.
+      // Shell is the one language here where a backslash inside single quotes is a backslash, so `'a\'` is a complete literal followed by a bare `\`. Reading the backslash as an escape swallows the closing quote and pairs it with the NEXT one, which is a different span of the line.
       name: 'a shell single-quoted string takes no escapes',
       ok: normalise("echo 'a\\' 'b'", 'sh')[0]?.text === "echo 'S' 'S'",
     },
@@ -1414,9 +1279,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         normalise('const r = /"[0-9]+"/;', 'ts')[0].text,
     },
     {
-      // The heuristic's failure mode is reading `a / b` as the start of a pattern. It has
-      // to know both spellings, because `return /re/.test(x)` is how this very file writes
-      // `isMessageish` two hundred lines up.
+      // The heuristic's failure mode is reading `a / b` as the start of a pattern. It has to know both spellings, because `return /re/.test(x)` is how this very file writes `isMessageish` two hundred lines up.
       name: 'CONTROL: the regex heuristic reads a division as division and a `return /re/` as a regex',
       ok:
         !opensRegex('const q = (a + b) ') &&
@@ -1438,9 +1301,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     },
     {
       // `--seed` used to write `{generated, files, shapes}` and drop `accepted` on the
-      // floor. This asserts the committed artifact still carries both halves, and that a
-      // judged hash is never ALSO an anonymous one -- which would double-count it in the
-      // success line and hide the reason behind a silent entry.
+      // floor. This asserts the committed artifact still carries both halves, and that a judged hash is never ALSO an anonymous one -- which would double-count it in the success line and hide the reason behind a silent entry.
       name: 'CONTROL: the seed keeps its accepted block, disjoint from the anonymous shapes',
       ok: (() => {
         const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as {
@@ -1550,8 +1411,7 @@ function loadSeed(): { silent: Set<string>; accepted: string[] } {
   }
   // THE IDS, not a count, because the caller has to prove each one is still LIVE. Returning
   // the number was enough while the only question was "how many are silent"; it is not
-  // enough to answer "is this entry still buying anything", which is the half that makes
-  // the set shrink.
+  // enough to answer "is this entry still buying anything", which is the half that makes the set shrink.
   return { silent, accepted: ok };
 }
 
@@ -1569,8 +1429,7 @@ function main(): void {
   const files = tracked();
   const perFile = scan(files);
 
-  // FLOORS. Either means the scan is broken, and a broken scan reports a confident green
-  // having verified nothing -- the exact failure this repo gates against.
+  // FLOORS. Either means the scan is broken, and a broken scan reports a confident green having verified nothing -- the exact failure this repo gates against.
   if (files.length < 200) {
     console.error(
       `${RED}✗${NC} only ${files.length} file(s) in the corpus; the globs are broken or the tree moved`
@@ -1584,11 +1443,8 @@ function main(): void {
   }
 
   if (argv.includes('--seed')) {
-    // RE-SEEDING IS GATE SUPPRESSION, so it is not a routine command. A second `--seed`
-    // absorbs every shape that has reached N copies since install -- including the
-    // genuine duplication this gate exists to report -- and leaves no record that it
-    // did. The exit for a shape that is legitimately not one thing is `accepted` with a
-    // BLOCKER, one entry at a time, which is reviewable. This refuses rather than warns.
+    // RE-SEEDING IS GATE SUPPRESSION, so it is not a routine command. A second `--seed` absorbs every shape that has reached N copies since install -- including the genuine duplication this gate exists to report -- and leaves no record that it did. The exit for a shape that is legitimately not one thing is `accepted` with a BLOCKER, one entry at a time, which is reviewable. This
+    // refuses rather than warns.
     if (existsSync(SEED_FILE) && !argv.includes('--force')) {
       console.error(
         `${RED}✗${NC} a seed already exists at ${SEED_FILE}.\n` +
@@ -1598,12 +1454,8 @@ function main(): void {
       );
       process.exit(1);
     }
-    // ONLY the shapes that have ALREADY reached N copies. Seeding every hash in the tree
-    // was the first attempt and it is wrong twice over: a 708 KB artifact, and -- the part
-    // that matters -- it would suppress a line that exists ONCE today and gets copied
-    // twice tomorrow. That is new duplication, exactly what this gate is for, and it would
-    // have been silenced forever. Seeding the standing backlog and nothing else keeps the
-    // 1 -> 2 -> 3 transition live.
+    // ONLY the shapes that have ALREADY reached N copies. Seeding every hash in the tree was the first attempt and it is wrong twice over: a 708 KB artifact, and -- the part that matters -- it would suppress a line that exists ONCE today and gets copied twice tomorrow. That is new duplication, exactly what this gate is for, and it would have been silenced forever. Seeding the
+    // standing backlog and nothing else keeps the 1 -> 2 -> 3 transition live.
     const shapes = new Set<string>();
     const counts = new Map<string, Set<string>>();
     for (const [file, ws] of perFile) {
@@ -1616,17 +1468,12 @@ function main(): void {
     for (const [h, f] of counts) if (f.size >= N) shapes.add(h);
     // `accepted` SURVIVES A RESEED, and its loss was a real defect rather than a gap in
     // this comment. The writer used to emit `{generated, files, shapes}` and nothing else,
-    // so a single `--seed --force` DELETED all 25 hand-written BLOCKER reasons and folded
-    // the shapes they described into the anonymous backlog bucket -- the exact difference
-    // this file's own docstring draws between "one measurement taken at install" and
-    // "per-entry judgement". Silently, with no diff a reader would read as a loss.
+    // so a single `--seed --force` DELETED all 25 hand-written BLOCKER reasons and folded the shapes they described into the anonymous backlog bucket -- the exact difference this file's own docstring draws between "one measurement taken at install" and "per-entry judgement". Silently, with no diff a reader would read as a loss.
     const keep = existsSync(SEED_FILE)
       ? ((JSON.parse(readFileSync(SEED_FILE, 'utf8')) as { accepted?: Record<string, string> })
           .accepted ?? {})
       : {};
-    // An accepted shape must not ALSO sit in `shapes`, or the success line's
-    // `seed.size - accepted` arithmetic double-counts it and the judgement is hidden
-    // behind an anonymous entry that silences the same hash.
+    // An accepted shape must not ALSO sit in `shapes`, or the success line's `seed.size - accepted` arithmetic double-counts it and the judgement is hidden behind an anonymous entry that silences the same hash.
     for (const h of Object.keys(keep)) shapes.delete(h);
     writeFileSync(
       SEED_FILE,
@@ -1646,9 +1493,7 @@ function main(): void {
     process.exit(1);
   }
 
-  // LIVENESS, BEFORE THE VERDICT. An accepted entry that no longer occurs at N copies is
-  // debt that was already paid, and leaving it in place is how an escape-hatch list stops
-  // shrinking. This fails rather than warns, and names the exact lines to delete.
+  // LIVENESS, BEFORE THE VERDICT. An accepted entry that no longer occurs at N copies is debt that was already paid, and leaving it in place is how an escape-hatch list stops shrinking. This fails rather than warns, and names the exact lines to delete.
   const dead = deadAccepted(perFile, accepted);
   if (dead.length > 0) {
     console.error(
@@ -1700,17 +1545,9 @@ function main(): void {
   );
 }
 
-// ENTRY-POINT GUARD, and it is not decoration. This module exports `normalise`, `windows`,
-// `judge` and `coalesce` so a consumer can drive the REAL judgement rather than a
-// reimplementation -- and until this line existed, importing any of them ran a full
-// 320-file scan as a side effect and printed the gate's verdict. Found by doing exactly
-// that from the calibration replay.
+// ENTRY-POINT GUARD, and it is not decoration. This module exports `normalise`, `windows`, `judge` and `coalesce` so a consumer can drive the REAL judgement rather than a reimplementation -- and until this line existed, importing any of them ran a full 320-file scan as a side effect and printed the gate's verdict. Found by doing exactly that from the calibration replay.
 //
-// The other 23 `scripts/gates/check-*.ts` that both export and call `main()` bare are left
-// alone deliberately: swept 2026-09-01, NONE of them is imported anywhere (the apparent
-// hits in `ci-runner/manifest.ts` are script-name strings, not imports). This one is the
-// only member of the class with a consumer, so it is the only one where the defect is
-// live rather than latent.
+// The other 23 `scripts/gates/check-*.ts` that both export and call `main()` bare are left alone deliberately: swept 2026-09-01, NONE of them is imported anywhere (the apparent hits in `ci-runner/manifest.ts` are script-name strings, not imports). This one is the only member of the class with a consumer, so it is the only one where the defect is live rather than latent.
 if (process.argv[1] && import.meta.filename === path.resolve(process.argv[1])) {
   main();
 }

@@ -175,9 +175,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
   });
 
   it('DOES call performUpdate when manifest is newer than appliedAtStartup', async () => {
-    // Catches the case where a release lands AFTER the staged version was
-    // downloaded: startup applied 1.0.7, but a 1.0.8 release dropped while
-    // we were running. We must not silently leave the user one release behind.
+    // Catches the case where a release lands AFTER the staged version was downloaded: startup applied 1.0.7, but a 1.0.8 release dropped while we were running. We must not silently leave the user one release behind.
     bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
     updaterMocks.checkForUpdate.mockResolvedValue({
       updateAvailable: true,
@@ -201,8 +199,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
   it('does NOT print a redundant "Updated to ..." success message when short-circuiting', async () => {
     // The autoApplied message is printed by applyPendingUpdate to stderr at
     // startup; the update command should print "up to date" rather than
-    // re-emitting an "Updated to ..." line, which was the duplicate the user
-    // observed.
+    // re-emitting an "Updated to ..." line, which was the duplicate the user observed.
     bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
     updaterMocks.checkForUpdate.mockResolvedValue({
       updateAvailable: true,
@@ -211,8 +208,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
 
     await runUpdateCommand();
 
-    // The "up to date" success line uses the post-apply version (1.0.7), not
-    // the stale in-memory VERSION (1.0.6).
+    // The "up to date" success line uses the post-apply version (1.0.7), not the stale in-memory VERSION (1.0.6).
     const successCalls = outputMocks.success.mock.calls;
     expect(successCalls.length).toBeGreaterThan(0);
     expect(JSON.stringify(successCalls)).toContain('1.0.7');

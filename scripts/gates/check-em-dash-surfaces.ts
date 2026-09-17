@@ -82,12 +82,9 @@ interface Surface {
   minFiles: number;
 }
 
-// Declared with subset() rather than as a literal so an unknown or misspelled code throws
-// at module load. A literal cannot: it just silently scans a directory that does not exist,
-// which is how a locale goes unchecked for months while the gate reports green.
+// Declared with subset() rather than as a literal so an unknown or misspelled code throws at module load. A literal cannot: it just silently scans a directory that does not exist, which is how a locale goes unchecked for months while the gate reports green.
 //
-// ru is EXCLUDED ON PURPOSE and this is the single place that records it: Russian narration
-// keeps its copula dash, because `Репозиторий — это ...` is grammatically required where
+// ru is EXCLUDED ON PURPOSE and this is the single place that records it: Russian narration keeps its copula dash, because `Репозиторий — это ...` is grammatically required where
 // English uses "is". The catalog surface still includes ru; only transcripts are exempt.
 const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
   'en',
@@ -106,31 +103,19 @@ const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
 
 const SURFACES: readonly Surface[] = [
   // 13 locales today; the floor sits below that so it catches a collapsed glob, not a
-  // deliberate locale change. The two `.`-prefixed hash sidecars in this directory are
-  // skipped by the walker, which is why the real count is 13 and not the 15 `find` reports.
+  // deliberate locale change. The two `.`-prefixed hash sidecars in this directory are skipped by the walker, which is why the real count is 13 and not the 15 `find` reports.
   { dir: 'packages/www/src/i18n/translations', kind: 'catalog', exts: ['.json'], minFiles: 10 },
   { dir: 'packages/www/src', kind: 'source', exts: ['.astro', '.tsx'], minFiles: 50 },
-  // Tutorial narration. This surface was MISSING and it is the one that reaches a
-  // user's ears: these strings are spoken by the TTS engine and rendered as VTT
-  // captions, so an em dash here is not a style nit, it is something a listener
+  // Tutorial narration. This surface was MISSING and it is the one that reaches a user's ears: these strings are spoken by the TTS engine and rendered as VTT captions, so an em dash here is not a style nit, it is something a listener
   // hears as an odd pause. 234 files across 13 locales; the floor sits well below
   // that so it catches a collapsed glob rather than a deliberate locale change.
   //
-  // NESTED inside `packages/www/src` above and disjoint from it only by extension
-  // (.json here, .astro/.tsx there), the same arrangement as the packages/cli pair.
-  // `nestedSurfaceOverlap()` turns that from a claim into a check.
+  // NESTED inside `packages/www/src` above and disjoint from it only by extension (.json here, .astro/.tsx there), the same arrangement as the packages/cli pair. `nestedSurfaceOverlap()` turns that from a claim into a check.
   //
-  // SCOPED TO THE LOCALES WHERE THE RULE APPLIES, which is not all of them. The
-  // rule exists to remove an English AI tell. Russian narration keeps 36 dashes
-  // ON PURPOSE: `Репозиторий — это ...` is the copula dash, grammatically
-  // REQUIRED where English uses "is", and deleting it produces ungrammatical
-  // Russian that a listener would hear. Applying an English style rule across
-  // locales is the failure class this pipeline has been bitten by before, so the
-  // exemption is expressed as a narrower surface rather than a baseline entry
-  // that would read as debt someone should pay off.
+  // SCOPED TO THE LOCALES WHERE THE RULE APPLIES, which is not all of them. The rule exists to remove an English AI tell. Russian narration keeps 36 dashes ON PURPOSE: `Репозиторий — это ...` is the copula dash, grammatically REQUIRED where English uses "is", and deleting it produces ungrammatical Russian that a listener would hear. Applying an English style rule across locales is
+  // the failure class this pipeline has been bitten by before, so the exemption is expressed as a narrower surface rather than a baseline entry that would read as debt someone should pay off.
   //
-  // fr and pt WERE cleaned (operator's call), so they stay in scope and any new
-  // dash there fails.
+  // fr and pt WERE cleaned (operator's call), so they stay in scope and any new dash there fails.
   ...TRANSCRIPT_DASH_LOCALES.map(
     (lang): Surface => ({
       dir: `packages/www/src/data/tutorial-transcripts/${lang}`,
@@ -142,35 +127,22 @@ const SURFACES: readonly Surface[] = [
   { dir: '.claude/commands', kind: 'markdown', exts: ['.md'], minFiles: 3 },
   { dir: '.claude/agents', kind: 'markdown', exts: ['.md'], minFiles: 8 },
   { dir: '.claude/hooks', kind: 'source', exts: ['.sh', '.py'], minFiles: 20 },
-  // THE CI TOOLING TREE, added 2026-09-08. The gate's own header calls these "the www
-  // surfaces", but `.claude/hooks` above has never been www, so the real boundary was
-  // never www: it was whichever directories somebody had got round to listing, and `.ci`
-  // was simply absent. The rule in CLAUDE.md binds comments, help text and error messages
-  // repo-wide, and these files carry all three -- `check_secret_reachability.py:289` put
-  // an em dash straight into a gate's CI output, and `check-command-tree.sh:70` still
-  // does, which is what surfaced the hole.
+  // THE CI TOOLING TREE, added 2026-09-08. The gate's own header calls these "the www surfaces", but `.claude/hooks` above has never been www, so the real boundary was never www: it was whichever directories somebody had got round to listing, and `.ci` was simply absent. The rule in CLAUDE.md binds comments, help text and error messages repo-wide, and these files carry all three
+  // -- `check_secret_reachability.py:289` put an em dash straight into a gate's CI output, and `check-command-tree.sh:70` still does, which is what surfaced the hole.
   //
-  // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a
-  // baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em
-  // dashes today. Seeding grandfathers those and bans the 84th from this day. That is a
+  // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em dashes today. Seeding grandfathers those and bans the 84th from this day. That is a
   // real ban going forward and a paper one backwards; the drain is opportunistic, and
   // `--write-baseline` REFUSES to add, so the number can only fall from here.
   //
-  // Three sibling dirs rather than one `.ci`, because the floors differ by an order of
-  // magnitude and one global floor would stop catching a collapsed glob in the small one.
+  // Three sibling dirs rather than one `.ci`, because the floors differ by an order of magnitude and one global floor would stop catching a collapsed glob in the small one.
   { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 300 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
   { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 5 },
   // packages/cli. The first two join at ZERO (measured clean when they were
   // added); the third rides the baseline, because 93 percent of its findings are
-  // prose inside JSDoc where the dash often does real syntactic work, and a
-  // mechanical pass over that changes documented meaning.
+  // prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.
   //
-  // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE
-  // `packages/cli/src`, and they stay disjoint only because their extension sets
-  // do not intersect. Adding '.json' to the source surface would count every
-  // catalog finding twice. `nestedSurfaceOverlap()` below turns that from a
-  // comment into a check.
+  // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE `packages/cli/src`, and they stay disjoint only because their extension sets do not intersect. Adding '.json' to the source surface would count every catalog finding twice. `nestedSurfaceOverlap()` below turns that from a comment into a check.
   { dir: 'packages/cli/src/i18n/locales', kind: 'catalog', exts: ['.json'], minFiles: 10 },
   { dir: 'packages/cli/scripts', kind: 'source', exts: ['.ts'], minFiles: 8 },
   { dir: 'packages/cli/src', kind: 'source', exts: ['.ts'], minFiles: 300 },
@@ -279,11 +251,7 @@ const ZERO_SURFACES: readonly string[] = [
   '.claude/commands',
   '.claude/hooks',
   '.claude/agents',
-  // Both measured clean when they joined, and both are reader-facing:
-  // the locales are what `rdc --help` prints. Listing them here is what
-  // makes 'joins at zero' a RULE rather than a fact about one afternoon,
-  // because --write-baseline refuses to bake in a finding from a zero
-  // surface.
+  // Both measured clean when they joined, and both are reader-facing: the locales are what `rdc --help` prints. Listing them here is what makes 'joins at zero' a RULE rather than a fact about one afternoon, because --write-baseline refuses to bake in a finding from a zero surface.
   'packages/cli/src/i18n/locales',
   'packages/cli/scripts',
 ];
@@ -344,9 +312,7 @@ export function scanSurface(
       try {
         flat = flatten(JSON.parse(text));
       } catch (e) {
-        // A malformed catalog is check-translation-completeness's problem, not this
-        // gate's. Anything else is a bug HERE, and swallowing it would make this file
-        // report zero findings while looking healthy.
+        // A malformed catalog is check-translation-completeness's problem, not this gate's. Anything else is a bug HERE, and swallowing it would make this file report zero findings while looking healthy.
         if (e instanceof SyntaxError) continue;
         throw e;
       }
@@ -357,10 +323,7 @@ export function scanSurface(
       continue;
     }
 
-    // A fenced block in an instruction file is a transcript or a sample, and a dash inside
-    // one is usually quoted from somewhere this repo does not control. Prose is the surface
-    // the rule is about. The selftest proves this BOTH ways: silence inside a fence is only
-    // correct if the same text outside one is still reported.
+    // A fenced block in an instruction file is a transcript or a sample, and a dash inside one is usually quoted from somewhere this repo does not control. Prose is the surface the rule is about. The selftest proves this BOTH ways: silence inside a fence is only correct if the same text outside one is still reported.
     if (surface.kind === 'markdown') {
       let inFence = false;
       for (const line of text.split('\n')) {
@@ -468,8 +431,7 @@ function selftest(): boolean {
   const both = scanAll();
   check('an em dash in an .astro component is reported', both.length === 2, JSON.stringify(both));
 
-  // The id must survive a line move, or the baseline churns on unrelated edits and gets
-  // regenerated wholesale, which is how a shrink-only baseline quietly stops shrinking.
+  // The id must survive a line move, or the baseline churns on unrelated edits and gets regenerated wholesale, which is how a shrink-only baseline quietly stops shrinking.
   const before = scanAll().find((f) => f.file.endsWith('Hero.astro'))!;
   fs.writeFileSync(
     path.join(srcDir, 'Hero.astro'),
@@ -482,10 +444,7 @@ function selftest(): boolean {
     `${idOf(before)} vs ${idOf(after)}`
   );
 
-  // THE SURFACE TABLE ITSELF. If someone widens the catalog surface from `translations/`
-  // to `src/i18n/`, every catalog finding is counted two or three times and the baseline
-  // silently stops being drainable. That is a one-character edit, so it gets an assertion
-  // rather than a comment. See GENERATED_CATALOG_DIRS above.
+  // THE SURFACE TABLE ITSELF. If someone widens the catalog surface from `translations/` to `src/i18n/`, every catalog finding is counted two or three times and the baseline silently stops being drainable. That is a one-character edit, so it gets an assertion rather than a comment. See GENERATED_CATALOG_DIRS above.
   const catalogSurface = SURFACES.find((s) => s.kind === 'catalog');
   check(
     'the catalog surface is the SOURCE catalogs only, not the generated siblings',
@@ -496,8 +455,7 @@ function selftest(): boolean {
       `never be drained cleanly`
   );
 
-  // MARKDOWN FENCE AWARENESS, proved in BOTH directions. A one-way proof ("the fenced
-  // dash is ignored") is satisfied by a scanner that ignores the whole file.
+  // MARKDOWN FENCE AWARENESS, proved in BOTH directions. A one-way proof ("the fenced dash is ignored") is satisfied by a scanner that ignores the whole file.
   const cmdDir = path.join(root, '.claude/commands');
   fs.mkdirSync(cmdDir, { recursive: true });
   const mdSurface: Surface = {
@@ -536,8 +494,7 @@ function selftest(): boolean {
     JSON.stringify(mdHits)
   );
 
-  // A shell/python surface has no fences, so every line counts. `.claude/hooks` joined at
-  // zero and its dashes lived in echo strings as often as in comments.
+  // A shell/python surface has no fences, so every line counts. `.claude/hooks` joined at zero and its dashes lived in echo strings as often as in comments.
   const hookDir = path.join(root, '.claude/hooks/pre-bash');
   fs.mkdirSync(hookDir, { recursive: true });
   const hookSurface: Surface = {
@@ -557,9 +514,7 @@ function selftest(): boolean {
     scanSurface(root, hookSurface).findings.length === 1
   );
 
-  // THE FLOOR ITSELF. A surface whose glob returns nothing must REFUSE, not report clean.
-  // The old single global floor could not do this: 4 command files vanishing left the
-  // repo-wide total untouched.
+  // THE FLOOR ITSELF. A surface whose glob returns nothing must REFUSE, not report clean. The old single global floor could not do this: 4 command files vanishing left the repo-wide total untouched.
   check(
     'a surface whose glob finds nothing trips its own floor',
     floorViolations(root, [
@@ -575,11 +530,8 @@ function selftest(): boolean {
     'a finding in a zero surface is recognised as one',
     inZeroSurface('.claude/commands/pr-merge.md') && inZeroSurface('.claude/hooks/stop/x.py')
   );
-  // Both fixtures are assembled from the configuration at runtime rather than written out
-  // as path literals. That is not a dodge of `test-gate-paths-exist.sh`: that gate reads a
-  // path-shaped literal inside a gate script as a real path constant and fails when it does
-  // not exist, which is the right rule, and these two name nothing on disk ON PURPOSE.
-  // `inZeroSurface` is pure string comparison and never touches the filesystem, so a fixture
+  // Both fixtures are assembled from the configuration at runtime rather than written out as path literals. That is not a dodge of `test-gate-paths-exist.sh`: that gate reads a path-shaped literal inside a gate script as a real path constant and fails when it does not exist, which is the right rule, and these two name nothing on disk ON PURPOSE. `inZeroSurface` is pure string
+  // comparison and never touches the filesystem, so a fixture
   // for it must not be a real file. Deriving them from the two lists also means they keep
   // testing the real config instead of drifting the moment either list is edited.
   const prefixCollision = `${ZERO_SURFACES[0]}-archive/old.md`;
@@ -595,9 +547,7 @@ function selftest(): boolean {
     ZERO_SURFACES.every((z) => SURFACES.some((s) => s.dir === z)),
     `zero surfaces ${JSON.stringify(ZERO_SURFACES)} vs configured ${JSON.stringify(SURFACES.map((s) => s.dir))}`
   );
-  // THE NESTING INVARIANT, both directions. packages/cli/src/i18n/locales lives
-  // inside packages/cli/src and they are disjoint only by extension, which is one
-  // character away from double-counting every catalog finding.
+  // THE NESTING INVARIANT, both directions. packages/cli/src/i18n/locales lives inside packages/cli/src and they are disjoint only by extension, which is one character away from double-counting every catalog finding.
   check(
     'the live surface table has no nested surface sharing an extension',
     nestedSurfaceOverlap(SURFACES).length === 0,
@@ -625,10 +575,7 @@ function selftest(): boolean {
     JSON.stringify(SURFACES.map((s) => [s.dir, s.minFiles]))
   );
 
-  // THE COMPOSITION RULE. The set math and the write-path verdict are shared with every
-  // other shrink-only baseline in this repo, so the cases are written once and executed
-  // here. A gate that imports a refusal without exercising it is trusting a module it
-  // never ran.
+  // THE COMPOSITION RULE. The set math and the write-path verdict are shared with every other shrink-only baseline in this repo, so the cases are written once and executed here. A gate that imports a refusal without exercising it is trusting a module it never ran.
   for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail);
 
   // The one piece that is THIS gate's own: its seed targets are its configured surfaces.
@@ -684,9 +631,7 @@ function main(): void {
     files += r.files;
   }
 
-  // REFUSE, never report, on an input that cannot support a verdict. A glob that returns
-  // nothing looks exactly like a surface with no em dashes in it, and the check is PER
-  // SURFACE because a small surface collapsing is invisible in a repo-wide total.
+  // REFUSE, never report, on an input that cannot support a verdict. A glob that returns nothing looks exactly like a surface with no em dashes in it, and the check is PER SURFACE because a small surface collapsing is invisible in a repo-wide total.
   const thin = floorViolations(base);
   if (thin.length > 0) {
     console.error(
@@ -698,8 +643,7 @@ function main(): void {
   }
 
   if (argv.includes('--write-baseline')) {
-    // REFUSE to baseline a zero-surface finding. Reseeding is a bulk operation nobody
-    // reads the output of, so this has to be a hard stop rather than a warning.
+    // REFUSE to baseline a zero-surface finding. Reseeding is a bulk operation nobody reads the output of, so this has to be a hard stop rather than a warning.
     const forbidden = findings.filter((f) => inZeroSurface(f.file));
     if (forbidden.length > 0) {
       console.error(
@@ -716,8 +660,7 @@ function main(): void {
     }
     const ids = findings.map(idOf).sort();
 
-    // `path.relative` renders an out-of-tree baseline as a wall of `../`, so show the
-    // tree-relative form only when the file is actually IN the tree.
+    // `path.relative` renders an out-of-tree baseline as a wall of `../`, so show the tree-relative form only when the file is actually IN the tree.
     const shown = baselineFile.startsWith(`${base}${path.sep}`)
       ? path.relative(base, baselineFile)
       : baselineFile;
@@ -751,9 +694,7 @@ function main(): void {
       );
     }
 
-    // PRINT THE SHAPE, not just the verdict. `permitted` counts ids a --seed-surface let
-    // through: reporting a flat "0 added" there would hide the one operation that is
-    // allowed to grow the set, which is the only one worth reading closely.
+    // PRINT THE SHAPE, not just the verdict. `permitted` counts ids a --seed-surface let through: reporting a flat "0 added" there would hide the one operation that is allowed to grow the set, which is the only one worth reading closely.
     const written = new Set(ids);
     const drained = previous.filter((id) => !written.has(id)).length;
     const permitted = firstSeed ? 0 : baselineAdditions(previous, ids).length;
@@ -769,8 +710,7 @@ function main(): void {
 
   const baseline = new Set(loadBaseline(baselineFile));
 
-  // The same invariant from the other side, in case the baseline was hand-edited or
-  // written by an older build of this script.
+  // The same invariant from the other side, in case the baseline was hand-edited or written by an older build of this script.
   const smuggled = [...baseline].filter((id) => inZeroSurface(id.slice(0, id.lastIndexOf(':'))));
   if (smuggled.length > 0) {
     console.error(

@@ -80,16 +80,10 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-ci-runner.sh"
 
-# THE OPT-IN IS OWED, AND THE FIRST DRAFT OF THIS FILE GOT IT WRONG. The reasoning
-# was that every case drives a synthetic manifest in a tempdir, so nothing here
-# touches the real tree and the attribute would be an over-claim. The LOCK says
-# otherwise: `gate-test:ci-runner` declares `reads: ["tree:repo"]`, which puts the
-# twin in the real-tree set that `xdist_groups.real_tree_twins` derives, and
-# `real_tree_admission` refuses a member that does not opt in. The declaration is
-# also right on the merits: the runner is driven FROM the repo root, case 11 reads
+# THE OPT-IN IS OWED, AND THE FIRST DRAFT OF THIS FILE GOT IT WRONG. The reasoning was that every case drives a synthetic manifest in a tempdir, so nothing here touches the real tree and the attribute would be an over-claim. The LOCK says otherwise: `gate-test:ci-runner` declares `reads: ["tree:repo"]`, which puts the twin in the real-tree set that `xdist_groups.real_tree_twins`
+# derives, and `real_tree_admission` refuses a member that does not opt in. The declaration is also right on the merits: the runner is driven FROM the repo root, case 11 reads
 # package.json and runs `--selftest` with no seam at all, and the added seam control
-# reads gates.lock.json. Reading the tree while another step rewrites it is the
-# divergence that would be blamed on this port.
+# reads gates.lock.json. Reading the tree while another step rewrites it is the divergence that would be blamed on this port.
 REAL_TREE_TWIN = True
 
 TSX_REL = "node_modules/.bin/tsx"
@@ -98,10 +92,7 @@ TSX = paths.from_root(*TSX_REL.split("/"))
 RUNNER = paths.from_root(*RUNNER_REL.split("/"))
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 
-# `3 gates: 3 ok, 0 failed, 0 skipped`, and `1 gate: ...` when there is one.
-# THE PLURAL IS OPTIONAL ON PURPOSE: the added seam control drives a ONE-entry
-# fixture, and a pattern demanding "gates" matched nothing against the runner's
-# singular line. It was the control saying so that found this, in one run.
+# `3 gates: 3 ok, 0 failed, 0 skipped`, and `1 gate: ...` when there is one. THE PLURAL IS OPTIONAL ON PURPOSE: the added seam control drives a ONE-entry fixture, and a pattern demanding "gates" matched nothing against the runner's singular line. It was the control saying so that found this, in one run.
 SUMMARY_RE = re.compile(r"^(\d+) gates?: ", re.MULTILINE)
 
 
@@ -294,12 +285,7 @@ def test_failure_prints_both_streams(gate):
         gate.assert_contains(r.out, "exit 7", "the real exit code is reported")
         gate.assert_contains(r.out, "--- stdout ---", "captured stdout has its own header")
         gate.assert_contains(r.out, "--- stderr ---", "captured stderr has its own header")
-        # Asserting only that both markers appear SOMEWHERE would pass on a runner
-        # that merged the two streams, which is the defect the separation exists to
-        # prevent. So each marker is required in its own block and forbidden in the
-        # other.
-        # The stderr slice stops at the blank line that closes the failure block:
-        # the footer's "rerun all failures" line quotes the whole gate body, both
+        # Asserting only that both markers appear SOMEWHERE would pass on a runner that merged the two streams, which is the defect the separation exists to prevent. So each marker is required in its own block and forbidden in the other. The stderr slice stops at the blank line that closes the failure block: the footer's "rerun all failures" line quotes the whole gate body, both
         # markers included, and would defeat a naive to-end-of-file slice.
         lines = r.out.splitlines()
         stdout_block, stderr_block, mode = [], [], None
@@ -334,8 +320,7 @@ def test_failure_prints_both_streams(gate):
             stderr_text, "BOOM-ON-STDOUT", "stdout must not leak into the stderr block"
         )
         gate.assert_contains(r.out, "rerun: echo BOOM-ON-STDOUT", "the rerun command is printed")
-        # keep-going is the default for the same reason CI puts !cancelled() on
-        # every quality step: one run has to surface every failure.
+        # keep-going is the default for the same reason CI puts !cancelled() on every quality step: one run has to surface every failure.
         if not probe.is_file():
             gate.log_fail("neither gate around the failure wrote the probe file")
         text = probe.read_text(encoding="utf-8")
@@ -393,8 +378,7 @@ def test_mutex_serialises(gate):
             "two gates sharing a mutex group must never overlap",
         )
 
-        # CONTROL: the same probe, the same two gates, no mutex. If this does not
-        # observe an overlap the assertion above proves nothing.
+        # CONTROL: the same probe, the same two gates, no mutex. If this does not observe an overlap the assertion above proves nothing.
         log_b = work / "case4b.log"
         mf = manifest(
             gate,
@@ -435,8 +419,7 @@ def test_reads_shares_and_excludes(gate):
     from the same `mutex`/`reads` declarations this case exercises.
     """
     with harness.temp_dir() as work:
-        # Two SHARED holders of one resource must overlap. If this reads 1, `reads`
-        # has been collapsed into `mutex` and the battery's scanners serialise.
+        # Two SHARED holders of one resource must overlap. If this reads 1, `reads` has been collapsed into `mutex` and the battery's scanners serialise.
         mf = manifest(
             gate,
             work,
@@ -454,8 +437,7 @@ def test_reads_shares_and_excludes(gate):
             "two gates SHARING a resource must overlap; reads is not a second mutex",
         )
 
-        # A writer and a reader of the SAME resource must not. If this reads 2,
-        # `reads` is being ignored and the writer runs while the tree is enumerated.
+        # A writer and a reader of the SAME resource must not. If this reads 2, `reads` is being ignored and the writer runs while the tree is enumerated.
         mf = manifest(
             gate,
             work,
@@ -473,9 +455,7 @@ def test_reads_shares_and_excludes(gate):
             "an exclusive holder must never overlap a shared holder of the same resource",
         )
 
-        # CONTROL: the same two gates naming DIFFERENT resources must overlap. The
-        # lock is keyed, not global, and without this the assertion above is
-        # satisfied by a scheduler that simply serialises everything.
+        # CONTROL: the same two gates naming DIFFERENT resources must overlap. The lock is keyed, not global, and without this the assertion above is satisfied by a scheduler that simply serialises everything.
         mf = manifest(
             gate,
             work,
@@ -561,8 +541,7 @@ def test_jobs_bounds_concurrency(gate):
         gate.assert_exit_code(0, r.rc, "the concurrency fixture passes")
         gate.assert_eq(max_concurrency(gate, log), 2, "--jobs 2 admits exactly two gates at a time")
 
-        # CONTROL: the same six gates at --jobs 5 must exceed 2, or the assertion
-        # above would also pass on a runner that serialises everything.
+        # CONTROL: the same six gates at --jobs 5 must exceed 2, or the assertion above would also pass on a runner that serialises everything.
         log.unlink()
         run_ci(gate, mf, "--jobs", "5")
         conc = max_concurrency(gate, log)
@@ -662,8 +641,7 @@ def test_json_matches_what_was_printed(gate):
     with harness.temp_dir() as work:
         rerun = "echo JSON-STDOUT-MARKER; echo JSON-STDERR-MARKER >&2; exit 4"
         mf = manifest(gate, work, "case10", [spec("jok", "echo fine"), spec("jbad", rerun)])
-        # Under --json the machine document owns stdout and the human stream moves
-        # to stderr, so an agent can consume one and tail the other.
+        # Under --json the machine document owns stdout and the human stream moves to stderr, so an agent can consume one and tail the other.
         r = run_ci(gate, mf, "--jobs", "2", "--json")
         gate.assert_exit_code(1, r.rc, "--json does not change the exit code")
         try:
@@ -752,9 +730,7 @@ def test_missing_tool_fails_loudly(gate):
         gate.log_pass("case 12: a gate whose tool does not resolve fails loudly, never silently")
 
 
-# ---------------------------------------------------------------------------
-# ADDED BY THE PORT.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ADDED BY THE PORT. ---------------------------------------------------------------------------
 
 
 def test_the_manifest_seam_is_honoured(gate):

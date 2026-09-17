@@ -58,12 +58,8 @@ import _cipath  # noqa: F401
 from rediacc_ci import controls, paths
 
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
-# The hop onto the Stop hook's directory, through the package's own resolver.
-# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
-# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
-# lives, so the move planned for that program is a one-line change there rather
-# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
-# its own RESPROFILE_ROOT override, which the resolver's default root does not read.
+# The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
+# honours its own RESPROFILE_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 import wl_profile as W  # noqa: E402
 
@@ -119,9 +115,7 @@ def selftest() -> int:
     check("wl_profile selftest is green (the deriver is the instrument)", W.selftest() == 0)
     ok, why = W.admissible(0, 19)
     check("admission floor: J=19 is report-only", not ok and "denominator" in why)
-    # THE TRIGGER MUST BE ABLE TO FIRE, and the previous one could not: it ran after
-    # the pristine return, every --seed reset its sunset, and it grepped prose. These
-    # three controls are exactly those three defects, planted.
+    # THE TRIGGER MUST BE ABLE TO FIRE, and the previous one could not: it ran after the pristine return, every --seed reset its sunset, and it grepped prose. These three controls are exactly those three defects, planted.
     check(
         "kill trigger: an anchor in the FUTURE is silent",
         kill_trigger_fired({"installed": "2999-01-01T00:00:00Z"}) is None,
@@ -142,9 +136,7 @@ def selftest() -> int:
         load_baseline() is None or load_baseline().get("format") == 1,
     )
 
-    # The retirement trigger's "acted on" test, in both directions. Its whole job is
-    # to tell work from talk about work, so a control that only plants real code would
-    # miss the exact case that got through on the first try.
+    # The retirement trigger's "acted on" test, in both directions. Its whole job is to tell work from talk about work, so a control that only plants real code would miss the exact case that got through on the first try.
     check(
         "acted-on: a commit touching only the layer does NOT count",
         not acts_outside([".claude/hooks/stop/wl_profile.py", ".devcontainer/bashcov-sup.c"]),
@@ -160,10 +152,7 @@ def selftest() -> int:
         acts_outside([".claude/hooks/stop/wl_profile.py", "packages/cli/src/commands/repo.ts"]),
     )
 
-    # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from
-    # the bash corpus read as a clean tree for the running devbox's whole life, so a
-    # control that only proves the happy path would reproduce the original defect in
-    # the check that was written to catch it.
+    # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from the bash corpus read as a clean tree for the running devbox's whole life, so a control that only proves the happy path would reproduce the original defect in the check that was written to catch it.
     import tempfile  # noqa: PLC0415
     import time as _t  # noqa: PLC0415
 
@@ -196,12 +185,8 @@ def selftest() -> int:
 def seed(captures_dir: Path, reseed: set[str]) -> int:
     caps = captures_in(captures_dir)
     j = sum(c.judgeable for c in caps)
-    # AN EMPTY SEED IS REFUSED, and the gate-test is what made that rule honest. The
-    # first draft carried a "refuse a silent shrink" guard that could never fire: seeds
-    # ACCUMULATE F and J, so nothing but a NAMED --reseed-class can ever lower them,
-    # and the guard was a control that passed vacuously. What a seed must not do is
-    # claim to have measured when it read nothing -- the vacuity rule from
-    # .ci/scripts/ci/profiler/report.awk, applied to the baseline.
+    # AN EMPTY SEED IS REFUSED, and the gate-test is what made that rule honest. The first draft carried a "refuse a silent shrink" guard that could never fire: seeds ACCUMULATE F and J, so nothing but a NAMED --reseed-class can ever lower them, and the guard was a control that passed vacuously. What a seed must not do is claim to have measured when it read nothing -- the vacuity
+    # rule from .ci/scripts/ci/profiler/report.awk, applied to the baseline.
     if j == 0:
         print(
             f"✗ refusing to seed from {captures_dir}: 0 judgeable capture(s). A baseline seeded from nothing enshrines nothing. Name a real run folder.",
@@ -239,8 +224,7 @@ def seed(captures_dir: Path, reseed: set[str]) -> int:
     return 0
 
 
-# The layer's own files. A commit that only maintains the profiler is not evidence
-# that the profiler earned anything, so the trailer must touch something ELSE.
+# The layer's own files. A commit that only maintains the profiler is not evidence that the profiler earned anything, so the trailer must touch something ELSE.
 LAYER_FILES = (
     ".claude/hooks/stop/wl_resprofile.py",
     ".claude/hooks/stop/wl_ressample.py",
@@ -355,11 +339,7 @@ def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
     """
     import time  # noqa: PLC0415
 
-    # `corpus` is injectable ONLY so selftest() can drive both answers against a
-    # fixture. ROOT cannot serve that purpose: it is also this file's import path for
-    # wl_profile, so pointing it at a temp dir makes the module fail to load rather
-    # than report an empty corpus -- which is how the first attempt at this control
-    # "passed" by crashing before it reached the check.
+    # `corpus` is injectable ONLY so selftest() can drive both answers against a fixture. ROOT cannot serve that purpose: it is also this file's import path for wl_profile, so pointing it at a temp dir makes the module fail to load rather than report an empty corpus -- which is how the first attempt at this control "passed" by crashing before it reached the check.
     root = corpus or (Path.home() / ".claude" / "resprofile")
     slug = str(ROOT).lstrip("/").replace("/", "-")
     day = root / slug / time.strftime("%Y-%m-%d", time.gmtime())
@@ -391,8 +371,7 @@ def main(argv: list[str]) -> int:
     base = load_baseline()
     pristine = base is None
 
-    # BEFORE ANYTHING ELSE, because the previous placement made it unreachable: it
-    # ran after the pristine return, and the baseline is deliberately unseeded.
+    # BEFORE ANYTHING ELSE, because the previous placement made it unreachable: it ran after the pristine return, and the baseline is deliberately unseeded.
     kt = kill_trigger_fired(base)
     if kt:
         print(f"✗ KILL TRIGGER: {kt}", file=sys.stderr)
@@ -405,14 +384,10 @@ def main(argv: list[str]) -> int:
         return 0 if pristine else 1
     # THE BASH CORPUS IS THE OTHER HALF, and its silence used to read as clean.
     #
-    # bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when
-    # neither exists -- which is what the running devbox did for its whole life, so
-    # this scope recorded no bash at all while every gate below reported a healthy
-    # tree. That is the same shape as an empty captures dir, and it gets the same
-    # answer: UNJUDGEABLE, warn while pristine and fail once seeded, never "clean".
+    # bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when neither exists -- which is what the running devbox did for its whole life, so this scope recorded no bash at all while every gate below reported a healthy tree. That is the same shape as an empty captures dir, and it gets the same answer: UNJUDGEABLE, warn while pristine and fail once seeded, never
+    # "clean".
     #
-    # TODAY'S file only. An older day proves the writer worked then, not now, and
-    # "it used to record" is exactly the reassurance this check must not give.
+    # TODAY'S file only. An older day proves the writer worked then, not now, and "it used to record" is exactly the reassurance this check must not give.
     bl, bwhy = bash_corpus_today()
     if bl == 0:
         print(

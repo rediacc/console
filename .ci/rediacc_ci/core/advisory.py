@@ -77,8 +77,7 @@ GREEN = "\033[0;32m"
 YELLOW = "\033[1;33m"
 NC = "\033[0m"
 
-# The six continuation prefixes, exactly as the twin spells them, INCLUDING the
-# two leading spaces and the arrow. `  →  Patched in:` carries two spaces on
+# The six continuation prefixes, exactly as the twin spells them, INCLUDING the two leading spaces and the arrow. ` → Patched in:` carries two spaces on
 # each side of the arrow in the twin; a single space would be an invisible
 # difference that no reviewer catches and every differential does.
 AFFECTED = "  Affected: %s"
@@ -88,13 +87,10 @@ FIX = "  Fix: %s"
 ACTION = "  Action: %s"
 DETAILS = "  Details: %s"
 
-# The twin's default when a range is unknown but a patched version is not. A
-# literal rather than an empty string, because `  Affected: ` with nothing after
-# it reads as a rendering bug to whoever sees it in a log.
+# The twin's default when a range is unknown but a patched version is not. A literal rather than an empty string, because ` Affected: ` with nothing after it reads as a rendering bug to whoever sees it in a log.
 UNKNOWN_RANGE = "unknown"
 
-# `echo -e`'s escape table, less `\c` which is handled separately because it
-# TRUNCATES rather than substitutes. `\e` and `\E` are the bash extension over
+# `echo -e`'s escape table, less `\c` which is handled separately because it TRUNCATES rather than substitutes. `\e` and `\E` are the bash extension over
 # POSIX; both are accepted by the builtin.
 _ECHO_E_SIMPLE = {
     "a": "\a",
@@ -136,16 +132,10 @@ def _echo_e_sub(match: "re.Match") -> str:
     return _ECHO_E_SIMPLE.get(body, "\\" + body)
 
 
-# The program's field separator.
-# THE FIELD SEPARATOR IS US (`\x1f`), NOT TAB, AND THAT IS A BUG THIS FILE ALREADY
+# The program's field separator. THE FIELD SEPARATOR IS US (`\x1f`), NOT TAB, AND THAT IS A BUG THIS FILE ALREADY
 # PAID FOR. The first draft used tab. TAB IS IFS WHITESPACE IN BASH, so `IFS=$'\t'
-# read -r a b c` COLLAPSES consecutive tabs into one delimiter and an empty field
-# simply disappears, shifting every later field left. Measured on the first run of
-# this differential: a case with an empty `name` made the bash side read the FIX
-# hint as the name and print a different header, and the comparator reported a
-# STDOUT-DIFF that looked exactly like a port defect. It was a defect in the
-# DRIVER. `\x1f` is not IFS whitespace, so empty fields survive on both sides, and
-# an empty field is a case this contract has to be able to express.
+# read -r a b c` COLLAPSES consecutive tabs into one delimiter and an empty field simply disappears, shifting every later field left. Measured on the first run of this differential: a case with an empty `name` made the bash side read the FIX hint as the name and print a different header, and the comparator reported a STDOUT-DIFF that looked exactly like a port defect. It was a
+# defect in the DRIVER. `\x1f` is not IFS whitespace, so empty fields survive on both sides, and an empty field is a case this contract has to be able to express.
 SEP = "\x1f"
 
 USAGE = """advisory -- the `emit-advisory.sh` emitters, driven from stdin.
@@ -297,8 +287,7 @@ class Advisories:
         "desc",
     )
 
-    # The twin's variable name per table, so an error message can name the thing
-    # the reader will grep for in bash rather than the thing this file calls it.
+    # The twin's variable name per table, so an error message can name the thing the reader will grep for in bash rather than the thing this file calls it.
     BASH_NAME: ClassVar[dict[str, str]] = {
         "severity": "ADV_SEVERITY",
         "title": "ADV_TITLE",

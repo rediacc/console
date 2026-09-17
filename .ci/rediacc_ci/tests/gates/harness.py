@@ -50,10 +50,7 @@ import tempfile
 
 LEDGER_ENV = "GATE_HARNESS_LEDGER"
 
-# The colour codes test-helpers.sh uses. Kept so a ported test's stdout is
-# byte-comparable with its twin's when a reader puts the two side by side, and so
-# the `PASS:` counting in test_twin_parity.py has to strip exactly one thing on
-# both sides rather than one thing on one side.
+# The colour codes test-helpers.sh uses. Kept so a ported test's stdout is byte-comparable with its twin's when a reader puts the two side by side, and so the `PASS:` counting in test_twin_parity.py has to strip exactly one thing on both sides rather than one thing on one side.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[1;33m"
@@ -352,9 +349,7 @@ class Harness:
         self.ledger = ledger
         self.passes: list[str] = []
         self.assertions = 0
-        # The `ok`/`no` tally, kept as its own pair of counters because
-        # tally_finish's verdict line is a documented output shape three gate
-        # tests already print by hand.
+        # The `ok`/`no` tally, kept as its own pair of counters because tally_finish's verdict line is a documented output shape three gate tests already print by hand.
         self.tally_count = 0
         self.tally_fails = 0
 

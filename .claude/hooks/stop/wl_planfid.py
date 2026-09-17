@@ -117,15 +117,12 @@ import wl_judge
 
 # ---- Tier 1: finding the approved plan --------------------------------------
 
-# The attachment the harness writes when the operator ACCEPTS a plan. Matched as
-# a raw byte substring first, because a stop hook may not spend a JSON parse on
-# every line of a 35 MB transcript.
+# The attachment the harness writes when the operator ACCEPTS a plan. Matched as a raw byte substring first, because a stop hook may not spend a JSON parse on every line of a 35 MB transcript.
 EXIT_TOKEN = b'"plan_mode_exit"'
 PLAN_PATH_RE = re.compile(r'"planFilePath"\s*:\s*"((?:[^"\\]|\\.)*)"')
 PLAN_EXISTS_RE = re.compile(r'"planExists"\s*:\s*(true|false)')
 SIDECHAIN_RE = re.compile(r'"isSidechain"\s*:\s*true')
-# Bound the first scan of a transcript this session has never scanned. 256 MB is
-# far above the largest observed here (35 MB) and still bounds the worst case.
+# Bound the first scan of a transcript this session has never scanned. 256 MB is far above the largest observed here (35 MB) and still bounds the worst case.
 FIRST_SCAN_CAP = int(os.environ.get("WORKLIST_PLANFID_SCAN_CAP", str(256 * 1024 * 1024)))
 CHUNK = 1 << 20
 # A window around the token wide enough to hold the whole attachment record.
@@ -204,10 +201,7 @@ def read_plan(plan_path):
 
 FENCE_RE = re.compile(r"^\s*```")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
-# Headings under which bullets are TASKS rather than context. Everything else in
-# a plan (Context, Decisions, Verified facts, Out of scope) is prose in list
-# clothing, and counting it inflates the task count, which makes the shortfall
-# signal fire on sessions that decomposed perfectly well.
+# Headings under which bullets are TASKS rather than context. Everything else in a plan (Context, Decisions, Verified facts, Out of scope) is prose in list clothing, and counting it inflates the task count, which makes the shortfall signal fire on sessions that decomposed perfectly well.
 ACTION_WORD_RE = re.compile(
     r"\b(wave|phase|step|stage|task|plan|implement|work|change|deliverab"
     r"|round|milestone|part|build|todo|to-do|action)\w*\b",
@@ -243,10 +237,7 @@ def _norm(s):
     return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
 
 
-# How much of a claimed missing task must be built out of one real task line.
-# 0.7 measured against the corpus: a paraphrase or a truncated quote of a real
-# task clears it, while the plan's DECISIONS bullets score 0.23-0.33 against
-# their nearest task and are rejected.
+# How much of a claimed missing task must be built out of one real task line. 0.7 measured against the corpus: a paraphrase or a truncated quote of a real task clears it, while the plan's DECISIONS bullets score 0.23-0.33 against their nearest task and are rejected.
 TASK_MATCH = float(os.environ.get("WORKLIST_PLANFID_TASK_MATCH", "0.7"))
 MIN_MATCH_TOKENS = 3
 
@@ -319,8 +310,7 @@ UMBRELLA_RANGE_RE = re.compile(
     re.IGNORECASE,
 )
 UMBRELLA_WORD_RE = re.compile(r"\b%s\b" % LABEL_WORDS, re.IGNORECASE)
-# Same shape the tick-evidence gate accepts. An item carrying a file:line is
-# pointed at something concrete, which is the opposite of an umbrella.
+# Same shape the tick-evidence gate accepts. An item carrying a file:line is pointed at something concrete, which is the opposite of an umbrella.
 CITATION_RE = re.compile(r"[\w./-]+\.[A-Za-z]{1,5}:\d+")
 UMBRELLA_MAX_WORDS = int(os.environ.get("WORKLIST_PLANFID_UMBRELLA_WORDS", "8"))
 
@@ -423,8 +413,7 @@ def load_state(path):
 
 
 def save_state(path, state):
-    # Whole-file rewrite, correct here for the same reason as the reggate marker:
-    # the file is per-session, so there is no second writer to race.
+    # Whole-file rewrite, correct here for the same reason as the reggate marker: the file is per-session, so there is no second writer to race.
     with contextlib.suppress(OSError):
         path.write_text(json.dumps(state, indent=1), encoding="utf-8")
 
@@ -553,19 +542,10 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
     by_id = {i: t for i, _st, t in mine}
     raw_umb = pf.get("umbrella_ids")
     umb = [str(x) for x in raw_umb if str(x) in open_ids] if isinstance(raw_umb, list) else []
-    # A missing entry must match a line THE TASK PARSER CALLS A TASK, not merely
-    # appear somewhere in the plan.
+    # A missing entry must match a line THE TASK PARSER CALLS A TASK, not merely appear somewhere in the plan.
     #
-    # MEASURED, and it is why this is not the looser check it started as. The
-    # first version verified `n in _norm(plan_text)`, and the corpus run put a
-    # FALSE POSITIVE on the board twice out of two: given the operator's own
-    # corrected decomposition, haiku answered "unfaithful" and quoted DECISION
-    # bullets ("Stat callouts KEEP their number and claim in place") as untracked
-    # tasks. They are verbatim in the plan, so the loose check passed them, and
-    # the session that had just done exactly the right thing would have been
-    # walled in. Matching against plan_tasks() closes it deterministically: the
-    # same parser that decides whether to spend a call decides what counts as
-    # evidence, so context and locked decisions cannot be cited as work.
+    # MEASURED, and it is why this is not the looser check it started as. The first version verified `n in _norm(plan_text)`, and the corpus run put a FALSE POSITIVE on the board twice out of two: given the operator's own corrected decomposition, haiku answered "unfaithful" and quoted DECISION bullets ("Stat callouts KEEP their number and claim in place") as untracked tasks. They
+    # are verbatim in the plan, so the loose check passed them, and the session that had just done exactly the right thing would have been walled in. Matching against plan_tasks() closes it deterministically: the same parser that decides whether to spend a call decides what counts as evidence, so context and locked decisions cannot be cited as work.
     tasks = plan_tasks(plan_text)
     task_tokens = [set(_norm(t).split()) for t in tasks]
     raw_missing = pf.get("missing")
@@ -574,35 +554,22 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
         miss = [str(x) for x in raw_missing if matches_a_task(str(x), task_tokens)]
     instruction = str(pf.get("instruction", ""))[:300]
     if not miss:
-        # A VERIFIED UMBRELLA ID BLOCKS WHEN THE DETERMINISTIC SHORTFALL ALSO
-        # FIRED, and this replaces the flat "an umbrella claim alone never
-        # blocks" rule that used to live here.
+        # A VERIFIED UMBRELLA ID BLOCKS WHEN THE DETERMINISTIC SHORTFALL ALSO FIRED, and this replaces the flat "an umbrella claim alone never blocks" rule that used to live here.
         #
-        # THE OLD RULE WAS MEASURED AND IT WAS THE DEFECT. Twenty trials on the
-        # prose-umbrella shape: 17 blocks, 3 misses, and every one of the three
+        # THE OLD RULE WAS MEASURED AND IT WAS THE DEFECT. Twenty trials on the prose-umbrella shape: 17 blocks, 3 misses, and every one of the three
         # misses came back `faithful=False` naming a REAL verified umbrella id
         # with an EMPTY missing list. The judge was right all three times and
         # this branch threw the detection away. That is a very different failure
         # from a classifier that misses, and it was in the verification, not in
         # the model.
         #
-        # The old reasoning ("the checkable half is the actionable half") is
-        # still sound in isolation and simply does not generalise off the
-        # incident shape: on a plan whose items are prose rather than wave
-        # labels, the judge reliably points at the ITEM and does not enumerate
-        # the tasks.
+        # The old reasoning ("the checkable half is the actionable half") is still sound in isolation and simply does not generalise off the incident shape: on a plan whose items are prose rather than wave labels, the judge reliably points at the ITEM and does not enumerate the tasks.
         #
-        # THE CONJUNCTION IS WHAT KEEPS THE FALSE-POSITIVE BOUND. `shortfall` is
-        # arithmetic, computed from the plan and the store with no model in the
+        # THE CONJUNCTION IS WHAT KEEPS THE FALSE-POSITIVE BOUND. `shortfall` is arithmetic, computed from the plan and the store with no model in the
         # loop; the umbrella id is a model claim already checked against the real
-        # open items. Two independent sources, neither sufficient alone. Measured
-        # on a worklist that legitimately covers 15 plan tasks with 8 grouped
-        # items: 10 of 10 answers came back faithful with ZERO umbrella ids, so
-        # the rule added 0 false positives in 10 trials. N is small.
+        # open items. Two independent sources, neither sufficient alone. Measured on a worklist that legitimately covers 15 plan tasks with 8 grouped items: 10 of 10 answers came back faithful with ZERO umbrella ids, so the rule added 0 false positives in 10 trials. N is small.
         #
-        # prefilter() is REUSED rather than re-deriving the threshold, so the
-        # shortfall this consults can never drift from the one that decided to
-        # spend the call in the first place.
+        # prefilter() is REUSED rather than re-deriving the threshold, so the shortfall this consults can never drift from the one that decided to spend the call in the first place.
         if not (umb and any(k == "shortfall" for k, _d in prefilter(tasks, mine))):
             return (
                 "settle",
@@ -610,9 +577,7 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
                 "judge said unfaithful but named no plan TASK that nothing tracks, "
                 "and there is no shortfall to corroborate the %d umbrella id(s)" % len(umb),
             )
-        # No task list to show, so the arithmetic goes into the instruction the
-        # block already renders. Deliberately not a new field: reshaping
-        # V_PLANFID would mean editing the message module and its ARITY entry
+        # No task list to show, so the arithmetic goes into the instruction the block already renders. Deliberately not a new field: reshaping V_PLANFID would mean editing the message module and its ARITY entry
         # for information that fits where the reader is already looking.
         instruction = (
             "%d tracked item(s) against %d plan task(s), and the item(s) named above are "
@@ -641,8 +606,7 @@ def render_items(mine, cap=40):
 
 # ---- Controls ----------------------------------------------------------------
 
-# The real incident, quoted from ~/.claude/plans/memoized-gliding-kay.md and from
-# the worklist as it stood before the operator caught it. Trimmed to the sections
+# The real incident, quoted from ~/.claude/plans/memoized-gliding-kay.md and from the worklist as it stood before the operator caught it. Trimmed to the sections
 # that decide the verdict; the wording is verbatim.
 REAL_PLAN = """# www round 4: the page frame, the voice, and a docs surface people can browse
 
@@ -699,8 +663,7 @@ INCIDENT_ITEMS = [
     ("bbbb2222", " ", "www round 4 Waves B-D"),
 ]
 
-# What it tracked after the operator's correction, trimmed to the same shape the
-# live store holds. This is the NEGATIVE control: same plan, faithful items.
+# What it tracked after the operator's correction, trimmed to the same shape the live store holds. This is the NEGATIVE control: same plan, faithful items.
 DECOMPOSED_ITEMS = [
     ("97e5b05d", " ", "r4-A3 menus: rebuild PersonaMegaMenu.tsx (312 lines, 11 hooks)"),
     ("c84a8a4b", " ", "r4-A4 menus: new Learn menu, flat list = 6 doc categories"),
@@ -708,11 +671,7 @@ DECOMPOSED_ITEMS = [
     ("11110002", " ", "r4-A2 Footer.tsx black + full bleed, one band with sp-bottom-cta"),
     ("11110003", " ", "r4-A5 one ::backdrop rule dims constellation popup and both menus"),
     ("02eb5327", " ", "r4-B2 pair Get-the-technical-brief with Short-on-time in one row"),
-    # ADDED after the first corpus run, and the model was RIGHT to complain. This
-    # fixture is a trim of the live worklist and the trim dropped the item for
-    # "The row must degrade to ONE column when the gated button is absent", which
-    # is its own plan task. The check called the gap and the fixture, not the
-    # check, was wrong. A negative control that is not actually faithful measures
+    # ADDED after the first corpus run, and the model was RIGHT to complain. This fixture is a trim of the live worklist and the trim dropped the item for "The row must degrade to ONE column when the gated button is absent", which is its own plan task. The check called the gap and the fixture, not the check, was wrong. A negative control that is not actually faithful measures
     # nothing.
     ("11110004", " ", "r4-B2b the row degrades to ONE column when the gated button is absent"),
     ("101b59c3", " ", "r4-B1 reorder the download sections in SolutionPage.astro:96"),
@@ -729,9 +688,7 @@ DECOMPOSED_ITEMS = [
     ("6ece336e", " ", "r4-B-V verify Wave B: no source line, disclosure closed on load"),
 ]
 
-# The model half. Cannot be stubbed: a stub that answers "unfaithful" proves
-# nothing about whether the classifier can tell the incident from its own fix.
-# Run with --corpus, never on the per-stop path.
+# The model half. Cannot be stubbed: a stub that answers "unfaithful" proves nothing about whether the classifier can tell the incident from its own fix. Run with --corpus, never on the per-stop path.
 CORPUS = [
     ("REAL incident: two umbrella items for four waves", True, REAL_PLAN, INCIDENT_ITEMS),
     ("REAL correction: the same plan, decomposed", False, REAL_PLAN, DECOMPOSED_ITEMS),
@@ -747,14 +704,8 @@ CORPUS = [
 ]
 
 
-# Measured, not guessed. Two corpus runs on 2026-08-19 disagreed with themselves
-# on the same prompt: the incident case came back 2/2 in one run and 1/2 in the
-# next. The instability is confined to RECALL, which is the tolerable direction
-# here -- a missed umbrella costs one undetected papering-over, while a false
-# positive walls in a session that did the right thing and teaches everyone to
-# route around the check. So the gate is asymmetric: any FP fails outright,
-# recall is a rate with a floor. Raise the floor with a measurement, never on a
-# hunch.
+# Measured, not guessed. Two corpus runs on 2026-08-19 disagreed with themselves on the same prompt: the incident case came back 2/2 in one run and 1/2 in the next. The instability is confined to RECALL, which is the tolerable direction here -- a missed umbrella costs one undetected papering-over, while a false positive walls in a session that did the right thing and teaches
+# everyone to route around the check. So the gate is asymmetric: any FP fails outright, recall is a rate with a floor. Raise the floor with a measurement, never on a hunch.
 RECALL_FLOOR = float(os.environ.get("WORKLIST_PLANFID_RECALL_FLOOR", "0.6"))
 
 
@@ -892,9 +843,7 @@ def _selftest():
         len(plan_tasks("## Steps\n\n- the parent task line\n      - a nested detail line\n")) == 1,
     )
 
-    # ---- the claim matcher, directly. It is the ONLY thing standing between a
-    # model sentence and a block, so it gets its own controls rather than being
-    # exercised only through apply_planfid_verdict.
+    # ---- the claim matcher, directly. It is the ONLY thing standing between a model sentence and a block, so it gets its own controls rather than being exercised only through apply_planfid_verdict.
     tt = [set(_norm(t).split()) for t in plan_tasks(REAL_PLAN)]
     check("an exact task line matches", matches_a_task("Callouts lose only their source line.", tt))
     check(
@@ -941,8 +890,7 @@ def _selftest():
         "a plan below the task floor is never policed by shortfall",
         "shortfall" not in {k for k, _d in prefilter(tasks[:4], [("a1", " ", "one item")])},
     )
-    # THE INSTRUMENT BLIND. The umbrella signal must read STATE, not only text:
-    # the same two strings, already ticked, are history rather than live cover.
+    # THE INSTRUMENT BLIND. The umbrella signal must read STATE, not only text: the same two strings, already ticked, are history rather than live cover.
     ticked = [(i, "x", t) for i, _s, t in INCIDENT_ITEMS]
     check(
         "an already-TICKED umbrella does not fire the umbrella signal",
@@ -984,8 +932,7 @@ def _selftest():
             "the scan reports the whole file as consumed", scanned == os.path.getsize(tp), scanned
         )
         check("the discovered plan reads back", len(read_plan(got)) > MIN_PLAN_CHARS)
-        # Incremental: re-scanning from the recorded offset finds nothing new,
-        # which is what makes the per-stop cost the DELTA and not the file.
+        # Incremental: re-scanning from the recorded offset finds nothing new, which is what makes the per-stop cost the DELTA and not the file.
         got2, _ = scan_plan_exit(tp, start=scanned)
         check("re-scanning from the banked offset costs nothing and finds nothing", got2 == "")
         # planExists false is not an approval we can act on.
@@ -1048,8 +995,7 @@ def _selftest():
         )
 
         # SETTLED LIFETIME. faithful and deferred are permanent; unevidenced
-        # expires the moment the worklist grows, which is the hole a permanent
-        # bank would leave open (see is_settled).
+        # expires the moment the worklist grows, which is the hole a permanent bank would leave open (see is_settled).
         perm = {"settled": {"s1": {"verdict": "faithful"}}}
         check("a faithful verdict stays settled at any item count", is_settled(perm, "s1", 99))
         cond = {"settled": {"s2": {"verdict": "unevidenced", "items": 2}}}
@@ -1118,11 +1064,7 @@ def _selftest():
         k == "settle" and _p == "unevidenced",
         d,
     )
-    # THE MEASURED FALSE POSITIVE, pinned. On the corpus run of 2026-08-19 haiku
-    # answered "unfaithful" about the operator's own corrected decomposition and
-    # quoted a locked DECISION bullet as an untracked task. It is verbatim in the
-    # plan, so the first version of this verification passed it and blocked a
-    # session that had done exactly the right thing.
+    # THE MEASURED FALSE POSITIVE, pinned. On the corpus run of 2026-08-19 haiku answered "unfaithful" about the operator's own corrected decomposition and quoted a locked DECISION bullet as an untracked task. It is verbatim in the plan, so the first version of this verification passed it and blocked a session that had done exactly the right thing.
     k, _p, d = apply_planfid_verdict(
         {
             **good,
@@ -1137,24 +1079,11 @@ def _selftest():
         item_re,
     )
     check("a DECISION bullet quoted as a task is not evidence", k == "settle", "%s %s" % (k, d))
-    # REWRITTEN 2026-08-19, and the rewrite is the point rather than a repair.
-    # This used to assert "an umbrella claim ALONE never blocks", full stop, and
-    # it correctly went red when that rule was replaced. The rule was replaced
-    # because it was MEASURED as the defect: on 20 trials of the prose-umbrella
-    # shape, all 3 misses returned a real verified umbrella id with an empty
-    # missing list, and this branch discarded a correct detection every time.
+    # REWRITTEN 2026-08-19, and the rewrite is the point rather than a repair. This used to assert "an umbrella claim ALONE never blocks", full stop, and it correctly went red when that rule was replaced. The rule was replaced because it was MEASURED as the defect: on 20 trials of the prose-umbrella shape, all 3 misses returned a real verified umbrella id with an empty missing
+    # list, and this branch discarded a correct detection every time.
     #
-    # The property worth keeping is the FALSE-POSITIVE BOUND, which is narrower
-    # than the old claim: an umbrella id alone still cannot block. It needs the
-    # deterministic shortfall alongside it, and DECOMPOSED_ITEMS has no
-    # shortfall, so this is the case that pins the conjunction from that side.
-    # The umbrella id MUST be one that exists in DECOMPOSED_ITEMS, or this control
-    # is vacuous and I proved that the hard way: the first version reused `good`,
-    # whose ids live only in INCIDENT_ITEMS, so verification dropped them, `umb`
-    # came back empty, and the branch settled no matter what the conjunction did.
-    # Mutating the shortfall test away did not turn it red. With a REAL id the
-    # control finally pins the half it claims to: verified umbrella, no shortfall,
-    # still no block.
+    # The property worth keeping is the FALSE-POSITIVE BOUND, which is narrower than the old claim: an umbrella id alone still cannot block. It needs the deterministic shortfall alongside it, and DECOMPOSED_ITEMS has no shortfall, so this is the case that pins the conjunction from that side. The umbrella id MUST be one that exists in DECOMPOSED_ITEMS, or this control is vacuous and
+    # I proved that the hard way: the first version reused `good`, whose ids live only in INCIDENT_ITEMS, so verification dropped them, `umb` came back empty, and the branch settled no matter what the conjunction did. Mutating the shortfall test away did not turn it red. With a REAL id the control finally pins the half it claims to: verified umbrella, no shortfall, still no block.
     check(
         "an umbrella claim without a shortfall still never blocks",
         apply_planfid_verdict(
@@ -1247,8 +1176,7 @@ def _selftest():
     check(
         "the rendered item list carries ids and states", "#aaaa1111" in render_items(INCIDENT_ITEMS)
     )
-    # ---- Tier-2 instrumentation. It must record the BRANCH and the SIGNALS,
-    # and it must not be able to damage the state it sits beside.
+    # ---- Tier-2 instrumentation. It must record the BRANCH and the SIGNALS, and it must not be able to damage the state it sits beside.
     with tempfile.TemporaryDirectory() as td:
         wl = pathlib.Path(td) / "w.jsonl"
         ok1 = record_verdict(wl, "abcdefgh", "s1", "faithful", ["shortfall"], 13, 2, "why")
@@ -1316,7 +1244,6 @@ def _selftest():
 
 if __name__ == "__main__":
     if "--corpus" in sys.argv:
-        # Real model calls. A gate, run when this module or PLANFID_PROMPT
-        # changes, never on the per-stop path.
+        # Real model calls. A gate, run when this module or PLANFID_PROMPT changes, never on the per-stop path.
         sys.exit(_corpus_selftest())
     sys.exit(_selftest() if "--selftest" in sys.argv else 0)

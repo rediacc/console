@@ -32,9 +32,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-closure-untagged.sh"
 
 GENERATE_TAG = paths.from_root(".ci", "scripts", "ci", "generate-tag.sh")
 
-# Every path the rdc closure hashes. Listed here so a closure that grows without
-# this fixture growing with it fails loudly in build_fixture rather than
-# silently testing a different code path.
+# Every path the rdc closure hashes. Listed here so a closure that grows without this fixture growing with it fails loudly in build_fixture rather than silently testing a different code path.
 RDC_CLOSURE_PATHS = (
     "packages/cli",
     "packages/shared",
@@ -50,8 +48,7 @@ RDC_CLOSURE_PATHS = (
     ".github/workflows/ci-build-docker.yml",
 )
 
-# The `rdc)` arm of the closure case statement, which is where the path list
-# actually lives.
+# The `rdc)` arm of the closure case statement, which is where the path list actually lives.
 RDC_ARM_RE = re.compile(r"^        rdc\)(.*?)^            \)", re.DOTALL | re.MULTILINE)
 
 COPIED = (

@@ -95,22 +95,14 @@ DEFAULT_TIMEOUT = "60"
 DEFAULT_POLL_INTERVAL = "10"
 DEFAULT_WORKFLOW = "ci.yml"
 
-# The twin's line number for `if [[ $ELAPSED -ge $TIMEOUT ]]`. bash puts it in
-# the arithmetic diagnostic, so the port has to know it to be byte-identical.
-# `test_the_arithmetic_line_number_is_still_line_92` re-derives it from the twin
-# rather than trusting this constant.
+# The twin's line number for `if [[ $ELAPSED -ge $TIMEOUT ]]`. bash puts it in the arithmetic diagnostic, so the port has to know it to be byte-identical. `test_the_arithmetic_line_number_is_still_line_92` re-derives it from the twin rather than trusting this constant.
 ARITH_LINE = 92
 
-# The twin's line numbers for its two `gh api` command substitutions. bash names
-# the line in `command not found`, so a port that cannot fail identically on a
-# machine without `gh` is not equivalent -- and the twin has NO `require_cmd`,
-# so that machine reads as a PASS. See `not_found` below.
+# The twin's line numbers for its two `gh api` command substitutions. bash names the line in `command not found`, so a port that cannot fail identically on a machine without `gh` is not equivalent -- and the twin has NO `require_cmd`, so that machine reads as a PASS. See `not_found` below.
 RUN_LOOKUP_LINE = 57
 LISTING_LINE = 98
 
-# The two jq programs, copied from the twin (:104 and :105). The first is built
-# by interpolating the current run id and its creation timestamp into the filter
-# TEXT, which is the twin's own approach and is why it is a format string here.
+# The two jq programs, copied from the twin (:104 and :105). The first is built by interpolating the current run id and its creation timestamp into the filter TEXT, which is the twin's own approach and is why it is a format string here.
 JQ_OLDER_RUNS = (
     '[.workflow_runs[] | select(.id != %s and .created_at < "%s") '
     "| {id: .id, run_number: .run_number}]"
@@ -118,9 +110,7 @@ JQ_OLDER_RUNS = (
 JQ_LENGTH = "length"
 JQ_ROWS = ".[]"
 
-# `[A-Za-z_][A-Za-z0-9_]*`, which is what bash treats as a variable NAME inside
-# an arithmetic context. Deliberately not `str.isidentifier()`: that accepts
-# Unicode letters bash rejects.
+# `[A-Za-z_][A-Za-z0-9_]*`, which is what bash treats as a variable NAME inside an arithmetic context. Deliberately not `str.isidentifier()`: that accepts Unicode letters bash rejects.
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _DECIMAL = re.compile(r"^[+-]?[0-9]+$")
 
@@ -262,8 +252,7 @@ def gh_capture(args: list[str], *, merge_stderr: bool, line: int) -> tuple[int, 
             check=False,
         )
     except FileNotFoundError:
-        # bash writes the diagnostic to the SHELL's stderr, so `2>&1` captures it
-        # into the body and `2>/dev/null` throws it away. Both arms, exactly.
+        # bash writes the diagnostic to the SHELL's stderr, so `2>&1` captures it into the body and `2>/dev/null` throws it away. Both arms, exactly.
         return 127, (not_found("gh", line).rstrip("\n") if merge_stderr else "")
     return proc.returncode, proc.stdout.rstrip("\n")
 
@@ -292,8 +281,7 @@ def force_cancel_run(repository: str, run_id: str, run_number: str) -> None:
                 check=False,
             ).returncode
         except FileNotFoundError:
-            # `2>/dev/null` on both POSTs, so bash's message is discarded here and
-            # only the 127 survives -- which sends both arms to the warning.
+            # `2>/dev/null` on both POSTs, so bash's message is discarded here and only the 127 survives -- which sends both arms to the warning.
             code = 127
         if code == 0:
             log.info(message)
@@ -408,20 +396,14 @@ def main(argv: list[str]) -> int:
         )
         older_count = jq_or_die(JQ_LENGTH, older_runs, line=106)
 
-        # `[[ "$OLDER_COUNT" -eq 0 ]]` is arithmetic, but `jq 'length'` on an
-        # array can only print a non-negative decimal integer, so the string
-        # comparison and the arithmetic one agree for every body reachable here.
+        # `[[ "$OLDER_COUNT" -eq 0 ]]` is arithmetic, but `jq 'length'` on an array can only print a non-negative decimal integer, so the string comparison and the arithmetic one agree for every body reachable here.
         if older_count == "0":
             log.info("No older CI runs in progress - done")
             return 0
 
         log.info("Found %s older run(s) - force-cancelling..." % older_count)
 
-        # `for row in $(echo "$OLDER_RUNS" | jq -c '.[]')` -- UNQUOTED, so bash
-        # word-splits on IFS. jq -c emits one space-free object per line and both
-        # fields are numbers, so splitting on whitespace and splitting on newlines
-        # agree for every body this filter can produce. Split on whitespace anyway,
-        # because that is what the twin does.
+        # `for row in $(echo "$OLDER_RUNS" | jq -c '.[]')` -- UNQUOTED, so bash word-splits on IFS. jq -c emits one space-free object per line and both fields are numbers, so splitting on whitespace and splitting on newlines agree for every body this filter can produce. Split on whitespace anyway, because that is what the twin does.
         rows = jq_or_die(JQ_ROWS, older_runs, args=("-c",), line=116).split()
         for row in rows:
             run_id = jq_or_die(".id", row, args=("-r",), line=117)

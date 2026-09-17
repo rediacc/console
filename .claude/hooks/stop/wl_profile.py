@@ -53,11 +53,8 @@ import re
 import sys
 from pathlib import Path
 
-# WHAT "WAITING ON MY OWN CHILD" ACTUALLY LOOKS LIKE ON THIS KERNEL, counted over
-# the real corpus rather than guessed. The old set was three names and missed the
-# single most common one: `do_sigtimedwait`, which is bashcov-sup waiting on the one
-# child it supervises -- 4,422 samples, and the ROOT of every capture, which is why
-# rank()'s blocked share below read 0% by construction. `pipe_read` never occurs on
+# WHAT "WAITING ON MY OWN CHILD" ACTUALLY LOOKS LIKE ON THIS KERNEL, counted over the real corpus rather than guessed. The old set was three names and missed the single most common one: `do_sigtimedwait`, which is bashcov-sup waiting on the one child it supervises -- 4,422 samples, and the ROOT of every capture, which is why rank()'s blocked share below read 0% by construction.
+# `pipe_read` never occurs on
 # 6.18 at all; the kernel calls it `anon_pipe_read`. Symbol names move between
 # kernels, so this set is a LABEL, never the verdict on its own.
 DEFERRING = {
@@ -106,9 +103,7 @@ class Capture:
         self.samples = samples
         self.run = run
         self.source = source
-        # Judgeability is a property of the INSTRUMENT (did it sample enough), decided
-        # once here and carried through dilate() unchanged: dilating a recording does
-        # not retroactively change how many samples were taken.
+        # Judgeability is a property of the INSTRUMENT (did it sample enough), decided once here and carried through dilate() unchanged: dilating a recording does not retroactively change how many samples were taken.
         n, exp = int(run.get("samples_n", 0)), int(run.get("expected_n", 0))
         self.judgeable = (
             (not run.get("unsampled")) and n >= 3 and (exp == 0 or n >= JUDGEABLE_FRACTION * exp)
@@ -191,8 +186,7 @@ def aggregate(cap: Capture) -> dict[int, dict]:
             # while tree CPU climbs 4 -> 18,227. A saturation predicate on the leader
             # is blind to every multi-threaded tool here. `tstates` (per-thread) is
             # authoritative when the sampler recorded it; older captures have no such
-            # field and fall back to the leader, which is why this reads rather than
-            # requires it -- a format change must never retro-invalidate a corpus.
+            # field and fall back to the leader, which is why this reads rather than requires it -- a format change must never retro-invalidate a corpus.
             _ts = p.get("tstates") or {}
             _eff = p["state"]
             if _ts and (_ts.get("R") or _ts.get("D")):
@@ -295,10 +289,7 @@ def e4_concurrent_writers(
                 wset |= a["wfd"]
             first = min((a["first"] for a in agg.values()), default=0)
             last = max((a["last"] for a in agg.values()), default=0)
-            # Offset by the run-relative start so two captures' clocks are comparable:
-            # each capture's t_ms is relative to its own start, and the RUN record carries
-            # `t0_ms` (absolute) when the caller supplies it. Without it, overlap cannot be
-            # decided and the pair is skipped -- unresolved is never "no overlap".
+            # Offset by the run-relative start so two captures' clocks are comparable: each capture's t_ms is relative to its own start, and the RUN record carries `t0_ms` (absolute) when the caller supplies it. Without it, overlap cannot be decided and the pair is skipped -- unresolved is never "no overlap".
             t0 = c.run.get("t0_ms")
             views.append((c, wset, first, last, t0))
         for i, (ca, wa, fa, la, ta) in enumerate(views):
@@ -340,11 +331,9 @@ def e5_memory_outlier(cap: Capture) -> list[dict]:
         if len(sibs) < E5_MIN_SIBLINGS:
             continue
         hwms = sorted(a["hwm_kb"] for a in sibs)
-        # UNMEASURED IS NOT SMALL. The first live run fired this twice -- `grep` x11 at
-        # "2348x" and `basename` x5 at "12.5x" -- because short-lived siblings sampled
+        # UNMEASURED IS NOT SMALL. The first live run fired this twice -- `grep` x11 at "2348x" and `basename` x5 at "12.5x" -- because short-lived siblings sampled
         # once carry hwm_kb=0, the median collapsed onto an `or 1` floor, and the ratio
-        # exploded. A sibling with no measured peak is UNRESOLVED, and Rule 3 says an
-        # unresolved input kills a finding rather than feeding it.
+        # exploded. A sibling with no measured peak is UNRESOLVED, and Rule 3 says an unresolved input kills a finding rather than feeding it.
         if hwms[0] <= 0 or hwms[len(hwms) // 2] < E5_MIN_MEDIAN_KB:
             continue
         med = hwms[len(hwms) // 2]
@@ -440,11 +429,8 @@ def e7_stalled(c: Capture) -> list[dict]:
     """
     if len(c.samples) < E7_MIN_TICKS:
         return []
-    # THE DISCRIMINATOR NEEDS THE FIELDS IT DISCRIMINATES ON. Captures taken before
-    # the sampler recorded `pipes` and `tstates` carry neither, and without the pipe
-    # graph condition (4) is vacuously true -- so on that data E7 degenerates into
-    # exactly the weaker "the parent looks blocked" test that killed two battery runs.
-    # Measured: over 678 captures from the pre-change corpus it produced 2 findings
+    # THE DISCRIMINATOR NEEDS THE FIELDS IT DISCRIMINATES ON. Captures taken before the sampler recorded `pipes` and `tstates` carry neither, and without the pipe graph condition (4) is vacuously true -- so on that data E7 degenerates into exactly the weaker "the parent looks blocked" test that killed two battery runs. Measured: over 678 captures from the pre-change corpus it
+    # produced 2 findings
     # that CANNOT be validated either way. Abstaining is the only honest answer; a
     # verdict from an instrument that did not record the evidence is not a verdict.
     if not any("pipes" in pr for smp in c.samples for pr in (smp.get("p") or [])):
@@ -581,10 +567,7 @@ def _synthetic(
     return Capture(samples, run, "syn-%d-%s" % (children, "seq" if sequential else "par"))
 
 
-# A fixture that spawns bash must NOT be re-exec'd under the profiler's own
-# supervisor (BASH_ENV is live on this machine): the tree would gain a
-# bashcov-sup layer and every depth assertion shifts by one. Caught by the hook
-# battery the first time it ran with profiling on -- the profiler measuring its
+# A fixture that spawns bash must NOT be re-exec'd under the profiler's own supervisor (BASH_ENV is live on this machine): the tree would gain a bashcov-sup layer and every depth assertion shifts by one. Caught by the hook battery the first time it ran with profiling on -- the profiler measuring its
 # own test. The BASH_ENV file honours WORKLIST_PROFILE=off.
 _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
@@ -679,10 +662,7 @@ def selftest() -> int:
             "D1: findings byte-identical under dilate(k=%.1f)" % k,
             json.dumps(derive([dilate(c, k) for c in caps]), sort_keys=True) == base,
         )
-    # BOTH clocks must move, and this control was weaker than it claimed until a
-    # mutant showed it: it checked only run.wall_ms, so stripping the SAMPLE t_ms
-    # scaling left every verdict unchanged and the control green. Lifetimes are what
-    # the concurrency predicates read, so the samples are the clock that matters.
+    # BOTH clocks must move, and this control was weaker than it claimed until a mutant showed it: it checked only run.wall_ms, so stripping the SAMPLE t_ms scaling left every verdict unchanged and the control green. Lifetimes are what the concurrency predicates read, so the samples are the clock that matters.
     _d = dilate(fire, 2.3)
     _a0, _a1 = aggregate(fire), aggregate(_d)
     check(
@@ -909,8 +889,7 @@ def selftest() -> int:
         "admission: J<20 is report-only for lack of denominator",
         admissible(0, 8) == (False, "report-only for lack of denominator (J=8 < 20)"),
     )
-    # THE TWO CORRECTIONS OF THIS WAVE, planted. Both were silent defects: the set
-    # missed the most common wchan in the corpus, and the share read the supervisor.
+    # THE TWO CORRECTIONS OF THIS WAVE, planted. Both were silent defects: the set missed the most common wchan in the corpus, and the share read the supervisor.
     check(
         "norm_wchan strips a GCC clone suffix",
         norm_wchan("do_sigtimedwait.isra.0") == "do_sigtimedwait"
@@ -926,9 +905,7 @@ def selftest() -> int:
         "hrtimer_nanosleep" not in DEFERRING and "hrtimer_nanosleep" in SLEEPING,
     )
 
-    # E7's TWO DIRECTIONS. The silent one is the load-bearing half: a `$( )` capture
-    # is a parent parked on a pipe its own child writes, and calling that a hang cost
-    # two killed battery runs before this predicate existed.
+    # E7's TWO DIRECTIONS. The silent one is the load-bearing half: a `$( )` capture is a parent parked on a pipe its own child writes, and calling that a hang cost two killed battery runs before this predicate existed.
     def _cap(procs_per_tick):
         smps = [
             {"t_ms": i * 500, "p": [dict(pr) for pr in procs]}
@@ -1010,16 +987,10 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
         days_seen += 1
         # BASH FIRST, and folding it into the SAME table is the point.
         #
-        # bash.jsonl was write-only for its whole life: a `grep -rln` for it over the
-        # tree returned exactly one file, its own writer. 35 MB a day of records that
-        # nothing read, while the ranking beside it claimed to say where the time went
-        # and could only see Python. Now that the supervisor stamps a `shape` on every
-        # record, a shell script ranks against a Python one on the same axis -- which
-        # is the only way the top of this table is the real top.
+        # bash.jsonl was write-only for its whole life: a `grep -rln` for it over the tree returned exactly one file, its own writer. 35 MB a day of records that nothing read, while the ranking beside it claimed to say where the time went and could only see Python. Now that the supervisor stamps a `shape` on every record, a shell script ranks against a Python one on the same axis
+        # -- which is the only way the top of this table is the real top.
         #
-        # Units differ by construction: the exit recorder writes ms and kB, the C
-        # supervisor writes us and kB. Converted here rather than at the writer, whose
-        # record format is a public artifact other things parse.
+        # Units differ by construction: the exit recorder writes ms and kB, the C supervisor writes us and kB. Converted here rather than at the writer, whose record format is a public artifact other things parse.
         bs = day / "bash.jsonl"
         if bs.exists():
             n_bash = 0
@@ -1042,9 +1013,7 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
                 e["rss_kb_max"] = max(
                     e["rss_kb_max"], int(r.get("maxrss_kb", 0)), int(r.get("peak_hwm_kb", 0))
                 )
-            # Counted per DAY and from THIS day's records, never from the running
-            # table: `shapes` is non-empty as soon as any earlier day contributed,
-            # so a truthiness test on it would report full coverage for a corpus
+            # Counted per DAY and from THIS day's records, never from the running table: `shapes` is non-empty as soon as any earlier day contributed, so a truthiness test on it would report full coverage for a corpus
             # with one good day and twenty empty ones.
             if n_bash:
                 days_with_bash += 1
@@ -1094,15 +1063,9 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
                 )
                 for smp in c.samples:
                     g["samples"] += 1
-                    # THE FRONTIER, NOT THE ROOT. This read `p[0]`, which under the
-                    # supervisor IS the supervisor -- parked in do_sigtimedwait for
-                    # 291 of 291 captures while the work happened underneath it. The
-                    # share was 0% by construction and told the reader nothing.
+                    # THE FRONTIER, NOT THE ROOT. This read `p[0]`, which under the supervisor IS the supervisor -- parked in do_sigtimedwait for 291 of 291 captures while the work happened underneath it. The share was 0% by construction and told the reader nothing.
                     #
-                    # A tree counts as waiting only when NOTHING in it is running:
-                    # no process in R or D, and at least one parked somewhere that is
-                    # not "waiting on my own child". A deferring parent above a
-                    # running child is the normal shape of every $( ) capture.
+                    # A tree counts as waiting only when NOTHING in it is running: no process in R or D, and at least one parked somewhere that is not "waiting on my own child". A deferring parent above a running child is the normal shape of every $( ) capture.
                     procs = smp.get("p") or []
                     if any(pr.get("state") in ("R", "D") for pr in procs):
                         continue

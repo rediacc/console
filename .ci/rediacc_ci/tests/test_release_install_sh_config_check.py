@@ -154,9 +154,7 @@ def assert_same(
     assert norm(new.stderr) == norm(old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# The green path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The green path ---------------------------------------------------------------------------
 
 
 def test_real_tree_agrees(tmp_path: pathlib.Path) -> None:  # noqa: ARG001 -- symmetry
@@ -177,9 +175,7 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     assert norm(old.stdout) == norm(_run(TWIN, ROOT).stdout)
 
 
-# ---------------------------------------------------------------------------
-# The failure branches, each reached by a real mutation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The failure branches, each reached by a real mutation ---------------------------------------------------------------------------
 
 
 def test_a_wrong_default_account_server_is_caught(tmp_path: pathlib.Path) -> None:
@@ -200,8 +196,7 @@ def test_a_wrong_config_mode_is_caught_on_every_writing_case(tmp_path: pathlib.P
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert old.stderr.count("expected mode 600, got 640") == 4
-    # The mode failure does not suppress the channel PASS lines: the twin's
-    # `run_case` keeps going after a mode mismatch (:110-112).
+    # The mode failure does not suppress the channel PASS lines: the twin's `run_case` keeps going after a mode mismatch (:110-112).
     assert old.stdout.count(OK_GLYPH) == 5
     assert_same(old, new)
 
@@ -276,16 +271,13 @@ def test_a_missing_install_sh_is_the_same_refusal(tmp_path: pathlib.Path) -> Non
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_free_port_hands_back_a_bindable_port() -> None:
     port = install_sh_config_check.free_port()
     assert 1024 < port < 65536
-    # The twin's trick is to bind, read the port and close: the port must be
-    # re-bindable immediately afterwards or `http.server` would fail.
+    # The twin's trick is to bind, read the port and close: the port must be re-bindable immediately afterwards or `http.server` would fail.
     sock = socket.socket()
     sock.bind(("127.0.0.1", port))
     sock.close()
@@ -309,9 +301,7 @@ def test_substituted_strips_every_trailing_newline() -> None:
     assert install_sh_config_check.substituted(kept) == "a\nb"
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

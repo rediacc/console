@@ -86,13 +86,8 @@ def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False, idle=False)
         return fired.get("gone") != stampkey
     # THE `idle` KEY MUST LIVE HERE, not only at the ladder's call site. This
     # function IS the poll fast path's oracle, and the docstring above records
-    # what happens when the two disagree: the report goes silent while the
-    # forfeit keeps firing, with no way to discharge it short of abandoning the
-    # item. An `idle` rung latched by the ladder but invisible to this function
-    # would reproduce that deadlock exactly. Checked BEFORE the age rungs
-    # because it is a different subject: `idle` is a proven state, the 90/120
-    # rungs are raw age, and an idle worker quiet for 200 minutes must latch
-    # once as idle rather than re-firing as `resolve`.
+    # what happens when the two disagree: the report goes silent while the forfeit keeps firing, with no way to discharge it short of abandoning the item. An `idle` rung latched by the ladder but invisible to this function would reproduce that deadlock exactly. Checked BEFORE the age rungs because it is a different subject: `idle` is a proven state, the 90/120 rungs are raw age,
+    # and an idle worker quiet for 200 minutes must latch once as idle rather than re-firing as `resolve`.
     if idle:
         return fired.get("idle") != stampkey
     if age_min >= LADDER_RESOLVE_MIN:
@@ -221,9 +216,7 @@ def bg_output_facts(cwd, session_id, live_bg):
         # The harness scratch root is <tmp>/claude-<uid>/ on this platform,
         # not <tmp>/ itself; the plain-gettempdir form is kept as a fallback
         # for setups where TMPDIR already points inside the scratch root.
-        # Found live on the check-in's FIRST real firing: a shell task with a
-        # growing output stream read as "no output stream yet" because the
-        # derivation missed the claude-<uid> segment.
+        # Found live on the check-in's FIRST real firing: a shell task with a growing output stream read as "no output stream yet" because the derivation missed the claude-<uid> segment.
         tails = [str(session_id or ""), "tasks"]
         candidates = [
             os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), munged, *tails),
@@ -277,9 +270,7 @@ def verify_background(event_bg, table=None, ancestors=None):
     return out
 
 
-# The inbox waiter (wl_wait.py) launched as a background shell task. Matched on
-# the SCRIPT NAME in the declared command, which is the only stable marker: the
-# task id is per-launch and the description is free text.
+# The inbox waiter (wl_wait.py) launched as a background shell task. Matched on the SCRIPT NAME in the declared command, which is the only stable marker: the task id is per-launch and the description is free text.
 WAITER_MARK = "wl_wait.py"
 
 
@@ -341,22 +332,13 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
     if not proj.is_dir():
         return None  # cannot tell: NOT the same as zero, and callers must differ
-    # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` --
-    # every session directory under the project -- so ANY unrelated session with
-    # a teammate transcript touched in the last fresh_min made `fresh > 0` here,
+    # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` -- every session directory under the project -- so ANY unrelated session with a teammate transcript touched in the last fresh_min made `fresh > 0` here,
     # for a session whose own roster might be 100% phantom. That silently
     # defeated the certainty branch in prune_background (fresh == 0 is what
-    # licenses the auto-reap) in exactly the situation it was built for: a
-    # session resumed after compaction, which is when OTHER sessions are most
-    # likely to be active in the same tree. It also deflated the `unknown`
-    # overclaim count reported to the operator. This tree runs concurrent
-    # sessions as a matter of course, so the collision was routine, not exotic.
+    # licenses the auto-reap) in exactly the situation it was built for: a session resumed after compaction, which is when OTHER sessions are most likely to be active in the same tree. It also deflated the `unknown` overclaim count reported to the operator. This tree runs concurrent sessions as a matter of course, so the collision was routine, not exotic.
     scope = proj / session_id / "subagents" if session_id else None
     if scope is not None and not scope.is_dir():
-        # FAIL TO "CANNOT TELL", NEVER TO ZERO. Zero is the value that licenses
-        # reaping the whole teammate roster, so a session id that does not
-        # resolve to a directory (a prefix instead of a full uuid, a store not
-        # yet created) must not be read as "no teammates are alive".
+        # FAIL TO "CANNOT TELL", NEVER TO ZERO. Zero is the value that licenses reaping the whole teammate roster, so a session id that does not resolve to a directory (a prefix instead of a full uuid, a store not yet created) must not be read as "no teammates are alive".
         return None
     metas = scope.glob("*.meta.json") if scope is not None else proj.glob("*/subagents/*.meta.json")
     now, fresh = time.time(), 0
@@ -378,23 +360,18 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
 
 # ---- teammate idle detection ------------------------------------------------
 
-# Stop reasons that mean the model ENDED ITS TURN rather than paused inside one.
-# `tool_use` is deliberately absent: that is the mid-turn reason.
+# Stop reasons that mean the model ENDED ITS TURN rather than paused inside one. `tool_use` is deliberately absent: that is the mid-turn reason.
 IDLE_STOP_REASONS = frozenset({"end_turn", "stop_sequence", "max_tokens"})
 
-# How far back to read for the last parseable record. A teammate transcript's
-# final record is small, but a single record can be large (a pasted file, a long
-# tool result), so this is generous rather than tight.
+# How far back to read for the last parseable record. A teammate transcript's final record is small, but a single record can be large (a pasted file, a long tool result), so this is generous rather than tight.
 TEAMMATE_TAIL_BYTES = int(os.environ.get("WORKLIST_TEAMMATE_TAIL_BYTES", "262144"))
 
 # Minutes a PROVEN-idle worker must stay quiet before the ladder escalates from
 # reporting to blocking. Operator-set, 2026-08-23; the plan proposed 15 and the
-# operator confirmed it. The report itself is non-blocking and fires on the
-# FIRST stop the worker is idle, so this only governs the escalation.
+# operator confirmed it. The report itself is non-blocking and fires on the FIRST stop the worker is idle, so this only governs the escalation.
 WORKER_IDLE_BLOCK_MIN = int(os.environ.get("WORKER_IDLE_BLOCK_MIN", "15"))
 
-# How far a transcript's mtime may sit AFTER a recorded idle edge and still count
-# as "nothing was written since". Two different clocks-of-record are being
+# How far a transcript's mtime may sit AFTER a recorded idle edge and still count as "nothing was written since". Two different clocks-of-record are being
 # compared (the hook's time.time() against a filesystem mtime); the measured
 # delta on a genuinely idle agent was -0.1s, and a resume writes a whole turn.
 IDLE_EDGE_EPSILON_S = float(os.environ.get("WORKLIST_IDLE_EDGE_EPSILON_S", "2"))
@@ -559,38 +536,19 @@ def teammate_state(cwd, session_id, name, now=None):
             # The hook stamped the edge itself, so prefer it unconditionally.
             #
             # AN EARLIER VERSION GUARDED THIS WITH `edge >= last_ts` AND THAT WAS
-            # BACKWARDS -- caught by Control 6c. The edge is normally OLDER than
-            # the mtime (the file gets touched after the turn ends), so that
-            # guard discarded the edge in exactly the case the sidecar exists
+            # BACKWARDS -- caught by Control 6c. The edge is normally OLDER than the mtime (the file gets touched after the turn ends), so that guard discarded the edge in exactly the case the sidecar exists
             # for, silently falling back to the mtime it was meant to sharpen.
             #
-            # No staleness guard is needed and one would be wrong. `idle_edge`
-            # returns the NEWEST edge for this name, so a superseded edge from a
-            # previous idle->resume->idle cycle cannot be returned once the hook
-            # fires again. And if the hook never fires again, the teammate is
-            # either still idle (the old edge is the correct answer) or it
-            # resumed -- in which case the transcript reads mid-turn and this
-            # branch is never reached at all.
+            # No staleness guard is needed and one would be wrong. `idle_edge` returns the NEWEST edge for this name, so a superseded edge from a previous idle->resume->idle cycle cannot be returned once the hook fires again. And if the hook never fires again, the teammate is either still idle (the old edge is the correct answer) or it resumed -- in which case the transcript reads
+            # mid-turn and this branch is never reached at all.
             quiet_min, last_ts = max(0.0, (now - edge) / 60.0), edge
         return "idle", quiet_min, last_ts, agent_id
-    # THE TRANSCRIPT CANNOT ALWAYS SEE THE END OF A TURN, and a live probe is
-    # what proved it (2026-08-23, agent `idle-probe3`). Its final record was
-    # `assistant / stop_reason: None / ['text']` -- a streaming partial, which
-    # this classifier deliberately calls `working` because 410 of 701 assistant
-    # records in the sample look like that mid-turn. The agent had FINISHED. Its
-    # transcript would have said `working` forever, which is the very blindness
-    # this whole item exists to remove, wearing a safer-looking hat.
+    # THE TRANSCRIPT CANNOT ALWAYS SEE THE END OF A TURN, and a live probe is what proved it (2026-08-23, agent `idle-probe3`). Its final record was `assistant / stop_reason: None / ['text']` -- a streaming partial, which this classifier deliberately calls `working` because 410 of 701 assistant records in the sample look like that mid-turn. The agent had FINISHED. Its transcript
+    # would have said `working` forever, which is the very blindness this whole item exists to remove, wearing a safer-looking hat.
     #
-    # The journal resolves it, and NOT as a guess: `TeammateIdle` is the harness
-    # stating the teammate went idle, self-recorded, which is strictly stronger
-    # evidence than a tail read. The resume case is what makes it safe to trust
-    # -- a teammate that resumes WRITES, so its transcript mtime moves past the
-    # edge. So the edge decides only while nothing has been written after it.
+    # The journal resolves it, and NOT as a guess: `TeammateIdle` is the harness stating the teammate went idle, self-recorded, which is strictly stronger evidence than a tail read. The resume case is what makes it safe to trust -- a teammate that resumes WRITES, so its transcript mtime moves past the edge. So the edge decides only while nothing has been written after it.
     #
-    # EPSILON, not equality: the two stamps come from different clocks-of-record
-    # (the hook's `time.time()` and the filesystem's mtime) and the observed
-    # delta on a genuinely-idle agent was -0.1s. A resume is a whole turn of
-    # writing, orders of magnitude past this.
+    # EPSILON, not equality: the two stamps come from different clocks-of-record (the hook's `time.time()` and the filesystem's mtime) and the observed delta on a genuinely-idle agent was -0.1s. A resume is a whole turn of writing, orders of magnitude past this.
     edge = idle_edge(cwd, session_id, name)
     if edge is not None and last_ts <= edge + IDLE_EDGE_EPSILON_S:
         return "idle", max(0.0, (now - edge) / 60.0), edge, agent_id
@@ -747,9 +705,7 @@ def worker_facts(event, session_id):
     for b in live_bg:
         tid = str(b.get("id") or "?")
         v = verdicts.get(tid, "unverifiable")
-        # The PARAMETER, not a second read of the event. Both carry the same
-        # value today (wl_checks.py:1471 derives it from this very event), but
-        # one source at the call boundary cannot drift from the other.
+        # The PARAMETER, not a second read of the event. Both carry the same value today (wl_checks.py:1471 derives it from this very event), but one source at the call boundary cannot drift from the other.
         quiet = output_quiet_min(session_id, tid)
         if v == "confirmed":
             osword = "OS process confirmed"
@@ -821,13 +777,8 @@ def ladder(fold, session_id, event, state_doc):
             continue  # expired leases are open items already
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
-        # GONE means DROPPED, not merely unconfirmable. A worker only counts as
-        # gone if the harness could see it when the lease was taken and cannot
-        # see it now. An Agent leased by NAME never appears in a background-task
-        # list at all, and reporting that as "finished or stopped" sent this
-        # session chasing a worker that was actively writing files. Unverifiable
-        # workers fall through to the age ladder, which catches a real stall
-        # without inventing a death.
+        # GONE means DROPPED, not merely unconfirmable. A worker only counts as gone if the harness could see it when the lease was taken and cannot see it now. An Agent leased by NAME never appears in a background-task list at all, and reporting that as "finished or stopped" sent this session chasing a worker that was actively writing files. Unverifiable workers fall through to
+        # the age ladder, which catches a real stall without inventing a death.
         gone = bool(wid) and wid not in now_bg and bool(rec.get("worker_verified"))
         subjects.append(
             (
@@ -864,14 +815,9 @@ def ladder(fold, session_id, event, state_doc):
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
-        # The loop variables are bound as DEFAULTS, not closed over. B023 is a
-        # false positive at this particular site -- fire_once is only ever
-        # called inside the same iteration that defines it, never stored or
-        # deferred, so the late-binding bug it warns about cannot happen here.
-        # Binding them anyway is free and provably equivalent, and it keeps
+        # The loop variables are bound as DEFAULTS, not closed over. B023 is a false positive at this particular site -- fire_once is only ever called inside the same iteration that defines it, never stored or deferred, so the late-binding bug it warns about cannot happen here. Binding them anyway is free and provably equivalent, and it keeps
         # B023 enabled for the sites where the warning WOULD be real; turning
-        # the rule off to clear six known-safe uses is how the next genuine
-        # late-binding bug ships unnoticed.
+        # the rule off to clear six known-safe uses is how the next genuine late-binding bug ships unnoticed.
         def fire_once(rung, rung_rec=rung_rec, stampkey=stampkey, key=key):
             nonlocal changed
             if rung_rec.get(rung) == stampkey:
@@ -882,13 +828,8 @@ def ladder(fold, session_id, event, state_doc):
             return True
 
         if gone:
-            # SEPARATE from `investigates` on purpose. Both are 90-minute-rung
-            # blocks, but they have DIFFERENT remedies, and merging them meant
-            # the caller printed one footer for both: `--update`, which is the
-            # one command that cannot resolve a dead worker. It refreshes the
-            # text and the liveness clock and leaves the false worker:<id> in
-            # place, so the identical complaint fires on the very next stop.
-            # Measured, not theorised: it cost a session a full round trip.
+            # SEPARATE from `investigates` on purpose. Both are 90-minute-rung blocks, but they have DIFFERENT remedies, and merging them meant the caller printed one footer for both: `--update`, which is the one command that cannot resolve a dead worker. It refreshes the text and the liveness clock and leaves the false worker:<id> in place, so the identical complaint fires on the
+            # very next stop. Measured, not theorised: it cost a session a full round trip.
             if fire_once("gone"):
                 gones.append(
                     "%s   <- its declared worker:%s is NOT in the harness background list any more "
@@ -896,20 +837,13 @@ def ladder(fold, session_id, event, state_doc):
                     "a new worker id, or reclassify it" % (label, wid)
                 )
             continue
-        # THE CASE THAT USED TO FALL THROUGH TO PURE AGE. `gone` above needs
-        # `worker_verified`, which a NAME-leased teammate never gets, so a
-        # teammate that has verifiably stopped reached here and was treated as
-        # merely quiet -- for up to 120 minutes. Ask the teammate's own
-        # transcript instead of inferring from absence.
+        # THE CASE THAT USED TO FALL THROUGH TO PURE AGE. `gone` above needs `worker_verified`, which a NAME-leased teammate never gets, so a teammate that has verifiably stopped reached here and was treated as merely quiet -- for up to 120 minutes. Ask the teammate's own transcript instead of inferring from absence.
         #
-        # Only for a worker the harness cannot see. A wid still in `now_bg` is
-        # running by the harness's own account, and second-guessing that from a
-        # transcript tail could only ever manufacture a false idle.
+        # Only for a worker the harness cannot see. A wid still in `now_bg` is running by the harness's own account, and second-guessing that from a transcript tail could only ever manufacture a false idle.
         if wid and wid not in now_bg:
             verdict, quiet, _ts, _aid = teammate_state(event.get("cwd") or "", session_id, wid)
             if verdict == "idle":
-                # REPORT ON THE FIRST STOP, block only after
-                # WORKER_IDLE_BLOCK_MIN. The report is the cheap half and it is
+                # REPORT ON THE FIRST STOP, block only after WORKER_IDLE_BLOCK_MIN. The report is the cheap half and it is
                 # what would have saved the 3.5 hours; the block is the
                 # escalation for when nobody read it.
                 if fire_once("idle") if quiet >= WORKER_IDLE_BLOCK_MIN else True:
@@ -921,8 +855,7 @@ def ladder(fold, session_id, event, state_doc):
                     )
                 continue
             if verdict == "stalled":
-                # SUSPECT, and said in those words. Never dead, never gone --
-                # `unverifiable` falls through untouched for the same reason.
+                # SUSPECT, and said in those words. Never dead, never gone -- `unverifiable` falls through untouched for the same reason.
                 if fire_once("investigate"):
                     investigates.append(
                         "%s   <- worker:%s is mid-turn but has written nothing for %dm; it may be "

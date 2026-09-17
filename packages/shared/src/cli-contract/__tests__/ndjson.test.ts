@@ -35,8 +35,7 @@ describe('readLines', () => {
   });
 
   it('refuses a newline-free flood instead of buffering it unboundedly', async () => {
-    // A hostile machine emitting 2 MiB with no newline. The reader must throw
-    // rather than allocate all of it.
+    // A hostile machine emitting 2 MiB with no newline. The reader must throw rather than allocate all of it.
     const flood = enc.encode('x'.repeat(2 * 1024 * 1024));
     const iterate = async () => {
       for await (const line of readLines(streamOf(flood))) {

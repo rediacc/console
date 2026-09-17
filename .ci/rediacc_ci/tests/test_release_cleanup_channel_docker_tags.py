@@ -46,9 +46,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "cleanup_channel_docker_tags.py
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Records argv[1:] ONLY, never `$0`: the twin invokes the deleter through a path
-# containing `/../` and the port through the normalised one, so a stub echoing
-# its own name would manufacture a difference that is not one.
+# Records argv[1:] ONLY, never `$0`: the twin invokes the deleter through a path containing `/../` and the port through the normalised one, so a stub echoing its own name would manufacture a difference that is not one.
 FAKE_CLEANUP_STAGING = """#!/usr/bin/python3
 import os
 import sys
@@ -180,9 +178,7 @@ def _block(*lines: str) -> str:
     return "## Cleanup Channel Tags\n\n" + "".join(line + "\n" for line in lines)
 
 
-# ---------------------------------------------------------------------------
-# The controls on the harness
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls on the harness ---------------------------------------------------------------------------
 
 
 def test_the_fixture_carries_a_stub_deleter_not_the_real_one(tmp_path: pathlib.Path) -> None:
@@ -202,9 +198,7 @@ def test_both_subjects_exist() -> None:
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 
-# ---------------------------------------------------------------------------
-# The branch production actually takes
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The branch production actually takes ---------------------------------------------------------------------------
 
 
 def test_edge_takes_the_known_gap_branch_and_calls_nothing(tmp_path: pathlib.Path) -> None:
@@ -242,9 +236,7 @@ def test_staging_must_be_a_prefix_not_a_substring(tmp_path: pathlib.Path) -> Non
     assert_agree(old, new, "substring-staging")
 
 
-# ---------------------------------------------------------------------------
-# The two branches that do call the deleter
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The two branches that do call the deleter ---------------------------------------------------------------------------
 
 
 def test_a_staging_tag_is_deleted_and_reported(tmp_path: pathlib.Path) -> None:
@@ -293,9 +285,7 @@ def test_a_missing_deleter_falls_through_to_the_failure_block(tmp_path: pathlib.
     assert_agree(old, new, "missing-deleter", stderr=False)
 
 
-# ---------------------------------------------------------------------------
-# The summary file itself
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The summary file itself ---------------------------------------------------------------------------
 
 
 def test_the_block_is_appended_to_an_existing_summary(tmp_path: pathlib.Path) -> None:
@@ -314,9 +304,7 @@ def test_a_missing_summary_file_is_created(tmp_path: pathlib.Path) -> None:
     assert_agree(old, new, "create")
 
 
-# ---------------------------------------------------------------------------
-# Refusals, before the summary is touched
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals, before the summary is touched ---------------------------------------------------------------------------
 
 
 def test_missing_channel_refuses_and_writes_nothing(tmp_path: pathlib.Path) -> None:
@@ -366,9 +354,7 @@ def test_channel_is_validated_before_the_summary_path(tmp_path: pathlib.Path) ->
     assert old[0] == new[0] == 1
 
 
-# ---------------------------------------------------------------------------
-# Anti-vacuity
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Anti-vacuity ---------------------------------------------------------------------------
 
 
 def test_the_harness_actually_compared_something(tmp_path: pathlib.Path) -> None:

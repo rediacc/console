@@ -46,9 +46,7 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/quality/check-python-lint.sh"
 MODULE = "python_lint"
 
-# The package files copied into every specimen. Enough of them to clear
-# MIN_PY_FILES on their own, so a case that wants the floor to fire copies fewer
-# rather than lowering the floor.
+# The package files copied into every specimen. Enough of them to clear MIN_PY_FILES on their own, so a case that wants the floor to fire copies fewer rather than lowering the floor.
 PACKAGE_FILES = ("__init__.py", "log.py", "paths.py", "controls.py", "proc.py", "gitx.py")
 
 
@@ -71,8 +69,7 @@ def build(
     shutil.copy2(src / TWIN, root / TWIN)
     shutil.copy2(src / "pyproject.toml", root / "pyproject.toml")
     shutil.copy2(src / ".devcontainer" / "toolchain.env", root / ".devcontainer" / "toolchain.env")
-    # `.ci/cache/` holds the planted control file. Gitignored on purpose: "a
-    # crashed run cannot leave a stray .py that enumerate_py would pick up".
+    # `.ci/cache/` holds the planted control file. Gitignored on purpose: "a crashed run cannot leave a stray .py that enumerate_py would pick up".
     (root / ".gitignore").write_text(".ci/cache/\n", encoding="utf-8")
     for name in PACKAGE_FILES:
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
@@ -112,9 +109,7 @@ def run_both(
 
 
 CASES = [
-    # THE NEGATIVE HALF. A clean corpus must exit 0 AND print ruff's own
-    # "All checks passed!" line, which is the byte the port lost when it captured
-    # ruff's output in order to inspect it.
+    # THE NEGATIVE HALF. A clean corpus must exit 0 AND print ruff's own "All checks passed!" line, which is the byte the port lost when it captured ruff's output in order to inspect it.
     ("a clean corpus passes", {}, 0),
     (
         "an undefined name is reported",
@@ -127,8 +122,7 @@ CASES = [
         1,
     ),
     (
-        # EXE001. The property is the GIT mode, not the disk mode: CI lints a
-        # fresh checkout, so what it sees is whatever git recorded.
+        # EXE001. The property is the GIT mode, not the disk mode: CI lints a fresh checkout, so what it sees is whatever git recorded.
         "a shebang with git mode 100644 is EXE001",
         {"probe_exe.py": ("#!/usr/bin/env python3\nx = 1\n", 0o644)},
         1,
@@ -140,8 +134,7 @@ CASES = [
         1,
     ),
     (
-        # AND THE NEGATIVE HALF OF BOTH: the agreeing combinations must be silent,
-        # or the mode scan is a blanket refusal.
+        # AND THE NEGATIVE HALF OF BOTH: the agreeing combinations must be silent, or the mode scan is a blanket refusal.
         "a shebang with git mode 100755 is fine, and no shebang with 100644 is too",
         {
             "probe_ok_exe.py": ("#!/usr/bin/env python3\nx = 1\n", 0o755),
@@ -216,8 +209,7 @@ def test_a_missing_ruff_is_77_and_not_1(tmp_path):
     assert new_out == old_out
     assert new_err == old_err
     assert "NOT skipping" in old_err
-    # THE STANDALONE INSTALLER IS FIRST because it is the one that works in the
-    # devbox, where `python3 -m pip` reports "No module named pip".
+    # THE STANDALONE INSTALLER IS FIRST because it is the one that works in the devbox, where `python3 -m pip` reports "No module named pip".
     lines = [line for line in old_err.split("\n") if "install one of" in line or "://" in line]
     assert any("astral.sh/ruff" in line for line in lines), old_err
 

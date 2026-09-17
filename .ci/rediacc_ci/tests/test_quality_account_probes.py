@@ -109,9 +109,7 @@ def test_probe_script_carries_both_letters_of_set_plus_eu(tmp_path: pathlib.Path
             check=False,
         )
         assert proc.returncode != 0
-        # And the shape of the trap: the strict failure is the SAME status a
-        # healthy probe returns for a closed port, so nothing downstream could
-        # tell them apart.
+        # And the shape of the trap: the strict failure is the SAME status a healthy probe returns for a closed port, so nothing downstream could tell them apart.
         assert proc.returncode == ap.probe_rc(root, _free_port())
     finally:
         server.kill()

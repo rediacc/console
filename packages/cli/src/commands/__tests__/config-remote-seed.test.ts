@@ -55,8 +55,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
-  // Keep the real error classes (finalizeEnable/instanceof checks) but stub
-  // the adapter itself.
+  // Keep the real error classes (finalizeEnable/instanceof checks) but stub the adapter itself.
   const original = await importOriginal<typeof import('../../adapters/remote-config-adapter.js')>();
   return { ...original, RemoteConfigAdapter: MockRemoteConfigAdapter };
 });

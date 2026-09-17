@@ -78,12 +78,8 @@ LIB_REL = (
     ".ci/scripts/lib/age-check.sh",
 )
 
-# THE FAKES RECORD BEFORE THEY ANSWER, and they record TWICE: once into
-# `$FAKE_LOG` (which the call-log channel compares) and once onto stderr with the
-# same `call: ` prefix (which the shadow-gate ledger's `--finding-re` scopes to).
-# The second copy is not decoration: `shadow-gate.ts` classifies `-> ` and `v `
-# lines as CHATTER before any message regex sees them, so a gate that reports
-# mostly through log_info would record VACUOUS_BOTH_EMPTY rows forever.
+# THE FAKES RECORD BEFORE THEY ANSWER, and they record TWICE: once into `$FAKE_LOG` (which the call-log channel compares) and once onto stderr with the same `call: ` prefix (which the shadow-gate ledger's `--finding-re` scopes to). The second copy is not decoration: `shadow-gate.ts` classifies `-> ` and `v ` lines as CHATTER before any message regex sees them, so a gate that
+# reports mostly through log_info would record VACUOUS_BOTH_EMPTY rows forever.
 FAKE_NPM = r"""#!/bin/bash
 printf 'call: npm %s\n' "$*" >>"$FAKE_LOG"
 printf 'call: npm %s\n' "$*" >&2
@@ -126,10 +122,7 @@ f="$FAKE_DATA/ghsa.${2##*/}.json"
 cat "$f"
 """
 
-# `node --experimental-strip-types <lib> --window-seconds|--eligible-epoch p w`.
-# Only the LAST TWO argv words are logged, because the middle one is the absolute
-# path of `scripts/lib/release-age.ts` under the fixture root and the log is
-# compared verbatim.
+# `node --experimental-strip-types <lib> --window-seconds|--eligible-epoch p w`. Only the LAST TWO argv words are logged, because the middle one is the absolute path of `scripts/lib/release-age.ts` under the fixture root and the log is compared verbatim.
 FAKE_NODE = r"""#!/bin/bash
 args=("$@")
 n=${#args[@]}
@@ -146,9 +139,7 @@ fi
 exit 1
 """
 
-# `sleep` IS FAKED RATHER THAN WAITED OUT, and that is the reason the port spawns
-# it instead of calling `time.sleep`: the retry ladder is then observable, and
-# the two 10-second waits in the signature-failure case cost nothing.
+# `sleep` IS FAKED RATHER THAN WAITED OUT, and that is the reason the port spawns it instead of calling `time.sleep`: the retry ladder is then observable, and the two 10-second waits in the signature-failure case cost nothing.
 FAKE_SLEEP = r"""#!/bin/bash
 printf 'call: sleep %s\n' "$*" >>"$FAKE_LOG"
 printf 'call: sleep %s\n' "$*" >&2
@@ -197,8 +188,7 @@ AUDIT_PROD = """{
 }
 """
 
-# The same report plus one DEV-ONLY advisory whose `fixAvailable` is the boolean
-# `true`, which is the arm that reaches `npm view <pkg> time --json`.
+# The same report plus one DEV-ONLY advisory whose `fixAvailable` is the boolean `true`, which is the arm that reaches `npm view <pkg> time --json`.
 AUDIT_ALL = json.dumps(
     {
         **json.loads(AUDIT_PROD),
@@ -234,9 +224,7 @@ AUDIT_ALL = json.dumps(
     indent=2,
 )
 
-# The same production report with every fix removed, so the stale sweep emits
-# NOTHING for an allowlisted entry and its output stops depending on iteration
-# order. Used by the DEFECT 2 case, which needs a deterministic prefix.
+# The same production report with every fix removed, so the stale sweep emits NOTHING for an allowlisted entry and its output stops depending on iteration order. Used by the DEFECT 2 case, which needs a deterministic prefix.
 AUDIT_PROD_NO_FIX = AUDIT_PROD.replace(
     '"fixAvailable": { "name": "astro", "version": "7.0.2", "isSemVerMajor": true }',
     '"fixAvailable": false',
@@ -245,11 +233,7 @@ AUDIT_PROD_NO_FIX = AUDIT_PROD.replace(
     '"fixAvailable": false',
 )
 
-# ONE advisory reached through TWO packages, which is what `unique` and
-# `unique_by(.source)` exist for: npm emits the same `source` under every package
-# the vulnerability propagates to. The two `via` objects deliberately DIFFER in
-# title and url, because `unique_by` keeps the FIRST in input order and a port
-# that kept the last would print the other one.
+# ONE advisory reached through TWO packages, which is what `unique` and `unique_by(.source)` exist for: npm emits the same `source` under every package the vulnerability propagates to. The two `via` objects deliberately DIFFER in title and url, because `unique_by` keeps the FIRST in input order and a port that kept the last would print the other one.
 AUDIT_DUPE = """{
   "auditReportVersion": 2,
   "vulnerabilities": {
@@ -306,8 +290,7 @@ GHSA_ASTRO_XSS = """{
 }
 """
 
-# THE EMPTY RANGE IS THE POINT OF THIS FIXTURE, not an oversight: it is DEFECT 3,
-# where the collapsing `read` shifts `first_patched_version` into the range slot.
+# THE EMPTY RANGE IS THE POINT OF THIS FIXTURE, not an oversight: it is DEFECT 3, where the collapsing `read` shifts `first_patched_version` into the range slot.
 GHSA_ASTRO_SSRF = """{
   "ghsa_id": "GHSA-2pvr-wf23-7pc7",
   "description": "Host header SSRF.",
@@ -341,9 +324,7 @@ EMPTY_PROD_ALLOWLIST = "# no production suppressions\n"
 EMPTY_DEV_ALLOWLIST = "# no dev suppressions\n"
 EMPTY_BLOCKLIST = "# no packages held back\n"
 
-# Everything the twin, its four libraries, and the port shell out to, minus the
-# four that are faked. `sleep` is deliberately ABSENT: the fake must be the only
-# `sleep` on the PATH, or a case that removes it would wait for real seconds.
+# Everything the twin, its four libraries, and the port shell out to, minus the four that are faked. `sleep` is deliberately ABSENT: the fake must be the only `sleep` on the PATH, or a case that removes it would wait for real seconds.
 SYS_TOOLS = (
     "bash",
     "sh",
@@ -518,18 +499,14 @@ def fx(tmp_path: pathlib.Path) -> Fixture:
     shutil.copy2(TWIN, root / TWIN_REL)
     for rel in LIB_REL:
         shutil.copy2(ROOT / rel, root / rel)
-    # The WHOLE package: the twin's shims run `python3 -m rediacc_ci.core.*` and
-    # the port imports four of those modules, all resolved from the fixture root.
+    # The WHOLE package: the twin's shims run `python3 -m rediacc_ci.core.*` and the port imports four of those modules, all resolved from the fixture root.
     shutil.copytree(
         ROOT / ".ci" / "rediacc_ci",
         root / ".ci" / "rediacc_ci",
         ignore=shutil.ignore_patterns("__pycache__", "tests"),
     )
 
-    # The ONLY system tools the two implementations may reach. Resolved here and
-    # symlinked, so the PATH the gate runs under contains no third directory: see
-    # `Fixture.env`. A tool missing from this list fails loudly at fixture build
-    # time rather than as a mystery inside a case.
+    # The ONLY system tools the two implementations may reach. Resolved here and symlinked, so the PATH the gate runs under contains no third directory: see `Fixture.env`. A tool missing from this list fails loudly at fixture build time rather than as a mystery inside a case.
     sysbin = root / "fake" / "sysbin"
     sysbin.mkdir(parents=True)
     for tool in SYS_TOOLS:
@@ -567,9 +544,7 @@ def fx(tmp_path: pathlib.Path) -> Fixture:
     return fixture
 
 
-# ---------------------------------------------------------------------------
-# comparison
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- comparison ---------------------------------------------------------------------------
 
 WINDOW_PROBE = "call: node --window-seconds"
 
@@ -622,9 +597,7 @@ def assert_agree(fx: Fixture, **extra: str) -> Run:
     return old
 
 
-# ---------------------------------------------------------------------------
-# the happy paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the happy paths ---------------------------------------------------------------------------
 
 
 def test_a_clean_tree_passes_on_both_sides(fx: Fixture) -> None:
@@ -678,8 +651,7 @@ def test_defect3_an_empty_vulnerable_range_shifts_the_two_fields(fx: Fixture) ->
     assert "  Affected: 7.0.2  →  Patched in: Host header SSRF." in old.stdout, (
         "the field shift is gone from the twin; DEFECT 3 needs re-measuring"
     )
-    # The advisory that HAS a range renders correctly, so the shift is the empty
-    # field's doing and not a broken renderer.
+    # The advisory that HAS a range renders correctly, so the shift is the empty field's doing and not a broken renderer.
     assert "  Affected: < 6.1.6  →  Patched in: 6.1.6" in old.stdout
 
 
@@ -698,9 +670,7 @@ def test_the_github_annotation_form_under_ci(fx: Fixture) -> None:
     assert "\033[" not in old.stdout, "colour must be off under CI"
 
 
-# ---------------------------------------------------------------------------
-# the failing paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the failing paths ---------------------------------------------------------------------------
 
 
 def test_an_unallowed_production_advisory_fails(fx: Fixture) -> None:
@@ -791,9 +761,7 @@ def test_a_low_effort_blocker_is_refused(fx: Fixture) -> None:
     assert "strict gate enforced" in old.stderr
 
 
-# ---------------------------------------------------------------------------
-# the six defects
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the six defects ---------------------------------------------------------------------------
 
 
 def test_defect1_an_empty_audit_report_is_a_green_run(fx: Fixture) -> None:
@@ -819,9 +787,7 @@ def test_defect2_a_non_numeric_allowlist_entry_kills_both_sides_with_exit_5(fx: 
     )
     # NO-FIX REPORT ON PURPOSE. Both numeric entries then take the
     # `fixAvailable == false` early continue and emit nothing, so how much output
-    # precedes the death does not depend on which order the sweep walks the
-    # allowlist in -- which is the one thing bash's hash order and a Python dict
-    # genuinely disagree about (see the port's divergence list).
+    # precedes the death does not depend on which order the sweep walks the allowlist in -- which is the one thing bash's hash order and a Python dict genuinely disagree about (see the port's divergence list).
     fx.policy(
         ".audit-prod-allowlist",
         PROD_ALLOWLIST_BOTH + "\n# an entry keyed by GHSA id instead of by npm advisory source id\n"
@@ -851,8 +817,7 @@ def test_defect6_a_failed_gh_fetch_kills_both_sides_with_a_silent_exit_5(fx: Fix
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
     old = assert_agree(fx)
     assert old.exit == 5
-    # The fetch was ATTEMPTED: `gh`'s own stderr is redirected to /dev/null by the
-    # twin's worker, so the call log is the only place this is visible.
+    # The fetch was ATTEMPTED: `gh`'s own stderr is redirected to /dev/null by the twin's worker, so the call log is the only place this is visible.
     assert "call: gh api /advisories/GHSA-2pvr-wf23-7pc7" in old.calls
     assert "✗" not in old.stderr, "the death says nothing at all, which is the finding"
     assert "✗" not in old.stdout
@@ -899,9 +864,7 @@ def test_a_killed_npm_audit_blames_the_signal_and_not_the_registry(fx: Fixture) 
     assert "NOT a registry or network fault" in old.stderr
 
 
-# ---------------------------------------------------------------------------
-# signatures, npm version, missing binaries
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- signatures, npm version, missing binaries ---------------------------------------------------------------------------
 
 
 def test_a_signature_failure_retries_three_times_and_refuses(fx: Fixture) -> None:
@@ -961,9 +924,7 @@ def test_a_missing_npm_is_a_loud_127_naming_the_line(fx: Fixture) -> None:
     assert "<script>: line 387: npm: command not found" in old.stderr
 
 
-# ---------------------------------------------------------------------------
-# deferral
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- deferral ---------------------------------------------------------------------------
 
 
 def test_a_fix_held_in_the_upgrade_blocklist_is_deferred_not_failed(fx: Fixture) -> None:
@@ -1007,9 +968,7 @@ def test_a_fix_inside_the_freshness_window_is_deferred(fx: Fixture) -> None:
     assert "call: npm view astro time --json" in old.calls
 
 
-# ---------------------------------------------------------------------------
-# age
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- age ---------------------------------------------------------------------------
 
 
 def _git(root: pathlib.Path, *args: str, when: str | None = None) -> None:
@@ -1060,9 +1019,7 @@ def test_an_allowlist_entry_past_the_warn_window_only_warns(fx: Fixture) -> None
     assert "✓ Security audit passed" in old.stdout
 
 
-# ---------------------------------------------------------------------------
-# the pure helpers, and the two re-implementations, against the real tools
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the pure helpers, and the two re-implementations, against the real tools ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -1239,9 +1196,7 @@ def test_the_details_program_matches_the_real_jq(tmp_path: pathlib.Path) -> None
     assert port.program_details(json.loads(body)) == proc.stdout.rstrip("\n")
 
 
-# ---------------------------------------------------------------------------
-# the control: this differential can go red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the control: this differential can go red ---------------------------------------------------------------------------
 
 
 def _scenario(fx: Fixture, name: str) -> None:
@@ -1279,8 +1234,7 @@ def _plant(fx: Fixture, old_text: str, new_text: str) -> None:
 @pytest.mark.parametrize(
     ("scenario", "old_text", "new_text"),
     [
-        # The collapsing read, replaced with the obvious wrong thing. Visible
-        # only where a shifted field is PRINTED, which is the stale sweep.
+        # The collapsing read, replaced with the obvious wrong thing. Visible only where a shifted field is PRINTED, which is the stale sweep.
         (
             "full",
             'body = line.strip("\\t")',
@@ -1289,15 +1243,13 @@ def _plant(fx: Fixture, old_text: str, new_text: str) -> None:
                 '    body = line.strip("\\t")'
             ),
         ),
-        # The DEFECT 6 fallback, "fixed" to write valid JSON. The gate then does
-        # not die, which is a different exit code and eleven more lines.
+        # The DEFECT 6 fallback, "fixed" to write valid JSON. The gate then does not die, which is a different exit code and eleven more lines.
         (
             "missing-ghsa",
             'pathlib.Path(out).write_text("%s\\n" % slug, encoding="utf-8")',
             'pathlib.Path(out).write_text("{}\\n", encoding="utf-8")',
         ),
-        # One retry fewer: same verdict, one fewer `npm audit signatures` and one
-        # fewer `sleep`, which only the CALL LOG channel can see.
+        # One retry fewer: same verdict, one fewer `npm audit signatures` and one fewer `sleep`, which only the CALL LOG channel can see.
         ("signatures-fail", "SIGNATURE_ATTEMPTS = 3", "SIGNATURE_ATTEMPTS = 2"),
         # DEFECT 4's green line, "fixed" into a conditional one.
         (

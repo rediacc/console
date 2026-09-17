@@ -93,8 +93,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The npm script the twin runs (build-packages.sh:21). One string, so the
-# differential's expected call log and the code cannot drift.
+# The npm script the twin runs (build-packages.sh:21). One string, so the differential's expected call log and the code cannot drift.
 BUILD_SCRIPT = "build:packages"
 
 # The two arguments of the `rm -rf` (build-packages.sh:19), in the twin's order.
@@ -103,9 +102,7 @@ DIST_DIR = "packages/shared/dist"
 TSBUILDINFO_GLOB = "packages/shared/*.tsbuildinfo"
 
 # `PACKAGES=("packages/shared/dist")` (build-packages.sh:30). A tuple of one,
-# kept as a sequence because the twin kept it as an array: the loop below is the
-# twin's loop, and collapsing it to a single `if` would hide that the script was
-# written to check more than one thing and never did.
+# kept as a sequence because the twin kept it as an array: the loop below is the twin's loop, and collapsing it to a single `if` would hide that the script was written to check more than one thing and never did.
 EXPECTED_OUTPUTS = (DIST_DIR,)
 
 
@@ -154,9 +151,7 @@ def clean_targets(root: pathlib.Path | None = None) -> list[str]:
 def main(argv: list[str]) -> int:
     # THE TWIN PARSES NOTHING. `build-packages.sh` has no `parse_args` call and
     # no `case` loop; its usage line reads `build-packages.sh` with no options.
-    # Every argument is therefore ignored, including `--help`, and that is
-    # reproduced rather than improved: an argparse here would exit 2 on `--help`
-    # where the twin builds the packages.
+    # Every argument is therefore ignored, including `--help`, and that is reproduced rather than improved: an argparse here would exit 2 on `--help` where the twin builds the packages.
     del argv
 
     os.chdir(common.repo_root())

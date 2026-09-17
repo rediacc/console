@@ -82,12 +82,8 @@ const BATTERY_RUNNER = '.ci/rediacc_ci/battery.py';
  * That pattern could not see test-write-once-guard.sh or test-install-script.sh,
  * which ran in Quality/Static and nowhere else (plan finding F3).
  */
-// EXTENSION-SHAPED ONCE, AND IT COST A CUTOVER. This read `check-[\w.-]+\.sh`,
-// so the moment W7 P4 repointed a gate at its Python port the leaf stopped being
-// gate-shaped and rules R2/R3 quietly stopped judging it -- the same class as a
-// `paths:` glob of `**/*.sh` that stops selecting its own gate once the leaf is a
-// `.py`. Both spellings are matched now: the bash twins are `check-name.sh`, the
-// ports are `check_name.py`, and a gate is a gate under either.
+// EXTENSION-SHAPED ONCE, AND IT COST A CUTOVER. This read `check-[\w.-]+\.sh`, so the moment W7 P4 repointed a gate at its Python port the leaf stopped being gate-shaped and rules R2/R3 quietly stopped judging it -- the same class as a `paths:` glob of `**/*.sh` that stops selecting its own gate once the leaf is a `.py`. Both spellings are matched now: the bash twins are
+// `check-name.sh`, the ports are `check_name.py`, and a gate is a gate under either.
 const GATE_SHAPED =
   /^(?:\.ci\/scripts\/(?:quality|security)\/check[-_][\w.-]+\.(?:sh|py)|\.ci\/scripts\/test\/test[-_][\w.-]+\.(?:sh|py))$/;
 
@@ -95,9 +91,7 @@ const RED = '[31m';
 const GREEN = '[32m';
 const NC = '[0m';
 
-// ---------------------------------------------------------------------------
-// Command resolution
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Command resolution ---------------------------------------------------------------------------
 
 /** Words that prefix a command without being one. */
 const NOISE = new Set(['sudo', 'time', 'env', 'exec']);
@@ -561,10 +555,7 @@ function analyze(inp: Inputs): Finding[] {
       continue;
     }
     const stepLeaves = resolveLeaves(step.run, inp.scripts);
-    // The 57 battery entries all point at the single check:ci-quality-gates
-    // step, which resolves to run-all.sh rather than to any one test. Verifying
-    // the pointer reaches the battery RUNNER is what proves run-all.sh executes
-    // in CI, which is the fact those entries depend on.
+    // The 57 battery entries all point at the single check:ci-quality-gates step, which resolves to run-all.sh rather than to any one test. Verifying the pointer reaches the battery RUNNER is what proves run-all.sh executes in CI, which is the fact those entries depend on.
     const want = g.qualityGateTest ? [BATTERY_RUNNER] : g.leaves;
     if (!want.some((l) => stepLeaves.includes(l))) {
       add(
@@ -579,10 +570,7 @@ function analyze(inp: Inputs): Finding[] {
   for (const g of inp.gates) {
     if (seenIds.has(g.id)) add('hygiene', `duplicate manifest id "${g.id}".`);
     seenIds.add(g.id);
-    // An id is either an npm key, or a direct repo-relative script path that
-    // exists. The second form is what F3's two Static-lane gates need: the
-    // Static lane is a bare checkout with no node_modules, so they are invoked
-    // by path and carry no npm key.
+    // An id is either an npm key, or a direct repo-relative script path that exists. The second form is what F3's two Static-lane gates need: the Static lane is a bare checkout with no node_modules, so they are invoked by path and carry no npm key.
     const isKey = g.id in rootScripts;
     const isPath = !g.run.startsWith('npm ') && inp.fileExists(g.run.split(/\s+/)[0] ?? '');
     if (!isKey && !isPath) {
@@ -611,8 +599,7 @@ function analyze(inp: Inputs): Finding[] {
       if (!inp.fileExists(l)) add('hygiene', `"${g.id}" names leaf ${l}, which does not exist.`);
     }
   }
-  // Cycle detection: a cycle is a manifest bug and must fail loudly rather than
-  // deadlock the scheduler at run time.
+  // Cycle detection: a cycle is a manifest bug and must fail loudly rather than deadlock the scheduler at run time.
   const state = new Map<string, number>();
   const stack: string[] = [];
   const visit = (id: string): void => {
@@ -629,10 +616,7 @@ function analyze(inp: Inputs): Finding[] {
   };
   for (const g of inp.gates) visit(g.id);
 
-  // --- 7. Flattened-battery equality --------------------------------------
-  // Without this, flattening run-all.sh would recreate #549 fifty-seven times
-  // over: a new test would run in CI via the battery and never locally, or be
-  // listed locally and silently dropped.
+  // --- 7. Flattened-battery equality -------------------------------------- Without this, flattening run-all.sh would recreate #549 fifty-seven times over: a new test would run in CI via the battery and never locally, or be listed locally and silently dropped.
   const declared = new Set(
     inp.gates.filter((g) => g.qualityGateTest).map((g) => path.posix.basename(g.leaves[0] ?? ''))
   );
@@ -656,9 +640,7 @@ function analyze(inp: Inputs): Finding[] {
   return findings;
 }
 
-// ---------------------------------------------------------------------------
-// CONTROL. Prove the instrument can FIRE before trusting its green.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- CONTROL. Prove the instrument can FIRE before trusting its green. ---------------------------------------------------------------------------
 
 function universeOf(
   byDir: Record<string, Record<string, string>>,
@@ -690,10 +672,7 @@ function control(): void {
     process.exit(1);
   };
 
-  // --- PRE-A0: `python3 -m` resolves to a FILE, both directions --------------
-  // Before this arm every `-m` invocation resolved to the bare token `python3`, so a
-  // `leaves:` naming the real module could never match and the mismatch read as a
-  // registration error rather than a resolver gap.
+  // --- PRE-A0: `python3 -m` resolves to a FILE, both directions -------------- Before this arm every `-m` invocation resolved to the bare token `python3`, so a `leaves:` naming the real module could never match and the mismatch read as a registration error rather than a resolver gap.
   {
     const u = universeOf({ '': {} }, {}, [
       '.ci/rediacc_ci/quality/npmrc.py',
@@ -708,13 +687,11 @@ function control(): void {
     if (leaves('python3 -m rediacc_ci.tests')[0] !== '.ci/rediacc_ci/tests/__main__.py') {
       fail('a package `-m` does not fall through to its __main__.py');
     }
-    // THE ANTI-VACUITY DIRECTION: nothing may resolve to the bare interpreter, which is
-    // the exact symptom this box exists to remove.
+    // THE ANTI-VACUITY DIRECTION: nothing may resolve to the bare interpreter, which is the exact symptom this box exists to remove.
     if (leaves('python3 -m rediacc_ci.quality.npmrc').includes('python3')) {
       fail('`-m` still resolves to the bare `python3` token');
     }
-    // A module nobody tracks is NAMED, not silently swallowed. Reporting it as `python3`
-    // would be the old bug wearing a new coat.
+    // A module nobody tracks is NAMED, not silently swallowed. Reporting it as `python3` would be the old bug wearing a new coat.
     if (leaves('python3 -m no.such.module')[0] !== 'missing-module:no.such.module') {
       fail('an untracked `-m` module is not reported by name');
     }
@@ -733,9 +710,7 @@ function control(): void {
       '        run: npm run check:ci-covered',
       '      - name: Orphan',
       '        run: .ci/scripts/quality/check-planted-orphan.sh',
-      // THE PORTED SHAPE, planted alongside the bash one so the two are judged
-      // by the same run of the same matcher. A W7 P4 cutover turns exactly this
-      // step into exactly this line, and GATE_SHAPED did not match it.
+      // THE PORTED SHAPE, planted alongside the bash one so the two are judged by the same run of the same matcher. A W7 P4 cutover turns exactly this step into exactly this line, and GATE_SHAPED did not match it.
       '      - name: Ported orphan',
       '        run: .ci/scripts/quality/check_planted_ported_orphan.py',
     ].join('\n'),
@@ -796,12 +771,10 @@ function control(): void {
   if (!has('R2', 'check-planted-orphan.sh')) {
     fail('a CI-only shell gate absent from the manifest was NOT reported');
   }
-  // 3. The name-field trap from the plan's section 1.4, both halves. The
-  //    covered gate's step NAME contains `npm run check:ci-planted-chain-only`
+  // 3. The name-field trap from the plan's section 1.4, both halves. The covered gate's step NAME contains `npm run check:ci-planted-chain-only`
   //    while its `run:` invokes check:ci-covered. Leg 1 above is the half that
   //    catches a whole-file matcher (the chain-only gate would look covered);
-  //    this half catches the opposite error, a gate that IS genuinely run being
-  //    reported anyway because its step name confused the resolver.
+  // this half catches the opposite error, a gate that IS genuinely run being reported anyway because its step name confused the resolver.
   if (has('R3', 'check:ci-covered')) {
     fail('a gate whose declared step really runs it was reported as uncovered');
   }
@@ -819,16 +792,13 @@ function control(): void {
     ],
   });
   // NEEDLE-SCOPED, not `rule === 'R2'`: the fixture now plants a SECOND orphan
-  // (the ported one, leg 4b) whose own R2 finding is expected to survive this
-  // exemption. A rule-wide test would read that as a failure to silence.
+  // (the ported one, leg 4b) whose own R2 finding is expected to survive this exemption. A rule-wide test would read that as a failure to silence.
   if (silenced.some((f) => f.message.includes('check-planted-orphan.sh')))
     fail('an exempted CI-only gate was still reported');
 
-  // 4b. THE PORTED HALF OF BOTH, and it is the half that was broken. A cutover
-  //     leaves a `.py` where the `.sh` was, in the workflow step and in the
+  // 4b. THE PORTED HALF OF BOTH, and it is the half that was broken. A cutover leaves a `.py` where the `.sh` was, in the workflow step and in the
   //     package.json value; if either matcher is spelled `.sh` the gate goes
-  //     unjudged and its exemption stops covering its key -- silently, since a
-  //     matcher that stops matching reports nothing at all.
+  // unjudged and its exemption stops covering its key -- silently, since a matcher that stops matching reports nothing at all.
   if (!has('R2', 'check_planted_ported_orphan.py')) {
     fail(
       'a CI-only PORTED gate absent from the manifest was NOT reported: GATE_SHAPED is extension-shaped again'
@@ -848,9 +818,7 @@ function control(): void {
   if (silencedPy.some((f) => f.message.includes('check_planted_ported_orphan.py'))) {
     fail('an exempted CI-only PORTED gate was still reported');
   }
-  // And the exemption must reach the package.json KEY, not just the path: that
-  // is the expansion `endsWith('.sh')` used to gate, and the reason
-  // `check:ci-release-state` reported as unregistered the moment it was ported.
+  // And the exemption must reach the package.json KEY, not just the path: that is the expansion `endsWith('.sh')` used to gate, and the reason `check:ci-release-state` reported as unregistered the moment it was ported.
   const keyed = analyze({
     ...base,
     scripts: universeOf({
@@ -894,9 +862,7 @@ function control(): void {
   console.log('  PASS  `npm run ci` inside a run: block is an error, not coverage');
 }
 
-// ---------------------------------------------------------------------------
-// Disk inputs
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Disk inputs ---------------------------------------------------------------------------
 
 function loadScripts(): ScriptUniverse {
   const byDir = new Map<string, Record<string, string>>();
@@ -986,9 +952,7 @@ function loadGates(): readonly GateSpec[] {
 function main(): void {
   control();
 
-  // --- 1. Preflight, anti-vacuity -----------------------------------------
-  // Each of these makes some assertion below assert nothing, and "measured
-  // nothing" must never read as "found nothing".
+  // --- 1. Preflight, anti-vacuity ----------------------------------------- Each of these makes some assertion below assert nothing, and "measured nothing" must never read as "found nothing".
   const refuse = (why: string): never => {
     console.error(`${RED}✗${NC} Refusing to run: ${why}`);
     process.exit(1);
@@ -1049,10 +1013,7 @@ function main(): void {
     return;
   }
 
-  // Ordered rules first, then anything else. The trailing set is not decoration:
-  // grouping by a fixed list alone would let a rule added later count toward the
-  // exit code while never being printed, which is a finding measured and not
-  // reported -- the same silent-drop class this gate exists to catch.
+  // Ordered rules first, then anything else. The trailing set is not decoration: grouping by a fixed list alone would let a rule added later count toward the exit code while never being printed, which is a finding measured and not reported -- the same silent-drop class this gate exists to catch.
   const order = ['tautology', 'R1', 'R2', 'R3', 'hygiene', 'battery'];
   const rules = [...order, ...new Set(findings.map((f) => f.rule))].filter(
     (r, i, all) => all.indexOf(r) === i

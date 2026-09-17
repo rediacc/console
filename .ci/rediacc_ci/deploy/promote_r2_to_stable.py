@@ -138,12 +138,10 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its four guard messages. A literal, because
-# the bytes must survive the port.
+# The twin's own name, carried in its four guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable.sh"
 
-# `for dir in cli apt rpm apk archlinux` (twin :68). ORDER MATTERS to both the
-# call log and the purge list, which is how this port is proved equivalent.
+# `for dir in cli apt rpm apk archlinux` (twin :68). ORDER MATTERS to both the call log and the purge list, which is how this port is proved equivalent.
 CHANNEL_DIRS = ("cli", "apt", "rpm", "apk", "archlinux")
 
 # `BUCKET="rediacc-releases"` (twin :64) and the public host (twin :168), both
@@ -158,10 +156,7 @@ CC_MUTABLE = "no-cache"
 # module docstring.
 TMP_PREFIX = "/tmp/promote-"
 
-# `META_EXCLUDES` (twin :95-105), flattened to the argv order the twin expands
-# it into. EVERY PAIR AND ITS POSITION IS OBSERVABLE: aws applies include and
-# exclude rules in order with the last match winning, so a reordered list is a
-# different filter even when the set is identical.
+# `META_EXCLUDES` (twin :95-105), flattened to the argv order the twin expands it into. EVERY PAIR AND ITS POSITION IS OBSERVABLE: aws applies include and exclude rules in order with the last match winning, so a reordered list is a different filter even when the set is identical.
 META_EXCLUDES: tuple[str, ...] = (
     "--exclude",
     "Packages*",
@@ -201,21 +196,15 @@ META_EXCLUDES: tuple[str, ...] = (
     "versions.json",
 )
 
-# Phase 2, per directory, as an ORDERED tuple of filter argv fragments (twin
-# :112-158). One fragment is one `aws s3 sync` call, so the length of a
-# directory's tuple is how many phase-2 calls it makes: `apt` and `rpm` make
-# two because their signing metadata hashes their listing metadata, `apk`,
-# `archlinux` and `cli` make one. A directory absent from this table would make
-# none, and none is absent today.
+# Phase 2, per directory, as an ORDERED tuple of filter argv fragments (twin :112-158). One fragment is one `aws s3 sync` call, so the length of a directory's tuple is how many phase-2 calls it makes: `apt` and `rpm` make two because their signing metadata hashes their listing metadata, `apk`, `archlinux` and `cli` make one. A directory absent from this table would make none, and
+# none is absent today.
 PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
-    # 2a: Packages / Packages.gz (hashes of the .deb files phase 1 uploaded).
-    # 2b: Release / InRelease / Release.gpg (hashes of phase 2a).
+    # 2a: Packages / Packages.gz (hashes of the .deb files phase 1 uploaded). 2b: Release / InRelease / Release.gpg (hashes of phase 2a).
     "apt": (
         ("--exclude", "*", "--include", "Packages*"),
         ("--exclude", "*", "--include", "Release*", "--include", "InRelease"),
     ),
-    # 2a: primary / filelists / other (hashed by 2b's repomd).
-    # 2b: repomd.xml + signatures + rediacc.repo (the channel pointer).
+    # 2a: primary / filelists / other (hashed by 2b's repomd). 2b: repomd.xml + signatures + rediacc.repo (the channel pointer).
     "rpm": (
         (
             "--exclude",
@@ -269,8 +258,7 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
 
 # The per-directory channel rewrites (twin :74-92), applied to the LOCAL copy
 # before phase 2. `cli` rewrites two files with two expressions each; `rpm` and
-# `archlinux` rewrite one file with one expression. A directory absent from this
-# table rewrites nothing, which is `apt` and `apk`.
+# `archlinux` rewrite one file with one expression. A directory absent from this table rewrites nothing, which is `apt` and `apk`.
 INSTALL_SED = (
     "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g",
     's|} else { "edge" }|} else { "stable" }|g',
@@ -285,9 +273,7 @@ REWRITES: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
     "archlinux": (("rediacc.conf", (CHANNEL_SED,)),),
 }
 
-# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :180), where SCRIPT_DIR is
-# `.ci/scripts/deploy`. Relative to the repository root so the cutover to
-# `cf_purge_urls.py` is a one-line change in the box that owns it.
+# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :180), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to `cf_purge_urls.py` is a one-line change in the box that owns it.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # The four `${VAR:?msg}` guards (twin :58-61), in order, as (name, message).
@@ -298,8 +284,7 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("EDGE_VERSION", "%s: EDGE_VERSION must be set" % SELF),
 )
 
-# The four facts in the module docstring, as constants so a test can assert each
-# by name instead of restating the sentence.
+# The four facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 PHASE_FILTERED_FILES_ARE_PURGED_BUT_NEVER_UPLOADED = True
 PURGE_LIST_IS_BUILT_FROM_THE_DOWNLOAD = True
 VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = True

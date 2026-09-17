@@ -47,9 +47,7 @@ def gate(request):
         ledger=os.environ.get(harness.LEDGER_ENV),
     )
     yield handle
-    # "failed" as the default when no report was stashed: an item that never
-    # reached its call phase is not evidence of anything, and defaulting to
-    # "passed" would let a collection-time abort satisfy the check below.
+    # "failed" as the default when no report was stashed: an item that never reached its call phase is not evidence of anything, and defaulting to "passed" would let a collection-time abort satisfy the check below.
     if request.node.stash.get(_OUTCOME, "failed") != "passed":
         return
     if not handle.passes:

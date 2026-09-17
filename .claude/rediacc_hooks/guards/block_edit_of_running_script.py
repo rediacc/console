@@ -66,11 +66,7 @@ CHAIN = "pre-edit"
 TWIN = "pre-edit/block-edit-of-running-script.sh"
 ORDER = 7
 
-# HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and dropping the exclusion is not a
-# small over-block: every guard in a chain runs on the call carrying your edit,
-# so the refusal is PERMANENT and no amount of waiting clears it. Its Bash-side
-# sibling cost four blocked commands that way on 2026-08-27, one of them its own
-# repair.
+# HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and dropping the exclusion is not a small over-block: every guard in a chain runs on the call carrying your edit, so the refusal is PERMANENT and no amount of waiting clears it. Its Bash-side sibling cost four blocked commands that way on 2026-08-27, one of them its own repair.
 DEFECT = (
     "if hookio.grep_q(HOOK_CHAIN, rargs):\n            continue",
     "if False:\n            continue",
@@ -79,8 +75,7 @@ DEFECT = (
 HOOK_CHAIN = r"\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/"
 
 # The characters `sed 's/[.[\*^$()+?{}|]/\\&/g'` escapes. Note that inside a
-# POSIX bracket expression a backslash is an ORDINARY character, so `\` is a
-# member of the set rather than an escape.
+# POSIX bracket expression a backslash is an ORDINARY character, so `\` is a member of the set rather than an escape.
 META = r"([.\[\\*^$()+?{}|])"
 
 MESSAGE = """BLOCKED: '%(base)s' is being executed by a live process right now.
@@ -106,17 +101,14 @@ Pick one:
      edit is safe and this guard goes quiet on its own.
 """
 
-# ---------------------------------------------------------------------------
-# The fixture world: two live shells, at deterministic paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The fixture world: two live shells, at deterministic paths ---------------------------------------------------------------------------
 
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-running")
 LIVE_SCRIPT = "%s/long-running-suite.sh" % WORLD
 SIBLING_SCRIPT = "%s/hook-chain-sibling.sh" % WORLD
 IDLE_SCRIPT = "%s/nothing-is-running-this.sh" % WORLD
 
-# The second statement is not decoration. bash EXECs a script's final simple
-# command in place when it can, which would replace the shell with `sleep` --
+# The second statement is not decoration. bash EXECs a script's final simple command in place when it can, which would replace the shell with `sleep` --
 # `ps -o comm=` would then answer `sleep`, the shell test below would reject it,
 # and the fixture would silently stop being a running shell script.
 _BODY = "#!/usr/bin/env bash\nsleep 600\nexit 0\n"
@@ -149,15 +141,12 @@ def _running_world(_unused):
     for path in (LIVE_SCRIPT, SIBLING_SCRIPT, IDLE_SCRIPT):
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(_BODY)
-        # No chmod: the shells below are started as `bash <script>`, so the
-        # execute bit is never consulted, and setting one would only trip the
-        # permissive-mask lint for no behaviour.
+        # No chmod: the shells below are started as `bash <script>`, so the execute bit is never consulted, and setting one would only trip the permissive-mask lint for no behaviour.
     if not _CHILDREN:
         _hold_world_lock(WORLD)
         _kill_stale((LIVE_SCRIPT, SIBLING_SCRIPT))
         _CHILDREN.append(_spawn([LIVE_SCRIPT]))
-        # Launched with an argument that names a chain directory, which is the
-        # only way to reach the sibling exclusion from a controlled world.
+        # Launched with an argument that names a chain directory, which is the only way to reach the sibling exclusion from a controlled world.
         _CHILDREN.append(_spawn([SIBLING_SCRIPT, ".claude/hooks/pre-edit/marker"]))
         atexit.register(_reap)
         _await_visible()
@@ -174,11 +163,7 @@ def _spawn(argv):
     )
 
 
-# One session at a time in this world. TWO pytest runs of this suite were live
-# on this machine at once on 2026-09-06 (a peer agent's and this one's), and
-# they fought: each `_kill_stale` killed the other's shells, and the case that
-# names a running script reported different pids on the two sides of one
-# differential. The world has to sit at a FIXED path -- a static payload names
+# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names
 # it -- so it cannot be made per-process; an advisory lock held for the life of
 # the interpreter makes the second run wait instead.
 _LOCK_FDS = []
@@ -265,8 +250,7 @@ def _await_visible():
 
 
 def _pause():
-    # Deliberately not `time.sleep` at module scope: this is a 10 ms poll, and
-    # naming it once keeps the loop above readable.
+    # Deliberately not `time.sleep` at module scope: this is a 10 ms poll, and naming it once keeps the loop above readable.
     import time  # noqa: PLC0415
 
     time.sleep(0.01)
@@ -286,8 +270,7 @@ EDGE_CASES = [
     # SCOPE: shell scripts only.
     ("a TypeScript file is read into memory", {"tool_input": {"file_path": "packages/cli/a.ts"}}),
     ("a Python file is read into memory", {"tool_input": {"file_path": "a.py"}}),
-    # ESCAPE THE DOTS: `[b].sh` unescaped matches **/bin/bash**, i.e. every bash
-    # process on the machine. Measured on the twin 2026-09-01.
+    # ESCAPE THE DOTS: `[b].sh` unescaped matches **/bin/bash**, i.e. every bash process on the machine. Measured on the twin 2026-09-01.
     ("a one-letter script name", {"tool_input": {"file_path": "b.sh"}}),
     ("no file_path at all", {"tool_input": {"new_string": "x"}}),
 ]
@@ -342,9 +325,7 @@ def live_shells(pat, limit):
     try:
         pids = proc.pgrep_full(pat)
     except (proc.ProcError, re.error):
-        # `pgrep ... 2>/dev/null` in a `$( )`: a pattern pgrep refuses, or a
-        # process table it cannot read, both yield an empty word list and the
-        # loop simply never runs.
+        # `pgrep ... 2>/dev/null` in a `$( )`: a pattern pgrep refuses, or a process table it cannot read, both yield an empty word list and the loop simply never runs.
         pids = []
     running = ""
     for rpid in pids:
@@ -353,8 +334,7 @@ def live_shells(pat, limit):
         rargs = proc.cmdline_tr(rpid)
         if rargs is None:
             rargs = ""
-        # `cut -d' ' -f1-4`: the first four SPACE-delimited fields, with runs of
-        # spaces counting as empty fields exactly as cut reads them.
+        # `cut -d' ' -f1-4`: the first four SPACE-delimited fields, with runs of spaces counting as empty fields exactly as cut reads them.
         first4 = " ".join(rargs.split(" ")[:4])
         if not hookio.grep_q(pat, first4):
             continue

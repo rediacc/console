@@ -185,8 +185,7 @@ describe('backup retention', () => {
 
     await run(['retention', 'shop']);
 
-    // Read back from the server, never printed from local config: what is shown
-    // has to be what is enforced, on the surface that decides what is deleted.
+    // Read back from the server, never printed from local config: what is shown has to be what is enforced, on the surface that decides what is deleted.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       '/account/api/v1/backups/retention?lineage=lin-1'
     );
@@ -206,9 +205,7 @@ describe('backup retention', () => {
     expect(url).toBe('/account/api/v1/backups/retention');
     expect(init.method).toBe('PUT');
     const body = JSON.parse(init.body) as Record<string, unknown>;
-    // THE DEFECT: a flag mapped to the wrong field, or sent as a STRING. Zod
-    // would reject a string, but a mis-mapped field is accepted and silently
-    // changes which snapshots survive.
+    // THE DEFECT: a flag mapped to the wrong field, or sent as a STRING. Zod would reject a string, but a mis-mapped field is accepted and silently changes which snapshots survive.
     expect(body).toEqual({ lineageGuid: 'lin-1', keepLast: 7, keepMonthly: 12 });
   });
 
@@ -216,9 +213,7 @@ describe('backup retention', () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
 
-    // The server REPLACES every knob rather than merging, so a knob-less PUT
-    // would wipe the policy while reading like a no-op. That is data loss by
-    // omission, so it must be refused rather than sent.
+    // The server REPLACES every knob rather than merging, so a knob-less PUT would wipe the policy while reading like a no-op. That is data loss by omission, so it must be refused rather than sent.
     await expect(run(['retention', 'set', 'shop'])).rejects.toThrow();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
@@ -239,8 +234,7 @@ describe('backup retention', () => {
     await run(['retention', 'clear', 'shop']);
 
     const [url, init] = mockAccountServerFetch.mock.calls[0] as [string, { method: string }];
-    // THE DEFECT: an UNSCOPED delete. Without the lineage this clears the
-    // policy for a repository the operator did not name.
+    // THE DEFECT: an UNSCOPED delete. Without the lineage this clears the policy for a repository the operator did not name.
     expect(url).toBe('/account/api/v1/backups/retention?lineage=lin-1');
     expect(init.method).toBe('DELETE');
   });

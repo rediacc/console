@@ -163,10 +163,7 @@ function buildResources(decrypted: FullConfig): NonNullable<RdcConfig['resources
 export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
   const credentials = buildCredentials(decrypted);
 
-  // Spread-if-present throughout (see buildCredentials for why property
-  // existence is load-bearing). Committed top-level sections (account.userEmail,
-  // defaults.universalUser, infra.*) and '/policy' must come back out or the
-  // re-push commits fewer pointers than the server stored.
+  // Spread-if-present throughout (see buildCredentials for why property existence is load-bearing). Committed top-level sections (account.userEmail, defaults.universalUser, infra.*) and '/policy' must come back out or the re-push commits fewer pointers than the server stored.
   const rebuilt = {
     schemaVersion: 3,
     id: decrypted.id,

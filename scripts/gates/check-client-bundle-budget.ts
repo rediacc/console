@@ -112,9 +112,7 @@ function importSpecifiers(source: string): Edge[] {
     out.push({ spec: m[1], dynamic: true });
   // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare
   // side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` --
-  // and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE
-  // whose only three edges are all of that form, so this walk dead-ended there and the
-  // gate reported 451,621 B while the page shipped 576,294 B. Note the two lines above
+  // and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE whose only three edges are all of that form, so this walk dead-ended there and the gate reported 451,621 B while the page shipped 576,294 B. Note the two lines above
   // already use `\s*`; only this one demanded a space.
   for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g))
     out.push({ spec: m[1], dynamic: false });
@@ -386,8 +384,7 @@ function main(): void {
     process.exit(1);
   }
 
-  // The locale universe is @rediacc/locales. A homepage missing for a declared locale is a
-  // hard error: scoring zero for a locale nobody built reads exactly like scoring well.
+  // The locale universe is @rediacc/locales. A homepage missing for a declared locale is a hard error: scoring zero for a locale nobody built reads exactly like scoring well.
   const pages = SITE_LOCALES.map((l) => ({
     locale: l,
     rel: path.join(l, 'index.html'),

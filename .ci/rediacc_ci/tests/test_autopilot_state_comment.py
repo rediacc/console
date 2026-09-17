@@ -166,9 +166,7 @@ def previous_body(
     ).encode()
 
 
-# ---------------------------------------------------------------------------
-# select -- the lookup half of the upsert
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- select -- the lookup half of the upsert ---------------------------------------------------------------------------
 
 
 def comments(*items: dict) -> bytes:
@@ -285,9 +283,7 @@ def test_select_usage() -> None:
         assert b"usage: state-comment.sh select" in stderr
 
 
-# ---------------------------------------------------------------------------
-# render -- the rebuild half
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- render -- the rebuild half ---------------------------------------------------------------------------
 
 
 def test_render_from_nothing_is_the_fresh_comment() -> None:
@@ -342,9 +338,7 @@ def test_every_field_fails_closed_to_its_sentinel() -> None:
     hostile = [
         ("--campaign", "OPEN", b"campaign: none"),
         ("--campaign", "open; rm -rf /", b"campaign: none"),
-        # NOT `model: none`: whitespace is stripped GLOBALLY before the pattern
-        # is applied, so a spaced value becomes a valid identifier rather than
-        # collapsing. The twin's behaviour, pinned rather than tidied.
+        # NOT `model: none`: whitespace is stripped GLOBALLY before the pattern is applied, so a spaced value becomes a valid identifier rather than collapsing. The twin's behaviour, pinned rather than tidied.
         ("--model", "opus 4.5", b"model: opus4.5"),
         ("--model", "-leading-dash", b"model: none"),
         ("--model", "opus/../../etc", b"model: none"),
@@ -474,11 +468,9 @@ def test_the_line_cap_is_locale_dependent_in_the_twin() -> None:
     ledger line caps at a different point depending on how the step was invoked.
     Both are driven; the port resolves the locale the same way bash does."""
     long_ascii = "x" * 500
-    # 404 characters, 405 bytes: over the cap either way, and the two rules cut
-    # it in DIFFERENT places, which is the whole point of driving both.
+    # 404 characters, 405 bytes: over the cap either way, and the two rules cut it in DIFFERENT places, which is the whole point of driving both.
     accented = "a" * 399 + "é" + "tail"
-    # 400 characters, 401 bytes: over the cap in bytes and exactly at it in
-    # characters, so one locale truncates and the other does not touch it.
+    # 400 characters, 401 bytes: over the cap in bytes and exactly at it in characters, so one locale truncates and the other does not touch it.
     boundary = "a" * 399 + "é"
     for locale_name in ("C", "C.utf8"):
         env = {"LC_ALL": locale_name, "LANG": locale_name}
@@ -563,9 +555,7 @@ def test_render_usage() -> None:
     assert code == 0
 
 
-# ---------------------------------------------------------------------------
-# fields -- the read-back half
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- fields -- the read-back half ---------------------------------------------------------------------------
 
 
 def test_fields_reads_the_metadata_line_back() -> None:
@@ -605,9 +595,7 @@ def test_fields_usage() -> None:
     assert b"usage: state-comment.sh fields --body <file>" in stderr
 
 
-# ---------------------------------------------------------------------------
-# dispatch and the awk file-argument arms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- dispatch and the awk file-argument arms ---------------------------------------------------------------------------
 
 
 def test_an_unknown_subcommand_and_no_subcommand_both_refuse() -> None:
@@ -711,9 +699,7 @@ def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
     assert len(twin_err.splitlines()) == 1, "the twin grew a second diagnostic here"
 
 
-# ---------------------------------------------------------------------------
-# pure helpers, driven without a subprocess
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- pure helpers, driven without a subprocess ---------------------------------------------------------------------------
 
 
 def test_pure_helpers_are_exercised_directly() -> None:
@@ -737,8 +723,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
     # Python would have let it through.
     assert sc.normalize_field("last_sig", "deadbeef\n") == "deadbeef", "the newline is stripped"
 
-    # An unknown field name must REFUSE, not pass the value through: the
-    # alternative is a typo that silently disables a validator.
+    # An unknown field name must REFUSE, not pass the value through: the alternative is a typo that silently disables a validator.
     with pytest.raises(common.RefusalError) as caught:
         sc.normalize_field("nonesuch", "x")
     assert caught.value.code == 2

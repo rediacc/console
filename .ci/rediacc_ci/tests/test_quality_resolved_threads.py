@@ -160,8 +160,7 @@ CASES = [
         0,
     ),
     (
-        # A GRAPHQL ERROR IS VALID JSON AND EXITS 0, so an exit-code check alone
-        # would read it as a PR with no threads.
+        # A GRAPHQL ERROR IS VALID JSON AND EXITS 0, so an exit-code check alone would read it as a PR with no threads.
         "a GraphQL error response fails closed",
         json.dumps({"errors": [{"message": "Could not resolve to a Repository"}]}),
         "[]",

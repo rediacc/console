@@ -51,9 +51,7 @@ def port(argv: list[str], **env):
     return diff.bash_streams(cmd, env=diff.env_for(**env))
 
 
-# ---------------------------------------------------------------------------
-# 1. AGREEMENT -- the twin and the port, byte for byte
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. AGREEMENT -- the twin and the port, byte for byte ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
@@ -77,8 +75,7 @@ def _cases(fx: pathlib.Path):
         ),
         ("require-file-present", "require_file %s" % _sh(fa), ["require-file", fa], {}),
         ("require-file-absent", "require_file %s" % _sh(no), ["require-file", no], {}),
-        # `-f` is regular-file-only: a directory refuses with the SAME message,
-        # which is worth pinning because the message says "does not exist".
+        # `-f` is regular-file-only: a directory refuses with the SAME message, which is worth pinning because the message says "does not exist".
         ("require-file-is-a-dir", "require_file %s" % _sh(da), ["require-file", da], {}),
         (
             "require-file-dangling-symlink",
@@ -242,9 +239,7 @@ def test_ci_env_agrees_with_the_twins_exported_variables():
     assert (rc2, out2, err2) == (0, out, "")
 
 
-# ---------------------------------------------------------------------------
-# 2. QUIRKS OF THE TWIN -- driven against the TWIN, red if bash is repaired
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. QUIRKS OF THE TWIN -- driven against the TWIN, red if bash is repaired ---------------------------------------------------------------------------
 
 
 def test_the_twins_require_input_passes_on_an_empty_path_list():
@@ -293,8 +288,7 @@ def test_the_twins_to_upper_eats_its_own_flag():
     NOT reproduced -- see the docstring. Pinned so the absence is a decision.
     """
     rc, out, err = twin("to_upper -n")
-    # NOT even a newline: `echo -n` consumed the flag AND suppressed the newline,
-    # so `tr` had nothing at all to fold. `to_upper ""` at least emits "\n".
+    # NOT even a newline: `echo -n` consumed the flag AND suppressed the newline, so `tr` had nothing at all to fold. `to_upper ""` at least emits "\n".
     assert (rc, out, err) == (0, "", "")
     assert twin('to_upper ""')[1] == "\n"
     assert common.to_upper("-n") == "-N"
@@ -328,9 +322,7 @@ def test_require_submodule_uses_the_literal_ci_not_is_ci():
     assert common.require_submodule("/definitely/nope", "L", {"GITHUB_ACTIONS": "true"}) is False
 
 
-# ---------------------------------------------------------------------------
-# 3. THE DELIBERATE DIVERGENCES, from both sides
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. THE DELIBERATE DIVERGENCES, from both sides ---------------------------------------------------------------------------
 
 
 def test_the_port_refuses_an_empty_require_input_where_the_twin_passes():
@@ -367,9 +359,7 @@ def test_repo_root_cannot_move_the_process(tmp_path, monkeypatch):
     assert pathlib.Path.cwd() == before
 
 
-# ---------------------------------------------------------------------------
-# 4. THE PORT'S OWN UNITS, including the arms bash cannot reach here
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. THE PORT'S OWN UNITS, including the arms bash cannot reach here ---------------------------------------------------------------------------
 
 
 def test_sed_in_place_argv_inserts_the_empty_suffix_only_on_macos():
@@ -477,9 +467,7 @@ def test_refusal_carries_every_line_the_twin_would_print():
     assert caught.value.lines[0].startswith("renet is required in CI but missing:")
 
 
-# ---------------------------------------------------------------------------
-# 5. PLANTED DEFECTS -- proving each control can fire
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. PLANTED DEFECTS -- proving each control can fire ---------------------------------------------------------------------------
 
 
 def test_planted_a_parse_args_that_accepts_a_bad_identifier_is_caught(monkeypatch):
@@ -497,8 +485,7 @@ def test_planted_a_require_input_that_passes_vacuously_is_caught(monkeypatch):
         return real(flag, lead, why, paths_)
 
     monkeypatch.setattr(common, "require_input", vacuous)
-    # The planted version reproduces the twin's bug, and the assertion that
-    # would have caught it is the one in the divergence test above.
+    # The planted version reproduces the twin's bug, and the assertion that would have caught it is the one in the divergence test above.
     assert common.require_input("-f", "missing {}", "why", []) == 0
 
 

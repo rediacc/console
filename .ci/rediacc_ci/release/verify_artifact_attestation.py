@@ -31,9 +31,7 @@ import sys
 SELF = "verify-artifact-attestation.py"
 DIST_DIRS = ("dist/cli", "dist/packages")
 
-# `.ci/rediacc_ci/release/verify_artifact_attestation.py` -> `.ci` -> repo
-# root, exactly as the twin's `get_repo_root()` (`.ci/scripts/lib/../../..`,
-# called from `.ci/scripts/release/`) is the same three levels up.
+# `.ci/rediacc_ci/release/verify_artifact_attestation.py` -> `.ci` -> repo root, exactly as the twin's `get_repo_root()` (`.ci/scripts/lib/../../..`, called from `.ci/scripts/release/`) is the same three levels up.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 

@@ -311,9 +311,7 @@ export function prepareForkCreation(
     };
   }
 
-  // Get the grand GUID for the new fork
-  // If forking a fork, use the same grand
-  // If forking a credential, the credential becomes the grand
+  // Get the grand GUID for the new fork If forking a fork, use the same grand If forking a credential, the credential becomes the grand
   const grandGuid = repositoryData.grandGuid ?? repositoryData.repositoryGuid;
 
   return {

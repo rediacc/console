@@ -148,8 +148,7 @@ from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_rel
 
-# `[[:space:]]` in the C locale, minus the newline, which cannot occur inside a
-# line either implementation looks at.
+# `[[:space:]]` in the C locale, minus the newline, which cannot occur inside a line either implementation looks at.
 _HS = r"[ \t\r\f\v]"
 
 # The defaults, and the environment names that override them. `${VAR:-default}`
@@ -171,30 +170,22 @@ DEFAULT_ALLOWLIST = policy_rel(".profiler-coverage-allowlist")
 DEFAULT_ACTION_DIR = ".github/actions/profiler"
 
 # `${VAR-default}` rather than `${VAR:-default}` ON PURPOSE: a test that sets it
-# to the empty string means "no wrappers at all", which is the control for the
-# wrapper path. `os.environ.get(name, default)` is the same distinction.
+# to the empty string means "no wrappers at all", which is the control for the wrapper path. `os.environ.get(name, default)` is the same distinction.
 DEFAULT_WRAPPER_DIRS = ".github/actions/setup-workspace"
 
 # THE FLOORS ARE THE TWIN'S, CARRIED AT THE SAME VALUES. The tree carries 28
 # workflows / 121 jobs / 97 Linux jobs; anything far under these numbers means
-# the parse found a layout it does not understand, and "all covered" off three
-# jobs is precisely the lie this gate exists to prevent. They are hand-typed in
-# the twin and are NOT re-derived here, because a port that changes a floor
-# changes the verdict and the differential would rule MISMATCH on the tree that
-# proves the new floor right.
+# the parse found a layout it does not understand, and "all covered" off three jobs is precisely the lie this gate exists to prevent. They are hand-typed in the twin and are NOT re-derived here, because a port that changes a floor changes the verdict and the differential would rule MISMATCH on the tree that proves the new floor right.
 DEFAULT_MIN_WORKFLOWS = 10
 DEFAULT_MIN_JOBS = 60
 DEFAULT_MIN_LINUX = 40
 
-# The interval bounds, from the twin's message: below 1 the profiler perturbs
-# the job it measures, above 300 a 15-minute slim job yields under three samples.
+# The interval bounds, from the twin's message: below 1 the profiler perturbs the job it measures, above 300 a 15-minute slim job yields under three samples.
 INTERVAL_MIN = 1
 INTERVAL_MAX = 300
 
 
-# ---------------------------------------------------------------------------
-# Extractors. Each is self-tested below against a planted sample.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Extractors. Each is self-tested below against a planted sample. ---------------------------------------------------------------------------
 
 
 def job_keys(lines: list[str]) -> list[str]:
@@ -440,9 +431,7 @@ def is_linux_label(label: str) -> int:
     return UNKNOWN
 
 
-# ---------------------------------------------------------------------------
-# The inline self-test, which runs on EVERY invocation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The inline self-test, which runs on EVERY invocation ---------------------------------------------------------------------------
 
 SAMPLE = """\
 on:
@@ -512,8 +501,7 @@ def inline_selftest() -> int:
         return _selftest_fail("covering_uses(negative)", covering_uses(caller, SAMPLE_REF), "0")
 
     # LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
-    # docs/agent-reference/TRAPS.md). A shell `sort` compared against a
-    # hand-written literal is locale-dependent by construction. Currently
+    # docs/agent-reference/TRAPS.md). A shell `sort` compared against a hand-written literal is locale-dependent by construction. Currently
     # correct under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned
     # so it stays correct everywhere rather than by luck. `sorted(key=encode)`
     # is that byte sort.
@@ -531,9 +519,7 @@ def inline_selftest() -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# The sweep
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The sweep ---------------------------------------------------------------------------
 
 
 def records(text: str) -> list[str]:
@@ -575,24 +561,20 @@ def main(argv: list[str] | None = None) -> int:
     workflow_dir = os.environ.get(WORKFLOW_DIR_ENV) or DEFAULT_WORKFLOW_DIR
     allowlist_path = os.environ.get(ALLOWLIST_ENV) or DEFAULT_ALLOWLIST
     action_dir = os.environ.get(ACTION_DIR_ENV) or DEFAULT_ACTION_DIR
-    # `read -r -a` splits on IFS whitespace and drops empties, which is what
-    # `.split()` with no argument does.
+    # `read -r -a` splits on IFS whitespace and drops empties, which is what `.split()` with no argument does.
     wrapper_dirs = os.environ.get(WRAPPER_DIRS_ENV, DEFAULT_WRAPPER_DIRS).split()
     extra_covering = (os.environ.get(COVERING_ACTIONS_ENV) or "").split()
     min_workflows = int(os.environ.get(MIN_WORKFLOWS_ENV) or DEFAULT_MIN_WORKFLOWS)
     min_jobs = int(os.environ.get(MIN_JOBS_ENV) or DEFAULT_MIN_JOBS)
     min_linux = int(os.environ.get(MIN_LINUX_ENV) or DEFAULT_MIN_LINUX)
 
-    # The twin `cd`s to the repository root, so every path above is relative to
-    # it and every path PRINTED is relative too.
+    # The twin `cd`s to the repository root, so every path above is relative to it and every path PRINTED is relative too.
     os.chdir(str(root))
 
     if inline_selftest() != 0:
         return 1
 
-    # -- The action contract -------------------------------------------------
-    # Input names come from the real action.yml, never from a list hand-copied
-    # here that would drift the day an input is added.
+    # -- The action contract ------------------------------------------------- Input names come from the real action.yml, never from a list hand-copied here that would drift the day an input is added.
     action_yml = pathlib.Path(action_dir) / "action.yml"
     if not action_yml.is_file():
         log.error("profiler action not found at %s" % action_yml)
@@ -611,11 +593,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # -- The wrapper contract ------------------------------------------------
-    # A composite counts as coverage only once it is SHOWN to reference the
-    # profiler, using the same matcher the job sweep uses, so the day somebody
-    # edits that line out this gate goes red instead of certifying 26 jobs as
-    # profiled.
+    # -- The wrapper contract ------------------------------------------------ A composite counts as coverage only once it is SHOWN to reference the profiler, using the same matcher the job sweep uses, so the day somebody edits that line out this gate goes red instead of certifying 26 jobs as profiled.
     covering_actions: list[str] = []
     for raw_dir in wrapper_dirs:
         if not raw_dir:
@@ -654,9 +632,7 @@ def main(argv: list[str] | None = None) -> int:
         if failures:
             for message in failures:
                 head, _, tail = message.partition("\n")
-                # `ci_error`, not `log.error`: the twin's head line comes from
-                # `verify_all_blockers`, which is `ci_error`. The tail is a plain
-                # `echo` on both sides and stays on stdout.
+                # `ci_error`, not `log.error`: the twin's head line comes from `verify_all_blockers`, which is `ci_error`. The tail is a plain `echo` on both sides and stays on stdout.
                 ci_error(head)
                 if tail:
                     print(tail)
@@ -718,9 +694,7 @@ def main(argv: list[str] | None = None) -> int:
             total_jobs += 1
             block = job_block(lines, job)
 
-            # (b) CONFIGURATION -- checked for every job that uses the action,
-            # on any OS, because a misconfigured profile is wrong wherever it
-            # runs.
+            # (b) CONFIGURATION -- checked for every job that uses the action, on any OS, because a misconfigured profile is wrong wherever it runs.
             for bad in malformed_refs(block, action_ref):
                 if not bad:
                     continue
@@ -849,8 +823,7 @@ def main(argv: list[str] | None = None) -> int:
             required = False
             reason = ""
             if unresolved:
-                # Fail-closed: unresolvable means "we could not prove it is not
-                # Linux", and that must cost a line in the allowlist.
+                # Fail-closed: unresolvable means "we could not prove it is not Linux", and that must cost a line in the allowlist.
                 required = True
                 reason = unresolved
             else:
@@ -922,10 +895,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         failures_count += uncovered
 
-    # -- Verdict (a'): allowlist liveness -------------------------------------
-    # An entry is stale the moment its job disappears, becomes covered, or stops
-    # needing coverage, so this list can only shrink and the rollout cannot leave
-    # paid-down debt sitting in it.
+    # -- Verdict (a'): allowlist liveness ------------------------------------- An entry is stale the moment its job disappears, becomes covered, or stops needing coverage, so this list can only shrink and the rollout cannot leave paid-down debt sitting in it.
     stale = 0
     for key in sorted(allow_entries, key=str.encode):
         kind = known_keys.get(key, "")
@@ -1020,9 +990,7 @@ def _verify_one(entry: str, reason: str, file: str) -> list[str]:
     return [] if rejection is None else [rejection.message]
 
 
-# ---------------------------------------------------------------------------
-# The selftest, which is an ADDITION on top of the inline controls
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The selftest, which is an ADDITION on top of the inline controls ---------------------------------------------------------------------------
 
 _ACTION_YML = """\
 name: profiler
@@ -1049,8 +1017,7 @@ runs:
 
 _GOOD_REASON = "this job runs on a self-hosted box with no writable temp for the sampler"
 
-# The fixture mirrors the tree's own layout so that the `uses:` strings planted
-# in a workflow are the strings the gate resolves. See the note on `build`.
+# The fixture mirrors the tree's own layout so that the `uses:` strings planted in a workflow are the strings the gate resolves. See the note on `build`.
 WF_DIR = ".github/workflows"
 ACT_DIR = ".github/actions/profiler"
 WRAP_DIR = ".github/actions/setup-workspace"
@@ -1146,14 +1113,8 @@ def selftest() -> int:
         base = pathlib.Path(tmp)
         saved_cwd = os.getcwd()
 
-        # THE FIXTURE USES THE REAL PATHS, and the first cut of it did not.
-        # Pointing ACTION_DIR at `action` while every planted workflow still
-        # said `uses: ./.github/actions/profiler` meant the action_ref was
-        # `./action`, nothing matched it, and three controls failed on the
-        # WRAPPER contract before the sweep they were written for ever ran.
-        # A control that fires for the wrong reason is worse than one that does
-        # not fire, so the fixture now mirrors the tree's own layout and the
-        # literal refs in the workflows are the refs the gate resolves.
+        # THE FIXTURE USES THE REAL PATHS, and the first cut of it did not. Pointing ACTION_DIR at `action` while every planted workflow still said `uses: ./.github/actions/profiler` meant the action_ref was `./action`, nothing matched it, and three controls failed on the WRAPPER contract before the sweep they were written for ever ran. A control that fires for the wrong reason is
+        # worse than one that does not fire, so the fixture now mirrors the tree's own layout and the literal refs in the workflows are the refs the gate resolves.
         def build(name: str, workflows: dict[str, str], allow: str | None = None) -> pathlib.Path:
             tree = base / name
             (tree / WF_DIR).mkdir(parents=True, exist_ok=True)
@@ -1331,9 +1292,7 @@ def selftest() -> int:
             1,
         )
 
-        # A WRAPPER THAT NO LONGER CARRIES THE PROFILER must REFUSE rather than
-        # quietly covering every job that calls it. This is the fail-open the
-        # gate exists to prevent, driven for real.
+        # A WRAPPER THAT NO LONGER CARRIES THE PROFILER must REFUSE rather than quietly covering every job that calls it. This is the fail-open the gate exists to prevent, driven for real.
         broken_wrapper = build("broken-wrapper", {"a.yml": _workflow(_profiled_job("build"))})
         (broken_wrapper / WRAP_DIR / "action.yml").write_text(
             "name: setup-workspace\nruns:\n  using: composite\n  steps:\n    - run: echo hi\n",
@@ -1343,8 +1302,7 @@ def selftest() -> int:
             "FAIL-OPEN: a wrapper that stopped using the profiler refuses", run(broken_wrapper), 1
         )
 
-        # ...and the mirror: a job covered ONLY through a verified wrapper is
-        # covered. Without this the wrapper path could be dead code.
+        # ...and the mirror: a job covered ONLY through a verified wrapper is covered. Without this the wrapper path could be dead code.
         wrapped = build(
             "wrapped",
             {

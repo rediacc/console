@@ -51,9 +51,7 @@ RDC_SH = ROOT / "rdc.sh"
 OK_GLYPH = "  \033[0;32m✓\033[0m "
 BAD_GLYPH = "  \033[0;31m✗\033[0m "
 
-# The tail of `rdc.sh`. Anything appended AFTER it is unreachable at runtime and
-# still visible to layer 1's greps, which is how a "sources the env file"
-# finding is planted without breaking the dev path that layer 2 drives.
+# The tail of `rdc.sh`. Anything appended AFTER it is unreachable at runtime and still visible to layer 1's greps, which is how a "sources the env file" finding is planted without breaking the dev path that layer 2 drives.
 EXEC_TAIL = 'exec node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"\n'
 
 
@@ -107,9 +105,7 @@ def assert_same(
     assert new.stderr == old.stderr
 
 
-# ---------------------------------------------------------------------------
-# The green path, on the real tree and on an unmutated fixture
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The green path, on the real tree and on an unmutated fixture ---------------------------------------------------------------------------
 
 
 def test_real_tree_agrees_byte_for_byte() -> None:
@@ -127,14 +123,11 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     old, new = run_both(fixture)
     assert old.returncode == 0, old.stderr
     assert_same(old, new)
-    # The fixture must be a faithful stand-in, or every mutation below is
-    # measuring the fixture rather than the mutation.
+    # The fixture must be a faithful stand-in, or every mutation below is measuring the fixture rather than the mutation.
     assert old.stdout == _run(TWIN, ROOT).stdout
 
 
-# ---------------------------------------------------------------------------
-# Layer 1's four checks, each reached by a real mutation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 1's four checks, each reached by a real mutation ---------------------------------------------------------------------------
 
 
 def test_a_set_a_statement_is_caught(tmp_path: pathlib.Path) -> None:
@@ -214,13 +207,9 @@ def test_a_missing_dev_config_export_is_only_caught_by_layer_two(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Layer 2: the leak the gate exists to catch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Layer 2: the leak the gate exists to catch ---------------------------------------------------------------------------
 
-# `set -a` + `source` of the fixture env file, immediately before the final
-# `exec`, is the exact leak vector the gate's two layers describe. It fires
-# layer 1's first two checks AND puts every sentinel into the CLI environment.
+# `set -a` + `source` of the fixture env file, immediately before the final `exec`, is the exact leak vector the gate's two layers describe. It fires layer 1's first two checks AND puts every sentinel into the CLI environment.
 LEAK_PLANT = 'set -a\nsource "$ROOT_DIR/private/account/.env"\nset +a\n' + EXEC_TAIL
 
 
@@ -245,9 +234,7 @@ def test_a_missing_rdc_sh_is_the_same_refusal_on_both_sides(tmp_path: pathlib.Pa
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, driven against the real tools rather than against a manual
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, driven against the real tools rather than against a manual ---------------------------------------------------------------------------
 
 
 def test_has_set_a_matches_the_real_grep() -> None:
@@ -311,9 +298,7 @@ def test_exported_names_is_deduplicated_and_sorted() -> None:
     assert rdc_sh_env_check.exported_names("export 9BAD=1\n") == ""
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this differential red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this differential red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

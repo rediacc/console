@@ -78,9 +78,7 @@ def test_rejects_dockerfile_pin_drift(gate, tmp_path):
             replaced += 1
         else:
             drifted.append(line)
-    # THE CONTROL ON THE CONTROL. A sed that matched nothing would hand the gate a
-    # byte-identical Dockerfile, and the case would then be asserting that a
-    # CLEAN tree fails -- which is a defect in the test, not in the subject.
+    # THE CONTROL ON THE CONTROL. A sed that matched nothing would hand the gate a byte-identical Dockerfile, and the case would then be asserting that a CLEAN tree fails -- which is a defect in the test, not in the subject.
     if replaced == 0:
         gate.log_fail(
             "no `ARG CRIU_VERSION=` line in %s, so the planted drift was never planted "

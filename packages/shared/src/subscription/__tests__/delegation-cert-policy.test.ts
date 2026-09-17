@@ -146,10 +146,7 @@ describe('computeDelegationCertValidity', () => {
     });
 
     it('throws SubscriptionExpiredForDelegationError when grace has also expired', () => {
-      // Subscription expired 30 days ago, grace period is 3 days, so the cap
-      // is 27 days in the past. Issuing a fresh 1-day cert here would let an
-      // expired subscription mint a cert that outlives the documented hard
-      // cap. The policy must reject outright.
+      // Subscription expired 30 days ago, grace period is 3 days, so the cap is 27 days in the past. Issuing a fresh 1-day cert here would let an expired subscription mint a cert that outlives the documented hard cap. The policy must reject outright.
       expect(() =>
         computeDelegationCertValidity({
           planCode: 'PROFESSIONAL',

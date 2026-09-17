@@ -173,12 +173,8 @@ const main = (): number => {
 
   if (process.argv.slice(2).includes('--write-baseline')) {
     const found = scan(root, tracked(root)).map(key).sort();
-    // REFUSE BEFORE WRITING, through the shared composition guard rather than a
-    // private copy of the rule. An unconditional reseed can drain thirty
-    // findings, absorb one brand-new one, and print a SMALLER number while
-    // doing it -- the shrink-only baseline's whole point defeated by the
-    // command that maintains it. gate-test:shrink-only-composition caught this
-    // file bypassing the guard on the day it was written.
+    // REFUSE BEFORE WRITING, through the shared composition guard rather than a private copy of the rule. An unconditional reseed can drain thirty findings, absorb one brand-new one, and print a SMALLER number while doing it -- the shrink-only baseline's whole point defeated by the command that maintains it. gate-test:shrink-only-composition caught this file bypassing the guard on
+    // the day it was written.
     const verdict = writeBaselineVerdict({
       baselineExists: fs.existsSync(baseFile),
       firstSeedFlag: process.argv.includes('--first-seed'),

@@ -42,8 +42,7 @@ from rediacc_ci.tests import differential as diff
 if TYPE_CHECKING:
     import pathlib
 
-# One worker for the whole module: both implementations write the same fixed
-# `/tmp/cd-artifact-check`, which no lock entry can express.
+# One worker for the whole module: both implementations write the same fixed `/tmp/cd-artifact-check`, which no lock entry can express.
 XDIST_GROUP = "cd-artifact-check"
 
 TWIN = ".ci/scripts/release/assert-artifact-version.sh"
@@ -79,17 +78,10 @@ def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
     missing-tool branch."""
     d = tmp_path / ("bin-no-%s" % drop)
     d.mkdir(exist_ok=True)
-    # EVERY executable on the real PATH is mirrored, not a hand-picked list.
-    # A list is how this helper goes quietly wrong: the first attempt named ten
-    # tools and the twin died at `dirname` on line 39, before `require_cmd` had
-    # run at all, so the case was asserting on a broken harness rather than on
-    # the missing-tool branch. Mirroring everything means the ONLY thing absent
-    # is the one being dropped.
+    # EVERY executable on the real PATH is mirrored, not a hand-picked list. A list is how this helper goes quietly wrong: the first attempt named ten tools and the twin died at `dirname` on line 39, before `require_cmd` had run at all, so the case was asserting on a broken harness rather than on the missing-tool branch. Mirroring everything means the ONLY thing absent is the one
+    # being dropped.
     for entry in os.environ.get("PATH", "").split(os.pathsep):
-        # `/mnt/...` is the Windows drive mount a WSL developer's PATH carries,
-        # ~5400 entries behind a 9p filesystem. Listing them cost 79 SECONDS per
-        # test, measured, and nothing either implementation resolves lives there.
-        # Skipped before the isdir() probe, which is itself a 9p round trip.
+        # `/mnt/...` is the Windows drive mount a WSL developer's PATH carries, ~5400 entries behind a 9p filesystem. Listing them cost 79 SECONDS per test, measured, and nothing either implementation resolves lives there. Skipped before the isdir() probe, which is itself a 9p round trip.
         if not entry or entry.startswith("/mnt/") or not os.path.isdir(entry):
             continue
         for name in os.listdir(entry):

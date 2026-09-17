@@ -150,14 +150,8 @@ test.describe
     });
 
     test('resolve=theirs succeeds on an ordinary fork (unlocks via password) and merges three-way', async () => {
-      // PRIMARY regression for "no keyfile found for the merge lineage": ordinary
-      // forks have no keyfile, so a three-way merge must unlock the lineage with
-      // the repo password. A success here proves that path. The per-file
-      // RESOLUTION correctness (conflict → theirs, one-sided files kept) is
-      // covered deterministically by pkg/repomerge unit tests + the renet btrfs
-      // integration tests + the renet command-level validation — re-reading the
-      // merged mount here is flaky (post-swap remount of a same-ext4-UUID clone
-      // lineage over two-hop SSH), so it is intentionally not asserted.
+      // PRIMARY regression for "no keyfile found for the merge lineage": ordinary forks have no keyfile, so a three-way merge must unlock the lineage with the repo password. A success here proves that path. The per-file RESOLUTION correctness (conflict → theirs, one-sided files kept) is covered deterministically by pkg/repomerge unit tests + the renet btrfs integration tests + the
+      // renet command-level validation — re-reading the merged mount here is flaky (post-swap remount of a same-ext4-UUID clone lineage over two-hop SSH), so it is intentionally not asserted.
       const result = await runner.repositoryMerge(ours, theirs, DS, {
         resolve: 'theirs',
         base,
@@ -213,8 +207,7 @@ test.describe
 
     test('flag-free delta re-push of an existing fork is byte-identical', async () => {
       test.skip(!multiMachine, 'needs two workers');
-      // Modify, then re-push with a delta base but NO --force: regression for the
-      // fork-exists guard blocking a verified delta re-push.
+      // Modify, then re-push with a delta base but NO --force: regression for the fork-exists guard blocking a verified delta re-push.
       await runner.repositoryMount(repo, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `v2-${stamp}`, DS);
       await runner.repositoryUnmount(repo, DS);
@@ -229,8 +222,7 @@ test.describe
 
     test('delta pull --force re-pulls an existing repo, byte-identical', async () => {
       test.skip(!multiMachine, 'needs two workers');
-      // Diverge worker1 locally, then pull worker2's version back over it.
-      // Regression for `pull --force` being a no-op (bridge never forwarded force).
+      // Diverge worker1 locally, then pull worker2's version back over it. Regression for `pull --force` being a no-op (bridge never forwarded force).
       await runner.repositoryMount(repo, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `local-${stamp}`, DS);
       await runner.repositoryUnmount(repo, DS);
@@ -245,11 +237,9 @@ test.describe
 
 test.describe
   .serial('Promote (fork → grand swap) @bridge', () => {
-    // repository_promote had no live dispatch site (allowlist-only). Prove the
-    // swap (spec 03 §5.4: "make a validated fork the production repository under
+    // repository_promote had no live dispatch site (allowlist-only). Prove the swap (spec 03 §5.4: "make a validated fork the production repository under
     // its parent name"; both records must live in the same datastore) with the
-    // delta block's mount-free image-sha technique — remounting the swapped grand
-    // over two-hop SSH is the flaky path this suite deliberately avoids.
+    // delta block's mount-free image-sha technique — remounting the swapped grand over two-hop SSH is the flaky path this suite deliberately avoids.
     let runner: BridgeTestRunner;
     const grand = `promo-grand-${stamp}`;
     const fork = `promo-fork-${stamp}`;
@@ -296,8 +286,7 @@ test.describe
       const promote = await runner.repositoryPromote(grand, fork, DS);
       expect(runner.isSuccess(promote), `promote: ${runner.getCombinedOutput(promote)}`).toBe(true);
 
-      // The grand now carries the FORK's data: its image bytes changed and match
-      // the fork's pre-promote image. Content proof, not exit code alone.
+      // The grand now carries the FORK's data: its image bytes changed and match the fork's pre-promote image. Content proof, not exit code alone.
       const grandAfter = await imageSha(grand);
       expect(grandAfter, 'grand image unchanged after promote').not.toBe(grandBefore);
       expect(grandAfter, 'grand did not take the fork image').toBe(forkBefore);

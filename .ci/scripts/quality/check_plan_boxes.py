@@ -110,12 +110,8 @@ import _cipath  # noqa: F401
 from rediacc_ci import controls, paths
 
 ROOT = Path(os.environ.get("PLAN_BOXES_ROOT") or Path(__file__).resolve().parents[3])
-# The hop onto the Stop hook's directory, through the package's own resolver.
-# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
-# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
-# lives, so the move planned for that program is a one-line change there rather
-# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
-# its own PLAN_BOXES_ROOT override, which the resolver's default root does not read.
+# The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
+# honours its own PLAN_BOXES_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
 try:
@@ -123,11 +119,7 @@ try:
     import wl_planfid as PFID
     import wl_planfile as PF
 except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
-    # NOT a traceback. Importing the Stop hook's parser is this gate's ONLY way of
-    # reading a checkbox (see the docstring), so a tree without .claude/hooks/stop is a
-    # tree this gate cannot judge -- and a crash there reads to a reader, and to the
-    # anti-vacuity harness, as an unrelated bug rather than as blindness. A check that
-    # cannot see must SAY it cannot see.
+    # NOT a traceback. Importing the Stop hook's parser is this gate's ONLY way of reading a checkbox (see the docstring), so a tree without .claude/hooks/stop is a tree this gate cannot judge -- and a crash there reads to a reader, and to the anti-vacuity harness, as an unrelated bug rather than as blindness. A check that cannot see must SAY it cannot see.
     print(
         f"VACUOUS INPUT: cannot import the Stop hook's plan parser from "
         f"{ROOT / '.claude' / 'hooks' / 'stop'} ({_exc}). This gate reads checkboxes "
@@ -141,10 +133,7 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
 LEDGER = ROOT / ".ci" / "config" / "plan-boxes.json"
 PLAN_GLOB = "PLAN-*.md"
 
-# Floors. Measured 2026-09-02: 10 plan files carry boxes out of 70 total, 83 open and 37
-# ticked. The file floor is deliberately well under the total -- it guards against the
-# glob losing the corpus, not against ordinary housekeeping -- and the box floor guards
-# against a parser that silently resolves nothing.
+# Floors. Measured 2026-09-02: 10 plan files carry boxes out of 70 total, 83 open and 37 ticked. The file floor is deliberately well under the total -- it guards against the glob losing the corpus, not against ordinary housekeeping -- and the box floor guards against a parser that silently resolves nothing.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_BOXES_MIN_PLANS", "20"))
 MIN_OPEN_BOXES = int(os.environ.get("PLAN_BOXES_MIN_OPEN", "1"))
 
@@ -171,8 +160,7 @@ def _lifecycle() -> dict:
 ARCHIVE_DIR = _lifecycle().get("archive_dir", "agent/archive/plans")
 
 
-# A path-shaped token: one or more directory components before a dotted
-# basename. Only the basename survives into `loose_sig`.
+# A path-shaped token: one or more directory components before a dotted basename. Only the basename survives into `loose_sig`.
 PATHISH_RE = re.compile(r"(?:[\w.@~-]+/)+([\w.@~-]+\.[A-Za-z0-9]{1,6})")
 
 
@@ -339,18 +327,12 @@ def base_ledger(base: str) -> tuple[dict, str | None]:
     """
     raw = _git("show", f"{base}:{LEDGER.relative_to(ROOT)}")
     if raw is None:
-        # ABSENT IS EXPECTED EXACTLY ONCE: on the branch that introduces the
-        # ledger, the base predates it. Failing here would make the gate
-        # unshippable on its own branch, which is the shape the plan warned
-        # against. It is a SKIP, not a pass -- main() says so in the summary,
-        # so "G-A1..G-A5 did not run" can never read as "G-A1..G-A5 found nothing".
+        # ABSENT IS EXPECTED EXACTLY ONCE: on the branch that introduces the ledger, the base predates it. Failing here would make the gate unshippable on its own branch, which is the shape the plan warned against. It is a SKIP, not a pass -- main() says so in the summary, so "G-A1..G-A5 did not run" can never read as "G-A1..G-A5 found nothing".
         return {}, None
     try:
         return json.loads(raw), None
     except ValueError as exc:
-        # A ledger that EXISTS and does not parse is a different thing entirely:
-        # something is wrong with a file this gate depends on, and skipping would
-        # hide it.
+        # A ledger that EXISTS and does not parse is a different thing entirely: something is wrong with a file this gate depends on, and skipping would hide it.
         return {}, f"the ledger at {base[:9]} does not parse ({exc}); G-A1 is blind"
 
 
@@ -456,11 +438,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
         for bsig in rec["done_sigs"]:
             head_done.setdefault(bsig, rel)
 
-    # THE SECOND CHANCE, and why it reads git rather than the ledger. A box whose
-    # cited file MOVED is re-signed, and to `sig` that is indistinguishable from a
-    # deletion plus an unrelated addition. The ledger cannot answer this -- it
-    # stores signatures, not text -- so the base plan's own bytes are fetched from
-    # git and re-signed loosely. That is the same unforgeable source the base
+    # THE SECOND CHANCE, and why it reads git rather than the ledger. A box whose cited file MOVED is re-signed, and to `sig` that is indistinguishable from a deletion plus an unrelated addition. The ledger cannot answer this -- it stores signatures, not text -- so the base plan's own bytes are fetched from git and re-signed loosely. That is the same unforgeable source the base
     # ledger comes from: a working tree cannot rewrite `git show <base>:<path>`.
     head_loose: set[str] = set()
     for rel in scanned:
@@ -490,38 +468,17 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
     base_plans = ledger.get("plans") or {}
     lifecycle = _lifecycle()
 
-    # THERE IS NO AGE AMNESTY ANY MORE (W12 P2.7a, 2026-09-09). This block used to
-    # compute a `retired` set -- plans older than delete_days that the branch had
-    # deleted -- and exempt them from BOTH G-A1 and G-A5, on the reasoning that the
-    # housekeeping gate DEMANDED their deletion and two gates must not deadlock over
-    # one number. That reasoning expired: `.ci/scripts/quality/check-plan-housekeeping.sh:51`
-    # now says "THE REMEDY IS NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON
-    # PURPOSE", and .ci/config/plan-lifecycle.json calls compaction THE THIRD DOOR.
+    # THERE IS NO AGE AMNESTY ANY MORE (W12 P2.7a, 2026-09-09). This block used to compute a `retired` set -- plans older than delete_days that the branch had deleted -- and exempt them from BOTH G-A1 and G-A5, on the reasoning that the housekeeping gate DEMANDED their deletion and two gates must not deadlock over one number. That reasoning expired:
+    # `.ci/scripts/quality/check-plan-housekeeping.sh:51` now says "THE REMEDY IS NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON PURPOSE", and .ci/config/plan-lifecycle.json calls compaction THE THIRD DOOR.
     #
-    # The doors that remain all PRESERVE the box, so no deadlock survives the change:
-    #   - `worklist.py --plan-compact --park` keeps the plan at its own path and copies
-    #     every box line BYTE-IDENTICALLY (wl_planrec.py's property 2 exists precisely
-    #     so a compaction cannot look like a disappearance). `--park` rather than plain
-    #     `--plan-compact` because `compacted` is in FINISHED_STATES and G-A3 refuses a
+    # The doors that remain all PRESERVE the box, so no deadlock survives the change: - `worklist.py --plan-compact --park` keeps the plan at its own path and copies every box line BYTE-IDENTICALLY (wl_planrec.py's property 2 exists precisely so a compaction cannot look like a disappearance). `--park` rather than plain `--plan-compact` because `compacted` is in FINISHED_STATES and
+    # G-A3 refuses a
     #     finished status over open boxes; `parked` is not, deliberately.
-    #   - `git mv` untouched into the archive, which G-A2 accepts at R100.
-    #   - tick the box, or move it to a live plan.
+    # - `git mv` untouched into the archive, which G-A2 accepts at R100. - tick the box, or move it to a live plan.
     #
-    # WHAT THE AMNESTY WAS COSTING, measured on a real scratch tree before it was
-    # removed: a 41-day-old plan deleted wholesale, carrying one open box that
-    # survived nowhere, exited 0 -- and the success line ASSERTED "21 box(es) open at
-    # <base> all survive at HEAD" when 22 were open and one had just been destroyed.
-    # An instrument that reports work it did not do is the failure this file is for.
-    # ARCHIVING IS A LEGAL HOME AND G-A1 DID NOT KNOW IT, found 2026-09-09 by the
-    # control that replaced the age amnesty. G-A1's own message has always listed
-    # "not archived" among the ways a box may be gone and told the reader to
-    # `git mv` the plan into the archive -- but only G-A5 consulted `archived_ok`,
-    # so doing that reddened G-A1 on any plan the amnesty did not cover. Measured
-    # against the committed file the same day: a YOUNG plan moved into the archive
-    # at R100 reported "is GONE at HEAD ... not archived" while the identical move
-    # on a 999-day-old plan was silent. That is age deciding whether a correct
-    # action is correct, which it never should have. One predicate now, shared, so
-    # the two rules cannot disagree again.
+    # WHAT THE AMNESTY WAS COSTING, measured on a real scratch tree before it was removed: a 41-day-old plan deleted wholesale, carrying one open box that survived nowhere, exited 0 -- and the success line ASSERTED "21 box(es) open at <base> all survive at HEAD" when 22 were open and one had just been destroyed. An instrument that reports work it did not do is the failure this file
+    # is for. ARCHIVING IS A LEGAL HOME AND G-A1 DID NOT KNOW IT, found 2026-09-09 by the control that replaced the age amnesty. G-A1's own message has always listed "not archived" among the ways a box may be gone and told the reader to `git mv` the plan into the archive -- but only G-A5 consulted `archived_ok`, so doing that reddened G-A1 on any plan the amnesty did not cover.
+    # Measured against the committed file the same day: a YOUNG plan moved into the archive at R100 reported "is GONE at HEAD ... not archived" while the identical move on a 999-day-old plan was silent. That is age deciding whether a correct action is correct, which it never should have. One predicate now, shared, so the two rules cannot disagree again.
     def _archived(rel: str) -> bool:
         return any(a.endswith("/" + rel.rsplit("/", 1)[-1]) for a in archived_ok)
 
@@ -530,9 +487,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
         archived_here = rel not in scanned and _archived(rel)
         for bsig in rec.get("open_sigs") or []:
             compared += 1
-            # Counted as compared and as SURVIVING: an R100 rename means the box
-            # line is byte-identical in agent/archive/plans/, and G-A2 keeps that
-            # directory append-only, so it is findable rather than gone.
+            # Counted as compared and as SURVIVING: an R100 rename means the box line is byte-identical in agent/archive/plans/, and G-A2 keeps that directory append-only, so it is findable rather than gone.
             if archived_here:
                 continue
             if bsig in head_open or bsig in head_done:
@@ -549,8 +504,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
                 f"untouched into {ARCHIVE_DIR}/ ({where} that plan)"
             )
 
-    # G-A5: a plan may NEVER be deleted wholesale while deleting it loses a box.
-    # Age is reported for context and grants nothing. If every box it held survives
+    # G-A5: a plan may NEVER be deleted wholesale while deleting it loses a box. Age is reported for context and grants nothing. If every box it held survives
     # in another plan, the file is a husk and removing it costs nothing; firing
     # there would punish exactly the tidying this whole check wants.
     for rel in sorted(set(base_plans) - set(scanned)):
@@ -583,8 +537,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
             f"{ARCHIVE_DIR}/, or compact it. Deleting it does not finish the work, it hides it"
         )
 
-    # G-A3/A4 are properties of HEAD alone, but only for plans this branch touched --
-    # judging a plan the branch never opened would be a demand about somebody
+    # G-A3/A4 are properties of HEAD alone, but only for plans this branch touched -- judging a plan the branch never opened would be a demand about somebody
     # else's file.
     touched = _touched_plans(base)
     for rel in sorted(touched & set(scanned)):
@@ -652,11 +605,7 @@ def selftest() -> int:
     if not ok:
         bad += 1
 
-    # A MOVED citation is a re-spelling, not a new task. `sig` must NOT absorb it
-    # -- the base ledger is keyed by `sig` and re-keying it would make every
-    # historical box look deleted -- so the tolerance lives in `loose_sig`, and
-    # both halves of that split are asserted here. The pair is the real
-    # 2026-09-09 case: `scripts/` -> `scripts/gates/`.
+    # A MOVED citation is a re-spelling, not a new task. `sig` must NOT absorb it -- the base ledger is keyed by `sig` and re-keying it would make every historical box look deleted -- so the tolerance lives in `loose_sig`, and both halves of that split are asserted here. The pair is the real 2026-09-09 case: `scripts/` -> `scripts/gates/`.
     was = "Write `scripts/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change"
     now = was.replace("scripts/", "scripts/gates/")
     ok = loose_sig(was) == loose_sig(now)
@@ -673,8 +622,7 @@ def selftest() -> int:
     if not ok:
         bad += 1
 
-    # ... and the other control, because stripping directories could have collapsed
-    # the basename too, which would make every box about a different file one box.
+    # ... and the other control, because stripping directories could have collapsed the basename too, which would make every box about a different file one box.
     d1 = loose_sig(
         "Write `scripts/gates/check-alpha.ts` with the six floors and eight selftest plants"
     )
@@ -689,12 +637,8 @@ def selftest() -> int:
     if not ok:
         bad += 1
 
-    # ---- G-A1..G-A5, the transition rules ---------------------------------------
-    # These are the assertions most able to go silently vacuous: they compare two
-    # trees, and a comparison that resolves to nothing looks exactly like a
-    # comparison that found nothing wrong. Each rule is planted, and each plant
-    # has a pair proving the legitimate path is NOT reported -- a gate that reds
-    # on ticking a box teaches sessions not to tick boxes.
+    # ---- G-A1..G-A5, the transition rules --------------------------------------- These are the assertions most able to go silently vacuous: they compare two trees, and a comparison that resolves to nothing looks exactly like a comparison that found nothing wrong. Each rule is planted, and each plant has a pair proving the legitimate path is NOT reported -- a gate that reds on
+    # ticking a box teaches sessions not to tick boxes.
     def tp(base_plans, head, **kw):
         """transition_problems with git and the lifecycle stubbed out."""
         saved = {
@@ -774,10 +718,7 @@ def selftest() -> int:
             bad += 1
             print(f"        got {got}")
 
-    # G-A5 IS NEVER-DELETE (W12 P2.7a). Age no longer buys anything, so the pair is
-    # no longer young-vs-aged: it is "the box is lost" vs "the box survives". The
-    # 41-day case is spelled out on its own because it is the exact shape that
-    # PASSED before this rule changed, and the aged message must name COMPACTION.
+    # G-A5 IS NEVER-DELETE (W12 P2.7a). Age no longer buys anything, so the pair is no longer young-vs-aged: it is "the box is lost" vs "the box survives". The 41-day case is spelled out on its own because it is the exact shape that PASSED before this rule changed, and the aged message must name COMPACTION.
     delete_days = _lifecycle()["delete_days"]
     young = tp({"agent/PLAN-a.md": open_row}, {}, age=1)
     ok = any("was DELETED, losing" in g for g in young)
@@ -794,8 +735,7 @@ def selftest() -> int:
     if not ok:
         bad += 1
         print(f"        got {aged}")
-    # The 41 must be past the shared window, or the case above is not the case it
-    # claims to be and would keep passing if delete_days were raised.
+    # The 41 must be past the shared window, or the case above is not the case it claims to be and would keep passing if delete_days were raised.
     ok = delete_days < 41
     print(
         f"  {'PASS' if ok else 'FAIL'}  G-A5 PRECONDITION: 41 is past delete_days "
@@ -812,8 +752,7 @@ def selftest() -> int:
     if not ok:
         bad += 1
 
-    # G-A1 had the same amnesty and lost it too: the vanished signature must now be
-    # reported for an aged plan, which is the half a reader would not think to check.
+    # G-A1 had the same amnesty and lost it too: the vanished signature must now be reported for an aged plan, which is the half a reader would not think to check.
     ok = any("is GONE at HEAD" in g for g in aged)
     print(
         f"  {'PASS' if ok else 'FAIL'}  G-A1: an aged plan's vanished box is reported too "
@@ -822,8 +761,7 @@ def selftest() -> int:
     if not ok:
         bad += 1
 
-    # THE THREE DOORS, each a control that must NOT fire. Without these the rule
-    # above would red on exactly the tidying it wants.
+    # THE THREE DOORS, each a control that must NOT fire. Without these the rule above would red on exactly the tidying it wants.
     a5_pairs = [
         (
             "G-A5 CONTROL: an aged HUSK -- every box survives elsewhere -- is silent",
@@ -851,11 +789,7 @@ def selftest() -> int:
             bad += 1
             print(f"        got {got}")
 
-    # AGE MUST NOT DECIDE WHETHER A CORRECT ACTION IS CORRECT. Before 2026-09-09 the
-    # YOUNG half of this pair reported "is GONE at HEAD ... not archived" on a plan
-    # that had just been archived exactly as the message demands. Both halves are
-    # asserted, because a control that only exercises the aged half would have gone
-    # green over the bug it exists to catch.
+    # AGE MUST NOT DECIDE WHETHER A CORRECT ACTION IS CORRECT. Before 2026-09-09 the YOUNG half of this pair reported "is GONE at HEAD ... not archived" on a plan that had just been archived exactly as the message demands. Both halves are asserted, because a control that only exercises the aged half would have gone green over the bug it exists to catch.
     for age in (1, 999):
         got = tp(
             {"agent/PLAN-a.md": open_row},
@@ -871,8 +805,7 @@ def selftest() -> int:
             bad += 1
             print(f"        got {got}")
 
-    # G-A3: a finished status over open boxes. The pair matters -- a status the
-    # advisory still admits must NOT be reported, or every live plan reds.
+    # G-A3: a finished status over open boxes. The pair matters -- a status the advisory still admits must NOT be reported, or every live plan reds.
     fin = next(iter(FINISHED))
     got = tp({}, {"agent/PLAN-a.md": dict(open_row, status=fin)})
     ok = any("switches the check off" in g for g in got)
@@ -885,8 +818,7 @@ def selftest() -> int:
     )
     if got:
         bad += 1
-    # And the plan this branch never TOUCHED is not judged -- demanding a header
-    # change in somebody else's file is how a gate gets routed around.
+    # And the plan this branch never TOUCHED is not judged -- demanding a header change in somebody else's file is how a gate gets routed around.
     got = tp({}, {"agent/PLAN-a.md": dict(open_row, status=fin)}, touched=set())
     print(f"  {'PASS' if got == [] else 'FAIL'}  G-A3 CONTROL: an untouched plan is not judged")
     if got:
@@ -1010,9 +942,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     problems = diff_problems(scanned, ledger)
-    # G-A1..G-A5. Only once G-A0 agrees: comparing a base ledger against a head tree the
-    # head ledger does not describe would report the ledger's own staleness as a
-    # vanished box, which blames the wrong thing.
+    # G-A1..G-A5. Only once G-A0 agrees: comparing a base ledger against a head tree the head ledger does not describe would report the ledger's own staleness as a vanished box, which blames the wrong thing.
     compared = 0
     base = None if problems else base_ref()
     if base:

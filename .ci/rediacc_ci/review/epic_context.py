@@ -114,8 +114,7 @@ def main(argv: list[str]) -> int:
             path = pathlib.Path(repo_root) / f
             if path.is_file():
                 print(f"--- {f} (first 40 lines) ---")
-                # Byte-for-byte `head -40`: write raw text, not `print()`, so a
-                # file missing its final trailing newline is not given one.
+                # Byte-for-byte `head -40`: write raw text, not `print()`, so a file missing its final trailing newline is not given one.
                 with path.open("r", encoding="utf-8") as fh:
                     for _ in range(40):
                         chunk = fh.readline()

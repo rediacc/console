@@ -125,19 +125,13 @@ RUNNER_NAME = "index.ts"
 VERSION_RE = re.compile(r"CURRENT_SCHEMA_VERSION = [0-9]+")
 TRAILING_DIGITS_RE = re.compile(r"[0-9]+$")
 
-# `find "$FIXTURES_DIR" -maxdepth 1 -name 'v*-sample.json'`, as a glob. maxdepth 1
-# means the directory itself and its immediate children, and a directory cannot
-# match the name pattern, so this is exactly the non-recursive glob.
+# `find "$FIXTURES_DIR" -maxdepth 1 -name 'v*-sample.json'`, as a glob. maxdepth 1 means the directory itself and its immediate children, and a directory cannot match the name pattern, so this is exactly the non-recursive glob.
 FIXTURE_GLOB = "v*-sample.json"
 
-# The scratch file the round-trip runs from. INSIDE packages/cli, because the
-# generated script resolves `src/__tests__/fixtures/config` relative to its own
-# working directory. See the port notes for the dirty-tree consequence.
+# The scratch file the round-trip runs from. INSIDE packages/cli, because the generated script resolves `src/__tests__/fixtures/config` relative to its own working directory. See the port notes for the dirty-tree consequence.
 TMP_SCRIPT_NAME = ".config-migrations-check.tmp.ts"
 
-# The generated tsx program, byte for byte from the twin's quoted heredoc. It is
-# a QUOTED heredoc (`<<'TSX'`), so nothing in it is expanded by the shell and
-# nothing here is interpolated either.
+# The generated tsx program, byte for byte from the twin's quoted heredoc. It is a QUOTED heredoc (`<<'TSX'`), so nothing in it is expanded by the shell and nothing here is interpolated either.
 TSX_SOURCE = """import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { runMigrations, RdcConfigSchema } from '@rediacc/shared/config-schema';
@@ -266,13 +260,9 @@ def main(argv: list[str] | None = None) -> int:
     # Extract CURRENT_SCHEMA_VERSION from the runner.
     versions = current_versions(runner.read_text(encoding="utf-8", errors="replace"))
     if not versions:
-        # SILENT EXIT 1. The twin's `log_error "Could not parse ..."` is
-        # unreachable: errexit kills the assignment before the `if`. See the port
-        # notes for the measurement. Reproduced rather than repaired.
+        # SILENT EXIT 1. The twin's `log_error "Could not parse ..."` is unreachable: errexit kills the assignment before the `if`. See the port notes for the measurement. Reproduced rather than repaired.
         return 1
-    # Bash fails the arithmetic `for` with its own diagnostic and carries on with
-    # the loop body never having run, so more than one declaration means NO coverage
-    # loop at all. See the port notes for why the diagnostic itself is not reproduced.
+    # Bash fails the arithmetic `for` with its own diagnostic and carries on with the loop body never having run, so more than one declaration means NO coverage loop at all. See the port notes for why the diagnostic itself is not reproduced.
     current = None if len(versions) > 1 else int(versions[0])
 
     log.info("CURRENT_SCHEMA_VERSION = %s" % "\n".join(versions))
@@ -299,8 +289,7 @@ def main(argv: list[str] | None = None) -> int:
         if not fixtures:
             log.warn("No v*-sample.json fixtures in %s (skipping round-trip)" % fixtures_dir)
         else:
-            # Use a tsx script to run the actual TypeScript runner -- keeps the
-            # check from re-implementing migration logic.
+            # Use a tsx script to run the actual TypeScript runner -- keeps the check from re-implementing migration logic.
             cli_dir = repo_root / "packages" / "cli"
             tmp_script = cli_dir / TMP_SCRIPT_NAME
             try:
@@ -309,8 +298,7 @@ def main(argv: list[str] | None = None) -> int:
                     ["npx", "--no-install", "tsx", tmp_script.name],
                     cwd=str(cli_dir),
                     stdout=subprocess.PIPE,
-                    # `2>&1`, inside the child. See the port notes: the merge is
-                    # load-bearing here rather than accidental.
+                    # `2>&1`, inside the child. See the port notes: the merge is load-bearing here rather than accidental.
                     stderr=subprocess.STDOUT,
                     text=True,
                     check=False,
@@ -326,9 +314,7 @@ def main(argv: list[str] | None = None) -> int:
                     for line in result.split("\n"):
                         log.info("  %s" % line)
             finally:
-                # `trap 'rm -f "$tmpscript"' EXIT`. A `finally` rather than an
-                # atexit hook, so the file is gone before the caller sees the
-                # verdict and a crash in the reporting below cannot leave it.
+                # `trap 'rm -f "$tmpscript"' EXIT`. A `finally` rather than an atexit hook, so the file is gone before the caller sees the verdict and a crash in the reporting below cannot leave it.
                 with contextlib.suppress(OSError):
                     tmp_script.unlink()
 
@@ -397,8 +383,7 @@ def selftest() -> int:
         (r / MIGRATIONS_REL / RUNNER_NAME).unlink()
         ctl.check("VACUITY: a missing runner is refused", run(), 1)
 
-        # THE DEAD-CODE PATH. A runner with no constant exits 1 and says NOTHING.
-        # Asserted as a named control so the silence is a decision on the record.
+        # THE DEAD-CODE PATH. A runner with no constant exits 1 and says NOTHING. Asserted as a named control so the silence is a decision on the record.
         r = fresh()
         (r / MIGRATIONS_REL / RUNNER_NAME).write_text("export const OTHER = 3;\n", encoding="utf-8")
         ctl.check("PRESERVED DEFECT: an unparseable version exits 1 SILENTLY", run(), 1)
@@ -413,16 +398,13 @@ def selftest() -> int:
         r = fresh(current=4, migrations=())
         ctl.check("PLANT: three missing files are caught", run(), 1)
 
-        # MIRROR: version 1 needs NO migration files at all, so the loop being
-        # empty is a PASS and not a vacuity hole. This is the boundary the range
-        # gets wrong if someone writes `range(1, current + 1)`.
+        # MIRROR: version 1 needs NO migration files at all, so the loop being empty is a PASS and not a vacuity hole. This is the boundary the range gets wrong if someone writes `range(1, current + 1)`.
         r = fresh(current=1, migrations=())
         ctl.check("MIRROR: CURRENT=1 needs no migrations and passes", run(), 0)
         r = fresh(current=2, migrations=(1,))
         ctl.check("MIRROR: CURRENT=2 needs exactly v1-to-v2", run(), 0)
 
-        # MIRROR: an EXTRA migration beyond the current version is not a finding.
-        # The gate checks coverage, not tidiness.
+        # MIRROR: an EXTRA migration beyond the current version is not a finding. The gate checks coverage, not tidiness.
         r = fresh(current=3, migrations=(1, 2, 3, 4))
         ctl.check("MIRROR: migrations beyond CURRENT are not reported", run(), 0)
 
@@ -485,11 +467,7 @@ def selftest() -> int:
         (fx / "notes.md").write_text("x", encoding="utf-8")
         (fx / "sample.json").write_text("{}", encoding="utf-8")
         # BYTE ORDER, MEASURED AGAINST `LC_ALL=C find | sort`, NOT GUESSED. `-`
-        # is 0x2D and `0` is 0x30, so `v1-sample.json` sorts BEFORE
-        # `v10-sample.json`, which in turn sorts before `v2-sample.json`. This
-        # assertion was written the other way round on the first draft and the
-        # control caught it, which is the whole reason a numeric-looking sort
-        # gets a named case rather than a comment.
+        # is 0x2D and `0` is 0x30, so `v1-sample.json` sorts BEFORE `v10-sample.json`, which in turn sorts before `v2-sample.json`. This assertion was written the other way round on the first draft and the control caught it, which is the whole reason a numeric-looking sort gets a named case rather than a comment.
         ctl.check(
             "fixtures: only v*-sample.json, in byte order, so v1- precedes v10- precedes v2-",
             [pathlib.Path(p).name for p in fixture_files(fx)],
@@ -504,10 +482,7 @@ def selftest() -> int:
             3,
         )
 
-        # THE VACUITY HOLE, named so it cannot be mistaken for a passing tree: a
-        # complete chain with NO fixtures at all still exits 0, having
-        # round-tripped nothing. The warning is visible, which is the only thing
-        # that makes carrying this defensible.
+        # THE VACUITY HOLE, named so it cannot be mistaken for a passing tree: a complete chain with NO fixtures at all still exits 0, having round-tripped nothing. The warning is visible, which is the only thing that makes carrying this defensible.
         r = fresh()
         (r / FIXTURES_REL).mkdir(parents=True, exist_ok=True)
         ctl.check("PRESERVED DEFECT: zero fixtures is a WARNING, not a failure", run(), 0)

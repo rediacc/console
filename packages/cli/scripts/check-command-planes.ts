@@ -72,8 +72,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(__dirname, '../src');
 
-// Must patch Commander BEFORE the CLI module registers anything, so the imports
-// below are dynamic on purpose: a static import would be hoisted above this call.
+// Must patch Commander BEFORE the CLI module registers anything, so the imports below are dynamic on purpose: a static import would be hoisted above this call.
 const registeredIn = instrumentRegistration(SRC);
 
 const { cli } = await import('../src/cli.js');

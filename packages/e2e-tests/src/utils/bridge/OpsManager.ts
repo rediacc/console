@@ -123,13 +123,9 @@ export class OpsManager extends BaseOpsManager {
     for (const ip of workerIPs) {
       console.warn(`  Initializing datastore on ${ip}...`);
 
-      // Initialize the base BTRFS datastore pool via the `renet datastore init`
-      // CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE
+      // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE
       // function (only named-datastore verbs — datastore_create/attach/... — are
-      // registered now), so the old `functions once --function datastore_init`
-      // path fails with "no command builder registered". The CLI command (needs
-      // root for the BTRFS mount, like `sudo renet setup` above) is the surviving
-      // way to lay down /mnt/rediacc.
+      // registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup` above) is the surviving way to lay down /mnt/rediacc.
       const result = await this.executeOnVM(
         ip,
         `sudo renet datastore init --path ${datastorePath} --size ${size} --force`,

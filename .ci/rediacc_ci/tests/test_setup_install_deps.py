@@ -57,10 +57,7 @@ TWIN_REL = ".ci/scripts/setup/install-deps.sh"
 PORT_REL = ".ci/rediacc_ci/setup/install_deps.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The files a fixture tree needs: the twin, the bash library it sources, and the
-# Python modules the port imports transitively. Listed explicitly rather than
-# copied with a wildcard, so a new dependency appears here as an edit instead of
-# being dragged in silently.
+# The files a fixture tree needs: the twin, the bash library it sources, and the Python modules the port imports transitively. Listed explicitly rather than copied with a wildcard, so a new dependency appears here as an edit instead of being dragged in silently.
 TREE_FILES = (
     TWIN_REL,
     ".ci/scripts/lib/common.sh",
@@ -74,8 +71,7 @@ TREE_FILES = (
     PORT_REL,
 )
 
-# `common.sh` needs `dirname` at source time and `uname`/`tr` inside the
-# detection helpers it runs there. `sleep` and `uname` are the two fakes.
+# `common.sh` needs `dirname` at source time and `uname`/`tr` inside the detection helpers it runs there. `sleep` and `uname` are the two fakes.
 PATH_MINIMUM = ("dirname", "tr")
 
 FAKE_NPM = """#!{python}
@@ -102,16 +98,13 @@ if os.environ.get("FAKE_NPM_FAIL_IN") == where:
 sys.exit(rc)
 """
 
-# Records the delay and returns instantly. `$1` is bash's integer, printed
-# unchanged so it can be compared against the port's `%g`-formatted float.
+# Records the delay and returns instantly. `$1` is bash's integer, printed unchanged so it can be compared against the port's `%g`-formatted float.
 FAKE_SLEEP = """#!/bin/sh
 printf 'sleep\\t%s\\n' "$1" >> "$FAKE_CALL_LOG"
 """
 
 # `-s` is the only question `detect_os` asks; everything else is handed to the
-# real binary so `detect_arch`'s `uname -m` still answers truthfully on both
-# sides. NOT logged: OS detection is a query, not an effect, and logging it
-# would need a matching hook on the Python side for no gain.
+# real binary so `detect_arch`'s `uname -m` still answers truthfully on both sides. NOT logged: OS detection is a query, not an effect, and logging it would need a matching hook on the Python side for no gain.
 FAKE_UNAME = """#!/bin/sh
 if [ "$1" = "-s" ]; then
     printf '%s\\n' "${{FAKE_UNAME_S:-Linux}}"
@@ -120,10 +113,7 @@ fi
 exec {real} "$@"
 """
 
-# The Python half of the sleep and uname fakes. Imported by `site` at
-# interpreter startup, which is EARLIER than any `rediacc_ci` import -- required,
-# because `proc.retry_with_backoff` captures `time.sleep` as a default argument
-# when `proc` is imported.
+# The Python half of the sleep and uname fakes. Imported by `site` at interpreter startup, which is EARLIER than any `rediacc_ci` import -- required, because `proc.retry_with_backoff` captures `time.sleep` as a default argument when `proc` is imported.
 SITECUSTOMIZE = '''"""Test harness only. Fakes the two primitives bash reaches through PATH."""
 
 import os
@@ -266,9 +256,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 ACCOUNT_ALL = ("private/account", "private/account/web", "private/account/e2e")
 
 
-# ---------------------------------------------------------------------------
-# The default path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The default path ---------------------------------------------------------------------------
 
 
 def test_the_bare_run_is_one_npm_ci_at_the_root(tmp_path: pathlib.Path) -> None:
@@ -323,9 +311,7 @@ def test_an_unrecognised_flag_is_ignored_in_silence(tmp_path: pathlib.Path) -> N
     _assert_agree(old, new, "typo", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# Failure paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure paths ---------------------------------------------------------------------------
 
 
 def test_a_failing_npm_retries_three_times_on_the_10_20_schedule(
@@ -397,9 +383,7 @@ def test_npm_succeeding_without_node_modules_is_refused(tmp_path: pathlib.Path) 
     _assert_agree(old, new, "no-node-modules", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The account trees
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The account trees ---------------------------------------------------------------------------
 
 
 def test_all_three_account_trees_are_installed_in_order(tmp_path: pathlib.Path) -> None:
@@ -523,9 +507,7 @@ def test_a_failing_account_install_names_the_directory(tmp_path: pathlib.Path) -
     _assert_agree(old, new, "account-fails", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The vacuity case
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The vacuity case ---------------------------------------------------------------------------
 
 
 def test_both_halves_switched_off_still_reports_npm_install_complete(
@@ -565,9 +547,7 @@ def test_account_only_with_no_submodule_also_installs_nothing(
     _assert_agree(old, new, "account-only-no-submodule", old_calls, new_calls)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_parse_args_honours_every_occurrence_and_ignores_the_rest() -> None:

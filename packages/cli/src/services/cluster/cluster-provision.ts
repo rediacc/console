@@ -142,8 +142,7 @@ async function provisionCloud(
   await executor.init({ debug });
   await executor.apply({ debug });
 
-  // Widen to `| undefined` so the per-member lookup below is legitimately
-  // guarded (a missing output means tofu produced no IP for that member).
+  // Widen to `| undefined` so the per-member lookup below is legitimately guarded (a missing output means tofu produced no IP for that member).
   const outputs: Record<string, { value: unknown } | undefined> = await executor.getOutputs();
   const members: ResolvedMember[] = [];
   for (const pool of cluster.pools) {
@@ -221,11 +220,8 @@ async function installCeph(
     `Cluster "${clusterName}": installing Ceph on ${members.length} member(s) as "${CEPH_CLUSTER_NAME}"...`
   );
 
-  // Idempotency: the ops provisioning phase (`renet ops up`) may already have
-  // bootstrapped ceph on the ceph-role VMs (mon + /etc/ceph/ceph.conf + OSDs).
-  // Re-running ceph_bootstrap then fails hard ("ceph.conf already exists"). If a
-  // mon already answers, SKIP prerequisites + bootstrap + cluster_create and only
-  // converge the application pool (idempotent). BUG #4: double-bootstrap collision.
+  // Idempotency: the ops provisioning phase (`renet ops up`) may already have bootstrapped ceph on the ceph-role VMs (mon + /etc/ceph/ceph.conf + OSDs). Re-running ceph_bootstrap then fails hard ("ceph.conf already exists"). If a mon already answers, SKIP prerequisites + bootstrap + cluster_create and only converge the application pool (idempotent). BUG #4: double-bootstrap
+  // collision.
   const alreadyUp = await cephIsBootstrapped(first.name, debug);
   if (alreadyUp) {
     outputService.info(
@@ -265,9 +261,7 @@ async function installCeph(
   // 4. Create the application pool (pg_num omitted — let renet default it).
   const pool = cluster.ceph?.pool ?? DEFAULTS.CEPH.POOL;
   const poolParams: Record<string, unknown> = { pool, cluster: CEPH_CLUSTER_NAME };
-  // Small/test topologies (<3 OSDs) cannot satisfy the Ceph default size 3 —
-  // the pool would sit active+undersized+degraded (HEALTH_WARN) forever. When
-  // the cluster's own ceph spec has fewer than 3 OSDs, ask for size 2 / min_size
+  // Small/test topologies (<3 OSDs) cannot satisfy the Ceph default size 3 — the pool would sit active+undersized+degraded (HEALTH_WARN) forever. When the cluster's own ceph spec has fewer than 3 OSDs, ask for size 2 / min_size
   // 1 so the pool is active+clean. A production topology (>=3 OSDs) passes
   // nothing and keeps Ceph's defaults untouched (finding #9; P2 gate ruling:
   // never change the product default).
@@ -275,11 +269,7 @@ async function installCeph(
   if (osdCount > 0 && osdCount < 3) {
     poolParams.size = 2;
     poolParams.min_size = 1;
-    // pg_num 32 for <3-OSD topologies (finding #17 belt-and-suspenders): the
-    // default 128 pg × size on 2 OSDs, on top of the ops-phase pool, can exceed
-    // mon_max_pg_per_osd (250) and make `osd pool create` hard-fail with ERANGE
-    // before autoscaling shrinks the pools. 32 pg (ceph's own small-cluster
-    // target) keeps the budget well under the cap regardless of timing.
+    // pg_num 32 for <3-OSD topologies (finding #17 belt-and-suspenders): the default 128 pg × size on 2 OSDs, on top of the ops-phase pool, can exceed mon_max_pg_per_osd (250) and make `osd pool create` hard-fail with ERANGE before autoscaling shrinks the pools. 32 pg (ceph's own small-cluster target) keeps the budget well under the cap regardless of timing.
     poolParams.pg_num = 32;
     outputService.info(
       `  small ceph topology (${osdCount} OSD(s)): creating pool "${pool}" at size 2/min_size 1, pg_num 32.`
@@ -358,8 +348,7 @@ async function installComponents(
   );
   if (cephPools.length > 0) {
     await installCeph(clusterName, cephPools, cluster, options.debug);
-    // Before k8s bring-up: give the k8s nodes ceph client access so the control
-    // node can create the rbd ds-control and peers can attach fork clones.
+    // Before k8s bring-up: give the k8s nodes ceph client access so the control node can create the rbd ds-control and peers can attach fork clones.
     if (k8sPools.length > 0) {
       await distributeCephClientConfig(clusterName, cephPools, k8sPools, options.debug);
     }
@@ -457,9 +446,7 @@ export async function createCluster(
   const cluster = await getCluster(clusterName);
   const sshUser = options.sshUser ?? DEFAULTS.CLOUD.SSH_USER;
 
-  // Slots are claimed per machine at the first repo issuance, so a cluster
-  // whose node count exceeds the ceiling provisions fine and then fails one
-  // repo at a time, after the VMs exist. Ask before spending anything.
+  // Slots are claimed per machine at the first repo issuance, so a cluster whose node count exceeds the ceiling provisions fine and then fails one repo at a time, after the VMs exist. Ask before spending anything.
   await assertMachineSlotsAvailable({
     machineCount: cluster.pools.reduce((total, pool) => total + pool.count, 0),
   });
@@ -468,8 +455,7 @@ export async function createCluster(
   if (isKvmProvider(cluster.provider)) {
     const provisioned = await provisionKvmCluster(clusterName, cluster);
     members = provisioned.members;
-    // Persist the id allocation before anything else can fail: destroy and scale
-    // address these VMs by id, so losing it strands them.
+    // Persist the id allocation before anything else can fail: destroy and scale address these VMs by id, so losing it strands them.
     await configService.updateCluster(clusterName, {
       kvm: provisioned.kvm,
     });
@@ -556,8 +542,7 @@ export async function destroyCluster(
   const startTime = Date.now();
   const cluster = await getCluster(clusterName);
 
-  // Remove DNS before the machines (removeClusterDnsRecords reads the control
-  // node's infra, which disappears with the machine records).
+  // Remove DNS before the machines (removeClusterDnsRecords reads the control node's infra, which disappears with the machine records).
   await removeControlNodeDns(clusterName, cluster);
   await teardownInfra(clusterName, cluster, options);
   await removeClusterMachines(clusterName, cluster);
@@ -612,8 +597,7 @@ export async function scaleCluster(
     );
   }
 
-  // Materialize new member machine records before joining (scale-up), or leave
-  // records for the operator to prune after draining (scale-down).
+  // Materialize new member machine records before joining (scale-up), or leave records for the operator to prune after draining (scale-down).
   if (targetCount > currentCount) {
     // Only the added nodes cost slots; the existing ones already hold theirs.
     await assertMachineSlotsAvailable({ machineCount: targetCount - currentCount });

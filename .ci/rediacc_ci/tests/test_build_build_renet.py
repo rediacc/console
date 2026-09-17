@@ -97,9 +97,7 @@ PATH_MINIMUM = (
     "basename",
 )
 
-# A minimal but REAL-SHAPED lockfile. Three components across both classes, and
-# `zot` covers only amd64, so the per-arch dimension is not uniform: a port that
-# assumed every component had every arch would produce five rows here, not six.
+# A minimal but REAL-SHAPED lockfile. Three components across both classes, and `zot` covers only amd64, so the per-arch dimension is not uniform: a port that assumed every component had every arch would produce five rows here, not six.
 LOCKFILE = """{
   "schemaVersion": 1,
   "components": {
@@ -128,8 +126,7 @@ LOCKFILE = """{
 }
 """
 
-# `$FAKE_STAGE_SKIP` withholds one asset from the staged tree, which is how the
-# `no staged .zst` warning and the completeness refusal are reached.
+# `$FAKE_STAGE_SKIP` withholds one asset from the staged tree, which is how the `no staged .zst` warning and the completeness refusal are reached.
 FAKE_BUILD_SH = """#!/bin/bash
 {
     printf 'FAKEBIN build.sh'
@@ -202,8 +199,7 @@ esac
 exit 0
 """
 
-# `zstd -d -f -q <src> -o <dst>`: decompresses to a NEW path and leaves the
-# input alone, which is the opposite of the `--rm` form the sibling script uses.
+# `zstd -d -f -q <src> -o <dst>`: decompresses to a NEW path and leaves the input alone, which is the opposite of the `--rm` form the sibling script uses.
 FAKE_ZSTD = """#!/bin/bash
 {
     printf 'FAKEBIN zstd'
@@ -253,10 +249,7 @@ if [[ -n "$out" ]]; then printf 'GOBIN %s %s\\n' "${GOOS:-}" "${GOARCH:-}" >"$ou
 exit 0
 """
 
-# `file(1)`. The description is deliberately longer than 80 bytes so the
-# `head -c 80` truncation on the windows arm is exercised rather than assumed.
-# `$FAKE_FILE_NOTSTRIPPED` names the basenames that should look like debug
-# builds.
+# `file(1)`. The description is deliberately longer than 80 bytes so the `head -c 80` truncation on the windows arm is exercised rather than assumed. `$FAKE_FILE_NOTSTRIPPED` names the basenames that should look like debug builds.
 FAKE_FILE = """#!/bin/bash
 {
     printf 'FAKEBIN file'
@@ -465,9 +458,7 @@ def _calls(log: str, tool: str) -> list[list[str]]:
     return [ln.split("\t") for ln in log.splitlines() if ln.startswith(prefix)]
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker_go_or_zstd(tmp_path) -> None:
@@ -492,9 +483,7 @@ def test_the_ls_mask_hides_only_the_timestamp() -> None:
     assert _mask(a) != _mask(d), "a mode change must survive the mask"
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
 
 
 def test_help_prints_the_usage_on_stdout_and_exits_zero(tmp_path) -> None:
@@ -549,9 +538,7 @@ def test_a_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
         _agree(old_t, new_t, "unbound-%s" % flag)
 
 
-# ---------------------------------------------------------------------------
-# The success paths
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The success paths ---------------------------------------------------------------------------
 
 
 def test_skip_embed_builds_six_binaries_and_touches_no_asset(tmp_path) -> None:
@@ -779,9 +766,7 @@ def test_the_staged_class_search_takes_base_before_cluster(tmp_path) -> None:
     _agree(old_t, new_t, "class-order")
 
 
-# ---------------------------------------------------------------------------
-# Refusals
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 
 def test_missing_jq_zstd_or_go_refuses_through_require_cmd(tmp_path) -> None:
@@ -895,9 +880,7 @@ def test_a_failing_docker_create_stops_with_dockers_status(tmp_path) -> None:
     _agree(old_t, new_t, "create-fails")
 
 
-# ---------------------------------------------------------------------------
-# The defects, each driven rather than asserted from a reading
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The defects, each driven rather than asserted from a reading ---------------------------------------------------------------------------
 
 
 def test_defect_a_missing_file_reports_every_binary_as_stripped(tmp_path) -> None:
@@ -995,9 +978,7 @@ def test_defect_no_staged_assets_at_all_is_a_raw_ls_error(tmp_path) -> None:
     _agree(old_t, new_t, "no-staged-assets")
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, both directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, both directions ---------------------------------------------------------------------------
 
 
 def test_parse_args_is_exercised_directly_in_both_directions() -> None:
@@ -1048,16 +1029,13 @@ def test_bash_glob_reproduces_both_of_the_shell_behaviours(tmp_path) -> None:
     (tmp_path / "a" / "renet-dir").mkdir()
     # Must fire: sorted, and only the matches.
     assert port.bash_glob("renet-*", tmp_path / "a") == ["renet-a", "renet-dir", "renet-x"]
-    # Must NOT fire: with no match the PATTERN is passed through literally, and
-    # that is precisely what turns `:86` into DEFECT 4.
+    # Must NOT fire: with no match the PATTERN is passed through literally, and that is precisely what turns `:86` into DEFECT 4.
     assert port.bash_glob("nothing-*", tmp_path / "a") == ["nothing-*"]
     # A trailing slash matches DIRECTORIES ONLY and keeps the slash.
     assert port.bash_glob("%s/a/renet-*/" % tmp_path) == ["%s/a/renet-dir/" % tmp_path]
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:

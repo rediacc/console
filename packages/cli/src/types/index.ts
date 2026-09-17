@@ -1,5 +1,4 @@
-// CLI-specific types — re-exports from the v2 Zod schema plus
-// non-config-shape enums/interfaces that remain hand-written.
+// CLI-specific types — re-exports from the v2 Zod schema plus non-config-shape enums/interfaces that remain hand-written.
 
 import type { PlatformKey } from '../utils/platform.js';
 
@@ -84,10 +83,7 @@ export const EXIT_CODES = {
   PAYMENT_REQUIRED: 8,
   RATE_LIMITED: 9,
   // 10 (LICENSE_REQUIRED) is the renet precedent; it lives with the recovery
-  // framework (services/renet/renet-license-contract.ts) and is propagated
-  // verbatim, never remapped, so it is intentionally not duplicated here.
-  // 11-15 are the P4 refusal classes (spec/03 §1), one per class the redesign
-  // introduces. 130 is the SIGINT convention (128+2) for a detached follow.
+  // framework (services/renet/renet-license-contract.ts) and is propagated verbatim, never remapped, so it is intentionally not duplicated here. 11-15 are the P4 refusal classes (spec/03 §1), one per class the redesign introduces. 130 is the SIGINT convention (128+2) for a detached follow.
   AMBIGUOUS: 11,
   STATE_MISMATCH: 12,
   HEALTH_GATE_FAILED: 13,

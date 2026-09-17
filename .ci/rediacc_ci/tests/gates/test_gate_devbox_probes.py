@@ -33,12 +33,10 @@ BASH_TWIN = ".ci/scripts/test/gates/test-devbox-probes.sh"
 
 LIB = paths.from_root(".ci", "lib", "devbox.sh")
 
-# The four functions the twin lifts. Named here so a rename fails LOUDLY at the
-# extraction rather than silently reducing what is exercised.
+# The four functions the twin lifts. Named here so a rename fails LOUDLY at the extraction rather than silently reducing what is exercised.
 WANTED = ("devbox_exec", "devbox_mount_ok", "devbox_identity_ok", "devbox_writable_ok")
 
-# A stand-in for the whole library surface the probes touch, so the fixtures
-# decide what "the container" answers.
+# A stand-in for the whole library surface the probes touch, so the fixtures decide what "the container" answers.
 STUB = """
 log_error() { echo "error: $*" >&2; }
 log_info()  { echo "info: $*"; }

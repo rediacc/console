@@ -126,16 +126,13 @@ from rediacc_ci.controls import Controls
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
 SPACE = r"[ \t\n\v\f\r]"
 
-# `grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'`: only scripts that would DIE
-# on a non-zero status. See the port notes for the `set -o errexit` blind spot.
+# `grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'`: only scripts that would DIE on a non-zero status. See the port notes for the `set -o errexit` blind spot.
 SET_E_RE = re.compile(r"^%s*set%s+-[a-z]*e" % (SPACE, SPACE))
 
 # The shell corpus: `--include='*.sh'`, with the twin itself removed by exact
 # filename. node_modules and .git USED TO BE LISTED HERE as the path substrings
 # `/node_modules/` and `/.git/`; they now come from `paths.walk_tree`, which
-# prunes them for every gate in this package rather than for the ones that
-# remembered. Empty rather than deleted, because the JS corpus below still has a
-# prune of its own and one parameter is clearer than two code paths.
+# prunes them for every gate in this package rather than for the ones that remembered. Empty rather than deleted, because the JS corpus below still has a prune of its own and one parameter is clearer than two code paths.
 SH_SUFFIXES = (".sh",)
 SH_PRUNE: tuple[str, ...] = ()
 SELF_NAME = "check-agent-browser-exit.sh"
@@ -144,17 +141,14 @@ SELF_NAME = "check-agent-browser-exit.sh"
 # --include='*.ts'`, with `dist` pruned. `dist` is on this list and not on the
 # shell one, exactly as in the twin. A directory NAME now, not the path substring
 # `/dist/`, because that is what `walk_tree`'s `exclude_dirs` takes; the two agree
-# on every path (the substring only ever matched a whole component) and the name
-# form is pruned before the subtree is entered rather than after it is read.
+# on every path (the substring only ever matched a whole component) and the name form is pruned before the subtree is entered rather than after it is read.
 JS_SUFFIXES = (".js", ".mjs", ".cjs", ".ts")
 JS_PRUNE = ("dist",)
 
-# The needle both corpora are built from, and the second half of the shell half's
-# line test. `agent-browser` then, later on the same line, `open`.
+# The needle both corpora are built from, and the second half of the shell half's line test. `agent-browser` then, later on the same line, `open`.
 NEEDLE = "agent-browser"
 
-# The throwing execs. A file that runs agent-browser through one of these and
-# never mentions `.stdout` has thrown away the only evidence there was.
+# The throwing execs. A file that runs agent-browser through one of these and never mentions `.stdout` has thrown away the only evidence there was.
 THROWING_EXECS = ("execSync(", "execFileSync(")
 
 # The recovery marker. Its PRESENCE ANYWHERE IN THE FILE clears the whole file,
@@ -208,8 +202,7 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
             try:
                 text = pathlib.Path(full).read_text(encoding="utf-8", errors="replace")
             except OSError:
-                # grep prints an error to the stderr the twin sends to /dev/null
-                # and lists nothing. An unreadable file is not a finding.
+                # grep prints an error to the stderr the twin sends to /dev/null and lists nothing. An unreadable file is not a finding.
                 continue
             if NEEDLE in text:
                 out.append(full)
@@ -238,16 +231,10 @@ def scan(root: str) -> list[str]:
     hits: list[str] = []
     for path in _corpus(root, SH_SUFFIXES, SH_PRUNE):
         if SELF_NAME in path:
-            # THIS FILE IS EXCLUDED, and that is not a loophole. It carries the
-            # pattern in its own fixtures and in its own error text, so a
-            # detector that reads itself reports five findings that are prose.
-            # This repo's trap log calls the class out by name. The exclusion is
-            # by exact path, so no other script can hide behind it.
+            # THIS FILE IS EXCLUDED, and that is not a loophole. It carries the pattern in its own fixtures and in its own error text, so a detector that reads itself reports five findings that are prose. This repo's trap log calls the class out by name. The exclusion is by exact path, so no other script can hide behind it.
             continue
         text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
-        # Only scripts that would DIE on a non-zero status. grep sees the whole
-        # file, including a final line with no newline, so this test reads the
-        # raw text rather than `_read_lines`.
+        # Only scripts that would DIE on a non-zero status. grep sees the whole file, including a final line with no newline, so this test reads the raw text rather than `_read_lines`.
         if not any(SET_E_RE.search(line) for line in text.split("\n")):
             continue
         for number, line in enumerate(_read_lines(text), start=1):
@@ -257,13 +244,10 @@ def scan(root: str) -> list[str]:
             # A comment is prose, not a call.
             if _strip_leading(line).startswith("#"):
                 continue
-            # Status already neutralised or consumed by a conditional. Matched
-            # against the RAW line, exactly as the shell `case` does.
+            # Status already neutralised or consumed by a conditional. Matched against the RAW line, exactly as the shell `case` does.
             if "|| true" in line or "|| :" in line or "||true" in line:
                 continue
-            # `*'if '*'agent-browser'*` is "an `if ` somewhere BEFORE an
-            # occurrence of the needle", so the LAST occurrence is the one that
-            # gives the pattern its best chance, not the first.
+            # `*'if '*'agent-browser'*` is "an `if ` somewhere BEFORE an occurrence of the needle", so the LAST occurrence is the one that gives the pattern its best chance, not the first.
             if_at = line.find("if ")
             if (if_at >= 0 and line.rfind(NEEDLE) >= if_at + 3) or "&&" in line:
                 continue
@@ -285,8 +269,7 @@ def scan_js(root: str) -> list[str]:
     hits: list[str] = []
     for path in _corpus(root, JS_SUFFIXES, JS_PRUNE):
         text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
-        # The recovery is present: this file reads the child's stdout on the
-        # throw path.
+        # The recovery is present: this file reads the child's stdout on the throw path.
         if RECOVERY in text:
             continue
         for number, line in enumerate(_read_lines(text), start=1):
@@ -302,8 +285,7 @@ def scan_js(root: str) -> list[str]:
     return hits
 
 
-# The two blocks of advice, kept as heredocs were: one string each, printed to
-# stderr under the finding they belong to. Reworded advice is allowed by the
+# The two blocks of advice, kept as heredocs were: one string each, printed to stderr under the finding they belong to. Reworded advice is allowed by the
 # differential; these are not reworded, because the JS snippet is the fix and a
 # paraphrase of a fix is not a fix.
 JS_ADVICE = """
@@ -363,8 +345,7 @@ def inline_controls() -> int:
 
         # A directory that does not exist. The twin drives this and throws the
         # result away (`>/dev/null 2>&1 || true`), so it asserts nothing; it is
-        # carried because deleting it would be a change to the twin's behaviour
-        # under an unrelated port, and it is reported as dead code instead.
+        # carried because deleting it would be a change to the twin's behaviour under an unrelated port, and it is reported as dead code instead.
         scan(str(ctl / "bad.sh_dir"))
 
         one = ctl / "one"
@@ -389,8 +370,7 @@ def inline_controls() -> int:
         print("  PASS  control: an unguarded call under set -e is reported")
         print("  PASS  control: a guarded call, and one outside set -e, are not")
 
-        # The JS half gets its own controls, for the same reason the shell half
-        # does.
+        # The JS half gets its own controls, for the same reason the shell half does.
         js = ctl / "js"
         shutil.rmtree(js, ignore_errors=True)
         js.mkdir(parents=True, exist_ok=True)
@@ -447,8 +427,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- the real scan ---------------------------------------------------
     #
-    # THE JS HALF RUNS FIRST AND EXITS. A tree carrying both defects reports only
-    # the JavaScript one. That is the twin's control flow, preserved.
+    # THE JS HALF RUNS FIRST AND EXITS. A tree carrying both defects reports only the JavaScript one. That is the twin's control flow, preserved.
     js_out = scan_js(root)
     if js_out:
         print(
@@ -462,8 +441,7 @@ def main(argv: list[str] | None = None) -> int:
 
     out = scan(root)
     if not out:
-        # STDOUT, deliberately: the twin's green verdict is a bare `echo`, not a
-        # log_info, so it lands on stdout while every finding lands on stderr.
+        # STDOUT, deliberately: the twin's green verdict is a bare `echo`, not a log_info, so it lands on stdout while every finding lands on stderr.
         print(
             "✓ No shell script, and no JS/TS caller, lets `agent-browser`'s "
             "exit status decide control flow."
@@ -480,8 +458,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# The three shell fixtures the twin's own controls use, plus the shapes it does
-# NOT have a control for. Each is a property, and a case with no property is a
+# The three shell fixtures the twin's own controls use, plus the shapes it does NOT have a control for. Each is a property, and a case with no property is a
 # case that will be deleted the first time someone tidies this file.
 _BAD_SH = '#!/usr/bin/env bash\nset -euo pipefail\nagent-browser open "$URL" >/dev/null 2>&1\n'
 
@@ -610,10 +587,7 @@ def selftest() -> int:
             [],
         )
 
-        # THE PRESERVED DEFECTS. These two assert the twin's behaviour, not the
-        # behaviour anyone would design. They are controls so that a later
-        # "cleanup" has to delete an assertion with a name on it rather than
-        # quietly widening the gate.
+        # THE PRESERVED DEFECTS. These two assert the twin's behaviour, not the behaviour anyone would design. They are controls so that a later "cleanup" has to delete an assertion with a name on it rather than quietly widening the gate.
         ctl.check(
             "PRESERVED DEFECT: `cd x && agent-browser open` is SKIPPED though it still dies",
             sh("g.sh", "set -e", 'cd "$d" && agent-browser open "$U" >/dev/null'),
@@ -625,8 +599,7 @@ def selftest() -> int:
             [],
         )
 
-        # THE LAST-LINE DEFECT, asserted directly because it is the one a reader
-        # is most likely to call a bug in the port rather than in the twin.
+        # THE LAST-LINE DEFECT, asserted directly because it is the one a reader is most likely to call a bug in the port rather than in the twin.
         box = root / "nonl"
         shutil.rmtree(box, ignore_errors=True)
         box.mkdir(parents=True)
@@ -692,11 +665,7 @@ def selftest() -> int:
 
         # -- VACUITY, in both halves ----------------------------------------
         #
-        # An empty corpus produces no findings, and that is CORRECT here rather
-        # than a hole: `scan` is a predicate over a directory the caller chose,
-        # and the twin drives it against a non-existent one in its own controls.
-        # The anti-vacuity property that matters lives in `inline_controls`,
-        # which refuses to let the gate proceed unless a planted defect fires.
+        # An empty corpus produces no findings, and that is CORRECT here rather than a hole: `scan` is a predicate over a directory the caller chose, and the twin drives it against a non-existent one in its own controls. The anti-vacuity property that matters lives in `inline_controls`, which refuses to let the gate proceed unless a planted defect fires.
         empty = root / "empty"
         empty.mkdir(exist_ok=True)
         ctl.check("VACUITY: an empty directory yields nothing", scan(str(empty)), [])
@@ -708,10 +677,7 @@ def selftest() -> int:
             [],
         )
 
-        # THE CONTROLS THEMSELVES MUST BE ABLE TO PASS. Driving them here is what
-        # proves the block main() runs before every real scan is not itself
-        # broken -- a control battery that always returned 1 would make this gate
-        # unusable, and one that always returned 0 would make it decorative.
+        # THE CONTROLS THEMSELVES MUST BE ABLE TO PASS. Driving them here is what proves the block main() runs before every real scan is not itself broken -- a control battery that always returned 1 would make this gate unusable, and one that always returned 0 would make it decorative.
         ctl.check("the twin's inline controls pass", inline_controls(), 0)
 
         # And the plant they are built from must really be a plant.

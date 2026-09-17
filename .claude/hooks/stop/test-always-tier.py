@@ -28,9 +28,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 CHECKS = HERE / "wl_checks.py"
 
-# ---------------------------------------------------------------------------
-# THE PINNED INVARIANT SET. A key belongs here iff it satisfies I1, I2 or I3 in
-# wl_checks.py's tier comment. Adding one is a deliberate act with an argument
+# --------------------------------------------------------------------------- THE PINNED INVARIANT SET. A key belongs here iff it satisfies I1, I2 or I3 in wl_checks.py's tier comment. Adding one is a deliberate act with an argument
 # attached; the corollary there (an I1-only check should move its latch to
 # display time instead of being promoted) is why this set is not longer.
 ALWAYS_KEYS = frozenset(
@@ -51,11 +49,7 @@ ALWAYS_KEYS = frozenset(
         "unblocked-claim",
         "pending-ask",
         "ci-red",
-        # "Review Complete" red while everything else is clean: silence here
-        # reads identically to a genuinely reviewed, unresolved-thread-free
-        # head, which is the exact ambiguity CI_NONBLOCKING_CONTEXTS created
-        # by design for ci_classify -- this check exists specifically to
-        # un-hide it, so it cannot itself be left to rotate away.
+        # "Review Complete" red while everything else is clean: silence here reads identically to a genuinely reviewed, unresolved-thread-free head, which is the exact ambiguity CI_NONBLOCKING_CONTEXTS created by design for ci_classify -- this check exists specifically to un-hide it, so it cannot itself be left to rotate away.
         "review-red",
         "ladder-investigate",
         "ladder-gone",
@@ -75,10 +69,7 @@ ALWAYS_KEYS = frozenset(
     }
 )
 
-# Keys built at runtime (`"agent-pushback:%s" % name`, the per-slug checklist
-# keys from wl_checklist._ckey) or passed through from another module, so the
-# AST sees no literal. Named here so assertion 3 stays honest about them
-# instead of quietly ignoring every non-literal call.
+# Keys built at runtime (`"agent-pushback:%s" % name`, the per-slug checklist keys from wl_checklist._ckey) or passed through from another module, so the AST sees no literal. Named here so assertion 3 stays honest about them instead of quietly ignoring every non-literal call.
 DYNAMIC_KEYS = frozenset(
     {
         "agent-pushback",
@@ -89,8 +80,7 @@ DYNAMIC_KEYS = frozenset(
     }
 )
 
-# Checks deliberately left at T_HYGIENE. Pinned for the same reason the ladder
-# is: hygiene must be a DECISION, not what a check inherits by being forgotten.
+# Checks deliberately left at T_HYGIENE. Pinned for the same reason the ladder is: hygiene must be a DECISION, not what a check inherits by being forgotten.
 HYGIENE_KEYS = frozenset(
     {
         "sweep-moment",
@@ -183,8 +173,7 @@ def main():
             % (sorted(got - ALWAYS_KEYS) or "(none)", sorted(ALWAYS_KEYS - got) or "(none)")
         )
 
-    # 2. Every ladder key is a key some vadd can really produce. THIS is the
-    #    assertion that catches a promotion that never took effect.
+    # 2. Every ladder key is a key some vadd can really produce. THIS is the assertion that catches a promotion that never took effect.
     laddered = set()
     for _tier, keys in wl_checks.PRIORITY_LADDER:
         laddered |= set(keys)
@@ -195,8 +184,7 @@ def main():
             "  unreachable and they silently sit at T_HYGIENE: %s" % (len(ghosts), ghosts)
         )
 
-    # 3. Every check is CLASSIFIED -- laddered or pinned as hygiene. A new check
-    #    must be placed on purpose rather than default into the bottom tier.
+    # 3. Every check is CLASSIFIED -- laddered or pinned as hygiene. A new check must be placed on purpose rather than default into the bottom tier.
     unclassified = sorted(seen - laddered - HYGIENE_KEYS)
     if unclassified:
         fails.append(
@@ -204,14 +192,13 @@ def main():
             "  so they default to T_HYGIENE by accident: %s" % unclassified
         )
 
-    # 4. Every invariant is at least T_INTEGRITY. A check that cannot be rotated
-    #    away but sorts below docs drift in the collapse is a contradiction.
+    # 4. Every invariant is at least T_INTEGRITY. A check that cannot be rotated away but sorts below docs drift in the collapse is a contradiction.
     misplaced = sorted(k for k in ALWAYS_KEYS if wl_checks.check_tier(k) > wl_checks.T_INTEGRITY)
     if misplaced:
         fails.append("invariants sitting below T_INTEGRITY on the ladder: %s" % misplaced)
 
     # 5. THE CONTROL FOR THE CONTROL. The parser must actually find things; a
-    #    green run over an empty key set proves nothing at all.
+    # green run over an empty key set proves nothing at all.
     if len(seen) < 40 or not always_keys(tree):
         fails.append(
             "the AST scan found only %d vadd key(s) and %d always -- the parser is\n"

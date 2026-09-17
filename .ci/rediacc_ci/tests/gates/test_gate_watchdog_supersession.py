@@ -62,8 +62,7 @@ process.stdout.write(v.superseded ? "superseded" : "normal");
 
 def subject(gate):
     # The four lines this used to hold were byte-identical in three watchdog gate tests;
-    # they live in `harness` now. See harness.watchdog_subject for why this one is
-    # extractable where an assertion message is not.
+    # they live in `harness` now. See harness.watchdog_subject for why this one is extractable where an assertion message is not.
     return harness.watchdog_subject(gate, WATCHDOG)
 
 

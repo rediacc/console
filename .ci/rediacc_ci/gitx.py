@@ -122,9 +122,7 @@ import re
 
 from rediacc_ci import proc
 
-# Verbatim from .claude/hooks/stop/wl_git.py:84-89. Each one closes a way git can
-# decide to wait for a human:
-#   GIT_EDITOR / GIT_SEQUENCE_EDITOR  a rebase or commit that wants a message
+# Verbatim from .claude/hooks/stop/wl_git.py:84-89. Each one closes a way git can decide to wait for a human: GIT_EDITOR / GIT_SEQUENCE_EDITOR a rebase or commit that wants a message
 #   GIT_TERMINAL_PROMPT=0             a fetch that wants credentials
 #   GIT_PAGER=cat                     a long output that wants a pager on a tty
 NONINTERACTIVE = {
@@ -134,16 +132,10 @@ NONINTERACTIVE = {
     "GIT_PAGER": "cat",
 }
 
-# The observed timeouts in this tree are 10, 15, 25 and 30 seconds, always an
-# explicit literal at the call site. 30 is the largest of them and is used here as
-# the default so no existing behaviour gets tighter by being ported.
+# The observed timeouts in this tree are 10, 15, 25 and 30 seconds, always an explicit literal at the call site. 30 is the largest of them and is used here as the default so no existing behaviour gets tighter by being ported.
 DEFAULT_TIMEOUT = 30.0
 
-# The `**/` ban from .ci/scripts/quality/check_pathspec_scope.py:73, restated so a
-# caller of this module is warned at the call site instead of by a gate later.
-# `:(` prefixed magic pathspecs are exempt there and here: `:(glob)a/**/*.sh` opts
-# INTO fnmatch semantics deliberately, which is a different statement from the
-# accidental narrowing this rule is about.
+# The `**/` ban from .ci/scripts/quality/check_pathspec_scope.py:73, restated so a caller of this module is warned at the call site instead of by a gate later. `:(` prefixed magic pathspecs are exempt there and here: `:(glob)a/**/*.sh` opts INTO fnmatch semantics deliberately, which is a different statement from the accidental narrowing this rule is about.
 _DOUBLESTAR = "**/"
 
 
@@ -183,9 +175,7 @@ def git(
     return proc.run([*prefix, *args], env=env, timeout=timeout)
 
 
-# ---------------------------------------------------------------------------
-# Where the repository is
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Where the repository is ---------------------------------------------------------------------------
 
 
 def toplevel(start: os.PathLike[str] | str | None = None) -> pathlib.Path | None:
@@ -214,9 +204,7 @@ def is_work_tree(root: os.PathLike[str] | str | None = None) -> bool:
     return git(["rev-parse", "--is-inside-work-tree"], root=root).stdout.strip() == "true"
 
 
-# ---------------------------------------------------------------------------
-# Which branch
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Which branch ---------------------------------------------------------------------------
 
 
 def branch(root: os.PathLike[str] | str | None = None) -> str | None:
@@ -267,9 +255,7 @@ def ref_exists(ref: str, root: os.PathLike[str] | str | None = None) -> bool:
     return head_sha(root, ref) is not None
 
 
-# ---------------------------------------------------------------------------
-# Is it dirty -- four questions, named
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Is it dirty -- four questions, named ---------------------------------------------------------------------------
 
 
 def status_entries(root: os.PathLike[str] | str | None = None) -> list[tuple[str, str]] | None:
@@ -297,11 +283,9 @@ def status_entries(root: os.PathLike[str] | str | None = None) -> list[tuple[str
         index += 1
         if not entry:
             continue
-        # FIXED WIDTH, NOT `partition(" ")`. The status code is exactly two
-        # characters and either may be a SPACE -- ` M`, `R `, `??`. Splitting on
+        # FIXED WIDTH, NOT `partition(" ")`. The status code is exactly two characters and either may be a SPACE -- ` M`, `R `, `??`. Splitting on
         # the first space therefore yields xy="R" and path=" renamed.txt" for
-        # every entry whose second column is blank, which is most of them, and the
-        # leading space then survives into every path comparison downstream.
+        # every entry whose second column is blank, which is most of them, and the leading space then survives into every path comparison downstream.
         xy = entry[:2]
         path = entry[3:]
         # A rename or copy is followed by its ORIGIN path as a separate field.
@@ -357,9 +341,7 @@ def has_unstaged_changes(root: os.PathLike[str] | str | None = None) -> bool | N
     return None
 
 
-# ---------------------------------------------------------------------------
-# Ancestry
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Ancestry ---------------------------------------------------------------------------
 
 
 def is_ancestor(
@@ -404,9 +386,7 @@ def count_commits(rev_range: str, root: os.PathLike[str] | str | None = None) ->
     return int(text) if text.isdigit() else None
 
 
-# ---------------------------------------------------------------------------
-# Listing files
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Listing files ---------------------------------------------------------------------------
 
 
 def ls_files(
@@ -486,9 +466,7 @@ def file_modes(*pathspecs: str, root: os.PathLike[str] | str | None = None) -> d
     return out
 
 
-# ---------------------------------------------------------------------------
-# Submodules and siblings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Submodules and siblings ---------------------------------------------------------------------------
 
 # A `[submodule "name"]` header, and the two keys inside it this module reads.
 _SECTION_RE = re.compile(r'^\s*\[submodule\s+"(?P<name>[^"]+)"\]\s*$')

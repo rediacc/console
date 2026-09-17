@@ -54,10 +54,7 @@ PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/version/inject_env.py")
 # The four names, in the twin's own export order.
 NAMES = ("APP_VERSION", "VITE_APP_VERSION", "CLI_VERSION", "TAG")
 
-# The recording `resolve-version.sh` stub. Configured by its own TEXT rather
-# than through the environment: the subject reads `$VERSION` itself, and a stub
-# reading three more env vars would make an env-shaped divergence
-# unattributable.
+# The recording `resolve-version.sh` stub. Configured by its own TEXT rather than through the environment: the subject reads `$VERSION` itself, and a stub reading three more env vars would make an env-shaped divergence unattributable.
 FAKE_RESOLVER = """#!/usr/bin/env python3
 import pathlib, sys
 LOG = %(log)r
@@ -69,8 +66,7 @@ sys.stdout.write(OUT)
 sys.exit(RC)
 """
 
-# A fixed baseline environment for every run, so the exported-set diff is
-# against something stated rather than against the test runner's inheritance.
+# A fixed baseline environment for every run, so the exported-set diff is against something stated rather than against the test runner's inheritance.
 BASE_ENV = {
     "PATH": "/usr/bin:/bin",
     "HOME": "/nonexistent",
@@ -78,9 +74,7 @@ BASE_ENV = {
     "PYTHONDONTWRITEBYTECODE": "1",
 }
 
-# Dumps the port's `inject()` result in the same shape `_exports_twin` reads out
-# of a real shell. Loaded BY PATH so `__file__` is the fixture copy and the
-# resolver stub beside it is the one that answers.
+# Dumps the port's `inject()` result in the same shape `_exports_twin` reads out of a real shell. Loaded BY PATH so `__file__` is the fixture copy and the resolver stub beside it is the one that answers.
 PORT_EXPORT_HARNESS = """
 import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("inject_env_under_test", sys.argv[1])
@@ -205,8 +199,7 @@ def _exports_twin(root, argv, env_extra):
             code = int(value)
         elif name in NAMES:
             exported[name] = value
-    # The names the sourced script did NOT touch, so a port that exported a
-    # fifth one is caught rather than ignored.
+    # The names the sourced script did NOT touch, so a port that exported a fifth one is caught rather than ignored.
     extra = sorted(
         f.partition("=")[0]
         for f in fields
@@ -315,8 +308,7 @@ def test_exported_set_port_and_twin_agree(tmp_path, fixture_kw, argv, env_extra)
     )
     # ANTI-VACUITY, per case rather than once. Roughly a third of the table is a
     # refusal, where BOTH sides correctly export nothing; without this the other
-    # two thirds could quietly join them and every row would read "two empty
-    # dicts agree".
+    # two thirds could quietly join them and every row would read "two empty dicts agree".
     if old_code == 0:
         assert sorted(old_exports) == sorted(NAMES), (
             "a successful run exported %r, not the four names" % sorted(old_exports)

@@ -96,8 +96,7 @@ export function readProcEnviron(pid: number | 'self'): Map<string, string> | nul
 function getLinuxParentPid(pid: number): number | null {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, 'utf-8');
-    // Format: pid (comm) state ppid ...
-    // The comm field can contain spaces and parens, so find the LAST ')' first
+    // Format: pid (comm) state ppid ... The comm field can contain spaces and parens, so find the LAST ')' first
     const closeParen = stat.lastIndexOf(')');
     if (closeParen === -1) return null;
     const fields = stat.slice(closeParen + 2).split(' ');
@@ -238,14 +237,11 @@ export function isOverrideLegitimate(overrideVar: string = OVERRIDE_VAR_GRAND): 
   if (!available) return false;
 
   if (ancestors.length === 0) {
-    // Linux: /proc itself unreadable (exotic containers) — historical fail
-    // open. A helper that ran but reported nothing is not trusted.
+    // Linux: /proc itself unreadable (exotic containers) — historical fail open. A helper that ran but reported nothing is not trusted.
     return process.platform === 'linux';
   }
 
-  // Find the agent boundary: the HIGHEST ancestor (last in array, closest to init)
-  // that has an agent env var. We walk from current process upward, so the last
-  // match in the array is the highest in the tree.
+  // Find the agent boundary: the HIGHEST ancestor (last in array, closest to init) that has an agent env var. We walk from current process upward, so the last match in the array is the highest in the tree.
   let agentBoundaryIdx = -1;
   for (let i = ancestors.length - 1; i >= 0; i--) {
     if (hasAgentEnvVar(ancestors[i].env)) {
@@ -257,11 +253,7 @@ export function isOverrideLegitimate(overrideVar: string = OVERRIDE_VAR_GRAND): 
   // No agent boundary found — not in agent mode, override is always legitimate
   if (agentBoundaryIdx === -1) return true;
 
-  // Check: does the agent boundary process's exec-time environment have the
-  // override? If the override is in the same process that introduced the
-  // agent env var, it was present when the agent started → set by user.
-  // If the override is NOT in the agent boundary but IS in a descendant,
-  // it was injected below the boundary.
+  // Check: does the agent boundary process's exec-time environment have the override? If the override is in the same process that introduced the agent env var, it was present when the agent started → set by user. If the override is NOT in the agent boundary but IS in a descendant, it was injected below the boundary.
   return ancestors[agentBoundaryIdx].env.has(overrideVar);
 }
 

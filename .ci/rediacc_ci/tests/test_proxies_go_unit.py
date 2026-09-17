@@ -85,8 +85,7 @@ TU = {
         'func TestT(t *testing.T) { _ = "testutil.TempDir"; if T() != 4 { t.Fatal("no") } }\n'
     ),
 }
-# THE FIFTH ALTERNATIVE'S OWN CLASS: `os.Getuid()`, the real idiom `pkg/storage`
-# uses, matching neither `Geteuid` nor `RequireRoot` nor `testutil.`.
+# THE FIFTH ALTERNATIVE'S OWN CLASS: `os.Getuid()`, the real idiom `pkg/storage` uses, matching neither `Geteuid` nor `RequireRoot` nor `testutil.`.
 GU = {
     f"{RENET}/pkg/gu/gu.go": "package gu\n\nfunc G() int { return 5 }\n",
     f"{RENET}/pkg/gu/gu_test.go": (
@@ -164,8 +163,7 @@ def assert_same(
         old.stderr,
     )
     assert new.stdout == old.stdout
-    # `go test` prints a per-package wall time, and the two runs get different
-    # ones. Everything else on the stream must match byte for byte.
+    # `go test` prints a per-package wall time, and the two runs get different ones. Everything else on the stream must match byte for byte.
     assert _mask(new.stderr) == _mask(old.stderr)
 
 
@@ -219,9 +217,7 @@ def _real_tree_env() -> dict[str, str]:
     }
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def test_selftest_is_byte_identical() -> None:
@@ -258,9 +254,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Fixture cases over a synthetic module
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture cases over a synthetic module ---------------------------------------------------------------------------
 
 
 def test_the_derived_subset_prints_its_whole_shape(tmp_path: pathlib.Path) -> None:
@@ -362,9 +356,7 @@ def test_a_go_list_that_produces_nothing_is_77_not_a_finding(tmp_path: pathlib.P
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to go RED
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to go RED ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
@@ -407,9 +399,7 @@ def test_a_getuid_only_package_is_now_excluded(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers ---------------------------------------------------------------------------
 
 
 def test_candidates_keeps_only_packages_with_test_files() -> None:
@@ -492,9 +482,7 @@ def test_the_fourth_alternative_removes_nothing_extra_on_the_real_tree() -> None
         f"{sorted(broad_dirs - narrow_dirs)}. That is real lost local coverage; "
         "re-argue the trade-off in the twin's header rather than deleting this test."
     )
-    # Unlike the fourth, the fifth is NOT a strict subset -- it is why it was
-    # added. `pkg/storage`, `pkg/repository` and `pkg/filesystem` sit outside
-    # the first four alternatives entirely and are real, measured gains.
+    # Unlike the fourth, the fifth is NOT a strict subset -- it is why it was added. `pkg/storage`, `pkg/repository` and `pkg/filesystem` sit outside the first four alternatives entirely and are real, measured gains.
     assert fifth_dirs - narrow_dirs - broad_dirs, (
         "the fifth alternative now adds NOTHING beyond the first four; if that "
         "is genuinely true the alternative is dead weight and this test should "

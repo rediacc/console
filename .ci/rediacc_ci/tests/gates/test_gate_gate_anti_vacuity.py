@@ -65,194 +65,92 @@ TWIN_TIMEOUT = 900
 
 ROOT = paths.repo_root()
 
-# REGISTRY -- one entry per line: `(<script>, <expected substring>)`.
-# The substring pins the DIAGNOSTIC, not just the exit code: a validator that
-# fails for an unrelated reason (a crashed import, a missing dependency) is not
-# evidence that it detects a missing input.
+# REGISTRY -- one entry per line: `(<script>, <expected substring>)`. The substring pins the DIAGNOSTIC, not just the exit code: a validator that fails for an unrelated reason (a crashed import, a missing dependency) is not evidence that it detects a missing input.
 #
 # `.sh` and `.py` entries are repo-root-relative; `.ts` entries are relative to
-# `scripts/`. TRANSCRIBED FROM THE TWIN, and kept equal to it by
-# `test_the_registry_agrees_with_the_twins`.
+# `scripts/`. TRANSCRIBED FROM THE TWIN, and kept equal to it by `test_the_registry_agrees_with_the_twins`.
 REGISTRY: tuple[tuple[str, str], ...] = (
     ("check-translation-hashes.ts", "locale"),
     ("check-translation-completeness.ts", "locale"),
-    # The probe gate's subject is a single library file. Against an empty tree
-    # that file is absent, and "nothing to check" must be a FAILURE: a liveness
-    # gate that silently passes when it cannot reach the probe would recreate
-    # the very class it exists to catch (a check that cannot tell absent from
-    # present). It also refuses when python3 is missing, because its control
-    # listener could not fire.
+    # The probe gate's subject is a single library file. Against an empty tree that file is absent, and "nothing to check" must be a FAILURE: a liveness gate that silently passes when it cannot reach the probe would recreate the very class it exists to catch (a check that cannot tell absent from present). It also refuses when python3 is missing, because its control listener could
+    # not fire.
     (".ci/scripts/quality/check_account_probes.py", "nothing to check"),
-    # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling
-    # above IS, and the asymmetry is real rather than an oversight. The probe
-    # gate's subject is .ci/lib/account.sh, which this harness's fixture does
-    # NOT copy, so an empty tree genuinely starves it. The drill-verdict gate's
-    # subject is scripts/drills/lib.sh, and the fixture DOES copy scripts/ -- so
-    # on the "empty" tree its subject is present, all four verdict assertions
-    # run for real, and it correctly exits 0. Registering it asserted that a
+    # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling above IS, and the asymmetry is real rather than an oversight. The probe gate's subject is .ci/lib/account.sh, which this harness's fixture does NOT copy, so an empty tree genuinely starves it. The drill-verdict gate's subject is scripts/drills/lib.sh, and the fixture DOES copy scripts/ -- so on the
+    # "empty" tree its subject is present, all four verdict assertions run for real, and it correctly exits 0. Registering it asserted that a
     # gate must fail when its input exists, which is backwards; the meta-gate
-    # caught exactly that on the first run. Its own missing-subject branch is
-    # real but unreachable from here.
-    # Against an empty tree every oracle is unavailable, so the run is vacuous
-    # and must FAIL rather than report "every entry is still load-bearing".
+    # caught exactly that on the first run. Its own missing-subject branch is real but unreachable from here. Against an empty tree every oracle is unavailable, so the run is vacuous and must FAIL rather than report "every entry is still load-bearing".
     ("check-suppression-liveness.ts", "vacuous"),
-    # A mutation gate: it copies packages/cli into a sandbox, breaks the source,
-    # and requires the tests to fail. On an empty tree there is nothing to
-    # mutate, and "no source to mutate" must be a hard error - a mutation gate
-    # that reports success having mutated nothing is the purest form of the
+    # A mutation gate: it copies packages/cli into a sandbox, breaks the source, and requires the tests to fail. On an empty tree there is nothing to mutate, and "no source to mutate" must be a hard error - a mutation gate that reports success having mutated nothing is the purest form of the
     # class this meta-gate exists to catch.
     ("check-guard-mutations.ts", "required subject missing"),
-    # A bash gate, reachable only since this harness learned to run .sh. It used
-    # to `exit 0` when private/renet was absent, silently taking govulncheck,
-    # deadcode and golangci-lint with it.
+    # A bash gate, reachable only since this harness learned to run .sh. It used to `exit 0` when private/renet was absent, silently taking govulncheck, deadcode and golangci-lint with it.
     (".ci/scripts/private/run-renet.sh", "required"),
-    # Same submodule, same failure mode: with private/renet absent it would run
-    # `go test` over nothing and report that the licence tier map covers the
+    # Same submodule, same failure mode: with private/renet absent it would run `go test` over nothing and report that the licence tier map covers the
     # function registry. The CLI now derives its licence-issuance class from
     # that map, so a vacuous green here would launder a console defect too.
     (".ci/scripts/quality/check_renet_tier_map.py", "required"),
-    # REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, both entries above and below.
-    # These pins name a gate BY PATH, and after a cutover the path names the twin
-    # rather than the registered gate. Nothing goes red when that happens: the
-    # harness keeps exercising the .sh, keeps passing, and silently stops covering
+    # REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, both entries above and below. These pins name a gate BY PATH, and after a cutover the path names the twin rather than the registered gate. Nothing goes red when that happens: the harness keeps exercising the .sh, keeps passing, and silently stops covering
     # the thing CI actually runs. Found by the batch-4 writer for tier-map; the
-    # types entry is the same defect left behind by batch 3 and was swept here.
-    # Same shape again: `require_submodule ... || exit 0` becomes a hard fail
+    # types entry is the same defect left behind by batch 3 and was swept here. Same shape again: `require_submodule ... || exit 0` becomes a hard fail
     # under CI=true (which this harness sets), so an empty tree is a loud
     # "required in CI but missing" rather than a green diff of nothing.
     (".ci/scripts/quality/check_renet_types.py", "required"),
-    # Python lint. Against an empty tree `git ls-files` enumerates nothing and
-    # `ruff check` with no paths exits 0 -- indistinguishable from a clean repo,
-    # which is the exact shape this harness exists to catch. The input floor is
-    # therefore checked BEFORE the linter is even resolved, so the empty-tree
-    # failure is about VACUITY and not about a missing binary: an absent ruff
-    # would be an ENVIRONMENT failure wearing a vacuity failure's exit code, and
-    # pinning that would assert nothing about the gate.
+    # Python lint. Against an empty tree `git ls-files` enumerates nothing and `ruff check` with no paths exits 0 -- indistinguishable from a clean repo, which is the exact shape this harness exists to catch. The input floor is therefore checked BEFORE the linter is even resolved, so the empty-tree failure is about VACUITY and not about a missing binary: an absent ruff would be an
+    # ENVIRONMENT failure wearing a vacuity failure's exit code, and pinning that would assert nothing about the gate.
     (".ci/scripts/quality/check_python_lint.py", "VACUOUS INPUT"),
-    # Same shape, different subject: against an empty tree `git ls-files` returns
-    # no JS/TS at all and the detector would report "no inline Python" over zero
-    # files -- indistinguishable from a clean repo. The MIN_FILES floor turns
-    # that into a loud refusal. Its own detector controls run first and abort
-    # separately, so a control failure cannot masquerade as this one.
+    # Same shape, different subject: against an empty tree `git ls-files` returns no JS/TS at all and the detector would report "no inline Python" over zero files -- indistinguishable from a clean repo. The MIN_FILES floor turns that into a loud refusal. Its own detector controls run first and abort separately, so a control failure cannot masquerade as this one.
     (".ci/scripts/quality/check_inline_python.py", "VACUOUS INPUT"),
-    # Against an empty tree there are no locale files at all, so every comparison
-    # is over an empty set and the gate would exit 0 reporting that every value
-    # matches. The MIN_PAIRS floor turns that into a loud refusal.
+    # Against an empty tree there are no locale files at all, so every comparison is over an empty set and the gate would exit 0 reporting that every value matches. The MIN_PAIRS floor turns that into a loud refusal.
     (".ci/scripts/quality/check_i18n_value_types.py", "VACUOUS INPUT"),
-    # Against an empty tree there is no baseline file and no workflow, so every
-    # headroom comparison is over an empty set and the gate would exit 0 while
-    # having compared nothing -- indistinguishable from full coverage. Both the
-    # missing-file path and the too-few-jobs floor say VACUOUS INPUT.
+    # Against an empty tree there is no baseline file and no workflow, so every headroom comparison is over an empty set and the gate would exit 0 while having compared nothing -- indistinguishable from full coverage. Both the missing-file path and the too-few-jobs floor say VACUOUS INPUT.
     (".ci/scripts/quality/check_job_timeout_headroom.py", "VACUOUS INPUT"),
-    # Against an empty tree there is no .gitmodules, so nothing is declared and
-    # every completeness comparison is over an empty set -- which would read
-    # exactly like "all submodules present". The MIN_SUBMODULES floor refuses.
+    # Against an empty tree there is no .gitmodules, so nothing is declared and every completeness comparison is over an empty set -- which would read exactly like "all submodules present". The MIN_SUBMODULES floor refuses.
     (".ci/scripts/quality/check_scope_completeness.py", "VACUOUS INPUT"),
-    # Against an empty tree there is no .claude/settings.json, so no hook command
-    # is parsed and every reference check is over an empty set -- which reads
-    # exactly like "every hook resolves". The MIN_COMMANDS floor refuses.
+    # Against an empty tree there is no .claude/settings.json, so no hook command is parsed and every reference check is over an empty set -- which reads exactly like "every hook resolves". The MIN_COMMANDS floor refuses.
     (".ci/scripts/quality/check_hooks_resolvable.py", "VACUOUS INPUT"),
-    # Against an empty tree there are no workflows, so no secret is referenced
-    # and the gate would report that every reference is reachable. The
-    # MIN_REFERENCES floor turns that into a loud refusal.
+    # Against an empty tree there are no workflows, so no secret is referenced and the gate would report that every reference is reachable. The MIN_REFERENCES floor turns that into a loud refusal.
     (".ci/scripts/quality/check_actions_allowlist.py", "VACUOUS INPUT"),
     (".ci/scripts/quality/check_plan_housekeeping.py", "VACUOUS INPUT"),
     (".ci/scripts/quality/check_plan_boxes.py", "VACUOUS INPUT"),
     (".ci/scripts/quality/check_syncpack_sources.py", "VACUOUS INPUT"),
     (".ci/scripts/quality/check_secret_reachability.py", "VACUOUS INPUT"),
     (".ci/scripts/quality/check_bws_map.py", "refusing to pass vacuously"),
-    # Against an empty tree the probe locale file is absent, so no rule set can
-    # be resolved at all and the gate would otherwise report that zero enabled
-    # rules are healthy -- which is what a healthy repo looks like too.
+    # Against an empty tree the probe locale file is absent, so no rule set can be resolved at all and the gate would otherwise report that zero enabled rules are healthy -- which is what a healthy repo looks like too.
     (".ci/scripts/quality/check_lint_rule_liveness.py", "VACUOUS INPUT"),
-    # Against an empty tree there is no .claude/agents at all, so every
-    # reachability assertion is over an empty corpus and the gate would exit 0
-    # reporting that every agent is reachable -- which is what a healthy corpus
-    # looks like too. The missing-directory path and the MIN_AGENTS floor both
-    # say VACUOUS INPUT, and both are answered BEFORE wl_agents is imported: the
-    # fixture has no .claude/hooks either, so an unguarded import would exit
-    # non-zero for an environment reason wearing a vacuity failure's exit code.
+    # Against an empty tree there is no .claude/agents at all, so every reachability assertion is over an empty corpus and the gate would exit 0 reporting that every agent is reachable -- which is what a healthy corpus looks like too. The missing-directory path and the MIN_AGENTS floor both say VACUOUS INPUT, and both are answered BEFORE wl_agents is imported: the fixture has no
+    # .claude/hooks either, so an unguarded import would exit non-zero for an environment reason wearing a vacuity failure's exit code.
     (".ci/scripts/quality/check_agent_hint_liveness.py", "VACUOUS INPUT"),
-    # An empty tree tracks no js/ts at all, so "every file reaches a linter" is
-    # trivially true over zero files -- indistinguishable from full coverage.
+    # An empty tree tracks no js/ts at all, so "every file reaches a linter" is trivially true over zero files -- indistinguishable from full coverage.
     (".ci/scripts/quality/check_lint_scope_coverage.py", "VACUOUS INPUT"),
-    # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
-    # This harness's fixture copies scripts/ and .ci/scripts/ but not
-    # .ci/breakpoint/, so the drift gate would fail with "No such file or
-    # directory" -- non-zero for a reason that has nothing to do with vacuity,
-    # which is precisely the false signal the REGISTRY POLICY above warns about.
-    # Its missing-manifest behaviour is proven in test-breakpoint-portability.sh
-    # instead, where an isolated copy of the folder genuinely exists.
-    # NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh.
-    # Its sibling check-autopilot-workflow-invariants.sh IS registered below, and
-    # the asymmetry is deliberate rather than an oversight. That one reads the
-    # workflow tree, so an empty fixture makes it vacuous and it must say so.
-    # This one never touches the tree at all: it is three `gh api` calls against
-    # the live ruleset (:52, :71). An empty-tree run would exit non-zero on the
-    # absent GITHUB_AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity
-    # failure's exit code, and pinning it would assert nothing about the gate.
+    # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh. This harness's fixture copies scripts/ and .ci/scripts/ but not .ci/breakpoint/, so the drift gate would fail with "No such file or directory" -- non-zero for a reason that has nothing to do with vacuity, which is precisely the false signal the REGISTRY POLICY above warns about. Its missing-manifest
+    # behaviour is proven in test-breakpoint-portability.sh instead, where an isolated copy of the folder genuinely exists. NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh. Its sibling check-autopilot-workflow-invariants.sh IS registered below, and the asymmetry is deliberate rather than an oversight. That one reads the workflow tree, so an empty
+    # fixture makes it vacuous and it must say so. This one never touches the tree at all: it is three `gh api` calls against the live ruleset (:52, :71). An empty-tree run would exit non-zero on the absent GITHUB_AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity failure's exit code, and pinning it would assert nothing about the gate.
     # Verified live instead, 2026-07-30: with GITHUB_AUTOPILOT_APP_ID=4409539 it exits 0
-    # and reports ruleset 12344707 bypass actors [RepositoryRole:5,
-    # Integration:2772000] with autopilot absent, which is the property it exists
-    # to defend.
-    # The harness fixture copies scripts/ and .ci/scripts/ but nothing that
-    # REFERENCES them (no workflows, no docs, no allowlist), so the gate must
-    # report the resulting orphans loudly rather than pass. The "ZERO shell
-    # files" guard covers the stricter case of no shell tree at all.
+    # and reports ruleset 12344707 bypass actors [RepositoryRole:5, Integration:2772000] with autopilot absent, which is the property it exists to defend. The harness fixture copies scripts/ and .ci/scripts/ but nothing that REFERENCES them (no workflows, no docs, no allowlist), so the gate must report the resulting orphans loudly rather than pass. The "ZERO shell files" guard
+    # covers the stricter case of no shell tree at all.
     ("check-dead-bash.ts", "dead shell symbol"),
-    # Both of its checks walk .github/workflows. The empty tree has no workflow
-    # YAML, so every invariant it asserts is over an empty set. It used to
-    # `exit 0` on a missing directory, which meant renaming the workflow tree
-    # would silently retire the gate.
+    # Both of its checks walk .github/workflows. The empty tree has no workflow YAML, so every invariant it asserts is over an empty set. It used to `exit 0` on a missing directory, which meant renaming the workflow tree would silently retire the gate.
     (".ci/scripts/security/check-workflow-gates.sh", "blind"),
-    # The empty tree has no package.json and no .github/workflows, so there is
-    # no gate census on either side and every one of its seven assertions would
-    # be over an empty set. It replaced check-ci-chain-parity.ts and
-    # check-gate-reachability.ts, which were registered here separately for the
+    # The empty tree has no package.json and no .github/workflows, so there is no gate census on either side and every one of its seven assertions would be over an empty set. It replaced check-ci-chain-parity.ts and check-gate-reachability.ts, which were registered here separately for the
     # same property; both are gone.
     ("check-ci-parity.ts", "Refusing to run"),
-    # The scope engine's workflow closure is computed by ITERATING
-    # `uses: ./.github/workflows/*` at runtime, never by matching names, so the
-    # test asserts a real closure over the real tree. On the empty fixture that
+    # The scope engine's workflow closure is computed by ITERATING `uses: ./.github/workflows/*` at runtime, never by matching names, so the test asserts a real closure over the real tree. On the empty fixture that
     # closure is {} and the assertion must fail: registering it pins the fact
-    # that moving or renaming the workflow tree cannot silently turn the
-    # closure test into a tautology over an empty set.
+    # that moving or renaming the workflow tree cannot silently turn the closure test into a tautology over an empty set.
     (".ci/scripts/test/gates/test-scope-engine.sh", "closure"),
-    # A DIFF gate with no baseline and no ledger measures nothing, and
-    # "measured nothing" must never read as "found nothing". Against the empty
-    # fixture both its inputs are gone, so it must refuse to run. Its first
-    # draft did the opposite: a wrong ledger path made the protected set empty,
-    # so it reported OK on a planted fabrication. Only a control caught that.
+    # A DIFF gate with no baseline and no ledger measures nothing, and "measured nothing" must never read as "found nothing". Against the empty fixture both its inputs are gone, so it must refuse to run. Its first draft did the opposite: a wrong ledger path made the protected set empty, so it reported OK on a planted fabrication. Only a control caught that.
     ("check-locale-only-edits.ts", "Refusing to run"),
     ("check-jq-boolean-default.ts", "Refusing to run"),
     (".ci/scripts/security/check-autopilot-workflow-invariants.sh", "INVARIANT-FAIL"),
-    # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1
-    # verbatim: point it at a tree without packages/www/src/content/docs and
-    # the glob returns zero files, every loop iterates zero times, and it
-    # printed "All external links are valid". Measured on the empty fixture
-    # before the guard was added, not inferred from reading it.
+    # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1 verbatim: point it at a tree without packages/www/src/content/docs and the glob returns zero files, every loop iterates zero times, and it printed "All external links are valid". Measured on the empty fixture before the guard was added, not inferred from reading it.
     ("check-external-links.ts", "Refusing to run"),
-    # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale
-    # trees absent it finds zero contamination AND every one of its 379 baselined
-    # findings looks fixed, so an unguarded version would either print a checkmark or
-    # fail for the wrong reason. It must refuse instead.
+    # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale trees absent it finds zero contamination AND every one of its 379 baselined findings looks fixed, so an unguarded version would either print a checkmark or fail for the wrong reason. It must refuse instead.
     ("check-locale-de-contamination.ts", "Refusing to run"),
-    # Its sibling, and root pattern 1 again: three hardcoded locale-root constants, so a
-    # tree without any of them made it walk zero locales and print a checkmark. It was
-    # NOT registered here while it carried a second, subtler vacuity inside itself --
-    # `if (!STOPWORDS[locale]) continue` silently skipped ar/ja/ko/ru/zh/et, which is how
-    # 379 German values lived in account-web's ar/ja/ru/zh under a green gate. That skip
-    # is now a hard error naming the locale, so the only way left to make this gate
-    # assert nothing is to take its input away -- which is exactly what this entry pins.
+    # Its sibling, and root pattern 1 again: three hardcoded locale-root constants, so a tree without any of them made it walk zero locales and print a checkmark. It was NOT registered here while it carried a second, subtler vacuity inside itself -- `if (!STOPWORDS[locale]) continue` silently skipped ar/ja/ko/ru/zh/et, which is how 379 German values lived in account-web's
+    # ar/ja/ru/zh under a green gate. That skip is now a hard error naming the locale, so the only way left to make this gate assert nothing is to take its input away -- which is exactly what this entry pins.
     ("check-i18n-cross-locale.ts", "Refusing to run"),
-    # The eight www-simplification gates, plus the untranslated-text gate whose skip this
-    # replaced. EVERY ONE of them is root pattern 1 or 2 by construction -- each walks a
-    # hardcoded packages/www path -- so an empty tree is the exact shape that would make
-    # them print a checkmark over nothing. check-docs-untranslated-text.ts is the reason
-    # this block exists: it used to `exit 0` with "Docs directory not found, skipping",
-    # which is pattern 2 verbatim, and it was ALSO proven dead in the other direction (a
-    # wholly English paragraph in a German doc exited 0). A gate can be vacuous by having
-    # no input and vacuous by having no detector, and this repo has now paid for both.
+    # The eight www-simplification gates, plus the untranslated-text gate whose skip this replaced. EVERY ONE of them is root pattern 1 or 2 by construction -- each walks a hardcoded packages/www path -- so an empty tree is the exact shape that would make them print a checkmark over nothing. check-docs-untranslated-text.ts is the reason this block exists: it used to `exit 0` with
+    # "Docs directory not found, skipping", which is pattern 2 verbatim, and it was ALSO proven dead in the other direction (a wholly English paragraph in a German doc exited 0). A gate can be vacuous by having no input and vacuous by having no detector, and this repo has now paid for both.
     ("check-docs-untranslated-text.ts", "Refusing to run"),
     ("check-em-dash-surfaces.ts", "Refusing to run"),
     ("check-locale-config-divergence.ts", "Refusing to run"),
@@ -260,61 +158,31 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     ("check-layout-overflow.ts", "Refusing to run"),
     ("check-hydration-clean.ts", "Refusing to run"),
     ("check-form-validation.ts", "Refusing to run"),
-    # These two read packages/www/dist rather than the source tree. Their refusal is the
-    # difference between them and check:ci-seo's built-HTML scan, which SELF-SKIPS without
-    # a dist and has therefore been vacuous on every developer machine for its whole life.
+    # These two read packages/www/dist rather than the source tree. Their refusal is the difference between them and check:ci-seo's built-HTML scan, which SELF-SKIPS without a dist and has therefore been vacuous on every developer machine for its whole life.
     ("check-anchor-integrity.ts", "Refusing to run"),
     ("check-client-bundle-budget.ts", "Refusing to run"),
-    # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
-    # Measured, not assumed: it passes all 55 assertions against the empty tree,
-    # because it is a pure unit test that builds every fixture it needs (its
-    # plans and job lists are constructed in-test, and it reads scope-map only
+    # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh. Measured, not assumed: it passes all 55 assertions against the empty tree, because it is a pure unit test that builds every fixture it needs (its plans and job lists are constructed in-test, and it reads scope-map only
     # for the job-key list, which .ci/scripts carries into the fixture). Passing
     # with the repo absent is CORRECT for it rather than vacuous, so an entry
-    # here could never fail and would be exactly the dead assertion this
-    # harness exists to catch. Its anti-vacuity controls are inline instead.
+    # here could never fail and would be exactly the dead assertion this harness exists to catch. Its anti-vacuity controls are inline instead.
     #
     # NOT registered here either: .ci/scripts/test/gates/test-scope-baseline-attest.sh,
     # for the same reason and measured the same way: all 75 assertions pass
-    # against the empty tree (exit 0), because it too builds every fixture it
-    # needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
+    # against the empty tree (exit 0), because it too builds every fixture it needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
     # no git call, no gh call and no network call; the only repo files it reads
-    # are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway.
-    # Passing with the source tree absent is CORRECT for it, so an entry here
-    # would assert nothing. Its controls are inline instead, one per planted
-    # defect, plus three engine mutants run by hand during authoring (drop the
-    # `delete plan.reconciled`, drop the cheap-first mode gate, restore the
+    # are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway. Passing with the source tree absent is CORRECT for it, so an entry here would assert nothing. Its controls are inline instead, one per planted defect, plus three engine mutants run by hand during authoring (drop the `delete plan.reconciled`, drop the cheap-first mode gate, restore the
     # one-green-run-per-sha pick) each of which flips a different case red.
     #
-    # NOT registered here either: .ci/scripts/test/gates/test-scope-gate-outputs.sh,
-    # measured the same way and with the same result: all 6 cases pass against
-    # the empty tree (exit 0). It BUILDS the tree it needs -- it copies
-    # .ci/scripts/ci into a temp dir, `git init`s a repository there with the
-    # branch shape a baseline walk requires, and shims `gh` on PATH -- so the
-    # only repo input it has is the .ci/scripts/ tree this harness copies in
-    # anyway. It reads no packages/, no private/, no .github/. Passing with the
-    # source tree absent is CORRECT for it, so an entry here could never fail.
-    # Its controls are inline, one per case, and the emitter control was proven
+    # NOT registered here either: .ci/scripts/test/gates/test-scope-gate-outputs.sh, measured the same way and with the same result: all 6 cases pass against the empty tree (exit 0). It BUILDS the tree it needs -- it copies .ci/scripts/ci into a temp dir, `git init`s a repository there with the branch shape a baseline walk requires, and shims `gh` on PATH -- so the only repo input
+    # it has is the .ci/scripts/ tree this harness copies in anyway. It reads no packages/, no private/, no .github/. Passing with the source tree absent is CORRECT for it, so an entry here could never fail. Its controls are inline, one per case, and the emitter control was proven
     # by a planted defect during authoring (suppress the run_*=false push in
     # scope-shadow.sh's emitter and case (a) goes red naming the dead emitter;
-    # restore and it goes green). That same planted defect also caught a defect
-    # in the TEST: collecting the lines before the control check made the failing
-    # run exit silently with an empty log, which is a right exit code and a dead
-    # diagnostic. The control now runs first.
+    # restore and it goes green). That same planted defect also caught a defect in the TEST: collecting the lines before the control check made the failing run exit silently with an empty log, which is a right exit code and a dead diagnostic. The control now runs first.
     #
-    # NOT registered here either: .ci/scripts/test/gates/test-watchdog-supersession.sh,
-    # and the same measurement was taken rather than reasoned: all 9 assertions
-    # pass against the empty tree (exit 0). Its only repo dependency is
-    # .ci/scripts/ci/watchdog-monitor.cjs, which this harness copies in, and
-    # every input to the decision under test is a literal in the test itself.
-    # Passing with the source tree absent is CORRECT for it, so an entry here
-    # could never fail. Its controls are inline and were proven by hand during
-    # authoring: relaxing the predicate to drop `noFailures` flips
-    # "a real failure is never laundered as supersession" red, and relaxing
+    # NOT registered here either: .ci/scripts/test/gates/test-watchdog-supersession.sh, and the same measurement was taken rather than reasoned: all 9 assertions pass against the empty tree (exit 0). Its only repo dependency is .ci/scripts/ci/watchdog-monitor.cjs, which this harness copies in, and every input to the decision under test is a literal in the test itself. Passing with
+    # the source tree absent is CORRECT for it, so an entry here could never fail. Its controls are inline and were proven by hand during authoring: relaxing the predicate to drop `noFailures` flips "a real failure is never laundered as supersession" red, and relaxing
     # `newerRunExists === true` to `Boolean(newerRunExists)` flips
-    # "newerRunExists is compared strictly" red. Both directions were run, not
-    # assumed. Its sibling test-watchdog-schedule-exemption.sh is unregistered
-    # on the same grounds.
+    # "newerRunExists is compared strictly" red. Both directions were run, not assumed. Its sibling test-watchdog-schedule-exemption.sh is unregistered on the same grounds.
 )
 
 
@@ -363,16 +231,8 @@ def run_against_empty_tree(script: str) -> harness.RunResult:
         elif script.endswith(".py"):
             argv = [harness.require_tool("python3", "install python3"), script]
         else:
-            # The else-branch used to be the ONLY alternative to `.sh`, which
-            # silently resolved any new language to `scripts/<path>` and failed as
-            # a stale-registry error rather than as an unsupported one -- the
-            # first `.py` entry hit exactly that.
-            # Two homes, in step with the twin and with `registry_path` above: after
-            # W9 P2 a `.ts` validator lives under `scripts/gates/`. Resolved against
-            # the COPY, not the repo, because that is what this process will execute.
-            # Fixing only `registry_path` and leaving this on the old home is exactly
-            # what broke `test_validator_rejects_empty_tree` here on 2026-09-09 while
-            # the twin passed -- one resolver moved and its pair did not.
+            # The else-branch used to be the ONLY alternative to `.sh`, which silently resolved any new language to `scripts/<path>` and failed as a stale-registry error rather than as an unsupported one -- the first `.py` entry hit exactly that. Two homes, in step with the twin and with `registry_path` above: after W9 P2 a `.ts` validator lives under `scripts/gates/`. Resolved
+            # against the COPY, not the repo, because that is what this process will execute. Fixing only `registry_path` and leaving this on the old home is exactly what broke `test_validator_rejects_empty_tree` here on 2026-09-09 while the twin passed -- one resolver moved and its pair did not.
             rel = "scripts/gates/%s" % script
             if not (tmp / rel).is_file():
                 rel = "scripts/%s" % script
@@ -470,11 +330,7 @@ def test_fixture_can_import_package(gate):
     try:
         result = run_against_empty_tree(probe_rel)
     finally:
-        # REMOVED IN A `finally`, and not left to a later line. Every assertion
-        # helper raises, and the twin's `trap ... RETURN` does NOT fire on the
-        # `exit 1` those helpers perform -- measured while proving this case can
-        # fail, the planted `.py` survived the red run and showed up in
-        # `git status` as an untracked file in a tree holding other sessions' work.
+        # REMOVED IN A `finally`, and not left to a later line. Every assertion helper raises, and the twin's `trap ... RETURN` does NOT fire on the `exit 1` those helpers perform -- measured while proving this case can fail, the planted `.py` survived the red run and showed up in `git status` as an untracked file in a tree holding other sessions' work.
         probe.unlink(missing_ok=True)
     if result.rc != 0:
         gate.log_fail(
@@ -485,9 +341,7 @@ def test_fixture_can_import_package(gate):
     gate.assert_contains(
         result.combined, "imported rediacc_ci from", "the probe must report the package it loaded"
     )
-    # It must be the COPY. If this ever resolved to the repo root the case would
-    # be green with the copy-list leg deleted, which is the vacuity this whole
-    # file exists to police.
+    # It must be the COPY. If this ever resolved to the repo root the case would be green with the copy-list leg deleted, which is the vacuity this whole file exists to police.
     gate.assert_not_contains(
         result.combined,
         str(ROOT / ".ci" / "rediacc_ci"),
@@ -574,9 +428,7 @@ def test_sharedselftestcases_can_fail(gate):
             ),
             encoding="utf-8",
         )
-        # PROVE THE PLANT LANDED. A no-op substitution produces an identical file
-        # and the control then passes against unmutated source -- a green that
-        # proves nothing.
+        # PROVE THE PLANT LANDED. A no-op substitution produces an identical file and the control then passes against unmutated source -- a green that proves nothing.
         if work.read_text(encoding="utf-8") == source:
             gate.log_fail("CONTROL COULD NOT PLANT: the mutation left the guard unchanged")
         probe.write_text(
@@ -712,10 +564,7 @@ def test_validator_rejects_empty_tree(gate):
     problems = []
     for script, needle in REGISTRY:
         if not registry_path(script).is_file():
-            # Named rather than skipped. A registry entry pointing at a missing
-            # file has NOT been checked, and `test_registry_entries_exist` above
-            # is the case that owns that finding -- but folding it into "fine"
-            # here would let this loop report a clean sweep over a short corpus.
+            # Named rather than skipped. A registry entry pointing at a missing file has NOT been checked, and `test_registry_entries_exist` above is the case that owns that finding -- but folding it into "fine" here would let this loop report a clean sweep over a short corpus.
             problems.append(
                 "%s: the registered file does not exist, so it was NOT checked" % script
             )

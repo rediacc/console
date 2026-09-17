@@ -20,17 +20,9 @@ import subprocess
 import sys
 import tempfile
 
-# THIS HARNESS SITS BESIDE ITS GUARD, which is what
-# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
-# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
-# and it is the only credit these four have because their block direction needs
-# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
-# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
-# to .claude/oracles/, where the differential still compares the two
-# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
-# the reason the cutover exists at all: a suite that kept driving the retired file
-# would keep passing while the thing that actually runs went unchecked.
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original to .claude/oracles/, where the differential still compares the two byte for byte. This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked.
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unverified_push"]
 
@@ -78,9 +70,7 @@ def put(**over):
 CARRIED = os.path.join(d, ".ci", "config", "carried-reds.json")
 
 # A reason long enough to clear the substance bar the guard applies (>= 80
-# chars), so these cases test the CARRYING logic rather than accidentally
-# testing the length check. The low-effort case below uses a short one on
-# purpose.
+# chars), so these cases test the CARRYING logic rather than accidentally testing the length check. The low-effort case below uses a short one on purpose.
 GOOD_REASON = (
     "BLOCKER: the repair is a rebase reword and block-git-amend.sh has no override, "
     "so it belongs to the operator rather than this session."
@@ -129,17 +119,14 @@ cases.append((0, run(PUSH), "a WHOLE, GREEN, tree-matching receipt is honoured")
 put(headTree="0" * 40)
 cases.append((2, run(PUSH), "a receipt for a DIFFERENT tree is not a receipt"))
 
-# A `--quick --only <one-gate>` run produces a receipt otherwise identical to
-# one from all 254 gates. Without this the guard would honour a push proven by
-# a single gate -- a hole the runner closes by recording `whole`.
+# A `--quick --only <one-gate>` run produces a receipt otherwise identical to one from all 254 gates. Without this the guard would honour a push proven by a single gate -- a hole the runner closes by recording `whole`.
 put(whole=False)
 cases.append((2, run(PUSH), "a NARROWED run (--only/--skip) cannot authorise a push"))
 
 put(exitCode=1, failed=["check:format", "check:ci-parity"])
 cases.append((2, run(PUSH), "a RED receipt refuses, and names the failures"))
 
-# --- the allow direction, which decides whether the guard is tolerable -------
-# A guard whose usual outcome is a false positive is one that gets bypassed.
+# --- the allow direction, which decides whether the guard is tolerable ------- A guard whose usual outcome is a false positive is one that gets bypassed.
 put()
 cases.append((0, run("git status"), "CONTROL: a non-push is out of scope"))
 cases.append((0, run("git push --dry-run origin 0827-1"), "CONTROL: a dry run buys no CI round"))
@@ -155,9 +142,7 @@ cases.append(
 drop()
 cases.append((0, run("git status"), "CONTROL: no receipt is still fine for a non-push"))
 
-# --- carried reds: a RED receipt may authorise a push only when NAMED ---------
-# All-or-nothing is the shape that gets a guard bypassed, so a red may be carried
-# -- but only with every failure named, no stale entry, and a substantive reason.
+# --- carried reds: a RED receipt may authorise a push only when NAMED --------- All-or-nothing is the shape that gets a guard bypassed, so a red may be carried -- but only with every failure named, no stale entry, and a substantive reason.
 uncarry()
 put(exitCode=1, failed=["check:ci-pr-task-trailers"])
 cases.append((2, run(PUSH), "a red with NO carried-reds file still refuses"))
@@ -168,8 +153,7 @@ cases.append((0, run(PUSH), "a red whose every failure is NAMED and justified is
 put(exitCode=1, failed=["check:ci-pr-task-trailers", "check:lint"])
 cases.append((2, run(PUSH), "a SECOND, unnamed red still refuses -- carrying is per-gate"))
 
-# The rot guard: an excuse must not outlive the failure it excuses. The npm side
-# of this repo once carried 101 dead allowlist entries for exactly this reason.
+# The rot guard: an excuse must not outlive the failure it excuses. The npm side of this repo once carried 101 dead allowlist entries for exactly this reason.
 put(exitCode=1, failed=["check:lint"])
 carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
 cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
@@ -179,8 +163,7 @@ put(exitCode=1, failed=["check:ci-pr-task-trailers"])
 carry({"gate": "check:ci-pr-task-trailers", "reason": "known issue"})
 cases.append((2, run(PUSH), "a LOW-EFFORT reason does not carry anything"))
 
-# ORDERING: `whole` is checked BEFORE carrying, so carrying cannot become a
-# second way to launder a --only run. That hole is what the whole flag closed.
+# ORDERING: `whole` is checked BEFORE carrying, so carrying cannot become a second way to launder a --only run. That hole is what the whole flag closed.
 put(exitCode=1, failed=["check:ci-pr-task-trailers"], whole=False)
 carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
 cases.append((2, run(PUSH), "a NARROWED run is refused even when its red is carried"))

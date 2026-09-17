@@ -69,9 +69,7 @@ import { envRoot } from '../lib/repo-root.js';
 const ROOT = envRoot('CI_STEP_ENV_PARITY_ROOT');
 const LOCK = 'scripts/ci-runner/gates.lock.json';
 
-// ---------------------------------------------------------------------------
-// The workflow side: step `env:` blocks, and nothing else
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The workflow side: step `env:` blocks, and nothing else ---------------------------------------------------------------------------
 
 /** One step's `env:` block, as the workflow really writes it. */
 export interface StepEnv {
@@ -208,9 +206,7 @@ export function parseWorkflowStepEnv(text: string, where = '<workflow>'): Parsed
   return { steps, problems, envBlocks };
 }
 
-// ---------------------------------------------------------------------------
-// The lock side
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The lock side ---------------------------------------------------------------------------
 
 export interface LockGate {
   id: string;
@@ -224,8 +220,7 @@ export function groupByStep(gates: readonly LockGate[]): Map<string, LockGate[]>
   for (const g of gates) {
     const ci = g.ci;
     if (!ci || ci.kind !== 'step' || !ci.workflow || !ci.job || !ci.step) continue;
-    // A space-joined key is safe here because a workflow path, a job id and a step name
-    // are stored separately and re-split by index below, never by the separator.
+    // A space-joined key is safe here because a workflow path, a job id and a step name are stored separately and re-split by index below, never by the separator.
     const key = JSON.stringify([ci.workflow, ci.job, ci.step]);
     const list = out.get(key);
     if (list) list.push(g);
@@ -337,9 +332,7 @@ export function compareStep(
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// The analysis, pure over its inputs so the controls can drive it synthetically
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The analysis, pure over its inputs so the controls can drive it synthetically ---------------------------------------------------------------------------
 
 export interface Shape {
   workflows: number;
@@ -401,9 +394,7 @@ export function analyze(gates: readonly LockGate[], read: (workflow: string) => 
   };
 }
 
-// ---------------------------------------------------------------------------
-// The real run
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 function main(): number {
   let gates: LockGate[];
@@ -417,8 +408,7 @@ function main(): number {
     return 1;
   }
 
-  // ANTI-VACUITY, BOTH CORPORA, REFUSED SEPARATELY. A populated half does not excuse an
-  // empty one: an empty lock and an unreadable workflow produce the same confident zero.
+  // ANTI-VACUITY, BOTH CORPORA, REFUSED SEPARATELY. A populated half does not excuse an empty one: an empty lock and an unreadable workflow produce the same confident zero.
   if (gates.length === 0) {
     console.error(
       `✗ ${LOCK} holds 0 gates; this gate is not seeing the registry and its green would mean nothing`
@@ -441,14 +431,11 @@ function main(): number {
     );
     return 1;
   }
-  // THE PARSER'S OWN LIVENESS. Every comparison below reads "the step has no env" when the
-  // env parser is broken, and every one of those comparisons then passes. So the parser
-  // must be shown to work on the REAL corpus before its silence is believed.
+  // THE PARSER'S OWN LIVENESS. Every comparison below reads "the step has no env" when the env parser is broken, and every one of those comparisons then passes. So the parser must be shown to work on the REAL corpus before its silence is believed.
   if (shape.envBlocks === 0) {
     // ONE call, not three. Three wrapped `console.error`s make the tail
     // `console.error( / 'S' / ); / return 1; / }`, which is byte-identical to the same
-    // tail in every other gate that reports and refuses -- `check:ci-shape-duplication`
-    // reported exactly that as fingerprint `94f3f7e6f351` the moment this file joined the
+    // tail in every other gate that reports and refuses -- `check:ci-shape-duplication` reported exactly that as fingerprint `94f3f7e6f351` the moment this file joined the
     // `scripts/gates/check-*.ts` family. The message is unchanged; only its delivery is.
     console.error(
       `✗ the step-env parser found 0 \`env:\` blocks across ${shape.workflows} workflow ` +
@@ -503,9 +490,7 @@ function main(): number {
   return 1;
 }
 
-// ---------------------------------------------------------------------------
-// Controls
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 const WF = [
   'name: x',

@@ -55,10 +55,7 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "verify-ssh.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "verify_ssh.py"
 
-# ABSOLUTE INTERPRETERS, resolved once from the SUITE's environment. Every case
-# below hands the subject a PATH holding nothing but the stub directory, so
-# `bash`, `python3` and even the stubs' own `#!/usr/bin/env python3` would be
-# unresolvable if any of them went through PATH.
+# ABSOLUTE INTERPRETERS, resolved once from the SUITE's environment. Every case below hands the subject a PATH holding nothing but the stub directory, so `bash`, `python3` and even the stubs' own `#!/usr/bin/env python3` would be unresolvable if any of them went through PATH.
 BASH = shutil.which("bash") or "/bin/bash"
 PYTHON = sys.executable
 
@@ -70,14 +67,9 @@ BASE_ENV = {
     "PYTHONDONTWRITEBYTECODE": "1",
 }
 
-# The recording stub. Written as Python (new instruments are Python, not bash)
-# and generated per case so its configuration lives in its OWN text rather than
-# in an environment two processes deep.
+# The recording stub. Written as Python (new instruments are Python, not bash) and generated per case so its configuration lives in its OWN text rather than in an environment two processes deep.
 #
-# The counter file is what makes "succeeds on the Nth call" expressible: ssh is
-# a fresh process every attempt, so the attempt number cannot live in a
-# variable. It is per-CASE and per-SIDE, so the two implementations each get
-# their own count and neither can consume the other's budget.
+# The counter file is what makes "succeeds on the Nth call" expressible: ssh is a fresh process every attempt, so the attempt number cannot live in a variable. It is per-CASE and per-SIDE, so the two implementations each get their own count and neither can consume the other's budget.
 FAKE_SSH = """#!%(python)s
 import os, sys, time
 LOG = %(log)r
@@ -103,9 +95,7 @@ if ERR:
 sys.exit(0 if SUCCEED_ON and n >= SUCCEED_ON else 255)
 """
 
-# Every other external program the subject reaches for. Each records its argv
-# into the same log, so the comparison sees the whole call SEQUENCE in order,
-# not just the ssh calls.
+# Every other external program the subject reaches for. Each records its argv into the same log, so the comparison sees the whole call SEQUENCE in order, not just the ssh calls.
 FAKE_TOOL = """#!%(python)s
 import sys
 LOG = %(log)r
@@ -120,19 +110,13 @@ sys.exit(RC)
 """
 
 
-# The real programs a subject may still reach for, symlinked into a second
-# scratch directory. PATH is then exactly `<stubs>:<allowed real tools>` and
-# nothing else, so "not on PATH" means it, and a tool nobody listed cannot
-# quietly appear.
+# The real programs a subject may still reach for, symlinked into a second scratch directory. PATH is then exactly `<stubs>:<allowed real tools>` and nothing else, so "not on PATH" means it, and a tool nobody listed cannot quietly appear.
 #
 # `dirname` is on the list because the TWIN needs it before it does anything
 # else: `SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"` is line 29,
-# and with a stubs-only PATH the twin died there with `dirname: command not
-# found` while the port ran perfectly -- which the comparison correctly reported
-# as a divergence, and which was the test's fault rather than the port's.
+# and with a stubs-only PATH the twin died there with `dirname: command not found` while the port ran perfectly -- which the comparison correctly reported as a divergence, and which was the test's fault rather than the port's.
 #
-# `ssh` and `ssh-keyscan` are DELIBERATELY ABSENT: they are the two the stubs
-# own, and a symlink to a real one here would defeat every case in this file.
+# `ssh` and `ssh-keyscan` are DELIBERATELY ABSENT: they are the two the stubs own, and a symlink to a real one here would defeat every case in this file.
 ALLOWED_REAL_TOOLS = (
     "dirname",
     "basename",
@@ -198,8 +182,7 @@ def _bin(
         ("sleep", "", 0),
         ("whoami", "fixtureuser\n", 0),
         ("sudo", "", sudo_rc),
-        # Deterministic diagnostics: the real ones report live kernel data, and
-        # two runs a second apart can legitimately differ.
+        # Deterministic diagnostics: the real ones report live kernel data, and two runs a second apart can legitimately differ.
         ("cut", "0.10 0.20 0.30\n", 0),
         ("nproc", "8\n", 0),
     ):
@@ -230,10 +213,7 @@ def _run(
     env.update(env_extra)
     # PATH IS REPLACED, NOT PREPENDED, and the difference is not pedantry. The
     # first version of this file prepended, and `with_ssh=False` -- the case
-    # that is supposed to prove `require_cmd ssh` fires -- silently fell through
-    # to the machine's REAL ssh and tried to resolve a hostname on the network.
-    # Both sides agreed, so the comparison stayed green while the case tested
-    # nothing it claimed to. A replaced PATH cannot do that.
+    # that is supposed to prove `require_cmd ssh` fires -- silently fell through to the machine's REAL ssh and tried to resolve a hostname on the network. Both sides agreed, so the comparison stayed green while the case tested nothing it claimed to. A replaced PATH cannot do that.
     env["PATH"] = "%s:%s" % (binder, _sysbin(workdir / "sysbin"))
     resolved = shutil.which("ssh", path=env["PATH"])
     if with_ssh:
@@ -465,9 +445,7 @@ def test_refusals_that_diverge_only_in_text() -> None:
         "attempts-junk", ["h"], {**KEY, "ATTEMPTS": "abc"}, succeed_on=1, exact_stderr=False
     )
     assert exit_code == 1
-    # `whoami` HAS run by this point on both sides: bash does not evaluate
-    # ATTEMPTS arithmetically until the loop header, which is after the
-    # USER_NAME assignment. That ordering is asserted here rather than assumed.
+    # `whoami` HAS run by this point on both sides: bash does not evaluate ATTEMPTS arithmetically until the loop header, which is after the USER_NAME assignment. That ordering is asserted here rather than assumed.
     assert [c.split("\t")[0] for c in calls] == ["whoami"], calls
 
 
@@ -480,9 +458,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
     assert vs.parse_attempts("-2") == -2
     assert vs.parse_attempts("0x10") == 16
     assert vs.parse_attempts("010") == 8
-    # BOTH DIRECTIONS: junk must be rejected, not coerced to a default. A port
-    # that fell back to 15 here would probe a host fifteen times where the twin
-    # refuses outright.
+    # BOTH DIRECTIONS: junk must be rejected, not coerced to a default. A port that fell back to 15 here would probe a host fifteen times where the twin refuses outright.
     assert vs.parse_attempts("abc") is None
     assert vs.parse_attempts("3x") is None
     assert vs.parse_attempts("") is None

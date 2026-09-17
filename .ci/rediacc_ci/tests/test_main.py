@@ -40,15 +40,9 @@ from rediacc_ci.tests import differential as diff
 
 REAL_MAIN = pathlib.Path(cli.__file__)
 
-# The three lines the fixtures rewrite. Each is asserted to have matched, so a
-# refactor that changes a spelling reds these tests instead of quietly turning
-# them into a run of the unmodified file.
+# The three lines the fixtures rewrite. Each is asserted to have matched, so a refactor that changes a spelling reds these tests instead of quietly turning them into a run of the unmodified file.
 # THE TABLE'S ASSIGNMENT, HOWEVER MANY ROWS IT HOLDS. A literal `= ()` was
-# enough while the table was empty and stopped matching the day `setup` was
-# ported: the assertion below then refused to run rather than silently testing
-# an unmodified file, which is the assertion working. Both spellings are
-# matched -- the empty one-liner, and a multi-row tuple closed by a `)` in
-# column zero, which is how ruff formats it.
+# enough while the table was empty and stopped matching the day `setup` was ported: the assertion below then refused to run rather than silently testing an unmodified file, which is the assertion working. Both spellings are matched -- the empty one-liner, and a multi-row tuple closed by a `)` in column zero, which is how ruff formats it.
 TABLE_RE = re.compile(
     r"^VERBS: tuple\[Verb, \.\.\.\] = \(\)$|^VERBS: tuple\[Verb, \.\.\.\] = \(.*?^\)$",
     re.MULTILINE | re.DOTALL,
@@ -59,9 +53,7 @@ BROKEN_SLICE_LINE = "    rest = list(argv)"
 HELP_LINE = "        print(format_help(registry))"
 BROKEN_HELP_LINE = "        print(format_help(registry), file=sys.stderr)"
 
-# The handler under test's microscope: it prints the argv list it was handed, as
-# JSON, so the assertion is about a LIST and not about a re-split string. A
-# space inside one element is the case that a naive `" ".join` proof would miss.
+# The handler under test's microscope: it prints the argv list it was handed, as JSON, so the assertion is about a LIST and not about a re-split string. A space inside one element is the case that a naive `" ".join` proof would miss.
 PROBE_SOURCE = """\
 import json
 
@@ -89,13 +81,10 @@ def _fixture(tmp_path, *, main_source: str | None = None) -> pathlib.Path:
     root = tmp_path / "pkgroot"
     pkg = root / "rediacc_ci"
     pkg.mkdir(parents=True)
-    # No re-exports, exactly like the real __init__: the fixture must not need
-    # any module the real package happens to have.
+    # No re-exports, exactly like the real __init__: the fixture must not need any module the real package happens to have.
     (pkg / "__init__.py").write_text("__all__: list[str] = []\n", encoding="utf-8")
     (pkg / "__main__.py").write_text(planted, encoding="utf-8")
-    # `probe` is a TOP-LEVEL module, not `rediacc_ci.probe`: resolving it proves
-    # the dotted name in the table is what gets imported, rather than something
-    # the package would have pulled in anyway.
+    # `probe` is a TOP-LEVEL module, not `rediacc_ci.probe`: resolving it proves the dotted name in the table is what gets imported, rather than something the package would have pulled in anyway.
     (root / "probe.py").write_text(PROBE_SOURCE, encoding="utf-8")
     return root
 
@@ -120,9 +109,7 @@ def _run(args, *, root: pathlib.Path | None = None, cwd=None):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-# ---------------------------------------------------------------------------
-# the table is data, and it is introspectable
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the table is data, and it is introspectable ---------------------------------------------------------------------------
 
 
 def test_the_verb_table_is_data_with_a_name_accessor() -> None:
@@ -134,8 +121,7 @@ def test_the_verb_table_is_data_with_a_name_accessor() -> None:
         assert verb.module
         assert verb.entry
     assert cli.names() == [verb.name for verb in cli.VERBS]
-    # The accessor reads the table it is GIVEN, which is what makes the fixture
-    # and every dispatch case below possible.
+    # The accessor reads the table it is GIVEN, which is what makes the fixture and every dispatch case below possible.
     row = cli.Verb("probe", "s", "probe")
     assert cli.names((row,)) == ["probe"]
 
@@ -149,8 +135,7 @@ def test_help_is_derived_from_the_table_not_written_twice() -> None:
     for verb in cli.VERBS:
         assert verb.name in out, verb.name
     if not cli.VERBS:
-        # Vacuity guard for the loop above: with an empty table it asserts
-        # nothing, so the empty state has to be asserted explicitly.
+        # Vacuity guard for the loop above: with an empty table it asserts nothing, so the empty state has to be asserted explicitly.
         assert "none yet" in out
     assert (
         cli.format_help((cli.Verb("probe", "print the argv it got", "probe"),)).count("probe") >= 1
@@ -165,9 +150,7 @@ def test_h_is_the_same_help_on_the_same_stream() -> None:
     assert out_short == out_long
 
 
-# ---------------------------------------------------------------------------
-# the two error paths: a message, a stream, an exit code, and no traceback
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the two error paths: a message, a stream, an exit code, and no traceback ---------------------------------------------------------------------------
 
 
 def test_no_verb_is_a_usage_error_on_stderr_and_not_a_traceback() -> None:
@@ -203,9 +186,7 @@ def test_an_unknown_verb_lists_the_registered_ones(tmp_path) -> None:
     assert "known verbs: probe" in err
 
 
-# ---------------------------------------------------------------------------
-# argument passthrough: the contract every future port depends on
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- argument passthrough: the contract every future port depends on ---------------------------------------------------------------------------
 
 
 def test_argv_reaches_the_handler_exactly(tmp_path) -> None:
@@ -291,9 +272,7 @@ def _returns_a_string(argv):  # noqa: ARG001 -- the handler signature is the poi
     return "fine"
 
 
-# ---------------------------------------------------------------------------
-# CONTROLS. Each plants one defect and requires an assertion above to fire.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CONTROLS. Each plants one defect and requires an assertion above to fire. ---------------------------------------------------------------------------
 
 
 def test_control_the_fixture_really_runs_the_copy(tmp_path) -> None:
@@ -315,8 +294,7 @@ def test_control_the_passthrough_assertion_can_fail(tmp_path) -> None:
     root = _fixture(tmp_path, main_source=broken)
     rc, out, err = _run(["probe", "--", "--flag", "a b"], root=root, cwd=tmp_path)
     assert rc == 0, err
-    # The exact wrong answer, not merely "different": this names how a broken
-    # dispatcher fails, so the control cannot pass because of some third fault.
+    # The exact wrong answer, not merely "different": this names how a broken dispatcher fails, so the control cannot pass because of some third fault.
     assert json.loads(out) == ["probe", "--", "--flag", "a b"]
     assert json.loads(out) != WANT_ARGV
 

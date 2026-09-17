@@ -38,10 +38,7 @@ CONSOLE_ROOT = pathlib.Path(__file__).resolve().parents[3]
 CI_DOCKER_DIR = CONSOLE_ROOT / ".ci" / "docker" / "ci"
 BACKEND_STATE_FILE = CONSOLE_ROOT / ".backend-state"
 
-# rediacc-web is NOT here, and the omission is load-bearing. The `web:` service it
-# named is gone from .ci/docker/ci/docker-compose.yml (issue #533: nothing ever
-# started it, and it named an image CI does not publish). ci-stop-elite keeps its
-# own rediacc-web entry, which is correct -- that one is elite's container.
+# rediacc-web is NOT here, and the omission is load-bearing. The `web:` service it named is gone from .ci/docker/ci/docker-compose.yml (issue #533: nothing ever started it, and it named an image CI does not publish). ci-stop-elite keeps its own rediacc-web entry, which is correct -- that one is elite's container.
 CONTAINERS = ("rediacc-account-server",)
 
 
@@ -119,8 +116,7 @@ def main() -> int:
             print("  Force removing: %s" % container)
             force_remove(container)
 
-    # `missing_ok`, because the twin's `rm -f` is not an error when there is
-    # nothing to remove and this is the common case in CI.
+    # `missing_ok`, because the twin's `rm -f` is not an error when there is nothing to remove and this is the common case in CI.
     BACKEND_STATE_FILE.unlink(missing_ok=True)
 
     print("All services stopped")

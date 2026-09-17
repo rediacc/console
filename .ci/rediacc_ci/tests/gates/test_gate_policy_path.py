@@ -81,8 +81,7 @@ def all_paths(gate) -> list[str]:
 def test_pure_join_needs_no_filesystem(gate):
     gate.log_test("policyPath resolves against a root that contains nothing")
     with harness.temp_dir() as empty:
-        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles, nothing. A
-        # helper that stat'ed anything would have to either throw or answer a
+        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles, nothing. A helper that stat'ed anything would have to either throw or answer a
         # second location here; a pure join cannot tell the difference.
         result = pp(gate, "--path", ".deps-upgrade-blocklist", "--root", str(empty))
         gate.assert_eq(
@@ -90,13 +89,8 @@ def test_pure_join_needs_no_filesystem(gate):
             str(empty / ".ci" / "policy" / ".deps-upgrade-blocklist"),
             "resolves against a root containing no .ci directory at all",
         )
-        # The bash twin's second assertion is `rmdir`, which REFUSES a non-empty
-        # directory, so a helper that had touched, cached or created anything
-        # under the fixture root would fail that line. `iterdir()` is the same
-        # claim stated positively: nothing was created either. It is spelled this
-        # way rather than as `find | wc -l` for the reason the twin records --
-        # check:ci-silent-failures refuses an unguarded pipeline there, and it is
-        # right to, since a find that errored would count 0 and read as success.
+        # The bash twin's second assertion is `rmdir`, which REFUSES a non-empty directory, so a helper that had touched, cached or created anything under the fixture root would fail that line. `iterdir()` is the same claim stated positively: nothing was created either. It is spelled this way rather than as `find | wc -l` for the reason the twin records -- check:ci-silent-failures
+        # refuses an unguarded pipeline there, and it is right to, since a find that errored would count 0 and read as success.
         leftovers = sorted(p.name for p in empty.iterdir())
         gate.assert_eq(
             leftovers, [], "and the fixture root is still empty, so nothing was created either"
@@ -109,8 +103,7 @@ def test_every_known_name_resolves_to_a_real_file(gate):
     found = all_paths(gate)
     missing = [p for p in found if not pathlib.Path(p).is_file()]
     gate.assert_eq(missing, [], "every known policy name resolves to a file that exists today")
-    # ANTI-VACUITY. An empty name list would pass the loop above without checking
-    # anything, which is the class this repo keeps getting caught by.
+    # ANTI-VACUITY. An empty name list would pass the loop above without checking anything, which is the class this repo keeps getting caught by.
     gate.assert_eq(
         len(found) >= MIN_KNOWN_NAMES,
         True,
@@ -136,9 +129,7 @@ def test_unknown_name_is_refused_loudly(gate):
 def test_ci_trigger_is_not_a_policy_name(gate):
     gate.log_test(".ci-trigger is the one root dotfile in this family that is NOT policy")
     # It has no entries, no BLOCKER lines and no parser anywhere in the tree; its
-    # only effect is ROOT_MANIFESTS membership in .ci/scripts/ci/scope-map.cjs,
-    # which is what makes `touch .ci-trigger` force a full CI round. Naming it
-    # here would make the module claim a file it must not move.
+    # only effect is ROOT_MANIFESTS membership in .ci/scripts/ci/scope-map.cjs, which is what makes `touch .ci-trigger` force a full CI round. Naming it here would make the module claim a file it must not move.
     gate.assert_eq(
         pp(gate, "--is", ".ci-trigger").out.strip(),
         "false",
@@ -159,8 +150,7 @@ def test_ci_trigger_is_not_a_policy_name(gate):
 
 def test_one_location_at_a_time(gate):
     gate.log_test("no transition fallback: exactly one live policy directory")
-    # Every path the module hands out must live under the single directory --dir
-    # names. Two live locations is the failure this asserts against.
+    # Every path the module hands out must live under the single directory --dir names. Two live locations is the failure this asserts against.
     directory = pp(gate, "--dir").out.strip()
     expected = paths.repo_root() / directory if directory else paths.repo_root()
     strays = [p for p in all_paths(gate) if pathlib.Path(p).parent != expected]

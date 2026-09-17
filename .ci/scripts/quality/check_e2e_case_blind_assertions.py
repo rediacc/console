@@ -138,16 +138,13 @@ def run_controls():
         failures.extend(
             f"a healthy assertion was flagged: {n}" for n in never if any(n in g for g in got)
         )
-        # 7, not 8: the QUIET_NOT_LOWERCASED_SUBJECT line is deliberately bound
-        # to a subject this rule does not track, so it must NOT be resolved.
+        # 7, not 8: the QUIET_NOT_LOWERCASED_SUBJECT line is deliberately bound to a subject this rule does not track, so it must NOT be resolved.
         if examined != 7:
             failures.append(
                 f"resolved {examined} lowercased-subject assertions, expected exactly 7"
             )
 
-    # The rule is a claim ABOUT a helper. If that helper stops lowercasing, this
-    # gate is enforcing a rule that no longer exists, and every finding it
-    # produces is noise. Fail loudly rather than police a vanished contract.
+    # The rule is a claim ABOUT a helper. If that helper stops lowercasing, this gate is enforcing a rule that no longer exists, and every finding it produces is noise. Fail loudly rather than police a vanished contract.
     try:
         if ".toLowerCase()" not in HELPER.read_text(errors="replace"):
             failures.append(

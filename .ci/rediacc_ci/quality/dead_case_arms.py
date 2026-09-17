@@ -111,9 +111,7 @@ import time
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The three roots and their environment overrides, exactly as the twin names
-# them. Space-separated strings rather than lists, because the twin word-splits
-# them and the SPLIT STRING is what appears in the finding text.
+# The three roots and their environment overrides, exactly as the twin names them. Space-separated strings rather than lists, because the twin word-splits them and the SPLIT STRING is what appears in the finding text.
 TEST_DIRS_ENV = "DEAD_CASE_TEST_DIRS"
 MEDIA_DIRS_ENV = "DEAD_CASE_MEDIA_DIRS"
 CODE_DIRS_ENV = "DEAD_CASE_CODE_DIRS"
@@ -122,21 +120,15 @@ DEFAULT_TEST_DIRS = ".ci/scripts/test"
 DEFAULT_MEDIA_DIRS = ".ci/media"
 DEFAULT_CODE_DIRS = ".ci/scripts scripts packages/www/scripts"
 
-# POSIX [[:space:]], written out rather than abbreviated to `\s`, which is wider
-# in Python and would match a non-breaking space grep never sees.
+# POSIX [[:space:]], written out rather than abbreviated to `\s`, which is wider in Python and would match a non-breaking space grep never sees.
 SPACE = r"[ \t\n\v\f\r]"
 
-# A case-arm line: starts with an optional `*`, carries at least one
-# double-quoted glob segment, and ENDS in `)` (optionally followed by a
-# command on the same line). The earlier attempt anchored on `)$`, which
+# A case-arm line: starts with an optional `*`, carries at least one double-quoted glob segment, and ENDS in `)` (optionally followed by a command on the same line). The earlier attempt anchored on `)$`, which
 # missed the common `... ) ;;` and `... )` -with-trailing-code shapes and
-# made this gate's own control fail -- which is exactly what the control
-# is for.
+# made this gate's own control fail -- which is exactly what the control is for.
 CASE_ARM = re.compile(r'^%s*\*[^)]*"[^"]*"[^)]*\)' % SPACE)
 
-# The second grep of `extract_case_keys`, dropping a matched line whose CONTENT
-# is a comment. Applied to the whole `path:lineno:content` string, so the
-# `[^:]+:[0-9]+:` prefix is part of the pattern and not stripped first.
+# The second grep of `extract_case_keys`, dropping a matched line whose CONTENT is a comment. Applied to the whole `path:lineno:content` string, so the `[^:]+:[0-9]+:` prefix is part of the pattern and not stripped first.
 COMMENT_HIT = re.compile(r"^[^:]+:[0-9]+:%s*#" % SPACE)
 
 # Every quoted segment on a matched line, and every `ident=` token inside one.
@@ -145,9 +137,7 @@ COMMENT_HIT = re.compile(r"^[^:]+:[0-9]+:%s*#" % SPACE)
 QUOTED = re.compile(r'"[^"]*"')
 KEY_TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}=")
 
-# A line that does not count as a live reference: a comment in shell, C or a
-# block-comment continuation. `grep -qvE` over the hits, so ONE non-comment line
-# anywhere makes the key live.
+# A line that does not count as a live reference: a comment in shell, C or a block-comment continuation. `grep -qvE` over the hits, so ONE non-comment line anywhere makes the key live.
 CODE_COMMENT = re.compile(r"^%s*(#|//|\*)" % SPACE)
 
 # The directory name `--exclude-dir=test` removes, at any depth.
@@ -184,8 +174,7 @@ def _walk_files(root: pathlib.Path, exclude_dir: str | None = None):
             for name in filenames:
                 candidates.append(pathlib.Path(dirpath) / name)
     else:
-        # A root that does not exist. `grep`'s complaint goes to /dev/null in
-        # the twin and the walk simply yields nothing here.
+        # A root that does not exist. `grep`'s complaint goes to /dev/null in the twin and the walk simply yields nothing here.
         return
     for path in candidates:
         if path.is_symlink() or not path.is_file():
@@ -212,8 +201,7 @@ def extract_case_keys(dirs: list[str], base: pathlib.Path) -> list[str]:
         root = pathlib.Path(spec)
         absolute = root if root.is_absolute() else base / root
         for path, text in _walk_files(absolute):
-            # Re-spell the path the way grep would have printed it: the argument
-            # as given, plus the part below it.
+            # Re-spell the path the way grep would have printed it: the argument as given, plus the part below it.
             try:
                 suffix = path.relative_to(absolute)
                 shown = spec if str(suffix) == "." else os.path.join(spec, str(suffix))
@@ -278,8 +266,7 @@ def scan(
         if hit == "":
             continue
         # `${line%%:*}` and `cut -d: -f2`: the path is everything before the
-        # FIRST colon and the line number is the second colon-separated field.
-        # A path containing a colon breaks both, identically on both sides.
+        # FIRST colon and the line number is the second colon-separated field. A path containing a colon breaks both, identically on both sides.
         parts = hit.split(":")
         path = parts[0]
         lineno = parts[1] if len(parts) > 1 else ""
@@ -336,20 +323,10 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as control_dir:
         control = pathlib.Path(control_dir)
 
-        # -------------------------------------------------------------------
-        # CONTROL FIRST. Plant the exact defect this gate exists for and require
-        # the scanner to catch it. A gate that has never been seen to fire is
-        # indisputably worthless, and this one would otherwise report a clean
-        # tree forever.
-        # -------------------------------------------------------------------
+        # ------------------------------------------------------------------- CONTROL FIRST. Plant the exact defect this gate exists for and require the scanner to catch it. A gate that has never been seen to fire is indisputably worthless, and this one would otherwise report a clean tree forever. -------------------------------------------------------------------
         (control / "test").mkdir(parents=True)
-        # The planted key is GENERATED, never a literal. A literal placed here
-        # would live in this very file, which sits inside CODE_DIRS, so
-        # key_is_live would find it and call the planted arm "live" -- the
-        # control would then pass by accident and this gate would report a clean
-        # tree without ever having caught anything. Found by the control failing
-        # on its first run, which is the whole argument for putting the control
-        # before the scan.
+        # The planted key is GENERATED, never a literal. A literal placed here would live in this very file, which sits inside CODE_DIRS, so key_is_live would find it and call the planted arm "live" -- the control would then pass by accident and this gate would report a clean tree without ever having caught anything. Found by the control failing on its first run, which is the whole
+        # argument for putting the control before the scan.
         planted_key = "deadarmprobe%d%d" % (os.getpid(), int(time.time()))
         (control / "test" / "planted.sh").write_text(
             'case "$out" in\n    *"%s=20"* | *"%s=1"*)\n        log_fail "planted dead arm" ;;\n'
@@ -363,24 +340,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
-        # -------------------------------------------------------------------
-        # THE MEDIA SCAN ROOT, CONTROLLED IN BOTH DIRECTIONS.
+        # ------------------------------------------------------------------- THE MEDIA SCAN ROOT, CONTROLLED IN BOTH DIRECTIONS.
         #
-        # Adding a directory to a scan is the easiest change in this file to get
-        # wrong in a way that reports success: name the variable, forget to pass
-        # it, and the gate goes on scanning what it always scanned while its
-        # output claims a wider corpus. One control cannot catch that on its own
-        # -- a scanner that flagged EVERYTHING would also fire on a planted arm
-        # -- so both directions are required here:
+        # Adding a directory to a scan is the easiest change in this file to get wrong in a way that reports success: name the variable, forget to pass it, and the gate goes on scanning what it always scanned while its output claims a wider corpus. One control cannot catch that on its own -- a scanner that flagged EVERYTHING would also fire on a planted arm -- so both directions
+        # are required here:
         #
-        #   FIRES on a dead arm placed in a media-shaped root, and
-        #   STAYS SILENT on a live one whose key a real emitter does produce.
+        # FIRES on a dead arm placed in a media-shaped root, and STAYS SILENT on a live one whose key a real emitter does produce.
         #
-        # The live half points CODE_DIRS at a generated emitter rather than
-        # hoping some existing key is still live, for the same reason the
-        # planted key is generated: a literal written here would live in this
-        # file, inside CODE_DIRS, and vouch for itself.
-        # -------------------------------------------------------------------
+        # The live half points CODE_DIRS at a generated emitter rather than hoping some existing key is still live, for the same reason the planted key is generated: a literal written here would live in this file, inside CODE_DIRS, and vouch for itself. -------------------------------------------------------------------
         for name in ("media", "media-live", "media-code"):
             (control / name).mkdir(parents=True)
         media_planted_key = "mediadeadprobe%d%d" % (os.getpid(), int(time.time()))
@@ -409,9 +376,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
-    # VACUITY FLOOR for the new root. A scan root that has stopped matching
-    # files reports clean forever, which is the same green as a clean tree and
-    # tells them apart never.
+    # VACUITY FLOOR for the new root. A scan root that has stopped matching files reports clean forever, which is the same green as a clean tree and tells them apart never.
     media_files = media_shell_files(split_dirs(media_dirs_text), root)
     if media_files == 0:
         log.error(
@@ -420,9 +385,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # -----------------------------------------------------------------------
-    # The real scan.
-    # -----------------------------------------------------------------------
+    # ----------------------------------------------------------------------- The real scan. -----------------------------------------------------------------------
     real = scan(
         split_dirs(test_dirs_text) + split_dirs(media_dirs_text), code_dirs, root, code_dirs_text
     )
@@ -505,9 +468,7 @@ def selftest() -> int:
         tests.mkdir()
         code.mkdir()
 
-        # A generated key, for the same reason the gate generates its own: a
-        # literal here would live in this file, inside the repository's real
-        # CODE_DIRS, and vouch for itself the next time the gate ran.
+        # A generated key, for the same reason the gate generates its own: a literal here would live in this file, inside the repository's real CODE_DIRS, and vouch for itself the next time the gate ran.
         dead_key = "selftestdeadprobe%d" % os.getpid()
         live_key = "selftestliveprobe%d" % os.getpid()
 
@@ -530,9 +491,7 @@ def selftest() -> int:
             [],
         )
 
-        # THE FOUNDING DEFECT, as a control. A key that appears ONLY in a
-        # comment must not count as live, or the gate immunises itself against
-        # every pattern anyone documents.
+        # THE FOUNDING DEFECT, as a control. A key that appears ONLY in a comment must not count as live, or the gate immunises itself against every pattern anyone documents.
         (tests / "arm.sh").write_text(
             'case "$out" in\n    *"%s=1"*) log_fail "x" ;;\nesac\n' % dead_key, encoding="utf-8"
         )
@@ -554,8 +513,7 @@ def selftest() -> int:
             key_is_live(dead_key, [str(code)], base),
             False,
         )
-        # All three comment markers, and a mirror for each: the same text as
-        # code IS live.
+        # All three comment markers, and a mirror for each: the same text as code IS live.
         for marker in ("#", "//", "*"):
             (code / "doc.sh").write_text("%s %s=20\n" % (marker, dead_key), encoding="utf-8")
             ctl.check(

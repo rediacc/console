@@ -19,23 +19,11 @@ import subprocess
 import sys
 import tempfile
 
-# THIS HARNESS SITS BESIDE ITS GUARD, which is what
-# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
-# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
-# and it is the only credit these four have because their block direction needs
-# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
-# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
-# to .claude/oracles/, where the differential still compares the two
-# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
-# the reason the cutover exists at all: a suite that kept driving the retired file
-# would keep passing while the thing that actually runs went unchecked.
-# A REAL FOREIGN REPOSITORY, built rather than named. The scope cases below assert that
-# the guard stands down outside this checkout, and `target_root` resolves a path by
-# asking git about it: a path that does not exist is unresolvable, the guard keeps
-# guarding by design, and the case would then pass only while the fixture was missing --
-# green for the opposite of the reason it claims. Measured on the first run of these two
-# cases, which failed against a made-up /tmp path.
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original to .claude/oracles/, where the differential still compares the two byte for byte. This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked. A REAL
+# FOREIGN REPOSITORY, built rather than named. The scope cases below assert that the guard stands down outside this checkout, and `target_root` resolves a path by asking git about it: a path that does not exist is unresolvable, the guard keeps guarding by design, and the case would then pass only while the fixture was missing -- green for the opposite of the reason it claims.
+# Measured on the first run of these two cases, which failed against a made-up /tmp path.
 _FOREIGN_DIR = tempfile.mkdtemp(prefix="guard-scope-")
 subprocess.run(["git", "init", "-q", _FOREIGN_DIR], check=True, capture_output=True)
 pathlib.Path(_FOREIGN_DIR, "a.txt").write_text("hi\n", encoding="utf-8")
@@ -46,10 +34,7 @@ GUARD_ARGV = [sys.executable, DISPATCH, "block_destructive_git_restore"]
 
 # MUST BLOCK: every one of these discards uncommitted work.
 BLOCK = [
-    # A SUBMODULE is a different git toplevel and is NOT foreign: private/account is
-    # shared and frozen, so a discard there is exactly what this guard refuses. Pinned
-    # because the scope fix above allowed it until the predicate was narrowed from
-    # "different toplevel" to "outside the project tree".
+    # A SUBMODULE is a different git toplevel and is NOT foreign: private/account is shared and frozen, so a discard there is exactly what this guard refuses. Pinned because the scope fix above allowed it until the predicate was narrowed from "different toplevel" to "outside the project tree".
     "git -C private/account restore .",
     "git checkout -- packages/www/src/i18n/translations/.translation-hashes.json",  # the real 2026-08-14 command
     "git checkout --",
@@ -70,11 +55,7 @@ BLOCK = [
 
 # MUST NOT BLOCK: branch work, read-only inspection, and unrelated commands.
 ALLOW = [
-    # SCOPE, added 2026-09-09: a repo that is not this worktree. The guard's argument is
-    # about THIS shared checkout, and a session's throwaway fixture repo is not it. The
-    # first cut of this keyed on the event's cwd and could never fire, because the
-    # harness resets the shell's directory after every call -- the directory that
-    # matters is the one spelled in the command.
+    # SCOPE, added 2026-09-09: a repo that is not this worktree. The guard's argument is about THIS shared checkout, and a session's throwaway fixture repo is not it. The first cut of this keyed on the event's cwd and could never fire, because the harness resets the shell's directory after every call -- the directory that matters is the one spelled in the command.
     "git -C %s restore ." % _FOREIGN_DIR,
     "git -C %s checkout -- ." % _FOREIGN_DIR,
     "git checkout main",
@@ -104,10 +85,7 @@ def run(cmd: str) -> int:
 
 
 def main() -> int:
-    # Both directions in one pass: a command that must be BLOCKED (exit 2) and
-    # one that must be ALLOWED (exit 0). Keeping them as comprehensions rather
-    # than append-loops is what ruff's PERF401 asks for, and it keeps the two
-    # halves of the control visibly symmetric.
+    # Both directions in one pass: a command that must be BLOCKED (exit 2) and one that must be ALLOWED (exit 0). Keeping them as comprehensions rather than append-loops is what ruff's PERF401 asks for, and it keeps the two halves of the control visibly symmetric.
     failures = [f"MUST BLOCK but did not: {cmd!r}" for cmd in BLOCK if run(cmd) != 2]
     failures += [f"MUST ALLOW but blocked: {cmd!r}" for cmd in ALLOW if run(cmd) != 0]
 

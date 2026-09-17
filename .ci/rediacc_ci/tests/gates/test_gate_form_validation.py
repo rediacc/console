@@ -31,9 +31,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-form-validation.sh"
 
 GATE = paths.from_root("scripts/gates", "check-form-validation.ts")
 
-# The leniency planted by the mutant: accept a captcha guard as validation, which
-# is exactly what would let ContactForm pass while an empty submit still reaches
-# the network.
+# The leniency planted by the mutant: accept a captcha guard as validation, which is exactly what would let ContactForm pass while an empty submit still reaches the network.
 MUTATION = "&& !CAPTCHA_IDENTS.test(i)"
 
 
@@ -82,9 +80,7 @@ def test_selftest_passes_and_plants_both_shapes(gate):
 def test_the_control_can_actually_fail(gate, tmp_path):
     source = gate_source(gate)
     hits = source.count(MUTATION)
-    # THE CONTROL ON THE CONTROL. A mutation that matches nothing produces a
-    # byte-identical copy, whose selftest PASSES, and this case then reds while
-    # saying the opposite of what happened.
+    # THE CONTROL ON THE CONTROL. A mutation that matches nothing produces a byte-identical copy, whose selftest PASSES, and this case then reds while saying the opposite of what happened.
     if hits == 0:
         gate.log_fail(
             "the planted leniency %r no longer appears in %s, so the 'mutant' below is a "

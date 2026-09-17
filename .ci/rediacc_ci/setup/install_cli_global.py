@@ -118,21 +118,13 @@ from rediacc_ci.core import common
 ARG_KEY = "ARG_PACKAGE_DIR"
 DEFAULT_PACKAGE_DIR = "packages/cli"
 
-# The tarball pattern, from install-cli-global.sh:41. `npm pack` names its output
-# `<name>-<version>.tgz` with the scope stripped, so `@rediacc/cli` packs as
-# `rediacc-cli-<version>.tgz`.
+# The tarball pattern, from install-cli-global.sh:41. `npm pack` names its output `<name>-<version>.tgz` with the scope stripped, so `@rediacc/cli` packs as `rediacc-cli-<version>.tgz`.
 TARBALL_GLOB = "rediacc-cli-*.tgz"
 
-# GNU coreutils `ls` exits 2 for "serious trouble", which includes an operand it
-# cannot stat. Under `pipefail` that becomes the pipeline's status and under
-# `set -e` it becomes the SCRIPT's status. Named rather than inlined so the
-# provenance of a bare `2` is readable at the return statement.
+# GNU coreutils `ls` exits 2 for "serious trouble", which includes an operand it cannot stat. Under `pipefail` that becomes the pipeline's status and under `set -e` it becomes the SCRIPT's status. Named rather than inlined so the provenance of a bare `2` is readable at the return statement.
 LS_CANNOT_STAT_EXIT = 2
 
-# The message install-cli-global.sh:44 would print if it could be reached. Kept
-# as a constant, unused by any code path, so that the string a reader greps for
-# still exists in the port -- and so its absence from every run's output is a
-# deliberate, documented match rather than an omission.
+# The message install-cli-global.sh:44 would print if it could be reached. Kept as a constant, unused by any code path, so that the string a reader greps for still exists in the port -- and so its absence from every run's output is a deliberate, documented match rather than an omission.
 UNREACHABLE_NO_TARBALL = "No tarball found after npm pack"
 
 # The two names the twin probes for, in order (install-cli-global.sh:58-64).
@@ -207,9 +199,7 @@ def main(argv: list[str]) -> int:
         exc.report()
         return exc.code
 
-    # `cd "$(get_repo_root)"` BEFORE the validation, so `--package-dir` is always
-    # interpreted relative to the repo root and never to the caller's cwd
-    # (install-cli-global.sh:27).
+    # `cd "$(get_repo_root)"` BEFORE the validation, so `--package-dir` is always interpreted relative to the repo root and never to the caller's cwd (install-cli-global.sh:27).
     os.chdir(common.repo_root())
 
     try:
@@ -225,8 +215,7 @@ def main(argv: list[str]) -> int:
     log.step("Creating npm package tarball...")
     code = npm(["pack"])
     if code != 0:
-        # UNGUARDED IN THE TWIN: `set -e` ends it here with npm's code and no
-        # message of its own. Fact 2.
+        # UNGUARDED IN THE TWIN: `set -e` ends it here with npm's code and no message of its own. Fact 2.
         return code
 
     tarball = choose_tarball()

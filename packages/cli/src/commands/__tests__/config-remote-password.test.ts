@@ -277,10 +277,7 @@ describe('config remote enable --password', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 
-  // Six unrelated server conditions share HTTP 403 on password-enroll and the
-  // CLI used to render all of them as "requires a passkey". The server sends
-  // them as bare HTTPExceptions with no error code (see
-  // private/account/src/middleware/api-token.ts and routes/configs.ts), so the
+  // Six unrelated server conditions share HTTP 403 on password-enroll and the CLI used to render all of them as "requires a passkey". The server sends them as bare HTTPExceptions with no error code (see private/account/src/middleware/api-token.ts and routes/configs.ts), so the
   // message text is the only discriminator; these cases quote it verbatim.
   const forbiddenCases: { name: string; serverMessage: string; expected: RegExp }[] = [
     {

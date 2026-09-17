@@ -32,8 +32,7 @@ PLAIN = "module example.com/y\n\ngo 1.21\n"
 def _bash_discovery(root: pathlib.Path) -> list[str]:
     code, out, err = diff.bash_streams(DISCOVERY, cwd=str(root))
     # `grep -v` exits 1 on no match and `sort` then succeeds; the twin runs the
-    # pipeline inside a process substitution where the status is ignored, so a
-    # non-zero code here is not a failure of the test.
+    # pipeline inside a process substitution where the status is ignored, so a non-zero code here is not a failure of the test.
     assert err == "", err
     assert code in (0, 1), code
     return [line for line in out.split("\n") if line]
@@ -44,8 +43,7 @@ def test_discovery_matches_bash_on_a_populated_tree(tmp_path: pathlib.Path) -> N
     (tmp_path / "a" / "go.mod").write_text(REPLACING, encoding="utf-8")
     (tmp_path / "b" / "c").mkdir(parents=True)
     (tmp_path / "b" / "c" / "go.mod").write_text(REPLACING, encoding="utf-8")
-    # A module that does NOT replace renet is not a subject. Without this the
-    # comparison would agree on a discovery that matched every go.mod.
+    # A module that does NOT replace renet is not a subject. Without this the comparison would agree on a discovery that matched every go.mod.
     (tmp_path / "d").mkdir()
     (tmp_path / "d" / "go.mod").write_text(PLAIN, encoding="utf-8")
     found = gms.find_modules(tmp_path)

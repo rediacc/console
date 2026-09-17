@@ -89,8 +89,7 @@ CASES = [
         1,
     ),
     (
-        # THE NEGATIVE HALF. Same shape, mode 755, must go quiet. Without this a
-        # detector that flags every referenced script passes the case above.
+        # THE NEGATIVE HALF. Same shape, mode 755, must go quiet. Without this a detector that flags every referenced script passes the case above.
         "the same script committed executable is not reported",
         {"alpha.sh": ("#!/bin/bash\necho a\n", 0o755), "caller.yml": ("run: ./alpha.sh\n", 0o644)},
         0,
@@ -104,15 +103,13 @@ CASES = [
         1,
     ),
     (
-        # DOCUMENTATION IS NOT AN INVOCATION. Both false positives the twin was
-        # written for are this shape.
+        # DOCUMENTATION IS NOT AN INVOCATION. Both false positives the twin was written for are this shape.
         "a reference inside a comment is documentation, not an invocation",
         {"eta.sh": ("#!/bin/bash\necho e\n", 0o644), "caller.yml": ("# Usage: ./eta.sh\n", 0o644)},
         0,
     ),
     (
-        # THE ANCHOR CONTROL. `../iota.sh` from inside sub/ must NOT be read as
-        # `./iota.sh` relative to sub/.
+        # THE ANCHOR CONTROL. `../iota.sh` from inside sub/ must NOT be read as `./iota.sh` relative to sub/.
         "a parent-relative reference is not a local one",
         {
             "sub/iota.sh": ("#!/bin/bash\necho i\n", 0o644),
@@ -126,10 +123,7 @@ CASES = [
         1,
     ),
     (
-        # AN UNTRACKED TARGET IS NOT OURS. The reference names a path git does not
-        # know, so no mode exists and nothing is reported. `git add -A` picks up
-        # every file written here, so the untracked case is expressed by naming a
-        # path that was never written at all.
+        # AN UNTRACKED TARGET IS NOT OURS. The reference names a path git does not know, so no mode exists and nothing is reported. `git add -A` picks up every file written here, so the untracked case is expressed by naming a path that was never written at all.
         "a reference to a path git does not track is skipped",
         {"caller.yml": ("run: ./nowhere.sh\n", 0o644)},
         0,

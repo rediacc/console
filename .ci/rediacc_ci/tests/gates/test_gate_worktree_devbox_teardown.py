@@ -160,8 +160,7 @@ def test_failed_teardown_aborts_the_removal(gate, tmp_path: pathlib.Path):
 
 def test_no_docker_keeps_todays_behaviour(gate, tmp_path: pathlib.Path):
     gate.log_test("a docker-less machine must behave exactly as before")
-    # `docker info` failing means no daemon: there is no container to orphan, so
-    # removal must proceed rather than start refusing where it always worked.
+    # `docker info` failing means no daemon: there is no container to orphan, so removal must proceed rather than start refusing where it always worked.
     directory = build_harness(gate, tmp_path, 1, 1)
     rc, calls = run_removal(directory)
     gate.assert_exit_code(0, rc, "removal must still succeed with no docker daemon")
@@ -176,8 +175,7 @@ def test_no_docker_keeps_todays_behaviour(gate, tmp_path: pathlib.Path):
 
 def test_control_ordering_can_fail(gate, tmp_path: pathlib.Path):
     gate.log_test("CONTROL: move teardown after the delete and the order test MUST go red")
-    # BY CONSTRUCTION: a harness whose remove_worktree calls them in the WRONG
-    # order. If the assertion cannot see that, it is not testing order.
+    # BY CONSTRUCTION: a harness whose remove_worktree calls them in the WRONG order. If the assertion cannot see that, it is not testing order.
     directory = tmp_path / "ctl"
     directory.mkdir()
     (directory / "harness.sh").write_text(

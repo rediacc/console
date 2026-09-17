@@ -68,17 +68,9 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real, deterministic, and genuinely reached: `dirname` and `basename` by the
-# twin's own path arithmetic, `tr` by its lowercase of a flag name, `find` and
-# `head` by the output lookup, `cp`/`mkdir`/`wc` by the copy and the size line,
-# `mktemp` by `:172` and `rm` by the EXIT trap.
-# Everything not listed is ABSENT, including a real `nfpm` and a real `gpg`.
+# Real, deterministic, and genuinely reached: `dirname` and `basename` by the twin's own path arithmetic, `tr` by its lowercase of a flag name, `find` and `head` by the output lookup, `cp`/`mkdir`/`wc` by the copy and the size line, `mktemp` by `:172` and `rm` by the EXIT trap. Everything not listed is ABSENT, including a real `nfpm` and a real `gpg`.
 #
-# `mktemp` WAS MISSING FROM THIS TUPLE and every build-path case failed with
-# `line 172: mktemp: command not found`, exit 127, on the OLD side only. That is
-# the PATH-discipline trap this campaign keeps hitting from the other direction:
-# replacing PATH is right, and a tool the twin genuinely needs then has to be
-# listed here or the differential compares a real run against a broken one.
+# `mktemp` WAS MISSING FROM THIS TUPLE and every build-path case failed with `line 172: mktemp: command not found`, exit 127, on the OLD side only. That is the PATH-discipline trap this campaign keeps hitting from the other direction: replacing PATH is right, and a tool the twin genuinely needs then has to be listed here or the differential compares a real run against a broken one.
 PATH_MINIMUM = (
     "dirname",
     "basename",
@@ -95,15 +87,10 @@ PATH_MINIMUM = (
     "rm",
 )
 
-# `find` is a FAKE that records its argv and then execs the real one, so the
-# lookup at `:277-279` is compared as an INVOCATION and not merely by its
-# result. Without it a port that said `-maxdepth 2` would pass every case here,
-# because nfpm's output directory has no subdirectory for the difference to show
-# up in. `$FAKE_FIND_RC` also makes DEFECT 3 drivable.
+# `find` is a FAKE that records its argv and then execs the real one, so the lookup at `:277-279` is compared as an INVOCATION and not merely by its result. Without it a port that said `-maxdepth 2` would pass every case here, because nfpm's output directory has no subdirectory for the difference to show up in. `$FAKE_FIND_RC` also makes DEFECT 3 drivable.
 REAL_FIND = shutil.which("find")
 
-# The masking helper every fake shares. `$FIXTURE_TMP/<random>/rest` becomes
-# `<BUILD_DIR>/rest`, and `$FIXTURE_TMP/<random>/` becomes `<BUILD_DIR>/`.
+# The masking helper every fake shares. `$FIXTURE_TMP/<random>/rest` becomes `<BUILD_DIR>/rest`, and `$FIXTURE_TMP/<random>/` becomes `<BUILD_DIR>/`.
 MASK = r"""
 __mask() {
     local a="$1" rest sub
@@ -124,9 +111,7 @@ __record() {
 }
 """
 
-# `nfpm package --config X --packager F --target D/`. Writes ONE file, named the
-# way nfpm names things (which is deliberately NOT the name the script wants --
-# the rename at `:286` is the behaviour under test).
+# `nfpm package --config X --packager F --target D/`. Writes ONE file, named the way nfpm names things (which is deliberately NOT the name the script wants -- the rename at `:286` is the behaviour under test).
 FAKE_NFPM = (
     """#!/bin/bash
 __self=nfpm
@@ -204,10 +189,7 @@ exit "${FAKE_CANON_RC:-0}"
 """
 )
 
-# Records, then delegates to the real `find` so the DIRECTORY-ORDER behaviour the
-# port's module head relies on is genuinely exercised. `FAKE_FIND_RC` overrides
-# the real status without changing the output, which is what DEFECT 3 needs: a
-# `find` that PRINTS a package and still exits non-zero.
+# Records, then delegates to the real `find` so the DIRECTORY-ORDER behaviour the port's module head relies on is genuinely exercised. `FAKE_FIND_RC` overrides the real status without changing the output, which is what DEFECT 3 needs: a `find` that PRINTS a package and still exits non-zero.
 FAKE_FIND = (
     """#!/bin/bash
 __self=find
@@ -229,20 +211,14 @@ LINE_RE = re.compile(r"line \d+: ")
 GOOD_FPR = "ABCDEF0123456789ABCDEF0123456789ABCDEF01"
 OTHER_FPR = "9999999999999999999999999999999999999999"
 
-# The passphrase the fixture hands the signing path, and what the fake `nfpm`
-# prints for a variable it was NOT given.
+# The passphrase the fixture hands the signing path, and what the fake `nfpm` prints for a variable it was NOT given.
 #
-# BOUND TO A NAME RATHER THAN WRITTEN INLINE, and that is a lint constraint
-# rather than a style preference: ruff's S105/S106 flag a string LITERAL next to
+# BOUND TO A NAME RATHER THAN WRITTEN INLINE, and that is a lint constraint rather than a style preference: ruff's S105/S106 flag a string LITERAL next to
 # an identifier that looks like a credential, so `_signed(RELEASE_GPG_PASSPHRASE=
 # "hunter2")` and `seen["NFPM_RPM_PASSPHRASE"] == "hunter2"` are four findings.
-# A reference is not a literal. Suppressing the rule per line is what
-# `check:ci-python-lint` explicitly refuses, and it would be the wrong trade
-# anyway: the rule is right in general and merely uninformed about fixtures.
+# A reference is not a literal. Suppressing the rule per line is what `check:ci-python-lint` explicitly refuses, and it would be the wrong trade anyway: the rule is right in general and merely uninformed about fixtures.
 #
-# `FIXTURE_PHRASE`, not `FIXTURE_PASSPHRASE`: S105 matches the IDENTIFIER, so
-# naming the constant after what it holds simply moved the same finding from
-# five call sites to one declaration.
+# `FIXTURE_PHRASE`, not `FIXTURE_PASSPHRASE`: S105 matches the IDENTIFIER, so naming the constant after what it holds simply moved the same finding from five call sites to one declaration.
 FIXTURE_PHRASE = "hunter2"
 UNSET = "<unset>"
 
@@ -430,9 +406,7 @@ def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
 DEB = ("--binary", "dist/cli/rdc-linux-x64", "--version", "1.2.3", "--arch", "amd64")
 
 
-# ---------------------------------------------------------------------------
-# The control on the control
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
 def test_the_scratch_path_is_sealed(tmp_path) -> None:
@@ -507,9 +481,7 @@ def test_the_restated_constants_match_constants_sh() -> None:
         assert expected in text, "constants.sh no longer says %s; the port is stale" % expected
 
 
-# ---------------------------------------------------------------------------
-# Argument parsing and validation
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument parsing and validation ---------------------------------------------------------------------------
 
 
 def test_help_prints_usage_on_stdout_and_exits_zero(tmp_path) -> None:
@@ -598,9 +570,7 @@ def test_an_invalid_arch_refuses(tmp_path) -> None:
     _agree(old_t, new_t, "bad-arch")
 
 
-# ---------------------------------------------------------------------------
-# Naming: four conventions, four arch spellings
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Naming: four conventions, four arch spellings ---------------------------------------------------------------------------
 
 
 def test_every_format_and_arch_spelling_produces_the_documented_filename(tmp_path) -> None:
@@ -719,9 +689,7 @@ def test_a_binary_with_no_directory_part_still_becomes_absolute(tmp_path) -> Non
     _agree(old_t, new_t, "bare-binary-name")
 
 
-# ---------------------------------------------------------------------------
-# The unsigned happy path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The unsigned happy path ---------------------------------------------------------------------------
 
 
 def test_an_unsigned_deb_builds_renames_and_warns(tmp_path) -> None:
@@ -795,8 +763,7 @@ def test_release_signing_required_turns_an_empty_secret_into_a_refusal(tmp_path)
     indistinguishable from "no signing wanted", and the build shipped unsigned
     and green."""
     root = fixture(tmp_path)
-    # NOT `..._amd64.%s`: rpm's convention is `-1.x86_64.rpm`, and writing the
-    # deb spelling for both formats is how this assertion previously came to
+    # NOT `..._amd64.%s`: rpm's convention is `-1.x86_64.rpm`, and writing the deb spelling for both formats is how this assertion previously came to
     # carry an `or fmt == "rpm"` escape hatch -- which made it ALWAYS TRUE for
     # rpm and therefore checked nothing on the arm that needed it most.
     built = {
@@ -839,9 +806,7 @@ def test_release_signing_required_does_not_touch_apk_or_archlinux(tmp_path) -> N
         _agree(old_t, new_t, "required-noop-%s" % fmt)
 
 
-# ---------------------------------------------------------------------------
-# Failure paths around nfpm
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Failure paths around nfpm ---------------------------------------------------------------------------
 
 
 def test_a_missing_nfpm_is_declared_not_a_stack_trace(tmp_path) -> None:
@@ -939,9 +904,7 @@ def test_the_build_directory_never_survives_any_path(tmp_path) -> None:
         assert new_t[4] == [], new_t[4]
 
 
-# ---------------------------------------------------------------------------
-# Signing
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Signing ---------------------------------------------------------------------------
 
 
 def _signed(fpr: str = GOOD_FPR, **extra) -> dict[str, str | None]:
@@ -1231,8 +1194,7 @@ def test_the_logger_escape_divergence_is_pinned_not_accidental(tmp_path) -> None
     assert "  Binary: a\\tb\n" in new_t[0].stderr, "the port does not"
     assert old_t[0].stderr != new_t[0].stderr
 
-    # Everything OTHER than that line still has to match, or this test would be
-    # excusing far more divergence than it names.
+    # Everything OTHER than that line still has to match, or this test would be excusing far more divergence than it names.
     def without_binary_line(text: str) -> list[str]:
         return [ln for ln in text.splitlines() if "Binary:" not in ln]
 
@@ -1254,9 +1216,7 @@ def test_a_missing_gpg_is_declared_before_the_check_that_needs_it(tmp_path) -> N
     _agree(old_t, new_t, "no-gpg")
 
 
-# ---------------------------------------------------------------------------
-# The proof the differential can fail
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The proof the differential can fail ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:
@@ -1302,9 +1262,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     assert new_t[4] != [], "the leak must be visible"
 
 
-# ---------------------------------------------------------------------------
-# Unit-level
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Unit-level ---------------------------------------------------------------------------
 
 
 def test_package_filename_covers_all_four_conventions() -> None:

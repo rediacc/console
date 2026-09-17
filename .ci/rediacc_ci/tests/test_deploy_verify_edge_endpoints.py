@@ -67,11 +67,7 @@ COMMON_LIB = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "verify_edge_endpoints.py"
 REGIONS = ROOT / "regions.json"
 
-# The recording fake. `$*` rather than a per-argument encoding because that is
-# what a reader compares by eye when a case fails, and no argument here contains
-# a space. A per-slug counter file lets a fixture answer DIFFERENTLY on the
-# second attempt, which is the only way to exercise `fetch_retry`'s agree-late
-# branch without a real eventually-consistent CDN.
+# The recording fake. `$*` rather than a per-argument encoding because that is what a reader compares by eye when a case fails, and no argument here contains a space. A per-slug counter file lets a fixture answer DIFFERENTLY on the second attempt, which is the only way to exercise `fetch_retry`'s agree-late branch without a real eventually-consistent CDN.
 FAKE_CURL = r"""#!/bin/bash
 printf 'curl %s\n' "$*" >>"$FAKE_LOG"
 url="${!#}"
@@ -122,10 +118,7 @@ HEALTHY_HEADERS = (
     "x-content-type-options: nosniff\r\n\r\n"
 )
 
-# The twin's retry budget is 6 attempts, 5 seconds apart: 25 seconds per failing
-# assertion. Two attempts with no sleep keeps the retry LOOP exercised (the
-# give-up message names the attempt count) while the whole file stays under a
-# second. `0` and not `0.01`: see FINDING 3.
+# The twin's retry budget is 6 attempts, 5 seconds apart: 25 seconds per failing assertion. Two attempts with no sleep keeps the retry LOOP exercised (the give-up message names the attempt count) while the whole file stays under a second. `0` and not `0.01`: see FINDING 3.
 BUDGET = {"EDGE_RETRIES": "2", "EDGE_RETRY_SLEEP": "0"}
 
 
@@ -279,17 +272,14 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     return tree
 
 
-# ---------------------------------------------------------------------------
-# The happy path, and the proof that it is not vacuous
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path, and the proof that it is not vacuous ---------------------------------------------------------------------------
 
 
 def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 0, old.err
     assert old.out.endswith("Smoke test passed\n")
-    # Anti-vacuity: a green run must have SAID something, and the region loop in
-    # particular must have run for every region in regions.json.
+    # Anti-vacuity: a green run must have SAID something, and the region loop in particular must have run for every region in regions.json.
     for domain in region_domains():
         assert "  %s health: OK (security headers verified)" % domain in old.out
     assert old.log.count("curl ") == 9 + 2 * len(region_domains()), old.log
@@ -305,9 +295,7 @@ def test_workers_only_skips_every_version_dependent_assertion(tmp_path: pathlib.
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Every documented failure mode
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Every documented failure mode ---------------------------------------------------------------------------
 
 
 def _put(directory: pathlib.Path, url: str, ext: str, text: str) -> None:
@@ -367,10 +355,7 @@ def test_a_stale_worker_bundle_fails_the_redirect_table_fingerprint(
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    # The em dash is the twin's own byte, and the port emits it from an escape.
-    # The escape, not the character: the twin emits a literal U+2014 here and this
-    # assertion must match that byte, but a literal em dash in authored source is
-    # banned house-wide.
+    # The em dash is the twin's own byte, and the port emits it from an escape. The escape, not the character: the twin emits a literal U+2014 here and this assertion must match that byte, but a literal em dash in authored source is banned house-wide.
     assert "got 200 \u2014 old worker bundle likely live" in old.out
     assert_same(old, new)
 
@@ -503,9 +488,7 @@ def test_a_version_mismatch_is_tolerated_not_failed(tmp_path: pathlib.Path) -> N
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The retry loop, in both directions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The retry loop, in both directions ---------------------------------------------------------------------------
 
 
 def test_a_surface_that_agrees_on_the_second_attempt_passes(tmp_path: pathlib.Path) -> None:
@@ -573,8 +556,7 @@ def test_a_fractional_retry_sleep_makes_the_twin_pass_without_running(
     assert old.rc == 0, "the twin PASSES a deployment whose /about returned 200"
     assert old.out.endswith("Smoke test passed\n")
     assert "  worker fingerprint (redirect table): OK (/about=410)" in old.out
-    # Asked of the running bash: 5.3 says "arithmetic syntax error", 5.2 says
-    # "syntax error", and CI is 5.2 while every host here is 5.3.
+    # Asked of the running bash: 5.3 says "arithmetic syntax error", 5.2 says "syntax error", and CI is 5.2 while every host here is 5.3.
     assert bash_dialect.arith_syntax_error() in old.err
     assert "::error::" not in old.out, "and it never says a word about the failure"
 
@@ -611,9 +593,7 @@ def test_an_integer_retry_sleep_is_still_byte_identical(tmp_path: pathlib.Path) 
         assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Region health, including the two defects it carries
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Region health, including the two defects it carries ---------------------------------------------------------------------------
 
 
 def test_a_non_200_region_fails_the_run_and_reports_finding_2(tmp_path: pathlib.Path) -> None:
@@ -718,9 +698,7 @@ def test_every_failing_region_is_reported_not_just_the_first(tmp_path: pathlib.P
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# FINDING 1: the vacuity hole, on a fixture tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- FINDING 1: the vacuity hole, on a fixture tree ---------------------------------------------------------------------------
 
 
 def test_a_missing_regions_json_checks_zero_regions_and_still_passes(
@@ -756,9 +734,7 @@ def test_the_same_tree_with_regions_json_present_does_check_them(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# Preconditions
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Preconditions ---------------------------------------------------------------------------
 
 
 def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) -> None:
@@ -804,9 +780,7 @@ def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
     assert old[1] == new[1] == ""
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers, exercised directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_substitute_strips_every_trailing_newline() -> None:
@@ -856,9 +830,7 @@ def test_fetch_retry_exhausts_the_budget_exactly_once_per_attempt() -> None:
     assert len(calls) == 4, "N attempts means N predicate calls, not N+1"
 
 
-# ---------------------------------------------------------------------------
-# The control: a planted defect must turn this suite red
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The control: a planted defect must turn this suite red ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:

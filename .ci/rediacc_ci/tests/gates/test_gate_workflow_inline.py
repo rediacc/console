@@ -37,10 +37,7 @@ from rediacc_ci.tests.gates import harness, workflow_rule
 
 BASH_TWIN = ".ci/scripts/test/gates/test-workflow-inline.sh"
 
-# INLINE_MAX_LOGIC, restated so the boundary cases can be read without opening
-# the subject. It is a MIRROR of the rule's constant, not the source of it: the
-# boundary case below drives 8 and 9 through the real script, so a change to the
-# rule reds there rather than silently agreeing with this line.
+# INLINE_MAX_LOGIC, restated so the boundary cases can be read without opening the subject. It is a MIRROR of the rule's constant, not the source of it: the boundary case below drives 8 and 9 through the real script, so a change to the rule reds there rather than silently agreeing with this line.
 INLINE_MAX_LOGIC = 8
 
 
@@ -194,9 +191,7 @@ def test_reports_every_offending_file(gate):
 
 def test_no_baseline_escape_hatch(gate):
     gate.log_test("regression guard on the DELETED grandfather clause")
-    # A baseline file sitting in the tree, naming the offending workflow with a
-    # matching count, must NOT excuse it. If this ever passes at exit 0, the
-    # ratchet has come back.
+    # A baseline file sitting in the tree, naming the offending workflow with a matching count, must NOT excuse it. If this ever passes at exit 0, the ratchet has come back.
     with harness.temp_dir() as d:
         write_workflow(d / "legacy.yml", 2)
         (d / "baseline.json").write_text('{"legacy.yml":2}\n', encoding="utf-8")
@@ -215,8 +210,7 @@ def test_no_baseline_escape_hatch(gate):
 
 def test_empty_tree_is_not_a_pass(gate):
     gate.log_test("ANTI-VACUITY: a workflow dir with no workflows is not clean")
-    # If the workflow directory moves or empties, the rule is asserting nothing
-    # and must say so instead of reporting clean. `assert_vacuous_tree_fails` is
+    # If the workflow directory moves or empties, the rule is asserting nothing and must say so instead of reporting clean. `assert_vacuous_tree_fails` is
     # the harness's port of the bash helper of the same name; it takes a runner
     # returning a RunResult, where the bash original left the output in $LAST_OUT.
     with harness.temp_dir() as d:

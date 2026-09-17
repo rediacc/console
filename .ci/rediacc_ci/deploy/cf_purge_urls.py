@@ -68,9 +68,7 @@ import os
 import subprocess
 import sys
 
-# The twin's own name, printed in every message it emits (:53, :66, :83, :104).
-# A literal rather than argv[0], because the messages must stay byte-identical
-# through the port and argv[0] here is a `.py` path.
+# The twin's own name, printed in every message it emits (:53, :66, :83, :104). A literal rather than argv[0], because the messages must stay byte-identical through the port and argv[0] here is a `.py` path.
 SELF = "cf-purge-urls.sh"
 
 # `${URLS[@]:$i:30}` (:88). The Cloudflare purge_cache endpoint accepts at most
@@ -83,9 +81,7 @@ CF_API_BASE = "https://api.cloudflare.com/client/v4"
 # The `$2: unbound variable` stand-in named in divergence 1 above.
 MISSING_ZONE_VALUE = "cf-purge-urls.sh: --zone requires a value"
 
-# The two paths that break the header's "always exits 0" promise. Named as a
-# constant so the differential can assert the defect by name rather than by
-# restating the sentence.
+# The two paths that break the header's "always exits 0" promise. Named as a constant so the differential can assert the defect by name rather than by restating the sentence.
 ALWAYS_EXITS_ZERO_IS_FALSE = True
 
 # `sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'` over the twin: its comment block
@@ -294,9 +290,7 @@ def main(argv: list[str]) -> int:
         print("::error::%s: --zone <ZONE_ID> is required" % SELF, file=sys.stderr)
         return 1
 
-    # `if [[ ! -t 0 ]]` (:58). A closed stdin is not a terminal either, and a
-    # logger-style crash here would read as the script failing rather than as
-    # there being nothing to read.
+    # `if [[ ! -t 0 ]]` (:58). A closed stdin is not a terminal either, and a logger-style crash here would read as the script failing rather than as there being nothing to read.
     try:
         piped = not sys.stdin.isatty()
     except (AttributeError, ValueError):
@@ -335,9 +329,7 @@ def main(argv: list[str]) -> int:
                     "(best-effort; Cache Rule makes this non-critical):" % (index * BATCH_SIZE),
                     file=sys.stderr,
                 )
-                # `echo "$RESPONSE" | jq -c '.errors' >&2`: jq's STDOUT is
-                # redirected to stderr here, so the errors array lands on the
-                # same stream as the warning above it.
+                # `echo "$RESPONSE" | jq -c '.errors' >&2`: jq's STDOUT is redirected to stderr here, so the errors array lands on the same stream as the warning above it.
                 rc_err, errors = _jq(["-c", ".errors"], response + "\n")
                 if rc_err:
                     raise BashExitError(rc_err)

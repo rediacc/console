@@ -30,9 +30,7 @@ from rediacc_ci import paths
 
 _HOOK_DIR = paths.from_root(".claude", "hooks", "stop")
 
-# A child that backgrounds a grandchild and then exits on its own. The grandchild
-# inherits stdout, so the pipe stays open long after the child is gone -- which is the
-# whole hazard. The child speaks first so there is partial output to preserve.
+# A child that backgrounds a grandchild and then exits on its own. The grandchild inherits stdout, so the pipe stays open long after the child is gone -- which is the whole hazard. The child speaks first so there is partial output to preserve.
 _FORKING_CHILD = "echo i-said-something; sleep 120 & exec sleep 120"
 
 
@@ -66,8 +64,7 @@ def test_a_child_holding_the_pipe_through_a_grandchild_is_bounded():
 
     assert result.timed_out is True, "the child outlives the deadline, so this IS a timeout"
     assert result.returncode == mod.TIMEOUT_RC
-    # Generous against a loaded machine, and still far below the 120s the grandchild
-    # would otherwise hold the pipe for. The point is bounded, not fast.
+    # Generous against a loaded machine, and still far below the 120s the grandchild would otherwise hold the pipe for. The point is bounded, not fast.
     assert elapsed < 30, "the runner took %.1fs; the grandchild kept the pipe open" % elapsed
 
 
@@ -98,6 +95,5 @@ def test_an_ordinary_command_is_unaffected():
     assert result.returncode == 0
     assert result.timed_out is False
     assert result.stdout.strip() == "fine"
-    # NEVER MERGED: several callers parse stdout as JSON, and a log line folded in from
-    # stderr would break the parse rather than the logging.
+    # NEVER MERGED: several callers parse stdout as JSON, and a log line folded in from stderr would break the parse rather than the logging.
     assert result.stderr.strip() == "bad"

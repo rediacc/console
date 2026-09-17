@@ -89,10 +89,7 @@ def main(argv: list[str]) -> int:
         except OSError:
             continue
         print(f"  {size:>10} bytes  {path}")
-    # A VACUOUS collection is REPORTED, not fatal: this runs in an `if:
-    # always()` diagnostics step, so exiting non-zero here would replace the
-    # real failure the operator came to read with a complaint about its
-    # diagnostics. The floor is the message.
+    # A VACUOUS collection is REPORTED, not fatal: this runs in an `if: always()` diagnostics step, so exiting non-zero here would replace the real failure the operator came to read with a complaint about its diagnostics. The floor is the message.
     if count == 0:
         print("  (nothing collected -- check that the drills ran with --keep-work)")
 

@@ -85,18 +85,13 @@ import sys
 
 # The four names the twin exports, in the order it exports them. `TAG` is the
 # legacy name renet/build.sh and some Docker builds still read; it is last in
-# the twin and last here, because a caller that dumps the mapping in insertion
-# order should produce the twin's own order.
+# the twin and last here, because a caller that dumps the mapping in insertion order should produce the twin's own order.
 EXPORTED_NAMES = ("APP_VERSION", "VITE_APP_VERSION", "CLI_VERSION", "TAG")
 
 # The local-dev fallback, and the exact string `--strict` refuses.
 DEV_VERSION = "0.0.0-dev"
 
-# The twin's ERE, character for character. A publishable version is dotted
-# numeric, optionally v-prefixed, with an optional pre-release/build suffix.
-# Matched with `fullmatch` rather than `search`: bash's `$` is end-of-string,
-# where Python's `$` also matches before a trailing newline, so `search` would
-# accept "1.2.3\n" that bash rejects.
+# The twin's ERE, character for character. A publishable version is dotted numeric, optionally v-prefixed, with an optional pre-release/build suffix. Matched with `fullmatch` rather than `search`: bash's `$` is end-of-string, where Python's `$` also matches before a trailing newline, so `search` would accept "1.2.3\n" that bash rejects.
 PUBLISHABLE_RE = re.compile(r"v?[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?")
 
 
@@ -141,8 +136,7 @@ def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
         if arg == "--version":
             if i + 1 >= len(argv):
                 raise UsageError("inject-env.sh: --version requires an argument")
-            # THE DEFECT IN THE MODULE DOCSTRING LIVES HERE: the next word is
-            # taken whatever it is, including another flag.
+            # THE DEFECT IN THE MODULE DOCSTRING LIVES HERE: the next word is taken whatever it is, including another flag.
             override = argv[i + 1]
             given = True
             i += 2
@@ -171,9 +165,7 @@ def resolve(override: str) -> str:
     resolved = _resolver_output()
     if resolved:
         return resolved
-    # Covers BOTH a failing resolver and one that exits 0 printing nothing. The
-    # second case is the one the twin's comment records as having propagated an
-    # empty version through `--strict`.
+    # Covers BOTH a failing resolver and one that exits 0 printing nothing. The second case is the one the twin's comment records as having propagated an empty version through `--strict`.
     return DEV_VERSION
 
 
@@ -193,8 +185,7 @@ def _resolver_output() -> str:
             check=False,
         )
     except OSError:
-        # A missing or non-executable resolver: bash's own diagnostic goes to
-        # the suppressed stderr and the substitution yields "".
+        # A missing or non-executable resolver: bash's own diagnostic goes to the suppressed stderr and the substitution yields "".
         return ""
     if completed.returncode != 0:
         return ""

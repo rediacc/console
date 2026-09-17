@@ -31,8 +31,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-inject-env.sh"
 
 GATE = paths.from_root(".ci", "scripts", "version", "inject-env.sh")
 
-# Every release-path boundary that must invoke --strict. Listed once, so the
-# count below is derived from this tuple rather than typed twice.
+# Every release-path boundary that must invoke --strict. Listed once, so the count below is derived from this tuple rather than typed twice.
 STRICT_CALLERS = (
     ".github/workflows/ci-build-cli.yml",
     ".github/workflows/ci-build-docker.yml",
@@ -92,9 +91,7 @@ def test_rejects_an_empty_version(gate):
     gate.assert_exit_code(1, result.rc, "an empty --version must fail under --strict")
     gate.assert_contains(result.err, "empty", "the failure must say the version was empty")
 
-    # And it is refused without --strict too: an explicitly-supplied empty
-    # version used to fall through to the resolver and silently pick up the
-    # CURRENT tag, i.e. the version that is already published.
+    # And it is refused without --strict too: an explicitly-supplied empty version used to fall through to the resolver and silently pick up the CURRENT tag, i.e. the version that is already published.
     result = run_inject(gate, "--version", "", "--print")
     gate.assert_exit_code(1, result.rc, "an empty --version must fail even without --strict")
     gate.log_pass("empty --version is refused, strict or not")
@@ -104,8 +101,7 @@ def test_rejects_a_malformed_version(gate):
     for value in ("1.2.x", "latest", "none", "<html>404</html>"):
         result = run_inject(gate, "--version", value, "--strict", "--print")
         gate.assert_exit_code(1, result.rc, "'%s' must fail under --strict" % value)
-    # Without --strict the same values still resolve: dev and local builds are
-    # not in the business of policing versions.
+    # Without --strict the same values still resolve: dev and local builds are not in the business of policing versions.
     result = run_inject(gate, "--version", "latest", "--print")
     gate.assert_exit_code(0, result.rc, "non-strict resolution must stay permissive")
     gate.assert_eq(result.out.strip(), "latest", "and yield the value it was given")
@@ -162,8 +158,7 @@ def test_guard_is_reachable_from_the_release_path(gate, tmp_path):
         % len(STRICT_CALLERS),
     )
 
-    # PROVE THIS COUNT CAN FALL: strip the invocations in a COPY and watch it
-    # drop to zero -- the exact state the repo was in before this wave. The copy
+    # PROVE THIS COUNT CAN FALL: strip the invocations in a COPY and watch it drop to zero -- the exact state the repo was in before this wave. The copy
     # lives under tmp_path; the real boundaries are read and never written.
     for name in STRICT_CALLERS:
         src = root.joinpath(*name.split("/"))

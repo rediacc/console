@@ -97,8 +97,7 @@ else:
     print(os.environ.get("FAKE_OPENSSL_B64", "aa/bb+cc=dd" + "x" * 60))
 """
 
-# A supplied-everything base: no generator runs, so the case is deterministic
-# even with the real node and openssl on PATH.
+# A supplied-everything base: no generator runs, so the case is deterministic even with the real node and openssl on PATH.
 SUPPLIED = {
     "ACCOUNT_ED25519_PRIVATE_KEY": "given-ed-priv",
     "ACCOUNT_ED25519_PUBLIC_KEY": "given-ed-pub",
@@ -111,9 +110,7 @@ SUPPLIED = {
 
 NAME_VALUE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
-# Fixture values, held in constants so the assertions below do not put a string
-# literal beside a `*_PASSWORD` / `*_SECRET` key: ruff's S105 reads that shape
-# as a hardcoded credential, and none of these is one.
+# Fixture values, held in constants so the assertions below do not put a string literal beside a `*_PASSWORD` / `*_SECRET` key: ruff's S105 reads that shape as a hardcoded credential, and none of these is one.
 FIXTURE_REGISTRY_CRED = "ghs_fixture"
 FIXTURE_ADMIN_WORD = "hunter2"
 STUB_WEBHOOK_VALUE = "whsec_test_"
@@ -191,9 +188,7 @@ def _run(base: pathlib.Path, which: str, env_extra: dict[str, str], *, dump: boo
     env_file = base / ".ci" / "docker" / "ci" / ".env"
     if env_file.exists():
         env_file.unlink()
-    # ONE path for both sides, truncated before each run: the value lands in
-    # the environment dump, so two different paths would read as a divergence
-    # in the thing under test.
+    # ONE path for both sides, truncated before each run: the value lands in the environment dump, so two different paths would read as a divergence in the thing under test.
     github_env = base / "github-env"
     github_env.write_text("", encoding="utf-8")
 
@@ -256,9 +251,7 @@ def _sides(name: str, env_extra: dict[str, str] | None = None, *, dump: bool = T
     return old, new, old_calls
 
 
-# ---------------------------------------------------------------------------
-# Controls: a comparison against a file that is not there proves nothing.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Controls: a comparison against a file that is not there proves nothing. ---------------------------------------------------------------------------
 
 
 def test_all_three_files_exist_where_this_file_says_they_do() -> None:
@@ -309,9 +302,7 @@ def test_the_twin_is_sourced_by_two_scripts_and_executed_by_none() -> None:
     assert executed == [], executed
 
 
-# ---------------------------------------------------------------------------
-# The constants are the twin's own text, not a paraphrase of it.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The constants are the twin's own text, not a paraphrase of it. ---------------------------------------------------------------------------
 
 
 def test_the_node_programs_are_the_twins_own_text() -> None:
@@ -362,9 +353,7 @@ def test_strip_and_cut_agrees_with_the_bash_pipeline() -> None:
         assert ci_env.strip_and_cut(text) == _bash_pipeline(text), text
 
 
-# ---------------------------------------------------------------------------
-# The differential.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The differential. ---------------------------------------------------------------------------
 
 
 def test_the_supplied_everything_case_agrees_on_all_four_observables() -> None:
@@ -459,10 +448,7 @@ def test_a_missing_node_ends_the_sourcing_shell_at_127() -> None:
         base = _tree(pathlib.Path(td))
         _stub_bin(base)
         (base / "bin" / "node").unlink()
-        # A CURATED PATH, because the real one has a real node on it and the
-        # point of this case is that there is none. `dirname` and `uname` are
-        # what the twin needs before it reaches node: its own SCRIPT_DIR, and
-        # common.sh's detect_os/detect_arch, which run at SOURCE time.
+        # A CURATED PATH, because the real one has a real node on it and the point of this case is that there is none. `dirname` and `uname` are what the twin needs before it reaches node: its own SCRIPT_DIR, and common.sh's detect_os/detect_arch, which run at SOURCE time.
         for name in ("dirname", "uname"):
             real = shutil.which(name)
             assert real is not None, name

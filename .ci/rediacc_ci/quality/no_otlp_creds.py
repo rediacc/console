@@ -95,28 +95,22 @@ import sys
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The dev build produced by `build.sh dev`, and the CI release builds produced by
-# `.ci/scripts/build/build-renet.sh`. The twin checks whichever exists and says
-# "it's fine to have just one".
+# The dev build produced by `build.sh dev`, and the CI release builds produced by `.ci/scripts/build/build-renet.sh`. The twin checks whichever exists and says "it's fine to have just one".
 DEV_RENET = ("private", "renet", "bin", "renet")
 RELEASE_BIN_DIR = ("private", "bin")
 RELEASE_PREFIX = "renet-"
 
-# The CLI bundle. The only valid `Basic` header in it is built at runtime from
-# `this.authToken` after `setRuntimeOtlpCredentials()` has been called.
+# The CLI bundle. The only valid `Basic` header in it is built at runtime from `this.authToken` after `setRuntimeOtlpCredentials()` has been called.
 CLI_BUNDLE = ("packages", "cli", "dist", "cli-bundle.cjs")
 
-# POSIX [[:space:]], written out. `\s` on a Python str also matches U+00A0 and
-# friends, which would make "is this output only whitespace" a different question.
+# POSIX [[:space:]], written out. `\s` on a Python str also matches U+00A0 and friends, which would make "is this output only whitespace" a different question.
 SPACE_RE = re.compile(r"[ \t\n\v\f\r]")
 
-# The two ldflag names, matched as `grep -q 'telemetry\.otlpUser'` does: a plain
-# substring with the dot escaped, anywhere in the buildinfo.
+# The two ldflag names, matched as `grep -q 'telemetry\.otlpUser'` does: a plain substring with the dot escaped, anywhere in the buildinfo.
 OTLP_USER_RE = re.compile(r"telemetry\.otlpUser")
 OTLP_PASS_RE = re.compile(r"telemetry\.otlpPass")
 
-# `grep -B1 -A1 'otlpUser\|otlpPass'` -- a BRE alternation, so a plain substring
-# test on either name.
+# `grep -B1 -A1 'otlpUser\|otlpPass'` -- a BRE alternation, so a plain substring test on either name.
 OTLP_SYMBOL_RE = re.compile(r"otlpUser|otlpPass")
 
 # `grep -Eq '^[A-Za-z0-9+/=]{20,}$'` -- a whole line of base64 alphabet, 20 or
@@ -129,9 +123,7 @@ BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=]{20,}$")
 # of a literal apostrophe inside a single-quoted shell pattern.
 BASIC_LITERAL_RE = re.compile(r"[\"']Basic [A-Za-z0-9+/=]{20,}[\"']")
 
-# The em dash in these two lines is the TWIN'S BYTE, not authored prose, and both
-# strings are compared against the twin's stdout by the shadow differential. It is
-# written as an escape so this source file carries none.
+# The em dash in these two lines is the TWIN'S BYTE, not authored prose, and both strings are compared against the twin's stdout by the shadow differential. It is written as an escape so this source file carries none.
 NO_RENET_WARN = (
     "no renet binaries found at private/renet/bin or private/bin \u2014 skipping renet checks"
 )
@@ -154,8 +146,7 @@ def renet_binaries(root: pathlib.Path) -> list[pathlib.Path]:
     release_dir = root.joinpath(*RELEASE_BIN_DIR)
     if release_dir.is_dir():
         with os.scandir(release_dir) as entries:
-            # `-type f` follows the symlink and asks about the target, and
-            # `-name 'renet-*'` is a glob on the BASENAME only.
+            # `-type f` follows the symlink and asks about the target, and `-name 'renet-*'` is a glob on the BASENAME only.
             found.extend(
                 pathlib.Path(entry.path)
                 for entry in entries
@@ -248,9 +239,7 @@ def main(argv: list[str] | None = None) -> int:
         log.warn(NO_RENET_WARN)
         log.warn(NO_RENET_HINT)
     else:
-        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE. Exit 2 is
-        # the twin's "setup error", distinct from 1 (a leak) so a caller can tell
-        # "this gate could not run" from "this gate found something".
+        # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE. Exit 2 is the twin's "setup error", distinct from 1 (a leak) so a caller can tell "this gate could not run" from "this gate found something".
         if not _have_go():
             log.error("go is required to inspect renet binaries via 'go version -m'")
             return 2
@@ -270,13 +259,9 @@ def main(argv: list[str] | None = None) -> int:
                     "%s: 'go version -m' failed (exit %d); cannot inspect for baked credentials"
                     % (binary, completed.returncode)
                 )
-                # `sed 's/^/    /' "$buildinfo_err" >&2`: raw, four spaces, NOT
-                # through the logger. See the port notes.
+                # `sed 's/^/ /' "$buildinfo_err" >&2`: raw, four spaces, NOT through the logger. See the port notes.
                 stderr_text = completed.stderr or ""
-                # `[[ -s "$buildinfo_err" ]] && sed ... >&2`: only when the file
-                # has bytes. `splitlines()` rather than `split("\n")` because sed
-                # does not invent a final empty line for a trailing newline, and a
-                # spurious "    " line would be an extra compared finding.
+                # `[[ -s "$buildinfo_err" ]] && sed ... >&2`: only when the file has bytes. `splitlines()` rather than `split("\n")` because sed does not invent a final empty line for a trailing newline, and a spurious " " line would be an extra compared finding.
                 if stderr_text:
                     for line in stderr_text.splitlines():
                         print("    %s" % line, file=sys.stderr)
@@ -301,10 +286,7 @@ def main(argv: list[str] | None = None) -> int:
                 errors += 1
 
         if errors == 0:
-            # The double glyph is the TWIN'S: log_info already prefixes `✓` and
-            # the message text starts with another one. Carried, and reported as
-            # a twin finding rather than tidied, because tidying it would change
-            # a compared line.
+            # The double glyph is the TWIN'S: log_info already prefixes `✓` and the message text starts with another one. Carried, and reported as a twin finding rather than tidied, because tidying it would change a compared line.
             log.info("✓ renet binaries: no OTLP credentials in build info")
 
     bundle = root.joinpath(*CLI_BUNDLE)
@@ -321,8 +303,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if errors > 0:
         # `log_error ""` prints a bare glyph with no message. Carried; the
-        # comparator drops an empty finding, so it costs nothing and removing it
-        # would change the bytes a human diffs.
+        # comparator drops an empty finding, so it costs nothing and removing it would change the bytes a human diffs.
         log.error("")
         log.error("%d credential leak(s) detected. Do NOT ship these artifacts." % errors)
         log.error("Check for accidentally-reintroduced build-time injection in")
@@ -368,8 +349,7 @@ def selftest() -> int:
         len(buildinfo_findings("b", "telemetry.otlpUser telemetry.otlpPass")),
         2,
     )
-    # MIRROR: the dot is escaped in the twin's pattern, so `telemetryXotlpUser`
-    # is not a match. A port that dropped the escape would flag more.
+    # MIRROR: the dot is escaped in the twin's pattern, so `telemetryXotlpUser` is not a match. A port that dropped the escape would flag more.
     ctl.check(
         "MIRROR: an unrelated symbol with the same tail is not a finding",
         buildinfo_findings("b", "telemetryXotlpUser=1"),

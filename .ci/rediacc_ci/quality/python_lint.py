@@ -194,8 +194,7 @@ RUFF_VERSION = "0.16.1"
 EXIT_CANNOT_RUN = 77
 
 # ruff colours its output even through a pipe; the `-->` lines arrive wrapped in
-# escapes and an anchored match without this strip silently falls back to naming
-# every file.
+# escapes and an anchored match without this strip silently falls back to naming every file.
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 UNFORMATTED = re.compile(r"^ *--> ([^:]*):.*$")
 
@@ -383,10 +382,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file ----------
-    # "Runs before the real list is built, because a list that omits files
-    # silently is not worth counting." The name is runtime-keyed so a crashed
-    # earlier run cannot make this pass by leaving its specimen behind.
+    # ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file ---------- "Runs before the real list is built, because a list that omits files silently is not worth counting." The name is runtime-keyed so a crashed earlier run cannot make this pass by leaving its specimen behind.
     enum_probe = "enum_probe_%d_%d.py" % (os.getpid(), int(time.time()))
     probe_path = pathlib.Path(root) / enum_probe
     probe_path.write_text("x = 1\n", encoding="utf-8")
@@ -426,25 +422,12 @@ def main(argv: list[str] | None = None) -> int:
             print("    %s" % name, file=sys.stderr)
         return 1
 
-    # `toolchain_load || exit 1`, which the twin runs at
-    # check-python-lint.sh:137 -- AFTER the two vacuity refusals above and
-    # BEFORE the resolver below, so the order here is the twin's order and not a
-    # convenient one.
+    # `toolchain_load || exit 1`, which the twin runs at check-python-lint.sh:137 -- AFTER the two vacuity refusals above and BEFORE the resolver below, so the order here is the twin's order and not a convenient one.
     #
-    # WHY THE PORT NEEDED THIS AT ALL. The module notes above explain that the
-    # pins file's RUFF_VERSION is immediately overwritten by the literal, so the
-    # port skips reading the file for the VERSION and is right to. What it also
-    # skipped was `toolchain_load`'s REFUSAL: with the pins file gone the twin
-    # exits 1 having printed nothing else, and this port went on to lint with
-    # whatever resolver it could find. That is an anti-vacuity refusal quietly
-    # dropped in a port, which is the shape this whole programme exists to
-    # catch. Found by the W7 P4 batch 8a cutover differential on a fixture tree
-    # that had no `.devcontainer/`: twin exit 1 with one line of stderr, port
-    # exit 0 with a full green report over 12 files.
+    # WHY THE PORT NEEDED THIS AT ALL. The module notes above explain that the pins file's RUFF_VERSION is immediately overwritten by the literal, so the port skips reading the file for the VERSION and is right to. What it also skipped was `toolchain_load`'s REFUSAL: with the pins file gone the twin exits 1 having printed nothing else, and this port went on to lint with whatever
+    # resolver it could find. That is an anti-vacuity refusal quietly dropped in a port, which is the shape this whole programme exists to catch. Found by the W7 P4 batch 8a cutover differential on a fixture tree that had no `.devcontainer/`: twin exit 1 with one line of stderr, port exit 0 with a full green report over 12 files.
     #
-    # The early return on REDIACC_TOOLCHAIN_LOADED is `toolchain.sh:28`, kept
-    # because a caller that has already sourced the pins legitimately has no
-    # file to re-read.
+    # The early return on REDIACC_TOOLCHAIN_LOADED is `toolchain.sh:28`, kept because a caller that has already sourced the pins legitimately has no file to re-read.
     if not os.environ.get("REDIACC_TOOLCHAIN_LOADED"):
         pins = pathlib.Path(root) / ".devcontainer" / "toolchain.env"
         if not os.access(pins, os.R_OK):
@@ -507,11 +490,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # NOT CAPTURED, and that is the difference between agreeing with the twin
         # and printing one line fewer. `$RUFF check --no-cache -- "${PY_FILES[@]}"`
-        # is a bare command in the twin, so ruff writes straight to the gate's own
-        # streams -- INCLUDING its `All checks passed!` line on success. A port
-        # that captured the output in order to inspect it would swallow that line
-        # on the GREEN path, which is exactly the divergence a differential built
-        # only from red specimens never sees. Caught by the clean specimen.
+        # is a bare command in the twin, so ruff writes straight to the gate's own streams -- INCLUDING its `All checks passed!` line on success. A port that captured the output in order to inspect it would swallow that line on the GREEN path, which is exactly the divergence a differential built only from red specimens never sees. Caught by the clean specimen.
         sys.stdout.flush()
         sys.stderr.flush()
         check = subprocess.run(
@@ -638,16 +617,14 @@ def selftest() -> int:
     ]
     format_cases = [
         ("a plain --> line yields its path", "unformatted:\n  --> a/b.py:1:1\n", "a/b.py "),
-        # THE ANSI CASE, which is the one that silently fell back to naming
-        # every file. ruff colours through a pipe.
+        # THE ANSI CASE, which is the one that silently fell back to naming every file. ruff colours through a pipe.
         (
             "a coloured --> line yields its path too",
             "\x1b[1m\x1b[94m--> \x1b[0ma/b.py:1:1\n",
             "a/b.py ",
         ),
         ("two paths are sorted and space-terminated", "  --> z.py:1\n  --> a.py:1\n", "a.py z.py "),
-        # THE NEGATIVE HALF: no `-->` line means no paths, which is what triggers
-        # the twin's whole-list fallback.
+        # THE NEGATIVE HALF: no `-->` line means no paths, which is what triggers the twin's whole-list fallback.
         ("output with no --> line yields nothing", "All checks passed!\n", ""),
     ]
 
@@ -664,8 +641,7 @@ def selftest() -> int:
     ctl.check("cannot-run is 77, never 1", EXIT_CANNOT_RUN, 77)
     ctl.check("the pin the twin actually compares against", RUFF_VERSION, "0.16.1")
 
-    # COLOUR IS DECIDED BY CI, NOT BY isatty. Both directions, because a port that
-    # used the logger would be byte-identical only when attached to a terminal.
+    # COLOUR IS DECIDED BY CI, NOT BY isatty. Both directions, because a port that used the logger would be byte-identical only when attached to a terminal.
     saved = os.environ.get("CI")
     try:
         os.environ["CI"] = "true"

@@ -120,9 +120,7 @@ export async function provisionReplicaDatastores(
     throw new Error(`Cannot replicate "${input.repo}": the cluster has no nodes to host replicas.`);
   }
 
-  // Replicas land round-robin, so the machines this touches are the distinct
-  // nodes the rotation reaches — fewer than `replicas` when replicas outnumber
-  // nodes. Asked before the snapshot, because everything after it is placement.
+  // Replicas land round-robin, so the machines this touches are the distinct nodes the rotation reaches — fewer than `replicas` when replicas outnumber nodes. Asked before the snapshot, because everything after it is placement.
   const targetMachines = [
     ...new Set(
       Array.from({ length: input.replicas }, (_, i) => input.nodes[i % input.nodes.length].machine)
@@ -146,10 +144,7 @@ export async function provisionReplicaDatastores(
     try {
       await provisionOneReplica(input, i, node);
     } catch (error) {
-      // A replica set is placed one node at a time, so any failure part-way
-      // leaves a real, working partial deployment behind. Say what exists and
-      // what to re-run rather than letting a bare bridge error imply that
-      // nothing happened, or that everything did.
+      // A replica set is placed one node at a time, so any failure part-way leaves a real, working partial deployment behind. Say what exists and what to re-run rather than letting a bare bridge error imply that nothing happened, or that everything did.
       throw new Error(
         `${error instanceof Error ? error.message : String(error)}\n\n${partialPlacementGuidance({
           placed,
@@ -182,8 +177,7 @@ export async function provisionOneReplica(
 ): Promise<void> {
   const tag = replicaTag(input.setName, index);
   const forkName = `${input.datastore}:${tag}`;
-  // Clone the datastore from the snapshot (constant-time, DB-size-independent).
-  // datastore_fork registers the fork record ONLY in the control machine's
+  // Clone the datastore from the snapshot (constant-time, DB-size-independent). datastore_fork registers the fork record ONLY in the control machine's
   // registry; when the replica lands on a DIFFERENT node, its registry has no
   // such record, so we ferry the record (the `datastore fork --json` output)
   // there via datastore_adopt before attaching (finding #36; mirrors the
@@ -221,25 +215,15 @@ export async function provisionOneReplica(
     // The fork record now lives on the replica node and is attached there; the
     // control's copy (from datastore_fork) is vestigial. Forget it on control
     // (registry-only; the fork is DETACHED there and the clone is owned by the
-    // node's record) so a later re-fork of the SAME tag — `repo replicate
-    // refresh`, which discards on the node then re-forks on control — does not
-    // collide with a stale control record (finding #40).
+    // node's record) so a later re-fork of the SAME tag — `repo replicate refresh`, which discards on the node then re-forks on control — does not collide with a stale control record (finding #40).
     await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
   }
-  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a
-  // BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/
-  // <pvc>.img` AND the empty directory that image was mounted over. The replica's
-  // PV points at that directory. Without this step the image is never opened, the
-  // pod bind-mounts the empty dir, and the replica comes up healthy, Ready, and
-  // EMPTY — no FailedMount, no event, no symptom except missing data.
+  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/ <pvc>.img` AND the empty directory that image was mounted over. The replica's PV points at that directory. Without this step the image is never opened, the pod bind-mounts the empty dir, and the replica comes up healthy,
+  // Ready, and EMPTY — no FailedMount, no event, no symptom except missing data.
   //
-  // By GUID, never by name (#93, found live by B1): the repo folder on the
-  // datastore — and therefore on its byte-clone fork — is `repos/<guid>`, so a
-  // name-based `repo:` param stats `repos/<name>` and aborts every replicate.
+  // By GUID, never by name (#93, found live by B1): the repo folder on the datastore — and therefore on its byte-clone fork — is `repos/<guid>`, so a name-based `repo:` param stats `repos/<name>` and aborts every replicate.
   //
-  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's
-  // nodeAffinity key), so opening first means a pod can never be scheduled onto a
-  // volume that is not yet mounted.
+  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's nodeAffinity key), so opening first means a pod can never be scheduled onto a volume that is not yet mounted.
   await dispatch(
     'datastore_volumes_open',
     node.machine,

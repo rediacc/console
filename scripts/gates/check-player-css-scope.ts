@@ -36,12 +36,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { envRoot } from '../lib/repo-root.js';
 
-// ANCHORED ON THIS FILE, not on the caller's working directory. This read
-// `process.env.PLAYER_CSS_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
-// did not see: its pattern only matched cwd as the FIRST argument of
-// path.resolve/join, so the commonest shape of its own rule passed. The
-// seam is preserved -- PLAYER_CSS_ROOT still overrides -- but the default is
-// derived from this file's location.
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.PLAYER_CSS_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- PLAYER_CSS_ROOT still overrides -- but the default is derived from
+// this file's location.
 const ROOT = envRoot('PLAYER_CSS_ROOT');
 const DIST = path.join(ROOT, 'packages/www/dist');
 

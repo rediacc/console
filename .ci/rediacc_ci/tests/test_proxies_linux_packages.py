@@ -51,12 +51,10 @@ FIXTURE_FILES = (
     PORT_REL,
 )
 
-# The toolchain the twin's preflight declares (`:52-56`). Named here so the
-# skip below reports which one is missing rather than a bare "cannot run".
+# The toolchain the twin's preflight declares (`:52-56`). Named here so the skip below reports which one is missing rather than a bare "cannot run".
 NEEDED = ("dpkg-deb", "rpmbuild", "createrepo_c", "gpg")
 
-# A stub SUBJECT with the real one's SHAPE and none of its cost: four
-# `^run_test "` call sites (which is what the proxy derives its expectation
+# A stub SUBJECT with the real one's SHAPE and none of its cost: four `^run_test "` call sites (which is what the proxy derives its expectation
 # from), `TEST: ` banners and `[DRY-RUN] Would` lines on stderr, and the
 # `Results:` summary the proxy parses.
 STUB_SUBJECT = """#!/usr/bin/env bash
@@ -82,9 +80,7 @@ echo "Results: $PASSED passed, $FAILED failed (total $TOTAL)" >&2
 [[ $FAILED -eq 0 ]]
 """
 
-# A stub ensure-nfpm.sh, so the fixture never reaches the network. The twin
-# calls it at `:47` whenever nfpm is not already on PATH, which on this host it
-# is not.
+# A stub ensure-nfpm.sh, so the fixture never reaches the network. The twin calls it at `:47` whenever nfpm is not already on PATH, which on this host it is not.
 STUB_ENSURE_NFPM = """#!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -203,9 +199,7 @@ def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
     return str(d)
 
 
-# ---------------------------------------------------------------------------
-# The real tree
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
 def _real_tree_env() -> dict[str, str]:
@@ -247,9 +241,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-# ---------------------------------------------------------------------------
-# Fixture cases: no packaging, no network
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Fixture cases: no packaging, no network ---------------------------------------------------------------------------
 
 
 def test_a_stub_subject_reports_its_real_versus_stubbed_split(tmp_path: pathlib.Path) -> None:
@@ -304,12 +296,9 @@ def test_a_missing_toolchain_is_77_not_a_verdict(tmp_path: pathlib.Path) -> None
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# THE DEFECT THAT WAS: the anti-vacuity check failed OPEN. FIXED 2026-09-10.
+# --------------------------------------------------------------------------- THE DEFECT THAT WAS: the anti-vacuity check failed OPEN. FIXED 2026-09-10.
 #
-# BOTH DIRECTIONS, because a refusal with only a positive control would red
-# every legitimate run in which nothing happened to be stubbed.
-# ---------------------------------------------------------------------------
+# BOTH DIRECTIONS, because a refusal with only a positive control would red every legitimate run in which nothing happened to be stubbed. ---------------------------------------------------------------------------
 
 
 def test_a_renamed_dry_run_marker_is_now_a_loud_refusal(
@@ -375,9 +364,7 @@ def test_the_surviving_pass_line_prints_the_corroborated_shape(
     assert_same(old, new)
 
 
-# ---------------------------------------------------------------------------
-# The planted defect: this differential must be able to go RED
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect: this differential must be able to go RED ---------------------------------------------------------------------------
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
@@ -403,9 +390,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     assert "4 of 4 subtests really executed" in new_b.stdout
 
 
-# ---------------------------------------------------------------------------
-# The pure helpers, driven directly
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The pure helpers, driven directly ---------------------------------------------------------------------------
 
 
 def test_expected_tests_counts_lines_not_matches() -> None:

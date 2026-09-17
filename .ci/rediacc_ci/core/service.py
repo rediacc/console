@@ -88,21 +88,15 @@ import time
 
 from rediacc_ci import log, paths
 
-# `.ci/config/constants.sh:295-297`, verbatim. UNCONDITIONAL, with no tty test:
-# see defect 2 in the module docstring. Named `COLOR_` rather than reusing
-# `log.RED` so a reader grepping either file finds the same spelling.
+# `.ci/config/constants.sh:295-297`, verbatim. UNCONDITIONAL, with no tty test: see defect 2 in the module docstring. Named `COLOR_` rather than reusing `log.RED` so a reader grepping either file finds the same spelling.
 COLOR_RED = "\033[0;31m"
 COLOR_GREEN = "\033[0;32m"
 COLOR_NC = "\033[0m"
 
-# `docker compose -p <this>`. The project name is what makes `service_stop` able
-# to tear down a stack it did not start in this process.
+# `docker compose -p <this>`. The project name is what makes `service_stop` able to tear down a stack it did not start in this process.
 PROJECT = "rediacc-service"
 
-# The two containers `service_status` reports on, in order. `service_stop`'s
-# force-remove list is longer (it includes the two init containers) and is kept
-# separate below for the same reason the twin keeps them separate: one is a
-# status surface and the other is a cleanup surface.
+# The two containers `service_status` reports on, in order. `service_stop`'s force-remove list is longer (it includes the two init containers) and is kept separate below for the same reason the twin keeps them separate: one is a status surface and the other is a cleanup surface.
 STATUS_CONTAINERS = ("rediacc-service-web", "rediacc-service-rustfs")
 STOP_CONTAINERS = (
     "rediacc-service-web",
@@ -387,23 +381,14 @@ def main(argv: list[str]) -> int:
     verb, rest = argv[0], argv[1:]
     if verb == "status":
         check_docker()
-        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE.
-        # `service_status` prints an uptime derived from the wall clock, so two
-        # runs a second apart disagree and no byte comparison against the twin is
-        # possible without freezing it on BOTH sides. The twin's seam is a fake
-        # `date` earlier on PATH, which is how `test-bws-env.sh` already fakes
+        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE. `service_status` prints an uptime derived from the wall clock, so two runs a second apart disagree and no byte comparison against the twin is possible without freezing it on BOTH sides. The twin's seam is a fake `date` earlier on PATH, which is how `test-bws-env.sh` already fakes
         # `bws`; this is the same trick spelled for a process that reads the
-        # clock directly. UNSET IN EVERY REAL RUN, so the default is the wall
-        # clock and nothing about production behaviour depends on it.
+        # clock directly. UNSET IN EVERY REAL RUN, so the default is the wall clock and nothing about production behaviour depends on it.
         pinned = os.environ.get("SERVICE_STATUS_NOW", "")
         try:
             return service_status(now=int(pinned) if pinned else None)
         except StatusAbortedError as aborted:
-            # THE TWIN PRINTS NOTHING HERE AND NEITHER DOES THIS, on stdout. The
-            # reason goes to stderr because a port that reproduced a silent death
-            # WITHOUT saying why would be reproducing the defect and hiding the
-            # discovery of it at the same time. Exit 1 either way, so the
-            # observable contract a caller branches on is unchanged.
+            # THE TWIN PRINTS NOTHING HERE AND NEITHER DOES THIS, on stdout. The reason goes to stderr because a port that reproduced a silent death WITHOUT saying why would be reproducing the defect and hiding the discovery of it at the same time. Exit 1 either way, so the observable contract a caller branches on is unchanged.
             print("service: %s" % aborted, file=sys.stderr)
             return 1
     if verb == "logs":

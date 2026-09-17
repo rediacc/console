@@ -106,8 +106,7 @@ FIXDIR_REL = (".ci", "scripts", "test", "fixtures", "mutate-check")
 SUITE_NAME = "fixture-suite.sh"
 TARGET_NAME = "fixture_mod.py"
 
-# `grep -qE '^\s+echo "  (PASS|FAIL): '`, with [[:space:]] written out. See the
-# port notes for why `\s` is the wrong abbreviation here.
+# `grep -qE '^\s+echo " (PASS|FAIL): '`, with [[:space:]] written out. See the port notes for why `\s` is the wrong abbreviation here.
 INDENTED_RESULT_RE = re.compile(r"^[ \t\v\f\r]+echo \"  (PASS|FAIL): ")
 
 # The colour codes the twin printf's unconditionally. No tty test in the twin, so
@@ -116,10 +115,7 @@ _GREEN = "\033[0;32m"
 _RED = "\033[0;31m"
 _NC = "\033[0m"
 
-# How a scenario judges the runner's exit code. Three shapes, because the four
-# scenarios genuinely ask three different questions and collapsing them into
-# "non-zero is bad" is how scenario 4 would stop distinguishing a hard error from
-# an ordinary failure.
+# How a scenario judges the runner's exit code. Three shapes, because the four scenarios genuinely ask three different questions and collapsing them into "non-zero is bad" is how scenario 4 would stop distinguishing a hard error from an ordinary failure.
 RC_ZERO = "eq0"
 RC_NONZERO = "ne0"
 RC_TWO = "eq2"
@@ -181,8 +177,7 @@ class _Tally:
     def bad(self, label: str, detail: str = "") -> None:
         print("  %sFAIL%s %s" % (_RED, _NC, label))
         if detail:
-            # `sed 's/^/       /' <<<"$2" | head -12`. The herestring appends a
-            # newline, so sed sees at least one line even for a single word.
+            # `sed 's/^/ /' <<<"$2" | head -12`. The herestring appends a newline, so sed sees at least one line even for a single word.
             for line in (detail + "\n").splitlines()[:12]:
                 print("       %s" % line)
         self.failed += 1
@@ -212,16 +207,11 @@ def run_scenario(
             check=False,
         )
     except OSError:
-        # See the port notes: bash reports 126 with its own diagnostic text, this
-        # reports 126 with none. No ledger fixture reaches here.
+        # See the port notes: bash reports 126 with its own diagnostic text, this reports 126 with none. No ledger fixture reaches here.
         return 126, ""
-    # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it.
-    # Without this the detail block printed one extra blank line per failing
-    # scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines`
-    # then sees a final empty record. Found 2026-09-06 by the byte-for-byte case
+    # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it. Without this the detail block printed one extra blank line per failing scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines` then sees a final empty record. Found 2026-09-06 by the byte-for-byte case
     # in tests/test_quality_mutate_check.py; the shadow differential could NOT
-    # see it, because `bad()` prints `  FAIL <label>` with ONE space and
-    # scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
+    # see it, because `bad()` prints ` FAIL <label>` with ONE space and scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
     return completed.returncode, (completed.stdout or "").rstrip("\n")
 
 
@@ -241,8 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     suite = fixdir / SUITE_NAME
     target = fixdir / TARGET_NAME
 
-    # The twin exits at the FIRST missing file, so the loop order is part of the
-    # message a reader gets. Kept.
+    # The twin exits at the FIRST missing file, so the loop order is part of the message a reader gets. Kept.
     for required in (runner, suite, target):
         if not required.is_file():
             print("check-mutate-check: missing %s" % required, file=sys.stderr)
@@ -253,8 +242,7 @@ def main(argv: list[str] | None = None) -> int:
 
     common = ["--suite", str(suite), "--file", str(target)]
 
-    # 1. The good case: mutation kills case 900, baseline is clean. The ONLY
-    #    exit 0.
+    # 1. The good case: mutation kills case 900, baseline is clean. The ONLY exit 0.
     rc, out = run_scenario(
         runner,
         [
@@ -272,8 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         tally.bad("red-then-green did not exit 0 (rc=%d)" % rc, out)
 
-    # 2. Case 901 is red in BOTH directions. Reporting that as success is the
-    #    failure this whole tool exists for.
+    # 2. Case 901 is red in BOTH directions. Reporting that as success is the failure this whole tool exists for.
     rc, out = run_scenario(
         runner,
         [
@@ -351,8 +338,7 @@ def selftest() -> int:
     ctl.check("CONTROL: rc 1 satisfies the non-zero mode", rc_ok(RC_NONZERO, 1), True)
     ctl.check("PLANT: rc 0 does not satisfy the non-zero mode", rc_ok(RC_NONZERO, 0), False)
     ctl.check("CONTROL: rc 2 satisfies the two mode", rc_ok(RC_TWO, 2), True)
-    # THE ONE THAT MATTERS: scenario 4 asks for a HARD error, and any other
-    # non-zero code is the runner failing for some other reason. A port that
+    # THE ONE THAT MATTERS: scenario 4 asks for a HARD error, and any other non-zero code is the runner failing for some other reason. A port that
     # relaxed this to `!= 0` would pass while the distinction was gone.
     ctl.check("PLANT: rc 1 does NOT satisfy the two mode", rc_ok(RC_TWO, 1), False)
     ctl.raises(

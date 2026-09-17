@@ -68,10 +68,7 @@ from rediacc_ci.core import common
 
 SELF = "tag-submodules.py"
 
-# BLOCKER: the single-element list is deliberate and moved verbatim out of
-# cd-v2.yml -- private/renet is the only submodule whose commits ship inside a
-# release today, and keeping the loop shape means adding the next one is a
-# one-word edit rather than a restructure.
+# BLOCKER: the single-element list is deliberate and moved verbatim out of cd-v2.yml -- private/renet is the only submodule whose commits ship inside a release today, and keeping the loop shape means adding the next one is a one-word edit rather than a restructure.
 SUBMODULES = ("private/renet",)
 
 BOT_NAME = "github-actions[bot]"
@@ -130,8 +127,7 @@ def tag_one(sub: str, version: str) -> int:
 
     head = _git_capture("rev-parse", "HEAD")
     if head.returncode != 0:
-        # `set -e` on a failed command substitution: git has already printed
-        # its own fatal message to the inherited stderr.
+        # `set -e` on a failed command substitution: git has already printed its own fatal message to the inherited stderr.
         return head.returncode
     head_sha = head.stdout.rstrip("\n")
 

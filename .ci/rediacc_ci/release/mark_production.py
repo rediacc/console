@@ -65,15 +65,13 @@ import sys
 
 from rediacc_ci import log
 
-# `^v[0-9]+\.[0-9]+\.[0-9]+$`: a malformed version must NOT become a tag,
-# because `production` is the thing humans will trust.
+# `^v[0-9]+\.[0-9]+\.[0-9]+$`: a malformed version must NOT become a tag, because `production` is the thing humans will trust.
 SEMVER_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
 # `${GITHUB_REPOSITORY:-rediacc/console}`.
 DEFAULT_REPO = "rediacc/console"
 
-# The two substrings that mean "this version was never published", as opposed to
-# "the lookup itself failed". Everything else takes the did-NOT-run branch.
+# The two substrings that mean "this version was never published", as opposed to "the lookup itself failed". Everything else takes the did-NOT-run branch.
 NOT_FOUND_MARKERS = ("release not found", "Not Found")
 
 
@@ -263,8 +261,7 @@ def main(argv: list[str]) -> int:
             ]
         )
     if rc != 0:
-        # `set -e`: the script dies HERE, with the failing command's status and
-        # without the "moved the tag" line. No message of its own is invented.
+        # `set -e`: the script dies HERE, with the failing command's status and without the "moved the tag" line. No message of its own is invented.
         return rc
 
     out.info("mark-production: moved the 'production' tag to %s (%s)" % (version, sha))

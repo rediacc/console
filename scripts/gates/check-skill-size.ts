@@ -69,8 +69,7 @@ const selftest = (): number => {
     'a skill without the flag is not capped',
     !declaresSelfImproving('---\nname: x\n---\nbody\n')
   );
-  // THE CONTROL THAT MATTERS: the flag must be frontmatter, or any skill that merely
-  // discusses self-improvement would opt itself in.
+  // THE CONTROL THAT MATTERS: the flag must be frontmatter, or any skill that merely discusses self-improvement would opt itself in.
   check(
     'the same text in the BODY does not opt in',
     !declaresSelfImproving('---\nname: x\n---\nself-improving: true\n')

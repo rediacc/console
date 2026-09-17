@@ -237,10 +237,7 @@ export function formatReport(result: RunResult, opts: { ci: boolean }): string {
  * uninitialized submodule, for instance); checking nothing at all is not.
  */
 export function isVacuous(result: RunResult, probeCount: number): boolean {
-  // Keyed on ENTRIES CHECKED, not probes run. A probe can execute and still
-  // assert nothing (its suppression file is absent), which is exactly what
-  // happens on the anti-vacuity harness's fixture now that it copies
-  // .ci/scripts in: one probe "ran" over zero entries and the gate reported
+  // Keyed on ENTRIES CHECKED, not probes run. A probe can execute and still assert nothing (its suppression file is absent), which is exactly what happens on the anti-vacuity harness's fixture now that it copies .ci/scripts in: one probe "ran" over zero entries and the gate reported
   // success. entriesChecked === 0 subsumes probesRun === 0 and closes that.
   return probeCount > 0 && result.entriesChecked === 0;
 }

@@ -82,14 +82,12 @@ import sys
 
 from rediacc_ci import log
 
-# Twin line numbers bash prints inside its own diagnostics. Re-derived from the
-# twin by `test_the_pinned_line_numbers_still_point_at_the_twins_lines`.
+# Twin line numbers bash prints inside its own diagnostics. Re-derived from the twin by `test_the_pinned_line_numbers_still_point_at_the_twins_lines`.
 VERSION_ARG_LINE = 34
 REF_NAME_LINE = 81
 
 # `[[ ! "$TAG" =~ ^[a-zA-Z0-9._-]+$ ]]` (twin :112). Docker's tag alphabet, as
-# the twin spells it -- note it accepts a leading `.` or `-`, which a real
-# Docker tag may not, so this is the twin's rule and not Docker's.
+# the twin spells it -- note it accepts a leading `.` or `-`, which a real Docker tag may not, so this is the twin's rule and not Docker's.
 TAG_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
 
 # `[[ ${#TAG} -gt 128 ]]` (twin :119).
@@ -106,9 +104,7 @@ LOCAL_BRANCH = "local"
 # The three names `--env-file` writes, in the twin's order (twin :133-135).
 ENV_FILE_NAMES = ("TAG", "WEB_TAG", "RENET_TAG")
 
-# The help body, copied from the twin (:45-66) with `$0` left as a placeholder.
-# DEFECT A lives in here verbatim: the "uses version from package.json" line is
-# wrong and is reproduced anyway, because the differential compares bytes.
+# The help body, copied from the twin (:45-66) with `$0` left as a placeholder. DEFECT A lives in here verbatim: the "uses version from package.json" line is wrong and is reproduced anyway, because the differential compares bytes.
 HELP_LINES = (
     "Usage: {prog} [OPTIONS]",
     "",
@@ -161,8 +157,7 @@ def parse_argv(argv: list[str]) -> tuple[str, bool, bool]:
         if arg == "--version":
             if index + 1 >= len(argv):
                 # `${2?--version requires an argument}`: bash names the POSITIONAL
-                # PARAMETER (`2`), not the option, which is why the message reads
-                # `... line 34: 2: --version requires an argument`.
+                # PARAMETER (`2`), not the option, which is why the message reads `... line 34: 2: --version requires an argument`.
                 sys.stderr.write(
                     "%s: line %d: 2: --version requires an argument\n"
                     % (sys.argv[0], VERSION_ARG_LINE)

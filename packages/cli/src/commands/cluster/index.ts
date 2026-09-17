@@ -36,8 +36,7 @@ function registerCreate(cluster: Command): void {
     .summary(t('commands.cluster.create.descriptionShort'))
     .description(t('commands.cluster.create.description'))
     .argument('<cluster>', t('options.clusterName'))
-    // Declaration flags (absorbed from `config cluster add`, 06 §2): a bare
-    // `cluster create --name X` (no --provider) provisions an ALREADY-declared
+    // Declaration flags (absorbed from `config cluster add`, 06 §2): a bare `cluster create --name X` (no --provider) provisions an ALREADY-declared
     // cluster, resuming the two-phase flow; passing --provider declares first.
     .option('--provider <provider>', t('commands.cluster.create.providerOption'))
     .option('--pool <spec...>', t('commands.cluster.create.poolOption'))

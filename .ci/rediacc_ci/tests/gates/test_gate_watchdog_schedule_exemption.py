@@ -48,13 +48,10 @@ BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-schedule-exemption.sh"
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 
-# The two anchors the ordering guard reads. ANCHORED ON THE CALL SITE, not the
-# definition, and that is the trap the twin records: the first draft grepped
+# The two anchors the ordering guard reads. ANCHORED ON THE CALL SITE, not the definition, and that is the trap the twin records: the first draft grepped
 # `evaluateCancelExemption({ runEvent`, which ALSO matches
 # `function evaluateCancelExemption({ runEvent })`, so it measured the
-# definition's position and would have passed with the call site AFTER the
-# cancel. It proved nothing at all, and was caught by reading the line number it
-# reported (97, the definition) instead of trusting the green.
+# definition's position and would have passed with the call site AFTER the cancel. It proved nothing at all, and was caught by reading the line number it reported (97, the definition) instead of trusting the green.
 CHECK_ANCHOR = "const exemption = evaluateCancelExemption("
 CANCEL_ANCHOR = "actions/runs/{run_id}/force-cancel"
 FALLBACK_ANCHOR = "cancelWorkflowRun"
@@ -80,8 +77,7 @@ const v = w.evaluateCancelExemption({ runEvent: process.argv[2] });
 process.stdout.write(v.exempt ? "exempt" : "cancel");
 """
 
-# `null` and `undefined` are DIFFERENT states to a JavaScript reader and the twin
-# drives both, so the port does too rather than folding them into one case.
+# `null` and `undefined` are DIFFERENT states to a JavaScript reader and the twin drives both, so the port does too rather than folding them into one case.
 EXEMPT_MISSING_JS = """
 const w = require(process.argv[1]);
 const v = w.evaluateCancelExemption({
@@ -114,8 +110,7 @@ def count_of(needle: str) -> int:
 
 def test_exempt_list_is_real(gate):
     gate.log_test("ANTI-VACUITY #1: read the exempt list out of the module itself")
-    # If `schedule` were dropped from it, every case below would pass for the
-    # wrong reason.
+    # If `schedule` were dropped from it, every case below would pass for the wrong reason.
     listing = node_eval(
         gate,
         "process.stdout.write(require(process.argv[1]).CANCEL_EXEMPT_EVENTS.join(','))",
@@ -128,8 +123,7 @@ def test_exempt_list_is_real(gate):
 
 def test_ci_still_has_a_schedule_trigger(gate):
     gate.log_test("ANTI-VACUITY #2: the exemption is dead code if ci.yml has no nightly")
-    # This catches "the nightly was quietly removed" as loudly as it catches "the
-    # exemption was quietly removed".
+    # This catches "the nightly was quietly removed" as loudly as it catches "the exemption was quietly removed".
     if not CI_WORKFLOW.is_file():
         gate.log_fail("ci.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
     gate.assert_contains(
@@ -152,8 +146,7 @@ def test_schedule_is_exempt(gate):
 
 def test_pull_request_still_cancels(gate):
     gate.log_test("CONTROL: the PR path must be byte-identical")
-    # Force-cancelling a red PR run is what stops a lint error from burning the
-    # 44-minute E2E fleet.
+    # Force-cancelling a red PR run is what stops a lint error from burning the 44-minute E2E fleet.
     gate.assert_eq(
         exempt(gate, "pull_request"),
         "cancel",
@@ -174,18 +167,10 @@ def test_push_still_cancels(gate):
 
 def test_workflow_dispatch_is_exempt(gate):
     gate.log_test("the dispatch rehearsal stands in for the nightly, so it reports like one")
-    # THIS REVERSES AN EARLIER DECISION IN THE TWIN, and the reasoning is
-    # recorded rather than silently swapped. The first version asserted the
-    # opposite on two grounds: that a dispatch is something a human just asked
+    # THIS REVERSES AN EARLIER DECISION IN THE TWIN, and the reasoning is recorded rather than silently swapped. The first version asserted the opposite on two grounds: that a dispatch is something a human just asked
     # for and is watching, and that cancelling saves the fleet from burning on a
-    # failure the first red already proved. The second is wrong on its own
-    # measured terms -- machine-minutes are flat at roughly 500 per run and FREE
-    # on a public repo. INFORMATION PER ROUND is the scarce resource: the nightly
-    # stayed broken for twelve nights partly because each round surfaced one gate
-    # at a time, and a force-cancel stops at the FIRST failure. The first is
-    # wrong because ci.yml calls the dispatch path "schedule-equivalent BY
-    # CONSTRUCTION", and a tool built to prove the nightly's conclusion is honest
-    # must not launder its own.
+    # failure the first red already proved. The second is wrong on its own measured terms -- machine-minutes are flat at roughly 500 per run and FREE on a public repo. INFORMATION PER ROUND is the scarce resource: the nightly stayed broken for twelve nights partly because each round surfaced one gate at a time, and a force-cancel stops at the FIRST failure. The first is wrong
+    # because ci.yml calls the dispatch path "schedule-equivalent BY CONSTRUCTION", and a tool built to prove the nightly's conclusion is honest must not launder its own.
     gate.assert_eq(
         exempt(gate, "workflow_dispatch"),
         "exempt",
@@ -205,8 +190,7 @@ def test_unknown_event_fails_closed(gate):
 
 def test_matching_is_exact_not_fuzzy(gate):
     gate.log_test("guards against somebody 'improving' this into a fuzzy match")
-    # A substring or case-insensitive match would silently exempt events nobody
-    # vetted.
+    # A substring or case-insensitive match would silently exempt events nobody vetted.
     gate.assert_eq(exempt(gate, "Schedule"), "cancel", "matching is case-sensitive")
     gate.assert_eq(exempt(gate, "schedules"), "cancel", "matching is exact, not a prefix")
     gate.assert_eq(exempt(gate, "pre-schedule"), "cancel", "matching is exact, not a substring")
@@ -215,11 +199,7 @@ def test_matching_is_exact_not_fuzzy(gate):
 
 def test_exemption_is_checked_before_the_cancel_api_call(gate):
     gate.log_test("THE ORDERING GUARD, and why this is not just a boolean check")
-    # The exemption is only worth anything if forceCancel consults it BEFORE it
-    # calls the cancel API. A sibling gate test exists because of a pure ordering
-    # bug of exactly this shape: a branch returned before the check that was
-    # supposed to govern it, and the log cheerfully asserted the opposite of the
-    # behaviour.
+    # The exemption is only worth anything if forceCancel consults it BEFORE it calls the cancel API. A sibling gate test exists because of a pure ordering bug of exactly this shape: a branch returned before the check that was supposed to govern it, and the log cheerfully asserted the opposite of the behaviour.
     check_line = line_of(CHECK_ANCHOR)
     cancel_line = line_of(CANCEL_ANCHOR)
     if not check_line or not cancel_line:
@@ -240,9 +220,7 @@ def test_exemption_is_checked_before_the_cancel_api_call(gate):
 
 def test_single_chokepoint(gate):
     gate.log_test("cancellation must have ONE chokepoint the exemption governs")
-    # The exemption lives inside forceCancel precisely so every call site
-    # inherits it, including the no-drain Review Gate path. A direct cancel API
-    # call elsewhere in the file would bypass it entirely.
+    # The exemption lives inside forceCancel precisely so every call site inherits it, including the no-drain Review Gate path. A direct cancel API call elsewhere in the file would bypass it entirely.
     gate.assert_eq(
         count_of(CANCEL_ANCHOR),
         1,

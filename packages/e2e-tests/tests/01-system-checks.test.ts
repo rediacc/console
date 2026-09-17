@@ -148,8 +148,7 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(result.code).toBe(0);
   });
 
-  // NOTE: check_datastore is tested in 03-datastore-lifecycle.test.ts
-  // because it requires a datastore to be initialized first
+  // NOTE: check_datastore is tested in 03-datastore-lifecycle.test.ts because it requires a datastore to be initialized first
 });
 
 /**

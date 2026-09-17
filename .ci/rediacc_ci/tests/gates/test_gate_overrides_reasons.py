@@ -72,15 +72,8 @@ def run_validator_with_pkg(gate, pkg_content: str) -> harness.RunResult:
     with harness.temp_dir() as temp:
         (temp / "package.json").write_text(pkg_content + "\n", encoding="utf-8")
         shutil.copytree(SCRIPTS_DIR, temp / "scripts")
-        # REDIACC_CI_ROOT POINTS THE COPIED VALIDATOR AT THE REAL PACKAGE. Since
-        # 2026-09-09 `scripts/lib/blocker-validator.ts` is a client of
-        # `rediacc_ci.core.allowlist` and resolves that package two directories
-        # above its own file, which in this fixture is the temp dir. It refused
-        # loudly, which is the designed behaviour and exactly wrong here: the
-        # low-effort case then asserted on a "canonical validator could not be
-        # run" traceback instead of on the verdict it exists to check. The same
-        # override, for the same reason, as `test-ci-job-aggregation.sh` uses on
-        # its mirrored `.ci` layout.
+        # REDIACC_CI_ROOT POINTS THE COPIED VALIDATOR AT THE REAL PACKAGE. Since 2026-09-09 `scripts/lib/blocker-validator.ts` is a client of `rediacc_ci.core.allowlist` and resolves that package two directories above its own file, which in this fixture is the temp dir. It refused loudly, which is the designed behaviour and exactly wrong here: the low-effort case then asserted on a
+        # "canonical validator could not be run" traceback instead of on the verdict it exists to check. The same override, for the same reason, as `test-ci-job-aggregation.sh` uses on its mirrored `.ci` layout.
         return harness.run(
             [tool, "tsx", "scripts/gates/check-overrides-reasons.ts"],
             cwd=temp,

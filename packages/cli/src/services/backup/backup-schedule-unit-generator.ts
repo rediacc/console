@@ -56,8 +56,7 @@ export function cronToOnCalendar(cron: string): string {
   return `${dowPrefix}${datePart} ${timePart}`;
 }
 
-// systemd's OnCalendar syntax uses `..` for ranges (cron uses `-`) and
-// comma-separated lists. Support list-of-ranges like cron's "0-2,4-23".
+// systemd's OnCalendar syntax uses `..` for ranges (cron uses `-`) and comma-separated lists. Support list-of-ranges like cron's "0-2,4-23".
 function toTimerField(value: string): string {
   if (value === '*') return '*';
   if (value.startsWith('*/')) return `00/${value.slice(2)}`;
@@ -155,16 +154,9 @@ function buildChunkStoreCommand(
     );
   }
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
-  // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot`
-  // had no way to express it and scheduling one would have run a HOT snapshot
-  // where the operator asked for cold — their stated intent silently inverted.
-  // The verb now has --cold, so the mode is emitted instead of rejected.
+  // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold — their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
-  // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be
-  // deployed to a machine BEFORE a unit carrying --cold is written to it. An
-  // older renet dies at cobra's flag parse, and the failure surfaces as a
-  // backup that silently never ran. `backup schedule` seeds the binary first,
-  // which is what keeps this in the right order.
+  // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
   for (const repo of strategy.include ?? []) parts.push(`--repo ${repo}`);
   const bwlimit = bandwidthToBytesPerSecond(strategy.bandwidthLimit);
@@ -199,9 +191,7 @@ function bandwidthToBytesPerSecond(limit: string | undefined): number | undefine
     );
   }
   const scale: Record<string, number> = { k: 1024, m: 1024 ** 2, g: 1024 ** 3, t: 1024 ** 4 };
-  // .at(2) rather than m[2]: the group is OPTIONAL, and this repo does not set
-  // noUncheckedIndexedAccess, so m[2] is typed as always-present and lint calls
-  // the guard redundant. .at() returns string | undefined, which is the truth.
+  // .at(2) rather than m[2]: the group is OPTIONAL, and this repo does not set noUncheckedIndexedAccess, so m[2] is typed as always-present and lint calls the guard redundant. .at() returns string | undefined, which is the truth.
   const unit = m.at(2)?.toLowerCase() ?? '';
   return Math.round(Number(m[1]) * (unit ? scale[unit] : 1));
 }
@@ -217,17 +207,12 @@ export function buildBackupCommands(
   const envVars: Record<string, string> = {};
 
   for (const dest of destinations) {
-    // A HARD ERROR, not a skip. Emitting nothing is exactly the defect the
-    // hosted-service branch was written to fix: an operator declared a
-    // destination, deployed the schedule, and got a timer that backed up
-    // nothing with no error anywhere. If this path is reached, the strategy
-    // still names an rclone/storage destination and must be migrated.
+    // A HARD ERROR, not a skip. Emitting nothing is exactly the defect the hosted-service branch was written to fix: an operator declared a destination, deployed the schedule, and got a timer that backed up nothing with no error anywhere. If this path is reached, the strategy still names an rclone/storage destination and must be migrated.
     const reason = unschedulableDestinationReason(dest);
     if (reason) {
       throw new Error(`${reason} Refusing to generate a unit that would back up nothing.`);
     }
-    // The CHUNK STORE is now the only destination kind. The rclone/OneDrive
-    // emission was removed 2026-08-15 on an explicit operator decision.
+    // The CHUNK STORE is now the only destination kind. The rclone/OneDrive emission was removed 2026-08-15 on an explicit operator decision.
     commands.push(buildChunkStoreCommand(strategy, datastore, remoteRenetPath));
   }
   return { commands, envVars };
@@ -294,21 +279,12 @@ export function generateServiceUnit(
   // TimeoutStartSec=infinity: backups can legitimately take > 24 h for a
   // first full seed of a large repo. Any finite cap eventually bites.
   //
-  // TimeoutStopSec is what systemd allows renet AFTER a SIGTERM before it
-  // SIGKILLs, and the two modes need very different budgets:
+  // TimeoutStopSec is what systemd allows renet AFTER a SIGTERM before it SIGKILLs, and the two modes need very different budgets:
   //
-  //   hot  (90s): renet aborts the transfer and deletes its datastore snapshot,
-  //     bounded at 60s renet-side. Without a window systemd would SIGKILL
-  //     mid-cleanup and orphan the snapshot.
-  //   cold (960s): a SIGTERM inside the outage window leaves containers STOPPED,
-  //     and renet's handler must bring every one of them back before it exits.
-  //     That restart is bounded at 15 min renet-side (coldRestartTimeout), so a
-  //     90s window would SIGKILL mid-restart and leave the repositories down —
-  //     converting a clean shutdown into the exact outage cold mode exists to
-  //     keep brief. The budget is the renet bound plus a minute of slack.
+  // hot (90s): renet aborts the transfer and deletes its datastore snapshot, bounded at 60s renet-side. Without a window systemd would SIGKILL mid-cleanup and orphan the snapshot. cold (960s): a SIGTERM inside the outage window leaves containers STOPPED, and renet's handler must bring every one of them back before it exits. That restart is bounded at 15 min renet-side
+  // (coldRestartTimeout), so a 90s window would SIGKILL mid-restart and leave the repositories down — converting a clean shutdown into the exact outage cold mode exists to keep brief. The budget is the renet bound plus a minute of slack.
   //
-  // Reconcile repairs a machine left in that state within a tick, but a backstop
-  // measured in minutes is not a reason to hand systemd a knife.
+  // Reconcile repairs a machine left in that state within a tick, but a backstop measured in minutes is not a reason to hand systemd a knife.
   const stopTimeout = (strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold' ? 960 : 90;
   const serviceContent = `[Unit]
 Description=Rediacc Scheduled Backup (${strategyName})

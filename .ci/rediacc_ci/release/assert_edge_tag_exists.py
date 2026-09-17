@@ -103,14 +103,10 @@ from rediacc_ci import log
 
 SELF = "assert-edge-tag-exists.py"
 
-# The name the twin's own messages carry. NOT `SELF`: these strings are
-# compared byte-for-byte against the live script, which is the `.sh`.
+# The name the twin's own messages carry. NOT `SELF`: these strings are compared byte-for-byte against the live script, which is the `.sh`.
 TWIN = "assert-edge-tag-exists.sh"
 
-# `^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$` (:74). LOOSER than the strict
-# semver every sibling uses: a prerelease or build suffix is accepted here,
-# because a channel pointer may legitimately advertise one and the question is
-# whether it EXISTS, not whether it is promotable.
+# `^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$` (:74). LOOSER than the strict semver every sibling uses: a prerelease or build suffix is accepted here, because a channel pointer may legitimately advertise one and the question is whether it EXISTS, not whether it is promotable.
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
 
 # `${GITHUB_REPOSITORY:-rediacc/console}` (:92) and
@@ -126,13 +122,9 @@ REQUIRED_ENV = (
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
 )
 
-# The `grep -qE` that decides "provably absent" versus "could not tell", one per
-# probe. Each is the twin's pattern verbatim.
+# The `grep -qE` that decides "provably absent" versus "could not tell", one per probe. Each is the twin's pattern verbatim.
 #
-# `probe_gh_release`'s pattern carries `release not found|^release not found`,
-# where the second alternative is subsumed by the first and matches nothing the
-# first does not. Kept as written: it is dead in the twin too, and rewriting it
-# here would be the port quietly disagreeing about what the twin tests.
+# `probe_gh_release`'s pattern carries `release not found|^release not found`, where the second alternative is subsumed by the first and matches nothing the first does not. Kept as written: it is dead in the twin too, and rewriting it here would be the port quietly disagreeing about what the twin tests.
 GH_API_ABSENT = re.compile(r"HTTP 404|Not Found")
 GH_RELEASE_ABSENT = re.compile(r"HTTP 404|Not Found|release not found|^release not found")
 R2_ABSENT = re.compile(r"\(404\)|Not Found|NoSuchKey")
@@ -143,8 +135,7 @@ PRESENT = "present"
 ABSENT = "absent"
 UNKNOWN_PREFIX = "unknown:"
 
-# The defect named in the module docstring, as a constant so a test can assert
-# against the twin's behaviour BY NAME rather than by repeating the sentence.
+# The defect named in the module docstring, as a constant so a test can assert against the twin's behaviour BY NAME rather than by repeating the sentence.
 SHIFT2_UNDERFLOW_IS_SILENT_EXIT_1 = True
 
 
@@ -278,9 +269,7 @@ class Verdicts:
             self.failed = True
             self.could_not_tell = True
             return False
-        # UNREACHABLE from the three probes, and kept anyway. A fourth verdict
-        # invented by a later edit must be REPORTED, not folded into a pass:
-        # this is the arm that makes an unclassifiable answer loud.
+        # UNREACHABLE from the three probes, and kept anyway. A fourth verdict invented by a later edit must be REPORTED, not folded into a pass: this is the arm that makes an unclassifiable answer loud.
         log.error("INTERNAL %s: unclassifiable probe result '%s' for %s" % (TWIN, state, what))
         self.failed = True
         return False
@@ -376,8 +365,7 @@ def main(argv: list[str]) -> int:
             return 1
 
     # :90-91. The aws CLI reads AWS_*; the workflow passes CLOUDFLARE_R2_*.
-    # Without this bridge `head-object` dies on NoCredentials and the sentinel
-    # probe answers `unknown` -- which is what broke promote-stable for 7 runs.
+    # Without this bridge `head-object` dies on NoCredentials and the sentinel probe answers `unknown` -- which is what broke promote-stable for 7 runs.
     os.environ["AWS_ACCESS_KEY_ID"] = os.environ["CLOUDFLARE_R2_ACCESS_KEY_ID"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
     endpoint = os.environ["CLOUDFLARE_R2_ENDPOINT"]

@@ -71,8 +71,7 @@ import sys
 # fires once per lifecycle moment and is counted per event.
 TOOL_EVENTS = ("PreToolUse", "PostToolUse")
 
-# A matcher spelling that means "every tool". `None` is the key being absent,
-# which is how every wildcard row in this repository's settings.json is written
+# A matcher spelling that means "every tool". `None` is the key being absent, which is how every wildcard row in this repository's settings.json is written
 # today; the other two are accepted because the harness's own documentation uses
 # them and a future edit may.
 WILDCARD_MATCHERS = (None, "", "*")

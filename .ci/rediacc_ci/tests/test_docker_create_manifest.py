@@ -45,8 +45,7 @@ PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "docker" / "create_manifest.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
 # `create` PRINTS NOTHING on purpose; `inspect` answers with a fixed manifest
-# listing. See the module docstring: a constant, argv-independent response is
-# what makes the recorded call log the only witness to what was pushed.
+# listing. See the module docstring: a constant, argv-independent response is what makes the recorded call log the only witness to what was pushed.
 FAKE_DOCKER = r"""#!/usr/bin/python3
 import os
 import sys
@@ -75,9 +74,7 @@ if verb == "inspect":
 sys.exit(0)
 """
 
-# `dirname` for SCRIPT_DIR in the twin and in constants.sh, `uname`/`tr` for
-# common.sh's detection helpers, `grep`/`head` for the twin's verify pipeline,
-# `python3` because the fake is Python. Anything not listed is ABSENT.
+# `dirname` for SCRIPT_DIR in the twin and in constants.sh, `uname`/`tr` for common.sh's detection helpers, `grep`/`head` for the twin's verify pipeline, `python3` because the fake is Python. Anything not listed is ABSENT.
 PATH_MINIMUM = ("dirname", "uname", "tr", "grep", "head", "python3")
 
 
@@ -198,9 +195,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
 
 
-# ---------------------------------------------------------------------------
-# Argument handling
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
 def test_help_is_stdout_and_exit_zero(tmp_path) -> None:
@@ -277,9 +272,7 @@ def test_each_value_flag_dies_the_way_set_u_dies(tmp_path) -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# Dry run, including the double space
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Dry run, including the double space ---------------------------------------------------------------------------
 
 
 def test_dry_run_prints_the_two_commands_and_calls_nothing(tmp_path) -> None:
@@ -315,9 +308,7 @@ def test_dry_run_without_push_latest_prints_one_command(tmp_path) -> None:
     assert len(old.stdout.splitlines()) == 1
 
 
-# ---------------------------------------------------------------------------
-# The real path
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The real path ---------------------------------------------------------------------------
 
 
 def test_the_happy_path_creates_verifies_and_prints_platforms(tmp_path) -> None:
@@ -332,8 +323,7 @@ def test_the_happy_path_creates_verifies_and_prints_platforms(tmp_path) -> None:
     assert old_calls.splitlines() == [
         head + "create\t-t\tghcr.io/rediacc/api:1.2.3\t" + src,
         head + "create\t-t\tghcr.io/rediacc/api:latest\t" + src,
-        # TWO inspects, not one: the twin decides the verdict with the first and
-        # shows platforms with the second.
+        # TWO inspects, not one: the twin decides the verdict with the first and shows platforms with the second.
         head + "inspect\tghcr.io/rediacc/api:1.2.3",
         head + "inspect\tghcr.io/rediacc/api:1.2.3",
     ], old_calls
@@ -395,9 +385,7 @@ def test_a_missing_docker_is_bashs_own_command_not_found(tmp_path) -> None:
     assert old_calls == ""
 
 
-# ---------------------------------------------------------------------------
-# Defects of the twin, pinned rather than fixed
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Defects of the twin, pinned rather than fixed ---------------------------------------------------------------------------
 
 
 def test_defect_a_manifest_that_cannot_be_verified_still_exits_zero(tmp_path) -> None:
@@ -437,9 +425,7 @@ def test_defect_a_single_arch_image_is_not_detected_before_the_push(tmp_path) ->
     assert old.returncode == 0
 
 
-# ---------------------------------------------------------------------------
-# The planted defect
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
@@ -527,15 +513,12 @@ def test_the_merged_stream_keeps_the_twins_line_order(tmp_path) -> None:
     assert old.stdout.count("\n") >= 10, old.stdout
 
 
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_source_images_and_the_field_are_two_different_things() -> None:
     assert port.source_images("r/i", "1") == ["r/i:1-amd64", "r/i:1-arm64"]
-    # The field carries the LEADING SPACE. This is the assertion that keeps the
-    # human-readable line byte-identical to the twin's.
+    # The field carries the LEADING SPACE. This is the assertion that keeps the human-readable line byte-identical to the twin's.
     assert port.source_images_field("r/i", "1") == " r/i:1-amd64 r/i:1-arm64"
 
 
@@ -559,8 +542,7 @@ def test_the_platform_filter_matches_grep_e_on_a_corpus() -> None:
     head = shutil.which("head")
     assert head is not None, "head is missing from this machine"
     # THE PIPELINE IS RUN THROUGH bash, not through `shell=True`, because the
-    # pipeline IS the thing under comparison and `bash -c` is what the twin
-    # itself uses. It also keeps the argv a list, which is this repo's rule.
+    # pipeline IS the thing under comparison and `bash -c` is what the twin itself uses. It also keeps the argv a list, which is this repo's rule.
     pipeline = '%s -E "(Platform:|Name:)" | %s -10' % (grep, head)
     for text in corpus:
         proc = subprocess.run(
@@ -598,9 +580,7 @@ def test_resolve_image_path_prefers_image_path_verbatim(monkeypatch) -> None:
     assert port.resolve_image_path(bare) == "ghcr.io/rediacc/api"
 
 
-# ---------------------------------------------------------------------------
-# Staleness alarms
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Staleness alarms ---------------------------------------------------------------------------
 
 
 def test_the_registry_constant_is_still_constants_shs() -> None:

@@ -182,8 +182,7 @@ function head(): string {
   return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf-8' }).trim();
 }
 
-// ---------------------------------------------------------------------------
-// The selftest: the pure contract, both directions.
+// --------------------------------------------------------------------------- The selftest: the pure contract, both directions.
 
 function selftest(): number {
   process.stdout.write('changed-selection: controls first, then the verdict\n');
@@ -212,9 +211,7 @@ function selftest(): number {
     'the note prints the SHAPE, not just a verdict',
     `got ${sel.note}`
   );
-  // THE CONTROL THAT MAKES THE ONE ABOVE MEAN SOMETHING: a change set matching NO
-  // glob must still take the unscoped gate. Without this, a selector that simply
-  // returned everything would pass the first case.
+  // THE CONTROL THAT MAKES THE ONE ABOVE MEAN SOMETHING: a change set matching NO glob must still take the unscoped gate. Without this, a selector that simply returned everything would pass the first case.
   const none = selectChanged(specs, cs(['unrelated/x']), matches);
   check(
     none.chosen.map((s) => s.id).join(',') === 'a',
@@ -251,8 +248,7 @@ function selftest(): number {
     'ZERO gates in is a refusal: a selection over an empty manifest is vacuous',
     refuses(cs(['x']), [], 'ZERO gates')
   );
-  // The two refusals must not be one message wearing two hats. A reader fixing a
-  // shallow clone needs to be told it is a shallow clone.
+  // The two refusals must not be one message wearing two hats. A reader fixing a shallow clone needs to be told it is a shallow clone.
   let emptyMsg = '';
   let unresolvedMsg = '';
   try {
@@ -290,8 +286,7 @@ function finish(label: string): number {
   return 0;
 }
 
-// ---------------------------------------------------------------------------
-// The real runner, as a process.
+// --------------------------------------------------------------------------- The real runner, as a process.
 
 function main(): number {
   process.stdout.write('changed-selection: driving scripts/ci-runner/run.ts as a process\n');
@@ -329,12 +324,8 @@ function main(): number {
   try {
     const sha = head();
 
-    // --- 1. FAIL OPEN, real manifest, a change set of the WHOLE TRACKED TREE ---
-    // THE CHANGE SET IS FED THROUGH A SHIM RATHER THAN TAKEN FROM THE AMBIENT DIFF,
-    // and that is a correctness requirement, not a convenience. On push-to-main the
-    // merge base IS HEAD, so the ambient diff is empty and the runner correctly
-    // REFUSES -- which would turn this gate red on the one event where nothing is
-    // wrong. The assertion therefore rides a change set this gate constructs and
+    // --- 1. FAIL OPEN, real manifest, a change set of the WHOLE TRACKED TREE --- THE CHANGE SET IS FED THROUGH A SHIM RATHER THAN TAKEN FROM THE AMBIENT DIFF, and that is a correctness requirement, not a convenience. On push-to-main the merge base IS HEAD, so the ambient diff is empty and the runner correctly REFUSES -- which would turn this gate red on the one event where
+    // nothing is wrong. The assertion therefore rides a change set this gate constructs and
     // knows the answer for; the ambient path is asserted separately, below, as a
     // disjunction that is true in every state.
     const allBin = fakeGit(path.join(tmp, 'all'), sha, tracked);
@@ -435,10 +426,7 @@ function main(): number {
       'the empty-set refusal names ITS OWN reason, not the unresolved one',
       `err=${empty.err.slice(0, 250)}`
     );
-    // FIX THE CONTROL FIRST. A shim that broke the runner some other way would make
-    // the two cases above red for a reason that has nothing to do with the change set.
-    // The one-file run in section 2 is that control and it used the SAME shim writer,
-    // so this restates it against the REAL manifest rather than the synthetic one.
+    // FIX THE CONTROL FIRST. A shim that broke the runner some other way would make the two cases above red for a reason that has nothing to do with the change set. The one-file run in section 2 is that control and it used the SAME shim writer, so this restates it against the REAL manifest rather than the synthetic one.
     const oneReal = runRunner(['--list', '--changed'], { CI_RUNNER_BASE: 'HEAD' }, oneBin);
     check(
       oneReal.rc === 0 && selectedIds(oneReal.out).size > 0,
@@ -450,9 +438,7 @@ function main(): number {
     // --- 5. THE AMBIENT PATH, asserted as a disjunction true in every state -----
     // The real differ against the real base. On a PR it answers with files; on
     // push-to-main the merge base is HEAD and it correctly refuses; on a shallow
-    // clone it cannot resolve. All three are legitimate, and ANYTHING ELSE is not:
-    // a green whose selection has lost an unscoped gate, or a red carrying neither
-    // refusal, both mean the real path has stopped behaving like the shimmed one.
+    // clone it cannot resolve. All three are legitimate, and ANYTHING ELSE is not: a green whose selection has lost an unscoped gate, or a red carrying neither refusal, both mean the real path has stopped behaving like the shimmed one.
     const ambient = runRunner(['--list', '--changed']);
     const ambientIds = selectedIds(ambient.out);
     const ambientOk =

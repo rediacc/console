@@ -174,8 +174,7 @@ def run_case(
     env = dict(os.environ)
     env["HOME"] = str(tmp_home)
     env["XDG_CONFIG_HOME"] = str(tmp_home / ".config")
-    # install.sh reads these at top level, then write_install_config uses the
-    # CHANNEL/SERVER_URL globals that result.
+    # install.sh reads these at top level, then write_install_config uses the CHANNEL/SERVER_URL globals that result.
     if channel and channel != "stable":
         env["REDIACC_CHANNEL"] = channel
     else:
@@ -212,8 +211,7 @@ def run_case(
             return
 
         # `local got_channel; got_channel=$(python3 ...)` under `set -e`: the
-        # assignment takes the substitution's status, so a failing read ends the
-        # whole run right here, with the child's traceback already on stderr.
+        # assignment takes the substitution's status, so a failing read ends the whole run right here, with the child's traceback already on stderr.
         for field in ("updateChannel", "accountServer"):
             probe = read_account_field(config_file, field)
             sys.stderr.write(probe.stderr)
@@ -307,9 +305,7 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
             ("worker_channel_only", "edge", "", "yes", "edge", "https://www.rediacc.com"),
-            # worker_none: neither rewrite landed -- install.sh can't infer
-            # origin, leaves no config so rdc update falls back to default
-            # stable.
+            # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update falls back to default stable.
             ("worker_none", "stable", "", "no", "", ""),
             # worker_server_only: SERVER_URL rewritten but CHANNEL not.
             (
@@ -320,9 +316,7 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
                 "stable",
                 "https://unreachable-server.invalid",
             ),
-            # worker_full_with_server_info: both baked + a real server-info
-            # responding with `updateChannel: stable`. The baked edge channel
-            # must NOT be overridden.
+            # worker_full_with_server_info: both baked + a real server-info responding with `updateChannel: stable`. The baked edge channel must NOT be overridden.
             ("worker_full_with_server_info", "edge", server.url, "yes", "edge", server.url),
         )
         for name, channel, server_url, expect_file, expect_channel, expect_account in cases:

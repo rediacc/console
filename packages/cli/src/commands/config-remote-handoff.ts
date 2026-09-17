@@ -48,11 +48,7 @@ export async function decryptHandoff(
   try {
     plainBytes = await cekHandoffDecrypt(encryptedBlob, privateKey);
   } catch (error) {
-    // The blob was sealed against a public key this process did not generate,
-    // so the AES-GCM tag fails. In practice: a browser tab left open from an
-    // earlier `config remote enable` posting to the new run's callback. Raw,
-    // this surfaced as "OperationError: The operation failed for an
-    // operation-specific reason" at all three call sites in config-remote.ts.
+    // The blob was sealed against a public key this process did not generate, so the AES-GCM tag fails. In practice: a browser tab left open from an earlier `config remote enable` posting to the new run's callback. Raw, this surfaced as "OperationError: The operation failed for an operation-specific reason" at all three call sites in config-remote.ts.
     throw new ValidationError(
       t('commands.config.remote.handoffUndecryptable', {
         error: error instanceof Error ? error.message : String(error),

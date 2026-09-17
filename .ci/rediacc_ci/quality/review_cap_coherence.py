@@ -98,15 +98,12 @@ GATE_REL = ".ci/scripts/review/claude-review-gate.sh"
 STATUS_REL = ".ci/scripts/review/review-status.sh"
 LIB_REL = ".ci/scripts/lib/common.sh"
 
-# The colours, assigned unconditionally, exactly as the twin does. See the port
-# notes for why `rediacc_ci.log` is deliberately not used here.
+# The colours, assigned unconditionally, exactly as the twin does. See the port notes for why `rediacc_ci.log` is deliberately not used here.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The four helpers that must be defined once, in the library, and nowhere else.
-# ORDER IS THE TWIN'S `for fn in ...` ORDER, because it is the order the
-# findings come out in and a reviewer diffs the two outputs side by side.
+# The four helpers that must be defined once, in the library, and nowhere else. ORDER IS THE TWIN'S `for fn in ...` ORDER, because it is the order the findings come out in and a reviewer diffs the two outputs side by side.
 SHARED_HELPERS = (
     "review_spend_total",
     "review_spent_attempt_count",
@@ -114,16 +111,10 @@ SHARED_HELPERS = (
     "review_report_count",
 )
 
-# THE 2026-08-07 SHAPE ITSELF: a caller deriving the numerator from
-# `review_report_count` directly. That is how review-status.sh read 0/3 while
-# the gate read 3/3, so it is named as its own failure rather than left to be
-# inferred from the absence of `review_spend_total`.
+# THE 2026-08-07 SHAPE ITSELF: a caller deriving the numerator from `review_report_count` directly. That is how review-status.sh read 0/3 while the gate read 3/3, so it is named as its own failure rather than left to be inferred from the absence of `review_spend_total`.
 _LOCAL_NUMERATOR = re.compile(r"review_count=.*review_report_count")
 
-# The anchor the deadlock branch is extracted by. ANCHORED AT COLUMN 0 and
-# stopped after the FIRST complete range: the same condition appears again,
-# indented, further down the file, and an unanchored range restarts there and
-# returns an unterminated block that cannot run.
+# The anchor the deadlock branch is extracted by. ANCHORED AT COLUMN 0 and stopped after the FIRST complete range: the same condition appears again, indented, further down the file, and an unanchored range restarts there and returns an unterminated block that cannot run.
 _GUARD_START = re.compile(r'^if \[\[ "\$currency_ok" == true \]\]')
 _GUARD_END = re.compile(r"^fi$")
 
@@ -136,8 +127,7 @@ _MUTANT_TO = 'review_count="$(review_report_count "$pr")"'
 #
 # The five pinned variables are what put the run AT the cap: review_count == 3
 # == MAX_REVIEWS_PER_PR, with currency_ok false so the else-branch is entered at
-# all. The loggers are stubbed to `:` so the branch's own output does not reach
-# the arrays' verdict.
+# all. The loggers are stubbed to `:` so the branch's own output does not reach the arrays' verdict.
 _GUARD_WRAPPER = """
                     warnings=(); failures=()
                     log_info() { :; }; log_warn() { :; }; log_error() { :; }
@@ -146,9 +136,7 @@ _GUARD_WRAPPER = """
                     if [[ ${#failures[@]} -gt 0 ]]; then echo GUARD_MISSED; fi
                 """
 
-# The environment the wrapper runs under, over the inherited one. The twin sets
-# these as a command prefix, which makes them environment variables for the
-# child and therefore ordinary shell variables inside it.
+# The environment the wrapper runs under, over the inherited one. The twin sets these as a command prefix, which makes them environment variables for the child and therefore ordinary shell variables inside it.
 _GUARD_ENV = {
     "review_count": "3",
     "MAX_REVIEWS_PER_PR": "3",
@@ -225,10 +213,7 @@ def run_guard(guard: str) -> str:
         env=env,
     )
     # `out="$( ... )"` STRIPS EVERY TRAILING NEWLINE, and forgetting that is a
-    # real bug this port shipped for one run. The finding text interpolates this
-    # value -- "(got: GUARD_MISSED)" -- so an unstripped "\n" put the closing
-    # paren on the next line and the shadow differential scored
-    # MISMATCH_FINDINGS against the twin on the one fixture that reaches this
+    # real bug this port shipped for one run. The finding text interpolates this value -- "(got: GUARD_MISSED)" -- so an unstripped "\n" put the closing paren on the next line and the shadow differential scored MISMATCH_FINDINGS against the twin on the one fixture that reaches this
     # branch. The comparator earned its keep; the strip is the fix.
     return proc.stdout.rstrip("\n")
 
@@ -270,8 +255,7 @@ def evaluate(gate_src: str, status_src: str, lib_src: str) -> list[str]:
 
     # 3. The shared helpers must be defined once, in the lib.
     #
-    # THE CONCATENATION IS DELIBERATE AND UNSEPARATED. See the port notes: `$g$s`
-    # joins the last line of the gate to the first line of the status script.
+    # THE CONCATENATION IS DELIBERATE AND UNSEPARATED. See the port notes: `$g$s` joins the last line of the gate to the first line of the status script.
     joined = gate_src + status_src
     for fn in SHARED_HELPERS:
         definition = re.compile(r"^%s\(\) \{" % re.escape(fn))
@@ -328,8 +312,7 @@ def main(argv: list[str] | None = None) -> int:
     status = root / STATUS_REL
     lib = root / LIB_REL
 
-    # A MISSING SUBJECT IS A REFUSAL, NOT AN ABSTENTION, and the twin's wording
-    # says so: "refusing to pass while measuring nothing".
+    # A MISSING SUBJECT IS A REFUSAL, NOT AN ABSTENTION, and the twin's wording says so: "refusing to pass while measuring nothing".
     for path in (gate, status, lib):
         if not path.is_file():
             return fail(
@@ -340,9 +323,7 @@ def main(argv: list[str] | None = None) -> int:
     gate_src = gate.read_text(encoding="utf-8", errors="replace")
     status_src = status.read_text(encoding="utf-8", errors="replace")
     lib_src = lib.read_text(encoding="utf-8", errors="replace")
-    # `$(cat f)` strips every trailing newline. That is not cosmetic here: the
-    # ONE-DEFINITION scan concatenates two of these three, and whether the join
-    # produces a spliced line depends on exactly this.
+    # `$(cat f)` strips every trailing newline. That is not cosmetic here: the ONE-DEFINITION scan concatenates two of these three, and whether the join produces a spliced line depends on exactly this.
     gate_src = gate_src.rstrip("\n")
     status_src = status_src.rstrip("\n")
     lib_src = lib_src.rstrip("\n")
@@ -366,8 +347,7 @@ def main(argv: list[str] | None = None) -> int:
     real_out = evaluate(gate_src, status_src, lib_src)
     if real_out:
         print("%s✗%s the review cap is not measured coherently:" % (RED, NC), file=sys.stderr)
-        # ONLY THE FIRST LINE IS INDENTED. `printf '  %s\n' "$REAL_OUT"` gets one
-        # argument holding embedded newlines. Reproduced, and reported.
+        # ONLY THE FIRST LINE IS INDENTED. `printf ' %s\n' "$REAL_OUT"` gets one argument holding embedded newlines. Reproduced, and reported.
         print("  %s" % "\n".join(real_out), file=sys.stderr)
         print(file=sys.stderr)
         print(
@@ -389,9 +369,7 @@ def main(argv: list[str] | None = None) -> int:
         "%s✓%s review cap coherent: one numerator, one denominator, deadlock guard reachable "
         "at the cap" % (GREEN, NC)
     )
-    # PRINT THE SHAPE, NOT JUST THE VERDICT. `wc -l <<<"$CONTROL_OUT"` counts the
-    # herestring's lines, which for a non-empty findings list is exactly its
-    # length: the herestring appends the final newline the list does not carry.
+    # PRINT THE SHAPE, NOT JUST THE VERDICT. `wc -l <<<"$CONTROL_OUT"` counts the herestring's lines, which for a non-empty findings list is exactly its length: the herestring appends the final newline the list does not carry.
     print(
         "  control fired on the pre-fix split numerator (%d finding(s)), so this green means "
         "the checks can fail" % len(control_out)
@@ -399,8 +377,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A minimal, COHERENT trio. Small enough to read, and every property the gate
-# asserts is present exactly once, so each plant below removes exactly one.
+# A minimal, COHERENT trio. Small enough to read, and every property the gate asserts is present exactly once, so each plant below removes exactly one.
 _LIB = """#!/bin/bash
 review_cap_for() {
     echo 3
@@ -474,14 +451,12 @@ def selftest() -> int:
 
         ctl.check("CONTROL: the coherent trio passes", run(_GATE, _STATUS, _LIB), 0)
 
-        # THE VACUITY CASES. Each subject missing in turn, because a loop that
-        # stopped checking one of the three looks identical to a clean tree.
+        # THE VACUITY CASES. Each subject missing in turn, because a loop that stopped checking one of the three looks identical to a clean tree.
         ctl.check("VACUITY: a missing gate script is refused", run(None, _STATUS, _LIB), 1)
         ctl.check("VACUITY: a missing status script is refused", run(_GATE, None, _LIB), 1)
         ctl.check("VACUITY: a missing lib is refused", run(_GATE, _STATUS, None), 1)
 
-        # THE CONTROL ON THE CONTROL. If the mutant cannot be planted, the gate
-        # must refuse rather than report the green it did not earn.
+        # THE CONTROL ON THE CONTROL. If the mutant cannot be planted, the gate must refuse rather than report the green it did not earn.
         ctl.check(
             "VACUITY: an unplantable control is refused",
             run(
@@ -523,23 +498,19 @@ def selftest() -> int:
                 run(_GATE, _STATUS, plant(_LIB, "%s() {" % fn, "%s_renamed() {" % fn)),
                 1,
             )
-        # PLANT 5: a local copy shadowing the shared one. This is the shape the
-        # ONE-DEFINITION assertion exists for, and it is the one a substring
-        # test would miss: the name is ALREADY present in both scripts.
+        # PLANT 5: a local copy shadowing the shared one. This is the shape the ONE-DEFINITION assertion exists for, and it is the one a substring test would miss: the name is ALREADY present in both scripts.
         ctl.check(
             "PLANT: a helper redefined in a review script is caught",
             run(_GATE + "\nreview_cap_for() {\n    echo 9\n}\n", _STATUS, _LIB),
             1,
         )
-        # PLANT 6: the behavioural half. The guard branch records a hard failure
-        # at the cap instead of a warning, which is #553 exactly.
+        # PLANT 6: the behavioural half. The guard branch records a hard failure at the cap instead of a warning, which is #553 exactly.
         ctl.check(
             "PLANT: a deadlock guard that does not fire is caught",
             run(_GATE, plant(_STATUS, "warnings+=(", "failures+=("), _LIB),
             1,
         )
-        # PLANT 7: the anchor is gone, so nothing could be extracted. An
-        # extraction that found nothing has tested nothing.
+        # PLANT 7: the anchor is gone, so nothing could be extracted. An extraction that found nothing has tested nothing.
         ctl.check(
             "PLANT: an unextractable guard is caught",
             run(_GATE, plant(_STATUS, 'if [[ "$currency_ok" == true ]]', "if $ok"), _LIB),
@@ -555,10 +526,7 @@ def selftest() -> int:
         # THE MIRROR IS NARROW ON PURPOSE, and the first draft of it was WRONG.
         # `review_count=.*review_report_count` is a per-line ERE with no comment
         # awareness, so `# review_count= from review_report_count ...` DOES fire
-        # it -- in the twin as much as in the port. Writing that case as a
-        # must-not-fire mirror asserted a behaviour neither implementation has.
-        # The honest mirror is a line naming both helpers in the other order,
-        # which the regex cannot match and which a looser rewrite would.
+        # it -- in the twin as much as in the port. Writing that case as a must-not-fire mirror asserted a behaviour neither implementation has. The honest mirror is a line naming both helpers in the other order, which the regex cannot match and which a looser rewrite would.
         ctl.check(
             "MIRROR: review_report_count named BEFORE review_count is not the shape",
             run(
@@ -601,9 +569,7 @@ def selftest() -> int:
         False,
     )
     # THE TRAILING NEWLINE, PINNED. `out="$( ... )"` strips it and the port did
-    # not, which put the closing paren of "(got: GUARD_MISSED)" on its own line
-    # and made the shadow differential report MISMATCH_FINDINGS. Asserted on the
-    # exact string rather than on a substring, because a substring test is what
+    # not, which put the closing paren of "(got: GUARD_MISSED)" on its own line and made the shadow differential report MISMATCH_FINDINGS. Asserted on the exact string rather than on a substring, because a substring test is what
     # let it through.
     ctl.check(
         "run_guard: the result carries NO trailing newline, as $( ) does not",

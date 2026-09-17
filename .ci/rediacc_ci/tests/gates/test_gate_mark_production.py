@@ -31,9 +31,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-mark-production.sh"
 
 SUT = paths.from_root(".ci", "scripts", "release", "mark-production.sh")
 
-# The two anchors the CONTROL cuts between. Named at module level because the
-# control's whole value is that it fails LOUDLY when they move, rather than
-# performing a no-op excision and reporting that the guard is not what refuses.
+# The two anchors the CONTROL cuts between. Named at module level because the control's whole value is that it fails LOUDLY when they move, rather than performing a no-op excision and reporting that the guard is not what refuses.
 GUARD_START = 'if ! out="$(gh release view'
 GUARD_END = 'log_info "mark-production: $VERSION is a published release"'
 
@@ -105,8 +103,7 @@ def test_a_published_release_is_marked(gate, tmp_path):
     gate.log_test("a genuinely published version is marked")
     if not SUT.is_file():
         gate.log_fail("subject under test is missing: %s" % SUT)
-    # The anti-vacuity half: if this cannot pass, every refusal below is
-    # satisfied trivially by a script that always fails.
+    # The anti-vacuity half: if this cannot pass, every refusal below is satisfied trivially by a script that always fails.
     if run_sut(tmp_path, "ok", "v1.3.1") != 0:
         gate.log_fail("a published release was refused; the refusals below would prove nothing")
     gate.log_pass("a published release is marked")
@@ -172,9 +169,7 @@ def test_malformed_versions_never_become_tags(gate, tmp_path):
 
 def test_control_the_guard_can_be_removed(gate, tmp_path):
     gate.log_test("CONTROL: delete the release check and the refusals MUST stop firing")
-    # By CONSTRUCTION: copy the script and cut the block that verifies the
-    # release exists, then require the unpublished case to flip to success. If
-    # it does not flip, the assertions above are not reaching the guard.
+    # By CONSTRUCTION: copy the script and cut the block that verifies the release exists, then require the unpublished case to flip to success. If it does not flip, the assertions above are not reaching the guard.
     body = SUT.read_text(encoding="utf-8")
     for anchor in (GUARD_START, GUARD_END):
         if anchor not in body:

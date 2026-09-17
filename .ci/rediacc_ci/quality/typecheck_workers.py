@@ -124,14 +124,10 @@ import sys
 
 from rediacc_ci.core import common
 
-# The message prefix every line of output carries (twin :44-111). The twin
-# hard-codes its own basename rather than deriving it, so the port does too and
-# the name stays `typecheck-workers` after the cutover renames nothing.
+# The message prefix every line of output carries (twin :44-111). The twin hard-codes its own basename rather than deriving it, so the port does too and the name stays `typecheck-workers` after the cutover renames nothing.
 SELF = "typecheck-workers"
 
-# `find workers -maxdepth 2 -name tsconfig.json -type f` (twin :41), verbatim.
-# `-maxdepth 2` is what keeps `workers/<x>/node_modules/**/tsconfig.json` out of
-# the set, and it is also why a worker whose tsconfig sits deeper is invisible.
+# `find workers -maxdepth 2 -name tsconfig.json -type f` (twin :41), verbatim. `-maxdepth 2` is what keeps `workers/<x>/node_modules/**/tsconfig.json` out of the set, and it is also why a worker whose tsconfig sits deeper is invisible.
 FIND_ARGV = ("find", "workers", "-maxdepth", "2", "-name", "tsconfig.json", "-type", "f")
 
 # The two recognised arguments (twin :52, :64). There is deliberately no third
@@ -141,9 +137,7 @@ INSTALL_FLAG = "--install"
 
 # `NPM_NET=(--fetch-timeout=120000 --fetch-retries=5 --fetch-retry-mintimeout=2000
 # --fetch-retry-maxtimeout=30000)` (twin :89-90). NPM'S OWN BOUND, not
-# coreutils' `timeout(1)`: `check:ci-shell-commands` refuses `timeout` because
-# the minimal CI image does not ship it. The order is the twin's, because it is
-# observable in the call log.
+# coreutils' `timeout(1)`: `check:ci-shell-commands` refuses `timeout` because the minimal CI image does not ship it. The order is the twin's, because it is observable in the call log.
 NPM_NET = (
     "--fetch-timeout=120000",
     "--fetch-retries=5",
@@ -151,15 +145,13 @@ NPM_NET = (
     "--fetch-retry-maxtimeout=30000",
 )
 
-# The zero-discovery refusal (twin :44-45), the two lines quoted exactly,
-# including the two-space indent on the second and the sentence split.
+# The zero-discovery refusal (twin :44-45), the two lines quoted exactly, including the two-space indent on the second and the sentence split.
 NO_WORKERS_LINES = (
     "%s: found no workers/*/tsconfig.json. The layout moved, or this" % SELF,
     "  script is looking in the wrong place; either way a green here would be vacuous.",
 )
 
-# The three defects in the module docstring, as constants a test can assert by
-# name instead of restating the sentence.
+# The three defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
 AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN = True
 A_PARTIAL_FIND_FAILURE_IS_A_SMALLER_GREEN_RUN = True
 A_PRESENT_BUT_STALE_NODE_MODULES_IS_NEVER_REFRESHED = True
@@ -282,8 +274,7 @@ def install_one(directory: str) -> None:
         print("%s: installing %s (npm ci)" % (SELF, directory))
     else:
         print("%s: installing %s (npm install, no lockfile)" % (SELF, directory))
-    # `>/dev/null` ON STDOUT ONLY (twin :93, :96): npm's progress is dropped and
-    # its errors are not.
+    # `>/dev/null` ON STDOUT ONLY (twin :93, :96): npm's progress is dropped and its errors are not.
     status = _run(npm_argv(directory, has_lockfile=has_lockfile), stdout=subprocess.DEVNULL)
     if status:
         raise BashExitError(status)
@@ -304,9 +295,7 @@ def main(argv: list[str]) -> int:
 
     configs = discover(root)
 
-    # THE ANTI-VACUITY FLOOR THE TWIN ALREADY HAS, and the reason this port does
-    # not add a second one: a discovery gate that finds nothing has verified
-    # nothing, and the twin says so in exactly these words on stderr.
+    # THE ANTI-VACUITY FLOOR THE TWIN ALREADY HAS, and the reason this port does not add a second one: a discovery gate that finds nothing has verified nothing, and the twin says so in exactly these words on stderr.
     if not configs:
         for line in NO_WORKERS_LINES:
             print(line, file=sys.stderr)

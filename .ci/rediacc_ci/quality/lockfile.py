@@ -167,29 +167,23 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The npm whose OUTPUT FORM is canonical for every committed lockfile (issue
-# #587). CLAUDE.md's "27-line package-lock.json flip" section is the prose half
+# The npm whose OUTPUT FORM is canonical for every committed lockfile (issue #587). CLAUDE.md's "27-line package-lock.json flip" section is the prose half
 # of this pin; the two must be changed together or the repo goes back to arguing
 # with itself.
 CANONICAL_NPM = "npm@11"
 
 # The npm CI actually runs. Keep in step with setup-node's bundled npm (Node 22
 # -> npm 10); the exact version is printed in every job's "Environment details".
-# This is NOT the canonical writer any more, but it is still the installer, so it
-# still gets a vote.
+# This is NOT the canonical writer any more, but it is still the installer, so it still gets a vote.
 CI_NPM = "npm@10"
 
-# The file name discovered everywhere. Named once so the discovery and the
-# messages cannot drift apart.
+# The file name discovered everywhere. Named once so the discovery and the messages cannot drift apart.
 LOCK_NAME = "package-lock.json"
 
-# The directory `find` is told to skip. A vendored tree's own lockfiles are not
-# this repository's to validate.
+# The directory `find` is told to skip. A vendored tree's own lockfiles are not this repository's to validate.
 EXCLUDED_DIR = "node_modules"
 
-# The supply-chain probe's argv after `npx`. Carried as a tuple so the order --
-# which is what a reader diffs against the twin -- cannot be reshuffled by an
-# accidental edit.
+# The supply-chain probe's argv after `npx`. Carried as a tuple so the order -- which is what a reader diffs against the twin -- cannot be reshuffled by an accidental edit.
 LINT_ARGS = (
     "--no-install",
     "lockfile-lint",
@@ -215,18 +209,12 @@ def discover(root: pathlib.Path) -> list[str]:
     success having opened nothing.
     """
     out: list[str] = []
-    # `paths.walk_tree` prunes `node_modules` in place, which is what
-    # `-not -path '*/node_modules/*'` amounts to for every path `find` can
-    # produce, and is also why a lockfile sitting directly beside a node_modules
-    # is still found. It prunes `.claude/worktrees` too: a peer session's sibling
-    # checkout of this repository carries its own `package-lock.json` files, and
-    # this gate was linting them as if they were ours.
+    # `paths.walk_tree` prunes `node_modules` in place, which is what `-not -path '*/node_modules/*'` amounts to for every path `find` can produce, and is also why a lockfile sitting directly beside a node_modules is still found. It prunes `.claude/worktrees` too: a peer session's sibling checkout of this repository carries its own `package-lock.json` files, and this gate was
+    # linting them as if they were ours.
     #
-    # THE PRUNE IS NO LONGER SPELLED BY `EXCLUDED_DIR`. That constant now only
-    # builds the selftest fixture below, so editing it will NOT change what this
+    # THE PRUNE IS NO LONGER SPELLED BY `EXCLUDED_DIR`. That constant now only builds the selftest fixture below, so editing it will NOT change what this
     # walk skips; `paths.PRUNED_DIR_NAMES` is where that lives. Said out loud
-    # because a constant that used to steer the code it sits above is exactly the
-    # kind of thing a later reader edits expecting an effect.
+    # because a constant that used to steer the code it sits above is exactly the kind of thing a later reader edits expecting an effect.
     for dirpath, _dirnames, filenames in paths.walk_tree(root):
         if LOCK_NAME in filenames:
             out.append(str(pathlib.Path(dirpath).relative_to(root) / LOCK_NAME))
@@ -325,9 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         directory = (root / lock).parent
         rel_dir = str(pathlib.Path(lock).parent)
 
-        # SKIP LOUDLY. The quality-security job checks out WITHOUT submodules,
-        # so private/account* and private/growth* legitimately do not exist
-        # there. A silent skip is how a gate goes green while checking nothing.
+        # SKIP LOUDLY. The quality-security job checks out WITHOUT submodules, so private/account* and private/growth* legitimately do not exist there. A silent skip is how a gate goes green while checking nothing.
         if not (directory / "package.json").is_file():
             log.warn("SKIP %s - no package.json beside it (submodule not checked out?)" % lock)
             skipped.append(lock)
@@ -339,9 +325,7 @@ def main(argv: list[str] | None = None) -> int:
             failed.append("%s (supply chain)" % lock)
             continue
 
-        # BOTH MAJORS, AND THE LOOP IS WRITTEN ONCE so neither can be dropped by
-        # editing only the other. `role` is what the failure message needs to
-        # say: the two have DIFFERENT fixes.
+        # BOTH MAJORS, AND THE LOOP IS WRITTEN ONCE so neither can be dropped by editing only the other. `role` is what the failure message needs to say: the two have DIFFERENT fixes.
         resolve_failed = False
         for npm_pin, role in ((CANONICAL_NPM, "canonical writer"), (CI_NPM, "CI's installer")):
             log.step("[%s] resolvable by %s (%s)..." % (lock, npm_pin, role))
@@ -390,15 +374,12 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Lockfile check FAILED for: %s" % " ".join(failed))
         return 1
 
-    # THE SHAPE, NOT JUST THE VERDICT: the count and both pins are named, so a
-    # reader notices when the number collapses or a pin quietly disappears.
+    # THE SHAPE, NOT JUST THE VERDICT: the count and both pins are named, so a reader notices when the number collapses or a pin quietly disappears.
     log.info(
         "All %d lockfile(s): supply-chain clean and resolvable by BOTH %s (canonical form) "
         "and %s (CI's installer)" % (len(lockfiles), CANONICAL_NPM, CI_NPM)
     )
-    # THE LIMIT IS PRINTED ON THE SUCCESS PATH, as a WARNING, on purpose: a gate
-    # whose name overstates its coverage is the disease this file was written to
-    # cure, so the cure says out loud what it did not check.
+    # THE LIMIT IS PRINTED ON THE SUCCESS PATH, as a WARNING, on purpose: a gate whose name overstates its coverage is the disease this file was written to cure, so the cure says out loud what it did not check.
     log.warn(
         "Note the limit: --dry-run does NOT run the reify peer check. This proves npm 10 "
         "can RESOLVE these lockfiles, not that it can install them (round-9 ERESOLVE, see "
@@ -441,8 +422,7 @@ def selftest() -> int:
             discover(root),
             [LOCK_NAME, "pkg/%s" % LOCK_NAME],
         )
-        # And the exclusion is by COMPONENT, not by substring: a directory whose
-        # name merely contains the word is not node_modules.
+        # And the exclusion is by COMPONENT, not by substring: a directory whose name merely contains the word is not node_modules.
         near = root / "my_node_modules_backup"
         near.mkdir()
         (near / LOCK_NAME).write_text("{}", encoding="utf-8")
@@ -513,14 +493,12 @@ def selftest() -> int:
             with stubbed():
                 return main([])
 
-        # THE VACUITY CASE FIRST: no lockfile anywhere is a refusal, and it must
-        # not be reachable by deleting files until the gate goes quiet.
+        # THE VACUITY CASE FIRST: no lockfile anywhere is a refusal, and it must not be reachable by deleting files until the gate goes quiet.
         set_stub(0, 0, 0)
         ctl.check("VACUITY: no lockfile anywhere is refused", run(), 1)
 
         (root / LOCK_NAME).write_text("{}", encoding="utf-8")
-        # Still no package.json beside it: the SKIP path. It exits 0, which is
-        # the twin's behaviour, and says so twice in warnings.
+        # Still no package.json beside it: the SKIP path. It exits 0, which is the twin's behaviour, and says so twice in warnings.
         ctl.check("SKIP: a lockfile with no package.json beside it is skipped, loudly", run(), 0)
 
         (root / "package.json").write_text("{}", encoding="utf-8")
@@ -535,8 +513,7 @@ def selftest() -> int:
         set_stub(0, 0, 1)
         ctl.check("PLANT: CI's installer failing to resolve reds", run(), 1)
 
-        # BOTH FAILING reports only the FIRST, because the two have different
-        # fixes. Proven through the transcript rather than asserted in prose.
+        # BOTH FAILING reports only the FIRST, because the two have different fixes. Proven through the transcript rather than asserted in prose.
         set_stub(0, 1, 1)
         ctl.check("PLANT: both majors failing still reds", run(), 1)
 
@@ -550,18 +527,14 @@ def selftest() -> int:
         set_stub(1, 0, 0)
         ctl.check("PLANT: and the judged one still reds beside a skipped one", run(), 1)
 
-        # A NESTED lockfile WITH its package.json is judged, not skipped. Two
-        # directions, because "everything is skipped" and "everything is judged"
-        # are both single-branch bugs that a one-sided control cannot tell apart.
+        # A NESTED lockfile WITH its package.json is judged, not skipped. Two directions, because "everything is skipped" and "everything is judged" are both single-branch bugs that a one-sided control cannot tell apart.
         (root / "sub" / "package.json").write_text("{}", encoding="utf-8")
         set_stub(0, 0, 0)
         ctl.check("MIRROR: a nested lockfile with a package.json passes", run(), 0)
         set_stub(1, 0, 0)
         ctl.check("PLANT: and the nested one is really judged (lint fails)", run(), 1)
 
-        # THE STUB ITSELF IS CONTROLLED. Without this, every case above could be
-        # passing because `npx` was never reached at all, and a gate whose probe
-        # never ran is the vacuity this whole exercise exists to refuse.
+        # THE STUB ITSELF IS CONTROLLED. Without this, every case above could be passing because `npx` was never reached at all, and a gate whose probe never ran is the vacuity this whole exercise exists to refuse.
         set_stub(0, 0, 7)
         with stubbed():
             ctl.check(

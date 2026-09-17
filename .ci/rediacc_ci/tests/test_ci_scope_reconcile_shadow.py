@@ -113,12 +113,8 @@ def _fake_gh_bin(where: pathlib.Path) -> pathlib.Path:
     return where
 
 
-# Every external command the twin invokes (directly, or via a builtin that
-# still needs the binary on PATH for a non-builtin shell): dirname, mkdir,
-# tee, timeout, rm, head, gh, node. `bash` and `python3` are the runners
-# themselves. On this host `gh` and `bash` both resolve through `/usr/bin`
-# (and its `/bin` alias), so excluding "the directory gh lives in" would take
-# the runner down with it -- a curated symlink farm avoids that entirely.
+# Every external command the twin invokes (directly, or via a builtin that still needs the binary on PATH for a non-builtin shell): dirname, mkdir, tee, timeout, rm, head, gh, node. `bash` and `python3` are the runners themselves. On this host `gh` and `bash` both resolve through `/usr/bin` (and its `/bin` alias), so excluding "the directory gh lives in" would take the runner down
+# with it -- a curated symlink farm avoids that entirely.
 _ALWAYS_NEEDED = ("bash", "python3", "dirname", "mkdir", "tee", "timeout", "rm", "head")
 
 
@@ -278,8 +274,7 @@ def test_download_retries_once_then_succeeds(tmp_path: pathlib.Path) -> None:
         FAKE_GH_DOWNLOAD_FAIL_FIRST="1",
         FAKE_GH_DOWNLOAD_ATTEMPT_FILE=str(old_attempt),
     )
-    # The port's own recording gets a DIFFERENT attempt-marker file so the two
-    # subjects' independent "fail once, then succeed" states do not share
+    # The port's own recording gets a DIFFERENT attempt-marker file so the two subjects' independent "fail once, then succeed" states do not share
     # state; re-run the port explicitly with its own marker.
     new_env, _ = _base_env(
         tmp_path,
@@ -378,8 +373,7 @@ def test_reconcile_stderr_truncated_at_3000_bytes(tmp_path: pathlib.Path) -> Non
     old, new, _, _ = run_both(root, tmp_path, "truncate", FAKE_RECONCILE_STDERR=long_err)
     assert old.returncode == 0
     _assert_agree(old, new, "truncate")
-    # Isolate the fenced block's own run of "E"s from the surrounding prose
-    # (which legitimately contains the letter E elsewhere) before counting.
+    # Isolate the fenced block's own run of "E"s from the surrounding prose (which legitimately contains the letter E elsewhere) before counting.
     fenced = old.stdout.split("```")[1]
     run_of_e = max((len(list(g)) for k, g in itertools.groupby(fenced) if k == "E"), default=0)
     assert run_of_e == 3000, "fixture assumption broke: expected exactly the 3000-byte cap"
@@ -444,9 +438,7 @@ def test_summary_unset_falls_back_to_stdout_but_diverges_on_corruption(
     assert old.returncode == 0
     assert new.returncode == 0
 
-    # A clean reference: the SAME fixture, a real GITHUB_STEP_SUMMARY file, so
-    # its stdout (still captured through a pipe -- no fallback path involved)
-    # is a single un-doubled copy.
+    # A clean reference: the SAME fixture, a real GITHUB_STEP_SUMMARY file, so its stdout (still captured through a pipe -- no fallback path involved) is a single un-doubled copy.
     reference = subprocess.run(
         ["bash", str(root / ".ci" / "scripts" / "ci" / "scope-reconcile-shadow.sh")],
         cwd=root,
@@ -462,20 +454,15 @@ def test_summary_unset_falls_back_to_stdout_but_diverges_on_corruption(
     )
     assert reference.returncode == 0
 
-    # The twin's own header text appears at least once even when corrupted --
-    # this is the "it did something" floor, not an equivalence claim.
+    # The twin's own header text appears at least once even when corrupted -- this is the "it did something" floor, not an equivalence claim.
     assert "Skip-plan reconciliation" in old_stdout
 
-    # The PORT duplicates cleanly: total byte count is EXACTLY double the
-    # clean single-copy reference, regardless of chunk granularity, even
-    # when its own stdout is a real file rather than a pipe.
+    # The PORT duplicates cleanly: total byte count is EXACTLY double the clean single-copy reference, regardless of chunk granularity, even when its own stdout is a real file rather than a pipe.
     assert len(new_stdout) == 2 * len(reference.stdout), (
         "the port must duplicate its total output byte-for-byte when SUMMARY is unset"
     )
 
-    # The TWIN does NOT, on a real file: the kernel file-offset race
-    # overwrites part of the second copy, so its total length falls short of
-    # a clean double (reproduced deterministically on this host).
+    # The TWIN does NOT, on a real file: the kernel file-offset race overwrites part of the second copy, so its total length falls short of a clean double (reproduced deterministically on this host).
     assert len(old_stdout) < 2 * len(reference.stdout), (
         "the twin's known kernel-race corruption did not reproduce on a real file "
         "(output is no longer shorter than a clean double); either the environment "

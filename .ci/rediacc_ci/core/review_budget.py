@@ -193,34 +193,27 @@ from rediacc_ci import paths
 from rediacc_ci.core import ghx
 
 # `REVIEW_CAP_TIERS='10000:3 50000:5 :7'` (common.sh:534), as (bound, cap).
-# `None` is the empty bound: the catch-all top tier. Order is the contract --
-# the twin iterates and takes the first tier whose bound the value fits.
+# `None` is the empty bound: the catch-all top tier. Order is the contract -- the twin iterates and takes the first tier whose bound the value fits.
 CAP_TIERS: tuple[tuple[int | None, int], ...] = ((10000, 3), (50000, 5), (None, 7))
 
-# common.sh:549. Unreachable while the last tier's bound is empty, kept because
-# removing it would silently change what happens if someone edits CAP_TIERS.
+# common.sh:549. Unreachable while the last tier's bound is empty, kept because removing it would silently change what happens if someone edits CAP_TIERS.
 CAP_FALLBACK = 3
 
-# `REVIEW_ATTEMPT_INFRA_CLASSES` (common.sh:661). A tuple, not a space-separated
-# string, so the single-token rule the twin can only state in a comment is
-# checkable: `test_core_review_budget.py` asserts no member contains a space.
+# `REVIEW_ATTEMPT_INFRA_CLASSES` (common.sh:661). A tuple, not a space-separated string, so the single-token rule the twin can only state in a comment is checkable: `test_core_review_budget.py` asserts no member contains a space.
 INFRA_CLASSES = ("error_max_turns", "error_during_execution")
 
 REVIEW_FREE_REATTEMPTS_PER_HEAD = 2  # common.sh:662
 REVIEW_MAX_ATTEMPTS_PER_HEAD = 3  # common.sh:663
 
 # `needle="**Claude finished"` (common.sh:590). The PRODUCER CONSTANT, written
-# verbatim by claude-review-gate.sh. common.sh:560-573 records at length why
-# this must never gain a content qualifier: the old one undercounted every
-# measured PR (#551 counted 0 of 1, #550 5 of 7, #546 3 of 7, #543 1 of 9).
+# verbatim by claude-review-gate.sh. common.sh:560-573 records at length why this must never gain a content qualifier: the old one undercounted every measured PR (#551 counted 0 of 1, #550 5 of 7, #546 3 of 7, #543 1 of 9).
 REPORT_NEEDLE = "**Claude finished"
 REPORT_EPIC_NEEDLE = "**Claude finished (epic %s)"
 
 # `select(.user.login | contains("github-actions"))` (common.sh:593).
 REPORT_AUTHOR_SUBSTRING = "github-actions"
 
-# The marker key and sentinel `review_attempt_states`' awk keys on
-# (common.sh:688, :687).
+# The marker key and sentinel `review_attempt_states`' awk keys on (common.sh:688, :687).
 ATTEMPT_KEY = "claude-review-attempt:"
 ATTEMPT_EOF = "---REVIEW-ATTEMPT-EOF---"
 
@@ -228,13 +221,10 @@ ATTEMPT_EOF = "---REVIEW-ATTEMPT-EOF---"
 # ANCHORED at both ends, lowercase hex only. Both properties are driven.
 EPIC_LINE = re.compile(r"^`?PR-TASK:[ \t]*([0-9a-f]{6,32})`?$")
 
-# The override `review_epic_ids` honours (common.sh:610-611), so a test can point
-# at a fixture without writing into the real tree.
+# The override `review_epic_ids` honours (common.sh:610-611), so a test can point at a fixture without writing into the real tree.
 PUBLISH_ROOT_ENV = "WORKLIST_PUBLISH_ROOT"
 
-# common.sh:764-765's stated rule, named so a caller opts into it visibly rather
-# than inheriting it. See DEFECT 1 for why "conservative" does not survive
-# contact with a numerator that also fails to zero.
+# common.sh:764-765's stated rule, named so a caller opts into it visibly rather than inheriting it. See DEFECT 1 for why "conservative" does not survive contact with a numerator that also fails to zero.
 DIFF_LOC_FAILS_TO_ZERO = 0
 
 _UNSIGNED = re.compile(r"[0-9]+")
@@ -266,9 +256,7 @@ class AttemptState:
         return "%s\t%d\t%s" % (self.sha, self.attempts, self.cls)
 
 
-# ---------------------------------------------------------------------------
-# THE DENOMINATOR (common.sh:534-550)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE DENOMINATOR (common.sh:534-550) ---------------------------------------------------------------------------
 
 
 def cap_for(changed_lines: str | int | None) -> int:
@@ -292,9 +280,7 @@ def cap_for(changed_lines: str | int | None) -> int:
     return CAP_FALLBACK
 
 
-# ---------------------------------------------------------------------------
-# THE ATTEMPT LEDGER, pure (common.sh:666-743)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE ATTEMPT LEDGER, pure (common.sh:666-743) ---------------------------------------------------------------------------
 
 
 def class_is_infra(cls: str) -> bool:
@@ -350,8 +336,7 @@ def parse_attempt_states(raw: str) -> list[AttemptState]:
             flush()
             continue
         if ATTEMPT_KEY in line and sha == "":
-            # `sub(/.*claude-review-attempt:[[:space:]]*/, "", line)` is GREEDY,
-            # so a line carrying the key twice keeps the text after the LAST one.
+            # `sub(/.*claude-review-attempt:[[:space:]]*/, "", line)` is GREEDY, so a line carrying the key twice keeps the text after the LAST one.
             tail = line.rsplit(ATTEMPT_KEY, 1)[1].lstrip(" \t")
             # `sub(/[[:space:]].*$/, "", line)` -- up to the first whitespace.
             sha = re.split(r"[ \t]", tail, maxsplit=1)[0]
@@ -471,9 +456,7 @@ def _strip_ws_int(value: str | int) -> int:
     return int(text)
 
 
-# ---------------------------------------------------------------------------
-# THE SNAPSHOT (common.sh:603-617)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE SNAPSHOT (common.sh:603-617) ---------------------------------------------------------------------------
 
 
 def epic_ids(branch: str, env: dict[str, str] | None = None) -> list[str]:
@@ -512,10 +495,7 @@ def epic_ids(branch: str, env: dict[str, str] | None = None) -> list[str]:
     return found
 
 
-# ---------------------------------------------------------------------------
-# THE NETWORK HALF -- raises rather than swallows, agreeing with the twin
-# since the DEFECT 1 fix (previously the port refused what the twin swallowed)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- THE NETWORK HALF -- raises rather than swallows, agreeing with the twin since the DEFECT 1 fix (previously the port refused what the twin swallowed) ---------------------------------------------------------------------------
 
 
 def report_count(
@@ -657,9 +637,7 @@ def _repo_slug(repo: str | None, env: dict | None) -> str:
     return slug
 
 
-# ---------------------------------------------------------------------------
-# CLI -- the surface the shadow differential drives
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- CLI -- the surface the shadow differential drives ---------------------------------------------------------------------------
 
 USAGE = """review_budget -- the review-cap half of .ci/scripts/lib/common.sh.
 

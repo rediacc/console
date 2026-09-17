@@ -141,8 +141,7 @@ def test_pr_channel_also_still_asserts(gate, stage):
 
 
 def test_empty_channel_skips_only_the_metadata_assertions(gate, stage):
-    # THE FIX. This is the exact nightly shape: no channel, so no package
-    # repositories were built, so their absence is correct.
+    # THE FIX. This is the exact nightly shape: no channel, so no package repositories were built, so their absence is correct.
     stage.seed_dist()
     stage.drop_metadata()
     gate.assert_eq(stage.validate("schedule", ""), "PASS", "the nightly shape must validate")
@@ -156,8 +155,7 @@ def test_empty_channel_skips_only_the_metadata_assertions(gate, stage):
 
 
 def test_the_skip_is_announced_not_silent(gate, stage):
-    # A silently weakened check is how this class of bug survives. The skip has
-    # to be visible in the run summary and as a notice.
+    # A silently weakened check is how this class of bug survives. The skip has to be visible in the run summary and as a notice.
     stage.seed_dist()
     stage.drop_metadata()
     stage.validate("schedule", "")
@@ -171,10 +169,7 @@ def test_the_skip_is_announced_not_silent(gate, stage):
 
 
 def test_empty_channel_does_NOT_weaken_the_other_assertions(gate, stage):  # noqa: N802
-    # THE OTHER DANGEROUS DIRECTION, and the one a careless fix gets wrong: the
-    # channel gate must cover ONLY the two metadata checks. If a nightly stops
-    # producing CLI binaries or half the packages, that must still be red --
-    # otherwise "fix the nightly" would have quietly become "stop checking it".
+    # THE OTHER DANGEROUS DIRECTION, and the one a careless fix gets wrong: the channel gate must cover ONLY the two metadata checks. If a nightly stops producing CLI binaries or half the packages, that must still be red -- otherwise "fix the nightly" would have quietly become "stop checking it".
     stage.seed_dist()
     stage.drop_metadata()
     (stage.root / "dist" / "cli" / "rdc-linux-x64").unlink()

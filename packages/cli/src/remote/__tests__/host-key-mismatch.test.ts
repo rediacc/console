@@ -33,8 +33,7 @@ describe('buildHostKeyMismatchMessage', () => {
   });
 
   it('states the remedy conditionally rather than as an instruction', () => {
-    // Guard against regressing to a "tip: just run scan-keys" hint, which
-    // trains the reflex that defeats the point of pinning.
+    // Guard against regressing to a "tip: just run scan-keys" hint, which trains the reflex that defeats the point of pinning.
     const msg = build(`${host} ssh-ed25519 ${OLD_ED25519}`);
     expect(msg).toContain('If the change is expected');
     expect(msg).toContain('rdc machine scan-keys hostinger');

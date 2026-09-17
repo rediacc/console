@@ -60,8 +60,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-devcontainer-pin-freshness.sh"
 VALIDATOR = paths.from_root("scripts", "gates", "check-devcontainer-pin-freshness.ts")
 REAL_DOCKERFILE = paths.from_root(".devcontainer", "Dockerfile")
 
-# The real digests of bw-linux-2026.8.0.zip / bw-linux-arm64-2026.8.0.zip, so a
-# passing `--upgrade` case also re-proves the pins in the tree.
+# The real digests of bw-linux-2026.8.0.zip / bw-linux-arm64-2026.8.0.zip, so a passing `--upgrade` case also re-proves the pins in the tree.
 BW_SHA_AMD64 = "367f618e9fcccaac4980ec12c7bafd01df739b5f3cb1af31bc9045cf75eea1d6"
 BW_SHA_ARM64 = "74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8"
 
@@ -79,9 +78,7 @@ def build_fixtures(gate, directory):
 
     dockerfile = directory / "Dockerfile"
     shutil.copy2(REAL_DOCKERFILE, dockerfile)
-    # WRITABLE regardless of the source's mode: copy2 carries the source's
-    # permissions across, and `--upgrade` must be able to rewrite the copy.
-    # Without this the case depends on the environment rather than on the code.
+    # WRITABLE regardless of the source's mode: copy2 carries the source's permissions across, and `--upgrade` must be able to rewrite the copy. Without this the case depends on the environment rather than on the code.
     dockerfile.chmod(dockerfile.stat().st_mode | 0o200)
 
     # Reported far OLDER than the real pin -> nothing is stale.
@@ -104,8 +101,7 @@ def build_fixtures(gate, directory):
         encoding="utf-8",
     )
 
-    # Stale, but the arm64 asset has NO digest -> `--upgrade` must refuse the whole
-    # source rather than write a version whose hash it could not resolve.
+    # Stale, but the arm64 asset has NO digest -> `--upgrade` must refuse the whole source rather than write a version whose hash it could not resolve.
     (directory / "stale-missing-digest.json").write_text(
         "{\n"
         '  "bw": {\n'

@@ -35,9 +35,7 @@ def _joined(*rows: str) -> str:
     return "\n".join(rows)
 
 
-# The exemption program, verbatim from check-content-quality.sh:111-118. Copied
-# rather than read out of the file so a rewrite of the twin shows up here as a
-# failing comparison instead of as a silently-updated expectation.
+# The exemption program, verbatim from check-content-quality.sh:111-118. Copied rather than read out of the file so a rewrite of the twin shows up here as a failing comparison instead of as a silently-updated expectation.
 AWK_EXEMPT = r"""awk '
         BEGIN { fm=0; cb=0 }
         /^---$/ && cb==0 { fm++; if (fm<=2) { print NR; next } }
@@ -52,9 +50,7 @@ def _bash_exempt(tmp_path: pathlib.Path, text: str) -> set[int]:
     """The line numbers the twin's awk marks exempt, for `text`."""
     target = tmp_path / "doc.md"
     target.write_text(text, encoding="utf-8")
-    # The filename is appended rather than interpolated into the awk text so
-    # the program below reads exactly as it does in the twin, with no trailing
-    # quote gymnastics between the closing `'` and the argument.
+    # The filename is appended rather than interpolated into the awk text so the program below reads exactly as it does in the twin, with no trailing quote gymnastics between the closing `'` and the argument.
     code, out, err = diff.bash_streams(AWK_EXEMPT + '"%s"' % target, cwd=str(tmp_path))
     assert err == "", err
     assert code == 0, code

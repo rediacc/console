@@ -37,15 +37,10 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-hook-change.sh"
 ORDER = 36
 
-# Without the `git commit` test the note fires on every Bash call the session
-# makes while anything under .claude/hooks/ is staged -- which, during hook
-# work, is most of them. That is the difference between "the reminder at the
-# moment of the act" and a banner nobody reads.
+# Without the `git commit` test the note fires on every Bash call the session makes while anything under .claude/hooks/ is staged -- which, during hook work, is most of them. That is the difference between "the reminder at the moment of the act" and a banner nobody reads.
 DEFECT = ('if not hookio.case_glob(cmd, "*git commit*"):', "if False:")
 
-# The staged paths that count. `grep '^\\.claude/hooks/'` in the original is a
-# BRE, and this pattern means the same thing under ERE, so no translation is
-# needed beyond the escaping Python already requires.
+# The staged paths that count. `grep '^\\.claude/hooks/'` in the original is a BRE, and this pattern means the same thing under ERE, so no translation is needed beyond the escaping Python already requires.
 HOOK_PATH = r"^\.claude/hooks/"
 
 
@@ -95,21 +90,15 @@ def _repo_with_staged(path, hook_files):
 
 
 FIXTURES = {
-    # Two hook files, so the port's per-line indentation loop is exercised on
-    # more than one record.
+    # Two hook files, so the port's per-line indentation loop is exercised on more than one record.
     "hooks-staged": lambda p: _repo_with_staged(
         p, ["pre-bash/block-example.sh", "pre-edit/warn-example.sh"]
     ),
-    # The same world with nothing under .claude/hooks/ staged: the ALLOW side,
-    # and the only reason the grep above is visible to the differential.
+    # The same world with nothing under .claude/hooks/ staged: the ALLOW side, and the only reason the grep above is visible to the differential.
     "hooks-clean": lambda p: _repo_with_staged(p, []),
 }
 
-# WHY THE LIVE WORKTREE IS NOT ONE OF THESE. The guard's answer is a function of
-# whatever happens to be in THIS checkout's index, and this tree is shared with
-# other sessions and other agents. A `git add` landing between the bash sweep
-# and the Python sweep would be reported here as a port defect, so both
-# variants are controlled worlds built by the builders above.
+# WHY THE LIVE WORKTREE IS NOT ONE OF THESE. The guard's answer is a function of whatever happens to be in THIS checkout's index, and this tree is shared with other sessions and other agents. A `git add` landing between the bash sweep and the Python sweep would be reported here as a port defect, so both variants are controlled worlds built by the builders above.
 ENVS = [
     (
         "staged",
@@ -131,9 +120,7 @@ ENVS = [
 
 EDGE_CASES = [
     ("the plain commit", "git commit -m 'fix a guard'"),
-    # `case "$CMD" in *"git commit"*)` is an UNANCHORED glob, so a commit in a
-    # later clause, in a wrapper, or inside quoted prose all reach the check.
-    # That is the original's behaviour and the port must keep it, warts and all.
+    # `case "$CMD" in *"git commit"*)` is an UNANCHORED glob, so a commit in a later clause, in a wrapper, or inside quoted prose all reach the check. That is the original's behaviour and the port must keep it, warts and all.
     ("a commit in a later clause", "git add -A && git commit -m x"),
     ("quoted prose still counts as a commit", "echo 'then git commit -m x'"),
     ("git commit-tree is a substring match too", "git commit-tree HEAD^{tree}"),
@@ -144,8 +131,7 @@ EDGE_CASES = [
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
-    # `... 2>/dev/null) || exit 0`: a jq failure gives "" and allows. See the
-    # port note in the module docstring for why this arm cannot be observed.
+    # `... 2>/dev/null) || exit 0`: a jq failure gives "" and allows. See the port note in the module docstring for why this arm cannot be observed.
     if cmd == "":
         return hookio.ALLOW
 
@@ -154,8 +140,7 @@ def run(ev):
 
     # `git diff --cached --name-only 2>/dev/null | grep '^\\.claude/hooks/' || true`.
     # The `|| true` only stops the pipeline's failure status from escaping; the
-    # substitution keeps grep's (possibly empty) output either way, which is
-    # what the `[ -n "$STAGED" ]` below then tests.
+    # substitution keeps grep's (possibly empty) output either way, which is what the `[ -n "$STAGED" ]` below then tests.
     staged = hookio.git_out(["diff", "--cached", "--name-only"])
     hooks = hookio.grep_lines(HOOK_PATH, staged)
     if not hooks:

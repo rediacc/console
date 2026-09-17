@@ -60,9 +60,7 @@ from rediacc_ci.core import toolchain
 if TYPE_CHECKING:  # pragma: no cover - both names are only ever annotations here
     from rediacc_ci.setup.ctx import Ctx, Result
 
-# The version managers `.ci/lib/setup.sh:70` probes, IN ITS ORDER, and the
-# command each one wants. Order is observable: a machine with both fnm and mise
-# is told about fnm, and a set would have made that arbitrary.
+# The version managers `.ci/lib/setup.sh:70` probes, IN ITS ORDER, and the command each one wants. Order is observable: a machine with both fnm and mise is told about fnm, and a set would have made that arbitrary.
 NODE_MANAGERS: tuple[tuple[str, str], ...] = (
     ("fnm", "fnm install {major} && fnm use {major}"),
     ("nvm", "nvm install {major} && nvm use {major}"),
@@ -71,8 +69,7 @@ NODE_MANAGERS: tuple[tuple[str, str], ...] = (
     ("mise", "mise use -g node@{major}"),
 )
 
-# `.ci/lib/setup.sh:270-283`. The manager is probed in this order and the FIRST
-# hit wins, so this is a tuple and not a dict literal read at random.
+# `.ci/lib/setup.sh:270-283`. The manager is probed in this order and the FIRST hit wins, so this is a tuple and not a dict literal read at random.
 SYSTEM_TOOL_INSTALLS: tuple[tuple[str, str], ...] = (
     ("apt-get", "sudo apt-get update && sudo apt-get install -y build-essential python3 jq"),
     ("dnf", "sudo dnf groupinstall -y 'Development Tools' && sudo dnf install -y python3 jq"),
@@ -81,8 +78,7 @@ SYSTEM_TOOL_INSTALLS: tuple[tuple[str, str], ...] = (
 )
 
 # `ARG GO_VERSION=` in `.devcontainer/Dockerfile`. The pin lives there and is
-# read, never restated: `.ci/lib/setup.sh:332-335` records why (a floating `go`
-# directive once resolved the never-published go1.26.5 and 404'd the image
+# read, never restated: `.ci/lib/setup.sh:332-335` records why (a floating `go` directive once resolved the never-published go1.26.5 and 404'd the image
 # build). `grep -oP '^ARG GO_VERSION=\K[0-9.]+'` in the bash; the same anchor,
 # the same character class, here.
 GO_ARG_RE = re.compile(r"^ARG GO_VERSION=([0-9.]+)", re.MULTILINE)
@@ -92,11 +88,7 @@ GO_VERSION_RE = re.compile(r"go([0-9.]+)")
 
 GH_INSTALL_DOCS = "https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
 
-# THE OFFICIAL apt RECIPE, VERBATIM. `.ci/lib/setup.sh:481-484` argues for
-# keeping it that way: "kept verbatim rather than paraphrased: they add a signed
-# keyring and an apt source, and getting either subtly wrong is a supply-chain
-# problem, not a typo". A constant rather than a list built at the call site,
-# so nothing can interpolate into it.
+# THE OFFICIAL apt RECIPE, VERBATIM. `.ci/lib/setup.sh:481-484` argues for keeping it that way: "kept verbatim rather than paraphrased: they add a signed keyring and an apt source, and getting either subtly wrong is a supply-chain problem, not a typo". A constant rather than a list built at the call site, so nothing can interpolate into it.
 GH_APT_SCRIPT = """set -e
 (type -p wget >/dev/null || (sudo apt-get update && sudo apt-get install wget -y))
 sudo mkdir -p -m 755 /etc/apt/keyrings
@@ -117,9 +109,7 @@ NODE_DIST_INDEX = "https://nodejs.org/dist/index.json"
 GO_DL_INDEX = "https://go.dev/dl/?mode=json&include=all"
 
 
-# ---------------------------------------------------------------------------
-# helpers the bash spells inline
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- helpers the bash spells inline ---------------------------------------------------------------------------
 
 
 def _at_least(have: str, want: str) -> bool:
@@ -183,9 +173,7 @@ def _fetch(url: str, timeout: int) -> bytes | None:
         return None
 
 
-# ---------------------------------------------------------------------------
-# the two pure pickers
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the two pure pickers ---------------------------------------------------------------------------
 
 
 def node_pick_lts(index_text: str, major: str) -> str | None:
@@ -239,9 +227,7 @@ def go_pick_sha(index_text: str, filename: str) -> str | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# 1. node
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. node ---------------------------------------------------------------------------
 
 
 def node_toolchain(ctx: Ctx) -> int:
@@ -305,9 +291,7 @@ def node_toolchain(ctx: Ctx) -> int:
         os_name = platform_.os_for("asset", system)
         arch = platform_.arch_for("node", machine)
     except platform_.PlatformError:
-        # The bash writes two arms, one per unsupported axis, and only the OS one
-        # can fire first. `platform_` folds both into one exception, so the arm
-        # is chosen back by asking which half failed.
+        # The bash writes two arms, one per unsupported axis, and only the OS one can fire first. `platform_` folds both into one exception, so the arm is chosen back by asking which half failed.
         if _os_unsupported(system):
             ctx.error("Unsupported OS %s; install Node.js >= %s yourself." % (system, minimum))
         else:
@@ -452,9 +436,7 @@ def _extract_strip1(tar, dest: pathlib.Path) -> None:
         tar.extract(member, root)
 
 
-# ---------------------------------------------------------------------------
-# 2. system tools
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. system tools ---------------------------------------------------------------------------
 
 
 def system_tools(ctx: Ctx) -> int:
@@ -521,9 +503,7 @@ def system_tools(ctx: Ctx) -> int:
         ctx.say()
         return 1
 
-    # `eval "$install_cmd"`: the string carries `&&`, so it is a shell program
-    # and not an argv. Run through `bash -c` for the same reason, which is also
-    # why the string is a constant in this file and never built from input.
+    # `eval "$install_cmd"`: the string carries `&&`, so it is a shell program and not an argv. Run through `bash -c` for the same reason, which is also why the string is a constant in this file and never built from input.
     if ctx.run(["bash", "-c", install_cmd], timeout=1800).rc != 0:
         ctx.error("Toolchain install failed. Run it yourself and re-run ./run.sh setup:")
         ctx.say()
@@ -547,9 +527,7 @@ def _cc_version(ctx: Ctx) -> str:
     return ctx.run(["cc", "--version"], timeout=10).first_line()
 
 
-# ---------------------------------------------------------------------------
-# 3. go
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. go ---------------------------------------------------------------------------
 
 
 def go_pin(root: pathlib.Path) -> str:
@@ -670,9 +648,7 @@ def _go_install(ctx: Ctx, *, want: str, filename: str) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# 4. gh
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 4. gh ---------------------------------------------------------------------------
 
 
 def gh_cli(ctx: Ctx) -> int:
@@ -740,9 +716,7 @@ def _gh_install(ctx: Ctx) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# 5. docker probe -- DEFINED IN THE BASH, CALLED BY NOTHING. See the header.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. docker probe -- DEFINED IN THE BASH, CALLED BY NOTHING. See the header. ---------------------------------------------------------------------------
 
 
 def docker_probe(ctx: Ctx) -> int:
@@ -759,9 +733,7 @@ def docker_probe(ctx: Ctx) -> int:
 
     if ctx.run(["docker", "info"], timeout=30).rc == 0:
         version = ctx.run(["docker", "version", "--format", "{{.Server.Version}}"], timeout=15)
-        # `|| echo 'version unknown'`: the bash discards the status here, and
-        # `.ci/rediacc_ci/core/dockerx.py:538` records that this is the right
-        # call in this one place -- an advisory line must not become an error.
+        # `|| echo 'version unknown'`: the bash discards the status here, and `.ci/rediacc_ci/core/dockerx.py:538` records that this is the right call in this one place -- an advisory line must not become an error.
         label = (
             version.out.strip() if version.rc == 0 and version.out.strip() else "version unknown"
         )
@@ -810,16 +782,10 @@ def _pretty_name() -> str:
     return "this distro"
 
 
-# ---------------------------------------------------------------------------
-# 6. git identity
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 6. git identity ---------------------------------------------------------------------------
 
 # `git log -200 --format='%an <%ae>' | grep -v '\[bot\]' | sort | uniq -c |
-#  sort -rn | head -1 | sed 's/^ *[0-9]* //'`. The whole pipeline is here rather
-# than shelled out because `uniq -c | sort -rn` has a tie-break nobody wrote
-# down: `sort -rn` is not stable across implementations, so the bash's answer
-# on a tie is already unspecified. Python's `max` takes the FIRST maximum, which
-# is at least a stated rule.
+# sort -rn | head -1 | sed 's/^ *[0-9]* //'`. The whole pipeline is here rather than shelled out because `uniq -c | sort -rn` has a tie-break nobody wrote down: `sort -rn` is not stable across implementations, so the bash's answer on a tie is already unspecified. Python's `max` takes the FIRST maximum, which is at least a stated rule.
 BOT_MARKER = "[bot]"
 
 
@@ -916,9 +882,7 @@ def _git_global(ctx: Ctx, key: str) -> str:
     return result.out.strip() if result.rc == 0 else ""
 
 
-# ---------------------------------------------------------------------------
-# 7. git credentials
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 7. git credentials ---------------------------------------------------------------------------
 
 CREDENTIAL_QUERY = "protocol=https\nhost=github.com\n\n"
 
@@ -1021,8 +985,7 @@ def git_credentials(ctx: Ctx) -> int:
     )
     del gh_token
 
-    # VERIFY, because approve reports nothing and a silently-empty store is
-    # exactly what sent the operator round this loop once already.
+    # VERIFY, because approve reports nothing and a silently-empty store is exactly what sent the operator round this loop once already.
     if credential_probe(ctx).rc != 0:
         ctx.error("Stored nothing: the credential helper did not return it back.")
         ctx.error("Check that credential.helper is set (it is: %s)." % (helper or "unset"))
@@ -1057,9 +1020,7 @@ def _try_gh_credential(ctx: Ctx) -> int | None:
     ctx.say("  from gh, so there is no token to create, paste, or keep in a file.")
     ctx.say()
     if ctx.confirm("Run 'gh auth login' now?"):
-        # `gh auth login && gh auth setup-git`: the second only runs if the
-        # first succeeded, and `gh auth login` is interactive, so it gets the
-        # real terminal rather than a captured pipe.
+        # `gh auth login && gh auth setup-git`: the second only runs if the first succeeded, and `gh auth login` is interactive, so it gets the real terminal rather than a captured pipe.
         login = subprocess.run(["gh", "auth", "login"], cwd=str(ctx.root), env=ctx.env, check=False)
         if (
             login.returncode == 0

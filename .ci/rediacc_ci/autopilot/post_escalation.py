@@ -122,9 +122,7 @@ ALLOW_VALUE = "true"
 # `_gh_probe`: three attempts, sleeping 3 then 6 seconds.
 GH_ATTEMPTS = 3
 
-# The step-class map, in the twin's order. A key with no entry here is reported
-# by its RAW key, so a new stage is never silently unnameable -- that fallback is
-# the `*)` arm and it is deliberate, not a gap.
+# The step-class map, in the twin's order. A key with no entry here is reported by its RAW key, so a new stage is never silently unnameable -- that fallback is the `*)` arm and it is deliberate, not a gap.
 STEP_CLASSES = {
     "restore": (
         "the trusted-config assert (wall 4): the PR branch's agent config "
@@ -148,8 +146,7 @@ PATCH_LENGTH_PROGRAM = '(.escalation.patch // "") | length'
 PATCH_PROGRAM = ".escalation.patch"
 
 # `${pair//[[:space:]]/}` in the C locale: space, tab, newline, vertical tab,
-# form feed, carriage return. Not Python's `str.strip`, which also eats
-# U+00A0 and friends once the string is text.
+# form feed, carriage return. Not Python's `str.strip`, which also eats U+00A0 and friends once the string is text.
 BASH_SPACE_RE = re.compile(r"[ \t\n\v\f\r]")
 
 # `grep -oE '`+'`: every maximal run of backticks.
@@ -255,8 +252,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, bytes]:
             time.sleep(attempt * 3)
     log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
     if stderr:
-        # `[[ -s "$err" ]] && sed 's/^/    /' "$err" >&2`. GNU sed does not
-        # invent a final newline the input did not have.
+        # `[[ -s "$err" ]] && sed 's/^/ /' "$err" >&2`. GNU sed does not invent a final newline the input did not have.
         text = stderr.decode("utf-8", "replace")
         parts = text.split("\n")
         incomplete = parts[-1] != ""
@@ -343,17 +339,13 @@ def build_body(handle, args: dict[str, str], klass: str) -> int:
         if steps:
             out("\nFailed step class: %s\n" % klass)
     else:
-        # With no verdict and no reason the step class IS the whole message, so
-        # printing it twice would be noise at the one moment the operator is
-        # scanning for what actually broke.
+        # With no verdict and no reason the step class IS the whole message, so printing it twice would be noise at the one moment the operator is scanning for what actually broke.
         out("The round failed in %s.\n" % klass)
 
     if have_verdict:
         # `[[ "$(jq ...)" != "0" ]]` sits inside `[[ ]]`, where `set -e` does
         # NOT apply: a jq failure here yields the empty string, which is `!= "0"`
-        # and therefore ENTERS the patch block. Reproduced -- the next jq then
-        # fails the same way and takes the run with it, which is the twin's
-        # behaviour and not a smoothing opportunity.
+        # and therefore ENTERS the patch block. Reproduced -- the next jq then fails the same way and takes the run with it, which is the twin's behaviour and not a smoothing opportunity.
         _, length = _jq_capture(PATCH_LENGTH_PROGRAM, verdict)
         if length != b"0":
             code, patch = _jq_capture(PATCH_PROGRAM, verdict)
@@ -367,8 +359,7 @@ def build_body(handle, args: dict[str, str], klass: str) -> int:
             )
             # The twin runs jq a THIRD time here rather than reusing the
             # captured value; the bytes are the same because `$( )` stripped
-            # only the trailing newlines jq's own `-r` added, and printing them
-            # back is what `jq -r ... >file` does.
+            # only the trailing newlines jq's own `-r` added, and printing them back is what `jq -r ... >file` does.
             code = _jq_into(handle, PATCH_PROGRAM, verdict)
             if code != 0:
                 return code
@@ -393,8 +384,7 @@ def main(argv: list[str]) -> int:
     no_label = args.get("ARG_NO_LABEL", "false")
     dry_run = args.get("ARG_DRY_RUN", "false")
 
-    # ORDER, KEPT: usage first, then the stage flag, so a broken invocation
-    # still gets the usage message rather than a confusing refusal.
+    # ORDER, KEPT: usage first, then the stage flag, so a broken invocation still gets the usage message rather than a confusing refusal.
     if not (pr and repo and title):
         log.error(USAGE)
         return 2
@@ -431,8 +421,7 @@ def _post(
         return code
 
     if dry_run == "true":
-        # `cat "$work/body.md"` -- BYTES, because the body carries
-        # model-authored text that need not be valid UTF-8.
+        # `cat "$work/body.md"` -- BYTES, because the body carries model-authored text that need not be valid UTF-8.
         sys.stdout.flush()
         with open(body_md, "rb") as handle:
             sys.stdout.buffer.write(handle.read())
@@ -455,9 +444,7 @@ def _post(
         ],
     )
     if not ok:
-        # `set -e` on gh_retry's status: THE LABEL IS NEVER APPLIED, so a
-        # campaign is not latched without the words that say why. See the
-        # module docstring.
+        # `set -e` on gh_retry's status: THE LABEL IS NEVER APPLIED, so a campaign is not latched without the words that say why. See the module docstring.
         return 1
     log.info("escalation comment posted on PR #%s" % pr)
 

@@ -42,8 +42,7 @@ SUT = paths.from_root(".ci", "scripts", "ci", "assert-ci-complete.sh")
 ARRAY_RE = re.compile(r"^(HARD_REQUIRED|SOFT_REQUIRED)=\((.*?)\)", re.MULTILINE | re.DOTALL)
 NAME_RE = re.compile(r"[A-Z][A-Z0-9_]*")
 
-# A fast-path run: builds and their dependents skipped -> must PASS. This is a
-# SCENARIO and not a floor, so it stays written out, exactly as the twin has it.
+# A fast-path run: builds and their dependents skipped -> must PASS. This is a SCENARIO and not a floor, so it stays written out, exactly as the twin has it.
 FASTPATH_SKIPS = {
     "POINTER_BUMP_ONLY": "true",
     "RESULT_BUILD_DOCKER": "skipped",
@@ -66,8 +65,7 @@ FASTPATH_SKIPS = {
     "RESULT_BREAKPOINT_LIFECYCLE": "skipped",
 }
 
-# The twin's hand-typed set, kept ONLY so the derivation can be checked against
-# it. Nothing below is driven from this.
+# The twin's hand-typed set, kept ONLY so the derivation can be checked against it. Nothing below is driven from this.
 TWIN_BASELINE_NAMES = frozenset(
     {
         "INITIALIZE",

@@ -43,20 +43,17 @@ import { fileURLToPath } from 'node:url';
 
 // Force every conditional help block to register so the render covers them:
 // some addHelpText blocks gate on isAgentEnvironment() (REDIACC_AGENT=1) and
-// others on --help-all. Both must be set BEFORE importing cli.ts, because the
-// blocks are attached at module-registration time.
+// others on --help-all. Both must be set BEFORE importing cli.ts, because the blocks are attached at module-registration time.
 process.env.REDIACC_AGENT = '1';
 if (!process.argv.includes('--help-all')) process.argv.push('--help-all');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// This gate lives beside export-command-tree.ts (packages/cli/scripts/), the
-// established home for scripts that walk the live Commander tree via ../src.
+// This gate lives beside export-command-tree.ts (packages/cli/scripts/), the established home for scripts that walk the live Commander tree via ../src.
 const EN_CLI_JSON = path.resolve(__dirname, '../src/i18n/locales/en/cli.json');
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-// Last-segment extensions that make a namespace-rooted token a filename in
-// prose (e.g. "common.js", "docs.md"), not a raw key. Kept deliberately small.
+// Last-segment extensions that make a namespace-rooted token a filename in prose (e.g. "common.js", "docs.md"), not a raw key. Kept deliberately small.
 const FILE_EXT = new Set([
   'js',
   'ts',
@@ -133,13 +130,8 @@ async function main(): Promise<void> {
   // A namespace-rooted, camelCase dotted token: <namespace>(.seg)+.
   const tokenRe = new RegExp(`\\b(?:${namespaces.join('|')})(?:\\.[A-Za-z][A-Za-z0-9]*)+`, 'g');
 
-  // Cast the BINDING, not the module, and go through `unknown` because that is what the
-  // conversion honestly is. `CommanderCommand` above is a deliberately minimal structural
-  // view of Commander's `Command` -- the four members this script actually calls -- so it
-  // does not "sufficiently overlap" with the real class and TS2352 is correct to say so.
-  // Casting the whole module additionally claimed something false about every OTHER export
-  // of cli.ts. This file was never typechecked until scripts/tsconfig.json was widened to
-  // include packages/cli/scripts, which is how a live gate leaf carried an unsound cast.
+  // Cast the BINDING, not the module, and go through `unknown` because that is what the conversion honestly is. `CommanderCommand` above is a deliberately minimal structural view of Commander's `Command` -- the four members this script actually calls -- so it does not "sufficiently overlap" with the real class and TS2352 is correct to say so. Casting the whole module additionally
+  // claimed something false about every OTHER export of cli.ts. This file was never typechecked until scripts/tsconfig.json was widened to include packages/cli/scripts, which is how a live gate leaf carried an unsound cast.
   const cliModule = await import('../src/cli.js');
   const cli = cliModule.cli as unknown as CommanderCommand;
 
@@ -171,8 +163,7 @@ async function main(): Promise<void> {
       const last = segs[segs.length - 1].toLowerCase();
       if (FILE_EXT.has(last)) continue;
       const parent = segs.slice(0, -1).join('.');
-      // Raw-key signature: the parent namespace path is a real object, the full
-      // path is a missing leaf.
+      // Raw-key signature: the parent namespace path is a real object, the full path is a missing leaf.
       if (classify(enJson, token) === 'missing' && classify(enJson, parent) === 'object') {
         seen.add(token);
         const idx = captured.indexOf(token);
@@ -187,8 +178,7 @@ async function main(): Promise<void> {
     for (const sub of cmd.commands) visit(sub, [...prefix, name]);
   };
 
-  // Walk each top-level command (skip the implicit root name "rdc" itself, but
-  // do render the root's own help for its addHelpText blocks).
+  // Walk each top-level command (skip the implicit root name "rdc" itself, but do render the root's own help for its addHelpText blocks).
   let rootCaptured = '';
   cli.configureOutput({ writeOut: (s: string) => (rootCaptured += s), writeErr: () => {} });
   try {

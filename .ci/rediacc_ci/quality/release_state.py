@@ -103,29 +103,20 @@ from rediacc_ci.controls import Controls
 DEFAULT_BUCKET = "rediacc-releases"
 SENTINEL_KEY = ".released"
 
-# Strict semver with the `v` prefix. Pre-release tags are deliberately outside
-# the contract, so they are filtered rather than judged.
+# Strict semver with the `v` prefix. Pre-release tags are deliberately outside the contract, so they are filtered rather than judged.
 STRICT_SEMVER = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
-# The sentinel key shape `rsv_list_sentinels` extracts a version from:
-# `s|^cli/\(v[0-9][0-9.]*\)/.released$|\1|p`. Looser than STRICT_SEMVER on
-# purpose -- the grep behind it is what tightens the result -- so the two stages
-# are kept separate rather than folded into one pattern.
+# The sentinel key shape `rsv_list_sentinels` extracts a version from: `s|^cli/\(v[0-9][0-9.]*\)/.released$|\1|p`. Looser than STRICT_SEMVER on purpose -- the grep behind it is what tightens the result -- so the two stages are kept separate rather than folded into one pattern.
 SENTINEL_LINE = re.compile(r"^%s/(v[0-9][0-9.]*)/%s$")
 
 # The channel pointer sed. GREEDY `.*` first, which is what makes it take the
 # LAST match on the line; see the port notes.
 POINTER_VERSION = re.compile(r'.*"version"[ \t]*:[ \t]*"([^"]*)"')
 
-# The two channels, in the twin's loop order. Order is observable: each channel
-# prints a log_step and an OK/DRIFT line.
+# The two channels, in the twin's loop order. Order is observable: each channel prints a log_step and an OK/DRIFT line.
 CHANNELS = ("edge", "stable")
 
-# The ratchet file, relative to the repository root. A monotonic high-water mark
-# stored in git: every successful release advances it to the new oldest CLI
-# sentinel and nothing decreases it. It protects the all-sentinels-empty case
-# (a mass scrub or a misconfigured probe), where bijection would otherwise
-# short-circuit to OK.
+# The ratchet file, relative to the repository root. A monotonic high-water mark stored in git: every successful release advances it to the new oldest CLI sentinel and nothing decreases it. It protects the all-sentinels-empty case (a mass scrub or a misconfigured probe), where bijection would otherwise short-circuit to OK.
 FLOOR_FILE_REL = ".ci/config/release-contract-floor.txt"
 
 
@@ -217,9 +208,7 @@ def list_sentinels(product: str, endpoint: str) -> list[str]:
             "text",
         ]
     )
-    # `2>/dev/null`: a failed probe yields no keys and no message, which is the
-    # twin's behaviour and is the weakest part of this gate. The library's own
-    # siblings (`rsv_prefix_nonempty`, `rsv_binary_count`, `rsv_sentinel_exists`)
+    # `2>/dev/null`: a failed probe yields no keys and no message, which is the twin's behaviour and is the weakest part of this gate. The library's own siblings (`rsv_prefix_nonempty`, `rsv_binary_count`, `rsv_sentinel_exists`)
     # all grew a third "COULD NOT TELL" state for exactly this reason; this one
     # never did. Carried unchanged, and reported.
     pattern = re.compile(SENTINEL_LINE.pattern % (re.escape(product), re.escape(SENTINEL_KEY)))
@@ -278,8 +267,7 @@ def pre_contract_floor(cli_versions: list[str], root: pathlib.Path) -> str:
 
     floor_file = os.environ.get("RSV_FLOOR_FILE") or ""
     if not floor_file:
-        # The twin's candidate list, in its order. `$REPO_ROOT` is a shell
-        # variable the gate assigns, so the port uses its own root for it.
+        # The twin's candidate list, in its order. `$REPO_ROOT` is a shell variable the gate assigns, so the port uses its own root for it.
         for candidate in (
             root / FLOOR_FILE_REL,
             paths.CI_DIR / "config" / "release-contract-floor.txt",
@@ -319,9 +307,7 @@ def assert_bijection(
     out: list[str] = []
     floor = pre_contract_floor(cli_versions, root)
     if not floor:
-        # Neither sentinels nor an override: the contract is not in effect for
-        # this state at all (a fresh dev bucket). Short-circuit to OK rather
-        # than false-positive on every old tag in repo history.
+        # Neither sentinels nor an override: the contract is not in effect for this state at all (a fresh dev bucket). Short-circuit to OK rather than false-positive on every old tag in repo history.
         out.append(
             "OK: release-state bijection holds -- no cli sentinels yet (contract not in effect)"
         )
@@ -388,9 +374,7 @@ def assert_channel_pointer_tagged(
     out: list[str] = []
     drift = 0
 
-    # An unreadable pointer is NOT a clean channel. Both files are written
-    # seconds apart by the same uploader, so a missing one means the read failed
-    # or the write tore, and either way the question was not answered.
+    # An unreadable pointer is NOT a clean channel. Both files are written seconds apart by the same uploader, so a missing one means the read failed or the write tore, and either way the question was not answered.
     if not latest_ver or not manifest_ver:
         out.append(
             "DRIFT %s: could not read the channel pointer (latest='%s' manifest='%s'); "
@@ -399,9 +383,7 @@ def assert_channel_pointer_tagged(
         )
         return out, 1
 
-    # They are written back to back. Disagreement means a torn write, and
-    # different consumers then resolve to different versions: install.sh reads
-    # latest.json, the updater reads manifest.json.
+    # They are written back to back. Disagreement means a torn write, and different consumers then resolve to different versions: install.sh reads latest.json, the updater reads manifest.json.
     if latest_ver != manifest_ver:
         out.append(
             "DRIFT %s: latest.json says '%s' but manifest.json says '%s'. They are written "
@@ -410,9 +392,7 @@ def assert_channel_pointer_tagged(
         )
         drift = 1
 
-    # The in-flight version legitimately has no tag yet: the pointer for release
-    # X is written before X's tag is pushed. Excluding it is what makes this
-    # relation safe to run on the release path at all.
+    # The in-flight version legitimately has no tag yet: the pointer for release X is written before X's tag is pushed. Excluding it is what makes this relation safe to run on the release path at all.
     if in_flight and latest_ver == in_flight:
         if drift == 0:
             out.append(
@@ -493,8 +473,7 @@ def _resolve_in_flight(root: pathlib.Path) -> str:
         text=True,
         check=False,
     )
-    # `set -e` on the twin: a failing resolve-version.sh kills the gate with its
-    # own diagnostics. The port forwards them and does the same.
+    # `set -e` on the twin: a failing resolve-version.sh kills the gate with its own diagnostics. The port forwards them and does the same.
     if proc.returncode != 0:
         sys.stderr.write(proc.stderr)
         raise SystemExit(proc.returncode)
@@ -557,8 +536,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log.step("listing git release tags")
     tag_versions = list_git_tags()
-    # `wc -l <<<"$tag_versions"` counts a herestring, and a herestring of the
-    # empty string is ONE line. Zero tags therefore reports `1 git tags`.
+    # `wc -l <<<"$tag_versions"` counts a herestring, and a herestring of the empty string is ONE line. Zero tags therefore reports `1 git tags`.
     log.info("  %d git tags" % (len(tag_versions) if tag_versions else 1))
 
     log.step("asserting release-state bijection")
@@ -615,17 +593,10 @@ def selftest() -> int:
         root = pathlib.Path(tmp)
         saved_floor = os.environ.pop("RSV_FLOOR_FILE", None)
         saved_grand = os.environ.pop("RSV_GRANDFATHER_BEFORE", None)
-        # THE RATCHET LEAKS IN FROM THE REAL TREE, and pinning it away is the
-        # only way these controls mean anything. `pre_contract_floor`'s SECOND
-        # candidate is `<this file's .ci>/config/release-contract-floor.txt`,
+        # THE RATCHET LEAKS IN FROM THE REAL TREE, and pinning it away is the only way these controls mean anything. `pre_contract_floor`'s SECOND candidate is `<this file's .ci>/config/release-contract-floor.txt`,
         # which is the twin's `${script_dir}/../../config/...` and does not move
-        # when the caller passes a fixture root. So a selftest that did not pin
-        # it would compute its floors from whatever version the REAL repository
-        # is on -- measured: v1.2.20, which grandfathers every fixture version
-        # and turns four plants green. Setting the variable to a path that does
-        # not exist is exactly how the twin is told "no ratchet": the search for
-        # candidates is skipped entirely when it is set, and a non-file value
-        # leaves the ratchet empty.
+        # when the caller passes a fixture root. So a selftest that did not pin it would compute its floors from whatever version the REAL repository is on -- measured: v1.2.20, which grandfathers every fixture version and turns four plants green. Setting the variable to a path that does not exist is exactly how the twin is told "no ratchet": the search for candidates is skipped
+        # entirely when it is set, and a non-file value leaves the ratchet empty.
         os.environ["RSV_FLOOR_FILE"] = str(root / "no-such-floor.txt")
         try:
             # -- the bijection ---------------------------------------------
@@ -685,10 +656,7 @@ def selftest() -> int:
 
             # -- the vacuity case, which is the one that must not read as OK --
             #
-            # No sentinels AND no ratchet is "the contract is not in effect",
-            # which the library short-circuits deliberately. It is recorded here
-            # as a KNOWN weak spot rather than left to be discovered: the gate
-            # reports OK having compared nothing.
+            # No sentinels AND no ratchet is "the contract is not in effect", which the library short-circuits deliberately. It is recorded here as a KNOWN weak spot rather than left to be discovered: the gate reports OK having compared nothing.
             empty_lines, empty_rc = bij([], ["v1.0.0", "v2.0.0"])
             ctl.check("KNOWN: no sentinels and no ratchet short-circuits to OK", empty_rc, 0)
             ctl.check(
