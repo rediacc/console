@@ -1582,7 +1582,7 @@ Do it in an order that cannot destroy the target:
 Write to a scratch path and `mv` into place, so a failure leaves the original untouched. Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look identical in a directory listing.
 ## A gate that says "in the same commit" is almost never checking commits
 Trap-Id: same-commit-advice-is-not-enforcement
-Enforced-By: file:.ci/scripts/quality/check_language_policy.py:918
+Enforced-By: file:.ci/scripts/quality/check_language_policy.py:789
 Residue: the wording is fixed in ONE gate. Twelve files under `.ci/scripts/quality/`,
 `.ci/rediacc_ci/quality/` and `scripts/gates/` carry same-commit language, and the other eleven still promise more than they check. Nothing decides, in general, whether a given gate's atomicity claim is enforced -- that is a property of what the gate reads, and reading it is a human step.
 
@@ -1656,3 +1656,24 @@ catch a check that cannot fail, and the environment it runs in made it one.
 
 The general shape: a control isolates the ONE variable it means to flip (here, `toolchain_load` skipped or not) and assumes everything else is neutral. When the real caller's environment carries state the control didn't account for (an exported variable, an ambient PATH entry, a cached file), the control's neutral case and its mutant case can converge, and the control passes
 locally (where that state is absent) while being vacuous in the one environment it exists to protect.
+
+---
+
+## A bulk transform's own proof can be the wrong proof, and a green one still shipped the damage
+Trap-Id: bulk-transform-wrong-proof-attached
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks that a quoted proof actually covers the class of damage the transform could do, only that some proof was quoted.
+
+A reflow pass on branch `0914-1` rewrote 884 files and destroyed 838 section banners across 161 of them, turning a three-line `---- / TITLE / ----` rule into one run-on line joined to the paragraph beneath it. Attached to that pass was a docstring-normalized AST-equality proof over every file, and it passed, because AST-diff cannot see prose structure. So did a fence, heading,
+table-row and list-marker structural check. So did 82 selftest controls and 216 pytest cases. The batch was large, the proof looked rigorous, and none of it was the right proof for the thing that broke.
+
+A later fix on the same branch repeated the shape one layer down: `shape_cluster_diff.py`, the tool built to answer THIS trap, was pointed at Python source for the first time and produced a false alarm of its own -- its `heading` and `indent-code` shapes were tuned against markdown and collide with an ordinary `#` comment or an indented comment line in `.py` source purely by
+coincidence of pattern, so a legitimate comment-paragraph join read as markdown-structure loss. The tool that exists to catch a wrong proof was itself run with the wrong proof for the corpus it was pointed at.
+
+THE PRINCIPLE THIS TRAP NAMES: batch size scales with the STRENGTH of the proof actually available for that content, not with ambition or with how rigorous a proof looks in general. An AST-equality proof is the right proof for a transform confined to code semantics; it is the wrong proof for one that touches prose structure, comments, or docstrings, because AST is blind to exactly
+that layer. A shape-cluster diff tuned for markdown's shapes is the right proof for markdown; pointed at source code it needs a DIFFERENT shape vocabulary, not the same one reused on faith. The 884-file batch was only cheap to revert because it was uncommitted -- the same batch committed first and proven second would have shipped the damage as a green merge.
+
+The check: before trusting a proof attached to a bulk transform, ask what class of content the transform actually touched, and whether the proof's own blind spot is the same class. An AST proof over a docstring rewrap has to be paired with something that reads the docstring's TEXT, not just its presence. A shape-cluster diff over source code has to use shapes measured against
+source code, not borrowed from a markdown corpus. A proof that cannot fail on the exact damage in question is not evidence of safety; it is evidence that the wrong question was asked.
+
+---
