@@ -1,5 +1,7 @@
 # PLAN: bump embedded k3s 1.36.3+k3s1 -> 1.36.4+k3s1
-Status: draft Owner: 9d92d9b6 Updated: 2026-08-30
+Status: draft
+Owner: 9d92d9b6
+Updated: 2026-08-30
 
 ## Why
 
@@ -11,7 +13,8 @@ Status: draft Owner: 9d92d9b6 Updated: 2026-08-30
 This gate runs on EVERY PR push (.github/workflows/ci-quality.yml, `quality-go` job, step "Check embed-asset upstream freshness"), wrapped in `.ci/scripts/quality/run-external-gate.sh`. On a `pull_request` event without the `no-external-quality` label the mode is `hard`, so the failure BLOCKS. It is unrelated to PR #579's own work -- upstream k3s cut v1.36.4+k3s1 on
 2026-08-27T15:53Z, past the freshness soak window, during a gap in the session.
 
-Scope: make that gate green by actually performing the bump, correctly, across both repos. Not in scope: any other component.
+Scope: make that gate green by actually performing the bump, correctly, across
+both repos. Not in scope: any other component.
 
 ## Decision record
 
@@ -81,7 +84,8 @@ Result:
 
 Format control: the SAME manifest fetch for v1.36.3+k3s1 returns exactly the two values currently pinned in the Dockerfile (`2f98a9f8…`, `c9a20910…`). The URL shape and the "bare release binary, not the airgap tarball" convention are therefore confirmed against the existing, working pins rather than guessed.
 
-WARNING: READ CAREFULLY when editing. The OLD arm64 pin is `c9a20910…` and the NEW one is `c920706…`. They share a 2-character prefix. Copy, do not retype.
+WARNING: READ CAREFULLY when editing. The OLD arm64 pin is `c9a20910…` and the
+NEW one is `c920706…`. They share a 2-character prefix. Copy, do not retype.
 
 ## Repository topology
 

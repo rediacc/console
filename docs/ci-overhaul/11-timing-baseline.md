@@ -1,6 +1,8 @@
 # Full-run timing baseline
 
-Status: done Owner: 8f55d4f0 Updated: 2026-09-06
+Status: done
+Owner: 8f55d4f0
+Updated: 2026-09-06
 
 This file exists because four different figures appear across the workstream drafts as thresholds (53.7s, 58s, and gate counts of 308, 310 and 311). None of them was measured on this tree. This is one run, recorded so no future box has to guess, and it replaces all four.
 

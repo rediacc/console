@@ -1,6 +1,8 @@
 # PLAN: bring .ci/config and .ci/policy JSON into the prose-style gate's scope
 
-Status: done Owner: d778be9d Updated: 2026-09-16
+Status: done
+Owner: d778be9d
+Updated: 2026-09-16
 
 ## Tasks
 
@@ -53,8 +55,9 @@ wrapped as multi-line concatenation -- the JSON output is still one line, confir
 
 ## 6. Baseline debt seeded
 
-55 pre-existing findings across `.ci/config/*.json` and `.ci/policy/*.json` seeded via `check_prose_style.py check --write-baseline --accept-new`. Included: R18 (line length) in the generated-baseline `note`/`why` fields named above; R1/R2 in `prose-style-rules.json`'s own rule descriptions and examples (`.ci/config/prose-style-rules.json:4,27,159-160` etc.) -- permanent and
-correct, since R1's own description cannot state the rule about that
+55 pre-existing findings across `.ci/config/*.json` and `.ci/policy/*.json` seeded via `check_prose_style.py check --write-baseline --accept-new`.
+Included: R18 (line length) in the generated-baseline `note`/`why` fields
+named above; R1/R2 in `prose-style-rules.json`'s own rule descriptions and examples (`.ci/config/prose-style-rules.json:4,27,159-160` etc.) -- permanent and correct, since R1's own description cannot state the rule about that
 pronoun without using it, exactly the same shape `agent/pr/*.md`'s <!-- style-ok -->
 generated-artifact exemption already argues from a different angle.
 

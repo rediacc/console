@@ -1,9 +1,12 @@
-Status: measured, ZERO shadow-gate ledgers recorded Owner: f4da5c2e (writer, gate-test ledger coverage) Date: 2026-09-09
+Status: measured, ZERO shadow-gate ledgers recorded
+Owner: f4da5c2e (writer, gate-test ledger coverage)
+Date: 2026-09-09
 
 # Gate-test twin coverage via `scripts/lib/shadow-gate.ts`: why 0 pairs were recorded
 
-**Headline: I recorded ZERO `.ci/shadow/*.observations.jsonl` pairs for gate-test twins.** Not because the tree wasn't clean enough to try, and not because I ran out of batch time. `shadow-gate.ts`, unmodified, **cannot produce an `EQUIVALENT` verdict for any of the 149 `.ci/scripts/test/gates/test-*.sh` <-> `.ci/rediacc_ci/tests/gates/test_gate_*.py` pairs**, for a structural
-reason common to the whole population, demonstrated below with a real planted defect on a real clean tree, not argued from reading the code.
+**Headline: I recorded ZERO `.ci/shadow/*.observations.jsonl` pairs for gate-test twins.**
+Not because the tree wasn't clean enough to try, and not because I ran out of batch time. `shadow-gate.ts`, unmodified, **cannot produce an `EQUIVALENT` verdict for any of the 149 `.ci/scripts/test/gates/test-*.sh` <-> `.ci/rediacc_ci/tests/gates/test_gate_*.py` pairs**, for a structural reason common to the whole population, demonstrated below with a real planted defect on a real
+clean tree, not argued from reading the code.
 
 There is also a second finding that changes the shape of the whole question: **a different, purpose-built, currently-live equivalence control already exists for 141 of the 149 twins** (`test_twin_parity.py::test_port_and_twin_agree`), runs in CI on every push, and is backed by its own hash-keyed ledger (`.ci/shadow/twin-parity.ledger.jsonl`, already 231+ lines). The census's "0 of
 149 gate tests carry a [shadow-gate] ledger" is correct as literally stated but is easy to misread as "gate-test equivalence is unchecked", which is false.

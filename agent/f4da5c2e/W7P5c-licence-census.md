@@ -1,4 +1,7 @@
-Status: measured Owner: f4da5c2e (writer W7P5-c) Date: 2026-09-09 Measured-At: 2026-09-09T18:14Z
+Status: measured
+Owner: f4da5c2e (writer W7P5-c)
+Date: 2026-09-09
+Measured-At: 2026-09-09T18:14Z
 
 # W7P5-c: the per-file deletion licence, measured
 

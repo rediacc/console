@@ -1,5 +1,9 @@
 # PLAN: Fix garbled German translations in renet's de.go
-Status: compacted Owner: w2d-writer Full-Text: f7a5351a9 agent/PLAN-fix-german-translation-artifacts.md Full-Text-Blob: 0ce3e39893deecb4e3e91cbfed5abdae0db3edd1 Record-Sig: 6e01a1c3
+Status: compacted
+Owner: w2d-writer
+Full-Text: f7a5351a9 agent/PLAN-fix-german-translation-artifacts.md
+Full-Text-Blob: 0ce3e39893deecb4e3e91cbfed5abdae0db3edd1
+Record-Sig: 6e01a1c3
 
 ## Why
 `private/renet/pkg/i18n/locales/de.go` carried machine-translation artifacts at scale: invented conjugations, stray English function words and untranslated English clauses spliced into German CLI strings. The plan enumerated them by PARSING both `en.go` and `de.go` and diffing per KEY rather than per line (the two files do not share line order), which put the real count at 423 of
@@ -30,7 +34,16 @@ locales in the same session, 1912 corrupted lines in total. Sweeping the class r
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:36Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: none Gates: none Why-Source: author Read-History: `git show 0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` recovers the text; `git log --find-object=0ce3e39893deecb4e3e91cbfed5abdae0db3edd1 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:36Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: none
+Gates: none
+Why-Source: author
+Read-History: `git show 0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` recovers the text; `git log --find-object=0ce3e39893deecb4e3e91cbfed5abdae0db3edd1 --all` names the commit
 
 ## History
 - 2026-09-06T17:32:36Z compacted by 8f55d4f0 from `done` (record-sig 6e01a1c3)

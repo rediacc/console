@@ -31,7 +31,8 @@ session sitting detached is never told its STATE.md went stale.
 
 ## Anti-vacuity control that matters most
 
-T7b: after a `stale` block, running again with an UNCHANGED world must BLOCK AGAIN. If `state_sig` were adopted on a stale verdict the gate would clear itself without a rewrite. The adopt must fire only on `ok`.
+T7b: after a `stale` block, running again with an UNCHANGED world must BLOCK
+AGAIN. If `state_sig` were adopted on a stale verdict the gate would clear itself without a rewrite. The adopt must fire only on `ok`.
 
 ## Ordering constraint
 

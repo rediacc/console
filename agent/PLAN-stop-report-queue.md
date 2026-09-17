@@ -1,5 +1,7 @@
 # PLAN: stop-report output queue (one section per stop, priority + FIFO)
-Status: done Owner: queue-plan agent, branch 0731-2 Updated: 2026-07-31
+Status: done
+Owner: queue-plan agent, branch 0731-2
+Updated: 2026-07-31
 
 ## Status
 
@@ -318,19 +320,23 @@ Every behaviour gets a FIRE case and a CONTROL case that differs by one planted 
 
 ### 173. one section per stop, the rest queue
 
-FIRE: a fixture where three class-2 volatile sections fire together (a fresh other-session brief, an orphaned item, and a poll-backoff tip). Assert the guide is present, EXACTLY ONE of the three section headers is present (count the matches, do not test them one at a time), and `N_OUTQ_MORE` reports 2.
+FIRE: a fixture where three class-2 volatile sections fire together (a fresh
+other-session brief, an orphaned item, and a poll-backoff tip). Assert the guide is present, EXACTLY ONE of the three section headers is present (count the matches, do not test them one at a time), and `N_OUTQ_MORE` reports 2.
 
-CONTROL: same fixture with `WORKLIST_REPORT_PER_STOP=3`. All three headers present, `N_OUTQ_MORE` absent.
+CONTROL: same fixture with `WORKLIST_REPORT_PER_STOP=3`. All three headers
+present, `N_OUTQ_MORE` absent.
 
 ### 174. FIFO inside a priority class
 
 Enqueue three class-2 sections in a known order across three stops, then drain over three stops with N=1 and assert the emission order matches the enqueue order. The cleanest fixture is the same three as 173, introduced one stop at a time so their `seq` values are unambiguous.
 
-CONTROL: touch the middle section's content on the second stop so it re-enqueues, and assert it now comes out LAST. That is the operator's "changed content re-enqueues at its priority", proven rather than asserted.
+CONTROL: touch the middle section's content on the second stop so it
+re-enqueues, and assert it now comes out LAST. That is the operator's "changed content re-enqueues at its priority", proven rather than asserted.
 
 ### 175. priority beats FIFO, with a planted defect
 
-FIRE: enqueue a class-2 section (other-session brief) on stop 1 and let it sit by setting N=0 for that stop, or simply enqueue it and then arrange for stop 2 to also produce a class-0 section (the `ci_report` downgraded note, which case 124 at `test-worklist-v5.sh:2630` already knows how to produce). On stop 2 with N=1, assert the CI note is emitted and the older brief is not.
+FIRE: enqueue a class-2 section (other-session brief) on stop 1 and let it sit
+by setting N=0 for that stop, or simply enqueue it and then arrange for stop 2 to also produce a class-0 section (the `ci_report` downgraded note, which case 124 at `test-worklist-v5.sh:2630` already knows how to produce). On stop 2 with N=1, assert the CI note is emitted and the older brief is not.
 
 CONTROL: with the CI run green, the brief drains on the next stop.
 
@@ -348,7 +354,8 @@ FIRE, three stops:
 note APPEARS on stop 2. The proof is that `wl_email.pump` sends nothing on stop 2 (its ledger already holds the send, `wl_email.py:479-481`), so the text can only have come from the queue.
 3. Assert `N_OUTQ_MORE` is absent on stop 3, so the queue actually emptied.
 
-CONTROL: the same fixture with no CI trouble at all. The email note appears on stop 1, which proves stop 2 in the FIRE leg was a delay and not the normal path.
+CONTROL: the same fixture with no CI trouble at all. The email note appears on
+stop 1, which proves stop 2 in the FIRE leg was a delay and not the normal path.
 
 PLANTED DEFECT, mandatory: in `outq_drain`, replace the per-entry removal with `items[:] = []` (a plausible "reset the queue after draining" bug). Confirm 176 FAILS at leg 2 with the email note never arriving, and that 173 still PASSES, which is the point: a cheap drop bug is invisible to the headline case and only this one catches it. Revert.
 

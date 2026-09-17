@@ -1,6 +1,7 @@
 # 07 — P1 Gate Review (renet storage core + config schema v3)
 
-Reviewer: Fable gate agent, 2026-07-10 ~21:05. Fully-autonomous mode (this review stands in for the user per the approved plan). Subject: the entire P1 phase against `09-implementation-phases.md` §P1 and specs 01-05 as amended by the 00-gate-review rulings. Evidence root: scratchpad `checkpoints/` + `reports/` (paths below are relative to it unless absolute).
+Reviewer: Fable gate agent, 2026-07-10 ~21:05. Fully-autonomous mode (this review
+stands in for the user per the approved plan). Subject: the entire P1 phase against `09-implementation-phases.md` §P1 and specs 01-05 as amended by the 00-gate-review rulings. Evidence root: scratchpad `checkpoints/` + `reports/` (paths below are relative to it unless absolute).
 
 ## VERDICT: **PASS-WITH-NOTES**
 

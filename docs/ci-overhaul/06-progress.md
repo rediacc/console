@@ -153,8 +153,8 @@ therefore mean a red job, no report, no findings, and **no marker SHA**, so the 
 
 Not in the original plan; added 2026-07-29 because the old gate watched the wrong queue. It blocked only on `- [ ]`, and this session held **zero** open items all night while the harness Task list carried six pending.
 
-Now: harness task-list awareness, a required `## Remaining` section naming every open task id, `DEFAULT:` on every deferral, a session brief, one-cron enforcement read from `session_crons`, a 250-600 character single-paragraph handover, a `PostCompact` hook that hands it back, a `SessionStart` hook that forces these design docs into context, this drift check, and a haiku judge on
-quiet stops. `MAX_BLOCKS` is deleted: there is no escape hatch.
+Now: harness task-list awareness, a required `## Remaining` section naming every
+open task id, `DEFAULT:` on every deferral, a session brief, one-cron enforcement read from `session_crons`, a 250-600 character single-paragraph handover, a `PostCompact` hook that hands it back, a `SessionStart` hook that forces these design docs into context, this drift check, and a haiku judge on quiet stops. `MAX_BLOCKS` is deleted: there is no escape hatch.
 
 Two measured facts that constrain any future change:
 
@@ -283,8 +283,9 @@ jobs flip a few at a time, so on the first poll the ratio is nowhere near met an
 
 This is the **mirror image** of the defect Wave A exists to fix. Laundering `failure` into `cancelled` hid twelve red nightlies. Reporting `failure` for the most ordinary event in the repo trains the operator to ignore watchdog reds, which eventually hides a real one just as effectively.
 
-**Fix**: `evaluateSupersession` plus `hasNewerRun` in `watchdog-monitor.cjs`, checked at the top of the poll and **before** anything can classify, since reaching `classifyFailure` is what spends the request and leads to `setFailed`. The verdict requires all three of: no job failed, at least one was cancelled, and a newer run demonstrably exists for the same workflow and branch. The
-API lookup runs only once the cheap local half already holds, so a healthy run pays nothing, and any error resolves to `false`.
+**Fix**: `evaluateSupersession` plus `hasNewerRun` in `watchdog-monitor.cjs`,
+checked at the top of the poll and **before** anything can classify, since reaching `classifyFailure` is what spends the request and leads to `setFailed`. The verdict requires all three of: no job failed, at least one was cancelled, and a newer run demonstrably exists for the same workflow and branch. The API lookup runs only once the cheap local half already holds, so a healthy
+run pays nothing, and any error resolves to `false`.
 
 **The polarity is deliberately lopsided.** Too loud costs a spurious red; too quiet silently swallows a genuine failure, which is strictly worse. Pushing a fix while the old run is still red is the normal way this arises, so "a newer run exists" must never on its own excuse a failure. That case is the single most important assertion in `test-watchdog-supersession.sh`.
 
@@ -319,8 +320,9 @@ bump that dirties package.json"*. That immunity is right for a dirty working fil
 **Reproduced twice on real traffic, and it was not a race.** Release `v1.2.12` landed 2026-07-30T10:16:14Z mid-PR. Runs `30534726467` and `30542942037` both failed `Validate Install Methods / Linux` with `Version mismatch: expected '1.2.13', got '1.2.12'`. In both, `Build (Docker) / CLI Docker` was **skipped** while `CLI Docker (cached)` succeeded, so the mutable `pr-546` tag kept
 serving a pre-release image while every run computed the next version afresh. Nothing on the branch could break the tie, because cutting a tag does not move the closure. **Deterministic and self-perpetuating: PR #546 could not have gone green without this fix.** An earlier note in this session called it a one-off release race; that was wrong and is corrected here.
 
-**Fix**: closure mode now folds `resolve-version.sh --current` into the key. Resolved inside `generate-tag.sh` rather than passed by the caller, so no call site can forget it, and `--current` rather than the computed next version because the bump type is not known until after `initialize.sh` has already called this script, and reordering that is release-affecting. An unresolvable
-version (a shallow clone, a fresh fork) degrades to an empty marker rather than failing the build. Residual, stated rather than hidden: two runs on the same base tag that resolve different bump types would bake different versions behind one key; that cannot produce the failure above, which required the base tag to move, and the weekly bucket bounds it anyway.
+**Fix**: closure mode now folds `resolve-version.sh --current` into the key.
+Resolved inside `generate-tag.sh` rather than passed by the caller, so no call site can forget it, and `--current` rather than the computed next version because the bump type is not known until after `initialize.sh` has already called this script, and reordering that is release-affecting. An unresolvable version (a shallow clone, a fresh fork) degrades to an empty marker rather
+than failing the build. Residual, stated rather than hidden: two runs on the same base tag that resolve different bump types would bake different versions behind one key; that cannot produce the failure above, which required the base tag to move, and the weekly bucket bounds it anyway.
 
 **Also corrected: a comment claiming this mode was inert.** `generate-tag.sh` said *"NOT WIRED INTO initialize.sh YET, deliberately"* while `initialize.sh` calls it and `cd-stage.yml:195-196` retags the result straight onto a release channel. A reader who believes a key is inert will not scrutinise it, which is roughly how the missing version survived. Of the two blockers that
 comment said had to be settled first, the unbounded staleness window IS handled by the weekly bucket; "same tag implies same bytes" is still FALSE (unpinned `npm install` for private/account, floating base images, a build-arg public key) and remains a known limitation rather than a solved one.
@@ -1083,7 +1085,8 @@ silence there is indistinguishable from correctness.
 
 **Housekeeping Phase 6 is dead by design, and now says so.** Deleting a pr-* environment OBJECT needs Administration:write, which `check-no-app-admin-perm.sh` deliberately forbids the App so a leaked token cannot delete edge/stable. The comment used to read as a pending upgrade. The real mechanism is a periodic manual `gh` sweep by an owner-token human.
 
-Gate: `.ci/scripts/test/gates/test-worklist-hooks.sh` runs BOTH stop-hook harnesses (569 + 115 = 684). It previously parsed only the last summary, so the first harness could fail unnoticed.
+Gate: `.ci/scripts/test/gates/test-worklist-hooks.sh` runs BOTH stop-hook
+harnesses (569 + 115 = 684). It previously parsed only the last summary, so the first harness could fail unnoticed.
 
 ## 2026-08-06 — the scope map stops running ceph for an attribution string
 
@@ -1642,7 +1645,8 @@ the author who had just written the entry. `pr-babysit-0804-1.md:114` adds the d
 Plan at `agent/PLAN-trap-enforcement.md`, which absorbs and supersedes `PLAN-unify-trap-corpus.md`. Instruments are matched to failure SHAPE, not topic: forbidden action and guaranteed-failing action (PreToolUse block), misread outcome (PostToolUse injection on `tool_response`), unproven claim (control-first gate). Of 23 traps roughly 14 are mechanizable now and about 2.5 are
 judgment-only, and the judgment-only ones sit at the top of the cost curve.
 
-Landed: `block-blanket-git-add.sh`, and `trapguard/dispatch.py` carrying `cancelled-run-not-passed` and `phantom-deletion-diff`.
+Landed: `block-blanket-git-add.sh`, and `trapguard/dispatch.py` carrying
+`cancelled-run-not-passed` and `phantom-deletion-diff`.
 
 **`tool_response` was probed before anything depended on it**, because the only evidence it arrives was a docstring recording a captured payload, which is a ruling from an artifact and itself a trap here. The probe recorded key names, lengths and booleans only, never values, and corrected that docstring twice: `isImage` and `noOutputExpected` are undocumented, and
 `agent_id`/`agent_type` are ABSENT on main-loop calls, appearing only for subagents, so a rule keyed on them would have silently never matched. The probe was retired in the same commit that shipped the rules.
@@ -1835,8 +1839,8 @@ Branch `0818-1`, PR #569. This wave started as "green the www round-3 work" and 
 
 ### 1. A silent truncation, and a verb that cannot express it
 
-The pr-babysit round log is a wave header, a STATUS block overwritten each round, and a history appendix. "Overwritten in place" invites `text[:i] + new`, which replaces from the STATUS heading to END OF FILE. A heartbeat tick whose entire purpose was keeping the log current destroyed the appendix that way, on a file with no backup, and the write SUCCEEDED: the new STATUS looked
-perfect and nothing said the history had gone.
+The pr-babysit round log is a wave header, a STATUS block overwritten each round, and a history appendix. "Overwritten in place" invites `text[:i] + new`, which replaces from the STATUS heading to END OF FILE. A heartbeat tick whose entire purpose was keeping the log current destroyed the appendix that way, on a file with no backup, and the write
+SUCCEEDED: the new STATUS looked perfect and nothing said the history had gone.
 
 `worklist.py --roundlog <branch>` (new `wl_roundlog.py`) now splices only the middle part and PRINTS the bytes kept on each side. Its first real use on the damaged log reported `appendix kept: 15809 bytes`, which is exactly the number a silent success hides. The time is machine-stamped rather than hand-typed, because that stamp is what a watchdog reads to decide a loop is wedged
 and a copied one lies.
@@ -2161,7 +2165,8 @@ plant by substitution and all 4 comply; `check-gate-id-convention` builds its co
 Getting the classifier right took two passes, and the first was wrong in the dangerous direction: it missed `sed -i "$expr"` (expression held in a variable, so no literal `s///` on the line) and mis-exempted the two gates that motivated the check.
 
 **`check_g` in `check:ci-setup-idempotency`** (`48cc833b`). `setup()` must initialise submodules BEFORE any phase that reads one. Order is the invariant, not presence: an init placed after the reader fixes nothing and reads as correct in a diff, so there are two control plants (absent, and present-but-late). The first version of this assertion FAILED ON CORRECT CODE -- its reader
-pattern matched `private/renet/go.mod` inside the comment explaining the ordering. Comments are stripped now. Same family as the editorconfig gate matching `binary` against a PATH: judge the code, not the prose describing it.
+pattern matched `private/renet/go.mod` inside the comment explaining the ordering. Comments are stripped now. Same family as the editorconfig gate matching `binary` against a
+PATH: judge the code, not the prose describing it.
 
 **`check-gate-id-convention.sh` outgrew argv** (`5ac65968`). It passed the entire `manifest.ts` and `package.json` to python3 as ARGV. Linux caps a single argument at MAX_ARG_STRLEN (32 pages = 131072 bytes); `manifest.ts` hit 131359 bytes and one commit earlier had been 130976 -- 96 bytes under. The symptom is the interpreter refusing to START (`/usr/bin/python3: Argument list too
 long`, exit 126), which reads like a broken runner rather than a gate that outgrew its plumbing. It now passes temp-file PATHS; verified against a synthetic 331KB manifest. This was a latent bomb: the next manifest entry would have tripped it regardless of content.
@@ -2247,7 +2252,9 @@ typo must not read as a branch that merely lacks a PR.
 ### Three defects the fix exposed
 
 - **`toolchain_pin_for` returned `""` with RETURN CODE 0** when the pins had not
-loaded, so `pin=$(...) || return 2` never fired and an empty version reached a URL: `.../download/v/shellcheck-v.linux.aarch64.tar.xz` -> curl 404. The 404 names GitHub, not the missing pin. `toolchain_check` already guarded this; `toolchain_acquire` did not.
+loaded, so `pin=$(...) || return 2` never fired and an empty version reached a
+  URL: `.../download/v/shellcheck-v.linux.aarch64.tar.xz` -> curl 404. The 404
+names GitHub, not the missing pin. `toolchain_check` already guarded this; `toolchain_acquire` did not.
 - **`devbox_exec` died wherever docker needs sudo.** `devbox_docker` answers TWO
 WORDS (`sudo docker`); `devbox_exec` was the only caller quoting it as one command name. Swept the class: `devbox_shell` was the last site still passing the numeric `-u $(id -u):$(id -g)`.
 - **The Stop hook could not see a gate that was committed in the stop that
@@ -2379,8 +2386,8 @@ emits `DRIFT edge: the channel pointer names 'v1.3.1', which has NO git tag`, an
 `upload-to-r2.sh` grew a `--skip-release` guard whose own gate test declares, in its header, that it CANNOT see whether any workflow passes the flag. That blind spot became `check-ci-workflow-invariants.sh`'s subject. The first cut keyed on job NAMES and hard-failed every synthetic fixture the gate test drives; its own test caught that ("a correctly gated job must pass: expected
 PASS, got FAIL"), and it was rescoped to trigger on the job that USES `cd-stage.yml` — the actual uploader path — with a `finalize-release-sentinel` fallback so a renamed stager fails rather than passing vacuously.
 
-Related: `cd-v2.yml` carried a `skip_release` output that `decide-release-mode.sh` wrote `false` on all three paths, so ~9 guards were permanently true and one of that workflow's comments credited it with a skip `workers_only` was performing. A condition that cannot be false is a claim, not a guard, and this one had already misled a reader. Removed; 9 jobs before and after, none
-lost.
+Related: `cd-v2.yml` carried a `skip_release` output that
+`decide-release-mode.sh` wrote `false` on all three paths, so ~9 guards were permanently true and one of that workflow's comments credited it with a skip `workers_only` was performing. A condition that cannot be false is a claim, not a guard, and this one had already misled a reader. Removed; 9 jobs before and after, none lost.
 
 ### The instrument that certified a release it never saw
 
@@ -2439,8 +2446,9 @@ image.
 Operator observation: `run-all.sh`'s 114-test battery left 6/8 cores idle for most of a 23-minute wall-clock run. The first hypothesis (a writer-chain scheduling barrier starving slots) was wrong, refuted by live slot-occupancy sampling: only 2/8 slots occupied from t=20s onward for ~22 of 23 minutes. The real cause is granularity, not scheduling: 2 of 114 "gate tests"
 (`test-worklist-hooks.sh`, `test-claude-hooks.sh`) are each secretly 700-900+ assertion serial batteries, each pinning one core for 15-20 minutes, while the other 112 finish in under 20 seconds combined.
 
-Fixed `test-worklist-hooks.sh`: its two sub-harnesses (`test-worklist-v5.sh`, `test-report-inbox.sh`) now dispatch as background subshells with per-harness output captured to temp files and printed in array order for a deterministic transcript. `run_harness()` itself is unchanged; only dispatch is concurrent. Measured: 977s -> 918s (-6%, bounded by the slower harness, not a 2x
-speedup). `test-claude-hooks.sh` (the bigger long pole) was deliberately left untouched — shared, load-bearing, out of scope for a mechanical dispatch change.
+Fixed `test-worklist-hooks.sh`: its two sub-harnesses (`test-worklist-v5.sh`, `test-report-inbox.sh`) now dispatch as background subshells with per-harness output captured to temp files and printed in array order for a deterministic transcript. `run_harness()` itself is unchanged; only dispatch is concurrent.
+Measured: 977s -> 918s (-6%, bounded by the slower harness, not a 2x speedup).
+`test-claude-hooks.sh` (the bigger long pole) was deliberately left untouched — shared, load-bearing, out of scope for a mechanical dispatch change.
 
 ### A gate green in CI can be red on every developer machine
 
@@ -2600,8 +2608,9 @@ again for a completely different reason — see below — which is worth knowing
 every message longer than one line uses. Thirty-six consecutive commits in one session passed that guard without it ever looking at them. They happened to carry trailers; nothing checked. Two of the three "unreadable" shapes were never unreadable — a heredoc BODY is in the command string, a `-F <file>` is on disk — and only a piped stdin remains genuinely opaque, which still
 ALLOWS. It also accepted any hex-shaped id; a **typo'd** id is worse than a missing one, because it looks tagged, so `git log --grep` finds no epic and the per-epic review never selects the commit. Ids are now checked against `agent/pr/<branch>.md`.
 2. **`block-raw-pr-body-edit.sh` covered `gh pr edit` and never `gh pr create`.**
-Measured: rc=0 for every create shape, rc=2 for every matching edit shape. The operator's symptom — *"why don't I see the epics in the PR description?"* — came in through create, and the guard was watching the door nobody used. Create is not refused outright, because it is the one call that legitimately writes a whole body: there is nothing to destroy yet. It is refused only when
-the body it writes does not already carry the block, which is exactly the state `check:ci-pr-epic-block` fails on minutes later.
+   Measured: rc=0 for every create shape, rc=2 for every matching edit shape.
+The operator's symptom — *"why don't I see the epics in the PR description?"* — came in through create, and the guard was watching the door nobody used. Create is not refused outright, because it is the one call that legitimately writes a whole body: there is nothing to destroy yet. It is refused only when the body it writes does not already carry the block, which is exactly the
+state `check:ci-pr-epic-block` fails on minutes later.
 3. **Neither guard had a regression case**, in either direction.
 4. **`check:ci-pr-task-trailers` had no base-ref precondition.** `PR_BASE_REF`
 was set correctly and the ref was still absent from the checkout, so the gate reported an "ambiguous argument" about the RANGE and said nothing about the missing fetch.
@@ -2782,7 +2791,9 @@ The peer DECLINED to authorise committing their own work, correctly: *"only the 
 
 ## 0827-1, later still: two count-floors, and a check that could not see its own gap
 
-Eleven more commits on the same wave, all pushed on the session's first fully clean receipt (`exitCode 0`, `whole`, `stable`, `failed: []`, zero carried-reds). Landed: `12de2e910` `609314a41` `0583b1690` `da2ecc5b5` `4afa862a4` `ef52d6d9e` `59a1beaa9` `a5983d9eb` `43d7797d7` `e60e30331` `2e41493a1`.
+Eleven more commits on the same wave, all pushed on the session's first fully clean receipt (`exitCode 0`, `whole`, `stable`, `failed: []`, zero carried-reds).
+Landed: `12de2e910` `609314a41` `0583b1690` `da2ecc5b5` `4afa862a4` `ef52d6d9e`
+`59a1beaa9` `a5983d9eb` `43d7797d7` `e60e30331` `2e41493a1`.
 
 ### The always-tier, and a channel that never reached a blocking session
 
@@ -2797,7 +2808,9 @@ comment, not a contract. Ten controls now pin it; planting `deepcopy → dict()`
 The mention-vs-target class recurred four times in one day, including a brand new guard reintroducing it within the hour of the other three being fixed. A control-first gate (`check_guard_mention_anchoring.py`) now turns each guard's own pattern into a concrete instance, embeds it in a sentence, and checks the guard doesn't refuse prose. It was vacuous twice before it was right —
 once because instances were built from alphabetised vocabulary (order-dependent patterns need `git commit` before `--allow-empty`), once because a broader pattern reader buried the real matcher behind message text and a probe cap cut it off — both caught only by planting the real regression, not by reading the code. Scoped to `pre-bash` only at first; a peer found the same
 chain-scoping hole this check exists to prevent, in the file written to prevent it. Extended to all three chains with per-chain payload builders; per-guard reachability was tried and discarded (37/42 inconclusive, because most guards need several conditions ANDed, not one substring) in favour of a per-chain plumbing control — one real trigger against one real guard, proven before
-anything is judged. Sweeping the corrected model across all chains found two more real offenders. Total: 7 guards anchored, 35 probed + 6 static across 3 chains, each fix proven with plant-then-restore.
+anything is judged. Sweeping the corrected model across all chains found two more real offenders.
+Total: 7 guards anchored, 35 probed + 6 static across 3 chains, each fix proven
+with plant-then-restore.
 
 ### Two count-floors calibrated for the wrong direction
 

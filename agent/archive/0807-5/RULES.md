@@ -42,7 +42,9 @@ authorised. `--admin` and force-push are NOT, and both are hook-blocked. If some
 failure in the release path of a merge this command performed. Even then, keep it surgical and say so loudly.
 - Never `git checkout/restore/stash/clean` to undo a mistake. Repair forward.
 - Never `git add -A`. Stage by explicit path. NEVER stage
-`.claude/settings.local.json`, `private/generative`, or `private/growth`. NOTE: `git stash list` shows two stashes belonging to OTHER sessions (`security-hardening-console-resolved`, `blocker-gate-extensions-wip`) — leave them completely alone.
+`.claude/settings.local.json`, `private/generative`, or `private/growth`.
+  NOTE: `git stash list` shows two stashes belonging to OTHER sessions
+(`security-hardening-console-resolved`, `blocker-gate-extensions-wip`) — leave them completely alone.
 - A blocked PreToolUse hook aborts the ENTIRE compound command — nothing in it
 ran. Do not assume an earlier step in the same call happened.
 - PRs on `rediacc/console` MUST be created `--draft`, then flipped with

@@ -1,6 +1,8 @@
 # PLAN: a stop-hook check for "CI green, Review Complete red" -- the local
 # session has the context a remote job does not
-Status: done Owner: unowned (branch 0827-1, PR #579) Updated: 2026-08-31
+Status: done
+Owner: unowned (branch 0827-1, PR #579)
+Updated: 2026-08-31
 
 ## Headline conclusion (read this before the rest)
 

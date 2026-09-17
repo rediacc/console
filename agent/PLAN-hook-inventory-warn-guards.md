@@ -1,5 +1,7 @@
 # PLAN: warn-* guards are outside the inventory that exists to keep guards alive
-Status: landed Owner: 9d92d9b6 Updated: 2026-08-28
+Status: landed
+Owner: 9d92d9b6
+Updated: 2026-08-28
 
 ## 0. The finding, measured
 

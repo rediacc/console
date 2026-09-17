@@ -58,17 +58,20 @@ implementations must live inside the recorded tree; the comparator now refuses a
 ## WAVE 2, up to 9 parallel
 
 ### T1. PORT-F/G/H/I. DONE 2026-09-06. All 77 quality gates have a proven twin.
-Owns per gate only: `.ci/rediacc_ci/quality/<mod>.py`, `.ci/rediacc_ci/tests/test_quality_<mod>.py`, `.ci/shadow/w7p2-<name>.observations.jsonl`. PROMPT: "Port THIRTEEN bash quality gates to Python twins behind a shadow differential. Your subjects are <list>. Follow the recording recipe in docs/ci-overhaul/12-remaining-work.md exactly. No registration is needed. Never edit or
-delete a bash twin. Transliterate comments: below a 0.90 comment-byte ratio is REFUSED IN CODE by the comparator. Report each assert output verbatim." The four that were EXCLUDED until T4 merged are released: check-e2e-coverage, check-go-deps, check-profiler-coverage and check-plan-housekeeping. T4 landed at `b80552370`, so port the CURRENT bytes and do not resurrect a root path
-from an older document. `POLICY_DIR` is `.ci/policy` now, and two of those four changed in that same commit.
+Owns per gate only: `.ci/rediacc_ci/quality/<mod>.py`, `.ci/rediacc_ci/tests/test_quality_<mod>.py`, `.ci/shadow/w7p2-<name>.observations.jsonl`.
+PROMPT: "Port THIRTEEN bash quality gates to Python twins behind a shadow
+differential. Your subjects are <list>. Follow the recording recipe in docs/ci-overhaul/12-remaining-work.md exactly. No registration is needed. Never edit or delete a bash twin. Transliterate comments: below a 0.90 comment-byte ratio is REFUSED IN CODE by the comparator. Report each assert output verbatim." The four that were EXCLUDED until T4 merged are released:
+check-e2e-coverage, check-go-deps, check-profiler-coverage and check-plan-housekeeping. T4 landed at `b80552370`, so port the CURRENT bytes and do not resurrect a root path from an older document. `POLICY_DIR` is `.ci/policy` now, and two of those four changed in that same commit.
 
 ### T2. Gate-test headers. DONE 2026-09-06 (ce8dbac6d, b80552370, 1490d7b7d).
 All 148 now declare a header. THE BRIEF'S `kind: test` WAS WRONG and both agents refused it from the parser rather than from each other: `kind: test` forbids `step:` and requires `test:` naming the gate-test that covers the entry, so it describes the 13 manifest entries whose CI coverage IS a gate-test, not the gate-tests themselves. The correct shape is `kind: battery` plus `step:
 Quality-gate unit tests`, which the binder's own selftest fixtures.
 
 The headers were NOT load-bearing when they landed, and that took two further fixes at `1490d7b7d`: `gate-bind.ts` excluded the whole `/test/gates/` tree from its subject scan, and separately a malformed header refused nothing in `--write` or `--dry-run` because the scan folded it into `problems`, which only the verify path reaches. Either alone would have made a planted defect
-fail to fire. PROMPT: "Add a `---- gate ----` header to each of <list>. Read scripts/lib/gate-header.ts for the parser v2 grammar. Derive id, run, step and lane from the EXISTING entry in gates.lock.json so the header restates the registry rather than inventing. Invariant 11: a header may only claim a step in a lane that has an `- id: setup` step; quality-branch has none, so a gate
-there declares `emit: false` plus `blocker:`. Verify with `gate-bind.ts --dry-run` and `--only check:ci-gate-bind`, both exit 0, and the declared count must rise by exactly the number you added. Never run `--write`."
+fail to fire.
+PROMPT: "Add a `---- gate ----` header to each of <list>. Read
+scripts/lib/gate-header.ts for the parser v2 grammar. Derive id, run, step and lane from the EXISTING entry in gates.lock.json so the header restates the registry rather than inventing. Invariant 11: a header may only claim a step in a lane that has an `- id: setup` step; quality-branch has none, so a gate there declares `emit: false` plus `blocker:`. Verify with `gate-bind.ts
+--dry-run` and `--only check:ci-gate-bind`, both exit 0, and the declared count must rise by exactly the number you added. Never run `--write`."
 
 ### T3. PROXY, W3 P2 heavy-job proxies. DONE 2026-09-06 (`fab50886f`).
 Owns new files under `.ci/scripts/test/` only. Each proxy returns 77 when its toolchain is absent. HOLDS A MACHINE MUTEX (docker, port 4800, account.db), so it cannot share a wave with any other docker-touching set. The elite compose proxy and the Stripe offline test are CUT: both depend on a gitignored surface or a live third party and would become flaky gates.

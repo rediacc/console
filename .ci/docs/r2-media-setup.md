@@ -11,7 +11,8 @@ use case.
 
 ## 2. Custom Domain
 
-Domain: `media.rediacc.com` (not `videos.rediacc.com` — poster images/subtitles live here too, `media` is the more durable name as scope grows).
+Domain: `media.rediacc.com` (not `videos.rediacc.com` — poster images/subtitles
+live here too, `media` is the more durable name as scope grows).
 
 Dashboard steps (or via API, see below):
 1. Go to R2 → `rediacc-www-media` → Settings
@@ -46,8 +47,8 @@ CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=
 CLOUDFLARE_R2_MEDIA_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 ```
 
-Note: if creating the token via the Cloudflare API (`/user/tokens`) instead of the dashboard, the S3-compatible credentials are **derived**, not returned directly: `Access Key ID = token.id`, `Secret Access Key = sha256_hex(token.value)`. Permission groups needed: "Workers R2 Storage Bucket Item Read" + "Workers R2 Storage Bucket Item Write", scoped via resource key
-`com.cloudflare.edge.r2.bucket.<account_id>_default_rediacc-www-media`.
+Note: if creating the token via the Cloudflare API (`/user/tokens`) instead of
+the dashboard, the S3-compatible credentials are **derived**, not returned directly: `Access Key ID = token.id`, `Secret Access Key = sha256_hex(token.value)`. Permission groups needed: "Workers R2 Storage Bucket Item Read" + "Workers R2 Storage Bucket Item Write", scoped via resource key `com.cloudflare.edge.r2.bucket.<account_id>_default_rediacc-www-media`.
 
 ## 4. GitHub Org Secrets
 

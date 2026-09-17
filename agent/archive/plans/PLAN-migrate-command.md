@@ -1,9 +1,10 @@
 # PLAN: /migrate and a git-tracked worklist store
 
-Status: draft Owner: d1589e0b Updated: 2026-09-04
+Status: draft
+Owner: d1589e0b
+Updated: 2026-09-04
 
-Scope: move the worklist event log into git under `agent/worklist/` so open work travels with push/pull; add `/migrate`, a user-invocable skill that lists candidate sessions, asks WHICH to continue (multi-select, never assumed), and re-tags their remaining items to the current session; and teach the Stop hook to surface a dead-or-remote predecessor's open items on every stop, in
-the PostCompact briefing and at SessionStart so a compaction summary carries them. Every load-bearing claim below carries a `file:line` that was read, and section 0 was measured on this machine rather than recalled.
+Scope: move the worklist event log into git under `agent/worklist/` so open work travels with push/pull; add `/migrate`, a user-invocable skill that lists candidate sessions, asks WHICH to continue (multi-select, never assumed), and re-tags their remaining items to the current session; and teach the Stop hook to surface a dead-or-remote predecessor's open items on every stop, in the PostCompact briefing and at SessionStart so a compaction summary carries them. Every load-bearing claim below carries a `file:line` that was read, and section 0 was measured on this machine rather than recalled.
 
 The operator's four decisions (store into git; re-tag with the old items ticked "migrated to"; automatic Stop-hook fold-in; scope = `[ ]`, `[>]` with leases reset, `[?]` with windows preserved, STATE.md Next action, predecessor brief marked handed off; NOT requests or round logs) are taken as given and are not re-argued here.
 
@@ -157,8 +158,7 @@ moves, per item, in one `append_events` batch:
 
 ## 4. The Stop-hook fold-in
 
-Where: `run_stop`, immediately after `classify_items` (`wl_checks.py:2878-2880`), a new `handoff_candidates(worklist, fold, session_id, projects_dir)` that walks `fold.items` for not-mine `[ ]`/`[>]`/`[?]` (so it sees the `[?]` that `others` drops, 1314), groups by owner, applies `session_liveness`, drops `live` owners (they stay in the existing `others-items` note), drops
-handed-off owners, and ranks same-branch, same-host, newest. It returns at most 6 owners with at most 3 brief lines each.
+Where: `run_stop`, immediately after `classify_items` (`wl_checks.py:2878-2880`), a new `handoff_candidates(worklist, fold, session_id, projects_dir)` that walks `fold.items` for not-mine `[ ]`/`[>]`/`[?]` (so it sees the `[?]` that `others` drops, 1314), groups by owner, applies `session_liveness`, drops `live` owners (they stay in the existing `others-items` note), drops handed-off owners, and ranks same-branch, same-host, newest. It returns at most 6 owners with at most 3 brief lines each.
 
 What it emits, verbatim shape (new `M.N_HANDOFF_CANDIDATES` in `worklist_messages.py`):
 

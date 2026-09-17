@@ -1,5 +1,7 @@
 # PLAN: nightly retry for failed runs, and the watchdog noise underneath it
-Status: done — Phases 1, 2, 3a and 5b landed on 0826-1 (PR #576); 3b deliberately not done Owner: 854ac1c6 Updated: 2026-08-26
+Status: done — Phases 1, 2, 3a and 5b landed on 0826-1 (PR #576); 3b deliberately not done
+Owner: 854ac1c6
+Updated: 2026-08-26
 
 ## What the operator asked
 
@@ -52,7 +54,8 @@ rule ("newest 100, delete the rest"), but it changes retention semantics for eve
 
 ## Phase 2 — the nightly retry
 
-**Home: a NEW JOB inside `.github/workflows/housekeeping.yml`.** Not a new workflow, not the watchdog.
+**Home: a NEW JOB inside `.github/workflows/housekeeping.yml`.** Not a new
+workflow, not the watchdog.
 
 - already `cron: '0 3 * * *'` (`housekeeping.yml:18`), deliberately clear of
 ci.yml's `0 1` and promote-stable's `0 6`;
@@ -92,7 +95,8 @@ so `conclusion=failure` regains its plain meaning repo-wide.
 
 ## Tests -- each must FIRE on a planted defect and stay silent when clean
 
-Surface: **gates** (source-level wiring) plus **hook/gate suite** for the script logic, per `.claude/skills/testing`.
+Surface: **gates** (source-level wiring) plus **hook/gate suite** for the script
+logic, per `.claude/skills/testing`.
 
 1. `test-nightly-retry-filters.sh` (new, `.ci/scripts/test/gates/`), hermetic
 with a shimmed `gh`:

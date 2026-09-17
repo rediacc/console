@@ -1,7 +1,9 @@
 # P0 Spec 04 — Config Schema v3
 
-Status: P0 spec deliverable (R2-F1, R2-F2, R2-F3, R2-F5, R2-F6, R2-F7, R2-F9). Implements: 02 §11 (all seven items), 02 §7 (placement tagged union), 06 §6 (addressing state needs), 03 §2 (attach state + holder inventory), 09 §P1 (config v3 lands with the renet storage core). Verified against the working tree on 2026-07-10; every cited identifier was grepped. Where the suite left
-detail thin, decisions here are marked **[P0-DECIDED]**. Gate review applied (`00-gate-review.md`, 2026-07-10): C4 (secret label contract key), C7 (cluster backref lifted out of the backend union), C11 (merged secret caps), C14 (holders gain `volumes`), C15 (set-placement ghost verb removed), G3 (registryPort).
+Status: P0 spec deliverable (R2-F1, R2-F2, R2-F3, R2-F5, R2-F6, R2-F7, R2-F9).
+Implements: 02 §11 (all seven items), 02 §7 (placement tagged union), 06 §6 (addressing
+state needs), 03 §2 (attach state + holder inventory), 09 §P1 (config v3 lands with the renet storage core). Verified against the working tree on 2026-07-10; every cited identifier was grepped. Where the suite left detail thin, decisions here are marked **[P0-DECIDED]**. Gate review applied (`00-gate-review.md`, 2026-07-10): C4 (secret label contract key), C7 (cluster backref
+lifted out of the backend union), C11 (merged secret caps), C14 (holders gain `volumes`), C15 (set-placement ghost verb removed), G3 (registryPort).
 
 Code studied:
 - `packages/shared/src/config-schema/schemas.ts` (v2 Zod schema, `CONFIG_KEY_ORDER_V2`, `stringifyConfig`)
@@ -323,7 +325,8 @@ The unified persist below fixes both by construction.
 
 ### 2.2 The v3 persist architecture: one chokepoint
 
-**Principle: encryption is a storage-layer transform, not a caller behavior.** Callers never see or produce blobs; they read and write plaintext config objects. The transform lives in `ConfigFileStorage` (the single component every writer already goes through):
+**Principle: encryption is a storage-layer transform, not a caller behavior.** Callers
+never see or produce blobs; they read and write plaintext config objects. The transform lives in `ConfigFileStorage` (the single component every writer already goes through):
 
 ```
 save/update/updateState(name, updater):

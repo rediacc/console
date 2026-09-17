@@ -1,6 +1,7 @@
 # RESEARCH: site chrome (nav, mega menus, search, language, footer)
 
-Agent: `sx-chrome`. Date: 2026-08-17. Browser session `sx-chrome`, screenshots under `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-chrome/`. Dev server `http://localhost:4321` was up the whole session; no route 404'd.
+Agent: `sx-chrome`. Date: 2026-08-17. Browser session `sx-chrome`,
+screenshots under `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-chrome/`. Dev server `http://localhost:4321` was up the whole session; no route 404'd.
 
 **Nothing was modified.** This file is the only thing written.
 
@@ -165,7 +166,8 @@ Duplication inside the footer: Contact appears in both the unnamed nav column an
 
 Two footer product links are homepage anchors, not pages: `/{lang}#problem` and `/{lang}#pricing` (`Footer.tsx:109`, `Footer.tsx:120`), while the bar's Pricing item points at the real `/{lang}/pricing`. Same word, two destinations.
 
-Screenshot: `ours-footer.png`. It looks good: five readable columns, generous spacing, one visual weight.
+Screenshot: `ours-footer.png`. It looks good: five readable columns, generous
+spacing, one visual weight.
 
 ### 2.7 Announcement bar and breadcrumb
 
@@ -209,7 +211,8 @@ The language globe is unreachable on every common phone width, and the nav is th
 
 Root cause: `.nav-container` is `grid-template-columns: auto auto 1fr auto auto` (`main.css:729-737`) and the wordmark is only hidden between `30rem` and `40rem` (`main.css:894-898`). Below `30rem` the wordmark comes back while three 48px utility icons stay, and `auto` tracks will not shrink below their content.
 
-Screenshots: `ours-nav-mobile.png`, `ours-nav-mobile-390-overflow.png`, `ours-sidebar-mobile.png` (drawer open, 375px wide, 33 links).
+Screenshots: `ours-nav-mobile.png`, `ours-nav-mobile-390-overflow.png`,
+`ours-sidebar-mobile.png` (drawer open, 375px wide, 33 links).
 
 ### 2.9 The scroll collapse (judgement, as asked)
 
@@ -247,8 +250,8 @@ mouse down left; mouse up left -> panel ABSENT              (the click closed it
 
 And a fast click (move + click inside 100ms) opens then closes 100ms later: `agent-browser click ".mega-menu-trigger"` left `#mega-menu-panel` absent every time, while `el.click()` (no mouseenter) opened it reliably.
 
-Cause: `onMouseEnter` schedules `onToggle` after 100ms (`MegaMenu.tsx:128-133`) **and** `onClick` calls `onToggle` (`MegaMenu.tsx:159`). Both fire for a mouse user, so the two toggles cancel. The button is `aria-haspopup="menu"` with `aria-expanded`, which tells assistive tech and every keyboard user that clicking is the way to open it. Identical bug in
-`PersonaMegaMenu.tsx:178-183` and `PersonaMegaMenu.tsx:207`.
+Cause: `onMouseEnter` schedules `onToggle` after 100ms
+(`MegaMenu.tsx:128-133`) **and** `onClick` calls `onToggle` (`MegaMenu.tsx:159`). Both fire for a mouse user, so the two toggles cancel. The button is `aria-haspopup="menu"` with `aria-expanded`, which tells assistive tech and every keyboard user that clicking is the way to open it. Identical bug in `PersonaMegaMenu.tsx:178-183` and `PersonaMegaMenu.tsx:207`.
 
 **(b) The nav overflows the viewport on phones** and strands the language globe off-screen at 360/390/414. Measured in section 2.8.
 

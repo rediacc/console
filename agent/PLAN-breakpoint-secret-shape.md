@@ -1,6 +1,7 @@
 # Breakpoint's secret shape
 
-Status: DESIGN, not implemented — 2026-09-06 Owner decision required. Raised by session d1589e0b under operator ruling "Build the step-scoped fetch shape now" (/ask, 2026-09-05).
+Status: DESIGN, not implemented — 2026-09-06
+Owner decision required. Raised by session d1589e0b under operator ruling "Build the step-scoped fetch shape now" (/ask, 2026-09-05).
 
 ## The problem, precisely
 

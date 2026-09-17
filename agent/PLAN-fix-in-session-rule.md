@@ -1,5 +1,9 @@
 # PLAN: fix-in-session rule (rule 2 rewrite, --triage verb, judge tightening, plan-file convention)
-Status: compacted Owner: planning agent, branch 0731-2 Full-Text: f7a5351a9 agent/PLAN-fix-in-session-rule.md Full-Text-Blob: de11703cc3f80d419da467c90f6da7494ade49e3 Record-Sig: ad22e290
+Status: compacted
+Owner: planning agent, branch 0731-2
+Full-Text: f7a5351a9 agent/PLAN-fix-in-session-rule.md
+Full-Text-Blob: de11703cc3f80d419da467c90f6da7494ade49e3
+Record-Sig: ad22e290
 
 ## Why
 The fix-in-session rule as written let a session REPORT a discovery instead of acting on it, and let an issue reference close a finding. This plan rewrote CLAUDE.md rule 2, added a `--triage` verb that answers INLINE, PLAN+SUBAGENT or OPERATOR-ONLY with the exact next command, tightened the stop judge and the tick gate so an issue settles nothing without a named door, and defined
@@ -35,7 +39,16 @@ the document defining it gets copied.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:37Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: CLAUDE.md Gates: none Why-Source: author Read-History: `git show de11703cc3f80d419da467c90f6da7494ade49e3` recovers the text; `git log --find-object=de11703cc3f80d419da467c90f6da7494ade49e3 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:37Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: CLAUDE.md
+Gates: none
+Why-Source: author
+Read-History: `git show de11703cc3f80d419da467c90f6da7494ade49e3` recovers the text; `git log --find-object=de11703cc3f80d419da467c90f6da7494ade49e3 --all` names the commit
 
 ## History
 - 2026-09-06T17:32:37Z compacted by 8f55d4f0 from `done` (record-sig ad22e290)

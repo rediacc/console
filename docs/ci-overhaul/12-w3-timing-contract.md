@@ -1,6 +1,8 @@
 # 12. The W3 timing contract
 
-Status: done Owner: T-SCHED B5 Updated: 2026-09-09
+Status: done
+Owner: T-SCHED B5
+Updated: 2026-09-09
 
 This file settles how a timing becomes admissible in this programme, and it exists because one gate carries four different figures across four files and every reader so far has treated them as a disagreement. They are not. They are four statistics of one gate, taken with different instruments for different questions, and only one of them is computed the way the tool that JUDGES
 cost computes it.

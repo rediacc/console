@@ -1,5 +1,7 @@
 # PLAN: mutrun, a two-direction mutation runner for expensive suites
-Status: done Owner: 99ccf057 Updated: 2026-08-10
+Status: done
+Owner: 99ccf057
+Updated: 2026-08-10
 
 **2026-08-18: DONE. The deliverable SHIPPED, and my first note here was wrong.** Verified on disk: `.ci/scripts/test/mutate-check.sh` (10,839 B), `.ci/scripts/quality/check-mutate-check.sh` (4,705 B), and the id `check:ci-mutate-check` registered at `package.json:26`. §0 below already said this; the correction is recorded rather than quietly overwritten.
 

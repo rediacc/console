@@ -24,7 +24,9 @@ Each tutorial is scored 1–10 across six dimensions:
 
 ## Tutorial 1: "Your Docker Containers Share a Root Daemon. Here's What Happens When One Gets Compromised."
 
-**Format**: Attack-then-defend live demonstration **Audience**: DevOps Engineers, Security Teams, CTOs **Composite Score: 9.1 / 10**
+**Format**: Attack-then-defend live demonstration
+**Audience**: DevOps Engineers, Security Teams, CTOs
+**Composite Score: 9.1 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -62,7 +64,9 @@ Counterintuitive reveal. Every Docker tutorial teaches you to use one daemon. Th
 
 ## Tutorial 2: "I Forked a 3TB Production Database in 4.7 Seconds. Zero Downtime. Zero Data Transfer."
 
-**Format**: Speed-run demonstration with timer on screen **Audience**: DevOps Engineers, CTOs, Database Administrators **Composite Score: 9.0 / 10**
+**Format**: Speed-run demonstration with timer on screen
+**Audience**: DevOps Engineers, CTOs, Database Administrators
+**Composite Score: 9.0 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -100,7 +104,9 @@ Speed runs trigger sharing behavior. Fireship built a 3M-subscriber channel on "
 
 ## Tutorial 3: "58% of Backups Fail to Restore. Here's How I Prove Mine Work Every Night — Automatically."
 
-**Format**: Automated disaster drill walkthrough with real corruption + recovery **Audience**: CTOs, SysAdmins, Security/Compliance Teams, Self-Hosters **Composite Score: 8.7 / 10**
+**Format**: Automated disaster drill walkthrough with real corruption + recovery
+**Audience**: CTOs, SysAdmins, Security/Compliance Teams, Self-Hosters
+**Composite Score: 8.7 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -138,7 +144,9 @@ Fear is a powerful motivator. The 58% stat is shocking and personal — every re
 
 ## Tutorial 4: "I Migrated a Running Server — Mid-Request — and Nobody Noticed."
 
-**Format**: Live migration demonstration with monitoring dashboard showing zero interruption **Audience**: DevOps Engineers, CTOs, Infrastructure Engineers **Composite Score: 8.8 / 10**
+**Format**: Live migration demonstration with monitoring dashboard showing zero interruption
+**Audience**: DevOps Engineers, CTOs, Infrastructure Engineers
+**Composite Score: 8.8 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -175,7 +183,9 @@ This is the infrastructure equivalent of a magic trick. "I moved a running proce
 
 ## Tutorial 5: "I Let an AI Agent Manage My Server for 24 Hours. It Fixed 3 Incidents I Slept Through."
 
-**Format**: 24-hour time-lapse with AI agent decision log + incident timeline **Audience**: DevOps Engineers, CTOs, AI Enthusiasts, Self-Hosters **Composite Score: 8.6 / 10**
+**Format**: 24-hour time-lapse with AI agent decision log + incident timeline
+**Audience**: DevOps Engineers, CTOs, AI Enthusiasts, Self-Hosters
+**Composite Score: 8.6 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -214,7 +224,9 @@ Terraform" posts get massive engagement — this is the logical next step.
 
 ## Tutorial 6: "5 Apps, 1 Server, Zero Port Conflicts: The Architecture Docker Should Have Had"
 
-**Format**: Progressive build-up from problem to solution **Audience**: Self-Hosters, DevOps Engineers, Small Team CTOs **Composite Score: 8.4 / 10**
+**Format**: Progressive build-up from problem to solution
+**Audience**: Self-Hosters, DevOps Engineers, Small Team CTOs
+**Composite Score: 8.4 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|
@@ -254,7 +266,9 @@ The r/selfhosted community (301K members) collectively shares one frustration: r
 
 ## Tutorial 7: "Ransomware Hit My Server. I Recovered Everything in 47 Seconds. Here's the Drill."
 
-**Format**: Timed disaster recovery drill with visible destruction and recovery **Audience**: CTOs, CISOs, SysAdmins, Business Owners **Composite Score: 8.5 / 10**
+**Format**: Timed disaster recovery drill with visible destruction and recovery
+**Audience**: CTOs, CISOs, SysAdmins, Business Owners
+**Composite Score: 8.5 / 10**
 
 | Dimension | Score | Reasoning |
 |-----------|-------|-----------|

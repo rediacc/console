@@ -1,6 +1,7 @@
 # The DUPLICATION angle: trigger, verdict, and what the history actually says
 
-Status: implemented. This file records the MEASUREMENTS, and in several places they contradict the approved plan. Where they do, the measurement wins and the plan's text is quoted so the difference is visible rather than quietly absorbed.
+Status: implemented. This file records the MEASUREMENTS, and in several places they
+contradict the approved plan. Where they do, the measurement wins and the plan's text is quoted so the difference is visible rather than quietly absorbed.
 
 Approved plan: `~/.claude/plans/let-s-make-comprehensive-plan-luminous-sparrow.md` (four rulings: all three pieces; N=3 span-scoped seeded; ride the call and trim SWEEP_PROMPT; unshallow then calibrate).
 
@@ -120,8 +121,8 @@ Five distinct fixtures missed at least once; none missed consistently. A full 20
 **So "14/14" is one draw, not a property**, and it spans three different rules — this is the harness's variance, not one rubric's weakness. The trim stands: the operator ruled on it as a rubric-quality change, and the fixtures that miss are controls the rules over-fire on rather than defects they now miss. But no claim of the form "calibrated at N/N" may omit how many samples it
 rests on, and a single clean run is not evidence that a rubric change was safe.
 
-**Consequence: `SHAPE_PROMPT` was deliberately NOT added to `.ci/config/rubric-calibration.json`.** That manifest exists to prove a calibrated rubric has not changed since it was calibrated, and on this evidence `SHAPE_PROMPT` has not been calibrated to a standard the entry would honestly assert. Adding it would record a calibration that did not happen — the exact shape of a green
-that means nothing.
+**Consequence: `SHAPE_PROMPT` was deliberately NOT added to
+`.ci/config/rubric-calibration.json`.** That manifest exists to prove a calibrated rubric has not changed since it was calibrated, and on this evidence `SHAPE_PROMPT` has not been calibrated to a standard the entry would honestly assert. Adding it would record a calibration that did not happen — the exact shape of a green that means nothing.
 
 ### 4a. A negative fixture that pointed at real duplication
 

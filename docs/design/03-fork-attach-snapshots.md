@@ -1,6 +1,7 @@
 # 03 — Fork, Attach `--writes`, Snapshots, and Safe Migration
 
-**Status: AS-BUILT.** Every mechanism below is implemented and proven live. Measured timings are recorded where the design only had estimates.
+**Status: AS-BUILT.** Every mechanism below is implemented and proven live. Measured
+timings are recorded where the design only had estimates.
 
 ## 1. Everything is CoW
 
@@ -43,8 +44,9 @@ claimants stale", which cannot generalize to many volumes. The new design has th
 4. **Convergent init as a goal**: "a broken machine fixes itself on the next
 create/attach" — the R2-F15 idempotency table requires re-runs against half-broken state to converge, not corner-error.
 
-**As-built: these four rules held, and rule 2 is what exposed the real bugs.** The no-lazy-success guard did its job perfectly: it refused every storage release and reported "target is busy". What it could not do was name the holder, and that turned out to be the expensive part. Chasing it produced the **holder taxonomy in 02 §3**, which is the durable result and which P4 must
-build a shared teardown primitive around. Two further hygiene bugs fell out of the same work:
+**As-built: these four rules held, and rule 2 is what exposed the real bugs.** The
+no-lazy-success guard did its job perfectly: it refused every storage release and reported "target is busy". What it could not do was name the holder, and that turned out to be the expensive part. Chasing it produced the **holder taxonomy in 02 §3**, which is the durable result and which P4 must build a shared teardown primitive around. Two further hygiene bugs fell out of the same
+work:
 
 - **#27**: `dmsetup remove` was single-shot and raced udev's open on the umount uevent, so
 `detach --discard` could fail hard and **strand the mapping**. Fixed with a bounded retry that breaks on non-busy errors and never falls back to a lazy success.
@@ -70,8 +72,9 @@ snapshotted immediately; the unsynced kine write was correctly absent from the p
 
 ## 4. Safe cross-site migration pipeline (user's four-step design, adopted)
 
-**Status: NOT LIVE-VALIDATED.** The **in-Ceph** migrate arm (04 §3) is built and proven with a measured cutover. This **cross-site** pipeline is not: a two-site validation needs two Ceph clusters running concurrently, which fits locally but never fits the 16GB GitHub-runner ceiling (tracked as rediacc/console#521, along with the concurrent parent-plus-fork case). It was
-deliberately deferred, not forgotten. Treat everything below as designed-but-unproven, and note that its two load-bearing primitives (fenced attach and identity rewrite) ARE proven by the fork and in-Ceph migrate arms.
+**Status: NOT LIVE-VALIDATED.** The **in-Ceph** migrate arm (04 §3) is built and proven with a
+measured cutover. This **cross-site** pipeline is not: a two-site validation needs two Ceph clusters running concurrently, which fits locally but never fits the 16GB GitHub-runner ceiling (tracked as rediacc/console#521, along with the concurrent parent-plus-fork case). It was deliberately deferred, not forgotten. Treat everything below as designed-but-unproven, and note that its
+two load-bearing primitives (fenced attach and identity rewrite) ARE proven by the fork and in-Ceph migrate arms.
 
 ```
 1. SNAPSHOT      group snap S1 (hot, source serving)          — instant

@@ -30,4 +30,5 @@ skipped `Tag & GitHub Release`, so there is no v1.2.19 tag and no GitHub Release
 
 ## Live workers
 
-Watch `bl2bb3igo` (Console CI on main). Waiter `bp7wt40d5`. Crons: work `c73f29b8`, poll `1e8a7aff`.
+Watch `bl2bb3igo` (Console CI on main). Waiter `bp7wt40d5`.
+Crons: work `c73f29b8`, poll `1e8a7aff`.

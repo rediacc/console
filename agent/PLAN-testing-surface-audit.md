@@ -1,7 +1,10 @@
 # PLAN: Testing-surface audit, and the gates that close it
-Status: draft Owner: 97604f47 Updated: 2026-08-15
+Status: draft
+Owner: 97604f47
+Updated: 2026-08-15
 
-Scope: the whole console monorepo on branch `backup-storage`, its submodules, and every workflow reachable from `.github/workflows/ci.yml`. Audited against a still tree: all writer agents reaped, all feature work landed.
+Scope: the whole console monorepo on branch `backup-storage`, its submodules, and
+every workflow reachable from `.github/workflows/ci.yml`. Audited against a still tree: all writer agents reaped, all feature work landed.
 
 ## THE OPERATOR'S INSTRUCTION, VERBATIM
 
@@ -396,7 +399,8 @@ is loud.
 - **`drill-backup.log` on failure.** Add `${{ runner.temp }}/drill-backup.log` to the
 artifact path list at `ct-tests.yml:1831`. Proof it can fail: force the leg red on a branch and confirm the artifact contains three logs.
 - **Drill scope for renet.** Add `renet` to `drills:` at `.ci/scripts/ci/scope-map.cjs:295`.
-Proof: `test-scope-engine.sh` already drives the scope map; add a case asserting a `private/renet/**` change selects `drills`.
+  Proof: `test-scope-engine.sh` already drives the scope map; add a case asserting a
+`private/renet/**` change selects `drills`.
 - **Elite S3 conformance probe.** Call `private/elite/scripts/s3-conformance-probe.sh`
 from the job that already starts elite (`.ci/scripts/infra/ci-start-elite.sh:14`, invoked from `ci.yml:939`). Proof: point it at a deliberately non-conformant stub and require a red. This is the cheapest partial mitigation for 4.1 while F1 is built.
 

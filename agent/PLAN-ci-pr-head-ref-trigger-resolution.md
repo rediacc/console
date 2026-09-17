@@ -1,5 +1,7 @@
 # PLAN: widen check:ci-pr-head-ref-completeness from "a setter exists" to "the setter resolves on every trigger"
-Status: draft Owner: d778be9d Updated: 2026-09-16
+Status: draft
+Owner: d778be9d
+Updated: 2026-09-16
 
 The gate asserts that every workflow step invoking a `PR_HEAD_REF`-preferring script carries a `PR_HEAD_REF` (or `GITHUB_HEAD_REF`) key in its `env:` block. It never reads the VALUE. `f1ce6911f` fixed a setter whose expression covered two of its workflow's three triggers and resolved to the empty string on the third; the gate was green throughout. This widens it to cross-reference
 each setter expression against the triggers its step can actually run under.
@@ -170,8 +172,9 @@ noise rate on the one variable the generalisation would add.** Exemption E1 does
 The asymmetry is structural, not accidental. Every `PR_HEAD_REF` reader resolves the value the SAME way on every event — env, then `GITHUB_HEAD_REF`, then `git branch --show-current` (`scripts/gates/check-pr-epic-block.ts:134-141`, `scripts/gates/check-pr-task-trailers.ts:439-446`, `.ci/scripts/quality/check-review-report-replies.sh:85`, `.ci/scripts/review/discover-epics.sh:23`).
 That uniformity is exactly what makes "empty on this trigger" a sound defect predicate. `PR_NUMBER`'s readers do not have it. Generalising would mean statically reading a `case` over `$EVENT_NAME` inside a shell script — an order of magnitude more machinery than the bug costs.
 
-**Recommendation: keep the variable set at `{PR_HEAD_REF, GITHUB_HEAD_REF}`** — the family the gate already knows and already has reader-side patterns for (`:67-68`, `:75`). Write the event→context table, the `if:` narrower and the caller-chain trigger resolver as separately named, separately controlled functions so a second variable is a name plus an exemption rule, and say in the
-docstring that `PR_NUMBER` was measured and deliberately excluded, with the two sites named. Broader here is not better; it is two findings, both wrong.
+**Recommendation: keep the variable set at `{PR_HEAD_REF, GITHUB_HEAD_REF}`** — the
+family the gate already knows and already has reader-side patterns for (`:67-68`, `:75`). Write the event→context table, the `if:` narrower and the caller-chain trigger resolver as separately named, separately controlled functions so a second variable is a name plus an exemption rule, and say in the docstring that `PR_NUMBER` was measured and deliberately excluded, with the two
+sites named. Broader here is not better; it is two findings, both wrong.
 
 ## Test design
 
@@ -240,7 +243,8 @@ refusal, or the word `VACUOUS`). Rename it `MIN_READERS = 2` and add `MIN_SETTER
 
 ## Notes for the implementer
 
-PR-TASK: e87fa3ce — this widening rides the same epic as `f1ce6911f`, the one-line unblock that exposed the blind spot. Use that trailer on every commit here.
+PR-TASK: e87fa3ce — this widening rides the same epic as `f1ce6911f`, the one-line
+unblock that exposed the blind spot. Use that trailer on every commit here.
 
 Two traps worth restating because both have already cost a session:
 - PyYAML parses `on:` as the boolean `True`. Verified today on `ci.yml`.

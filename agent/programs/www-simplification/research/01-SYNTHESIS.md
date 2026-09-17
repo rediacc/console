@@ -62,7 +62,8 @@ An English visitor downloads Korean, Arabic, Russian and Japanese marketing copy
 
 This is one import chain, it is worth more than every visual change in this document combined, and it belongs to nobody in the current ownership map. **It is Wave 0 and it should ship on its own.**
 
-Second-largest: the homepage `<link>`s **three solution-page stylesheets** (`dev-environments-brief` twice, plus `disaster-recovery`) — 113,970 B, 50.4% of all CSS parsed on that page, 77-90% of it unused.
+Second-largest: the homepage `<link>`s **three solution-page stylesheets**
+(`dev-environments-brief` twice, plus `disaster-recovery`) — 113,970 B, 50.4% of all CSS parsed on that page, 77-90% of it unused.
 
 ---
 
@@ -104,7 +105,8 @@ stylesheets sitewide.
 
 **Corrected by `sx-motion` after this section was first written.** It said "port claude.com's pattern (12 lines)". That was wrong: **we already ship it.** `main.css:3348-3387` plus `public/scripts/scroll-reveal.js` (a one-shot IntersectionObserver) load on every page via `BaseLayout.astro:440`. This is an *adoption*, not a port — and it is the seventh instance of the thesis in §1.
 
-Ordered: **M0** add `.reveal` above the fold (class attributes only, zero new code) · **M1** convert icons to filled · **M2** de-text the illustrations, 573 files -> 42 · **M3** unify the 8 hand-drawn cliparts to one weight · **M4** the h1 word reveal as a `.reveal` variant.
+Ordered: **M0** add `.reveal` above the fold (class attributes only, zero new
+code) · **M1** convert icons to filled · **M2** de-text the illustrations, 573 files -> 42 · **M3** unify the 8 hand-drawn cliparts to one weight · **M4** the h1 word reveal as a `.reveal` variant.
 
 **The second correction matters more.** This section previously claimed a `prefers-reduced-motion` guard in `solution-pages.css` was a prerequisite. It is not — `main.css:365-380` already applies a global `*` reduced-motion nuke plus zeroed duration tokens, and our coverage (14 blocks + the nuke) sits between anthropic.com's 5 and claude.com's 29. That is not our gap.
 
@@ -149,7 +151,8 @@ claude.com is **161 links / 1,070 px**. Their *bars* are restrained, not their f
 
 anthropic.com's single stroke weight is `--nav--icon-thickness: var(--border-width--main)` = 1px — **icon stroke and border thickness are the same token**. Even their arrow is a filled path with `stroke: none`.
 
-Ours: **13 duplicated `<path d>` strings**. The check mark is drawn **four different ways at three weights**; the CTA arrow appears in 5 files.
+Ours: **13 duplicated `<path d>` strings**. The check mark is drawn **four
+different ways at three weights**; the CTA arrow appears in 5 files.
 
 **Their motion, sampled rather than described** (`document.getAnimations()` every 150 ms): anthropic.com peaks at **22 concurrent**, only ever `CSSTransition:opacity` and `CSSTransition:transform`, and reaches **zero by t=1350 ms**. Not one `CSSAnimation`. **81% of transitions are 0.2s, 91% are `ease`.** claude.com's 11 content keyframes are 9x the *same* animation: `opacity 0->1`
 plus `translateY(N)->0`, nothing travelling more than ~20px.

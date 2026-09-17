@@ -1,5 +1,8 @@
 # PLAN: stop-hook cadence, an intent channel, and the noise cuts that come first
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-stop-hook-cadence.md Full-Text-Blob: af70feee31f7c4646bb5fe3783be6bbfc4814871 Record-Sig: 73f26660
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-stop-hook-cadence.md
+Full-Text-Blob: af70feee31f7c4646bb5fe3783be6bbfc4814871
+Record-Sig: 73f26660
 
 ## Why
 The Stop hook forced continuations often enough that sessions spent turns satisfying checks rather than shipping. Section 1 cut the measured noise (roster, world signature, brief staleness, the verdict's reason), section 3 changed WHEN the hook blocks, section 4 added an `--intent` channel, and section 2, batching the rotating tier, was always the speculative remainder.
@@ -19,7 +22,16 @@ shipped when `grep -c` found zero references. The correction was written into th
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:54Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: none Gates: none Why-Source: author Read-History: `git show af70feee31f7c4646bb5fe3783be6bbfc4814871` recovers the text; `git log --find-object=af70feee31f7c4646bb5fe3783be6bbfc4814871 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:54Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: none
+Gates: none
+Why-Source: author
+Read-History: `git show af70feee31f7c4646bb5fe3783be6bbfc4814871` recovers the text; `git log --find-object=af70feee31f7c4646bb5fe3783be6bbfc4814871 --all` names the commit
 
 ## History
 - 2026-09-06T17:08:54Z compacted by 8f55d4f0 from `done` (record-sig 73f26660)

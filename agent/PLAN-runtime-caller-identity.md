@@ -1,5 +1,8 @@
 # PLAN: runtime caller-identity awareness for the worklist CLI
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-runtime-caller-identity.md Full-Text-Blob: 61d22f80a7aa9243a0363a1e1245cd4ff7e3558a Record-Sig: 21a88cb5
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-runtime-caller-identity.md
+Full-Text-Blob: 61d22f80a7aa9243a0363a1e1245cd4ff7e3558a
+Record-Sig: 21a88cb5
 
 ## Why
 Every `<me>` in the worklist CLI was accepted on SHAPE alone; nothing had ever compared one to reality, and an agent-namespace token copied out of a Task-spawn result had been frozen as a hand-typed `<me>` and accepted. The framing handed to the planner blamed compaction rotating the session id. That is false, and the plan disproved it twice inside one transcript. The real finding:
@@ -20,7 +23,16 @@ which is why the suite derives the verb list from the source instead of listing 
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: design Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:53Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: none Gates: none Why-Source: author Read-History: `git show 61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` recovers the text; `git log --find-object=61d22f80a7aa9243a0363a1e1245cd4ff7e3558a --all` names the commit
+Record-Kind: compacted
+Prior-Status: design
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:53Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: none
+Gates: none
+Why-Source: author
+Read-History: `git show 61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` recovers the text; `git log --find-object=61d22f80a7aa9243a0363a1e1245cd4ff7e3558a --all` names the commit
 
 ## History
 - 2026-09-06T17:08:53Z compacted by 8f55d4f0 from `design` (record-sig 21a88cb5)

@@ -1,5 +1,9 @@
 # PLAN: Wire the unrun vitest suites into CI (the account gap is elsewhere)
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-wire-account-vitest-ci.md Full-Text-Blob: 5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1 Record-Sig: 19f0f451
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-wire-account-vitest-ci.md
+Full-Text-Blob: 5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1
+Record-Sig: 19f0f451
 
 ## Why
 The brief said private/account's vitest integration suite was never run by CI. It was, and had been on every non-bot run: the invocation is three hops deep and never spells the word `vitest` in a workflow or a `.ci` script, so a literal grep missed it. The plan is mostly that correction, plus the gaps that turned out to be real once the false one was cleared.
@@ -19,9 +23,16 @@ draft` forever unless someone edits it afterwards. Nobody did, and a later reade
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: draft Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:55Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .github/workflows/ci-quality.yml, .ci/scripts/private/run-account.sh, private/account/package.json, scripts/ci-runner/manifest.ts, .ci/scripts/ci/scope-map.cjs, .ci/scripts/test/run-unit.sh, package.json,
-packages/www/package.json, packages/json/package.json, private/account/src/services/backup-chunk-store.ts Gates: check:ci-account-scope-audit, check:ci-account-server, check:ci-gate-id-convention, check:ci-parity, check:ci-quality-gates, check:ci-runner-advice, check:ci-scope-completeness, check:ci-secret-reachability, check:ci-shell-lint, check:ci-test-account-web,
-check:ci-timeout-headroom, check:test-cli, check:test-shared, check:test-workers, check:test-www Why-Source: author Read-History: `git show 5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` recovers the text; `git log --find-object=5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1 --all` names the commit
+Record-Kind: compacted
+Prior-Status: draft
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:55Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .github/workflows/ci-quality.yml, .ci/scripts/private/run-account.sh, private/account/package.json, scripts/ci-runner/manifest.ts, .ci/scripts/ci/scope-map.cjs, .ci/scripts/test/run-unit.sh, package.json, packages/www/package.json, packages/json/package.json, private/account/src/services/backup-chunk-store.ts
+Gates: check:ci-account-scope-audit, check:ci-account-server, check:ci-gate-id-convention, check:ci-parity, check:ci-quality-gates, check:ci-runner-advice, check:ci-scope-completeness, check:ci-secret-reachability, check:ci-shell-lint, check:ci-test-account-web, check:ci-timeout-headroom, check:test-cli, check:test-shared, check:test-workers, check:test-www
+Why-Source: author
+Read-History: `git show 5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` recovers the text; `git log --find-object=5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1 --all` names the commit
 
 ## History
 - 2026-09-06T17:08:55Z compacted by 8f55d4f0 from `draft` (record-sig 19f0f451)

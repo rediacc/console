@@ -1,6 +1,7 @@
 # 08 — P2 Gate Review (cluster layer: anchor+rejoin fork/migrate, membership, node lifecycle)
 
-Reviewer: Fable gate agent, 2026-07-11 ~02:45-03:30. Fully-autonomous mode (this review stands in for the user per the approved plan). Subject: the entire P2 phase against `09-implementation-phases.md` §P2, `04-cluster-fork-migrate.md`, and specs 00-07. Evidence root: scratchpad `checkpoints/` + `reports/` + live-run logs. Every cheap check was re-run by me, not trusted.
+Reviewer: Fable gate agent, 2026-07-11 ~02:45-03:30. Fully-autonomous mode (this review
+stands in for the user per the approved plan). Subject: the entire P2 phase against `09-implementation-phases.md` §P2, `04-cluster-fork-migrate.md`, and specs 00-07. Evidence root: scratchpad `checkpoints/` + `reports/` + live-run logs. Every cheap check was re-run by me, not trusted.
 
 ## VERDICT: **PASS-WITH-NOTES** — the composed fork/migrate orchestration + e2e rewrite fold into P3 as its mandatory first wave
 

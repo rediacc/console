@@ -31,7 +31,8 @@ This is not a detail to work around. It is the reason change one is **Python-onl
 
 ## 1. The instrument
 
-**Primary: `/proc` deltas + `resource.getrusage`, pure stdlib, no dependency.** The two are complementary and neither is sufficient alone:
+**Primary: `/proc` deltas + `resource.getrusage`, pure stdlib, no dependency.**
+The two are complementary and neither is sufficient alone:
 
 * peak memory for CHILDREN exists only in `ru_maxrss` (and it is a MAX over
 children, not a sum, in KiB on Linux);
@@ -69,14 +70,16 @@ instead of crashing; the judge is gated at `wl_checks.py:5352,5379` on `(somethi
 
 ## 1c. Bash coverage, resolved -- verified by hand after the fable angle reported
 
-**Primary: F, a `wait4` supervisor the BASH_ENV file re-execs the shell under.** The BASH_ENV file, before the script or `-c` string runs, `exec`s `bashcov-sup -- bash <same flags> <same invocation>` with a recursion guard. The supervisor forwards signals, samples the child's `wchan`/`VmHWM` at 250 ms, `wait4`s, writes ONE record (exit or signal, wall, tree utime/stime, tree
-`ru_maxrss`, ctx switches, a wchan histogram) and exits with the child's status. Because the record is written by a PARENT the script's trap slot cannot touch, it survives everything section 0 found: a script's own EXIT trap, `exec`, `set -o posix`, `builtin trap`, `unset -f trap`, even `kill -9`.
+**Primary: F, a `wait4` supervisor the BASH_ENV file re-execs the shell under.** The
+BASH_ENV file, before the script or `-c` string runs, `exec`s `bashcov-sup -- bash <same flags> <same invocation>` with a recursion guard. The supervisor forwards signals, samples the child's `wchan`/`VmHWM` at 250 ms, `wait4`s, writes ONE record (exit or signal, wall, tree utime/stime, tree `ru_maxrss`, ctx switches, a wchan histogram) and exits with the child's status. Because
+the record is written by a PARENT the script's trap slot cannot touch, it survives everything section 0 found: a script's own EXIT trap, `exec`, `set -o posix`, `builtin trap`, `unset -f trap`, even `kill -9`.
 
 **Proven on the real target.** `bash .claude/hooks/stop/test-worklist-v5.sh` under F: `passed=889 failed=0`, exit 0, **152 records** where the naive design produced zero, and the suite's own record -- written AFTER line 60's `rm -rf` trap had run -- answers the "blocked on what" requirement for a 9-minute run: 2,268 wchan samples, 69% `anon_pipe_read` (reading `$( )` output from
 `worklist.py` children), 30% `do_wait`, 346 s CPU across the tree, tree peak RSS 179,888 kB. I re-ran F under `exec true` by hand: 1 record.
 
-**Fallback: A, shadow the `trap` builtin with a function** -- pure bash, no binary. Verified by hand: a script owning its EXIT trap still runs it, `rc=3` propagates, and a record lands. It loses `exec` (verified: 0 records), mid-script posix, `builtin`/`command trap`, `kill -9`, and child peak RSS. Repo exposure to those gaps is small and enumerated: 0 uses of `builtin
-trap`/`command trap`/`set -o posix`, ~20 `exec` sites, 2 `#!/bin/sh` scripts, 649 bash-shebang scripts.
+**Fallback: A, shadow the `trap` builtin with a function** -- pure bash, no binary.
+Verified by hand: a script owning its EXIT trap still runs it, `rc=3` propagates, and a record lands. It loses `exec` (verified: 0 records), mid-script posix, `builtin`/`command trap`, `kill -9`, and child peak RSS. Repo exposure to those gaps is small and enumerated: 0 uses of `builtin trap`/`command trap`/`set -o posix`, ~20 `exec` sites, 2 `#!/bin/sh` scripts, 649 bash-shebang
+scripts.
 
 **Optional backstop: D, kernel BSD accounting (`acct(2)`)** -- the only thing that sees dash, static binaries and SIGKILL. Works here via `sudo -n`; the devbox would need `--cap-add SYS_PACCT` and an `acct()` call in the entrypoint before `setpriv`. Coarse (10 ms quantum, average not peak memory, no wchan). Not in change one.
 
@@ -133,7 +136,8 @@ session that ran the battery, got green and has a clean board **never reaches it
 * The judge fails CLOSED by contract (`worklist.py:91-94`). This signal must never
 block a stop: the judge gates an exit so "cannot decide" must not be an escape; the profiler describes how work was done, so "we did not measure" must never become "you may not stop."
 
-So: a sibling `wl_profile.py`, imported through the existing `_MODS` probe, called inside `contextlib.suppress(Exception)`, no subprocess, no network, off switch `WORKLIST_PROFILE=off` (the `WORKLIST_*` prefix is covered free by the suite's ambient scrub).
+So: a sibling `wl_profile.py`, imported through the existing `_MODS` probe, called
+inside `contextlib.suppress(Exception)`, no subprocess, no network, off switch `WORKLIST_PROFILE=off` (the `WORKLIST_*` prefix is covered free by the suite's ambient scrub).
 
 **The one flagship finding, with the false positive that would embarrass it:** E1 SEQUENTIAL INDEPENDENT FANOUT -- N>=8 children, pairwise-disjoint lifetimes, each CPU-saturated, and **positively disjoint write domains**. The embarrassment is the worklist suite itself: strictly sequential, CPU-saturated children, ~690 spawn sites -- and `_harness.sh:50` is `rm -rf "$BASE"` against
 ONE shared fixture root, so parallelising it would have cases deleting each other. Verified. The control is that a recorded profile of the real suite must produce NO finding and must name the shared write domain as the reason -- not an allowlist entry.
@@ -157,8 +161,9 @@ byte-identical) would have caught this on first run, which is the point of havin
 * **E4 UNDECLARED CONCURRENT WRITER -- ENFORCE.** Two invocations with overlapping root
 lifetimes under one run id whose writable-fd path sets (under the repo root, minus any observed mktemp root) INTERSECT, with no declared exclusion (`mutex` in `scripts/ci-runner/manifest.ts`, or W membership in `.ci/scripts/test/run-all.sh:111`). It requires POSITIVE evidence of a shared write and never certifies disjointness -- Rule 3 exactly. Why it exists:
 `.ci/scripts/quality/check-pool-writer-safety.sh` is a static taint scanner whose own header (`:32-44`) records the precision it dropped and whose one-directional rule (`:46-49`) says "under-declaring manufactures a flake"; its structural blind spot is a write performed by a CHILD program it does not parse (`docs/agent-reference/TRAPS.md:1020-1029`). An fd table observes the write
-instead of inferring it. **It retires a standing `Enforced-By: JUDGMENT-ONLY` trap** (`TRAPS.md:995-997`, residue "a comment claiming isolation is not evidence of it"). Control: SILENT on a real `npm run ci` recording with the three declared writers running, naming the declared exclusion that covered each overlap; FIRES by re-planting the 2026-08-17 defect through the existing
-`RUN_ALL_WRITERS=""` seam (`run-all.sh:66,153-157`, already used as a control in `test-run-all-parallel.sh:204-211`), which must name `resolve-version.sh`. Needs gate-side coverage -- the `exec.ts:65` spawn is the walker's root.
+instead of inferring it. **It retires a standing `Enforced-By: JUDGMENT-ONLY` trap** (`TRAPS.md:995-997`, residue "a comment claiming isolation is not evidence of it").
+  Control: SILENT on a real `npm run ci` recording with the three declared writers
+running, naming the declared exclusion that covered each overlap; FIRES by re-planting the 2026-08-17 defect through the existing `RUN_ALL_WRITERS=""` seam (`run-all.sh:66,153-157`, already used as a control in `test-run-all-parallel.sh:204-211`), which must name `resolve-version.sh`. Needs gate-side coverage -- the `exec.ts:65` spawn is the walker's root.
 * **E5 INTRA-SHAPE MEMORY OUTLIER -- REPORT-ONLY until J>=20 (the shellcheck predicate,
 done right).** Among >=5 same-`comm` siblings under one parent, fire when `max(peakRSS)/median(peakRSS) >= 8` across >=2 recordings of one shape. NOT "fraction of MemTotal": 2714 MB is 41% of the 6.6 GB box that died (`.ci/scripts/security/shellcheck.sh:103-106`) and 4.7% of the 58 GB box this was written on -- a MemTotal threshold gives the same profile two verdicts, which is not
 portable across `scope: machine` and `scope: container`. The sibling-relative form reproduces the incident's real structure: `xargs -n 40 -P1` (`shellcheck.sh:117`) made ~12 same-comm siblings and ONE batch cost 27x its peers. The `comm`-equality restriction is load-bearing (a `tsc` beside twenty `sh` helpers must not fire). J is tiny for this class today, which is exactly what C4
@@ -184,7 +189,8 @@ The calibration sentence: **one battery run of per-invocation records (~360 KB) 
 
 **The shape key never contains command text.** `<lang>:<repo-relative-script-path>[#<verb>]`, where every component already exists as a public string in a public tree. A hash of argv is rejected outright: a templated command whose only variable part is a token of known format is brute-forceable, and a hash of secret-bearing text carries the secret.
 
-**Baseline: inherit the COMPOSITION rule, reject the shrink-only ratchet.** A defect count has a floor of zero and a monotone-desirable direction; a resource number has neither, and ratcheting CPU downward fails on a slower runner. What transfers is that the SET of shapes is shrink-only and a per-shape allowance may not be raised silently.
+**Baseline: inherit the COMPOSITION rule, reject the shrink-only ratchet.** A defect
+count has a floor of zero and a monotone-desirable direction; a resource number has neither, and ratcheting CPU downward fails on a slower runner. What transfers is that the SET of shapes is shrink-only and a per-shape allowance may not be raised silently.
 
 **The kill trigger, fixed in advance and script-checkable:** the rollup carries a `read_at` stamp written by whatever consumes it. If `read_at` is absent or older than 7 days, or 30 days pass with no commit citing a profile finding, the gate FAILS with a message naming the remedy as `git rm`. Precedent for the failure mode is in this very hook directory: `wl_admit.py:596-600`
 records a ledger that "nothing read, which made it a write-only file."

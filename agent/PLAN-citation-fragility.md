@@ -93,8 +93,10 @@ These are the sharpest evidence for this whole plan's premise: they are *already
 
 Applied to the 149 distinct object tokens, by reading each site's surrounding prose (not just its resolution status):
 
-**(a) File-content claim — mechanically safe as a blob id, or already is one.** Signal: a structural `Full-Text-Blob: <sha>` field (the plan-compaction metadata `wl_planfid.py` writes at the top of every compacted plan — this is already a blob id, by construction, and needs no change), or prose immediately adjacent to `git hash-object`, `git cat-file -p`, or an explicit `blob:`
-label. **This is almost the entire 53-token "blob only" bucket** — a spot check confirms nearly every one is the `Full-Text-Blob:` field, not a narrative citation. No action needed; this is the target state, already achieved, for this sub-class.
+**(a) File-content claim — mechanically safe as a blob id, or already is one.**
+Signal: a structural `Full-Text-Blob: <sha>` field (the plan-compaction
+metadata `wl_planfid.py` writes at the top of every compacted plan — this is already a blob id, by construction, and needs no change), or prose immediately adjacent to `git hash-object`, `git cat-file -p`, or an explicit `blob:` label. **This is almost the entire 53-token "blob only" bucket** — a spot check confirms nearly every one is the `Full-Text-Blob:` field, not a narrative
+citation. No action needed; this is the target state, already achieved, for this sub-class.
 
 **(b) Commit-identity claim — NOT safely convertible to a blob; needs prose judgment, not mechanical substitution.** Signal phrases found directly adjacent to the token in this corpus (each verified against a real site, not hypothesized): `committed (as|in|unformatted in)`, `HEAD stayed`, `measured at` / `measured on the tree at`, `landed (as|at)`, `confirmed via` followed by `git
 show <sha>:path`, `ancestor of HEAD`, `blame to … ancestor of HEAD`, `whose subject is`, a bare `git log <sha>`, `repoint(ed)`, a `commits <sha>, <sha>` list, `Landing: console commit <sha>, "feat(...)"`, or a sha immediately followed by its commit subject in quotes. A random sample of 8 commit-only tokens came back **8/8 genuine commit-identity claims** — this corpus is heavily
@@ -147,8 +149,10 @@ forensic/investigative in style (the plan files document *what actually happened
     in this repo's object store by design, same as the gate's own documented
     "SUBMODULE gitlink" exemption. Needs an inline note, not a fix.
 
-**(c) Not really a citation — a coincidental hex-shaped token.** Signal: the token is the trailing hex group of a canonical UUID (`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`, whose final 12-hex segment is *always* pure hex and therefore *always* matches `HEXTOK_RE` once it's ≥9 chars — this is a systemic, recurring source, not a one-off), or the word immediately before it is
-`fingerprint`, `fp`, `(report …)`, or it sits inside a scratchpad/session temp path. Found in this corpus (9 distinct tokens, all in the "resolves as neither" / dead bucket, none fenced):
+**(c) Not really a citation — a coincidental hex-shaped token.**
+Signal: the token is the trailing hex group of a canonical UUID
+(`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`, whose final 12-hex segment is *always* pure hex and therefore *always* matches `HEXTOK_RE` once it's ≥9 chars — this is a systemic, recurring source, not a one-off), or the word immediately before it is `fingerprint`, `fp`, `(report …)`, or it sits inside a scratchpad/session temp path. Found in this corpus (9 distinct tokens, all in the
+"resolves as neither" / dead bucket, none fenced):
 
 ```
 b4b800aaeb21      UUID tail   agent/PLAN-env-to-bitwarden-v2.md:401 (Stripe secret uuid)

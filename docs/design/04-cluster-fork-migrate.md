@@ -1,6 +1,7 @@
 # 04 — Cluster Fork and Migrate: Anchor + Rejoin
 
-**Status: AS-BUILT and PROVEN LIVE.** The fork orchestrator ran green four independent times (FU#1, rv1, e2e suite 16, e2e suite 17); the in-Ceph migrate ran green twice with a measured cutover. Both arms live in product code (`services/cluster/cluster-fork.ts`). The build added two steps the design did not anticipate; they are marked AS-BUILT below.
+**Status: AS-BUILT and PROVEN LIVE.** The fork orchestrator ran green four independent times
+(FU#1, rv1, e2e suite 16, e2e suite 17); the in-Ceph migrate ran green twice with a measured cutover. Both arms live in product code (`services/cluster/cluster-fork.ts`). The build added two steps the design did not anticipate; they are marked AS-BUILT below.
 
 ## 1. Principle
 
@@ -61,8 +62,8 @@ attach on new machines, CP identity rewrite (networkID KEPT, IP only), agents jo
 - **Cross-site**: the 03 §4 pipeline (snapshot → transfer → iterated diffs → down() →
 final diff → up() + health gate). RBD mirroring is the storage-native pre-copy transport when both sites run Ceph. Local-tier datastores still push.
 
-**AS-BUILT: the ordering is load-bearing, and it is not the obvious one.** Migrate hit the same record-propagation wall as fork (bug #18), and the naive sequence would have been destructive: detach the source, then discover the destination cannot register the record, and now the source cluster is down with its datastore detached and nothing able to attach it. The built sequence
-closes that failure mode **by construction**:
+**AS-BUILT: the ordering is load-bearing, and it is not the obvious one.** Migrate hit the
+same record-propagation wall as fork (bug #18), and the naive sequence would have been destructive: detach the source, then discover the destination cannot register the record, and now the source cluster is down with its datastore detached and nothing able to attach it. The built sequence closes that failure mode **by construction**:
 
 ```
 seed dest (ceph config + tooling)   ← the #7/#15 class, migrate arm (bug #19)

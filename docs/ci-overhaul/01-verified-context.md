@@ -102,9 +102,10 @@ The action's `validateTrackProgressEvent` allowlist excludes `workflow_run`.
 
 ### D4 `ops down` destroys the wrong fleet (live data loss)
 `ops_down.go:61-67` iterates `cfg.GetCluster(false)` and calls `driver.Destroy(vmID)`, which resolves the target by **libvirt domain name only** (`kvm/driver.go:372-385` to `opsconfig/config.go:644-649`). `VM_NET_BASE` has **zero** influence on the destroy target, and `rdc ops` never sets `VM_GROUP`. So `VM_NET_BASE=192.168.112 rdc ops down` destroys `rediacc1/11/12/21/22/23`, the
-other fleet. It also fires on **create**: `kvm/driver.go:73-79` force-destroys a name match before provisioning, so `ops up` on a second octet silently deletes the first fleet's running VMs. Related: `VMMACAddress` (`kvm/osquirks.go:61-68`) derives from `netOffset` **only**, so two fleets on different octets get identical MACs; `ops_down.go:78-80` never destroys the network;
-`CleanupStoragePool` early-returns for ungrouped fleets. **The machinery already exists and `rdc ops` is the one caller that never opted in:** `buildGroupEnv()` (`packages/provisioning/src/factories.ts:79-96`) emits the full per-group map, two-group behavior is already tested (`OpsManager.group-env.test.ts:147-149`), and the cluster-declaration path (`buildKvmConfig` in
-`packages/cli/src/commands/cluster/declare.ts:69-75`, reached through `rdc cluster create --provider kvm`, or `--declare-only` to stop after declaring) *requires* it, throwing with an explicit reference to collision with the ops fleet.
+other fleet. It also fires on **create**: `kvm/driver.go:73-79` force-destroys a name match before provisioning, so `ops up` on a second octet silently deletes the first fleet's running VMs.
+Related: `VMMACAddress` (`kvm/osquirks.go:61-68`) derives from `netOffset` **only**, so two
+fleets on different octets get identical MACs; `ops_down.go:78-80` never destroys the network; `CleanupStoragePool` early-returns for ungrouped fleets. **The machinery already exists and `rdc ops` is the one caller that never opted in:** `buildGroupEnv()` (`packages/provisioning/src/factories.ts:79-96`) emits the full per-group map, two-group behavior is already tested
+(`OpsManager.group-env.test.ts:147-149`), and the cluster-declaration path (`buildKvmConfig` in `packages/cli/src/commands/cluster/declare.ts:69-75`, reached through `rdc cluster create --provider kvm`, or `--declare-only` to stop after declaring) *requires* it, throwing with an explicit reference to collision with the ops fleet.
 
 > Corrected 2026-07-27 by `npm run ci`: an earlier draft of this line named a
 > `cluster`-level subcommand that does not exist. `declare.ts` is a module exporting
@@ -252,8 +253,9 @@ workflows calls another.
 
 ### D5's real input surface, and its one big trap
 `initialize.sh:141-144`; `--self` is `generate-tag.sh:114-116`. **The trap: both images embed `private/renet` binaries, but both tags derive from the console HEAD.** That is accidentally safe today because a renet bump *is* a console commit. Under a content hash it stops being safe unless the **renet submodule pointer is explicitly included**, or `RENET_TAG` is folded into both
-hashes. Omit it and a renet-only bump reuses a server image carrying the **old** renet binaries. This is the most likely stale-reuse bug. Also: `VITE_APP_VERSION=${WEB_TAG}` is self-referential and baked into the served version string; `ACCOUNT_ED25519_PUBLIC_KEY` is a secret build arg and not hashable; `.ci/scripts` is `.dockerignore`d yet several of those scripts shape the
-artifacts fed into the context, so hashing the build context is **not** sufficient.
+hashes. Omit it and a renet-only bump reuses a server image carrying the **old** renet binaries. This is the most likely stale-reuse bug.
+Also: `VITE_APP_VERSION=${WEB_TAG}` is self-referential and baked into the served version
+string; `ACCOUNT_ED25519_PUBLIC_KEY` is a secret build arg and not hashable; `.ci/scripts` is `.dockerignore`d yet several of those scripts shape the artifacts fed into the context, so hashing the build context is **not** sufficient.
 
 ### `deploy-preview` is safe to decouple, and has two dead steps
 It downloads only `preview-pages-${sha}` (produced by `stage-artifacts`), so it consumes **nothing** from `tests`. Removing `tests` from `needs` requires dropping the `needs.tests.result` clause in the same edit. **Found, not fixed:** `ci.yml:807` and `:813` inject `e2e-videos-${sha}` and `tutorial-recordings-${sha}`, and **no workflow produces either**. Both are `|| true`, so they

@@ -17,7 +17,8 @@ I have deliberately NOT committed any of your hunks all day. Everything of yours
 | `test-worklist-v5.sh` | case `29e`, the f2 uncapped-slice note, arity registrations |
 | `block-agent-state-shape.sh`, `test-hooks.sh` | never touched by me at all |
 
-**Question: do you want to commit and push those yourself onto `0804-1`, or should I?** I would rather you did — you know which of them are finished and I would only be guessing. If you would rather I did it, say so and I will commit them by explicit path and say in the message that the work is yours.
+**Question: do you want to commit and push those yourself onto `0804-1`, or
+should I?** I would rather you did — you know which of them are finished and I would only be guessing. If you would rather I did it, say so and I will commit them by explicit path and say in the message that the work is yours.
 
 I am not touching any of it until you answer.
 

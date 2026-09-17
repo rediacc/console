@@ -1,5 +1,9 @@
 # PLAN: agent hints in the stop hook, implementation
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-agent-hints-implementation.md Full-Text-Blob: 9e7c10012356718cff5eda813cae38e7287f31da Record-Sig: 6a4a8866
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-agent-hints-implementation.md
+Full-Text-Blob: 9e7c10012356718cff5eda813cae38e7287f31da
+Record-Sig: 6a4a8866
 
 ## Why
 The repo had accumulated specialist agents under `.claude/agents/` and sessions kept not using them; the operator had to point at them by hand twice in one day. The diagnosis was measured rather than argued: the word "bench" appeared zero times across the seven agent `description` fields and exactly once anywhere in the directory, in `account-dev.md`'s body. The knowledge existed
@@ -40,8 +44,16 @@ and getting it wrong would have made the gate invisible to its siblings. The des
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: ready Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:09Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, scripts/gates/check-ci-parity.ts, .claude/agents/account-dev.md, .ci/scripts/quality/check_gate_reachability_coverage.py,
-.ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/test/mutate-check.sh Gates: check:ci-agent-hint-liveness, check:ci-parity Why-Source: auto Read-History: `git show 9e7c10012356718cff5eda813cae38e7287f31da` recovers the text; `git log --find-object=9e7c10012356718cff5eda813cae38e7287f31da --all` names the commit
+Record-Kind: compacted
+Prior-Status: ready
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:09Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, scripts/gates/check-ci-parity.ts, .claude/agents/account-dev.md, .ci/scripts/quality/check_gate_reachability_coverage.py, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/test/mutate-check.sh
+Gates: check:ci-agent-hint-liveness, check:ci-parity
+Why-Source: auto
+Read-History: `git show 9e7c10012356718cff5eda813cae38e7287f31da` recovers the text; `git log --find-object=9e7c10012356718cff5eda813cae38e7287f31da --all` names the commit
 
 ## History
 - 2026-09-06T17:06:09Z compacted by 8f55d4f0 from `ready` (record-sig 6a4a8866)

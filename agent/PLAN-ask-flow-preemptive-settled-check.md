@@ -1,7 +1,10 @@
 # PLAN: Ask-flow preemptive settled-check
-Status: draft (v2 -- Part 1 redesigned around a model call, 2026-08-30) Owner: 9d92d9b6 Updated: 2026-08-30
+Status: draft (v2 -- Part 1 redesigned around a model call, 2026-08-30)
+Owner: 9d92d9b6
+Updated: 2026-08-30
 
-Scope: the AskUserQuestion path only. Not the Stop-hook judge, not PR #579, not the k3s bump.
+Scope: the AskUserQuestion path only. Not the Stop-hook judge, not PR #579, not
+the k3s bump.
 
 ## The measurement
 

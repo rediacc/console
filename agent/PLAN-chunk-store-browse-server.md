@@ -1,5 +1,8 @@
 # PLAN: chunk-store BROWSE, argued from the account server and the CLI
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-chunk-store-browse-server.md Full-Text-Blob: d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd Record-Sig: f6e46844
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-chunk-store-browse-server.md
+Full-Text-Blob: d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd
+Record-Sig: f6e46844
 
 ## Why
 The operator wanted to ask whether a particular file is inside a backup. This plan was one of two competing angles, assigned "server-and-client-first, renet changes as a last resort". Its verdict: the engine must PRODUCE a file index (no listing is derivable from a manifest, which hashes LUKS ciphertext in a fixed grid and carries no namespace at all), but the engine is the wrong
@@ -29,11 +32,16 @@ carries a team column, so within one subscription any `backup:read` token sees e
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: UNKNOWN Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:30:33Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/hash.go, private/account/src/db/schema.ts,
-private/account/src/services/backup-gc.service.ts, private/account/src/services/backup-chunk-store.ts, private/account/src/services/backup-storage.service.ts, packages/cli/src/commands/storage.ts, packages/cli/src/services/repo/storage-browser.ts, docs/backup-storage/05-docs-and-decommission.md, docs/backup-storage/README.md, private/account/src/routes/backups.ts,
-packages/cli/src/services/account/account-client.ts, packages/cli/src/services/config/config-base.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/services/config/remote-cache.ts, packages/cli/src/adapters/config-file-storage.ts, packages/cli/src/commands/config.ts, private/account/src/middleware/api-token.ts Gates: check:ci-account-scope-audit,
-check:ci-account-server, check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-design-tree, check:ci-i18n-cli-key-usage, check:ci-tutorial-cli-validity, check:cli-examples, check:i18n, check:test-cli Why-Source: author Read-History: `git show d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd` recovers the text; `git log
---find-object=d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd --all` names the commit
+Record-Kind: compacted
+Prior-Status: UNKNOWN
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:30:33Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/hash.go, private/account/src/db/schema.ts, private/account/src/services/backup-gc.service.ts, private/account/src/services/backup-chunk-store.ts, private/account/src/services/backup-storage.service.ts, packages/cli/src/commands/storage.ts, packages/cli/src/services/repo/storage-browser.ts, docs/backup-storage/05-docs-and-decommission.md, docs/backup-storage/README.md, private/account/src/routes/backups.ts, packages/cli/src/services/account/account-client.ts, packages/cli/src/services/config/config-base.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/services/config/remote-cache.ts, packages/cli/src/adapters/config-file-storage.ts, packages/cli/src/commands/config.ts, private/account/src/middleware/api-token.ts
+Gates: check:ci-account-scope-audit, check:ci-account-server, check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-design-tree, check:ci-i18n-cli-key-usage, check:ci-tutorial-cli-validity, check:cli-examples, check:i18n, check:test-cli
+Why-Source: author
+Read-History: `git show d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd` recovers the text; `git log --find-object=d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd --all` names the commit
 
 ## History
 - 2026-09-06T17:30:33Z compacted by 8f55d4f0 from `UNKNOWN` (record-sig f6e46844)

@@ -1,5 +1,8 @@
 # PLAN: the cold backup path for the chunk store
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-cold-path.md Full-Text-Blob: 94817d485e814eefcb2a0fc24d339c9a8a974c48 Record-Sig: 497574c0
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-cold-path.md
+Full-Text-Blob: 94817d485e814eefcb2a0fc24d339c9a8a974c48
+Record-Sig: 497574c0
 
 ## Why
 Cold backup for the chunk store, under the operator's constraint that the downtime be the SNAPSHOT window and never the transfer window. The design is a datastore-wide barrier around a constant-time reflink: stop containers, syncfs, stage, restart, and only then plan and upload, because holding containers down across `buildPlan` would make the outage O(image). It named three
@@ -33,7 +36,16 @@ because a quiesce you cannot verify is exactly what must not be labelled cold.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:30:34Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: none Gates: none Why-Source: author Read-History: `git show 94817d485e814eefcb2a0fc24d339c9a8a974c48` recovers the text; `git log --find-object=94817d485e814eefcb2a0fc24d339c9a8a974c48 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:30:34Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: none
+Gates: none
+Why-Source: author
+Read-History: `git show 94817d485e814eefcb2a0fc24d339c9a8a974c48` recovers the text; `git log --find-object=94817d485e814eefcb2a0fc24d339c9a8a974c48 --all` names the commit
 
 ## History
 - 2026-09-06T17:30:34Z compacted by 8f55d4f0 from `done` (record-sig 497574c0)

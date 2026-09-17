@@ -1,5 +1,7 @@
 # PLAN: Fix the two dead-branch regex bugs in `check:ci-shell-commands` (bash twin + Python port + tests + ledger)
-Status: draft -- BLOCKED, blast-radius claim below was WRONG, see correction Owner: f4da5c2e Updated: 2026-09-10
+Status: draft -- BLOCKED, blast-radius claim below was WRONG, see correction
+Owner: f4da5c2e
+Updated: 2026-09-10
 
 ## Problem
 
@@ -81,8 +83,9 @@ exit 0, "All commands are CI-compatible".
 
 **Actual measured count: 0.** Fixing both regex bugs surfaces zero new, previously-invisible violations anywhere in the real, current corpus. Nothing in `.ci/**/*.sh`, `scripts/**/*.sh`, `run.sh`, or `rdc.sh` today hides a disallowed command inside `$(...)` or behind a bare `if <disallowed-cmd>`.
 
-**Conclusion: (b) applies.** The count is zero, so this is a straight fix with **no baseline or allowlist needed** — there is nothing pre-existing to grandfather in, and no `.ci/policy/.*-allowlist`-style file is warranted for this gate. (If a future contributor happens to introduce one of these forms between this plan's writing and its landing, the fixed gate will correctly flag
-it as a new PR-time finding, which is exactly the gate doing its job — not a blast-radius regression to design around.)
+**Conclusion: (b) applies.** The count is zero, so this is a straight fix with **no baseline
+or allowlist needed** — there is nothing pre-existing to grandfather in, and no `.ci/policy/.*-allowlist`-style file is warranted for this gate. (If a future contributor happens to introduce one of these forms between this plan's writing and its landing, the fixed gate will correctly flag it as a new PR-time finding, which is exactly the gate doing its job — not a blast-radius
+regression to design around.)
 
 ## Fix design
 
@@ -236,7 +239,9 @@ a `--command` argument to `rdc term connect`, i.e. it runs on a REMOTE machine, 
 # CORRECTED PLAN 2026-09-10 (supersedes the draft above; the draft is kept for its own recorded lesson about invalid measurement technique)
 
 # PLAN: Fix `check:ci-shell-commands` regex gate and its 46 real findings (bash twin + python port + tests + ledger + full corpus fix)
-Status: done Owner: f4da5c2e Updated: 2026-09-10
+Status: done
+Owner: f4da5c2e
+Updated: 2026-09-10
 
 ## Problem
 
@@ -293,8 +298,8 @@ Deliberately reproduced (module docstring, `.ci/rediacc_ci/security/check_comman
 
 ## Blast-radius measurement (real, independently re-verified twice: by the Plan agent and by the driver, 46 findings)
 
-**Method**: copy `check-commands.sh` to a scratch dir, apply the exact 2-line fix, hardcode `ROOT_DIR="/home/developer/console"` in the scratch copy (rather than relying on its self-relative path resolution, which breaks when the file isn't at its real repo-relative location), run it. Result: **exit 1, 46 findings.** The real tracked `.ci/scripts/security/check-commands.sh` was
-never touched during measurement.
+**Method**: copy `check-commands.sh` to a scratch dir, apply the exact 2-line fix, hardcode
+`ROOT_DIR="/home/developer/console"` in the scratch copy (rather than relying on its self-relative path resolution, which breaks when the file isn't at its real repo-relative location), run it. Result: **exit 1, 46 findings.** The real tracked `.ci/scripts/security/check-commands.sh` was never touched during measurement.
 
 Corpus size, re-confirmed live: `find .ci -name '*.sh' -type f` -> 495; `find scripts -name '*.sh' -type f` -> 20; `run.sh` and `rdc.sh` both present. 495 + 20 + 2 = 517 scan targets.
 
@@ -493,7 +498,8 @@ confirmation on the real tree, not a scratch copy.
 
 Both subagent writer slots were occupied when this item came due (per this session's max-2 rule), and per this repo's standing rule a queued item is not a reason to sit idle -- the driver applied Writer A's exact file/finding set directly. All 19 files in the Writer A set (all 23 of its findings, rows 1-22 + row 41 from the tables above) applied verbatim per this plan's tables,
 `bash -n` syntax-checked clean on all 19, zero residual `seq` usage confirmed by grep, the account.sh padding rewrite verified byte-identical to the original (`len=65`, direct comparison). Re-ran the scratch fixed-gate check against the real, now-partially-fixed tree: **findings dropped from 46 to exactly 23**, matching Writer B's untouched file set precisely -- confirms Writer A's
-portion is complete and correct with no collateral changes (`git status` shows exactly the 19 intended files, nothing else). **Remainder: Writer B's 20 files / 23 findings**, unchanged, still queued.
+portion is complete and correct with no collateral changes (`git status` shows exactly the 19 intended files, nothing else).
+**Remainder: Writer B's 20 files / 23 findings**, unchanged, still queued.
 
 ## COMPLETE 2026-09-10: Writer B's 23 findings + the driver-owned final step, all done inline
 

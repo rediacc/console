@@ -1,5 +1,8 @@
 # PLAN: retire rclone, payload and feature
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-rclone-decommission.md Full-Text-Blob: 09c51ce36a58383f4f12ac17ed21fe99cdbcab29 Record-Sig: 859faadb
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-rclone-decommission.md
+Full-Text-Blob: 09c51ce36a58383f4f12ac17ed21fe99cdbcab29
+Record-Sig: 859faadb
 
 ## Why
 The operator asked to stop embedding rclone in the rdc binaries for a smaller artifact, then chose the wider scope and the sequencing: "Full removal, after cutover." The risk this plan existed to manage was a `grep -rl rclone | xargs` sweep, which would have destroyed two things that must live: `rdc storage browse` / `storage import`, which spawn the operator's OWN rclone from PATH
@@ -20,8 +23,16 @@ would report rclone re-entering the payload.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:53Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: scripts/dev/lib/cf-auth.sh, docs/backup-storage/05-docs-and-decommission.md, packages/shared/src/config-schema/schemas.ts, .ci/scripts/test/gates/test-embed-credits.sh, .ci/scripts/test/gates/test-embed-asset-freshness.sh,
-scripts/lib/embed-asset-sources.ts, packages/cli/src/data/third-party-credits.json, .gitmodules Gates: none Why-Source: author Read-History: `git show 09c51ce36a58383f4f12ac17ed21fe99cdbcab29` recovers the text; `git log --find-object=09c51ce36a58383f4f12ac17ed21fe99cdbcab29 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:53Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: scripts/dev/lib/cf-auth.sh, docs/backup-storage/05-docs-and-decommission.md, packages/shared/src/config-schema/schemas.ts, .ci/scripts/test/gates/test-embed-credits.sh, .ci/scripts/test/gates/test-embed-asset-freshness.sh, scripts/lib/embed-asset-sources.ts, packages/cli/src/data/third-party-credits.json, .gitmodules
+Gates: none
+Why-Source: author
+Read-History: `git show 09c51ce36a58383f4f12ac17ed21fe99cdbcab29` recovers the text; `git log --find-object=09c51ce36a58383f4f12ac17ed21fe99cdbcab29 --all` names the commit
 
 ## History
 - 2026-09-06T17:08:53Z compacted by 8f55d4f0 from `done` (record-sig 859faadb)

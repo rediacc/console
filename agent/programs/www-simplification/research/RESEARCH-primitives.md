@@ -16,8 +16,8 @@ Button, one Card, one Field, one Overlay and delete the ~4,500 lines of per-page
 
 ### 2.1 Buttons — 45 distinct computed treatments, 40 class roots
 
-Method: `document.querySelectorAll('a,button,input[type=submit],[role=button]')`, keep anything with a background, a border, or a `btn|button|cta` class; tuple = `(border-radius, padding, font-size, font-weight, border, background, color, box-shadow, transition, text-transform, letter-spacing, height)` read from `getComputedStyle`. Script: `scratchpad/js/btn.js`; per-page dumps in
-`scratchpad/dump/btn*.json`.
+Method: `document.querySelectorAll('a,button,input[type=submit],[role=button]')`,
+keep anything with a background, a border, or a `btn|button|cta` class; tuple = `(border-radius, padding, font-size, font-weight, border, background, color, box-shadow, transition, text-transform, letter-spacing, height)` read from `getComputedStyle`. Script: `scratchpad/js/btn.js`; per-page dumps in `scratchpad/dump/btn*.json`.
 
 | Page | button-like elements | distinct treatments |
 |---|---|---|
@@ -73,7 +73,8 @@ Screenshot strip (real cloned DOM nodes, side by side): `scratchpad/shots/sx-pri
 
 ### 2.2 Cards — 33 shells, 5 radii within 8px of each other
 
-Method: block elements with `border-radius >= 4px`, real padding, and a surface (border, shadow, or a background differing from the parent). `scratchpad/js/card.js`, dumps `scratchpad/dump/card*.json`. 37 raw tuples of which 4 are buttons that satisfy the same test — **33 genuine card shells**.
+Method: block elements with `border-radius >= 4px`, real padding, and a
+surface (border, shadow, or a background differing from the parent). `scratchpad/js/card.js`, dumps `scratchpad/dump/card*.json`. 37 raw tuples of which 4 are buttons that satisfy the same test — **33 genuine card shells**.
 
 | Property | distinct values |
 |---|---|
@@ -136,7 +137,8 @@ Measured input geometry (`scratchpad/js/form.js`, `dump/form*.json`) — three m
 | contact (`public/styles/contact-modal.css:122,321`) | `4px` | `8/12` | 16px | **`rgb(138,138,139)`** | 44px |
 | partner (`src/pages/[lang]/partners.astro`) | `8px` | `12/12` | 16px | `rgb(210,210,215)` | 48 / 52px |
 
-Labels: **4 distinct treatments** — `14px/500/#1a1a1a/mb:0` (contact, partners), `13.6px/500/#4a4a4f/mb:6px` (roi-calculator), `14px/400/#1a1a1a` (partner checkboxes), `14px/500/#4a4a4f/mb:8px` (solution pages).
+Labels: **4 distinct treatments** — `14px/500/#1a1a1a/mb:0` (contact,
+partners), `13.6px/500/#4a4a4f/mb:6px` (roi-calculator), `14px/400/#1a1a1a` (partner checkboxes), `14px/500/#4a4a4f/mb:8px` (solution pages).
 
 Error text: `--color-error` in three of them, hardcoded `#b91c1c` / `#fca5a5` at 13px in `src/styles/lead-magnet-modal.css:173-183`.
 
@@ -165,7 +167,8 @@ and live, on four pages: `document.querySelectorAll('.form-input,.form-group,.fo
 | `NewsletterReturnPopup.tsx` | 157 | `.newsletter-return-popup-overlay` (`src/styles/newsletter.css:319`) | **`color-mix(… 35%)`** | none | **`--z-modal`** | none |
 | `ImageModal.astro` | 167 | `.image-modal` (`public/styles/main.css:3075`) | **`--opacity-60`** | **2px** | `--z-toast` | none |
 
-Panels: 4 distinct treatments — `--radius-md` + shared shadow at max-width 480px / `--container-xs` / 620px (contact / search / region), hardcoded `12px` + `32px 28px` + 480px (`lead-magnet-modal.css:39-49`), `--radius-xl` + `--space-8` + 36rem (`newsletter.css:330-336`), `--radius-md` + `--space-8` + 500px (`main.css:3092`). Five distinct close-button treatments.
+Panels: 4 distinct treatments — `--radius-md` + shared shadow at max-width
+480px / `--container-xs` / 620px (contact / search / region), hardcoded `12px` + `32px 28px` + 480px (`lead-magnet-modal.css:39-49`), `--radius-xl` + `--space-8` + 36rem (`newsletter.css:330-336`), `--radius-md` + `--space-8` + 500px (`main.css:3092`). Five distinct close-button treatments.
 
 Behaviour is copy-pasted, not shared. `handleFocusTrap(e, modal, close)` is **byte-identical** in `ContactModal.tsx:29-49`, `LeadMagnetModal.tsx:32-52` and `RegionPickerModal.tsx:9-27` except for the focusable-elements selector string; `SearchModal.tsx` reimplements the same logic inline at lines 199-278; `NewsletterReturnPopup.tsx:75-90` does Escape + scroll-lock but **no focus
 trap at all**. `document.body.style.overflow = 'hidden'` is written five times.
@@ -376,8 +379,8 @@ Also **delete `.cta-bolt`** (`main.css:1745-1770`) and `scripts/check-cta-bolt-u
 **Change.** Use `main.css:2717-2840` — it is already good, already has `:invalid` / `:valid` / `[aria-invalid]` / `:disabled` / mobile states, and is already loaded on every page. Rewrite all five forms onto `.form-group` / `.form-label` / `.form-input` / `.form-error`. Extract the submit lifecycle (`idle → submitting → success → error` + Turnstile) into one `useFormSubmit` hook;
 today it is five `useState` clusters totalling 30 state variables.
 
-Delete: `.newsletter-input` and its states (`newsletter.css:46-75`), `.contact-modal-field *` **and** `.contact-inline-field *` (`contact-modal.css:122-181, 321-390` — the 11 byte-identical pairs from §2.4), `.partner-form-*` field CSS in `partners.astro`, the lead-magnet field CSS. Also add labels to the three ROI-calculator range inputs (the `label` critical axe violation) and
-remove the two native-styled honeypots' visual leak.
+Delete: `.newsletter-input` and its states (`newsletter.css:46-75`),
+`.contact-modal-field *` **and** `.contact-inline-field *` (`contact-modal.css:122-181, 321-390` — the 11 byte-identical pairs from §2.4), `.partner-form-*` field CSS in `partners.astro`, the lead-magnet field CSS. Also add labels to the three ROI-calculator range inputs (the `label` critical axe violation) and remove the two native-styled honeypots' visual leak.
 
 **Files.** `ContactForm.tsx`, `ContactModal.tsx`, `NewsletterSignup.tsx`, `LeadMagnetModal.tsx`, `contact-modal.css`, `newsletter.css`, `lead-magnet-modal.css`, `main.css` — **all mine**. Except `PartnerApplicationForm.tsx` + `partners.astro`, which are **not** in my list; flagged in §6.
 
@@ -391,7 +394,8 @@ remove the two native-styled honeypots' visual leak.
 + Escape + scroll lock + `role="dialog"`/`aria-modal`, and one
 `.overlay-backdrop` / `.overlay-panel` CSS pair in `main.css`. `ContactModal`, `SearchModal`, `LeadMagnetModal`, `RegionPickerModal`, `NewsletterReturnPopup` become content-only children.
 
-Delete: `public/styles/contact-modal.css` (375 lines), `search-modal.css` (331), `region-picker.css` (180) and the modal half of `lead-magnet-modal.css`; the three `<link media="print">` tags at `BaseLayout.astro:240-242` (**≈23 KB off every route**); the duplicated `handleFocusTrap` in three files; 8 fade keyframes → 1, 5 slide keyframes → 1.
+Delete: `public/styles/contact-modal.css` (375 lines), `search-modal.css`
+(331), `region-picker.css` (180) and the modal half of `lead-magnet-modal.css`; the three `<link media="print">` tags at `BaseLayout.astro:240-242` (**≈23 KB off every route**); the duplicated `handleFocusTrap` in three files; 8 fade keyframes → 1, 5 slide keyframes → 1.
 
 `NewsletterReturnPopup` gains a focus trap it does not currently have.
 
@@ -499,5 +503,6 @@ agent-browser eval "$(cat $S/js/impl.js)"    # distinct class roots
 agent-browser a11y http://localhost:4321/en --json
 ```
 
-Per-page dumps: `$S/dump/{btn,card,badge,form,impl}_*.json` (`REF_*` = claude.com / anthropic.com). Screenshots: `$S/shots/sx-primitives/` — `strip-buttons-global.png`, `strip-card-shells.png`, `strip-solution-primitives.png`, `home-cards-slice.png`, `home-cards-pricing.png`, `home-mobile-hero.png`. The specimen-strip injectors are `$S/js/strip.js` (clones real DOM nodes) and
-`$S/js/synth.js` (renders measured tuples as plain boxes); both mutate only the live page and are undone by a reload.
+Per-page dumps: `$S/dump/{btn,card,badge,form,impl}_*.json` (`REF_*` = claude.com / anthropic.com).
+Screenshots: `$S/shots/sx-primitives/` — `strip-buttons-global.png`,
+`strip-card-shells.png`, `strip-solution-primitives.png`, `home-cards-slice.png`, `home-cards-pricing.png`, `home-mobile-hero.png`. The specimen-strip injectors are `$S/js/strip.js` (clones real DOM nodes) and `$S/js/synth.js` (renders measured tuples as plain boxes); both mutate only the live page and are undone by a reload.

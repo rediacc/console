@@ -1,8 +1,10 @@
 # 03. v2, GitHub-side autonomy
 
-Status: **RECOMMENDED design, forward-looking. Build after PR-B has been observed on real traffic.** Nothing here has run.
+Status: **RECOMMENDED design, forward-looking. Build after PR-B has been observed on real
+traffic.** Nothing here has run.
 
-Goal: apply a label or let a PR go red, and it babysits itself across days and roughly 25 CI rounds while the laptop is closed, across console plus three submodule repos, stopping at green + reviewed + threads resolved. It never merges and never pushes `main`.
+Goal: apply a label or let a PR go red, and it babysits itself across days and roughly 25 CI
+rounds while the laptop is closed, across console plus three submodule repos, stopping at green + reviewed + threads resolved. It never merges and never pushes `main`.
 
 ---
 
@@ -82,8 +84,9 @@ and `isEntityContext` (`context.ts:292-296`) tests membership in `ENTITY_EVENT_N
 
 And `.claude/hooks/**` **do execute**: `parse-sdk-options.ts:329-335` sets `settingSources: ["user", "project", "local"]` by default, so `.claude/settings.json` in cwd is live, and restore-config's own docstring says the CLI acts on it "before any tool-permission gating, executing hooks (including SessionStart), setting env vars (NODE_OPTIONS, LD_PRELOAD, PATH)".
 
-**Therefore: a `workflow_run` job that checks out PR head has handed arbitrary PR-authored hook code a shell, with tokens in the environment, and none of the protection the design assumes.** The autopilot MUST check out a trusted ref. `claude-review-reusable.yml:57-60` already does exactly this (`repository: rediacc/console, ref: main`). **State it as an explicit invariant in the
-workflow, with a comment, rather than leaving it an accident of the checkout step.**
+   **Therefore: a `workflow_run` job that checks out PR head has handed arbitrary
+PR-authored hook code a shell, with tokens in the environment, and none of the protection the design assumes.** The autopilot MUST check out a trusted ref. `claude-review-reusable.yml:57-60` already does exactly this (`repository: rediacc/console, ref: main`). **State it as an explicit invariant in the workflow, with a comment, rather than leaving it an accident of the checkout
+step.**
 
 Still true and still relevant: you cannot iterate on the autopilot inside its own PR, and `git add -A` must be forbidden in the prompt.
 5. **Trigger limits.** `label_trigger` is issues-only and never sees a PR label.
@@ -103,7 +106,8 @@ shape the review pipeline already proves.
 | `schedule` every 2h | sweeper for missed events and "label applied while CI was already red" | no, dispatch only |
 | `workflow_dispatch` | manual arm, resume, stage testing | yes |
 
-Concurrency: `group: autopilot-<head_branch>`, `cancel-in-progress: false`. Never kill a round mid-push; the queued run's gate then sees "already handled" and exits.
+Concurrency: `group: autopilot-<head_branch>`, `cancel-in-progress: false`. Never kill a round
+mid-push; the queued run's gate then sees "already handled" and exits.
 
 > **Correction, 2026-08-05 (operator ruling): dispatch-campaign arming supersedes
 > label-only arming.** The text above and check 4 below describe the label as the
@@ -201,7 +205,8 @@ handoff. A console-only round mints a console-only token.
 
 ## 6. Adversarial review of this design
 
-Actor: anyone on the internet, since console is public. Assets: private submodule source checked out on the runner, the OAuth token, app private keys, main-branch integrity, the operator's commit identity.
+Actor: anyone on the internet, since console is public. Assets: private submodule source
+checked out on the runner, the OAuth token, app private keys, main-branch integrity, the operator's commit identity.
 
 **Where untrusted text reaches the model, and the mitigation.**
 1. **PR comments.** Fix rounds are pointed at the gate-provided failed-job list and logs, not

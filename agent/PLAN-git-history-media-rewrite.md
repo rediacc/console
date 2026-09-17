@@ -1,6 +1,9 @@
 # Rewrite git history to drop the migrated media blobs
 
-Status: ready Session: 0ad063bf Date: 2026-08-23 Supersedes the "Doing it" section of [rediacc/console#532](https://github.com/rediacc/console/issues/532), whose path selection is wrong in two ways (see "Two defects in #532" below).
+Status: ready
+Session: 0ad063bf
+Date: 2026-08-23
+Supersedes the "Doing it" section of [rediacc/console#532](https://github.com/rediacc/console/issues/532), whose path selection is wrong in two ways (see "Two defects in #532" below).
 
 ## Why
 

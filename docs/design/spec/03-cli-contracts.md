@@ -139,7 +139,8 @@ The options were:
 | **A. Build the serialisation rule** | Real work in 5 modules across 2 repos, before a single command is renamed. It is a contract-shape change, so it also re-emits `contract.generated.ts` + `contract.json` + 13 i18n bundles and touches the account submodule's render gate. | §2.2 ships as designed. `rdc repo up shop` is the CLI the whole redesign is written around |
 | B. Abandon positional names | Zero prerequisite work | Keeps `--name` tree-wide and `-m` on repo verbs. §2.2, §2.3, §3 (`@place` on the positional ref) and most of §5's help text are rewritten in flag terms. The addressing model 06 §6 was built to fix survives only in the derived-machine half |
 
-**RULED: A.** The positional name is not decoration; it is what makes the `repo[:tag][@place]` ref a single addressable token that verbs share, and it is the reason `-m` can disappear. Option B would keep the CLI's central ergonomic defect and leave 06 §6 half-implemented. Nothing in §2.2 may land before this does.
+**RULED: A.** The positional name is not decoration; it is what makes the
+`repo[:tag][@place]` ref a single addressable token that verbs share, and it is the reason `-m` can disappear. Option B would keep the CLI's central ergonomic defect and leave 06 §6 half-implemented. Nothing in §2.2 may land before this does.
 
 #### What "a ref concept" means, precisely (the deliverable)
 
@@ -700,13 +701,14 @@ Moved verbatim from `config provider *` (06 §2), positional name migration.
 #### `machine infra set|show|push` + `machine infra cert pull|push|status|clear`
 Moved from `config infra *` + `config cert-cache *` (06 §2; §1 tree omission flagged as U1). `[P0-DECIDED]` cert-cache is nested as `machine infra cert` (it caches the TLS material infra provisions; keeping it under infra keeps machine's top level flat).
 - `set <machine>`: flags kept (`--public-ipv4`, `--public-ipv6`, `--base-domain`,
-`--cert-email`, `--cf-dns-token`, `--tcp-ports`, `--udp-ports`). Help: `Set infrastructure settings for a machine.`
+`--cert-email`, `--cf-dns-token`, `--tcp-ports`, `--udp-ports`).
+  Help: `Set infrastructure settings for a machine.`
 - `show <machine>`: Help: `Show infrastructure settings.` MCP: mcp(read) (as today's
 `config infra show`).
 - `push <machine>`: Help: `Apply infrastructure settings to the machine.` Errors: renet
 failure → 14. Idempotency: convergent.
 - `cert pull|push|status|clear <machine>`: today's flags (`pull --no-prune`).
-Help: `Pull TLS certificates into the local cache.` etc.
+  Help: `Pull TLS certificates into the local cache.` etc.
 - Gate: A. MCP: `show`/`cert status` mcp(read); rest exclude: `Infra credential
 material; use CLI directly.`
 
@@ -856,8 +858,9 @@ the one place these remain, as narrowing filters, not routing).
 #### `repo fork <parent-ref> --tag <tag>`
 - Help: `Fork a repository copy-on-write. Instant at any size. New identity, empty secrets.`
 - Flags: `--tag <tag>` required; `--up` (deploy after fork); `--checkpoint` (CRIU);
-`--immutable` (create as immutable commit object); **`--no-wait`** (RENAMED from `--detach`, ruling R-P4-2v2 — this REOPENS AND SUPERSEDES U6, which had kept `--detach` here with the old meaning; detached-job runs use the global `--background`, §5.13). DELETED: `--cluster`, `--to-cluster`, `--provider` (06 §3: no runtime flag at all — the parent's placement decides docker-vs-k8s
-and `RepoRuntime` dispatches; cross-machine = fork + push).
+`--immutable` (create as immutable commit object); **`--no-wait`** (RENAMED from `--detach`, ruling R-P4-2v2 — this REOPENS AND SUPERSEDES U6, which had kept `--detach` here with the old meaning; detached-job runs use the global `--background`, §5.13).
+  DELETED: `--cluster`,
+`--to-cluster`, `--provider` (06 §3: no runtime flag at all — the parent's placement decides docker-vs-k8s and `RepoRuntime` dispatches; cross-machine = fork + push).
 - Errors: tag exists → 2; `--tag base` → 2 (§2.1); cross-datastore fork request → 2
 teaching "same-datastore forks are instant; cross-datastore moves are a copy: use repo push" (02 §3).
 - Contract invariants (02 §4, enforced by RepoRuntime, stated in help long-form):
@@ -1221,17 +1224,22 @@ name (--as) or promote/delete the existing repo first." Restore never overwrites
 External backup endpoints (S3, rsync targets). Absorbs `config storage *` (06 §2); `storage rename` dies (R2-F4). Verbs are **`add`/`remove`** per gate ruling R3 (a storage record registers an existing external endpoint; 06 §7.1's own rule).
 
 - `storage list [name]` — Help: `List storage endpoints. Give a name for full detail.`
-Flags: `--reveal` (with `name`; TTY-gated — absorbs `config storage show`, U2b confirmed by R3). Gate: A. MCP: mcp(read; excludeOptions: reveal).
+  Flags: `--reveal` (with `name`; TTY-gated — absorbs `config storage show`, U2b
+confirmed by R3). Gate: A. MCP: mcp(read; excludeOptions: reveal).
 - `storage add <name>` — Help: `Register a storage endpoint.` Flags: today's factory
 create options for storage records. Add class (§4.5). Gate: A. MCP: mcp(write).
 - `storage remove <name>` — Help: `Remove a storage endpoint from the config.`
-Flags: `-y`, `--dry-run`. Errors: referenced by a strategy → 2 listing referents. Gate: A. MCP: mcp(write, destructive).
+  Flags: `-y`, `--dry-run`. Errors: referenced by a strategy → 2 listing referents.
+  Gate: A. MCP: mcp(write, destructive).
 - `storage import <file>` — Help: `Import a storage endpoint from a definition file.`
-Flags: `--name <n>` override. Positional migration from `--file`. Gate: A. MCP: exclude: `Reads local files.`
+  Flags: `--name <n>` override. Positional migration from `--file`. Gate: A.
+  MCP: exclude: `Reads local files.`
 - `storage browse <name>` — Help: `Browse files on a storage endpoint.` Flags:
 `--path <sub>`. Interactive TTY browser (raw). Gate: A. MCP: exclude: `Interactive file browser; requires TTY.` (as today)
 - `storage prune <name> --machine <m>` — Help: `Delete old backup artifacts by policy.`
-Flags kept: `--dry-run`, `--force`, `--force-delete-mounted`, `--grace-days <n>`. Gate: A. MCP: mcp(write, destructive, idempotent; excludeOptions: grace-days, force-delete-mounted) (as today).
+Flags kept: `--dry-run`, `--force`, `--force-delete-mounted`, `--grace-days <n>`.
+  Gate: A. MCP: mcp(write, destructive, idempotent; excludeOptions: grace-days,
+force-delete-mounted) (as today).
 
 ### 5.8 `rdc term` (1 leaf)
 
@@ -1242,14 +1250,15 @@ shell; derived machine per §2.3; collision rule §3.3). Replaces `-m` + `-r`.
 - Flags kept: `-c/--command <cmd>` (run one command; exit code passthrough per §1),
 `--external`, `--reset-home`. DELETED `[P0-DECIDED]`: `--container`, `--container-action`, `--log-lines`, `--follow` — the container side door is retired in favor of `repo logs` / `repo exec` (R2-F14); `-t/--team` (dead vocabulary).
 - Gate: repo-shell form B (grandGuard, as today's `term repo`); machine form A.
-MCP: exclude: `Interactive shell.`
+  MCP: exclude: `Interactive shell.`
 
 ### 5.9 `rdc vscode` (6 leaves)
 
 Kept as-is (06 §5) with addressing migration on `connect`.
 
 - `vscode connect <target>` — Help: `Open VS Code on a machine or inside a repository.`
-Target grammar as `term connect`. Flags kept: `-f/--folder <path>`, `--url-only`, `-n/--new-window`, `--skip-env-setup`, `--insiders`, `--browser`, `--no-open`, `--local <port>`, `--server-provider <id>`, `--server-archive <file>`. `-t` deleted. Gate: repo form B (as today's `vscode repo`). MCP: exclude (group): `Opens a GUI.`
+Target grammar as `term connect`. Flags kept: `-f/--folder <path>`, `--url-only`, `-n/--new-window`, `--skip-env-setup`, `--insiders`, `--browser`, `--no-open`, `--local <port>`, `--server-provider <id>`, `--server-archive <file>`. `-t` deleted.
+  Gate: repo form B (as today's `vscode repo`). MCP: exclude (group): `Opens a GUI.`
 - `vscode list` — Help: `List VS Code remote connections.` Gate: A.
 - `vscode cleanup` — Flags: `--all`, `-c/--connection <name>`. Help: `Remove stale VS
 Code remote state.` Gate: A.
@@ -1267,7 +1276,7 @@ Local KVM dev fleet; unchanged surface (06 §5), no addressing changes (ops has 
 - `ops down` — Flags: `--backend <b>`. Help: `Stop the local VM fleet.`
 - `ops status` — Flags: `--backend <b>`. Help: `Show the local VM fleet.`
 - `ops ssh --vm-id <id>` — Flags: `-c/--command <cmd>`, `--backend <b>`, `--user <u>`.
-Help: `SSH into a fleet VM.` Exit: passthrough with `-c`.
+  Help: `SSH into a fleet VM.` Exit: passthrough with `-c`.
 - `ops setup` — Help: `Install host prerequisites for the VM fleet.`
 - `ops check` — Help: `Check host virtualization support.` Exit 1 on failed checks.
 - Gate: A (host-local; requires host KVM anyway). MCP: exclude (group, as today):
@@ -1284,7 +1293,8 @@ not signed in = no-op 0.
 - `subscription status [-m <machine>]` — Help: `Show subscription, and license state for
 a machine.` No `-m` = account view; with `-m` = activation + per-repo license table (absorbs `activation status`, `repo status`).
 - `subscription refresh [-m <machine>] [--repo <ref>]` — Help: `Refresh licenses from
-the account server.` No flags = account; `-m` = machine activation + repos; `--repo` narrows to one repo (requires `-m`... `[P0-DECIDED]` no: `--repo` takes a ref and derives the machine per §2.3; `-m` remains for the machine-wide form). Errors: license refresh rejection → 10 where renet reports it; payment → 8.
+the account server.` No flags = account; `-m` = machine activation + repos; `--repo` narrows to one repo (requires `-m`... `[P0-DECIDED]` no: `--repo` takes a ref and derives the machine per §2.3; `-m` remains for the machine-wide form).
+  Errors: license refresh rejection → 10 where renet reports it; payment → 8.
 - Gate: A. MCP: exclude (noun, as today): `License management; local concern.`
 
 ### 5.12 Top-level singles (5 leaves)
@@ -1298,7 +1308,9 @@ private `--output` dies. Gate: A. MCP: exclude: `Local account view.` `[P0-DECID
 - `mcp serve` — Help: `Run the MCP server for AI agents.` Flags: `--config <name>`,
 `--timeout <ms>`. Gate: E. MCP: exclude: `The MCP server itself.` (as today)
 - `run` (hidden) — unchanged: `-f/--function <name>` required, `-m/--machine <m>`
-required, `--param k=v...`, `-w/--watch`. Exit: renet passthrough incl. 10. Gate: E (absolute agentBlocked). MCP: exclude: `Escape hatch; agents use typed tools.` (as today)
+required, `--param k=v...`, `-w/--watch`. Exit: renet passthrough incl. 10.
+  Gate: E (absolute agentBlocked). MCP: exclude: `Escape hatch; agents use typed
+tools.` (as today)
 - **`serve` [NEW-SINCE-SPEC, 2026-07-13]** — `rdc serve --mode <daemon|container>`,
 `-p/--port`, `--host`. The executor daemon: it runs machine operations on a caller's behalf, and it is the other end of the `--proxy` global flag. This section enumerated 5 singles and did not know about it. Plane: `machine` + `interactive` (honest on both counts: running machine operations IS its job, and it listens until SIGINT, which is also what keeps it out of the proxy, since
 forwarding `rdc serve` to an executor would ask the executor to start another one). Gate and MCP disposition are UNSET in `COMMAND_METADATA` today, because the MCP coverage test never sees it (§4.10). **RULED (§9 Q4): `serve` STAYS a top-level single, and `--proxy` is contract-frozen.** They are the two ends of one wire; burying either would hide the mechanism that makes the
@@ -1328,8 +1340,8 @@ file:line-anchored; the four load-bearing ones re-verified against this tree).
 annotation below) arrives through `rdc serve` (from the web console or a `--proxy` thin client), the dispatch layer sets `ExecuteOptions.detached` **itself and keeps following the live stream**. This is structural, not a convenience: the container tier is a warm Cloudflare Container that **sleeps after 2 to 5 minutes idle**, and you cannot know in advance which `repo up` takes 3
 seconds and which takes 40 minutes. Client disconnect means **detach, not cancel** (an `AbortSignal` on the follow, from `c.req.raw.signal`). Version skew is already safe: on an old renet, `startJob` returns `null` and the run falls back to synchronous silently.
 2. **Direct CLI stays synchronous; the global `--background`/`-b` is the opt-in, and it is
-FIRE-AND-FORGET**: start the job, print the job id plus a resume hint, exit 0. The user watches later via `rdc job logs <job-id> -m <machine>`. ⚠ This needs a **no-follow mode that does not exist**: today's `runDetachedExecution` (`local-executor.ts:1271`) always tails the job to completion. An `ExecuteOptions` follow bit (default true) that `--background` clears; the serve path
-keeps following.
+   FIRE-AND-FORGET**: start the job, print the job id plus a resume hint, exit 0. The user
+watches later via `rdc job logs <job-id> -m <machine>`. ⚠ This needs a **no-follow mode that does not exist**: today's `runDetachedExecution` (`local-executor.ts:1271`) always tails the job to completion. An `ExecuteOptions` follow bit (default true) that `--background` clears; the serve path keeps following.
 
 `rdc job start -- <cmd>` was **rejected**: it re-creates the `run` escape hatch and defeats typed commands.
 
@@ -1400,7 +1412,9 @@ jobs are never collected.
 
 **THIS TABLE IS THE CONTRACT (§0).** Every command in the live tree carries a row here, and every row resolves to a real command. That pair is what P4 is held to, and it is mechanically checkable against `packages/cli/scripts/command-tree.json`. The leaf counts in the sub-headings below are descriptive and were correct when written; do not gate on them.
 
-The current tree was enumerated from code (`packages/cli/src/commands/**`, including the `commandFactory.ts` CRUD for machine/storage and the hidden `run` in `shortcuts.ts`). Dispositions: `kept` (same path, contract per §5), `renamed`, `moved`, `merged-into`, `replaced-by`, `deleted`. Every row's target contract is in §5; flag-level deltas are stated there.
+The current tree was enumerated from code (`packages/cli/src/commands/**`, including the `commandFactory.ts` CRUD for machine/storage and the hidden `run` in `shortcuts.ts`).
+Dispositions: `kept` (same path, contract per §5), `renamed`, `moved`, `merged-into`,
+`replaced-by`, `deleted`. Every row's target contract is in §5; flag-level deltas are stated there.
 
 **[AMENDED 2026-07-13] Two disposition classes were added when the tree moved under this document:**
 
@@ -1693,11 +1707,13 @@ The original obligations still hold: cli-docs, skill reference, `validate-cli-ex
 ### 8.1 The five new regeneration obligations
 
 1. **`packages/cli/scripts/command-tree.json`** (committed). Consumed by
-`scripts/gates/check-cli-docs.ts`, the www doc generators, and two ESLint rules. Nothing diffs it against the live tree directly, but `validate:cli-docs` regenerates `cli-application.md` from it in memory and diffs against disk for all 13 languages, so a stale tree surfaces there. Regen: `npm run export:command-tree -w @rediacc/cli`.
+`scripts/gates/check-cli-docs.ts`, the www doc generators, and two ESLint rules. Nothing diffs it against the live tree directly, but `validate:cli-docs` regenerates `cli-application.md` from it in memory and diffs against disk for all 13 languages, so a stale tree surfaces there.
+   Regen: `npm run export:command-tree -w @rediacc/cli`.
 
 2. **The generated CLI contract** (`packages/shared/src/cli-contract/data/`):
 `contract.generated.ts`, `contract.json`, and **`i18n/<lang>.json` for all 13 locales**. Gated by **`check:ci-cli-contract`**, which is a **regenerate-and-diff, not a hash** (`.ci/scripts/quality/check-cli-contract.sh`): ANY rename, move, added flag or changed help string turns it red. **This is the heaviest new obligation.** Every CLI i18n change re-emits 13 files, and the
-contract drives the web console, the `--proxy` thin client and the executor, so a stale contract means those three disagree with the CLI they are driving. Regen: `npm run generate:cli-contract -w @rediacc/cli`.
+contract drives the web console, the `--proxy` thin client and the executor, so a stale contract means those three disagree with the CLI they are driving.
+   Regen: `npm run generate:cli-contract -w @rediacc/cli`.
 
 3. **`packages/cli/src/config/command-planes.ts`.** Every new, renamed or moved leaf needs a
 plane (§4.9). Gated TWICE: `check:ci-command-planes` (import-graph cross-check) and `plane-coverage.test.ts`, which fails both on a command that resolves no plane **and on stale map entries that no longer match a real command**. Every rename in the reshape strands an entry and fails the gate until fixed. `plane-coverage.test.ts` also carries **hand-maintained snapshots** P4 must
@@ -2032,7 +2048,8 @@ translated promote prose). No `rdc repo takeover` COMMAND NAME survives in any l
 
 ### As-built — w2b-3 continuation (2026-07-13): the tail of the repo-family recontract
 
-Certified: tsc 0/0; contract up-to-date at **164 commands** (config 48 / machine 96 / other 20, proxyCapable 85); planes green; console-coverage 193; cli vitest 1750; shared vitest 525.
+Certified: tsc 0/0; contract up-to-date at **164 commands** (config 48 / machine 96 / other 20,
+proxyCapable 85); planes green; console-coverage 193; cli vitest 1750; shared vitest 525.
 
 #### §6 disposition rows flipped to DONE
 
@@ -2092,7 +2109,8 @@ wrong.
 
 ### As-built — w2b-4 (2026-07-13): task #7 closed out
 
-Certified: tsc 0/0; contract up-to-date at **164 commands** (config 51 / machine 93 / other 20, proxyCapable **82**); planes green; console-coverage 193; cli vitest 1748; shared vitest 525; biome clean. renet: gofmt clean, `go build ./...`, `go vet`, `go test ./cmd/renet ./pkg/router`, and golangci-lint (0 issues) all green.
+Certified: tsc 0/0; contract up-to-date at **164 commands** (config 51 / machine 93 / other 20,
+proxyCapable **82**); planes green; console-coverage 193; cli vitest 1748; shared vitest 525; biome clean. renet: gofmt clean, `go build ./...`, `go vet`, `go test ./cmd/renet ./pkg/router`, and golangci-lint (0 issues) all green.
 
 #### §6 disposition rows flipped to DONE
 
@@ -2316,8 +2334,9 @@ An operator rule, applied to the whole contract surface after `check-cli-docs.ts
 **`PROXY_EXCLUSIONS` had no stale-key gate, and it is the table whose entire job is to stop a command being shipped to a remote executor.** `proxyCapable` is `plane === 'machine' && !interactive && !(pathKey in PROXY_EXCLUSIONS)`. A key that goes stale through a rename therefore does not fail loudly. The lookup simply misses, the exclusion STOPS EXCLUDING, and the command silently
 becomes proxyCapable.
 
-Concretely: `machine scan-keys` is excluded because it runs ssh-keyscan from the CALLER's network position and stores the result in the CALLER's config. Rename it and forget this table, and a remote executor starts scanning from its own network and keeping the answer, with nothing anywhere saying so. That is bug #51's failure mode occurring INSIDE the mechanism built to prevent
-#51. Its sibling `COMMAND_PLANES` has had this protection all along (`plane-coverage.test.ts` reds on a stale entry); the proxy table did not. All seven keys were live when the gate was added, by luck rather than by control. The generator now hard-fails on a stale key in either exclusion table, proven red by renaming one.
+Concretely: `machine scan-keys` is excluded because it runs ssh-keyscan from the CALLER's network
+position and stores the result in the CALLER's config. Rename it and forget this table, and a remote executor starts scanning from its own network and keeping the answer, with nothing anywhere saying so. That is bug #51's failure mode occurring INSIDE the mechanism built to prevent #51. Its sibling `COMMAND_PLANES` has had this protection all along (`plane-coverage.test.ts` reds on
+a stale entry); the proxy table did not. All seven keys were live when the gate was added, by luck rather than by control. The generator now hard-fails on a stale key in either exclusion table, proven red by renaming one.
 
 **The positional-checker's exemption lists were hand-copied FOUR times, and every entry was dead.** `scripts/lib/positional-cli-detector.ts`, both ESLint rules, and a fourth paste in `eslint.config.js` each carried `EXEMPT_COMMAND_PREFIXES` = `rdc auth`, `audit`, `bridge`, `organization`, `permission`, `protocol`, `queue`, `region`, `repository`, `team`, `user`, `ceph` — all twelve
 deleted with the cloud adapter — plus `FREEFORM_ARG_COMMAND_PATHS` naming the removed `agent` noun and three `mcp` leaves that no longer exist. A blanket prefix exemption for a command that does not exist is not inert: it is a fail-open that arms itself the day someone reuses the name. All four now import `eslint-rules/lib/cli-exempt-lists.js` (plain ESM, because an ESLint rule

@@ -1,6 +1,7 @@
 # 01. Verified context
 
-Status: verified 2026-08-09 on branch main (console + private/renet + private/account at that day's HEADs). RE-VERIFY BANNER: every file:line below was confirmed by a read-only agent on that date; the tree moves, so re-check any line you are about to build on. Provider facts cite official docs fetched the same day.
+Status: verified 2026-08-09 on branch main (console + private/renet + private/account
+at that day's HEADs). RE-VERIFY BANNER: every file:line below was confirmed by a read-only agent on that date; the tree moves, so re-check any line you are about to build on. Provider facts cite official docs fetched the same day.
 
 ## The system being replaced (measured, not theory)
 
@@ -28,7 +29,8 @@ datastore (`pkg/datastore/backend_ceph.go:92-129`); repos and k8s CSI volumes (`
 ## Verified provider facts (Cloudflare, official docs, 2026-08-09)
 
 - R2 pricing: Standard $0.015/GB-mo, Class A $4.50/M, Class B $0.36/M, zero egress.
-IA: $0.01/GB-mo, $9/M, $0.90/M, $0.01/GB retrieval, 30-day minimum billing; IA was announced beta 2024-05-29 and no GA note was found. Ops are noise at our scale (137 GB seed at 8 MiB cells is about $0.08 of Class A); storage is the bill.
+  IA: $0.01/GB-mo, $9/M, $0.90/M, $0.01/GB retrieval, 30-day minimum billing; IA was
+announced beta 2024-05-29 and no GA note was found. Ops are noise at our scale (137 GB seed at 8 MiB cells is about $0.08 of Class A); storage is the bill.
 - Temp credentials: bucket-scoped, prefix-scopable, TTL field required (bounds NOT
 documented). `object-read-write` INCLUDES delete. Write-without-delete exists only via LOCAL JWT SIGNING with an `actions` array ("local signing only" per docs), and local signing needs no API call, which matters because the R2 REST API is limited to 1,200 requests per 5 minutes account-wide.
 - Conditional writes: If-None-Match/If-Match supported on PutObject (412 on

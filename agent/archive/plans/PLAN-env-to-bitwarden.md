@@ -1,4 +1,7 @@
-Status: draft Owner: 74de73ca Date: 2026-09-02 Scope: design only. Nothing here was executed against Bitwarden, AWS, Cloudflare or GitHub.
+Status: draft
+Owner: 74de73ca
+Date: 2026-09-02
+Scope: design only. Nothing here was executed against Bitwarden, AWS, Cloudflare or GitHub.
 
 # `.env` → Bitwarden: shrink the local secret file to a bootstrap token, and give
 # rotation a recoverable pre-rotation copy
@@ -398,7 +401,8 @@ Keep `rotation-bitwarden-names.test.ts:290`'s allowlist as it stands. Its five e
 
 ### Harness B — bash gate test for the fetch helper
 
-New: `.ci/scripts/test/gates/test-bws-env-helper.sh`, sourcing `.ci/scripts/test/lib/test-helpers.sh` (`assert_eq` `:38`, `assert_contains` `:46`, `assert_not_contains` `:54`, `assert_exit_code` `:62`). Add `with_fake_bws` beside `with_fake_gh` (`:93-112`), following the richer `SHIMDIR` + `plant()` shape of `.ci/scripts/test/gates/test-autopilot-no-bypass.sh:36-58`.
+New: `.ci/scripts/test/gates/test-bws-env-helper.sh`, sourcing
+`.ci/scripts/test/lib/test-helpers.sh` (`assert_eq` `:38`, `assert_contains` `:46`, `assert_not_contains` `:54`, `assert_exit_code` `:62`). Add `with_fake_bws` beside `with_fake_gh` (`:93-112`), following the richer `SHIMDIR` + `plant()` shape of `.ci/scripts/test/gates/test-autopilot-no-bypass.sh:36-58`.
 
 | # | Assertion | The planted defect |
 |---|---|---|
@@ -467,11 +471,13 @@ any earlier point is a code revert plus an untouched `.env`; after this it is a 
 ## Remaining (operator)
 
 - `[?]` **`CLOUDFLARE_API_TOKEN` vs `CF_GLOBAL_API_KEY` for local scripts.**
-DEFAULT: set the scoped token in `ci-shared` as the local path, change `publish-solutions.sh:55-58` to require it instead of the global key, and confine the global key to `admin-bootstrap`. This shrinks the blast radius of every non-rotation local script from "full Cloudflare account" to a scoped token, and it is what makes the two-account split mean anything.
+  DEFAULT: set the scoped token in `ci-shared` as the local path, change
+`publish-solutions.sh:55-58` to require it instead of the global key, and confine the global key to `admin-bootstrap`. This shrinks the blast radius of every non-rotation local script from "full Cloudflare account" to a scoped token, and it is what makes the two-account split mean anything.
 - `[?]` **Bench: leave `.env.bench` alone, or give bench its own SM project.**
-DEFAULT: leave it alone (option (i) in Part 4).
+  DEFAULT: leave it alone (option (i) in Part 4).
 - `[?]` **Store the `dkim-notify` PEM in Secrets Manager?**
-DEFAULT: no, not this round; keep the staged-file path and the 1Password backup discipline CLAUDE.md already mandates.
+  DEFAULT: no, not this round; keep the staged-file path and the 1Password backup discipline
+CLAUDE.md already mandates.
 - **Operator-only, no door around it** (`door:operator-only`): minting the two machine
 accounts and the `admin-bootstrap` project, seeding the 5 values, and rotating `BWS_ACCESS_TOKEN` itself. There is no `bws` verb for any of it.
 

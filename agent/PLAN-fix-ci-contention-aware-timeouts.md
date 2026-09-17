@@ -16,8 +16,11 @@ error message numbers kept in sync, same diagnostic added (this script runs on t
 - `.ci/docker/ci/docker-compose.yml`: account-server healthcheck
 `start_period` 10s -> 150s (budget 70s -> 210s, clears the 180s floor).
 
-Verified: `bash -n` on all 3 shell scripts, `check:ci-shell-lint` (535 files, clean), `check:ci-python-lint` (69 files, clean), the healthcheck gate's own `--selftest` (3/3 controls pass) and real run (`4 healthcheck(s) in 4 compose file(s)`, up from 3, all now clearing the floor, exit 0), YAML syntax on the edited compose file, and `check:ci-git-op-conditionals` /
-`check:ci-baseline-key-semantics` unaffected (both still green, confirming no collateral damage from this pass). Owner: e580532b Updated: 2026-08-28
+Verified: `bash -n` on all 3 shell scripts, `check:ci-shell-lint` (535 files,
+clean), `check:ci-python-lint` (69 files, clean), the healthcheck gate's own `--selftest` (3/3 controls pass) and real run (`4 healthcheck(s) in 4 compose file(s)`, up from 3, all now clearing the floor, exit 0), YAML syntax on the edited compose file, and `check:ci-git-op-conditionals` / `check:ci-baseline-key-semantics` unaffected (both still green, confirming no collateral
+damage from this pass).
+Owner: e580532b
+Updated: 2026-08-28
 
 ## 0. What this plan is answering
 

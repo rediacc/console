@@ -181,7 +181,8 @@ Contrast with `PartnerApplicationForm.tsx:147-151`, which *does* implement the c
 
 **Steps:** click **Subscribe** with the email field empty. **Expected:** an error, or the browser's native "Please fill out this field". **Actual:** nothing. No message, no focus move, no request. Measured form text before and after the click is byte-identical.
 
-Cause: `src/components/NewsletterSignup.tsx:131` sets `noValidate`, and `:45` is `if (!email) return;` — a bare early return with no user-facing branch. Identical construction at `src/components/LeadMagnetModal.tsx:133` (the gated-PDF modal used on the seven `/resources/*` briefs and the solution pages).
+Cause: `src/components/NewsletterSignup.tsx:131` sets `noValidate`, and `:45` is
+`if (!email) return;` — a bare early return with no user-facing branch. Identical construction at `src/components/LeadMagnetModal.tsx:133` (the gated-PDF modal used on the seven `/resources/*` briefs and the solution pages).
 
 A dead button is worse than an error message: the visitor concludes the site is broken and leaves. This is the *first* interaction on the site's main email-capture surface.
 
@@ -218,7 +219,8 @@ Also verified as a genuine token hole, distinct from the known 12-accent finding
 
 **URL:** `http://localhost:4321/en/docs/quick-start`
 
-Measured: two visible `<h1>` elements with identical text — `h1.article-title` inside `.article-header-main` (the layout's own title) and a bare `<h1>` inside `.article-content` (the markdown file's own `# Quick Start`).
+Measured: two visible `<h1>` elements with identical text —
+`h1.article-title` inside `.article-header-main` (the layout's own title) and a bare `<h1>` inside `.article-content` (the markdown file's own `# Quick Start`).
 
 Confirmed by counting `<h1` in the served HTML of all 36 docs routes reachable from the sidebar: **every one returns 2.** (There are 61 English docs markdown files in total, so the real count is likely higher.) An SEO and screen-reader-outline defect, and it is mechanical — one of the two is always redundant.
 

@@ -1,5 +1,7 @@
 # PLAN: two gates read packages/www/dist and never said so
-Status: landed Owner: 9d92d9b6 Updated: 2026-08-28
+Status: landed
+Owner: 9d92d9b6
+Updated: 2026-08-28
 
 ## 0. The finding, measured
 
@@ -32,7 +34,8 @@ So `check:ci-landmarks` and `check:ci-ssr-locale` were simply **missing a declar
 
 ## 2. The sweep, and the one candidate that was NOT a member
 
-Class: a gate whose script reads `packages/www/dist` without declaring `needs: ['build:www']`. Swept by mapping every dist-reading script under `scripts/` onto its manifest entry:
+Class: a gate whose script reads `packages/www/dist` without declaring
+`needs: ['build:www']`. Swept by mapping every dist-reading script under `scripts/` onto its manifest entry:
 
 | gate | leaf | declared? |
 |---|---|---|

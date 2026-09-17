@@ -1,6 +1,7 @@
 # PLAN: prose-style under-wrap detection (R19)
 
-Status: draft Owner: d778be9d
+Status: draft
+Owner: d778be9d
 
 ## Why
 

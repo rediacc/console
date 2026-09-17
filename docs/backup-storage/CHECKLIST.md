@@ -1,5 +1,6 @@
 # Handoff checklist: backup-storage
-Status: executing Owner: 97604f47
+Status: executing
+Owner: 97604f47
 
 ## Deliverables
 - [x] d1 file:docs/backup-storage/README.md

@@ -1,5 +1,9 @@
 # PLAN: Snapshot-addressed restore from chunk storage
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-chunkstore-restore.md Full-Text-Blob: 2b5bd24cd38dbb04b69cb118dfb5164fd26b3697 Record-Sig: 5da27895
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-chunkstore-restore.md
+Full-Text-Blob: 2b5bd24cd38dbb04b69cb118dfb5164fd26b3697
+Record-Sig: 5da27895
 
 ## Why
 The download half of the backup-storage program did not exist: upload was live and restore was a stub that refused `--at` by name. This plan designed the read path after correcting three things the brief had wrong, each of which changed the design. There was no read GRANT and, one layer earlier, no read SESSION: a lapsed subscription could not mint a session at all, so
@@ -35,9 +39,16 @@ work, it is finished when the write verbs refuse a read session by name and the 
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: draft Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:30:33Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: private/renet/cmd/renet/backup_pull.go, packages/cli/src/commands/backup.ts, packages/e2e-tests/tests/26-backup-storage-cli.test.ts, private/account/src/db/schema.ts, packages/shared/src/subscription/types.ts,
-scripts/drills/backup.sh, packages/cli/src/services/executor/local-executor.ts, packages/cli/src/services/account/license.ts Gates: check:ci-account-layer-isolation, check:ci-account-scope-audit, check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-renet-tiers, check:ci-renet-types Why-Source: author Read-History: `git show
-2b5bd24cd38dbb04b69cb118dfb5164fd26b3697` recovers the text; `git log --find-object=2b5bd24cd38dbb04b69cb118dfb5164fd26b3697 --all` names the commit
+Record-Kind: compacted
+Prior-Status: draft
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:30:33Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: private/renet/cmd/renet/backup_pull.go, packages/cli/src/commands/backup.ts, packages/e2e-tests/tests/26-backup-storage-cli.test.ts, private/account/src/db/schema.ts, packages/shared/src/subscription/types.ts, scripts/drills/backup.sh, packages/cli/src/services/executor/local-executor.ts, packages/cli/src/services/account/license.ts
+Gates: check:ci-account-layer-isolation, check:ci-account-scope-audit, check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-renet-tiers, check:ci-renet-types
+Why-Source: author
+Read-History: `git show 2b5bd24cd38dbb04b69cb118dfb5164fd26b3697` recovers the text; `git log --find-object=2b5bd24cd38dbb04b69cb118dfb5164fd26b3697 --all` names the commit
 
 ## History
 - 2026-09-06T17:30:33Z compacted by 8f55d4f0 from `draft` (record-sig 5da27895)

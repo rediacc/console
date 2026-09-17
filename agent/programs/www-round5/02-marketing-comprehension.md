@@ -1,6 +1,7 @@
 # 02. Marketing comprehension (Wave B)
 
-Status: planned, not started. Covers operator items 1, 2, and the item-4 fixes in marketing copy.
+Status: planned, not started. Covers operator items 1, 2, and the item-4 fixes in
+marketing copy.
 
 **File ownership for this wave.** `src/components/solution-pages/SPHomeNotASlice.astro`, the `HomeDifference` component, the shared FAQ component, `PricingTrustSection.astro`, `src/styles/pricing-page.css`, `src/i18n/translations/*.json`. **`public/styles/main.css` belongs to wave A alone** and must not be touched here.
 

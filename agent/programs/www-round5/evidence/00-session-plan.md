@@ -159,10 +159,12 @@ Four waves. **`public/styles/main.css` is owned by wave A alone** - it is a 3,42
 Nothing starts until the operator hands over a clean worktree. Work stays uncommitted; the operator runs `/pr-babysit` at the end.
 
 ### Wave A - chrome and surfaces
-Owns: `src/components/Navigation.tsx`, `src/components/Footer.astro`, `public/styles/main.css`, `src/styles/language-switcher.css`, `src/styles/solution-pages.css`.
+Owns: `src/components/Navigation.tsx`, `src/components/Footer.astro`,
+`public/styles/main.css`, `src/styles/language-switcher.css`, `src/styles/solution-pages.css`.
 
 - **Item 5, footer language switcher.** Add `--color-bg-alt` and `--color-hover` to the
-`.footer` token block at `main.css:2797-2806`, pointing at the dark values already present at `main.css:471,477`. One edit fixes the trigger, the panel and every row. Control: re-run `agent-browser a11y` and confirm the `.language-name` node clears.
+`.footer` token block at `main.css:2797-2806`, pointing at the dark values already present at `main.css:471,477`. One edit fixes the trigger, the panel and every row.
+  Control: re-run `agent-browser a11y` and confirm the `.language-name` node clears.
 - **Item 3, condense instead of blank.** Today `Navigation.tsx:58-112` fades
 `.nav-translate` and `.nav-wordmark` to zero over the first 80px and then applies `pointer-events: none` (`main.css:932-934`), leaving a fixed empty bar. Replace the fade-to-nothing with a **cross-fade to a condensed row**: as the full nav fades out, a slim row fades in carrying the mark, a breadcrumb of the current page, the search trigger and the primary CTA. Keep the existing
 single `requestAnimationFrame`-coalesced scroll listener and the CSS-custom-property drive - do not add a second listener. Drop the `pointer-events: none` rule, since the bar is now interactive at every scroll depth. Reuse the docs breadcrumb rather than inventing a second one.
@@ -182,7 +184,8 @@ mechanisms sit on top of it (see `EXPLORE-chrome.md` 3.3). Reduce to one:
 once wave B has landed its replacement, and confirm `check:ci-dead-css` and `check:ci-css-dom-refs` stay green.
 
 ### Wave B - marketing comprehension
-Owns: `src/components/solution-pages/SPHomeNotASlice.astro`, the `HomeDifference` component, `src/components/**` FAQ component, `PricingTrustSection.astro`, `src/styles/pricing-page.css`, `src/i18n/translations/*.json`.
+Owns: `src/components/solution-pages/SPHomeNotASlice.astro`, the `HomeDifference`
+component, `src/components/**` FAQ component, `PricingTrustSection.astro`, `src/styles/pricing-page.css`, `src/i18n/translations/*.json`.
 
 - **Item 1, visualise the Difference.** Extract the pricing `No Lock-In. Ever.` pattern
 into a real reusable component (`{title, description, visual}` per row, alternation derived from the row index, `order` / `grid-column` instead of the `direction: rtl` hack). Point BOTH the pricing section and the Difference section at it. This simultaneously fixes the broken `/ar/` alternation and retires the dead CSS in wave A. Then cut the Difference section from eight text
@@ -193,7 +196,8 @@ three machine-counting duplicates into one and the two billing ones into one, cu
 - **Item 4 fixes** in these files, once wave D's mechanism exists.
 
 ### Wave C - docs surface
-Owns: everything under `src/pages/[lang]/docs/`, `src/components/Docs*`, `src/utils/docs-categories.ts`, `src/content/config.ts`, `src/content/docs/**`, `src/styles/sidebar-shared.css`, `src/styles/article-content.css`. Full evidence in `agent/a68f3ab4/EXPLORE-docs.md`.
+Owns: everything under `src/pages/[lang]/docs/`, `src/components/Docs*`,
+`src/utils/docs-categories.ts`, `src/content/config.ts`, `src/content/docs/**`, `src/styles/sidebar-shared.css`, `src/styles/article-content.css`. Full evidence in `agent/a68f3ab4/EXPLORE-docs.md`.
 
 **Correction that reframes item 7.** There are TWO sub-grouping fields and they are not the same thing. "Filter by topic" on the browse page is `tags` (14 values, browse rail only, `index.astro:130-145`). "Essentials"/"Advanced" is `subcategory` (2 values, left sidebar only, and gated on `category === 'Tutorials'` at `DocsSidebar.astro:106`). The subcategory matrix is stark:
 
@@ -244,7 +248,8 @@ plus a **What's next** pair of cards at the foot, `Ctrl/Cmd+K` on the search tri
 before anything can read them type-safely.
 
 ### Wave D - gates
-Owns: `scripts/check-*.ts`, root `package.json`, `scripts/ci-runner/manifest.ts`, `.github/workflows/ci.yml`, `scripts/data/*baseline*.json`.
+Owns: `scripts/check-*.ts`, root `package.json`, `scripts/ci-runner/manifest.ts`,
+`.github/workflows/ci.yml`, `scripts/data/*baseline*.json`.
 
 Three-point wiring per `EXPLORE-chrome.md` 4.1-4.3, copying `check:ci-layout-overflow` verbatim as the template, `check:ci-parity` enforcing all three edits bidirectionally, and every gate carrying a `--selftest` control that proves it can fail.
 

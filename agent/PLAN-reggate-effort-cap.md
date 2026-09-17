@@ -1,6 +1,7 @@
 # PLAN: a bounded-effort cap for the stop-gate's regression-gate demands
 
-Status: DESIGNED 2026-09-05, by a Plan agent under operator ruling. Load-bearing claims re-verified against the source by d1589e0b before acceptance (see §9).
+Status: DESIGNED 2026-09-05, by a Plan agent under operator ruling. Load-bearing
+claims re-verified against the source by d1589e0b before acceptance (see §9).
 
 ## 1. The problem, with tonight's measurement
 
@@ -55,8 +56,8 @@ Three states only: **blocked now**, **debted with a due date**, **discharged aga
 
 Counting *demands* would let a session outwait one legitimate demand by stopping N times, which is the ignoring the operator ruled out. Counting *cheap settles* would let a session farm the budget with five honest `one-off`s and buy a pass on the sixth, real gate.
 
-**Scope: the branch.** `append_events` already stamps `br`, and the branch maps one-to-one onto one PR, one CI queue, one finish line - which is where the cost lands. NOT per session: a compaction hands the conversation a new session id and `reggate_path` is keyed on it, so a per-session budget evaporates exactly when a long night makes compaction likely. Two sessions sharing a
-branch share the budget, correctly, because they share the CI queue.
+**Scope: the branch.** `append_events` already stamps `br`, and the branch maps
+one-to-one onto one PR, one CI queue, one finish line - which is where the cost lands. NOT per session: a compaction hands the conversation a new session id and `reggate_path` is keyed on it, so a per-session budget evaporates exactly when a long night makes compaction likely. Two sessions sharing a branch share the budget, correctly, because they share the CI queue.
 
 ### Q2. What happens at the cap
 
@@ -74,8 +75,9 @@ When due, the hook appends `materialize` once and calls `S.add_item`, creating a
 
 **The critical separation: the item is the reminder, the ledger is the truth.** Ticking the item with prose does not write a `discharge`, so the CI gate still fails. Only the hook writes `discharge`, only after artifact proof via the existing `prove_new_gate` / `prove_named_artifact`. There is deliberately **no CLI verb to discharge a debt.**
 
-Rejected: **advisory** (this repo has measured that a passive finding is "read by nobody until the operator relayed it BY HAND" - dropping the finding, slowly); **a `[?]` with an executing DEFAULT** (CLAUDE.md reserves `[?]` for genuinely operator decisions, the DEFAULT re-imposes the same demand on a timer, and worst, `apply_regression_verdict` already settles on a `[?]` carrying
-`reggate:<sig>`, so producing them at the cap hands the session a copyable self-service exit from ANY demand); **auto-tick** (forbidden); **defer in the session marker only** (session-keyed, resets on compaction).
+Rejected: **advisory** (this repo has measured that a passive finding is "read by
+nobody until the operator relayed it BY HAND" - dropping the finding, slowly); **a `[?]` with an executing DEFAULT** (CLAUDE.md reserves `[?]` for genuinely operator decisions, the DEFAULT re-imposes the same demand on a timer, and worst, `apply_regression_verdict` already settles on a `[?]` carrying `reggate:<sig>`, so producing them at the cap hands the session a copyable
+self-service exit from ANY demand); **auto-tick** (forbidden); **defer in the session marker only** (session-keyed, resets on compaction).
 
 ### Q3. How the cap resets
 
@@ -117,7 +119,8 @@ For **3**: diminishing return is visible by round 3 (round 1 gates the fix, roun
 
 `wl_ci` already computes that state. It only ever LOWERS the cap to 1, never 0, so the floor holds. An unavailable `gh` query must leave the full budget - fail toward asking.
 
-Knobs: `WORKLIST_REGGATE_CAP=3`, `WORKLIST_REGGATE_CAP_AT_FINISH=1`, `WORKLIST_REGGATE_MAX_DEBTS=5`, `WORKLIST_REGGATE_DEBT_GRACE_MIN=720`. There is deliberately no "off" value: a disabled cap must look like a number somebody chose.
+Knobs: `WORKLIST_REGGATE_CAP=3`, `WORKLIST_REGGATE_CAP_AT_FINISH=1`,
+`WORKLIST_REGGATE_MAX_DEBTS=5`, `WORKLIST_REGGATE_DEBT_GRACE_MIN=720`. There is deliberately no "off" value: a disabled cap must look like a number somebody chose.
 
 ## 4. Where the ledger lives
 
@@ -125,8 +128,8 @@ An append-only JSONL log written through `wl_store._append_lines` under a blocki
 
 It must **NOT** be a new `ev:` kind in the item store. `wl_epic.py`'s header records why, and it learned it the hard way: `compact()` rewrites the log down to the minimal item-reproducing set, so **a novel event kind there is SILENTLY DESTROYED**. `.requests`, `.intents` and `.epics` are the precedents.
 
-**Location: `agent/reggate/<branch-slug>.jsonl`.** Under the tracked `agent/` tree so it survives a machine, rides the PR where a reviewer sees the deferrals in the diff, and is readable by a CI gate; `agent/` is a zero-job module in the scope map, so this adds no CI jobs. **One file per branch**, following wl_store's per-writer rule verbatim - both sides of a merge append at EOF,
-so a shared file conflicts on every concurrent append.
+**Location: `agent/reggate/<branch-slug>.jsonl`.** Under the tracked `agent/`
+tree so it survives a machine, rides the PR where a reviewer sees the deferrals in the diff, and is readable by a CI gate; `agent/` is a zero-job module in the scope map, so this adds no CI jobs. **One file per branch**, following wl_store's per-writer rule verbatim - both sides of a merge append at EOF, so a shared file conflicts on every concurrent append.
 
 `wl_store.AGENT_RESERVED_DIRS` **must** gain `"reggate"`, or `agent_session_dirs` reports a peer session that does not exist. That is the one silent failure this change can cause.
 
@@ -145,11 +148,13 @@ so a shared file conflicts on every concurrent append.
 
 **CI gate**, three-point wired as `prove_new_gate` itself requires: `scripts/check-reggate-debt.ts` (control-first `--selftest`), the `check:ci-reggate-debt` key, a manifest entry, a workflow step.
 
-**Docs**: a `suppressions.md` row naming the mechanism, its file, its reader and its in-gate oracle; and one sentence in CLAUDE.md §2 naming the single bounded exception. An unwritten exception IS the escape hatch.
+**Docs**: a `suppressions.md` row naming the mechanism, its file, its reader and
+its in-gate oracle; and one sentence in CLAUDE.md §2 naming the single bounded exception. An unwritten exception IS the escape hatch.
 
 ## 6. Control-first test plan
 
-Home: `worklist-cases/06-regression-gate.sh`, extended in place. New helpers in `_harness.sh` (the file's own rule forbids copying a helper into a case file): `debt_ledger`, `age_debt`, `merge_branch`, `shim_judge_capture` - the last required because the Layer 1 prompt change is otherwise untested.
+Home: `worklist-cases/06-regression-gate.sh`, extended in place. New helpers in
+`_harness.sh` (the file's own rule forbids copying a helper into a case file): `debt_ledger`, `age_debt`, `merge_branch`, `shim_judge_capture` - the last required because the Layer 1 prompt change is otherwise untested.
 
 C1 the cap does not fire early. C2 it fires at the cap. **C3 THE FINDING SURVIVES**: the ledger holds the blind spot byte-identically. **C4 THE FINDING RETURNS**: aged past due, the block carries the same string verbatim. **C5 a tick cannot discharge**. C6 only artifacts discharge. C7 cheap settles do not charge the budget. C8 not per session. C9 branch-scoped. C10 a merge resets
 the counter and makes debts due. C11 the floor. C12 the cap has a cap. C13 the finish line lowers to 1, never 0. C14 a stale gh answer cannot lower it. C15 corruption fails toward asking. C16 never latched. C17 the operator-deferral exit is untouched. C18 the cap cannot be self-served by a hand-written token. C19 Layer 1 reaches the prompt. C20 the CI gate is itself control-first.

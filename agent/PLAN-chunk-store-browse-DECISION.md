@@ -1,5 +1,7 @@
 # Chunk-store browse: synthesis and recommendation
-Status: done Owner: 8f55d4f0 Updated: 2026-09-06
+Status: done
+Owner: 8f55d4f0
+Updated: 2026-09-06
 
 ## Outcome, added 2026-09-06
 

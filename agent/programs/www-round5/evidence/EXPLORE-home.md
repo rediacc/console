@@ -39,7 +39,8 @@ Markup structure:
 | `.sp-slice-winner-label` + dot | `:103` | uppercase, brand color (`:209-229`) |
 | `.sp-slice-winner-description` | `:104` | 18px (`:230-235`) |
 
-Responsive: 4-up -> 2-up at `max-width: 1100px` (`:141-145`); at `max-width: 900px` the grid goes 1-up, padding drops to `64px 24px`, h2 to 28px, and `.sp-slice-winner` collapses to one column with `text-align: center` (`:236-256`).
+Responsive: 4-up -> 2-up at `max-width: 1100px` (`:141-145`); at `max-width: 900px`
+the grid goes 1-up, padding drops to `64px 24px`, h2 to 28px, and `.sp-slice-winner` collapses to one column with `text-align: center` (`:236-256`).
 
 Design notes already in the file: the winner card's emphasis is "by border and surface, not by a second shadow value" (`:184-189`) - the site paints exactly one box-shadow, and the previous `0 4px 24px var(--sp-brand-glow)` was removed. The dot's 4px ring was a zero-blur non-zero-spread shadow (an outline, not an elevation) and was deleted rather than reproduced (`:220-223`).
 Preserve that discipline in any rework.
@@ -85,7 +86,8 @@ section.home-difference > .home-difference-container
 
 The `after` column also gets `card--raised` (`:51`).
 
-CSS: `.difference-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); max-width: var(--container-lg) }` (`:63-69`); collapses to `1fr` at `max-width: 768px` (`:103-107`). **No illustrations, no images, no SVG anywhere in this component.**
+CSS: `.difference-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);
+max-width: var(--container-lg) }` (`:63-69`); collapses to `1fr` at `max-width: 768px` (`:103-107`). **No illustrations, no images, no SVG anywhere in this component.**
 
 **Critical history, from the file's own header comment (`HomeDifference.astro:2-23`):** this section *used to be* exactly the layout the operator now wants to rebuild - "a two-up lead block plus four alternating full-width illustrated rows, plus a `<dialog>` zoom lightbox for the clipart, plus 22 lines of client script to drive it." It was deleted for being **2,176px desktop /
 4,059px mobile (4.8 phone screens, 29% of the whole page) for 73 words and 12 pieces of clipart, at 30px per word against 8-10px everywhere else**. The stated reason: "By the third row a reader is pattern matching rather than reading, and none of the drawings said anything its two lines of text did not."
@@ -157,7 +159,8 @@ Each row is:
 
 `const rows = ta(ns + '.rows')` (`:13`) supplies the copy, but the component writes **six literal `<div>` blocks** and indexes them positionally (`rows[0]` at `:26`, `rows[1]` at `:53`, ... `rows[5]` at `:182`). `trust-row-reverse` is typed by hand on rows 2, 4, 6 (`:51`, `:119`, `:180`). Each SVG is inlined by hand inside the `.astro` file.
 
-Consequence: adding a 7th row requires editing BOTH the JSON and the component, and a JSON array of 5 would silently crash on `rows[5].title` (no guard). This is a template, not a reusable component.
+Consequence: adding a 7th row requires editing BOTH the JSON and the component, and a JSON
+array of 5 would silently crash on `rows[5].title` (no guard). This is a template, not a reusable component.
 
 ### SVG conventions in this section
 
@@ -214,7 +217,8 @@ Also note `pricing-page.css:1205-1206`: "Reduced motion is handled once, in `pub
 
 `.trust-row` declares no `direction`, so on `/ar/` it inherits `rtl` from `<html>`. `.trust-row-reverse` explicitly sets `direction: rtl` - **the same value**. So on `/ar/pricing` all six rows lay out identically and the alternation disappears entirely.
 
-Worse: `.trust-row-reverse > * { direction: ltr }` (`pricing-page.css:1256-1258`) forces the Arabic **text content** of rows 2/4/6 to render left-to-right, which is a correctness bug in the copy itself, not just the layout.
+Worse: `.trust-row-reverse > * { direction: ltr }` (`pricing-page.css:1256-1258`) forces the
+Arabic **text content** of rows 2/4/6 to render left-to-right, which is a correctness bug in the copy itself, not just the layout.
 
 Fix direction: express the swap with `order` or explicit `grid-column` on the two children rather than with `direction`. This makes the alternation direction-independent and removes the need for the `> *` reset and the mobile `direction: ltr` override. Any reuse of this pattern for the Difference section should adopt the fixed form, not clone the bug.
 
@@ -331,7 +335,8 @@ This is the only FAQ set on the site with no duplication and no billing content.
 
 #### `pages.resourcesBrief.<deck>.faq` - heading "Questions readers asked", 5 items x 6 decks = 30
 
-Decks: `ransomwareSurvival`, `multiCloudAlways`, `verifiedBackups`, `encryptionControl`, `devEnvironments`, `preemptiveDefense`.
+Decks: `ransomwareSurvival`, `multiCloudAlways`, `verifiedBackups`, `encryptionControl`,
+`devEnvironments`, `preemptiveDefense`.
 
 Key path pattern: `pages.resourcesBrief.<deck>.faq.items[N].q`
 

@@ -1,5 +1,9 @@
 # PLAN: Bring packages/cli under the em dash gate
-Status: compacted Owner: e6500e92 Full-Text: bb878f6e7 agent/PLAN-cli-em-dash-lint-gate.md Full-Text-Blob: 629e12f4662163b2e5b78fecaa292abf7354ae6f Record-Sig: 3816a060
+Status: compacted
+Owner: e6500e92
+Full-Text: bb878f6e7 agent/PLAN-cli-em-dash-lint-gate.md
+Full-Text-Blob: 629e12f4662163b2e5b78fecaa292abf7354ae6f
+Record-Sig: 3816a060
 
 ## Why
 The em dash gate covered `packages/www` only, so the largest prose surfaces in the repo were invisible while its output stayed green. This plan argued for extending the existing gate's surface table rather than writing a second gate: the id scheme, the shrink-only baseline, the per-surface floor and the inline selftest are one implementation, a second gate needs three new wiring
@@ -37,10 +41,16 @@ edit ratchet, and 228 findings drained without a campaign.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:30:34Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: scripts/ci-runner/manifest.ts, package.json, scripts/gates/check-em-dash-surfaces.ts, packages/cli/src/services/config/config-resources-resolve.ts, packages/cli/src/services/cluster/cluster-fork.ts,
-packages/cli/src/services/cluster/cluster-kube.ts, packages/cli/src/services/cluster/cluster-membership.ts, packages/cli/src/services/cluster/repo-replicate-ops.ts, packages/cli/src/services/repo/prune.ts, packages/cli/src/commands/update.ts, packages/cli/src/services/update/background-updater.ts, packages/cli/src/commands/doctor.ts, packages/cli/src/utils/timeline.ts,
-packages/cli/src/commands/config/field.ts, packages/cli/src/remote/repository/bashFunctions.ts, packages/cli/src/utils/repo-context-guard.ts, packages/cli/src/utils/process-ancestry.ts, packages/cli/src/services/core/embedded-assets.ts, packages/cli/src/commands/mcp/tools.ts, scripts/gen/sync-translations.ts Gates: check:ci-em-dash-surfaces, check:ci-gate-reachability-coverage,
-check:ci-i18n-cli-help-render, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-parity, check:i18n, check:i18n:completeness Why-Source: author Read-History: `git show 629e12f4662163b2e5b78fecaa292abf7354ae6f` recovers the text; `git log --find-object=629e12f4662163b2e5b78fecaa292abf7354ae6f --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:30:34Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: scripts/ci-runner/manifest.ts, package.json, scripts/gates/check-em-dash-surfaces.ts, packages/cli/src/services/config/config-resources-resolve.ts, packages/cli/src/services/cluster/cluster-fork.ts, packages/cli/src/services/cluster/cluster-kube.ts, packages/cli/src/services/cluster/cluster-membership.ts, packages/cli/src/services/cluster/repo-replicate-ops.ts, packages/cli/src/services/repo/prune.ts, packages/cli/src/commands/update.ts, packages/cli/src/services/update/background-updater.ts, packages/cli/src/commands/doctor.ts, packages/cli/src/utils/timeline.ts, packages/cli/src/commands/config/field.ts, packages/cli/src/remote/repository/bashFunctions.ts, packages/cli/src/utils/repo-context-guard.ts, packages/cli/src/utils/process-ancestry.ts, packages/cli/src/services/core/embedded-assets.ts, packages/cli/src/commands/mcp/tools.ts, scripts/gen/sync-translations.ts
+Gates: check:ci-em-dash-surfaces, check:ci-gate-reachability-coverage, check:ci-i18n-cli-help-render, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-parity, check:i18n, check:i18n:completeness
+Why-Source: author
+Read-History: `git show 629e12f4662163b2e5b78fecaa292abf7354ae6f` recovers the text; `git log --find-object=629e12f4662163b2e5b78fecaa292abf7354ae6f --all` names the commit
 
 ## History
 - 2026-09-06T17:30:34Z compacted by 8f55d4f0 from `done` (record-sig 3816a060)

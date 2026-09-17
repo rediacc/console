@@ -1,4 +1,6 @@
-Status: ready Owner: 74de73ca Updated: 2026-09-02
+Status: ready
+Owner: 74de73ca
+Updated: 2026-09-02
 
 # Plan files: a lifecycle nobody has to remember
 
@@ -135,7 +137,8 @@ The obvious objection -- "an agent can regenerate the ledger" -- is the point of
 
 ### Gate 1: `.ci/scripts/quality/check_plan_boxes.py`
 
-Python, `sys.path.insert(0, .claude/hooks/stop)`, calls `wl_planfile.plan_boxes`. Precedent: `check_gate_reachability_coverage.py` already imports from that directory.
+Python, `sys.path.insert(0, .claude/hooks/stop)`, calls `wl_planfile.plan_boxes`.
+Precedent: `check_gate_reachability_coverage.py` already imports from that directory.
 
 - **A0 LEDGER MATCHES TREE.** Every `agent/PLAN-*.md` (non-recursive) and every
 `agent/archive/plans/PLAN-*.md` must equal its ledger entry. Runs on every event.

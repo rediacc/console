@@ -10,7 +10,8 @@ Your mission: execute the `clarity-round6` program. Read `agent/programs/clarity
 
 Opus is the default for coding sub-agents. **Fable for the challenging pieces AND for planning agents.** Sonnet for all translation and naturalization work. At most **2 concurrent writers, with disjoint file ownership stated verbatim in every prompt**; investigation agents fan out freely.
 
-Fable-tier: the Docker GPU image and the lease boundary (w9); the palette change together with the `semantic_sense` gate (w4c); the per-page cut decisions (w5).
+Fable-tier: the Docker GPU image and the lease boundary (w9); the palette change together
+with the `semantic_sense` gate (w4c); the per-page cut decisions (w5).
 
 The i18n catalogs are a SERIALISED single-owner surface. Page agents PROPOSE splices into `reports/`; ONE owner applies them and runs `npm run i18n:generate-hashes` ONCE. Splice bytes, never parse-and-reserialize a catalog.
 

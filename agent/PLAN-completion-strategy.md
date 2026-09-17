@@ -1,4 +1,6 @@
-Status: ready Owner: f4da5c2e Date: 2026-09-09
+Status: ready
+Owner: f4da5c2e
+Date: 2026-09-09
 
 # Finish the big pieces: a completion strategy measured against the tree
 
@@ -97,8 +99,9 @@ half. 3B: W7P6's first tranche, the groups with no fan-in into 3A.
 
 **Calendar-gated, unmovable by parallelism:** the plan-housekeeping cliff first reds **2026-09-26** (3 plans), 17 by 09-30, 87 by 10-10, so wave 1A must beat it; `agent/PLAN-tooling-transformation.md:2486` at ~2026-09-21; `agent/PLAN-tooling-transformation.md:2473`, 54 uncompacted plans; and the K=5 shadow ledgers, which accrue per CI run and cannot be outrun by adding writers.
 
-**Operator-gated: 12 boxes gating ~20 downstream.** `agent/PLAN-tooling-transformation.md:1826` (mint the machine accounts) blocking `:1861`; `agent/PLAN-tooling-transformation.md:2581` (settle `private/account`) blocking `:2734`; the `autopilot_no_bypass` organisation variable; the `w7p2-stagingtag` human sign-off; `agent/archive/plans/PLAN-github-secrets-removal.md:551` and
-`:578`; `agent/archive/plans/PLAN-branch-aware-workflows.md:149` and `:154`; `agent/PLAN-bws-rotation-on-failure.md:99`; and two deferrals in `agent/PLAN-secret-namespace-migration.md`. **Ask for all of them in one round trip.**
+**Operator-gated: 12 boxes gating ~20 downstream.** `agent/PLAN-tooling-transformation.md:1826`
+(mint the machine accounts) blocking `:1861`; `agent/PLAN-tooling-transformation.md:2581` (settle `private/account`) blocking `:2734`; the `autopilot_no_bypass` organisation variable; the `w7p2-stagingtag` human sign-off; `agent/archive/plans/PLAN-github-secrets-removal.md:551` and `:578`; `agent/archive/plans/PLAN-branch-aware-workflows.md:149` and `:154`;
+`agent/PLAN-bws-rotation-on-failure.md:99`; and two deferrals in `agent/PLAN-secret-namespace-migration.md`. **Ask for all of them in one round trip.**
 
 ## 6. What "done" means, so the finish line stops moving
 

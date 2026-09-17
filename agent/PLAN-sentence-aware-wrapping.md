@@ -1,6 +1,9 @@
 # PLAN: sentence-aware wrapping for packages/www
 
-Status: draft Author: plan agent (session a68f3ab4) Date: 2026-08-23 Intended path: `/home/muhammed/console/agent/PLAN-sentence-aware-wrapping.md` Actual path: this file. Plan mode restricted this session to a single writable file, so the deliverable could not be written to `agent/`. Copy it across before implementing.
+Status: draft
+Author: plan agent (session a68f3ab4)
+Date: 2026-08-23
+Intended path: `/home/muhammed/console/agent/PLAN-sentence-aware-wrapping.md` Actual path: this file. Plan mode restricted this session to a single writable file, so the deliverable could not be written to `agent/`. Copy it across before implementing.
 
 Every number below was measured live against `http://localhost:4321` with `agent-browser` (headless Chromium 145) in session `plan-typo`. Nothing was guessed and nothing in the repo was modified.
 
@@ -33,7 +36,8 @@ This is the rule the detector implements and the rule the gate enforces. Everyth
 
 ## 2. Mechanism decision
 
-**Chosen: (a) wrap each sentence in `<span class="sentence">` with `display: inline-block`, produced at build time.**
+**Chosen: (a) wrap each sentence in `<span class="sentence">` with
+`display: inline-block`, produced at build time.**
 
 An inline-block is an atomic line-breaking unit: it starts on a new line when it does not fit on the current one, which is exactly the guarantee the rule needs.
 
@@ -201,7 +205,8 @@ A static gate alone cannot know whether a block wraps. A browser gate alone cann
 
 **Asserts:** every text-position render of a catalog value whose English is multi-sentence and longer than 25 characters goes through `<Sentences>`.
 
-Resolution: parse `.astro` and `.tsx` under `packages/www/src` for `t(...)` / `ta(...)` / `to(...)` calls in text position, resolve the key against `en.json`, count sentences with `Intl.Segmenter`, and require the enclosing expression to be a `Sentences` element.
+Resolution: parse `.astro` and `.tsx` under `packages/www/src` for
+`t(...)` / `ta(...)` / `to(...)` calls in text position, resolve the key against `en.json`, count sentences with `Intl.Segmenter`, and require the enclosing expression to be a `Sentences` element.
 
 Shrink-only baseline at `scripts/data/sentence-wrapping-baseline.json` via `scripts/lib/shrink-only-baseline.ts` (the 8th consumer). Finding id is `<file>:<translation-key>`, deliberately **not** carrying a line number, so the baseline survives a line move (`check-em-dash-surfaces.ts:434-435`). Surface floor `minFiles: 50` on `packages/www/src` so a collapsed glob fails instead of
 passing (`check-em-dash-surfaces.ts:89-104`).

@@ -86,7 +86,8 @@ for `WORKLIST_DEAD_HOURS` (24) is dropped by the next write, and its body is app
 - **A pre-section document is adopted, not destroyed**, under a
 `## SESSION legacy` heading, and ages out through the same reap path.
 
-Why: on 2026-08-09 the staleness gate nagged one session about a document another session owned, it obeyed, and a live campaign's entire state document was destroyed. Merge semantics are what make that impossible; the section format is what merge semantics need.
+Why: on 2026-08-09 the staleness gate nagged one session about a document
+another session owned, it obeyed, and a live campaign's entire state document was destroyed. Merge semantics are what make that impossible; the section format is what merge semantics need.
 
 ## Enforcement (live since 2026-07-30)
 

@@ -1,7 +1,10 @@
 # PLAN: commits must be attributable to a GitHub account
-Status: draft Owner: 74de73ca Updated: 2026-09-03
+Status: draft
+Owner: 74de73ca
+Updated: 2026-09-03
 
-Scope: a local guard that refuses a `git commit` whose author email GitHub does not link to an account, and a CI gate that refuses a PR containing such a commit. Designed 2026-09-03 by a Plan agent whose API results were measured, not recalled; the principal spot-checked the load-bearing ones before writing this.
+Scope: a local guard that refuses a `git commit` whose author email GitHub does not
+link to an account, and a CI gate that refuses a PR containing such a commit. Designed 2026-09-03 by a Plan agent whose API results were measured, not recalled; the principal spot-checked the load-bearing ones before writing this.
 
 ## 0. The measurement
 

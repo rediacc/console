@@ -1,5 +1,9 @@
 # PLAN: cross-PR greenlight, verify-at-read (skip test-renet / account E2E on any-PR job-green evidence)
-Status: compacted Owner: orchestrator (design synthesized from three discovery investigations), branch 0731-2 Full-Text: f7a5351a9 agent/PLAN-greenlight-verify-at-read.md Full-Text-Blob: 797d986ae411011b63c51b254fb17ebc0518d143 Record-Sig: 4fb11232
+Status: compacted
+Owner: orchestrator (design synthesized from three discovery investigations), branch 0731-2
+Full-Text: f7a5351a9 agent/PLAN-greenlight-verify-at-read.md
+Full-Text-Blob: 797d986ae411011b63c51b254fb17ebc0518d143
+Record-Sig: 4fb11232
 
 ## Why
 The scope engine skipped test-renet and the account E2E only when the submodule pointer had not moved against a lineage-local green baseline, so a submodule sha that some OTHER PR had already proven green still paid for a full re-run. The ask was to widen the evidence to any PR. The hard constraint was that no run may write its own trust token: PR-triggered jobs hold no write
@@ -24,8 +28,16 @@ headline sha died in the media history rewrite while the work it named was and i
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:01:29Z Boxes: 0 attested, 0 open, 0 abandoned Epics: e87fa3ce Touched: .ci/scripts/ci/scope-engine.cjs Gates: check:actions Why-Source: auto Read-History: `git show 797d986ae411011b63c51b254fb17ebc0518d143` recovers the text; `git log --find-object=797d986ae411011b63c51b254fb17ebc0518d143
---all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:01:29Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: e87fa3ce
+Touched: .ci/scripts/ci/scope-engine.cjs
+Gates: check:actions
+Why-Source: auto
+Read-History: `git show 797d986ae411011b63c51b254fb17ebc0518d143` recovers the text; `git log --find-object=797d986ae411011b63c51b254fb17ebc0518d143 --all` names the commit
 
 ## History
 - 2026-09-06T17:01:29Z compacted by 8f55d4f0 from `done` (record-sig 4fb11232)

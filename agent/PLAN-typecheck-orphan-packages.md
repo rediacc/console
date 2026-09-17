@@ -1,6 +1,8 @@
 # PLAN: four packages nothing typechecks
 
-Status: ready to run, AFTER #583 merges Origin: session f88f9be7, 2026-09-01. Found by sweeping the class behind `6ba6a0c4c`, which wired `packages/cli`'s 185 test files into a typecheck project and fixed the 111 errors hiding there. These four are the siblings. All counts below were MEASURED on the tree at `6ba6a0c4c`, not estimated.
+Status: ready to run, AFTER #583 merges
+Origin: session f88f9be7, 2026-09-01. Found by sweeping the class behind `6ba6a0c4c`,
+which wired `packages/cli`'s 185 test files into a typecheck project and fixed the 111 errors hiding there. These four are the siblings. All counts below were MEASURED on the tree at `6ba6a0c4c`, not estimated.
 
 ## The two shapes, which need different fixes
 
@@ -40,7 +42,8 @@ bigger win than the count suggests.
 
 That is a module-setting mismatch, not a defect. Fix the config first and re-measure; the worker's own errors are `src/smart-redirect.ts` (2), `src/index.ts` (1) and one test.
 
-Also: `workers/mta-sts` and `workers/proxy` have NO tsconfig at all. `workers/account` and `workers/www` have one plus a `"typecheck": "tsc --noEmit"` script that nothing invokes.
+Also: `workers/mta-sts` and `workers/proxy` have NO tsconfig at all. `workers/account` and
+`workers/www` have one plus a `"typecheck": "tsc --noEmit"` script that nothing invokes.
 
 ## How to wire it, once each package is clean
 

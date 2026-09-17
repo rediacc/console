@@ -36,4 +36,5 @@ touched. `private/generative` is clean. Both are GitLab-hosted, gitignored.
 
 ## Live workers
 
-`b56onktrp` (Console CI on main). Waiter `bstmm1rph`. Crons: work `c73f29b8`, poll `1e8a7aff`.
+`b56onktrp` (Console CI on main). Waiter `bstmm1rph`.
+Crons: work `c73f29b8`, poll `1e8a7aff`.

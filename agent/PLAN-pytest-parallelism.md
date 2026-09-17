@@ -1,5 +1,7 @@
 # PLAN: parallelise check:ci-pytest with pytest-xdist
-Status: done Owner: 8f55d4f0 Updated: 2026-09-07
+Status: done
+Owner: 8f55d4f0
+Updated: 2026-09-07
 
 Operator order 2026-09-07, verbatim: "let's employ a planning agent and implement then validate then optimize again then validate." Worklist #d76fa6de.
 

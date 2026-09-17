@@ -1,6 +1,8 @@
 # DECISIONS: the register of locked decisions, with PREFIXED ids
 
-Status: live Owner: 8f55d4f0 Updated: 2026-09-09
+Status: live
+Owner: 8f55d4f0
+Updated: 2026-09-09
 
 Enforced by `check:ci-decision-ids` (`.ci/scripts/quality/check_decision_ids.py`).
 

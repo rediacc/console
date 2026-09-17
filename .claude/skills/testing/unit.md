@@ -6,7 +6,8 @@ For a pure function: a parser, a formatter, a resolver, a state machine, a compa
 
 Beside the code it covers, in that package's `__tests__` directory. For the CLI that is `packages/cli/src/**/__tests__/`, mirroring the module layout.
 
-Run: `.ci/scripts/test/run-unit.sh --coverage`, which is what `ct-tests.yml`'s `test-unit` job runs. Per package: `cd packages/cli && npm test`.
+Run: `.ci/scripts/test/run-unit.sh --coverage`, which is what `ct-tests.yml`'s
+`test-unit` job runs. Per package: `cd packages/cli && npm test`.
 
 ## When a unit test is the WRONG answer
 

@@ -5,7 +5,8 @@
 > them would have deleted working code.
 
 
-Status: verified 2026-08-09, branch main. Two halves: the claims-reconciliation matrix (wave 4) and the line-level decommission (wave 5). The full 167-claim inventory and the 81-behavior parity inventory live in the source session's agent reports; this file carries the dispositions and the checklists.
+Status: verified 2026-08-09, branch main. Two halves: the claims-reconciliation
+matrix (wave 4) and the line-level decommission (wave 5). The full 167-claim inventory and the 81-behavior parity inventory live in the source session's agent reports; this file carries the dispositions and the checklists.
 
 ## Claims reconciliation (wave 4, English first, then Sonnet x12)
 
@@ -24,7 +25,8 @@ incremental-only transfer ("bandwidth down 98%", zero-cost-backup storage math);
 
 HONEST WORDING REQUIRED: immutability = create-only PUT + delete-free machine grants + server-only deletes (+ optional bucket-lock compliance layer); NOT certified WORM. SEC 17a-4-style claims stay off the table; strict-WORM customers get the customer-S3/Object Lock path later.
 
-REMOVED: the internal contradictions (queue vs drop, pull mount precondition, verification cadence day vs week, destination flag semantics).
+REMOVED: the internal contradictions (queue vs drop, pull mount precondition,
+verification cadence day vs week, destination flag semantics).
 
 **VERIFIED 2026-08-14, and two entries on this list were already false. Check before acting on the rest.**
 
@@ -65,9 +67,11 @@ DELETE (CLI): `services/backup/` five files, `commands/backup-ops.ts`, `commands
 1060-line `backup-schedule.test.ts`, `backup-status-state`, `backup-strategy`, `config-strategy-binding` tests; delete-partial line lists for eight more files; re-baseline plane-coverage (167 leaves) and contract counts (82 proxy-capable); regenerate command-tree/contract/cli-docs/skill-reference in the SAME commit (command-tree staleness FAILS OPEN). CLI i18n: 44
 `commands.backup.*` keys x13 (572 strings) + `.translation-hashes.json`; do NOT allowlist orphans, delete keys. The licensing gate on backup (`backup_license.go` sync-path halves, `refreshRepoLicensesBatch` preflight, ExecStartPre renewal in units) dies per the all-users ruling; the push/pull validation half and the failed-marker READERS survive.
 
-E2E: suites 10 and 15 do NOT die (they drive surviving verbs); they get replaced by the real battery on their own merit. Casts: zero scheduled-path content, nothing to re-record for decommission. `.e2e-coverage-allowlist`: no edits for decommission (the two entries are surviving verbs; wave 3 deletes them as coverage lands).
+E2E: suites 10 and 15 do NOT die (they drive surviving verbs); they get replaced by
+the real battery on their own merit. Casts: zero scheduled-path content, nothing to re-record for decommission. `.e2e-coverage-allowlist`: no edits for decommission (the two entries are surviving verbs; wave 3 deletes them as coverage lands).
 
-Governance: `docs/design/spec/00-gate-review.md:78` ruling R5 ("backup schedule stays per-machine systemd: CONFIRMED") and `03-cli-contracts.md:2215` get a superseding note naming this program, never a silent delete; `06-cli-reshape.md:59` tree line updated with the gate.
+Governance: `docs/design/spec/00-gate-review.md:78` ruling R5 ("backup schedule
+stays per-machine systemd: CONFIRMED") and `03-cli-contracts.md:2215` get a superseding note naming this program, never a silent delete; `06-cli-reshape.md:59` tree line updated with the gate.
 
 ## Migration of real machines (wave 5, operator-in-the-loop)
 

@@ -53,5 +53,6 @@ not a local mode; edge/production deploy from CI only. Deploy order for licensin
 - `./run.sh account reset` regenerates .env; the gateway must be restarted to pick
 env changes up (same tsx rule).
 
-Database: the dev data lives in `private/account/account.db` (better-sqlite3, opened by `src/entry/dev-gateway.ts` with cwd `private/account`), NOT in wrangler/D1 -- `wrangler.toml` declares a D1 binding that the dev path never touches. Browse it with `./run.sh account db`, which runs Drizzle Studio against that file; `drizzle.config.ts` already points at it. **`./run.sh account
-reset` DELETES account.db** (plus -wal/-shm), so anything you were reading in Studio is gone after a reset.
+Database: the dev data lives in `private/account/account.db` (better-sqlite3, opened
+by `src/entry/dev-gateway.ts` with cwd `private/account`), NOT in wrangler/D1 -- `wrangler.toml` declares a D1 binding that the dev path never touches. Browse it with `./run.sh account db`, which runs Drizzle Studio against that file; `drizzle.config.ts` already points at it. **`./run.sh account reset` DELETES account.db** (plus -wal/-shm), so anything you were reading in Studio is
+gone after a reset.

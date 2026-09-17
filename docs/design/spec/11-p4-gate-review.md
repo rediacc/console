@@ -333,7 +333,8 @@ the record.
 7. **F6/F7/F9** — the three cheap durability fixes (freshness gate; three registry lines; one
 `mcpExcludeReason`).
 
-Re-run: `lint`, `check:lint`, `check:cli-examples`, `check:cli-docs`, `check:ci-renet`. When those five are green, this verdict flips to PASS.
+Re-run: `lint`, `check:lint`, `check:cli-examples`, `check:cli-docs`, `check:ci-renet`. When
+those five are green, this verdict flips to PASS.
 
 ---
 

@@ -1,6 +1,9 @@
 # PLAN: re-sync the nine `techDiff.description` values across 12 locales
 
-Status: ready to run, gated on #583 merging Owner: whichever session picks it up Origin: worklist `#d84b5b51`, session f88f9be7, 2026-08-31. Its 120-minute autonomy window closed unanswered, so its DEFAULT is the decision: **this does NOT ride #583; it is its own pass, after #583 merges.** This file is that pass, written so it needs no rediscovery.
+Status: ready to run, gated on #583 merging
+Owner: whichever session picks it up
+Origin: worklist `#d84b5b51`, session f88f9be7, 2026-08-31. Its 120-minute autonomy
+window closed unanswered, so its DEFAULT is the decision: **this does NOT ride #583; it is its own pass, after #583 merges.** This file is that pass, written so it needs no rediscovery.
 
 ## The defect
 

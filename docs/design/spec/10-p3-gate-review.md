@@ -1,7 +1,10 @@
 # P3 gate review (feature layer + thin CSI driver)
 
-Reviewer: Fable (adversarial, evidence-first). Date: 2026-07-13. Subject: the entire P3 phase against `docs/design/09-implementation-phases.md` §P3 and the nine P3 carry-ins in `docs/design/spec/08-p2-gate-review.md`. Method: every gate re-run by the reviewer from a cold shell; every claimed fix located in the working tree by file:line; every live claim traced to a transcript.
-Nothing in this document is taken from a subordinate report's self-assessment.
+Reviewer: Fable (adversarial, evidence-first). Date: 2026-07-13.
+Subject: the entire P3 phase against `docs/design/09-implementation-phases.md` §P3
+and the nine P3 carry-ins in `docs/design/spec/08-p2-gate-review.md`.
+Method: every gate re-run by the reviewer from a cold shell; every claimed fix
+located in the working tree by file:line; every live claim traced to a transcript. Nothing in this document is taken from a subordinate report's self-assessment.
 
 HEADs at review: console `9eee3671b`, renet `c7e187a`. Both operator-authored, therefore sanctioned (the "zero commits" invariant was superseded on 2026-07-11 by an authorship-based invariant). No agent-authored commits exist. Verified via `git log --format='%an'`.
 
@@ -141,9 +144,9 @@ accepted with its mitigation documented.
 - **Agent-node CSI attach**: deferred residual (spec 09 §14 item 12). Workers currently
 no-op on the auto-enable fold.
 
-**Dedup: DONE at this gate.** Both deviations had been documented **twice**, in spec/09 §14 (items 10/11, by csi-live) and again in spec/09 §16 (as-built, by csi-impl), a benign artifact of two agents converging on the same rulings. I merged them: **§16 is now the single home**, since §14 is titled "OPEN items" and a *ruled* deviation is by definition no longer open. §14 items
-10-11 collapse to a pointer (numbering preserved), and §14 retains item 12 (the agent-node attach residual), which is genuinely still open. §16 absorbed the detail that existed only in §14: the hashed-volume-id alternative was **rejected** because it would break the path-probe fork resolution, and csi-sanity's max-length-name spec **stays red by design** (the documented price, not
-a bug).
+**Dedup: DONE at this gate.** Both deviations had been documented **twice**, in spec/09 §14
+(items 10/11, by csi-live) and again in spec/09 §16 (as-built, by csi-impl), a benign artifact of two agents converging on the same rulings. I merged them: **§16 is now the single home**, since §14 is titled "OPEN items" and a *ruled* deviation is by definition no longer open. §14 items 10-11 collapse to a pointer (numbering preserved), and §14 retains item 12 (the agent-node
+attach residual), which is genuinely still open. §16 absorbed the detail that existed only in §14: the hashed-volume-id alternative was **rejected** because it would break the path-probe fork resolution, and csi-sanity's max-length-name spec **stays red by design** (the documented price, not a bug).
 
 ---
 
@@ -185,7 +188,8 @@ false ownership flips. Liveness must be judged from the agent's task output, not
 
 The e2e campaign live-witnessed the gap (T10): a node-pinned local PV will not bind unless the node carries `rediacc.io/ds-<name>`, and `datastore attach` does not stamp it, so the suite has to call `kube_node_label` by hand. This is the original wave3b symptom, still reproducible.
 
-Recommendation: **P4, not now**, but with the fix location named so it is not re-litigated:
+Recommendation: **P4, not now**, but with the fix location named so it is not
+re-litigated:
 
 - **Fold it into renet's `datastore attach` path**, mirroring the symmetric CSI fold that
 csi-live landed (`deployCSIForAttachedDatastore` on attach, `RemoveNodeUnits` on detach, which is #26's fix). Attach is already the seam that installs the per-node CSI units and the per-datastore StorageClass; the node label belongs on exactly that seam, and detach should strip it. Putting it in CLI porcelain instead would be **thrown away by P4's own reshape**.

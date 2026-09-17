@@ -56,7 +56,8 @@ The reverse crashes the build. These fields are unguarded `.map()` calls and req
 
 The live proof is `socialProof`: still a member of `ALL_SECTIONS` at `:107`, rendered by nothing since rediacc/console#519, and the gate still reports all 6925 keys reachable.
 
-**Consequence: removing a section from `sections` and leaving its i18n produces roughly 30 to 70 dead keys times 13 locales, and nothing goes red.** Key deletion is a deliberate step in this plan, not something CI will remind anyone about.
+**Consequence: removing a section from `sections` and leaving its i18n produces roughly
+30 to 70 dead keys times 13 locales, and nothing goes red.** Key deletion is a deliberate step in this plan, not something CI will remind anyone about.
 
 ## The 13-locale multiplier, and why writers must be serialised
 

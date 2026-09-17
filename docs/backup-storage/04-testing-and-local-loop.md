@@ -1,7 +1,7 @@
 # 04. Testing and the local loop
 
-Status: verified 2026-08-09, branch main. The operator's standing rule: prove everything locally that can be proven locally; cloud probes are a separate, cost-declared, operator-visible leg. The operator has exported `REDIACC_ALLOW_CLUSTER_OPS=*` and `REDIACC_ALLOW_GRAND_REPO=*` in the launching terminal, so datastore/cluster and grand-repo drill legs are unblocked (ancestry
-verification requires it to be set BEFORE the session starts).
+Status: verified 2026-08-09, branch main. The operator's standing rule: prove
+everything locally that can be proven locally; cloud probes are a separate, cost-declared, operator-visible leg. The operator has exported `REDIACC_ALLOW_CLUSTER_OPS=*` and `REDIACC_ALLOW_GRAND_REPO=*` in the launching terminal, so datastore/cluster and grand-repo drill legs are unblocked (ancestry verification requires it to be set BEFORE the session starts).
 
 ## The vacuum being filled (do not repeat it)
 
@@ -11,8 +11,9 @@ proven techniques exist apart: suite 17's LUKS-image sha256 identity (`repositor
 ## Three tiers, all on existing harnesses
 
 1. Control plane (seconds, no infra): vitest in private/account on the
-`config-portal.test.ts:27-50` shape (fresh in-memory SQLite replaying the real drizzle migrations, `MemoryBlobStorageService`, `blob.clear()` per test). Additions: grant-path local double (the memory blob service has no URL concept; the grant abstraction needs a memory/local implementation designed in), DTO planted-strip control, scope-registry registration, no clock seam exists so
-retention tests backdate rows (the house convention).
+`config-portal.test.ts:27-50` shape (fresh in-memory SQLite replaying the real drizzle migrations, `MemoryBlobStorageService`, `blob.clear()` per test).
+   Additions: grant-path local double (the memory blob service has no URL concept;
+the grant abstraction needs a memory/local implementation designed in), DTO planted-strip control, scope-registry registration, no clock seam exists so retention tests backdate rows (the house convention).
 2. Byte-verify battery (minutes, ops VMs): new numbered suite in packages/e2e-tests
 under the default config (runs inside `test-e2e-workers`). Registration: the playwright project list, the README table, LIVE_CONFIG_REGISTRY only if a new config, skip-hygiene testIgnore if a new subdir. Zero-skip contract: any `test.skip()` firing in CI is a job failure, select by config instead. Delete `.e2e-coverage-allowlist` lines (`backup_delete`, `backup_list`) as coverage
 arrives (a covered entry fails the gate as stale). New corruption-injection helper (does not exist anywhere): flip a byte in a stored chunk, delete another, assert verify/scrub fire; a verification-disabled twin MUST fail it (prove the instrument). Restore assertions prefer image-sha over mounted-content reads (post-swap remounts over two-hop SSH are flaky; suite 17 documents it).
@@ -36,7 +37,8 @@ assume parity).
 3. Bucket lifecycle rules (Cloudflare-side API, no RustFS equivalent).
 4. One multipart sanity pass (not needed for MiB cells, but cheap insurance).
 
-Vehicle: a `rediacc-backups-bench` R2 bucket on the `rediacc-configs-bench` footing (wiped by the `reset-bench.sh` pattern, credentials via the cf-r2 rotation slug, `rotation check --for=bench` preflight), exercised by a `--cloud` leg on the drill, operator-run, cost-declared. Keep it out of the free local battery.
+Vehicle: a `rediacc-backups-bench` R2 bucket on the `rediacc-configs-bench` footing
+(wiped by the `reset-bench.sh` pattern, credentials via the cf-r2 rotation slug, `rotation check --for=bench` preflight), exercised by a `--cloud` leg on the drill, operator-run, cost-declared. Keep it out of the free local battery.
 
 ## CI placement
 

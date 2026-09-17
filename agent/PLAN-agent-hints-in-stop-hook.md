@@ -1,5 +1,9 @@
 # PLAN: Agent hints in the stop hook
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-agent-hints-in-stop-hook.md Full-Text-Blob: 1cc03bcbe8b95625789dabc41f2c5b84b83dd032 Record-Sig: 0c31fe11
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-agent-hints-in-stop-hook.md
+Full-Text-Blob: 1cc03bcbe8b95625789dabc41f2c5b84b83dd032
+Record-Sig: 0c31fe11
 
 ## Why
 The stop hook could not notice, unprompted, that the work in hand matched a specialist under `.claude/agents/`, so sessions kept not using them and the operator had to point at them by hand. This file carries the INVESTIGATION half of that work: how the hook's emission paths work, why `vadd` is the wrong channel, what the Haiku judge already costs per stop (which is the evidence a
@@ -31,8 +35,16 @@ the input to the plan that shipped, and its corrected proposals are the record o
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: superseded Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:10Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .claude/settings.json, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/quality/lint-rule-liveness.mjs, scripts/gates/check-ci-parity.ts,
-.ci/scripts/test/mutate-check.sh Gates: check:ci-agent-hint-liveness, check:ci-hook-worklist-suite Why-Source: auto Read-History: `git show 1cc03bcbe8b95625789dabc41f2c5b84b83dd032` recovers the text; `git log --find-object=1cc03bcbe8b95625789dabc41f2c5b84b83dd032 --all` names the commit
+Record-Kind: compacted
+Prior-Status: superseded
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:10Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .claude/settings.json, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/quality/lint-rule-liveness.mjs, scripts/gates/check-ci-parity.ts, .ci/scripts/test/mutate-check.sh
+Gates: check:ci-agent-hint-liveness, check:ci-hook-worklist-suite
+Why-Source: auto
+Read-History: `git show 1cc03bcbe8b95625789dabc41f2c5b84b83dd032` recovers the text; `git log --find-object=1cc03bcbe8b95625789dabc41f2c5b84b83dd032 --all` names the commit
 
 ## History
 - 2026-09-06T17:06:10Z compacted by 8f55d4f0 from `superseded` (record-sig 0c31fe11)

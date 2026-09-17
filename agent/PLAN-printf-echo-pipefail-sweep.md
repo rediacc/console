@@ -1,6 +1,8 @@
 # PLAN: the printf/echo half of the pipefail/grep -q class
 
-Status: done Owner: d778be9d Updated: 2026-09-16
+Status: done
+Owner: d778be9d
+Updated: 2026-09-16
 
 Successor to the 2026-09-16 widening in `3a7c1bcda`, which added 16 scaling COMMAND producers and `join_logical()`/`logical_lines()` to `.ci/scripts/quality/check-pipefail-grep-q.sh` and its port `.ci/rediacc_ci/quality/pipefail_grep_q.py`, and converted 21 sites across 14 files. Both files' headers state, in as many words, that `printf`/`echo` are "deliberately absent ... NOT
 proven safe ... a separate, larger, still-untriaged class". The operator has overruled that deferral. This plan closes it.

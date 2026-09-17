@@ -1,5 +1,7 @@
 # PLAN: scan() liveness oracle, the harness's own running-subagent roster
-Status: done Owner: 8f55d4f0 Updated: 2026-09-07
+Status: done
+Owner: 8f55d4f0
+Updated: 2026-09-07
 
 ## Why
 

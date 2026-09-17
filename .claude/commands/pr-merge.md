@@ -93,8 +93,9 @@ prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance, which
 **If it is NOT clean, do not just stop. Identify whose work it is first.** This tree is shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of this land. Steps 4 and 6 run `git checkout main` / `git merge --ff-only`, which carry uncommitted changes across silently when they do not conflict and abort mid-way when they do. Neither outcome is one
 you want to discover after a merge has already landed.
 
-So: report what is dirty and who it belongs to, and **never** `git add`, `stash`, `restore` or `checkout` those paths to make the precondition pass, because that destroys another session's work and is banned by CLAUDE.md. Either the operator lands with the dirty tree acknowledged (the changes ride along untouched, which is safe as long as they do not overlap what `main` moved), or
-the other session commits first. Observed live: a session held 18 uncommitted paths through a `/pr-merge`; nothing was lost, but only because `main`'s two new commits happened to touch none of them.
+  So: report what is dirty and who it belongs to, and **never** `git add`, `stash`, `restore`
+or `checkout` those paths to make the precondition pass, because that destroys another session's work and is banned by CLAUDE.md. Either the operator lands with the dirty tree acknowledged (the changes ride along untouched, which is safe as long as they do not overlap what `main` moved), or the other session commits first. Observed live: a session held 18 uncommitted paths through
+a `/pr-merge`; nothing was lost, but only because `main`'s two new commits happened to touch none of them.
 
 If the dirty path **does** overlap what `main` moved, `git checkout main` aborts outright (it will not silently clobber). If, on investigation, the diff is genuinely orphaned, with no commit in the branch's own history ever referenced it, it sat untouched across many rounds, and it is not part of anything currently in flight (check `git log --all -- <path>` and think about whether
 the content is even still needed, e.g. a semver range bump the lockfile already satisfies), the running session may commit it itself (never stash/discard) to unblock the checkout, with a message stating plainly that it was found orphaned and why it's safe to land. This is committing to preserve, not deciding the change was wanted; if genuinely unsure whose work it is or why it
@@ -203,7 +204,7 @@ completed-success → 0, unreadable → 2).
 
 Main-only surfaces in this repo: `finalize-release-sentinel`, `pipeline-sentinel`, `check-release-state`, `build-devcontainer-manifest` (all gated `github.event_name == 'push'` / `refs/heads/main`), the entire Release workflow (`cd-v2.yml`, dispatch-only), and Docker, which PR CI only DRY-RUNS while `main` does the real build+push.
 
-So: commit on `main` and push. Keep it surgical (name the paths, `git add -A` is still banned) and state plainly in the report that you pushed to `main` and why.
+  So: commit on `main` and push. Keep it surgical (name the paths, `git add -A` is still banned) and state plainly in the report that you pushed to `main` and why.
   - This is the ONLY situation in which pushing `main` is allowed without a fresh per-task request. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else still goes through `/pr-babysit`.
   - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "Release to Edge" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
 

@@ -1,5 +1,10 @@
-Status: draft Owner: 74de73ca Date: 2026-09-02 Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1 (archived byte-identical 2026-09-09; see `agent/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them. Scope:
-design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read or printed.
+Status: draft
+Owner: 74de73ca
+Date: 2026-09-02
+Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1
+(archived byte-identical 2026-09-09; see `agent/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
+Scope: design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was
+written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read or printed.
 
 # `.env` → Bitwarden, v2: classify on SHAREABILITY, not on secrecy
 
@@ -61,7 +66,8 @@ v1 tabulated `.env` as spelling `R2_ACCESS_KEY_ID`, `SES_AK_ID`, `AUTOPILOT_PRIV
 Measured today, name-only, from `private/account/.env`: it holds `CLOUDFLARE_R2_ACCESS_KEY_ID`, `AWS_IAM_ADMIN_ACCESS_KEY_ID`, `GITHUB_AUTOPILOT_PRIVATE_KEY`, `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`, `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. `secret-rename.py` carries `private/account/.env` in `EXTRA` (`scripts/dev/secret-rename.py:105`) and the `--apply` ran:
 `private/account/.env.pre-rename.bak` exists beside it, mode 0600, exactly as `:269` promises.
 
-Consequence: **20 of the 50 `.env` keys now match a store name byte for byte** (Part 2), against v1's implied 0. Alias handling is still needed, but for **three** names, not ten: `AWS_SES_ACCESS_KEY_ID`, `AWS_SES_SECRET_ACCESS_KEY` (regional collapse) and `OBS_OTLP_CREDENTIALS` (pre-regional leftover).
+Consequence: **20 of the 50 `.env` keys now match a store name byte for byte** (Part 2),
+against v1's implied 0. Alias handling is still needed, but for **three** names, not ten: `AWS_SES_ACCESS_KEY_ID`, `AWS_SES_SECRET_ACCESS_KEY` (regional collapse) and `OBS_OTLP_CREDENTIALS` (pre-regional leftover).
 
 ### 0.3 The rename broke a consumer that no console-side scan can see
 
@@ -187,7 +193,8 @@ The store grows by **10 entries, not 39** — 19 names already exist, 2 alias on
 docstring accepts ("DELIBERATELY NOT ASSERTED — that a UUID is live in Bitwarden"). The map's `refreshed_at` is 2026-09-02T19:12:14Z — today — and `bws-map-refresh.py` regenerates it from the store, so it is the freshest name-level record available without a token. **Re-run the identical comparison with `bws --color no secret list <project> --output json` inside the devcontainer
 before acting on the "absent" column.**
 
-Method: name-only set algebra over `sed -n 's/=.*//p' private/account/.env` (50) and `.ci/config/bws-secret-map.json .secrets | keys` (56). GitHub twins resolved through `secret-rename.py`'s `RENAMES` table read as data (the technique `check_bws_map.py` uses, so the two cannot disagree) against `.ci/config/secret-reachability.json`.
+Method: name-only set algebra over `sed -n 's/=.*//p' private/account/.env` (50) and
+`.ci/config/bws-secret-map.json .secrets | keys` (56). GitHub twins resolved through `secret-rename.py`'s `RENAMES` table read as data (the technique `check_bws_map.py` uses, so the two cannot disagree) against `.ci/config/secret-reachability.json`.
 
 ### 2.1 `.env` → store
 
@@ -274,7 +281,8 @@ lesson did not generalise to the rename.
 
 **Severity, precisely.** It fails LOUDLY (`die`, exit 1) rather than publishing nothing and exiting 0 — the `die` at `:56` was written for a different reason and happens to catch this. So it is an outage, not a silent corruption. `CF_GLOBAL_API_KEY`/`CF_EMAIL` at `:58` are unaffected; those names did not change.
 
-**Fix**: rename the three names in `publish-solutions.sh:55` and `publish.py:40`. Outside this session's write access (`door:no-write-access` for a design-only agent) — it belongs to whoever holds `private/growth`.
+**Fix**: rename the three names in `publish-solutions.sh:55` and `publish.py:40`. Outside
+this session's write access (`door:no-write-access` for a design-only agent) — it belongs to whoever holds `private/growth`.
 
 **And the class, not the instance**: any `private/growth` or `private/generative` file that sources console's `.env` must be swept for all 25 rename pre-images, not just these three. `grep -rIn -E '\b(R2_|BACKUP_S3_|TURNSTILE_|BREAKPOINT_|SES_AK_|APP_PRIVATE_KEY|AUTOPILOT_|CLAUDE_CODE_OAUTH|GPG_|OTLP_CLIENT_)' private/growth private/generative` is the sweep.
 
@@ -284,7 +292,8 @@ Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="red
 
 This falsifies `agent/PLAN-secret-namespace-migration.md` Part 18's measurement that "**all 50 keys** in `private/account/.env` have live readers". 49 do. The one that does not is the one whose readers were assumed from a CLAUDE.md sentence rather than grepped.
 
-**Disposition: DELETE from `.env` and `.env.example`. Do not seed it.** Migrating a dead key into a shared store is how a store accumulates entries nobody can retire, which is the `R2_TOKEN_AUTH_API` situation reproduced deliberately.
+**Disposition: DELETE from `.env` and `.env.example`. Do not seed it.** Migrating a dead key
+into a shared store is how a store accumulates entries nobody can retire, which is the `R2_TOKEN_AUTH_API` situation reproduced deliberately.
 
 ### D3 — `STRIPE_WEBHOOK_SECRET`: one name, two different things (severity: cutover-breaking)
 
@@ -293,13 +302,15 @@ to establish it.
 
 `.ci/lib/account.sh:825-827` exports it as `E2E_WEBHOOK_SECRET` for the E2E webhook simulation suite. A naive `bws_export STRIPE_WEBHOOK_SECRET` in `account dev` would therefore (a) sign simulated webhooks with the production secret, breaking the suite in a way that looks like a test bug, and (b) put a production credential into a dev gateway that did not previously hold one.
 
-**Fix: rename the local key `STRIPE_WEBHOOK_SECRET_E2E_FIXTURE`** at its writer (`.ci/lib/account.sh:238,296`) and its reader (`:825-827`), and add it to `.env.example`. Then the collision is gone by construction and the store entry can be fetched by any consumer that genuinely wants the production secret. A name that means two things in two places is not a spelling difference; it
-is the only entry in this table that would have shipped a wrong value rather than an empty one.
+**Fix: rename the local key `STRIPE_WEBHOOK_SECRET_E2E_FIXTURE`** at its writer
+(`.ci/lib/account.sh:238,296`) and its reader (`:825-827`), and add it to `.env.example`. Then the collision is gone by construction and the store entry can be fetched by any consumer that genuinely wants the production secret. A name that means two things in two places is not a spelling difference; it is the only entry in this table that would have shipped a wrong value rather
+than an empty one.
 
 ### D4 — spelling differences that are INTENDED
 
 - `AWS_SES_ACCESS_KEY_ID` / `AWS_SES_SECRET_ACCESS_KEY` (`.env`) vs `_EU` / `_US` (store).
-Deliberate: `set-account-worker-secrets.sh:26,205` documents the `AWS_SES_ACCESS_KEY_ID_<SUFFIX> -> Worker AWS_SES_ACCESS_KEY_ID` collapse, and `.github/workflows/ci.yml:1471` already does exactly this aliasing. Local dev is EU. Express it with the existing `NAME > ENV_NAME` grammar (`.github/actions/bws-secrets/action.yml:35-40`), never by renaming either side.
+  Deliberate: `set-account-worker-secrets.sh:26,205` documents the
+`AWS_SES_ACCESS_KEY_ID_<SUFFIX> -> Worker AWS_SES_ACCESS_KEY_ID` collapse, and `.github/workflows/ci.yml:1471` already does exactly this aliasing. Local dev is EU. Express it with the existing `NAME > ENV_NAME` grammar (`.github/actions/bws-secrets/action.yml:35-40`), never by renaming either side.
 - `OBS_OTLP_CREDENTIALS` (unsuffixed, both sides) alongside `OBS_OTLP_CREDENTIALS_{EU,US,ASIA}`
 (store only). Intended today, but it is a name that will read as a bug to the next person; the exemption file already explains it and the fetch site should cite that line.
 - `SELLER_*` vs the proposed `SELLER_PROFILE_JSON`: a deliberate shape change, not a rename.
@@ -460,12 +471,15 @@ defects, they are cheap, and D3 in particular must land before any `bws_export` 
 
 - `[?]` **Q1 — `UPSTREAM_API_KEY`: shared or per-install?** It is the delegation auto-renew
 token an on-prem install uses against `www.rediacc.com` (`private/account/src/entry/on-premise.ts:45-53,142`; `src/routes/portal-delegation-certs.ts:300-301` issues it). The portal enforces **one active delegation cert per subscription**, so two machines holding the same token are renewing one chain — which is either exactly what you want (one shared dev on-prem identity) or a way
-for two machines to fight over one cert. **DEFAULT: MOVE it.** One subscription, one token, one store entry; the alternative is each machine minting its own and no way to tell them apart.
+for two machines to fight over one cert.
+  **DEFAULT: MOVE it.** One subscription, one token, one store entry; the alternative is
+each machine minting its own and no way to tell them apart.
 
 - `[?]` **Q2 — where do the 4 admin credentials live, and does `CF_GLOBAL_API_KEY` survive?**
 `AWS_IAM_ADMIN_*` + `CF_GLOBAL_API_KEY`/`CF_EMAIL` are the most powerful credentials in the file. Seeding them into `ci-shared` upgrades `BWS_ACCESS_TOKEN` from "everything CI can deploy" to "everything the AWS and Cloudflare accounts can do" — for a token that sits unencrypted in a file every local script sources. v1 proposed a second `admin-bootstrap` project readable only by
-`mc-rotate`; the snag is `publish-solutions.sh:58`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token. **DEFAULT: `admin-bootstrap` for all four, AND set `CLOUDFLARE_API_TOKEN` (already in `ci-shared`, already in `.env.example`, absent from `.env`) as the local Cloudflare path so `publish-solutions.sh` requires the scoped token instead of the
-global key.** That is what makes the two-account split mean anything: it shrinks every non-rotation local script from "full Cloudflare account" to a scoped token.
+`mc-rotate`; the snag is `publish-solutions.sh:58`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token.
+  **DEFAULT: `admin-bootstrap` for all four, AND set `CLOUDFLARE_API_TOKEN` (already in
+`ci-shared`, already in `.env.example`, absent from `.env`) as the local Cloudflare path so `publish-solutions.sh` requires the scoped token instead of the global key.** That is what makes the two-account split mean anything: it shrinks every non-rotation local script from "full Cloudflare account" to a scoped token.
 
 - `[?]` **Q3 — nine `SELLER_*` entries or one `SELLER_PROFILE_JSON`?** Part 1 (c) argues both
 sides. **DEFAULT: one blob.**

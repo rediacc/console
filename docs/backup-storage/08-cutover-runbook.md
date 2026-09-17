@@ -38,7 +38,8 @@ There is a third client of this wire that is easy to forget: the drill (`scripts
 scripts/backup-cutover-preflight.sh
 ```
 
-Read-only: no bucket creation, no object writes, no credential minting, no mutating Cloudflare or R2 call. Run it against production as often as you like.
+Read-only: no bucket creation, no object writes, no credential minting, no
+mutating Cloudflare or R2 call. Run it against production as often as you like.
 
 It refuses rather than skips. With no store credentials it exits 1 saying so, because a preflight that reports "looks fine" when it could not reach the store converts an absent bucket into a green light, and the first thing anyone does with a green light is decommission the working restore path.
 

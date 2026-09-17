@@ -1,5 +1,9 @@
 # PLAN: STATE.md session isolation
-Status: compacted Owner: 99ccf057 Full-Text: f7a5351a9 agent/PLAN-state-md-session-isolation.md Full-Text-Blob: bb261677a201d15fcc277f98ee32d489d091d269 Record-Sig: 2ffbba40
+Status: compacted
+Owner: 99ccf057
+Full-Text: f7a5351a9 agent/PLAN-state-md-session-isolation.md
+Full-Text-Blob: bb261677a201d15fcc277f98ee32d489d091d269
+Record-Sig: 2ffbba40
 
 ## Why
 STATE.md was keyed per BRANCH while sessions are per SESSION, and this repo routinely runs several sessions in one shared checkout. On 2026-08-09 three were live at once and one, obeying the Stop hook's staleness nag, destroyed a peer's entire state document: a live canary campaign, attempt 6 in flight, a watch id, five flag flips, an operator-owned design question. It was
@@ -20,7 +24,16 @@ the plan's rejection standing as the last word on the layout.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:54Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: none Gates: none Why-Source: author Read-History: `git show bb261677a201d15fcc277f98ee32d489d091d269` recovers the text; `git log --find-object=bb261677a201d15fcc277f98ee32d489d091d269 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:54Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: none
+Gates: none
+Why-Source: author
+Read-History: `git show bb261677a201d15fcc277f98ee32d489d091d269` recovers the text; `git log --find-object=bb261677a201d15fcc277f98ee32d489d091d269 --all` names the commit
 
 ## History
 - 2026-09-06T17:08:54Z compacted by 8f55d4f0 from `done` (record-sig 2ffbba40)

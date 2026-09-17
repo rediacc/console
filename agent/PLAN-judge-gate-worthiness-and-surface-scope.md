@@ -1,5 +1,7 @@
 # PLAN: judge gate-worthiness scoring and surface scope beyond Quality
-Status: draft Owner: 9d92d9b6 Updated: 2026-08-30
+Status: draft
+Owner: 9d92d9b6
+Updated: 2026-08-30
 
 Two defects in the Stop hook's regression-gate arm, designed together because they share one root cause: the judge rules on a fix it cannot see.
 
@@ -205,8 +207,9 @@ And it closes a rubber stamp that exists TODAY: 58 of 125 settles took the unver
 
 26 top-level jobs. scripts/ci-runner/manifest.ts holds 331 entries; 315 point at ci-quality.yml, 1 at ci-build-renet.yml. The manifest IS the Quality inventory.
 
-BUT: 117 of those entries are `gate-test:*` ids running .ci/scripts/test/gates/test-*.sh, and those drive the scripts belonging to the NON-Quality jobs, offline, with fixtures: test-ci-complete-tiers.sh, test-dispatch-release.sh, test-simulate-promotion-serverside.sh, seven test-breakpoint-*.sh, four test-installmethods-*.sh, seven test-releaseversion-*.sh, test-label-*.sh,
-test-review-*.sh, test-greenlight*.sh. All 117 are scheduled by `npm run ci` and by `npm run ci:quick`, the pre-push battery enforced at .claude/hooks/pre-bash/block-unverified-push.sh:71.
+BUT: 117 of those entries are `gate-test:*` ids running
+.ci/scripts/test/gates/test-*.sh, and those drive the scripts belonging to the NON-Quality jobs, offline, with fixtures: test-ci-complete-tiers.sh, test-dispatch-release.sh, test-simulate-promotion-serverside.sh, seven test-breakpoint-*.sh, four test-installmethods-*.sh, seven test-releaseversion-*.sh, test-label-*.sh, test-review-*.sh, test-greenlight*.sh. All 117 are scheduled by
+`npm run ci` and by `npm run ci:quick`, the pre-push battery enforced at .claude/hooks/pre-bash/block-unverified-push.sh:71.
 
 So the local battery ALREADY reaches nearly every non-Quality job's logic. The judge has simply never been told it exists: 0 of 125 settles routed there.
 
@@ -229,7 +232,9 @@ THREE SCRIPTS WITH NO TEST AT ALL. Verified by grepping every filename through .
     .ci/scripts/ci/cancel-older-runs.sh    (job cancel-watchdog)   0 references
     .ci/scripts/ci/dispatch-watchdog.sh    (job cancel-watchdog)   0 references
     .ci/scripts/ci/assert-job-succeeded.sh (job pipeline-sentinel) 0 references
-These are three missing CASES in the existing battery, not a missing battery. Recommendation: three test-*.sh files under .ci/scripts/test/gates/, wired as gate-test:* manifest entries. Small, offline, and it uses the machinery that is already there.
+These are three missing CASES in the existing battery, not a missing battery.
+  Recommendation: three test-*.sh files under .ci/scripts/test/gates/, wired as
+gate-test:* manifest entries. Small, offline, and it uses the machinery that is already there.
 
 ONE WIRING GAP. .ci/scripts/test/run-unit.sh is fast, offline, and is the `tests` job's unit lane (ct-tests.yml:211). It is not in the manifest, and wl_reggate.CHECK_SCRIPT_GLOBS (wl_reggate.py:47-63) cannot see packages/*/__tests__/**, so a fix whose right home is a unit test can only ever settle through the weak prove_named_artifact existence check (wl_reggate.py:365-395). Six
 fix-sets in the store routed to `unit`. Recommendation, minimal: extend CHECK_SCRIPT_GLOBS with packages/*/__tests__/**/*.test.ts and packages/*/src/**/*.test.ts, and prove by running the single file through its package's test key. Do NOT add run-unit.sh to the manifest as a gate; that changes what `npm run ci` costs and is a separate decision. Note check:ci-test-scripts-reachable
@@ -259,7 +264,8 @@ No new proving machinery is needed for `pipeline`: CHECK_SCRIPT_GLOBS already co
 
 worklist_messages.py:1768-1788, question (4), is rewritten to ask the routing question in the right order:
 
-FIRST: which ci.yml JOB would have caught this? `quality` is one of 26. THEN: map job to surface.
+  FIRST: which ci.yml JOB would have caught this? `quality` is one of 26.
+  THEN: map job to surface.
     quality                              -> gates
     run-sh-tests, initialize, ci-complete,
     label-guide, review-gate, check-release-state,

@@ -1,6 +1,8 @@
 # Devbox: apply the operator's uid at image build, not at every container start
 
-Status: draft Written: 2026-09-07, by a Plan agent, on the operator's instruction: "7111 is not needed for dockerfile (user) actually. let's employ a planning agent to have the same user id automatically for who ever runs ./run.sh setup. So, not statically 1000 which is current I guess."
+Status: draft
+Written: 2026-09-07, by a Plan agent, on the operator's instruction: "7111 is not
+needed for dockerfile (user) actually. let's employ a planning agent to have the same user id automatically for who ever runs ./run.sh setup. So, not statically 1000 which is current I guess."
 
 ## Why
 
@@ -102,7 +104,8 @@ entrypoint-renumber rationale for B2 and must move together; `test_twin_parity.p
 
 The single clearest before/after: `docker logs -t <container>` shows NO `remapping` and NO `chown` lines, and `starting openvscode-server` within about a second of container start, with the `nothing is listening` line gone.
 
-Then: `docker exec <c> id vscode` prints the operator's ids; `-u vscode whoami` prints `vscode`; `-u vscode sudo -n true` exits 0 (this is what alternative 2 breaks); writes into `/go/bin` and `/opt/openvscode-server/extensions` succeed; `git status --porcelain` produces no `dubious ownership`.
+Then: `docker exec <c> id vscode` prints the operator's ids; `-u vscode whoami`
+prints `vscode`; `-u vscode sudo -n true` exits 0 (this is what alternative 2 breaks); writes into `/go/bin` and `/opt/openvscode-server/extensions` succeed; `git status --porcelain` produces no `dubious ownership`.
 
 On THIS host the derive must not happen at all (`id -u` is 1000 and the base ships `vscode` at 1000 once the 7111 block is gone), so `docker image ls` shows no `rediacc/devbox:*`. The different-uid case is provable here without a second machine by building `Dockerfile.uid` with `DEVBOX_UID=1001` and asserting `find / -xdev \( -uid 1000 -o -gid 1000 \) | wc -l` is 0.
 

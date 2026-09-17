@@ -2,8 +2,7 @@
 
 ## Worktree Warning
 
-**CRITICAL: This repo uses git worktrees.** The working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not
-`/home/muhammed/monorepo/console/`.
+**CRITICAL: This repo uses git worktrees.** The working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
 
 **`git worktree add` is hook-blocked from the assistant's own Bash tool** (`.claude/rediacc_hooks/guards/block_worktree_add.py`, chain `pre-bash`), unconditionally — the operator runs it themselves via the `!` prefix when they want one created. **Settled default (2026-09-16): do not ask which checkout new work should happen in.** Continue in whatever checkout the session is already
 in. A worktree only ever comes from the operator's own `! git worktree add ...`; there is nothing to gain from asking permission for a decision the assistant cannot execute either way. `.claude/rediacc_hooks/guards/block_settled_questions.py` (chain `pre-ask`) refuses a worktree/branch-routing question the same way it refuses a commit-permission question — if the genuine
@@ -107,7 +106,9 @@ has been produced".
 ### 3. Verification comes before the claim
 
 - **Run the real thing.** Output, exit-code, and error-path defects are invisible to code
-reading and to mocked tests. Drive the actual command and read stdout and stderr SEPARATELY: a wrapper that swallows output, or progress text landing on stdout, only shows up in the raw bytes.
+reading and to mocked tests. Drive the actual command and read stdout and stderr
+  SEPARATELY: a wrapper that swallows output, or progress text landing on stdout, only
+shows up in the raw bytes.
 - **A plan's claim about unread code is a hypothesis.** Verify the load-bearing
 ones before relying on them. Approved plans are wrong about real code often enough that the first live run is part of the implementation, not a formality.
 - **Do not trust a report that has not been spot-checked**, including a subagent's and

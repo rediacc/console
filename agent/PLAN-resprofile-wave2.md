@@ -1,5 +1,6 @@
 # Resource profiling, wave 2: make the layer true, then make it readable
-Status: approved Owner: 74de73ca (2026-09-03)
+Status: approved
+Owner: 74de73ca (2026-09-03)
 
 The operator ruled 2026-09-03: the whole cluster as ONE change; it rides the open PR #585 on branch `0903-1`; the gate stays UNSEEDED and report-only. Those three answers close the packaging questions -- do not re-ask them, and do not quietly descope a piece into a follow-up. Four Plan agents (fable) ran the four angles separately; this is the synthesis. Every claim below marked
 **[V]** I re-verified myself after the agents reported, because the operator's instruction was to verify any claim that a binary or measurement exists before proposing on it.

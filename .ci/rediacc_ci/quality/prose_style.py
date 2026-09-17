@@ -285,6 +285,22 @@ TABLE_ROW = re.compile(r"^\s{0,3}\|")
 # line and silently miss the far more common trailing shape -- caught by the
 # synthetic test below before this pattern was ever wired in.
 HTML_COMMENT_LINE = re.compile(r".*<!--")
+# A short Title-Case "Key: value" line at column zero -- `Status:`, `Owner:`,
+# `Updated:`, `Related:`, `Full-Text-Blob:`, and every other header field this
+# repo's plan/handoff-document convention uses (`wl_checks.py`'s own header
+# parsers, PLAN_STATUS_RE/PLAN_OWNER_RE, read exactly this shape). Found live
+# 2026-09-17, third instance of the same class this session: joining
+# "Status: done" into the very next line "Owner: e580532b" (no blank line
+# separates them, which is how this repo writes every one of these headers)
+# merged two independently-parsed fields into one line neither the plan-owner
+# reader nor the handoff-checklist grammar can read anymore -- 89 files hit
+# before this was caught. Matched GENERALLY (any Title-Case key, not an
+# enumerated name list) on purpose: enumerating specific keys is exactly how
+# the first two REFLOW_STOP gaps (tables, HTML comments) were found -- one
+# case at a time, after real damage was already committed. Matching too much
+# here (a "Note: ..." aside staying on its own line) is the safe direction;
+# matching too little is what broke 89 files.
+DOC_HEADER_FIELD = re.compile(r"^\s{0,3}\*{0,2}[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*\*{0,2}:\s\S")
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
 # A `gen-docs` generated region. Everything between the two markers is MACHINE
 # OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many
@@ -970,6 +986,7 @@ REFLOW_STOP = (
     BLOCKQUOTE,
     INDENT_CODE,
     HTML_COMMENT_LINE,
+    DOC_HEADER_FIELD,
 )
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
@@ -1370,6 +1387,221 @@ def _rule_help(rules, ids):
                 break
 
 
+# Directive-shaped comment bodies that must NEVER be joined with a neighbour,
+# checked against the RAW line rather than a stripped body, to sidestep any
+# assumption about whether a space follows the marker -- Go's own directive
+# comments, `//go:build linux`, have none. An ALLOWLIST of known tool-directive
+# shapes, deliberately, not a broad heuristic: after two structural bugs in
+# `reflow_markdown` this same session (a multi-row table, an HTML-comment
+# marker), under-reflowing here -- leaving a directive-adjacent line un-joined
+# -- is the safe failure mode; over-reflowing -- silently absorbing a
+# noqa/eslint-disable/go:build line into a joined paragraph, turning the tool
+# it talks to off -- is not.
+COMMENT_DIRECTIVE = re.compile(
+    r"(?:^\s*#!|-\*-\s*coding|\bnoqa\b|\btype:\s|\bpragma\b|\bpylint:|\bmypy:|\bstyle-ok\b"
+    r"|eslint|@ts-(?:ignore|expect-error|nocheck)|prettier-ignore|//go:(?:build|generate)"
+    r"|\bnolint\b|SPDX-License-Identifier)",
+    re.IGNORECASE,
+)
+# A body that reads as CODE rather than PROSE: an assignment, a brace, a
+# statement/block keyword, or a trailing semicolon. This exists because the
+# obvious "does the body start with a space" test alone would happily join
+# COMMENTED-OUT CODE into one garbled line -- `# def foo():` followed by
+# `#     return 1` reads as "a space after the marker" exactly like real
+# prose does, and joining them corrupts the reference the comment exists to
+# keep. Matching commented-out code is the safe direction to err in: a
+# missed reflow costs one narrow paragraph, a wrongly-joined one costs a
+# broken reference nobody notices until they try to use it.
+CODE_SHAPED_COMMENT = re.compile(
+    r"[={};]|^\s*(?:def|class|import|from|return|if|elif|else|for|while|try|except|"
+    r"finally|with|const|let|var|function|type|interface|enum|switch|case|package|"
+    r"func|struct|@\w)\b"
+)
+# Whole-line comment markers, by suffix. Only a line that IS a comment for its
+# ENTIRE length (after its own leading whitespace) is ever eligible -- a
+# trailing comment on a code line (`x = 1  # note`) is left alone and ends
+# the current paragraph, exactly like a real code line would.
+COMMENT_LINE_BY_SUFFIX = {
+    ".py": "#",
+    ".ts": "//",
+    ".tsx": "//",
+    ".js": "//",
+    ".cjs": "//",
+    ".mjs": "//",
+    ".go": "//",
+}
+
+
+# A LEXER DECIDES WHAT A COMMENT IS, never `^\s*#`. Measured 2026-09-17: the
+# regex version of this map rewrote 52 of 1051 `.py` files in this repository
+# into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...`
+# line reads to a per-line regex exactly like the real comment paragraph
+# underneath it, and the two were joined into one line -- moving the closing
+# quotes and silently rewriting the string's own content. The equivalent
+# line-prefix survey of the `.ts`/`.js`/`.go` corpus reported zero damage, but
+# it shared the blind spot of the thing it was checking, so it was evidence of
+# nothing. `python_comment_lines` and `cstyle_comment_lines` already resolve
+# strings correctly for the LINT path; these two are the same resolution kept
+# addressable by physical line, which is what reconstruction needs and what
+# `_emit` throws away.
+def _python_reflow_lines(text):
+    """1-based line number -> (indent, body) for each WHOLE-LINE `#` comment.
+
+    `tokenize` is the interpreter's own lexer, so a `#` inside a string or a
+    docstring is never a `COMMENT` token and can never reach this map. A
+    comment whose physical line carries code before it is TRAILING and is
+    dropped here, which leaves it unjoinable and makes it end a paragraph.
+    """
+    found = {}
+    for token in tokenize.generate_tokens(io.StringIO(text).readline):
+        if token.type != tokenize.COMMENT:
+            continue
+        row, col = token.start
+        indent = token.line[:col]
+        if indent.strip():
+            continue
+        found[row] = (indent, token.string[1:])
+    return found
+
+
+def _cstyle_reflow_lines(text):
+    """The same map for a `//` language, from `cstyle_comment_lines`' scanner.
+
+    The state machine is that function's, with two additions reconstruction
+    needs: the offset each physical line starts at, so a comment's column
+    separates whole-line from trailing, and a `/* */` span consumed WITHOUT
+    recording anything. A block comment is left entirely alone -- rewrapping
+    one risks its own asterisk alignment, and there is no reader benefit that
+    pays for that.
+    """
+    found = {}
+    i = 0
+    lineno = 1
+    line_start = 0
+    length = len(text)
+    quote = None
+    while i < length:
+        char = text[i]
+        if char == "\n":
+            lineno += 1
+            i += 1
+            line_start = i
+            continue
+        if quote is not None:
+            if char == "\\":
+                if i + 1 < length and text[i + 1] == "\n":
+                    lineno += 1
+                    line_start = i + 2
+                i += 2
+                continue
+            if char == quote:
+                quote = None
+            i += 1
+            continue
+        if char in "\"'`":
+            quote = char
+            i += 1
+            continue
+        if char == "/" and i + 1 < length and text[i + 1] == "/":
+            end = text.find("\n", i)
+            end = length if end == -1 else end
+            indent = text[line_start:i]
+            if not indent.strip():
+                found[lineno] = (indent, text[i + 2 : end])
+            i = end
+            continue
+        if char == "/" and i + 1 < length and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            end = length if end == -1 else end
+            lineno += text.count("\n", i, end)
+            i = min(end + 2, length)
+            line_start = text.rfind("\n", 0, i) + 1
+            continue
+        i += 1
+    return found
+
+
+def reflow_comments(text, suffix, width):
+    """Join hard-wrapped WHOLE-LINE comment paragraphs, then wrap at `width`.
+
+    Same join-then-wrap contract as `reflow_markdown`, over a narrower and
+    more conservative corpus. A paragraph ends on: a blank line, a code line
+    (including a line with a TRAILING comment -- `x = 1  # note` is left
+    alone, not partially joined), an indentation change (a different nesting
+    level, not a continuation), a marker this suffix does not use, a
+    `COMMENT_DIRECTIVE` line, a `CODE_SHAPED_COMMENT` line, or a body whose
+    first character is not whitespace (`#!shebang`, `##header`, `///
+    <reference>`, an ASCII divider `#---`) -- none of which is prose a reader
+    would want rewrapped with its neighbours, and each is emitted unchanged.
+
+    A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this
+    contract differs from `python_comment_lines`. That function lets the error
+    reach a caller that reports the file as UNCHECKED, because a lint result
+    nobody produced must not read as clean. A rewriter has no equivalent
+    honest partial answer: guessing at the shape of a file Python itself
+    rejects is how a broken file becomes a differently broken file.
+    """
+    marker = COMMENT_LINE_BY_SUFFIX.get(suffix)
+    if marker is None:
+        return text
+    try:
+        eligible = _python_reflow_lines(text) if suffix == ".py" else _cstyle_reflow_lines(text)
+    except (tokenize.TokenError, SyntaxError, ValueError):
+        return text
+
+    out = []
+    buffer = []
+    buf_indent = None
+
+    def flush():
+        if not buffer:
+            return
+        joined = " ".join(piece.strip() for piece in buffer)
+        joined = re.sub(r"\s{2,}", " ", joined).strip()
+        prefix = buf_indent + marker + " "
+        avail = max(width - len(prefix), 20)
+        if len(prefix) + len(joined) <= width:
+            out.append(prefix + joined)
+        else:
+            for piece in textwrap.wrap(
+                joined, width=avail, break_long_words=False, break_on_hyphens=False
+            ):
+                out.append(prefix + piece)
+        buffer.clear()
+
+    # `split("\n")`, not `splitlines()`. The lexers above number lines the way
+    # `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks
+    # on `\f`, `\v` and U+2028 (named, not written -- a literal one here would
+    # break this very file). A single one of those anywhere in a file would
+    # slide every later line number by one against the map, and rejoining
+    # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
+    # the round trip exact, so the trailing newline needs no special case.
+    for offset, raw in enumerate(text.split("\n")):
+        entry = eligible.get(offset + 1)
+        if entry is None:
+            flush()
+            buf_indent = None
+            out.append(raw)
+            continue
+        indent, body = entry
+        if (
+            not body.strip()
+            or COMMENT_DIRECTIVE.search(raw)
+            or CODE_SHAPED_COMMENT.search(body)
+            or (body and not body[0].isspace())
+        ):
+            flush()
+            buf_indent = None
+            out.append(raw)
+            continue
+        if buf_indent is not None and indent != buf_indent:
+            flush()
+        buf_indent = indent
+        buffer.append(body)
+    flush()
+    return "\n".join(out)
+
+
 def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     """The `reflow` subcommand. DRY RUN BY DEFAULT; `--write` is the opt-in."""
     width = globals_.get("max_line_length", 384)
@@ -1378,15 +1610,22 @@ def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     except RuleError as exc:
         log.error(str(exc))
         return 1
-    files = [f for f in files if f.endswith(".md")]
+    files = [
+        f
+        for f in files
+        if f.endswith(".md") or pathlib.Path(f).suffix in COMMENT_LINE_BY_SUFFIX
+    ]
     if not files:
-        log.error("VACUOUS: zero markdown files matched, so reflow checked nothing.")
+        log.error("VACUOUS: zero reflowable file(s) matched, so reflow checked nothing.")
         return 1
     changed = []
     for rel in files:
         full = pathlib.Path(root) / rel
         before = read_text(full)
-        after = reflow_markdown(before, width)
+        if rel.endswith(".md"):
+            after = reflow_markdown(before, width)
+        else:
+            after = reflow_comments(before, pathlib.Path(rel).suffix, width)
         if after == before:
             continue
         joined = len(before.splitlines()) - len(after.splitlines())
@@ -1400,7 +1639,7 @@ def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     verb = "rewrote" if write else "would rewrite"
     total = sum(n for _, n in changed)
     log.info(
-        "reflow: %s %d of %d markdown file(s) at width %d, collapsing %d line(s) in total "
+        "reflow: %s %d of %d file(s) at width %d, collapsing %d line(s) in total "
         "(largest single file %d)"
         % (verb, len(changed), len(files), width, total, max((n for _, n in changed), default=0))
     )
@@ -1927,6 +2166,16 @@ def selftest():
         reflow_markdown(_styleok, 40),
         _styleok,
     )
+    # Found live 2026-09-17, THIRD instance of the same class this session:
+    # 89 real plan/handoff-document files had "Status: done" merged into the
+    # very next line "Owner: <id>" when this reflow ran tree-wide, because
+    # neither line matched any existing REFLOW_STOP pattern.
+    _docheader = "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n"
+    ctl.check(
+        "reflow: doc-header key:value lines never merge into each other",
+        reflow_markdown(_docheader, 40),
+        _docheader,
+    )
     ctl.check(
         "reflow: a heading is untouched and does not absorb the next line",
         reflow_markdown("# H\ntext\n", 40),
@@ -1947,6 +2196,73 @@ def selftest():
         "reflow: no word was lost to the wrap",
         long_para.split(),
         ["word"] * 40,
+    )
+
+    # ---- reflow of comments: a LEXER decides what a comment is -----------
+    # The regex version of this joined the docstring line below into the real
+    # comment paragraph under it, which moved the closing `"""` and rewrote the
+    # string. Measured over `git ls-files '*.py'` on 2026-09-17: 52 of 1051
+    # files came back with a DIFFERENT `ast.dump`. The docstring has to END on
+    # the `#` line for the bug to show -- a `"""` on a line of its own already
+    # stops the paragraph, which is why the obvious three-line fixture passes
+    # against the broken code and proves nothing.
+    _py_docstring = (
+        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
+    )
+    ctl.check(
+        "reflow: a `#` line inside a docstring is not a comment",
+        reflow_comments(_py_docstring, ".py", 384),
+        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+    )
+    # The same shape one language over: a template literal ending on a line
+    # that OPENS with `//`. No semicolon, deliberately -- `;` would trip
+    # CODE_SHAPED_COMMENT and the broken code would pass by accident.
+    _ts_template = (
+        "const t = `\n// looks like a comment`\n"
+        "// a real comment that is\n// hard wrapped over two lines\n"
+    )
+    ctl.check(
+        "reflow: a `//` line inside a template literal is not a comment",
+        reflow_comments(_ts_template, ".ts", 384),
+        "const t = `\n// looks like a comment`\n"
+        "// a real comment that is hard wrapped over two lines\n",
+    )
+    # A block comment CONTAINING a `//` line, not a plain one: a plain block is
+    # already left alone by a line regex, so it would pass against the broken
+    # code and pin nothing. Reflowing WITHIN a `/* */` span is out of scope --
+    # the span is a stop, never a paragraph.
+    _block = "/*\n// inside a block comment */\n// a real one that is\n// hard wrapped\n"
+    ctl.check(
+        "reflow: a `//` line inside a `/* */` block is not a comment line",
+        reflow_comments(_block, ".ts", 384),
+        "/*\n// inside a block comment */\n// a real one that is hard wrapped\n",
+    )
+    # The trailing-comment rule, pinned where it can actually fail: a `#` that
+    # follows the docstring's own closing quotes on one physical line. `x = 1  #
+    # note` alone is refused by a line regex too, so it pins nothing here.
+    _trailing = (
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
+    )
+    ctl.check(
+        "reflow: a TRAILING comment on a docstring's closing line is never joined",
+        reflow_comments(_trailing, ".py", 384),
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+    )
+    # A rewriter has no honest partial answer for a file the lexer rejects, so
+    # it returns the bytes it was given. The broken code joined these two.
+    ctl.check(
+        "reflow: a file `tokenize` cannot read is returned UNCHANGED",
+        reflow_comments("def f(:\n# a comment that is\n# hard wrapped\n", ".py", 384),
+        "def f(:\n# a comment that is\n# hard wrapped\n",
+    )
+    ctl.check(
+        "reflow: comments IDEMPOTENT",
+        reflow_comments(reflow_comments(_py_docstring, ".py", 384), ".py", 384),
+        reflow_comments(_py_docstring, ".py", 384),
     )
 
     # ---- the real rules file loads and its examples are consistent -------

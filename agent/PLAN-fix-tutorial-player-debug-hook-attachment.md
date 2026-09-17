@@ -16,7 +16,9 @@ also wrong as initially written: solution videos have no `words` manifest entry 
 
 Control-first verified per the plan's instruction: reverted `clickSelector` to the broken eval-click shape, confirmed the gate correctly fails with the exact original symptom, then restored and confirmed green again.
 
-Final state: `npm run test:tutorial-player -w @rediacc/www` passes cleanly (exit 0, all 5 scenarios), reproduced across 3 consecutive runs, zero orphaned processes left behind on any of them. Owner: e580532b Updated: 2026-08-28
+Final state: `npm run test:tutorial-player -w @rediacc/www` passes cleanly (exit 0, all 5 scenarios), reproduced across 3 consecutive runs, zero orphaned processes left behind on any of them.
+Owner: e580532b
+Updated: 2026-08-28
 
 ## TL;DR
 

@@ -1,5 +1,9 @@
 # PLAN: backup list reads the machine it runs on, locally
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-backup-list-executor-fix.md Full-Text-Blob: 660292bf31cbeb875e0ba036c84015bb12632d5b Record-Sig: f315cc25
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-backup-list-executor-fix.md
+Full-Text-Blob: 660292bf31cbeb875e0ba036c84015bb12632d5b
+Record-Sig: f315cc25
 
 ## Why
 `rdc backup list --machine m` was broken three ways at once. It resolved `m` as both the executor and the source, so the machine was asked to SSH into itself to read its own disk, which only works on the internal KVM fleet where a shared private key is copied to every VM and fails on every customer machine. It then probed two hardcoded subdirectories, `hot/` and `cold/`, left over
@@ -35,11 +39,16 @@ a renet commit that does not resolve, while the work it claims is demonstrably p
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: step Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:10Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: packages/cli/src/commands/backup.ts, packages/cli/src/commands/repo-backup-list.ts, packages/cli/src/services/executor/local-executor.ts, private/renet/pkg/functions/commands/backup.go,
-private/renet/cmd/renet/backup_list.go, packages/cli/src/services/tofu/provision.ts, packages/cli/src/commands/machine/register.ts, packages/cli/src/services/repo/repo-key-deployment.ts, private/renet/pkg/infra/mesh/mesh.go, private/renet/pkg/infra/ceph/provisioner.go, packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts, packages/cli/src/commands/repo-backup.ts,
-private/renet/cmd/renet/backup_push.go, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/utils/local-execution-failures.ts, packages/cli/src/commands/storage.ts, packages/shared/src/renet-contract/data/functions.schema.ts, private/renet/pkg/list/repositories.go, packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts,
-packages/cli/src/config/command-docs.ts Gates: check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-i18n-cli-key-usage, check:ci-i18n-command-parity, check:ci-renet-tiers, check:ci-renet-types, check:cli-docs, check:cli-examples, check:test-cli Why-Source: auto Read-History: `git show 660292bf31cbeb875e0ba036c84015bb12632d5b` recovers the text; `git log
---find-object=660292bf31cbeb875e0ba036c84015bb12632d5b --all` names the commit
+Record-Kind: compacted
+Prior-Status: step
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:10Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: packages/cli/src/commands/backup.ts, packages/cli/src/commands/repo-backup-list.ts, packages/cli/src/services/executor/local-executor.ts, private/renet/pkg/functions/commands/backup.go, private/renet/cmd/renet/backup_list.go, packages/cli/src/services/tofu/provision.ts, packages/cli/src/commands/machine/register.ts, packages/cli/src/services/repo/repo-key-deployment.ts, private/renet/pkg/infra/mesh/mesh.go, private/renet/pkg/infra/ceph/provisioner.go, packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts, packages/cli/src/commands/repo-backup.ts, private/renet/cmd/renet/backup_push.go, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/utils/local-execution-failures.ts, packages/cli/src/commands/storage.ts, packages/shared/src/renet-contract/data/functions.schema.ts, private/renet/pkg/list/repositories.go, packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts, packages/cli/src/config/command-docs.ts
+Gates: check:ci-cli-contract, check:ci-command-planes, check:ci-command-tree, check:ci-i18n-cli-key-usage, check:ci-i18n-command-parity, check:ci-renet-tiers, check:ci-renet-types, check:cli-docs, check:cli-examples, check:test-cli
+Why-Source: auto
+Read-History: `git show 660292bf31cbeb875e0ba036c84015bb12632d5b` recovers the text; `git log --find-object=660292bf31cbeb875e0ba036c84015bb12632d5b --all` names the commit
 
 ## History
 - 2026-09-06T17:06:10Z compacted by 8f55d4f0 from `step` (record-sig f315cc25)

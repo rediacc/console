@@ -1,5 +1,9 @@
 # PLAN: Lint-rule liveness as a config-derived probe matrix
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-lint-rule-matrix-probe.md Full-Text-Blob: 4470daee93042f1278a0e5a0589ff1c612a2e896 Record-Sig: 5fb8d870
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-lint-rule-matrix-probe.md
+Full-Text-Blob: 4470daee93042f1278a0e5a0589ff1c612a2e896
+Record-Sig: 5fb8d870
 
 ## Why
 `check_lint_rule_liveness.py` planted a violation per rule and asserted the rule reported it, which is a genuine control and was fenced into near-uselessness by three constants: one probe path (`packages/www/src/i18n/translations/tr.json`), a `key.startswith("i18n/")` namespace filter that dropped `custom/` and `i18n-source/` entirely, and a hand-listed five-entry SPECIMENS table.
@@ -30,8 +34,16 @@ commit), so searching commit subjects for "lint" would have concluded the work n
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:02:33Z Boxes: 0 attested, 0 open, 0 abandoned Epics: e87fa3ce Touched: eslint-rules/i18n/index.js, eslint.config.js, eslint-rules/e2e-test-naming-convention.js, eslint-rules/require-testid.js, eslint-rules/i18n/shared/require-path-option.js, package.json, scripts/ci-runner/manifest.ts,
-.github/workflows/ci-quality.yml, .ci/scripts/test/gates/test-gate-anti-vacuity.sh, eslint-rules/i18n/interpolation-match.js Gates: check:ci-lint-rule-liveness, check:lint Why-Source: auto Read-History: `git show 4470daee93042f1278a0e5a0589ff1c612a2e896` recovers the text; `git log --find-object=4470daee93042f1278a0e5a0589ff1c612a2e896 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:02:33Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: e87fa3ce
+Touched: eslint-rules/i18n/index.js, eslint.config.js, eslint-rules/e2e-test-naming-convention.js, eslint-rules/require-testid.js, eslint-rules/i18n/shared/require-path-option.js, package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, .ci/scripts/test/gates/test-gate-anti-vacuity.sh, eslint-rules/i18n/interpolation-match.js
+Gates: check:ci-lint-rule-liveness, check:lint
+Why-Source: auto
+Read-History: `git show 4470daee93042f1278a0e5a0589ff1c612a2e896` recovers the text; `git log --find-object=4470daee93042f1278a0e5a0589ff1c612a2e896 --all` names the commit
 
 ## History
 - 2026-09-06T17:02:33Z compacted by 8f55d4f0 from `done` (record-sig 5fb8d870)

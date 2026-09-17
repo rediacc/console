@@ -1,5 +1,9 @@
 # PLAN: Localize the rendered RDC cheat sheet by deleting its private rendering path
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-localize-cheat-sheet-rendering.md Full-Text-Blob: f109c90887d63c381f47f648b684bcf281a24c53 Record-Sig: c6284ed5
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-localize-cheat-sheet-rendering.md
+Full-Text-Blob: f109c90887d63c381f47f648b684bcf281a24c53
+Record-Sig: c6284ed5
 
 ## Why
 The rendered RDC cheat sheet was not a localization bug, it was a SECOND DOCUMENT. `packages/www/src/marp/rdc-cheat-sheet.marp.md` was a 371-line English-only file that no gate scanned and no translator touched, and it was what every reader saw in all 13 locales, while a fully translated `packages/www/src/content/docs/<lang>/rdc-cheat-sheet.md` reached the .md and .txt exports, the
@@ -30,8 +34,15 @@ A gate introduced pre-satisfied proves nothing about the day it was written.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: accepted Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:37Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: packages/www/scripts/validate-docs-cli-usage.js, packages/www/scripts/validate-content-accuracy.js, packages/www/scripts/generate-search-index.js, packages/www/src/content/docs/de/rdc-cheat-sheet.md,
-packages/www/scripts/lib/cli-reference-catalog.js, packages/www/src/content/docs/en/rdc-cheat-sheet.md, .github/workflows/ci-quality.yml, packages/www/src/layouts/DocsLayout.astro, package.json Gates: check:ci-dead-css, check:ci-docs-render-parity, check:ci-parity, check:ci-retired-commands, check:ci-seo, check:cli-docs, check:cli-examples, check:i18n Why-Source: author
+Record-Kind: compacted
+Prior-Status: accepted
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:37Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: packages/www/scripts/validate-docs-cli-usage.js, packages/www/scripts/validate-content-accuracy.js, packages/www/scripts/generate-search-index.js, packages/www/src/content/docs/de/rdc-cheat-sheet.md, packages/www/scripts/lib/cli-reference-catalog.js, packages/www/src/content/docs/en/rdc-cheat-sheet.md, .github/workflows/ci-quality.yml, packages/www/src/layouts/DocsLayout.astro, package.json
+Gates: check:ci-dead-css, check:ci-docs-render-parity, check:ci-parity, check:ci-retired-commands, check:ci-seo, check:cli-docs, check:cli-examples, check:i18n
+Why-Source: author
 Read-History: `git show f109c90887d63c381f47f648b684bcf281a24c53` recovers the text; `git log --find-object=f109c90887d63c381f47f648b684bcf281a24c53 --all` names the commit
 
 ## History

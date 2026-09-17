@@ -1,4 +1,7 @@
-Status: draft Owner: 74de73ca Measured: 2026-09-02, against the working tree (uncommitted) and the live GitHub org. Every count below was produced by a parser over the real files or by `gh api`, not by reading.
+Status: draft
+Owner: 74de73ca
+Measured: 2026-09-02, against the working tree (uncommitted) and the live GitHub org.
+Every count below was produced by a parser over the real files or by `gh api`, not by reading.
 
 > **The tree is being edited by another session while this was written.**
 > `.github/workflows/cd-deploy-worker.yml` (22:55:45) and
@@ -82,7 +85,8 @@ spelling.
 | **BLOCKED on an operator rotation** | 3 | `OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` (§3 row O3) |
 | **Stays** | 1 (×3 repos) | `BWS_ACCESS_TOKEN` |
 
-Total: 37 + 4 + 2 + 3 + 1 = 47 org/console rows, plus the two submodule `CLAUDE_CODE_OAUTH_TOKEN` copies which go with §6. **44 of 48 are deletable in the cutover commit's wake; 3 wait on a rotation; 1 stays.**
+Total: 37 + 4 + 2 + 3 + 1 = 47 org/console rows, plus the two submodule `CLAUDE_CODE_OAUTH_TOKEN`
+copies which go with §6. **44 of 48 are deletable in the cutover commit's wake; 3 wait on a rotation; 1 stays.**
 
 ---
 

@@ -1,6 +1,7 @@
 # Research: zero-cost "Ask Assistant" deep links for docs
 
-Status: research complete (web-only, no repo edits). Plan mode blocked the requested output path `/home/muhammed/console/agent/a68f3ab4/RESEARCH-ai-deeplinks.md`, so the full findings live here. Copy this file to that path once plan mode is exited.
+Status: research complete (web-only, no repo edits). Plan mode blocked the requested
+output path `/home/muhammed/console/agent/a68f3ab4/RESEARCH-ai-deeplinks.md`, so the full findings live here. Copy this file to that path once plan mode is exited.
 
 **Confidence legend:** HIGH = documented by the vendor or reproduced by multiple independent 2026 sources. MED = multiple third-party sources agree, no vendor doc. LOW = single source, or sources disagree.
 
@@ -11,11 +12,16 @@ Status: research complete (web-only, no repo edits). Plan mode blocked the reque
 **Web:** `https://claude.ai/new?q=<urlencoded prompt>`
 
 - Parameter name is `q`. No vendor documentation exists for the *web* URL - Anthropic's
-only published deep-link doc covers the desktop scheme (below) and explicitly scopes itself to Desktop. Source: https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link
+only published deep-link doc covers the desktop scheme (below) and explicitly scopes itself to Desktop.
+  Source: https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link
 - Third-party link generators still ship `claude.ai/new?q=` as their current output and
-claim it **auto-submits on most clicks** ("Yes on most clicks", with edge cases needing a manual send). Confidence MED - this is a vendor-unsupported surface. Source: https://u2l.ai/tools/claude-prompt-link-generator Source: https://folge.me/tools/prompt-to-url (also lists an `incognito` flag for an anonymous chat)
+claim it **auto-submits on most clicks** ("Yes on most clicks", with edge cases needing a manual send). Confidence MED - this is a vendor-unsupported surface.
+  Source: https://u2l.ai/tools/claude-prompt-link-generator
+  Source: https://folge.me/tools/prompt-to-url (also lists an `incognito` flag for an
+anonymous chat)
 - Security research from March 2026 (updated May 2026) describes `claude.ai/new?q=...` as
-a live feature and used it as the delivery vector for a prompt-injection/exfiltration chain. Anthropic fixed the injection, not the parameter. Source: https://www.oasis.security/blog/claude-ai-prompt-injection-data-exfiltration-vulnerability
+a live feature and used it as the delivery vector for a prompt-injection/exfiltration chain. Anthropic fixed the injection, not the parameter.
+  Source: https://www.oasis.security/blog/claude-ai-prompt-injection-data-exfiltration-vulnerability
 - **Conflicting claim:** one search-summary source asserts the web `?q=` was removed in
 October 2025. No primary evidence for that was found, and the March/May 2026 security writeup plus current generators contradict it. Treat as unresolved. Confidence LOW on "removed"; MED on "still works".
 - **Logged out:** generators say the user is bounced to claude.ai signup and the prompt
@@ -53,16 +59,21 @@ claude://cowork/new?q=Draft%20the%20Q2%20update&folder=%2FUsers%2Fme%2Fdocs
 `https://chatgpt.com/?q=<urlencoded prompt>`
 
 - `q` is the prompt. Confidence HIGH - this is the URL OpenAI's own ChatGPT search Chrome
-extension installs as the browser's default search engine: `https://chatgpt.com/?q=%s&hints=search&ref=ext` Source: https://www.bleepingcomputer.com/news/security/openais-new-chatgpt-search-chrome-extension-feels-like-a-search-hijacker/ Source: https://chromewebstore.google.com/detail/chatgpt-search/ejcfepkfckglbgocfkanmcdngdijcgld
+extension installs as the browser's default search engine: `https://chatgpt.com/?q=%s&hints=search&ref=ext`
+  Source: https://www.bleepingcomputer.com/news/security/openais-new-chatgpt-search-chrome-extension-feels-like-a-search-hijacker/
+  Source: https://chromewebstore.google.com/detail/chatgpt-search/ejcfepkfckglbgocfkanmcdngdijcgld
 - `hints=` selects a UI mode. Documented values in the wild:
-`search | image | think | research | shopping | study | canvas`. It is a **client-side UI shortcut only**, not an API. Source: https://matthew.philogene.co.za/understanding-chatgpts-hints-parameter-a-ui-shortcut-not-a-search-window/ Source: https://folge.me/tools/prompt-to-url
+`search | image | think | research | shopping | study | canvas`. It is a **client-side UI shortcut only**, not an API.
+  Source: https://matthew.philogene.co.za/understanding-chatgpts-hints-parameter-a-ui-shortcut-not-a-search-window/
+  Source: https://folge.me/tools/prompt-to-url
 - `temporary-chat=true` opens an ephemeral chat. Confidence MED.
-Source: https://folge.me/tools/prompt-to-url
+  Source: https://folge.me/tools/prompt-to-url
 - **Auto-submit:** yes in the search-engine flow (that is the whole point of `hints=search`
   + `ref=ext`). For a bare `?q=` without `hints`, sources describe prefill and disagree on
 auto-send. Confidence MED. Do not depend on either behaviour.
 - **`model=` does NOT work.** A reported bug: passing `q=` forces the default model and
-silently ignores `model=`. Confidence MED. Source: https://community.openai.com/t/using-the-q-url-parameters-defaults-the-model-to-gpt4o-even-if-you-explicitly-pass-a-model-via-the-url-using-model/1074025
+silently ignores `model=`. Confidence MED.
+  Source: https://community.openai.com/t/using-the-q-url-parameters-defaults-the-model-to-gpt4o-even-if-you-explicitly-pass-a-model-via-the-url-using-model/1074025
 - **Length:** no published limit. One generator caps at 4,000 chars overall and notes
 ChatGPT itself tolerates ~6,000. Confidence LOW.
 
@@ -71,23 +82,29 @@ ChatGPT itself tolerates ~6,000. Confidence LOW.
 ## 3. Other providers
 
 ### Perplexity - works
-`https://www.perplexity.ai/search?q=<urlencoded>` (also `https://www.perplexity.ai/?q=`). This is the documented "add Perplexity as a browser search engine" URL, so it **runs the query** rather than merely prefilling. Confidence HIGH for the search-engine form. Source: https://github.com/qutebrowser/qutebrowser/discussions/8435 Source: https://folge.me/tools/prompt-to-url
+`https://www.perplexity.ai/search?q=<urlencoded>` (also `https://www.perplexity.ai/?q=`). This is the documented "add Perplexity as a browser search engine" URL, so it **runs the query** rather than merely prefilling. Confidence HIGH for the search-engine form.
+Source: https://github.com/qutebrowser/qutebrowser/discussions/8435
+Source: https://folge.me/tools/prompt-to-url
 
 ### Grok - works
-`https://grok.com/?q=<urlencoded>`. "Grok auto-submits the `q=` value on page load. Some edge cases require a manual submit click." Recommended cap 2,000 chars pre-encoding. Confidence MED (third-party only). Source: https://u2l.ai/tools/grok-prompt-link-generator
+`https://grok.com/?q=<urlencoded>`. "Grok auto-submits the `q=` value on page load. Some edge cases require a manual submit click." Recommended cap 2,000 chars pre-encoding. Confidence MED (third-party only).
+Source: https://u2l.ai/tools/grok-prompt-link-generator
 
 ### Microsoft Copilot - works, and this is the cautionary tale
-`https://copilot.microsoft.com/?q=<urlencoded>`. "When a user clicks this URL, Copilot automatically loads the prompt and executes it as if the user had manually typed and submitted it" - on page load, no further interaction. Confidence HIGH that the parameter exists and auto-executes; UNKNOWN whether the January 2026 patch narrowed it. Source:
-https://wizardcyber.com/reprompt-attack-microsoft-copilot-ai-abuse/ Source: https://www.malwarebytes.com/blog/news/2026/01/reprompt-attack-lets-attackers-steal-data-from-microsoft-copilot This is the "Reprompt" attack (CVE-2026-24307 / related CVE-2026-21516), disclosed by Varonis Threat Labs, patched in the 13–14 January 2026 Patch Tuesday. A one-click link exfiltrated profile
-details, file summaries and conversation memory from an authenticated consumer session. **Relevance to us: a prefilled-prompt deep link is a documented attack surface. Our button must only ever carry text the user can see.**
+`https://copilot.microsoft.com/?q=<urlencoded>`. "When a user clicks this URL, Copilot automatically loads the prompt and executes it as if the user had manually typed and submitted it" - on page load, no further interaction. Confidence HIGH that the parameter exists and auto-executes; UNKNOWN whether the January 2026 patch narrowed it.
+Source: https://wizardcyber.com/reprompt-attack-microsoft-copilot-ai-abuse/
+Source: https://www.malwarebytes.com/blog/news/2026/01/reprompt-attack-lets-attackers-steal-data-from-microsoft-copilot
+This is the "Reprompt" attack (CVE-2026-24307 / related CVE-2026-21516), disclosed by Varonis Threat Labs, patched in the 13–14 January 2026 Patch Tuesday. A one-click link exfiltrated profile details, file summaries and conversation memory from an authenticated consumer session. **Relevance to us: a prefilled-prompt deep link is a documented attack surface. Our button must only
+ever carry text the user can see.**
 
 ### Google Gemini - does NOT work natively
-`gemini.google.com/app?q=` / `?prompt=` only function with a third-party Chrome extension that simulates keystrokes; Gemini has no native URL prefill. One generator lists `gemini.google.com/app?q=` as supported, which contradicts the extension authors - treat the generator as wrong. Confidence MED that it does not work natively. Source:
-https://github.com/elliot79313/gemini-url-prompt Source: https://chromewebstore.google.com/detail/gemini-url-prompt/kdbgjkfdooaiompgeckjbegnnccchmma
+`gemini.google.com/app?q=` / `?prompt=` only function with a third-party Chrome extension that simulates keystrokes; Gemini has no native URL prefill. One generator lists `gemini.google.com/app?q=` as supported, which contradicts the extension authors - treat the generator as wrong. Confidence MED that it does not work natively.
+Source: https://github.com/elliot79313/gemini-url-prompt
+Source: https://chromewebstore.google.com/detail/gemini-url-prompt/kdbgjkfdooaiompgeckjbegnnccchmma
 
 ### Google AI Studio - partial
-`https://aistudio.google.com/app/prompts/new_chat` accepts `model=` and `grounding=true`, but a prompt-prefill parameter is an open feature request, not a shipped feature. Mintlify nonetheless ships an `aistudio` contextual-menu option, so some mechanism may exist - unverified. Confidence LOW. Source:
-https://discuss.ai.google.dev/t/set-prompt-to-aistudio-via-url-query-parameter/77309
+`https://aistudio.google.com/app/prompts/new_chat` accepts `model=` and `grounding=true`, but a prompt-prefill parameter is an open feature request, not a shipped feature. Mintlify nonetheless ships an `aistudio` contextual-menu option, so some mechanism may exist - unverified. Confidence LOW.
+Source: https://discuss.ai.google.dev/t/set-prompt-to-aistudio-via-url-query-parameter/77309
 
 ### Mistral Le Chat - no evidence
 No URL-prefill parameter found for `chat.mistral.ai`. Also note the service was rebranded toward "Mistral Vibe" in May 2026. Confidence LOW; do not ship a Mistral button.
@@ -109,7 +126,8 @@ https://urlencodedecode.com/blog/url-length-limits-by-browser.html
 - **URL-encoding roughly triples the cost of newlines, punctuation and non-ASCII** (`\n` →
 `%0A`, each non-ASCII byte → `%XX`), so a 2,000-char URL carries roughly 1,200–1,500 characters of readable prompt, and much less for a non-English locale.
 
-**Conclusion: inlining page content is not viable.** A single docs page is 5–50 KB of markdown. Send a short question plus a URL pointer to the markdown, and let the assistant fetch it.
+**Conclusion: inlining page content is not viable.** A single docs page is 5–50 KB of
+markdown. Send a short question plus a URL pointer to the markdown, and let the assistant fetch it.
 
 ---
 
@@ -117,12 +135,13 @@ https://urlencodedecode.com/blog/url-length-limits-by-browser.html
 
 ### Vercel - closest model to what we want
 - Changelog 18 July 2025: a "copy page dropdown in the top right corner … select your
-provider or copy as markdown", with **v0, Claude and ChatGPT** as the three providers. "The page content will be formatted and loaded into the selected AI provider." Source: https://vercel.com/changelog/open-vercel-documentation-pages-in-ai-providers
+provider or copy as markdown", with **v0, Claude and ChatGPT** as the three providers. "The page content will be formatted and loaded into the selected AI provider."
+  Source: https://vercel.com/changelog/open-vercel-documentation-pages-in-ai-providers
 - Menu items (from the docs page itself, last updated 2026-02-27):
   - **View as Markdown** - refetches the canonical URL with `Accept: text/markdown`, makes
     a browser-local Blob, opens it in a new tab.
   - **Copy page** - copies the markdown to the clipboard.
-Source: https://vercel.com/docs/agent-resources/markdown-access
+  Source: https://vercel.com/docs/agent-resources/markdown-access
 - Vercel also does **content negotiation**: `https://vercel.com/docs/functions` returns HTML
 to a browser and `text/markdown` when the request carries `Accept: text/markdown` *or* when it detects a known AI agent, with `Vary: Accept` so caches stay separate. Plus `.md` endpoints, `.graph.md` cross-link maps, `graph.json`, `sitemap.md`, `taxonomy.json`.
 - The exact provider URLs Vercel builds are **not published** and are constructed in
@@ -132,7 +151,8 @@ client-side JS. Confirming them needs a real browser with devtools.
 Menu in the bottom-right of every docs page offers four items:
 1. Copy Markdown  2. View raw Markdown  3. "Open a prompt in **ChatGPT** to read the page"
 4. "Open a prompt in **Claude** to read the page".
-The phrasing "a prompt … to read the page" strongly implies **a URL pointer, not inlined content**. Per-page markdown via `.md` (`https://posthog.com/docs/getting-started/install.md`), index at `https://posthog.com/llms.txt`. Source: https://posthog.com/docs/ai-engineering/markdown-llms-txt
+The phrasing "a prompt … to read the page" strongly implies **a URL pointer, not inlined content**. Per-page markdown via `.md` (`https://posthog.com/docs/getting-started/install.md`), index at `https://posthog.com/llms.txt`.
+Source: https://posthog.com/docs/ai-engineering/markdown-llms-txt
 
 ### Mintlify - the most configurable, and it is a product surface
 `docs.json` → `contextual.options`. Built-ins: `copy`, `view`, `assistant`, `download-pdf`, `chatgpt`, `claude`, `perplexity`, `grok`, `aistudio`, `devin`, `devin-desktop`, `mcp`, `add-mcp`, `cursor`, `vscode`, `devin-mcp`, `download-spec`. `display` is `header` (default) or `toc`. Per-page override via frontmatter.
@@ -148,7 +168,8 @@ Custom entries use a templated href with three placeholders - **`$page` (the cur
             "query": [{ "key": "text", "value": "Check out this documentation: $page" }] } }
 ```
 
-Mintlify does **not** publish the base URLs behind the built-in `chatgpt`/`claude` options. The existence of `$page` (full markdown) as a placeholder shows they do inline content for custom options, which makes the 2,000-char budget a live concern for anyone using it. Source: https://www.mintlify.com/docs/ai/contextual-menu
+Mintlify does **not** publish the base URLs behind the built-in `chatgpt`/`claude` options. The existence of `$page` (full markdown) as a placeholder shows they do inline content for custom options, which makes the 2,000-char budget a live concern for anyone using it.
+Source: https://www.mintlify.com/docs/ai/contextual-menu
 
 ### Kinde - the one site whose exact URL is published
 Builds only a ChatGPT link, and it sends **a URL, not content**:
@@ -159,13 +180,16 @@ https://chat.openai.com/?q=Can%20you%20summarize%20this%20page%3A%20https%3A%2F%
 
 decoded: `Can you summarize this page: https://docs.kinde.com/get-started/guides/first-things-first/`
 
-The author says Claude and Gemini "don't support this type of pre-written prompt" and ships a "Copy for AI" clipboard button instead. That assessment is from an earlier snapshot and is now wrong about Claude. Source: https://dev.to/kinde/adding-some-ai-hints-to-our-documentation-1nhf
+The author says Claude and Gemini "don't support this type of pre-written prompt" and ships a "Copy for AI" clipboard button instead. That assessment is from an earlier snapshot and is now wrong about Claude.
+Source: https://dev.to/kinde/adding-some-ai-hints-to-our-documentation-1nhf
 
 ### Cloudflare - markdown only, no provider buttons
-`developers.cloudflare.com/workers/llms.txt`, `developers.cloudflare.com/workers/index.md`, a "View as Markdown" affordance, and an `/agent-setup/` hub pushing Skills + MCP. No "Open in ChatGPT/Claude" links found on the page. Source: https://developers.cloudflare.com/workers/ , https://developers.cloudflare.com/agent-setup/
+`developers.cloudflare.com/workers/llms.txt`, `developers.cloudflare.com/workers/index.md`, a "View as Markdown" affordance, and an `/agent-setup/` hub pushing Skills + MCP. No "Open in ChatGPT/Claude" links found on the page.
+Source: https://developers.cloudflare.com/workers/ , https://developers.cloudflare.com/agent-setup/
 
 ### Fumadocs - open-source, drop-in
-`npx @fumadocs/cli add ai/page-actions` gives `<LLMCopyButton markdownUrl>` and `<ViewOptions markdownUrl githubUrl>`; generates `llms.txt`, `llms-full.txt`, per-page `.md`/`.mdx`, and supports `Accept`-header negotiation. Worth reading its `page-actions` component for the real provider URLs. Source: https://www.fumadocs.dev/docs/integrations/llms
+`npx @fumadocs/cli add ai/page-actions` gives `<LLMCopyButton markdownUrl>` and `<ViewOptions markdownUrl githubUrl>`; generates `llms.txt`, `llms-full.txt`, per-page `.md`/`.mdx`, and supports `Accept`-header negotiation. Worth reading its `page-actions` component for the real provider URLs.
+Source: https://www.fumadocs.dev/docs/integrations/llms
 
 ---
 
@@ -179,7 +203,8 @@ blockquote summary; zero or more H2-delimited sections containing file lists, ea
 - Per-page markdown convention, verbatim: pages "provide a clean markdown version of those
 pages at the same URL as the original page, either with `.md` appended (`page.html.md`) or with the extension replaced by `.md`."
 - **`llms-full.txt` is NOT in the spec.** It is a de-facto convention (a single file
-containing the whole corpus) popularised by Mintlify, Vercel and Fumadocs. Source: https://llmstxt.org/
+containing the whole corpus) popularised by Mintlify, Vercel and Fumadocs.
+  Source: https://llmstxt.org/
 
 **Per-page `.md` support among the sites in §5:**
 

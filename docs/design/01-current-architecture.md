@@ -1,6 +1,7 @@
 # 01 — Current Architecture (the "before" picture)
 
-**Status: HISTORICAL RECORD, frozen.** This file describes the system as it stood on 2026-07-10, BEFORE the redesign. It is deliberately not updated: it is the "before" half of the comparison, and the motivating evidence for the delete ledger in 02 §6. For what exists now, read 02 through 05.
+**Status: HISTORICAL RECORD, frozen.** This file describes the system as it stood on
+2026-07-10, BEFORE the redesign. It is deliberately not updated: it is the "before" half of the comparison, and the motivating evidence for the delete ledger in 02 §6. For what exists now, read 02 through 05.
 
 Everything below was verified against code on 2026-07-10 (console `973763d30`, renet `8478420`). Line numbers drift; identifiers are the stable reference.
 
@@ -52,7 +53,8 @@ template sets `imageFeatures: "layering"` only (no `exclusive-lock`), so a root 
 | At rest | LUKS (default; `repository create` refuses without password unless `--unencrypted`) | none (TypeDirectory) | none (plain ext4 .img) | none (no csi encryption configured) |
 | On-disk form | one LUKS file | directory | plain .img | RBD image |
 
-Consequence: stealing a k8s machine's disk yields everything, including every k8s Secret in the kine DB (k3s stores them unencrypted by default). The single-file property and LUKS are the same feature: the file IS the LUKS container; unencrypted repos degrade to directories.
+Consequence: stealing a k8s machine's disk yields everything, including every k8s Secret in
+the kine DB (k3s stores them unencrypted by default). The single-file property and LUKS are the same feature: the file IS the LUKS container; unencrypted repos degrade to directories.
 
 ## 5. Known gaps and complexity evidence (why the redesign)
 

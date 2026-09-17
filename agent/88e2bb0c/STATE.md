@@ -6,8 +6,9 @@ ROOT CAUSE: a prior session (9d92d9b6, likely the clarity-round6 portable-toolch
 
 FIX (outside this repo, in the user's home dotfiles, not console source): removed the stale `. "..."` line from both ~/.profile and ~/.bashrc. Verified with `grep -n claude-1000 ~/.bashrc ~/.profile` (no matches) and a clean `bash -c "source ~/.bashrc"`. DONE.
 
-SEPARATELY: cleared the 8 unread sub-agent reports the Stop hook was carrying (all from session 9d92d9b6, 2026-08-26, research toward the pr-epics feature / Standing Orders output style -- both of which now ship, confirming the research was consumed, not orphaned). Read all 8 directly (not via the fork I launched -- stopped that fork, a17263637304f5806, once I'd done the reading
-myself to avoid duplicate work) and marked them read via wl_report.py --read.
+SEPARATELY: cleared the 8 unread sub-agent reports the Stop hook was
+carrying (all from session 9d92d9b6, 2026-08-26, research toward the pr-epics feature / Standing Orders output style -- both of which now ship, confirming the research was consumed, not orphaned). Read all 8 directly (not via the fork I launched -- stopped that fork, a17263637304f5806, once I'd done the reading myself to avoid duplicate work) and marked them read via wl_report.py
+--read.
 
 A background mail waiter (bxaotc8gg, wl_wait.py --timeout 60 = 60 MINUTES not seconds) is running, listening for cross-session requests.
 

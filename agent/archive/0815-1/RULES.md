@@ -31,7 +31,9 @@ takes the datastore cold lock first, and a repo that did not actually quiesce is
 The campaign's defects have a signature: **the check ran, went green, and was looking at nothing.** So proof here is narrower than "the tests pass".
 
 - **Run the real thing before you claim it.** Every one of the cold path's three
-worst bugs survived a full unit suite and died in the first live run on an ops VM: staging that could never succeed, an outage paid before an unlicensed repo was refused, and a barrier reporting `1 repositories quiesced` while the fixture container never missed a sample.
+worst bugs survived a full unit suite and died in the first live run on an ops
+  VM: staging that could never succeed, an outage paid before an unlicensed
+repo was refused, and a barrier reporting `1 repositories quiesced` while the fixture container never missed a sample.
 - **A test's FIXTURE is part of the system under test.** That last bug was
 invisible because the discovery fake returned the same repos forever, so a barrier that stopped nothing looked exactly like one that stopped everything. When a live run finds something a unit test should have caught, fix the fixture, not just the code.
 - **Mutate the check before you trust it.** Break the thing on purpose and watch

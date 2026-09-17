@@ -1,6 +1,7 @@
 # Removing `gh` from secret rotation
 
-Status: PLAN — 2026-09-06, session d1589e0b Operator ask: *"plan for removing gh cli tool usage there since we don't keep them in github. also remove from github."*
+Status: PLAN — 2026-09-06, session d1589e0b
+Operator ask: *"plan for removing gh cli tool usage there since we don't keep them in github. also remove from github."*
 
 ## Why this is urgent rather than tidy
 

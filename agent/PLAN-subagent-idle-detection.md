@@ -1,6 +1,9 @@
 # Subagent idle/liveness detection
 
-Status: ready Owner: 0ad063bf Origin: session 0ad063bf, 2026-08-23. Design by a Plan agent, verified against live artifacts. Operator: approved to build; asked to be present when it starts.
+Status: ready
+Owner: 0ad063bf
+Origin: session 0ad063bf, 2026-08-23. Design by a Plan agent, verified against live artifacts.
+Operator: approved to build; asked to be present when it starts.
 
 ## Why
 
@@ -15,7 +18,8 @@ finished and wrote its report as plain assistant text, never calling `SendMessag
 4. `wl_report.py --list --unread` was run BEFORE the report existed and the stale
 answer was treated as current. The report had been on disk, unread, correct, from 12:30:50Z.
 
-Cost: four items sat `[>]` on a stopped worker for 3.5 hours, their leases running 110 minutes past the point the work was done.
+Cost: four items sat `[>]` on a stopped worker for 3.5 hours, their leases
+running 110 minutes past the point the work was done.
 
 ## The signal that already exists
 
@@ -163,7 +167,8 @@ and the two can disagree (a heartbeat written while the transcript write fails, 
 - It does not fix the case it appears to fix. A teammate that resumes writes to
 its transcript *before* it calls a tool (the assistant record comes first), so the transcript sees the resume at least as early as a `PreToolUse` heartbeat would, and sometimes earlier.
 
-**Decision: not built.** The un-idle edge is served by the level read that is already load-bearing. Recorded here so the question is not re-opened from scratch — it is a good idea whose answer is "we already have it", not "no".
+**Decision: not built.** The un-idle edge is served by the level read that is
+already load-bearing. Recorded here so the question is not re-opened from scratch — it is a good idea whose answer is "we already have it", not "no".
 
 ---
 

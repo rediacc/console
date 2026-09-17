@@ -1,6 +1,7 @@
 # 01. Verified context
 
-Status: **verified 2026-08-27**, session `e580532b`, branch `0827-1`, on a freshly rebuilt host.
+Status: **verified 2026-08-27**, session `e580532b`, branch `0827-1`, on a freshly
+rebuilt host.
 
 **RE-VERIFY BANNER.** Every file:line below is a hypothesis until you check it against the tree. Numbers taken from a dev server are marked as such and are look-only grade, because `browser-probe.md` records that a stale dev server serves a SMALLER page without failing. Re-take every page number against a frozen static build before acting on it.
 

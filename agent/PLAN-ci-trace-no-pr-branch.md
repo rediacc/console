@@ -1,5 +1,7 @@
 # PLAN: ci-trace must be able to read a branch that has no open PR
-Status: done — shipped in fb3c09a2; test 2 (check-ci-watch-recipe extension) NOT done, see Outcome Owner: 854ac1c6 Updated: 2026-08-25
+Status: done — shipped in fb3c09a2; test 2 (check-ci-watch-recipe extension) NOT done, see Outcome
+Owner: 854ac1c6
+Updated: 2026-08-25
 
 ## The finding, measured
 
@@ -55,7 +57,8 @@ and the whole reason this reader keys on a head is that a watchdog rerun *replac
 
 ## Tests — each must FIRE on a planted defect and stay silent when clean
 
-Surface: **static gate** for the wiring, plus a **live probe** for the query, following `.claude/skills/testing`'s routing (a behavioural claim about a GraphQL response is not something a `check-*.sh` can assert).
+Surface: **static gate** for the wiring, plus a **live probe** for the query,
+following `.claude/skills/testing`'s routing (a behavioural claim about a GraphQL response is not something a `check-*.sh` can assert).
 
 1. **`test-ci-trace-branch.sh`** (new, under `.ci/scripts/test/gates/`):
    - *Clean:* `ci_rollup(root, "main", allow_branch=True)` returns `ok` with a

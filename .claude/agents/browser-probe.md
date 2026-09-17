@@ -110,7 +110,8 @@ Test `rule.selectorText` first, or check the rule type explicitly. And when a CS
 - `title`, `url` and `viewport` are **not** top-level commands. Viewport is
 `agent-browser set viewport <w> <h>`; url and title come from `eval`.
 - **`eval` shares one scope across invocations**, so a bare `const x = ...` throws
-`Identifier 'x' has already been declared` on the second call. Wrap every snippet in an IIFE: `agent-browser eval "(()=>{ ... })()"`.
+`Identifier 'x' has already been declared` on the second call. Wrap every snippet in an
+  IIFE: `agent-browser eval "(()=>{ ... })()"`.
 - Playwright-style `text=Foo` selectors are **rejected** by `click`. Use a CSS selector or
 a `@ref` from `agent-browser snapshot`.
 - `scroll down <px>` under-scrolls on long pages. Use

@@ -634,7 +634,8 @@ is not vacuously true. Without this the gate reproduces inside itself the failur
 3. **CONTROL** - a fabricated key is reported UNREACHABLE, so "reachable" has not widened
 into "always true".
 
-Control-first: it simulates the pre-fix probe (manifest awareness removed) and requires assertion 2 to FAIL against it; if the planted defect passes, the gate declares itself broken.
+Control-first: it simulates the pre-fix probe (manifest awareness removed) and requires
+assertion 2 to FAIL against it; if the planted defect passes, the gate declares itself broken.
 
 Origin (`check_gate_reachability_coverage.py:4-17`): on 2026-08-07 the probe returned False for EVERY gate - all 191 registrations - because it walked `npm run X` edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts`, whose body contains no `npm run` references. The cost was not a missed defect but a MANUFACTURED one: it told two consecutive sessions that correctly-wired
 gates were "defined but never run". *"A probe that cannot pass is the same class as a check that cannot fail, and it is more expensive, because it spends real work denying something true."*

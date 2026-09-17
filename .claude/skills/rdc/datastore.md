@@ -2,8 +2,9 @@
 
 Create named datastores, attach them to machines, snapshot them, and fork them copy-on-write.
 
-**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with `VM_CEPH_NODES` SET IN THE ENVIRONMENT; without it the Ceph VMs come up as bare OS images and `rbd create` fails with "command not found"; bootstrap explicitly with `renet ops ceph provision` under the same env), and worker machines must have `ceph-common` installed with `/etc/ceph/ceph.conf` and keyring
-in place; the ops provisioner handles that only during a Ceph-enabled `ops up`. All commands run over SSH; see [SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for SSH key configuration.
+**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with
+`VM_CEPH_NODES` SET IN THE ENVIRONMENT; without it the Ceph VMs come up as bare OS images and `rbd create` fails with "command not found"; bootstrap explicitly with `renet ops ceph provision` under the same env), and worker machines must have `ceph-common` installed with `/etc/ceph/ceph.conf` and keyring in place; the ops provisioner handles that only during a Ceph-enabled `ops
+up`. All commands run over SSH; see [SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for SSH key configuration.
 
 **Agent sessions**: every datastore verb here is blocked unless `REDIACC_ALLOW_CLUSTER_OPS` (usually `*`, since creation has no existing cluster) was exported in the operator's terminal BEFORE the session started; the check is ancestry-verified and an in-session export is rejected. Creating repos inside a datastore additionally needs `REDIACC_ALLOW_GRAND_REPO`.
 
@@ -212,7 +213,9 @@ Source RBD image (read-write, production)
                                 +-- Mount (BTRFS)
 ```
 
-**Reads**: through device mapper -> RBD clone -> Ceph cluster (cached locally) **Writes** (`--writes local`): to the local sparse overlay, no network I/O, discarded on detach **Writes** (`--writes ceph`): to a durable clone in the pool **Storage**: the overlay starts at 0 bytes and grows only with writes
+**Reads**: through device mapper -> RBD clone -> Ceph cluster (cached locally)
+**Writes** (`--writes local`): to the local sparse overlay, no network I/O, discarded on detach **Writes** (`--writes ceph`): to a durable clone in the pool
+**Storage**: the overlay starts at 0 bytes and grows only with writes
 
 ## Troubleshooting
 

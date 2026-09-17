@@ -70,20 +70,22 @@ Raw spike transcripts were lost in the 2026-07-11 reboot. Their verdicts survive
 
 ### P1: renet storage core [DONE] (PASS-WITH-NOTES)
 
-Review: `spec/07-p1-gate-review.md`. Delivered the `RepoRuntime` interface plus its shared contract-test suite (20 docker + 15 kube contract tests), the named multi-datastore registry with create/attach/detach/fork/snapshot and the `--writes` contract, RBD **group snapshots** proven live on Ceph Squid 19.2.4, the k8s repo-as-folder model with per-volume LUKS images and static
-`local` PVs behind a no-provisioner/WFFC StorageClass, the per-namespace default-deny NetworkPolicy and the hostPath/hostNetwork ValidatingAdmissionPolicy, the delete ledger (ceph-csi, RADOS namespaces, per-PVC images, the whole teardown-leak apparatus), and **config schema v3** including the unified persist path with per-field encryption that fixed the confirmed encrypted-mode
-data-loss bug (R2-F3).
+Review: `spec/07-p1-gate-review.md`. Delivered the `RepoRuntime` interface plus its shared
+contract-test suite (20 docker + 15 kube contract tests), the named multi-datastore registry with create/attach/detach/fork/snapshot and the `--writes` contract, RBD **group snapshots** proven live on Ceph Squid 19.2.4, the k8s repo-as-folder model with per-volume LUKS images and static `local` PVs behind a no-provisioner/WFFC StorageClass, the per-namespace default-deny
+NetworkPolicy and the hostPath/hostNetwork ValidatingAdmissionPolicy, the delete ledger (ceph-csi, RADOS namespaces, per-PVC images, the whole teardown-leak apparatus), and **config schema v3** including the unified persist path with per-field encryption that fixed the confirmed encrypted-mode data-loss bug (R2-F3).
 
 ### P2: cluster layer [DONE] (PASS-WITH-NOTES)
 
-Review: `spec/08-p2-gate-review.md`. Delivered the F1-F8 fork PKI re-mint with a fail-loud CA-fingerprint refusal, the anchor model (`ds-control-<cluster>` embedded control plane), the membership verbs (`cluster join` / `cluster evict`), and the node graceful shutdown/boot lifecycle.
+Review: `spec/08-p2-gate-review.md`. Delivered the F1-F8 fork PKI re-mint with a fail-loud
+CA-fingerprint refusal, the anchor model (`ds-control-<cluster>` embedded control plane), the membership verbs (`cluster join` / `cluster evict`), and the node graceful shutdown/boot lifecycle.
 
 The review's most valuable finding was a contradiction: the composed new-model fork and migrate did **not** exist in product code at review time. They existed as renet primitives plus a hand battery script, while `rdc cluster fork` still ran the pre-program recipe and called `kube_identity_rewrite` **without** `operation=fork`, silently defaulting to the CA-preserving migrate arm.
 The verb named "fork" was producing forks that carried the parent CA: precisely the F1 hazard this program exists to close. That was fixed during the review, and the composed orchestrator became P3's mandatory first wave. Nine carry-ins were handed to P3.
 
 ### P3: feature layer + thin CSI driver [DONE] (PASS-WITH-NOTES, conditional)
 
-Review: `spec/10-p3-gate-review.md`. This was the largest phase and it is where the design met reality.
+Review: `spec/10-p3-gate-review.md`. This was the largest phase and it is where the design met
+reality.
 
 **What shipped:**
 
@@ -98,7 +100,9 @@ weight templating, served by renet's router as a Traefik weighted service.
 5. **dm-thin overlay auto-grow**, wired to the storage-maintain timer.
 6. **The thin node-local CSI driver** (`csi.rediacc.io`), specified in `spec/09-csi-driver.md`.
 Host-side systemd everything, **zero container images**, self-registering with no node-driver-registrar. csi-sanity conformance went 21/58 to 43/7 to **48/50**, with the two residuals ruled as documented deviations (**CSI-DEVIATION-1**: an over-long volume name is cleanly rejected rather than truncated, because the kernel caps device-mapper names at 128 chars and CSI permits
-128-char volume names, so the two cannot both be honoured; **CSI-DEVIATION-2**: CreateSnapshot idempotency is size-proxy, not provenance). Enablement is automatic: it folds into `kube install` (control plane) and `datastore attach` (node units and the per-datastore StorageClass), and out of `datastore detach` and `kube uninstall`.
+128-char volume names, so the two cannot both be honoured;
+   **CSI-DEVIATION-2**: CreateSnapshot idempotency is size-proxy, not provenance). Enablement is
+automatic: it folds into `kube install` (control plane) and `datastore attach` (node units and the per-datastore StorageClass), and out of `datastore detach` and `kube uninstall`.
 7. **The e2e rewrite**: suites 15, 16, and 17 rebuilt on the new model.
 
 **What P3 proved live** (four independent fork proofs, one dedicated migrate leg, one CSI conformance window, three e2e suites): see the README's "What is proven live" table. The headline is that whole-cluster fork with data included, PKI re-mint, secret scrub, and an undisturbed parent is now a repeatable end-to-end test, not a design assertion.
@@ -183,7 +187,8 @@ is an implicit plane re-declaration**; a move into a machine-default noun silent
 4. **MCP** (`mcp` XOR `mcpExcludeReason`) — stale entries caught loudly.
 5. **Ref binding** — silent: no binding means no resource picker and no action button.
 
-Detail: spec/03 §4.9, §4.10, §4.11, §8.3. Gates that enforce parts of this today: `check:ci-cli-contract`, `check:ci-command-planes`, `check:ci-console-coverage`.
+Detail: spec/03 §4.9, §4.10, §4.11, §8.3. Gates that enforce parts of this today:
+`check:ci-cli-contract`, `check:ci-command-planes`, `check:ci-console-coverage`.
 
 Closing step: the **MCP alignment gate**: apply the parked tree-walk coverage patch (`~/.claude/projects/-home-muhammed-monorepo-console/parked/mcp-coverage-gate.patch`; it found 56 drifted commands on the old tree) and classify every leaf of the new tree.
 
@@ -242,13 +247,15 @@ failure mode is **silent** (pods sit Pending forever with no error naming the mi
 
 Two structural blockers must be settled before the reshape lands: the **positional-argument blocker** and the **plane model**. Detail lives in `06-cli-reshape.md`.
 
-GATE: `./rdc.sh --help` tree matches 06; MCP coverage test green on the new tree; vitest, lint, and the CLI i18n gates green; USER reviews the tree.
+GATE: `./rdc.sh --help` tree matches 06; MCP coverage test green on the new tree; vitest, lint,
+and the CLI i18n gates green; USER reviews the tree.
 
 ### P5: examples on the new surface [TODO]
 
 Full catalog per 07 (§1-2 conventions are locked, including the `config init --name` footgun); harness plus gate opt-ins (07 §3-4). Order: harness + 02 + 10 first (proves conventions), then parallel batches; track 3 after its cluster examples' commands exist; VM access serialized by harness flock.
 
-GATE: `run-examples.sh --all --continue` full PASS locally, teardown-verified; per-example timings recorded (they feed the CI-set trim).
+GATE: `run-examples.sh --all --continue` full PASS locally, teardown-verified; per-example
+timings recorded (they feed the CI-set trim).
 
 ### P6: CI [TODO]
 

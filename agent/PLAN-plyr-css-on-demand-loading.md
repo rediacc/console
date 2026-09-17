@@ -1,5 +1,7 @@
 # PLAN: load the video player's CSS on demand, not on every page that carries the hydrator
-Status: draft Owner: 74de73ca Updated: 2026-09-03
+Status: draft
+Owner: 74de73ca
+Updated: 2026-09-03
 
 Every claim below was confirmed at source level in the toolchain, not inferred.
 
@@ -40,8 +42,8 @@ inline-vs-link, not which pages get it.
 `tutorial-video.css` contains **no selector for either mount class** -- every rule is `.tvp-*` or a `.tvp-root`-scoped `.plyr*` override, i.e. DOM React creates. The placeholder's reserved box comes from `solution-video.css:94,108` and `DocsLayout.astro:1369`, neither of which moves. So the stylesheet governs only DOM that does not exist until after it has loaded, and
 `Promise.all([ensurePlayerStyles(), import(player)])` makes the first frame of player DOM already styled.
 
-Cascade: `.plyr`/`.tvp-` selectors exist in exactly two files, and their overlaps are decided by SPECIFICITY, not order -- `solution-video.css:39-40,71-72` say in as many words that they were written that way "so the outcome does not depend on which stylesheet the bundler emits first". Reordering is safe, and that safety is documented in-tree. There is no `<ClientRouter />`
-anywhere, so no head swap can orphan a link.
+Cascade: `.plyr`/`.tvp-` selectors exist in exactly two files, and their overlaps are
+decided by SPECIFICITY, not order -- `solution-video.css:39-40,71-72` say in as many words that they were written that way "so the outcome does not depend on which stylesheet the bundler emits first". Reordering is safe, and that safety is documented in-tree. There is no `<ClientRouter />` anywhere, so no head swap can orphan a link.
 
 **The second import must move too, not merely may.** If `tutorial-video.css` stays static, `TutorialVideoPlayer.*.css` still exists and is still linked on all 1,366 pages (4,590 B instead of 37,018), and the gate's assertion is unsatisfiable.
 

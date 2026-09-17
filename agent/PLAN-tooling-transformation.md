@@ -1,5 +1,7 @@
 # PLAN: Tooling Transformation
-Status: ready Owner: 8f55d4f0 Updated: 2026-09-07
+Status: ready
+Owner: 8f55d4f0
+Updated: 2026-09-07
 
 ONE plan, not two. Round 1 was drafted into `~/.claude/plans/` where nothing tracked it; Round 2 was then written as a SECOND document, which made it worse. Both are now here, in one tracked file: Round 2 is the live plan, Round 1 is kept below in full because its 83 ticked boxes are the only record of what was actually done and why.
 
@@ -6205,8 +6207,7 @@ Status: READY. Twelve workstreams drafted by Plan agents, attacked by two advers
 The tooling surface is about 245k lines: `.ci/` 122k (91% bash), `.claude/` 62k, `scripts/` 52k TypeScript, `eslint-rules/` 6.4k JavaScript, and a 2,640-line `run.sh`. Discovery found three verbatim duplications and hundreds of copied helpers, five divergent tool-install lists, a half-built gate registry, a GitHub quality tier that runs 131 gate tests in one step and is floored by
 a single 785 s hook suite, 1,014 environment variable names across ten sources of truth, Linux-only bash with four live macOS bugs, sixteen allow/block lists at the repo root read by cwd-relative code, and an `agent/` history whose pointers mostly do not resolve.
 
-Goal: one enforced language rule, one shared Python core, a declaration-driven gate registry that emits both the local runner input and the CI shard matrix, a bootstrap that installs everything hooks and gates need, centralized environment with Bitwarden as the only credential path, an `agent/` history that is trustworthy and pushed to agents rather than remembered, and measurable
-parallelism gains. Testing and parallelization are the top priorities. Implementation runs under ultracode: a root driver, ten sub-drivers, agents in worktrees.
+Goal: one enforced language rule, one shared Python core, a declaration-driven gate registry that emits both the local runner input and the CI shard matrix, a bootstrap that installs everything hooks and gates need, centralized environment with Bitwarden as the only credential path, an `agent/` history that is trustworthy and pushed to agents rather than remembered, and measurable parallelism gains. Testing and parallelization are the top priorities. Implementation runs under ultracode: a root driver, ten sub-drivers, agents in worktrees.
 
 ## Measured baseline (2026-09-06, branch point c6d3af163)
 
@@ -6452,9 +6453,7 @@ Targets: local full-run floor 785 s to 273 s (then lower once the hooks are port
 - [x] P6 Cutover: harness calls the dispatcher, `settings.json` collapses from 65 command entries to 22, shims deleted, key space migrated.  **DONE 2026-09-07 (166623039):** settings.json 73 command entries to 30, 456 execs per Bash call to 35. Twins MOVED to .claude/oracles/, not deleted: they are what test_guards_differential compares against.
 - (round 1, SUPERSEDED by a Round 2 box above) P7 Cross-OS, the `WORKLIST_*` registry, suite sharding, lifecycle collapse to 11 entries.
 
-Targets: 2 processes per Bash tool call. **THE BASELINE THIS IS MEASURED AGAINST DOES NOT EXIST IN THE TREE, found 2026-09-07.** `git ls-files | grep -iE 'strace|exec-baseline'` returns ZERO, and there is no `GUARD_PASS` or fork-counter artifact anywhere, so W5 P0's stated deliverable (a fork counter) and the "456 execs to 35" figure in P6's note are both unreproducible today. A
-target defined against a missing baseline cannot be checked off, and that is the first thing P7 must fix. Measured directly instead: a Bash tool call currently fires **12 hook processes** before any in-guard forks (PreToolUse/Bash 4, PostToolUse 5 on the Bash matcher plus 3 on `*`), against the target of 2. All 374 `check` and 21 `check_out` assertions stay green throughout;
-`worklist-cases` is untouched.
+Targets: 2 processes per Bash tool call. **THE BASELINE THIS IS MEASURED AGAINST DOES NOT EXIST IN THE TREE, found 2026-09-07.** `git ls-files | grep -iE 'strace|exec-baseline'` returns ZERO, and there is no `GUARD_PASS` or fork-counter artifact anywhere, so W5 P0's stated deliverable (a fork counter) and the "456 execs to 35" figure in P6's note are both unreproducible today. A target defined against a missing baseline cannot be checked off, and that is the first thing P7 must fix. Measured directly instead: a Bash tool call currently fires **12 hook processes** before any in-guard forks (PreToolUse/Bash 4, PostToolUse 5 on the Bash matcher plus 3 on `*`), against the target of 2. All 374 `check` and 21 `check_out` assertions stay green throughout; `worklist-cases` is untouched.
 
 ### W6: Bootstrap, run.sh router and cross-OS (5 phases)
 - [x] P1 Prerequisites, router split, launchers, entry tests. Two prerequisite defects land in wave 1 because everything depends on them: `scripts/gates/check-dead-bash.ts:152` has no `py` alternative in its TEXTUAL regex, and `scripts/ci-runner/run.ts:940` computes `whole` from only `--only`/`--skip`, so a `--changed` receipt currently authorises a push.  **DONE 2026-09-06:** W6 P1 router split: run.sh 120 lines, run-legacy.sh 1334, run.ps1/run.cmd
@@ -6470,8 +6469,10 @@ target defined against a missing baseline cannot be checked off, and that is the
 the last ten twins that had a registration to repoint -- release_state, branch, claude_attribution, commit_identity, pr_description, resolved_threads, review_comments, review_report_replies, submodule_branches, plus the earlier scope_scripts_reachability step rename -- each byte-identical to its twin on both streams with the same exit code on this tree, and each already asserting
 equivalence over 5 to 14 distinct trees.
 
-THREE OF THE LAST THIRTEEN CANNOT BECOME LIVE BY REPOINTING, and finding out why was the wave's real yield. `check-autopilot-no-bypass.sh`, `check-ci-job-aggregation.sh` and `check-swallowed-failures.sh` are invoked by NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line, no wrapper. CI runs their gate TESTS and never the gates, so each one's logic is
-exercised against fixtures while it never judges the real repository. `check:ci-parity` cannot see this, because a gate absent from BOTH sides is absent from the comparison. Two of the three exit 0 against this tree; the third refuses without an organisation variable. Tracked, with the registration decision parked, rather than folded into a cutover it is not.
+THREE OF THE LAST THIRTEEN CANNOT BECOME LIVE BY REPOINTING, and finding out why was the wave's real yield. `check-autopilot-no-bypass.sh`, `check-ci-job-aggregation.sh` and `check-swallowed-failures.sh` are invoked by
+NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line,
+no wrapper. CI runs their gate TESTS and never the gates, so each one's logic is exercised against fixtures while it never judges the real repository. `check:ci-parity` cannot see this, because a gate absent from BOTH sides is absent from the comparison. Two of the three exit 0 against this tree; the third refuses without an organisation variable. Tracked, with the registration
+decision parked, rather than folded into a cutover it is not.
 
 `staging_tag_guard` is the fourth and is excluded for cause: its ledger is the programme's one permanent red.
 
@@ -6659,7 +6660,8 @@ quoted paths, so it can never yield their own names; omitting them gives `Cannot
 * **Copying the whole tracked tree was measured and rejected:** 5431 files / 2.0 GB,
 because the `private/*` gitlinks dominate, times seven fixtures per run.
 
-Now: twin rc=0 with 9 PASS, port rc=0 with 9 controls, and `test_twin_parity` reports `twin and port agree (both green)`.
+Now: twin rc=0 with 9 PASS, port rc=0 with 9 controls, and `test_twin_parity` reports
+`twin and port agree (both green)`.
 
 ## Verification
 

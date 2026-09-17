@@ -1,6 +1,8 @@
 # PLAN: make discover() git-tracked-only so a local machine's untracked files cannot contaminate a committed baseline
 
-Status: done Owner: d778be9d Updated: 2026-09-16
+Status: done
+Owner: d778be9d
+Updated: 2026-09-16
 
 ## Tasks
 
@@ -52,8 +54,8 @@ Two more data points on which spelling to write:
 - .ci/rediacc_ci/quality/plan_housekeeping.py is a quality gate in the same package
 that already uses the consolidated spelling throughout: gitx.ls_files(plan_glob, root=root) at :652, and gitx.git(["init", "-q", ctldir]) at :503 to build a control repo inside its own selftest.
 
-So: the fix follows the three baseline gates' semantics (git-tracked corpus, refuse when git cannot answer) using rediacc_ci.gitx's spelling, which is the in-package consolidation of exactly those three raw call sites. gitx.is_work_tree() is the documented way to ask the refusal question (.ci/rediacc_ci/gitx.py:207) -- verified present, matching signature is_work_tree(root:
-os.PathLike[str] | str | None = None) -> bool.
+So: the fix follows the three baseline gates' semantics (git-tracked corpus,
+refuse when git cannot answer) using rediacc_ci.gitx's spelling, which is the in-package consolidation of exactly those three raw call sites. gitx.is_work_tree() is the documented way to ask the refusal question (.ci/rediacc_ci/gitx.py:207) -- verified present, matching signature is_work_tree(root: os.PathLike[str] | str | None = None) -> bool.
 
 ## 3. Tracked vs. explicitly-named target
 

@@ -15,7 +15,8 @@ Rendering is the expensive step. A pair renders in 2 to 3 minutes, and narration
 
 At the measured pace that is an order of 15 to 30 hours of render, plus narration. Doing it four times because four decisions landed separately is the single largest waste available in this program.
 
-**So: every video-affecting decision lands BEFORE any render, and the fleet is rendered ONCE.** That is Wave 7, and Waves 2, 3 and 6 are its prerequisites. This is ordering, not postponement (I2).
+**So: every video-affecting decision lands BEFORE any render, and the fleet is rendered
+ONCE.** That is Wave 7, and Waves 2, 3 and 6 are its prerequisites. This is ordering, not postponement (I2).
 
 ## Operator directives, this session
 

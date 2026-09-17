@@ -4,7 +4,8 @@ Measurement point: `HEAD = ac817a647`, branch `tooling-transformation-w0`, 2026-
 
 **This phase performs NO cutover.** It is measurement only, because the passthrough drain is the highest outage risk in the programme and the only file that can carry a cutover (`.github/workflows/**`) has a single writer that is not W8.
 
-Related: [08-driver-contract.md](08-driver-contract.md) section 2 (Bitwarden token schema) and section 3 (single-writer lock table).
+Related: [08-driver-contract.md](08-driver-contract.md) section 2 (Bitwarden token schema) and
+section 3 (single-writer lock table).
 
 ---
 
@@ -62,7 +63,8 @@ End-to-end, `python3 scripts/dev/bws-map-refresh.py --dry-run` prints the warnin
 
 ## 3. P1 SURVEY — the complete passthrough class
 
-Method: PyYAML 6.0.3 node parse of all 28 workflow files and 5 `action.yml` files, cross-checked against raw `grep -rn`. No sampling.
+Method: PyYAML 6.0.3 node parse of all 28 workflow files and 5 `action.yml` files, cross-checked
+against raw `grep -rn`. No sampling.
 
 ### 3.1 `secrets: inherit` — zero, and banned
 
@@ -260,11 +262,12 @@ BWS_ACCESS_TOKEN
 `CLAUDE_CODE_OAUTH_TOKEN` exists on `rediacc/renet`, `rediacc/account` and `rediacc/elite` — not on `rediacc/console`, which is where `watchdog-monitor.yml` runs. `gh api orgs/rediacc/actions/secrets` returns `total_count: 0`, and all 8 environments hold zero secrets, so there is no other scope it could resolve from. `scripts/gates/check-secret-scope.ts:49` records the same wrong
 reason ("repo-scoped on renet/account/elite") as the justification for allowlisting it.
 
-Consequence: the watchdog's tier 1 (`CLOUDFLARE_API_TOKEN`) is already known-empty and baselined, and tier 2 is empty too. **Both classifier tiers are dead**, so every CI failure falls through to `WATCHDOG_RETRY_ALLOWLIST_PATTERNS` — which is precisely the "a judgment nobody made decided whether to spend a ~500-machine-minute retry" outcome the comment at `:142-147` says the second
-provider exists to prevent. This is the same failure class as `7343ae9dc` itself: a successful-looking call that authenticates as nobody.
+Consequence: the watchdog's tier 1 (`CLOUDFLARE_API_TOKEN`) is already known-empty and baselined,
+and tier 2 is empty too. **Both classifier tiers are dead**, so every CI failure falls through to `WATCHDOG_RETRY_ALLOWLIST_PATTERNS` — which is precisely the "a judgment nobody made decided whether to spend a ~500-machine-minute retry" outcome the comment at `:142-147` says the second provider exists to prevent. This is the same failure class as `7343ae9dc` itself: a
+successful-looking call that authenticates as nobody.
 
-Door: `.github/workflows/**` has a single writer that is not W8 (08-driver-contract section 3), so this is handed to the driver rather than fixed here. The fix is a decision, not a patch: either add `CLAUDE_CODE_OAUTH_TOKEN` as a repo secret on `rediacc/console` (operator-only), or fetch it from Bitwarden — which `watchdog-monitor.yml:153-158` argues against, because a bws step
-ahead of the monitor can take the monitor down, as it did on 2026-09-03 in run 33704079162.
+Door: `.github/workflows/**` has a single writer that is not W8 (08-driver-contract section 3),
+so this is handed to the driver rather than fixed here. The fix is a decision, not a patch: either add `CLAUDE_CODE_OAUTH_TOKEN` as a repo secret on `rediacc/console` (operator-only), or fetch it from Bitwarden — which `watchdog-monitor.yml:153-158` argues against, because a bws step ahead of the monitor can take the monitor down, as it did on 2026-09-03 in run 33704079162.
 
 ### F2 — a green line that describes machinery that no longer exists
 

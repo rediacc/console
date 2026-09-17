@@ -2,7 +2,8 @@
 
 ## SESSION 2fd369e0 (babysitter, 2026-08-08T22:00Z)
 
-**Role**: in-context PR babysitter for PR #560 (branch 0808-5), principal = operator. **Real state artifact**: ~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0808-5.md (wave header + STATUS + rounds). Read it FIRST on recovery, plus .claude/agents/pr-babysitter.md and .agent/0808-5/RULES.md.
+**Role**: in-context PR babysitter for PR #560 (branch 0808-5), principal = operator.
+**Real state artifact**: ~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0808-5.md (wave header + STATUS + rounds). Read it FIRST on recovery, plus .claude/agents/pr-babysitter.md and .agent/0808-5/RULES.md.
 
 **Now**: round 1. Snapshot 32d906f59 pushed, draft PR #560 up, CI run 31278900664 in flight. Terminal-state watch = bg task bpw3ckwyp; heartbeat cron 3a686f3a hourly at :23; inbox waiter bpl26dknc.
 

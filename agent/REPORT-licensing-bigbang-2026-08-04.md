@@ -1,6 +1,7 @@
 # Final Report: Config-Universe Follow-Up Big-Bang (licensing), 2026-08-04
 
-Status: COMPLETE except two operator actions (below). Everything UNCOMMITTED on the shared `main` checkout. Plan: `~/.claude/plans/implement-the-follow-up-big-bang-synthetic-walrus.md`.
+Status: COMPLETE except two operator actions (below). Everything UNCOMMITTED on the
+shared `main` checkout. Plan: `~/.claude/plans/implement-the-follow-up-big-bang-synthetic-walrus.md`.
 
 ## What landed
 

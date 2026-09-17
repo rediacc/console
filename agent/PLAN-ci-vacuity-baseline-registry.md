@@ -5,7 +5,8 @@ Status: ready
      .ci/rediacc_ci/tests/gates/test_gate_python_control_plants.py, does not exist. A plan
      whose status outruns its boxes is the thing the plan-record machinery exists to
      catch, and this one is owned by f4da5c2e, so it was mine to correct. -->
-Owner: f4da5c2e Updated: 2026-09-08
+Owner: f4da5c2e
+Updated: 2026-09-08
 
 The filename says "baseline registry" because that is what the triage predicted. **The design rejects a baseline.** The name is kept so the worklist pointer resolves; see §2 for why the instrument changed.
 
@@ -99,8 +100,10 @@ The 12 files convert mechanically. **Watch the derived floors**: removing the no
 The new gate is NOT a widened `control_vacuity`. Three reasons in descending force: the live gate is the bash twin (`package.json:140`) and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires byte-identical output, so widening means writing an AST-equivalent predicate **in bash**; invariant 5 forbids deleting the twin, so widening means maintaining a bash
 Python-parser until W7 P5; and the predicate is genuinely different — `control_vacuity` asks "is there a proof?", this asks "did you use the harness?".
 
-Predicate: inside a control region, `X.replace(...)` / `re.sub(..., X)` where `X` is a **bare `Name`** is a finding; `plant(...)` is not. The bare-`Name` restriction IS the exemption mechanism and needs no allowlist — it is what excludes `datetime.replace(tzinfo=…)` and `str(ROOT).lstrip("/").replace("/","-")`. Measured: with the restriction 12 files, without it 14, and both extras
-are false positives.
+Predicate: inside a control region, `X.replace(...)` / `re.sub(..., X)` where `X` is
+a **bare `Name`** is a finding; `plant(...)` is not. The bare-`Name` restriction IS the exemption mechanism and needs no allowlist — it is what excludes `datetime.replace(tzinfo=…)` and `str(ROOT).lstrip("/").replace("/","-")`.
+Measured: with the restriction 12 files, without it 14, and both extras are false
+positives.
 
 The `control_vacuity` disclosure edit must land in both twins in one commit or `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` reds — which is the control working.
 
@@ -123,7 +126,8 @@ At the third the tree is already clean, so **the gate is green the day it lands 
 Cutover interaction is the load-bearing advantage over a baseline. Scope is two globs, not a file list, so a port landing under `.ci/rediacc_ci/quality/` is in scope the moment it exists: no registration, no baseline row, no hand edit. If its selftest carries substitution plants the gate reds **in the cutover PR**, where the author is already in the file. With a baseline, every
 such cutover would need a hand-added row in a file whose whole point is that rows only ever leave it — the first author who added one to get a cutover through would have inverted the instrument and the second would have cited the first.
 
-Sequencing: the conversion touches 11 files under `.ci/rediacc_ci/quality/`, the tree W7 P4 is actively rewriting. Land as one PR and rebase rather than interleaving.
+Sequencing: the conversion touches 11 files under `.ci/rediacc_ci/quality/`, the tree
+W7 P4 is actively rewriting. Land as one PR and rebase rather than interleaving.
 
 ## 7. MEASURED ON FIRST RUN: the no-false-positives claim is wrong
 
@@ -148,7 +152,8 @@ of the same call are normalising both sides of a comparison; a mutant is never c
 2. **A result compared back against its own source already carries a vacuity
 proof.** This deliberately mirrors `control_vacuity`'s `proves_plant_landed`, so the two gates agree instead of contradicting. It exempts the fallback chain, which is STRONGER than `plant()` can be — `plant()` raises on the first miss and would destroy the second attempt.
 
-Rejected: `flows into a gate invocation` (dataflow this cannot do cheaply) and a `soft=` variant of `plant()` (a vacuity harness with an opt-out is not one).
+Rejected: `flows into a gate invocation` (dataflow this cannot do cheaply) and a
+`soft=` variant of `plant()` (a vacuity harness with an opt-out is not one).
 
 Shipping the gate at 4 known false positives would produce exactly the outcome §2 warns about: a gate suppressed within a day, still looking like coverage.
 

@@ -1,6 +1,8 @@
 # PLAN: gh Swallow-Failure Sweep Across `.ci/scripts` — Registered-Gate False-Green Risks
 
-Status: done Owner: f4da5c2e Updated: 2026-09-10
+Status: done
+Owner: f4da5c2e
+Updated: 2026-09-10
 
 Sections: Problem, Full verified instance list, Fix design per REGISTERED-GATE instance (literal diffs), Test plan, Execution recommendation.
 

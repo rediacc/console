@@ -1,6 +1,7 @@
 # 02. v1, CI economics and correctness
 
-Status: **RECOMMENDED design, not yet built.** Every claim traces to [01-verified-context.md](01-verified-context.md); re-verify before building on it.
+Status: **RECOMMENDED design, not yet built.** Every claim traces to
+[01-verified-context.md](01-verified-context.md); re-verify before building on it.
 
 v1 is two merges. **PR-A must merge and be proven green before PR-B's cuts are honest**, because PR-B's entire safety argument rests on the nightly being a real backstop.
 

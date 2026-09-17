@@ -1,6 +1,7 @@
 # 06. Execution guide
 
-Status: forward-looking, written 2026-08-09. The implementing session follows this top to bottom.
+Status: forward-looking, written 2026-08-09. The implementing session follows this
+top to bottom.
 
 ## Before anything
 
@@ -47,9 +48,9 @@ against artifacts. A watchdog cron (about 20 min) runs while waves are in flight
 
 ## Gates
 
-Local: `npm run ci` (manifest-driven; new check scripts need a GateSpec + anti-vacuity registration), the wave-relevant gate chains listed in 03 and 05. Worklist wiring (fail-closed): at session start seed one item per wave, tagged with the session prefix and carrying the checklist token: `worklist.py --add <me> 'cl:backup-storage/<wN> <wave title>'`. The Stop hook blocks any
-stopping session while a wave is neither ticked in docs/backup-storage/CHECKLIST.md nor covered by such an item. Tick a `wN` only after the store item is ticked with probed evidence. `- [?]` deferrals carry DEFAULTs; `- [>]` leases carry expiry + worker id and are renewed on wake. Update MANIFEST.md at every phase boundary; drop periodic uncommitted-tree patches into `checkpoints/`
-(a host reboot once destroyed a /tmp scratchpad).
+Local: `npm run ci` (manifest-driven; new check scripts need a GateSpec +
+anti-vacuity registration), the wave-relevant gate chains listed in 03 and 05. Worklist wiring (fail-closed): at session start seed one item per wave, tagged with the session prefix and carrying the checklist token: `worklist.py --add <me> 'cl:backup-storage/<wN> <wave title>'`. The Stop hook blocks any stopping session while a wave is neither ticked in
+docs/backup-storage/CHECKLIST.md nor covered by such an item. Tick a `wN` only after the store item is ticked with probed evidence. `- [?]` deferrals carry DEFAULTs; `- [>]` leases carry expiry + worker id and are renewed on wake. Update MANIFEST.md at every phase boundary; drop periodic uncommitted-tree patches into `checkpoints/` (a host reboot once destroyed a /tmp scratchpad).
 
 ## Wave-promotion preflight (mandatory, session-side; no source-tree gate applies)
 

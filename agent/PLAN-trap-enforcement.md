@@ -1,5 +1,7 @@
 # PLAN: Trap enforcement, from prose to instruments
-Status: W1 LANDED 2026-08-27; W2 to W4 still draft Owner: 99ccf057 Updated: 2026-08-09
+Status: W1 LANDED 2026-08-27; W2 to W4 still draft
+Owner: 99ccf057
+Updated: 2026-08-09
 
 Replace "a session reads TRAPS.md" with instruments that fire whether or not anyone read anything. The corpus stops being the protection and becomes the ledger of which instrument protects what, with a gate that reds when a trap has neither an instrument nor a stated reason it cannot have one.
 
@@ -72,8 +74,9 @@ in the block message.** Everything else injects after the fact and lets the sess
 
 ## 3. Ruling on the trap registry: adopt it, with one change and one hard constraint
 
-**Verdict: the registry is right, not over-engineered.** It is the only part of this design that scales, because it converts "is this trap covered?" from a question someone has to remember to ask into a gate that asks it every run. The repo already has two registries of exactly this shape and both are self-policing: `scripts/ci-runner/manifest.ts` (`GateSpec` at `:26-58`, whose
-docstring at `:17-20` states the house rule "MAINTENANCE IS BY RULE, NOT BY HAND") and `scripts/lib/suppression-liveness.ts` (`Probe` at `:45-78`, where every entry carries its own oracle and the oracle may return `null` to SKIP rather than condemn).
+**Verdict: the registry is right, not over-engineered.** It is the only part of this
+design that scales, because it converts "is this trap covered?" from a question someone has to remember to ask into a gate that asks it every run. The repo already has two registries of exactly this shape and both are self-policing: `scripts/ci-runner/manifest.ts` (`GateSpec` at `:26-58`, whose docstring at `:17-20` states the house rule "MAINTENANCE IS BY RULE, NOT BY HAND") and
+`scripts/lib/suppression-liveness.ts` (`Probe` at `:45-78`, where every entry carries its own oracle and the oracle may return `null` to SKIP rather than condemn).
 
 Two modifications to the proposal as stated.
 
@@ -238,7 +241,8 @@ This is the part no instrument closes, and it is the expensive part.
 restricted PATH that hid bash, a log collector pointed at a directory the tool deletes on exit, and a `keyctl` probe that exercised a different operation from the one that fails (`pr-babysit-0804-1.md:1420-1424`). Joining that residue: `A wrong comment is more dangerous than a wrong commit message` (no parser knows what a comment overclaims) and `A ruling from an artifact is a
 hypothesis` (no parser knows which claim was load-bearing).
 
-**Recommendation: inject at the moment of risk, and accept a named residue below that.** Ranked against the alternatives:
+**Recommendation: inject at the moment of risk, and accept a named residue below
+that.** Ranked against the alternatives:
 
 - *Session-start or PostCompact briefing* is what exists today, and it is precisely
 what failed: the 2026-08-04 author had the fact and did not apply it. Keep it (it is free, it already runs), demote it to a backstop.

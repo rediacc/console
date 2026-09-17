@@ -1,6 +1,9 @@
 # Plan-document discovery in /migrate and the Stop hook's handoff block
 
-Status: draft Owner: d778be9d Updated: 2026-09-17 Related: agent/PLAN-plan-file-lifecycle.md, agent/PLAN-tooling-transformation.md
+Status: draft
+Owner: d778be9d
+Updated: 2026-09-17
+Related: agent/PLAN-plan-file-lifecycle.md, agent/PLAN-tooling-transformation.md
 
 99 open `- [ ]` boxes across 11 committed plans, owned by three idle sessions, are invisible to every "what is left" surface this repo has. This makes the DISCOVERY layer read the plan census it already maintains.
 

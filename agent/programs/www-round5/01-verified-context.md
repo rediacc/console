@@ -1,6 +1,7 @@
 # 01. Verified context
 
-Status: AS-BUILT as of 2026-08-23, branch `0823-1`, measured live with `agent-browser` against `http://localhost:4321` in the pre-move checkout.
+Status: AS-BUILT as of 2026-08-23, branch `0823-1`, measured live with `agent-browser`
+against `http://localhost:4321` in the pre-move checkout.
 
 **Re-verify banner.** The repository moved from `~/monorepo/console` to `~/console` after these measurements were taken, and nothing was re-run afterwards. Line numbers move. Treat every `file:line` below as a hypothesis, confirm it, and correct this document in the same turn when it drifts.
 

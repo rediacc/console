@@ -1,5 +1,7 @@
 # PLAN: The client-bundle budget silently drops 124 KB, and that is the "nondeterminism"
-Status: draft Owner: 74de73ca Updated: 2026-09-03
+Status: draft
+Owner: 74de73ca
+Updated: 2026-09-03
 
 ## Recommendation, in one line
 

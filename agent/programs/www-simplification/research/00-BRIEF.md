@@ -34,7 +34,8 @@ Also forbidden, always: `git checkout`, `git restore`, `git stash`, `git clean`,
 `BaseLayout.astro:279-414` holds an inline `<style>` block that defines the `:root` custom properties (`--font-family`, `--font-size-*`, …). So tokens are split between an inline block in a layout, `public/styles/main.css`, and several files under `src/styles/` that declare their own `:root` (`lead-magnet-modal.css`, `sidebar-shared.css`, `solution-pages.css`,
 `AnnouncementBar.astro`). Establish the real cascade before you claim anything about it.
 
-Fonts: **Inter** (Regular/Medium/SemiBold/Bold) and **JetBrains Mono** (Regular/Bold), self-hosted under `public/fonts/`. Only Inter-Regular and Inter-SemiBold are preloaded (`BaseLayout.astro:131-133`).
+Fonts: **Inter** (Regular/Medium/SemiBold/Bold) and **JetBrains Mono**
+(Regular/Bold), self-hosted under `public/fonts/`. Only Inter-Regular and Inter-SemiBold are preloaded (`BaseLayout.astro:131-133`).
 
 ## Running instance
 

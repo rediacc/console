@@ -133,7 +133,8 @@ Traps this design had to close:
 - **`www_tutorials_generate` restores from R2 first and uploads last.** Both wrong
 mid-migration: the restore overwrites fresh narration, the upload publishes. `www_tutorials_media` invokes `tutorial_tts.cli` directly and does neither.
 - **A truncated mp4 with a fresh mtime is "done" forever**, since staleness is mtime-based.
-Fixed: `generate-tutorial-video.ts` renders to `stagePath` (`:142`) and does exactly one `renameSync` to the final path (`:465`). Keep it that way - and note the staging file needs an explicit `-f mp4` in `addEdgePad`, because a non-`.mp4` extension defeats ffmpeg's muxer inference and it exits 234.
+  Fixed: `generate-tutorial-video.ts` renders to `stagePath` (`:142`) and does exactly one
+`renameSync` to the final path (`:465`). Keep it that way - and note the staging file needs an explicit `-f mp4` in `addEdgePad`, because a non-`.mp4` extension defeats ffmpeg's muxer inference and it exits 234.
 
 Renders are `nice -n 10`; **narration is never niced** - the failure that matters is renders starving the GPU job's own CPU work (audio VAE, ffmpeg mastering, ASR). `--jobs` defaults from `nproc` **and** MemAvailable (Chrome ~3 GB/render, narration ~11.8 GB RSS). Judge a job count by **TTS seconds per clip**, never by load average.
 

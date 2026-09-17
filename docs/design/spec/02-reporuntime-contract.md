@@ -564,8 +564,9 @@ placement.datastore  ⇒ datastore registry record:
                          record.cluster unset ⇒ TypeDocker (named tiering datastore)
 ```
 
-[P0-DECIDED] **One-world datastores**: a named datastore is either cluster-attached (hosts ONLY kube repos) or plain (hosts ONLY docker repos), fixed at `datastore create` (`--cluster <name>` sets the backref) and immutable afterwards (change = create new + `repo push`, consistent with "moving = a copy", 02 §7). Rationale: without this rule the runtime cannot be derived from
-placement and would need a per-repo runtime field that can drift — the exact disease 02 §9 diagnoses. It also extends R2-F12 symmetrically: `repo create --machine M` refuses when M carries a cluster membership backref (02 §7); `repo create --datastore D` onto a cluster datastore IS the k8s repo form and needs no extra flag.
+[P0-DECIDED] **One-world datastores**: a named datastore is either cluster-attached (hosts ONLY kube repos) or plain (hosts ONLY docker repos), fixed at `datastore create` (`--cluster <name>` sets the backref) and immutable afterwards (change = create new + `repo push`, consistent with "moving = a copy", 02 §7).
+Rationale: without this rule the runtime cannot be derived from placement and would
+need a per-repo runtime field that can drift — the exact disease 02 §9 diagnoses. It also extends R2-F12 symmetrically: `repo create --machine M` refuses when M carries a cluster membership backref (02 §7); `repo create --datastore D` onto a cluster datastore IS the k8s repo form and needs no extra flag.
 
 The repo record stores NO runtime field. Runtime is always derived at use, so it can never disagree with placement.
 

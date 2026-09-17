@@ -1,6 +1,8 @@
 # PLAN: a resumable rebase executor with an AI in the loop
 
-Status: IMPLEMENTED 2026-08-27. All five steps shipped; see the closing section. Owner: session 9d92d9b6, branch 0826-3 Updated: 2026-08-27
+Status: IMPLEMENTED 2026-08-27. All five steps shipped; see the closing section.
+Owner: session 9d92d9b6, branch 0826-3
+Updated: 2026-08-27
 
 ## Context
 

@@ -1,5 +1,9 @@
 # PLAN: Claude Review trigger reliability -- workflow_dispatch head-SHA gap, not workflow_run non-delivery
-Status: compacted Owner: review-trigger-plan agent, branch 0731-2 Full-Text: f7a5351a9 agent/PLAN-github-actions-workflow-run-trigger-fix.md Full-Text-Blob: 5a72b31733f38380ee001b6361fbfba1b40657e5 Record-Sig: 87e086b4
+Status: compacted
+Owner: review-trigger-plan agent, branch 0731-2
+Full-Text: f7a5351a9 agent/PLAN-github-actions-workflow-run-trigger-fix.md
+Full-Text-Blob: 5a72b31733f38380ee001b6361fbfba1b40657e5
+Record-Sig: 87e086b4
 
 ## Why
 The brief assumed `workflow_run` never fired for Console CI completions on PR #550. Live verification did not support that: it fires reliably at roughly 2 to 7 minutes measured from the moment `CI Complete` actually turns green, and the investigation had been comparing against the run's `createdAt`, which is when the run was QUEUED on a branch whose CI takes 50 to 70 minutes. Three
@@ -34,8 +38,16 @@ the plan is what stops a later session either building it on faith or rediscover
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:37Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .ci/scripts/review/review-status.sh, .ci/scripts/review/claude-review-gate.sh Gates: none Why-Source: author Read-History: `git show 5a72b31733f38380ee001b6361fbfba1b40657e5` recovers the text; `git log
---find-object=5a72b31733f38380ee001b6361fbfba1b40657e5 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:37Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .ci/scripts/review/review-status.sh, .ci/scripts/review/claude-review-gate.sh
+Gates: none
+Why-Source: author
+Read-History: `git show 5a72b31733f38380ee001b6361fbfba1b40657e5` recovers the text; `git log --find-object=5a72b31733f38380ee001b6361fbfba1b40657e5 --all` names the commit
 
 ## History
 - 2026-09-06T17:32:37Z compacted by 8f55d4f0 from `done` (record-sig 87e086b4)

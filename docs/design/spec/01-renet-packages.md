@@ -1,7 +1,7 @@
 # P0 Spec 01 — Renet Package Design, Delete Ledger, Multi-Datastore, Bridge Contract
 
-Status: P0 implementation spec (2026-07-10). Expands 02 §6/§7/§9, 03 §2/§2b, 04, 09 §P1/P2 into per-file instructions. Every identifier below was verified against renet `2b13e9d` (console `0707-1`, HEAD `973763d30`) by grep/read; line numbers are advisory, symbol names are the contract. Decisions the suite left thin are marked **[P0-DECIDED]**. Claims in the suite that do not match
-the tree are collected in §5 (reality deltas).
+Status: P0 implementation spec (2026-07-10). Expands 02 §6/§7/§9, 03 §2/§2b, 04, 09 §P1/P2
+into per-file instructions. Every identifier below was verified against renet `2b13e9d` (console `0707-1`, HEAD `973763d30`) by grep/read; line numbers are advisory, symbol names are the contract. Decisions the suite left thin are marked **[P0-DECIDED]**. Claims in the suite that do not match the tree are collected in §5 (reality deltas).
 
 Gate status: **APPROVED** (`00-gate-review.md` §4b re-review addendum). Rulings applied — C1 (volume layout: spec 05 wins), C2 (§4 reworked to unified runtime-generic dispatch; re-review CLEARED), C3 (per-repo zot units), C6 (descriptor path), C7 (`--cluster` backref at create), C10 (`pkg/reporuntime`), C13 (identity-rewrite fork-arm role/writes), G2 (health/logs/exec bridge
 surface), G5 (fork record key + `autoAttach`). R1 (mount path) APPROVED.
@@ -144,9 +144,10 @@ node-lifecycle shutdown unit (02 §3) is NEW daemon work (`pkg/daemon/node_lifec
 Mechanism (verified): `RegisterWithSchema(&FunctionDef{...}, builder)` in per-family `init()` (`registry.go:82`); `renet functions generate-types` emits `packages/shared/src/renet-contract/data/functions.generated.ts`; `.ci/scripts/quality/check-e2e-coverage.sh` greps packages/e2e-tests for every generated name (raw `resource_verb` or spaced `resource verb`), with a BLOCKER
 allowlist. 152 functions registered today (counted per family: repository 33, ceph 34, system 19, kube 18, daemon 15, container 12, datastore 10, backup+checkpoint 9, kube_registry 2).
 
-Changes: full diff in §4 (reworked to the gate C2 ruling — spec 02 §3.3's unified dispatch model wins). File-level: `datastore.go` rewritten (new verb set); `kube.go` loses `KubeCsiTemplateCommand` AND the entire namespace/deploy/pv builder set (`KubeNamespaceCreateCommand`, `KubeDeployCommand`, `KubeNamespaceForkCommand`, `KubeNamespaceDeleteCommand`, `KubePVProvisionCommand`,
-`KubePVCloneCommand`, `KubePVDeleteCommand` — their bodies fold into `KubeRuntime` behind the runtime-generic `repository_*` family), keeping only the node-infra verbs (install/join/identity/ prep-fork/node-remove/upgrade/uninstall/kubeconfig/health); `repository.go` renames `repository_takeover` → `repository_promote` and adds `repository_health`/
-`repository_logs`/`repository_exec`. The shared helper `RequireDatastore` (`registry.go:186`) changes meaning: the `datastore` vault param becomes a NAME resolved on-machine via the registry, not a path **[P0-DECIDED]** — renet owns path resolution; the CLI stops shipping `/mnt/rediacc` strings (grep the CLI for `DEFAULTS.DATASTORE` in P4).
+Changes: full diff in §4 (reworked to the gate C2 ruling — spec 02 §3.3's unified
+dispatch model wins). File-level: `datastore.go` rewritten (new verb set); `kube.go` loses `KubeCsiTemplateCommand` AND the entire namespace/deploy/pv builder set (`KubeNamespaceCreateCommand`, `KubeDeployCommand`, `KubeNamespaceForkCommand`, `KubeNamespaceDeleteCommand`, `KubePVProvisionCommand`, `KubePVCloneCommand`, `KubePVDeleteCommand` — their bodies fold into `KubeRuntime`
+behind the runtime-generic `repository_*` family), keeping only the node-infra verbs (install/join/identity/ prep-fork/node-remove/upgrade/uninstall/kubeconfig/health); `repository.go` renames `repository_takeover` → `repository_promote` and adds `repository_health`/ `repository_logs`/`repository_exec`. The shared helper `RequireDatastore` (`registry.go:186`) changes meaning: the
+`datastore` vault param becomes a NAME resolved on-machine via the registry, not a path **[P0-DECIDED]** — renet owns path resolution; the CLI stops shipping `/mnt/rediacc` strings (grep the CLI for `DEFAULTS.DATASTORE` in P4).
 
 ### 1.7 `pkg/reporuntime` — the RepoRuntime home (gate C10)
 
@@ -368,8 +369,9 @@ exist is UNTESTED. Expected v2 behavior is trash-deferral until the last clone i
 or `KubeRuntime`. The `kube_namespace_*`/`kube_deploy`/`kube_pv_*` functions RETIRE as CLI-callable seams — keeping them would leave the CLI branching per runtime when choosing which function to call, the exact flag-routing disease 02 §9 diagnoses, re-keyed from flags to placement. Cluster-layer node-infra functions
 (`kube_install/join*/identity_rewrite/prep_fork/node_remove/upgrade/uninstall/ kubeconfig/health`) stay separate: cluster verbs are not dispatched through RepoRuntime (spec 02 §3.3).
 
-Baseline: 152 registered functions (§1.6). Net after this program: **150** (−11 deleted, +9 added, 4 renamed, plus param/semantics changes listed). Everything not listed below is KEEP with unchanged name and schema: all 34 `ceph_*` (Ceph-below plumbing: ops-fleet bootstrap + the datastore ceph backend consume them), all 12 `container_*` (docker-world plumbing, untouched), all 15
-`daemon_*`/`plugin_*`/ `network_*`, all 9 `backup_*`/`checkpoint_*`, all 19 `machine_*`/`setup`/`daemon_nop`, `kube_registry_up`/`kube_registry_wire` (the machine-level pull-through CACHE role, unchanged per C3 — per-repo registry units have no bridge verb, §1.8).
+Baseline: 152 registered functions (§1.6). Net after this program: **150**
+(−11 deleted, +9 added, 4 renamed, plus param/semantics changes listed). Everything not listed below is KEEP with unchanged name and schema: all 34 `ceph_*` (Ceph-below plumbing: ops-fleet bootstrap + the datastore ceph backend consume them), all 12 `container_*` (docker-world plumbing, untouched), all 15 `daemon_*`/`plugin_*`/ `network_*`, all 9 `backup_*`/`checkpoint_*`, all 19
+`machine_*`/`setup`/`daemon_nop`, `kube_registry_up`/`kube_registry_wire` (the machine-level pull-through CACHE role, unchanged per C3 — per-repo registry units have no bridge verb, §1.8).
 
 ### 4.1 Datastore family (10 → 13)
 

@@ -1,5 +1,8 @@
 # PLAN: narrow the `scripts/` harness rule in the CI scope map
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-scope-gates-split.md Full-Text-Blob: d1a4acd100bbcc1fbbace2d22f4d59663f7c2687 Record-Sig: 896eb492
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-scope-gates-split.md
+Full-Text-Blob: d1a4acd100bbcc1fbbace2d22f4d59663f7c2687
+Record-Sig: 896eb492
 
 ## Why
 The single `scripts/` rule in the CI scope map forced the full infra matrix for any change under `scripts/`, so an Apache-2.0 attribution-string check could schedule a ceph fork test. Worse, the comment defending the rule gave the WRONG reason: it cited gate-immunity, which the workflow already guarantees independently. A comment that misstates why a conservative rule exists is how
@@ -19,8 +22,16 @@ zero-job property, adding `gates` to a job-surface entry would silently undo the
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: approved Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:54Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: run.sh, .ci/scripts/test/gates/test-positional-detector.sh, .ci/scripts/quality/check-command-tree.sh, .ci/scripts/build/prepare-cli-assets.sh, packages/cli/src/config/__tests__/plane-leaf-rule.test.ts,
-packages/www/src/utils/solution-video.ts Gates: check:ci-account-scope-audit Why-Source: author Read-History: `git show d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` recovers the text; `git log --find-object=d1a4acd100bbcc1fbbace2d22f4d59663f7c2687 --all` names the commit
+Record-Kind: compacted
+Prior-Status: approved
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:54Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: run.sh, .ci/scripts/test/gates/test-positional-detector.sh, .ci/scripts/quality/check-command-tree.sh, .ci/scripts/build/prepare-cli-assets.sh, packages/cli/src/config/__tests__/plane-leaf-rule.test.ts, packages/www/src/utils/solution-video.ts
+Gates: check:ci-account-scope-audit
+Why-Source: author
+Read-History: `git show d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` recovers the text; `git log --find-object=d1a4acd100bbcc1fbbace2d22f4d59663f7c2687 --all` names the commit
 
 ## History
 - 2026-09-06T17:08:54Z compacted by 8f55d4f0 from `approved` (record-sig 896eb492)

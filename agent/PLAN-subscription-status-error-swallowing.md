@@ -1,6 +1,8 @@
 # PLAN: `subscription status` swallows account-server errors and exits 0 silently
 
-Status: done Owner: 9d92d9b6 Updated: 2026-08-26
+Status: done
+Owner: 9d92d9b6
+Updated: 2026-08-26
 
 ## Finding
 

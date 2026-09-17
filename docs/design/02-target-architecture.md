@@ -1,6 +1,7 @@
 # 02 — Target Architecture: the Datastore-Centric Model
 
-**Status: AS-BUILT.** This model is implemented and proven live (P1-P3). Where the build corrected the design, the corrected version is stated here and the original is noted.
+**Status: AS-BUILT.** This model is implemented and proven live (P1-P3). Where the build
+corrected the design, the corrected version is stated here and the original is noted.
 
 Decision (user, 2026-07-10): rebuild the Kubernetes storage layer around the datastore, the same way the docker world already works. Push Ceph back BELOW the repo layer. One storage philosophy for both worlds.
 
@@ -186,9 +187,10 @@ fork). `adopt` registers a record ferried from the source (two shapes: a fork re
 `rdc machine add` + `machine setup` auto-create a `default` datastore (local backend, `/mnt/rediacc` — the same path as today). Docker `repo create --machine M` lands there. A single-machine docker user never types, sees, or learns about datastores; their workflow is identical to today. `datastore create` exists only for ADDITIONAL named datastores (RBD-backed, tiering, second
 pool) — explicit opt-in, same philosophy as named configs.
 
-**Kubernetes repos MUST name their datastore explicitly** (user decision 2026-07-10). Rationale: in a cluster, datastore choice IS the placement decision — home node, failover blast-radius group, fork-affinity group (same-datastore repos fork instantly against each other), consistency-snapshot group — and it is nearly immutable (moving = a copy). Consequential + hard-to-reverse =
-explicit, the same principle behind the fork-attach `--writes` requirement and the required KVM net topology. A "default to the only datastore" rule is rejected: scripts working on a one-datastore cluster would silently change meaning when a second datastore appears. No cluster-level default-datastore setting in v1 (it would reintroduce silent co-location; may be added later as a
-consciously-declared opt-in).
+**Kubernetes repos MUST name their datastore explicitly** (user decision 2026-07-10).
+Rationale: in a cluster, datastore choice IS the placement decision — home node, failover
+blast-radius group, fork-affinity group (same-datastore repos fork instantly against each other), consistency-snapshot group — and it is nearly immutable (moving = a copy). Consequential + hard-to-reverse = explicit, the same principle behind the fork-attach `--writes` requirement and the required KVM net topology. A "default to the only datastore" rule is rejected: scripts working
+on a one-datastore cluster would silently change meaning when a second datastore appears. No cluster-level default-datastore setting in v1 (it would reintroduce silent co-location; may be added later as a consciously-declared opt-in).
 
 **Placement is a tagged union in the schema (review R2-F1 — blocker fix)**: N machines each auto-creating a datastore literally named `default` would break the names-unique-per-config invariant that lets `--datastore` alone determine cluster/node/tier. Resolution: default datastores are IMPLICIT — they never enter the datastore registry. Placement is stored as `placement: {
 datastore: <name> } | { machine: <name> }`, where the machine arm means "that machine's implicit default datastore". This mirrors the two `repo create` flags one-to-one, keeps name-uniqueness for NAMED datastores only, and needs a two-arm resolver instead of string special-casing. `repo create` takes exactly ONE placement flag: `--machine M` (docker shortcut → machine arm) or
@@ -229,8 +231,9 @@ live; create/mount/snapshot/fork/attach semantics.
 - **`RepoRuntime`** (new): how a repo runs. Contract (P0 spec finalizes):
 `Deploy(up)/Teardown(down)/Fork/Status/InjectSecrets/Health/ProvisionVolumes/ ApplyIsolation`. Implementations: `DockerRuntime` (compose, per-repo dockerd, loopback, compose validation) and `KubeRuntime` (manifests, namespace, local PVs, NetworkPolicy).
 
-Rules: a `RepoRuntime` never touches storage directly — it is handed mounted paths by the datastore layer (Ceph stays below, invisible). Policy invariants live at the interface, asserted ONCE for both worlds: fork ⇒ empty secret map; migrate ⇒ secrets re-inject; ROLE/WRITES/DATASTORE env injected into every lifecycle hook; teardown must be leak-reporting. **One shared contract-test
-suite runs against both implementations** — the "same verb = same semantics" CLI principle (06) becomes mechanically enforced instead of aspirational. A future runtime (RKE2 is the planned third distro; the distro interface pattern in `pkg/kube/distro` is the precedent) implements the same contract.
+Rules: a `RepoRuntime` never touches storage directly — it is handed mounted paths by the
+datastore layer (Ceph stays below, invisible). Policy invariants live at the interface, asserted ONCE for both worlds: fork ⇒ empty secret map; migrate ⇒ secrets re-inject; ROLE/WRITES/DATASTORE env injected into every lifecycle hook; teardown must be leak-reporting. **One shared contract-test suite runs against both implementations** — the "same verb = same semantics" CLI
+principle (06) becomes mechanically enforced instead of aspirational. A future runtime (RKE2 is the planned third distro; the distro interface pattern in `pkg/kube/distro` is the precedent) implements the same contract.
 
 ## 10. Honest casualties (documented, accepted by user)
 
@@ -262,8 +265,9 @@ it can stop/recompose/start during identity rewrite.
 **Terminology guard — provider ≠ distro.** `--provider` (kvm | a configured cloud provider) is pure IaaS: it decides where MACHINES come from (local libvirt VMs or OpenTofu-provisioned cloud instances). It never selects a Kubernetes: renet always installs its own k3s onto the provisioned machines (Ceph pools first, then k8s pools). There is no managed-Kubernetes (EKS/GKE/LKE)
 integration and none planned. k3s is to Rediacc what the per-repo dockerd is in the docker world — an embedded runtime component, not a user choice — and since k3s is CNCF-certified conformant Kubernetes, "only k3s" does not narrow the workload surface: standard manifests, charts, and kubectl work identically.
 
-Consequences: **k3s remains the only embeddable distro.** RKE2 (has a data-dir but is etcd-ONLY, no kine — requirement 2 fails as stated) stays a planned third backend gated on its own spike (single-server RKE2 with single-member etcd is plausibly crash-consistent under a group snap, but IP-change restore needs etcd member surgery). The `external` BYO-kubeconfig distro shrinks
-further: without renet-managed nodes and datastores it can join none of the storage model — kubeconfig + healthcheck only, lifecycle verbs return first-class "not applicable". Cluster fork/migrate/rehearse refuse non-embeddable distros with a clear error, as today.
+Consequences: **k3s remains the only embeddable distro.** RKE2 (has a data-dir but is
+etcd-ONLY, no kine — requirement 2 fails as stated) stays a planned third backend gated on its own spike (single-server RKE2 with single-member etcd is plausibly crash-consistent under a group snap, but IP-change restore needs etcd member surgery). The `external` BYO-kubeconfig distro shrinks further: without renet-managed nodes and datastores it can join none of the storage model
+— kubeconfig + healthcheck only, lifecycle verbs return first-class "not applicable". Cluster fork/migrate/rehearse refuse non-embeddable distros with a clear error, as today.
 
 ## 10c. The cost ledger of the k3s dependency (honest, user-reviewed)
 

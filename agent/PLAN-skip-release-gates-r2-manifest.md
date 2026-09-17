@@ -1,5 +1,7 @@
 # PLAN: bump-none must withhold the R2 channel pointer, not just the tag
-Status: done Owner: 854ac1c6 Updated: 2026-08-26 (COMPLETE: remediation landed, T1-T4 green, precondition wired)
+Status: done
+Owner: 854ac1c6
+Updated: 2026-08-26 (COMPLETE: remediation landed, T1-T4 green, precondition wired)
 
 ## 0. The state, re-verified in this session
 
@@ -70,8 +72,8 @@ nothing reads them on a release channel (`install.sh:361-366` serves stable/edge
 
 `validate-install` and `validate-promote` are **pre-publish** validators reading the staged channel (`test-install-methods.sh:562`, `:732`, `:1152`), then asserting `--version <next_version>`. Withhold the pointer and they assert the NEW version against the OLD published one and go red -- the failure `ci.yml:1336-1338` already documents.
 
-**Ruling: when the release is skipped, `validate-install` and `validate-promote` SKIP.** Not a new judgement -- the same ruling is recorded verbatim at `ci.yml:1340-1343` for the empty-channel case: *"with no channel there is nothing staged, so the job has no subject."* Both are `SOFT_REQUIRED` (`assert-ci-complete.sh:46`), which forgives `skipped`, so `CI Complete` still goes
-green.
+**Ruling: when the release is skipped, `validate-install` and `validate-promote` SKIP.**
+Not a new judgement -- the same ruling is recorded verbatim at `ci.yml:1340-1343` for the empty-channel case: *"with no channel there is nothing staged, so the job has no subject."* Both are `SOFT_REQUIRED` (`assert-ci-complete.sh:46`), which forgives `skipped`, so `CI Complete` still goes green.
 
 Same reasoning retires `cd-stage.yml:303-309` (`assert-r2-sentinel.sh`) and `cd-stage.yml:193-207` (the `:edge` Docker retag, a channel pointer of the same family and the input to `promote-stable.yml:90-98`).
 
@@ -130,7 +132,8 @@ in the step comment.
 > All three deadlines in section 0 are cleared. The `#573`-bytes sha256 divergence is
 > accepted and unrepairable, as section 4 always said.
 
-**OPERATOR-ONLY.** It writes production R2, creates a tag on `main`, and publishes a GitHub Release. Per CLAUDE.md, no session performs any of it unasked. Door: `door:operator-only`.
+**OPERATOR-ONLY.** It writes production R2, creates a tag on `main`, and publishes a GitHub Release. Per CLAUDE.md, no session performs any of it unasked.
+Door: `door:operator-only`.
 
 ### Roll forward, do not roll back
 
@@ -198,7 +201,8 @@ Sibling for `upload-repos-to-r2.sh` in the same file.
 
 **Extend** `.ci/scripts/security/check-ci-workflow-invariants.sh` with a `skip-release-threading` invariant (it already parses `ci.yml` with python3 and carries the `WORKFLOW_FILE` seam at `:47` for driving mutated copies). Gate test: `.ci/scripts/test/gates/test-ci-workflow-invariants.sh`.
 
-Asserts: `initialize` declares the output; `stage-artifacts` passes it; `validate-install` and `validate-promote` reference it; `finalize-release-sentinel` contains NO `--decide-only` step and its two guards are one expression; `cd-stage.yml` declares the input, forwards it in both upload steps, and conditions the retag and sentinel-assert.
+Asserts: `initialize` declares the output; `stage-artifacts` passes it; `validate-install`
+and `validate-promote` reference it; `finalize-release-sentinel` contains NO `--decide-only` step and its two guards are one expression; `cd-stage.yml` declares the input, forwards it in both upload steps, and conditions the retag and sentinel-assert.
 
 | planted defect (mutated copy) | expected |
 |---|---|

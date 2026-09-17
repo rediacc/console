@@ -1,7 +1,10 @@
 # PLAN: the always-tier, and three checks that could never reach a reader
-Status: landed Owner: unowned (drafted by 9d92d9b6, 2026-08-28) Updated: 2026-08-28
+Status: landed
+Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
+Updated: 2026-08-28
 
-Operator: *"you do not listen other channel's messages! Stop hook should detect it any bombard you with messages until you listen. Not just you also the other contexts. Our stop hook app is broken for some points. We have implemented too many things there but there are 'always to do' list that we must check no matter what!"*
+Operator: *"you do not listen other channel's messages! Stop hook should detect
+it any bombard you with messages until you listen. Not just you also the other contexts. Our stop hook app is broken for some points. We have implemented too many things there but there are 'always to do' list that we must check no matter what!"*
 
 ## 0. One-line diagnosis
 
@@ -110,8 +113,8 @@ before the tier change.
 
 **The proving case, which must FAIL before and PASS after:** a crowded session with an open ask, no waiter, and five unrelated rotating violations must still hear "NOT LISTENING" on the FIRST stop. Today it fails — `no-waiter-asked` sorts 23rd and the pick goes to `open-items`.
 
-Plus: ladder rungs 1→2→3→4 on four consecutive stops; a confirmed waiter silences it, an unverifiable one does not; tombstone with zero nudges blocks immediately while never-armed with zero nudges stays silent; nudge decay leaves 2 not 0; three simultaneous invariants quote exactly two and name the third; a rotated-away submodule move re-offers next stop; and `carry_through_pause`
-gets its first behavioural case ever (§1.5: it is currently untested).
+Plus: ladder rungs 1→2→3→4 on four consecutive stops; a confirmed waiter silences
+it, an unverifiable one does not; tombstone with zero nudges blocks immediately while never-armed with zero nudges stays silent; nudge decay leaves 2 not 0; three simultaneous invariants quote exactly two and name the third; a rotated-away submodule move re-offers next stop; and `carry_through_pause` gets its first behavioural case ever (§1.5: it is currently untested).
 
 No new `check:ci-*` id — everything rides `test-worklist-hooks.sh` and `test-hooks.sh`, both already wired.
 

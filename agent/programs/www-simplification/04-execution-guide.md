@@ -85,7 +85,8 @@ three were different and were real defects.
 
 **Publish the passes as well as the failures.** That is what found the third defect. `.sp-terminal-cursor` at 8x15px fell exactly through a small-box filter that cut off at 8px; it surfaced only because the same instrument that confirmed five findings was run over everything and its passes were listed too. A sweep that reports only hits cannot show you the case it never examined.
 
-**So: after any scripted pass, re-verify the WHOLE file, not the declarations you aimed at.** And prefer a named exception with a reason over a silent forced value. Five named exceptions beat five silent regressions.
+**So: after any scripted pass, re-verify the WHOLE file, not the declarations you
+aimed at.** And prefer a named exception with a reason over a silent forced value. Five named exceptions beat five silent regressions.
 
 ## Two rules born from wave 3, both non-obvious
 

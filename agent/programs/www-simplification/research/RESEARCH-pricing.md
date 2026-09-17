@@ -111,7 +111,8 @@ src/styles/professional-services-page.css:4  @import
 src/styles/disaster-recovery-page.css:1      @import   (1-line file, nothing else)
 ```
 
-Structure: **175 distinct classes, 294 rules on the pricing page, 22 media queries, 36 comment-delimited sections.**
+Structure: **175 distinct classes, 294 rules on the pricing page, 22 media
+queries, 36 comment-delimited sections.**
 
 Coverage measured in the live browser by walking the CSSOM and running `document.querySelector` on every rule's selector across all four consuming pages, then intersecting (control: `.cf-pricing-card`, `.pricing-hero`, `.comparison-category`, `.billing-toggle-btn` all matched, so the instrument fires):
 
@@ -162,7 +163,8 @@ They diverge on the only thing that matters — the funnel. Measured on both liv
 | CTA element | `<a href="/account/">` | `<button data-checkout="professional">` |
 | Destination | generic portal root | `/account/?checkout=PROFESSIONAL&period=monthly` |
 
-Cause: `pricing.astro:148` passes `useCheckout={true}`; `PricingPreview.astro:91` does not, so `checkoutPlans` is empty (`CfPricingCard.astro:33`). A visitor who buys from the homepage never reaches the plan-preselected checkout and never has their billing period carried over. Two labels for one action is also a translation liability across 13 locales.
+Cause: `pricing.astro:148` passes `useCheckout={true}`; `PricingPreview.astro:91`
+does not, so `checkoutPlans` is empty (`CfPricingCard.astro:33`). A visitor who buys from the homepage never reaches the plan-preselected checkout and never has their billing period carried over. Two labels for one action is also a translation liability across 13 locales.
 
 ### 2.7 The checkout entry
 
@@ -424,7 +426,8 @@ grep -rn "241|3\.2 TB|4\.7" <the seven files>   → no matches
 `pages.solutionPages.environmentCloning.*`. Neither is derived from anything.
 
 While confirming that, one thing in the same namespace is worth naming because it violates a standing rule rather than a design preference: `en.json → pages.solutionPages.environmentCloning.socialProof.quote` is a first-person customer testimonial with invented specifics ("We spun up 12 production-identical test environments in under 10 minutes … 3 engineers and 2 days per
-environment"), translated into all 13 locales. The operator's standing rule is that there are no customers yet and social proof is never to be invented. **Owner: whoever holds the solution pages.** Not mine, not touched.
+environment"), translated into all 13 locales. The operator's standing rule is that there are no customers yet and social proof is never to be invented.
+**Owner: whoever holds the solution pages.** Not mine, not touched.
 
 ### 6.6 PricingPreview's position on the homepage
 
@@ -478,4 +481,6 @@ node -e "…en.json → pages.pricing.comparison.categories…"
 agent-browser eval "(()=>{ … getBoundingClientRect … })()"
 ```
 
-Scripts used are in the session scratchpad (`deadcss.js`, `deadblocks.js`, `sel.js`, `cov-*.json`, `dead-selectors.txt`). Screenshots: `p-desktop-top.png`, `p-desktop-900.png`, `p-desktop-2258.png`, `p-desktop-4613.png`, `p-desktop-banners.png`, `p-regionpicker.png`, `m-0.png`, `m-900.png`, `m-4200.png`, `dr-cards.png`, `claude-top.png`.
+Scripts used are in the session scratchpad (`deadcss.js`, `deadblocks.js`, `sel.js`, `cov-*.json`, `dead-selectors.txt`).
+Screenshots: `p-desktop-top.png`, `p-desktop-900.png`, `p-desktop-2258.png`,
+`p-desktop-4613.png`, `p-desktop-banners.png`, `p-regionpicker.png`, `m-0.png`, `m-900.png`, `m-4200.png`, `dr-cards.png`, `claude-top.png`.

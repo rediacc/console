@@ -16,15 +16,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2914,
- "files": 700,
+ "count": 2939,
+ "files": 709,
  "by_rule": {
-  "R1": 1167,
-  "R11": 129,
+  "R1": 1169,
+  "R11": 130,
   "R14": 1,
-  "R18": 376,
-  "R2": 726,
-  "R7": 515
+  "R18": 396,
+  "R2": 727,
+  "R7": 516
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -496,6 +496,9 @@
    "R2": [
     "23841cae5cc2ffd9",
     "b6f43ff327c7968e"
+   ],
+   "R7": [
+    "808306e670457239"
    ]
   },
   ".ci/rediacc_ci/quality/python_env_registry.py": {
@@ -1103,12 +1106,12 @@
   },
   ".ci/scripts/autopilot/prompts/fix-round.md": {
    "R1": [
-    "0967add6bd5599ac",
     "13d13e6c5ad600e0",
     "2a071738fd17ba80",
     "430c0369abf28b48",
     "4f83e5c7e1c53f67",
     "6005c0e26703a5b7",
+    "606251d49efdbdf6",
     "8367b8e2c239e457",
     "86bba2d4260ea3c2",
     "8fe6527c6691b731",
@@ -1445,7 +1448,7 @@
   },
   ".claude/agents/account-dev.md": {
    "R1": [
-    "12478e333e047327",
+    "1c33d7c2626aa952",
     "6546f96edf8309bd",
     "80b3a408f610f924",
     "c0497dfb0f1bbc3d"
@@ -1509,6 +1512,7 @@
   },
   ".claude/agents/gate-author.md": {
    "R1": [
+    "1d2a24cd5f84cbe7",
     "2a30c3c562155d1c",
     "507e2841a78c912e",
     "5a8bc5c26803a2df",
@@ -1516,7 +1520,7 @@
     "6198f2f781a352c6",
     "62be534488cfc832",
     "936999a446fcdc74",
-    "9cb5058693a5a93f",
+    "c37c448b6662ac14",
     "cbe60ad21ceac1a4"
    ]
   },
@@ -2666,7 +2670,7 @@
     "f8ea398bf399bacb"
    ],
    "R11": [
-    "12f2ce6b6687a2ca"
+    "220083056014f180"
    ]
   },
   ".claude/skills/tutorials/SKILL.md": {
@@ -2708,6 +2712,7 @@
   },
   "CLAUDE.md": {
    "R18": [
+    "be7b89dbaa6cff21",
     "ed3d966149c20439",
     "ed7af9377534a860"
    ],
@@ -2773,6 +2778,16 @@
     "dd5c8b8a36862013"
    ]
   },
+  "agent/PLAN-add-chunkstore-backup-verb.md": {
+   "R18": [
+    "207f7bca200cf6ca"
+   ]
+  },
+  "agent/PLAN-add-js-extensions-shared.md": {
+   "R18": [
+    "50db8ff51a606f7b"
+   ]
+  },
   "agent/PLAN-ask-flow-preemptive-settled-check.md": {
    "R1": [
     "a2a204ecd4b2505b"
@@ -2794,6 +2809,21 @@
    "R7": [
     "89720eadca96fcf3",
     "c67fc67d01f2ac18"
+   ]
+  },
+  "agent/PLAN-backup-list-executor-fix.md": {
+   "R18": [
+    "ccdebc791241c719"
+   ]
+  },
+  "agent/PLAN-backup-quota-delta-gc.md": {
+   "R18": [
+    "21edd155313ca81f"
+   ]
+  },
+  "agent/PLAN-backup-restore-target-license.md": {
+   "R18": [
+    "278ecabd7beb1cba"
    ]
   },
   "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
@@ -2821,7 +2851,15 @@
     "e5521b9311d6d67a"
    ]
   },
+  "agent/PLAN-chunk-store-browse-engine.md": {
+   "R18": [
+    "9261ce15b01b2af7"
+   ]
+  },
   "agent/PLAN-chunk-store-browse-server.md": {
+   "R18": [
+    "14a43dc4975dee94"
+   ],
    "R2": [
     "ec23ab12b1bdd734"
    ]
@@ -2857,8 +2895,8 @@
   "agent/PLAN-ci-watch-enforcement.md": {
    "R1": [
     "41a6cbc11582317c",
-    "7598f4288e86e505",
-    "b5e0ad17bf525988"
+    "44a4f4f460576457",
+    "7598f4288e86e505"
    ],
    "R11": [
     "955b7d4c9e1c7e69"
@@ -2878,6 +2916,11 @@
     "d8bfd0bbe9ad075a"
    ]
   },
+  "agent/PLAN-cli-em-dash-lint-gate.md": {
+   "R18": [
+    "4c1c00aec820f902"
+   ]
+  },
   "agent/PLAN-cold-path.md": {
    "R1": [
     "22ea80e7062a3c17"
@@ -2890,7 +2933,7 @@
   },
   "agent/PLAN-devbox-uid-derived-image.md": {
    "R2": [
-    "74b5c4befbbb788f"
+    "07503a756679f9d4"
    ],
    "R7": [
     "87944d2f792f6da5"
@@ -2992,6 +3035,11 @@
     "ed56c3237f5df030"
    ]
   },
+  "agent/PLAN-localize-cheat-sheet-rendering.md": {
+   "R18": [
+    "e4fa1f6ee96ee136"
+   ]
+  },
   "agent/PLAN-migrate-plan-doc-discovery.md": {
    "R11": [
     "61d0507f786b18b8"
@@ -3003,6 +3051,11 @@
   "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
    "R1": [
     "81a7486e29c83245"
+   ]
+  },
+  "agent/PLAN-npm-ci-parallel-parity.md": {
+   "R18": [
+    "01b943bc949ca9ae"
    ]
   },
   "agent/PLAN-pipefail-grep-q-renet-gate.md": {
@@ -3204,8 +3257,9 @@
   },
   "agent/PLAN-stop-always-tier.md": {
    "R1": [
+    "4cfa25da22f73999",
     "5343954b06131f5c",
-    "91bdcaaddad2507e"
+    "aceb820207cf47dd"
    ],
    "R2": [
     "03f4a838f0bded79"
@@ -3263,6 +3317,7 @@
     "3b4bc6402d2b039f",
     "3ca7c41c3d1ef5bf",
     "41e2b52afd5b7d10",
+    "45c2f7c6cc0dc378",
     "488eac8d789bac1e",
     "4ca1d8696a146367",
     "4f7a2f719bd32f88",
@@ -3288,6 +3343,7 @@
     "9bb856f738913ad2",
     "a364ccef9ec98597",
     "a98ecbeb58896a7e",
+    "b8396bb178623a89",
     "c2886cd4b5a2bde2",
     "cbb4755e0042a1a9",
     "d0aad58d1be2f228",
@@ -3338,6 +3394,7 @@
   },
   "agent/PLAN-w9p2-script-relocation.md": {
    "R18": [
+    "03543fc3c05bcc61",
     "41f7bec55f45dc43",
     "51532e5640083d2e",
     "7f9661a20def97dd",
@@ -3373,7 +3430,7 @@
     "fda7f97408d0c6c5"
    ],
    "R7": [
-    "8d3ea07152fd6772"
+    "8816c176cadaa686"
    ]
   },
   "agent/REPORT-licensing-bigbang-2026-08-04.md": {
@@ -3437,11 +3494,12 @@
   },
   "agent/archive/0804-1/HANDOFF-from-4c3e095a.md": {
    "R1": [
+    "16f8dd6a675d3172",
     "17c3ece1774f7bf3",
+    "69104b5a54bac56a",
     "69c5ec53fea9915a",
     "782f634c2bec2a3e",
     "8f748cb3d730f606",
-    "912da5628f9c1682",
     "9bcc40d8c456fa5a",
     "b012c0f5b6c1ec38",
     "dea3e735d7bcfdfb",
@@ -3453,9 +3511,9 @@
    ],
    "R2": [
     "02fd105fd45b2ea9",
-    "0c16f407506f43ae",
     "22ece4def263dcd5",
     "7157d024c87447ad",
+    "84f322150bbdab22",
     "9d770dedefac7c7e",
     "a9f17277f1f386d8",
     "ad8c72fa35b89e2b",
@@ -3512,7 +3570,7 @@
     "454586fb3add1204"
    ],
    "R7": [
-    "8d22ca650dba9739"
+    "107290648fe72527"
    ]
   },
   "agent/archive/backup-storage/RULES.md": {
@@ -3524,7 +3582,7 @@
     "ba36300972c2bba5"
    ],
    "R7": [
-    "839957b261b61975"
+    "879573f84ba70f43"
    ]
   },
   "agent/archive/plans/PLAN-branch-aware-workflows.md": {
@@ -3533,7 +3591,7 @@
     "b952cc3a1d60984d"
    ],
    "R7": [
-    "5c9e308686e31499"
+    "f78b491e704b4ce0"
    ]
   },
   "agent/archive/plans/PLAN-env-to-bitwarden.md": {
@@ -3608,8 +3666,10 @@
     "5aeff3f1184f8574",
     "69ae13425931d401",
     "7c77c868242de625",
+    "7e19781a58aef2ef",
     "8eaa5bbc9e177e9d",
     "921c35faeaf3de4c",
+    "9c0d262f9ca34803",
     "aa1d1f97f3384413",
     "b077e4facb66cb61",
     "c11aa8066309818a",
@@ -3625,7 +3685,7 @@
     "8a5e86a02d0f1d69",
     "8f3394ee9d5c3161",
     "943f270acdef8927",
-    "b588a844a9bd6dd0",
+    "9db69c60f671b17a",
     "b952e8d828464643",
     "bd34b52c6d78af45"
    ]
@@ -3698,11 +3758,12 @@
   "agent/f4da5c2e/gate-test-ledger-coverage.md": {
    "R2": [
     "20f92989063543d1",
+    "3750fcd8891949f2",
+    "408985da4e3cc6fb",
     "53b0383cc7fdeabf",
     "620aef8714597cad",
     "674159bfb327e53d",
     "7aacf584bf04c8cd",
-    "b64eb3e3f32d8d9c",
     "c2a8ee7e5ac582cf",
     "c9523b93b90b87f0",
     "cf2aabe40d207c7e",
@@ -3941,6 +4002,7 @@
     "239a97b4441d8c62",
     "2df9511a59599e88",
     "37f06eae026b4910",
+    "5103078cd8e594b2",
     "58c892e775058b39",
     "5f3d70df430afad1",
     "63fda28e45cd89f9",
@@ -3953,8 +4015,7 @@
     "9b959dca5682be06",
     "9bc0b9efb947d7df",
     "e52ddbfd998c79a0",
-    "e77d8820d37747fc",
-    "f2c55d67abfc0e04"
+    "e77d8820d37747fc"
    ],
    "R2": [
     "24687f0c8aab46f1",
@@ -4174,13 +4235,13 @@
    "R2": [
     "01be4cb56de0c0f6",
     "024e1919afcffb88",
+    "290d21179ec9e8c7",
     "2ebedd655072108c",
     "337ae42ac832d8e5",
     "59ac987852fee9e1",
     "5b10310618869c6e",
     "747d22033dbe3f25",
     "ac93f10fba8bd1c5",
-    "b99e90b95b72ea52",
     "bec5add85a1f9aaf",
     "dc4936dcc7966545",
     "e86e847688d49cf2",
@@ -4277,10 +4338,10 @@
     "739e71b90e1d2b01",
     "7fb32b86b89ef62c",
     "80a61322b7a427c6",
-    "81cc6bfecaa57d17",
     "b8a1e16b5c4c9ede",
     "c9515f80699898c0",
-    "decf8f57ac95d661"
+    "decf8f57ac95d661",
+    "eb71ab0110416a96"
    ]
   },
   "agent/programs/www-simplification/research/RESEARCH-primitives.md": {
@@ -4290,8 +4351,8 @@
     "b336acbe931e44e1"
    ],
    "R11": [
-    "32aa579044e3a496",
-    "4895d78210fb7c74"
+    "c0afdb215759e21e",
+    "d6d62fcc594710a2"
    ],
    "R2": [
     "05b97e388f50c112",
@@ -4385,13 +4446,13 @@
   },
   "docs/agent-reference/TRAPS.md": {
    "R1": [
-    "035677af5cab5665",
     "03d73bce3a6a5857",
     "044e3a0b76a243d2",
     "07d6405fab9b44f1",
     "090c259ccd4150c0",
     "0d5d7f922291776c",
     "0e9a2cd90e3dace0",
+    "10cabbdbaa06cfdf",
     "11aed8bb919814fc",
     "1284e4e43822b338",
     "13e504c6fd568470",
@@ -4399,23 +4460,22 @@
     "17e21eddf06dc41c",
     "19919141543e110d",
     "1a2169c947ccb7d7",
+    "1b6d22bb8d6ca848",
     "1b8cda05975c1152",
     "219b652480ca6d4d",
     "253a70b5de2bbd11",
-    "27829c8c390f6a0c",
-    "3005d2c92bba35e9",
+    "299bc85254dcaa18",
+    "303cebd0432da886",
+    "310feab8374292b6",
     "3e5fa3101f36b979",
     "43a7650433902d62",
     "43f2483b6617fc6a",
-    "478a8d7007782cd1",
-    "52264750ed64cda9",
-    "54854090d0ccf77c",
+    "53cb594aa2b18872",
     "549d2e4f358e5f9e",
     "573519d7d328c8e1",
-    "5b03b781c6d4f14c",
     "5b0ae8c9a4951eea",
-    "5d0ba9f473cc941e",
     "60a3eabba3783d35",
+    "629b44889f35d437",
     "6acdd7b12f81b2ee",
     "6bfe54fad0bba70f",
     "718332443574d2b2",
@@ -4423,23 +4483,22 @@
     "7926681ee9fd039b",
     "842d12ef91be5aaf",
     "860a7f54eb7022ae",
-    "877578cdb17793ad",
-    "8a3bc16e9979835d",
+    "8a9d32938ae14cd7",
     "97945ea3011f9545",
-    "992d8dc90be03de6",
     "9faeeefb0f6c42f4",
-    "a3f4a5e0b8c80a88",
+    "a409aff3701d07d7",
     "a6b14b40fd6b28f0",
     "a7e6caf76cf418c9",
-    "ab220902e5e92658",
+    "a89f53920eb37946",
     "ae4d6d21bb672ac6",
+    "b07a962019533a1d",
     "b099a67a40d564c1",
-    "b52f4538f654a3db",
     "b71f31ebb275a522",
     "b882dd9c4aea56c2",
+    "b8a6fc22fe4acf8e",
     "b91f5211728138a2",
     "b99c9cf842f73133",
-    "c7d934ce8ef7a0f8",
+    "bf04a8cc2ab17fd1",
     "cb0118aebaaf5f08",
     "ce9ad59cb3f71bb9",
     "d7040f5e4a6d68dd",
@@ -4449,7 +4508,9 @@
     "df649ffb12b5d971",
     "e36fddf872dc3995",
     "e45820837621c8c6",
+    "e64a0ae9d6d47068",
     "e88b331fa0515997",
+    "eb43d654cebac205",
     "ebcdc089b5fdfd5a",
     "ebffe69bf52bb516",
     "efb6d2a64a7809d8",
@@ -4462,28 +4523,32 @@
     "9abde40162d19730",
     "d416edc24146a930"
    ],
+   "R18": [
+    "30e9be22de2b812b",
+    "4471962f97678f98"
+   ],
    "R2": [
     "172ee8345d261d9a",
     "19c6d50c6589e71c",
     "302525882d251086",
-    "5885c60516fc2667",
     "7973a8d2dae8c237",
     "8aa23dc35c99835a",
     "8b8609a5fb0a4865",
     "8ce7755eb665a57a",
     "d2ca7b7b7700c8f3",
     "d3ea9432ab39c7d4",
+    "d7640150b6fdaba2",
     "f335b2143214841c",
     "fb206eb91cb7b752"
    ],
    "R7": [
     "287374fcfde40f25",
-    "52092bde437d1b7e",
     "57b583f8fa287f52",
     "6c8df2efd536a774",
     "76e02304c18f3e71",
     "7c2506ee84269d43",
     "98f79223fb40c1e4",
+    "a15b778b2e2bc31c",
     "ab18d3fda9fb6147",
     "b859cbf8a161e8ae",
     "d5de43c8b212d22b",
@@ -4601,7 +4666,7 @@
   },
   "docs/backup-storage/01-verified-context.md": {
    "R1": [
-    "0fa8217660d82a21"
+    "b4775abd199629c7"
    ]
   },
   "docs/backup-storage/06-execution-guide.md": {
@@ -4615,8 +4680,8 @@
     "c8cde49ec914ba89"
    ],
    "R11": [
-    "e64c4899befe438a",
-    "ea2fa4754a1e4335"
+    "ea2fa4754a1e4335",
+    "f667e71336d16d02"
    ],
    "R2": [
     "20555388c0a4d0f2",
@@ -4632,8 +4697,8 @@
     "03e00ae809235725",
     "1f7042b82d58ef5e",
     "295caa08a38f9ae0",
-    "552c60c5b6addf71",
     "5ca6a192071056be",
+    "7f1148c70316672b",
     "99c3bbf67c75b5eb",
     "dcfc4a11e048a46d"
    ],
@@ -4790,11 +4855,11 @@
    ],
    "R2": [
     "24052d441b7f2be4",
-    "3991b01976e4f763",
     "405858b3bb263de7",
     "47c638f20d48fe57",
     "61de73d6e2d1bee0",
     "6220340d1afac835",
+    "70ec1b29f928b91b",
     "73e9227bb30a1c8c",
     "7a0e6c6da6193eea",
     "7bd7e4b8f442878c",
@@ -4914,8 +4979,7 @@
   },
   "docs/ci-overhaul/12-remaining-work.md": {
    "R1": [
-    "2807c8a099928670",
-    "ef093f167d191b9a"
+    "04b12fc0a7e162c0"
    ],
    "R7": [
     "54953ce38206466d",
@@ -5080,7 +5144,8 @@
   },
   "docs/design/spec/00-gate-review.md": {
    "R11": [
-    "540768f1272e5fb0"
+    "540768f1272e5fb0",
+    "91d81790a2aebe74"
    ]
   },
   "docs/design/spec/01-renet-packages.md": {
@@ -5218,11 +5283,11 @@
    "R2": [
     "21130038a3b584e4",
     "3bbc75f7c42ea7f7",
+    "3d548b020db4f5ac",
     "5a1a671b03b5e197",
     "8800c10570e57229",
     "b85ae604ceaf6b07",
     "cdf322be892c5a9e",
-    "e11f8e96c328a230",
     "e7e35cf62c05c893",
     "fe0da8c37f2a2dbb"
    ],
@@ -5260,12 +5325,12 @@
     "3943379010f06a15",
     "4386409ef98f24e2",
     "44b0401e27c12541",
-    "6082bee831d9f8ad",
     "65bf14b28045b02b",
     "84cc5dba128ebf66",
     "889c0ed1ebeffa75",
     "b1148edf87c062ab",
     "b4b0b1ca0beeeaa5",
+    "f0804da5938f4b4a",
     "f083f7a1a60e2540"
    ],
    "R7": [
@@ -5324,12 +5389,13 @@
     "ef467a1c681e3079"
    ],
    "R11": [
-    "c3fd7563d92efe9e"
+    "e60b7c8401da3be0"
    ],
    "R18": [
     "241b1438f2879d69",
     "358445e93f54668f",
     "8fb1e36318f4afdd",
+    "a6192561d2f83518",
     "bab0509923b0a586",
     "c73c0d99376bc4c4"
    ],
@@ -5389,7 +5455,8 @@
   },
   "docs/observability/architecture.md": {
    "R18": [
-    "284f650488eaa82f"
+    "284f650488eaa82f",
+    "af6064e1fd292bc3"
    ]
   },
   "docs/observability/dashboards/platform-overview.md": {

@@ -223,7 +223,9 @@ Sweeping the class rather than the instance did find three real gaps:
 whole tree and renamed `check:ci-test-account-web`, because the step name is all a reader of a red log sees and the old name would have been lying about 33 files. 592 tests now run.
 - **`packages/www`**: 2 files, 27 tests, run by nothing. Wired.
 - **`packages/shared`**: ran in CI but had NO manifest entry, so `npm run ci`
-never ran it locally. Invisible to the parity gate because R2 only matches `.ci/scripts/**` leaves. Adding `check:test-shared` immediately caught a REAL BREAK: `contract.test.ts:153` pinned `proxyCapableCommands()` at 83 while the tree had 84, because `backup snapshot` landed without moving the pin. The next push would have been red.
+never ran it locally. Invisible to the parity gate because R2 only matches `.ci/scripts/**` leaves. Adding `check:test-shared` immediately caught a REAL
+  BREAK: `contract.test.ts:153` pinned `proxyCapableCommands()` at 83 while the
+tree had 84, because `backup snapshot` landed without moving the pin. The next push would have been red.
 - **`packages/json`** is a fourth, deliberately not wired: it runs real Docker
 `up()`/`down()` lifecycles at 240s per function, so it belongs in `ct-tests.yml` behind a flag, sized against a runtime nobody has measured.
 
@@ -268,7 +270,8 @@ refused it.
 2. More importantly, **`ubuntu-slim` has a hard 15-minute cap** and kills the job
 regardless of what the YAML asks for. The number in the file would have been fiction.
 
-Fix: `quality-static` back to 12, the suite step moved to `quality-packages` (`ubuntu-latest`) beside the other unit-test steps, that lane raised 15 to 20 with the measured runtime cited in a comment, and `scripts/ci-runner/manifest.ts` repointed at the new job. `check:ci-workflow-gates`, `check:ci-workflows` and `check:ci-parity` all green, parity checked in both directions.
+Fix: `quality-static` back to 12, the suite step moved to `quality-packages`
+(`ubuntu-latest`) beside the other unit-test steps, that lane raised 15 to 20 with the measured runtime cited in a comment, and `scripts/ci-runner/manifest.ts` repointed at the new job. `check:ci-workflow-gates`, `check:ci-workflows` and `check:ci-parity` all green, parity checked in both directions.
 
 The operator's ruling on the underlying question was **"Keep it in CI, 4 minutes is worth it."**
 

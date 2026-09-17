@@ -1,6 +1,7 @@
 # Handoff checklist: www-round5
 
-Status: done Owner: a68f3ab4
+Status: done
+Owner: a68f3ab4
 
 Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/console` before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
 
@@ -47,9 +48,11 @@ The invariant to gate on is `player >= paragraph at every width`, which is the t
 
 **6. Reference parity (item 9): the recommended set PLUS two additions.**
 
-SHIP: category eyebrow, grouped sidebar, What's next cards, `Ctrl/Cmd+K`, inline language picker, **nested collapsible TOC**, **copy-page dropdown**.
+SHIP: category eyebrow, grouped sidebar, What's next cards, `Ctrl/Cmd+K`,
+inline language picker, **nested collapsible TOC**, **copy-page dropdown**.
 
-OMIT: the persistent question composer, on the README's own reasoning that Ask Assistant already covers that job without a floating element -- and a floating element cuts against items 3 and 6, whose theme is reducing visual noise.
+OMIT: the persistent question composer, on the README's own reasoning that Ask
+Assistant already covers that job without a floating element -- and a floating element cuts against items 3 and 6, whose theme is reducing visual noise.
 
 The operator widened this beyond the README's recommendation: the two additions are self-contained and neither competes with Ask Assistant. Wave C is therefore wider than the README scoped it, and wave D's docs-surface gate must cover both.
 

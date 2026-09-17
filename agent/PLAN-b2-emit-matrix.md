@@ -1,6 +1,7 @@
 # PLAN: B2 emit the matrix (within-lane sharding for ci-quality.yml)
-Status: partially executed -- D1-D4 and D5's first clause landed 2026-09-15, verified against the live tree, NOT re-derived from this checklist (which still read "draft" and every task unchecked despite the commits below existing). D5's second clause was ATTEMPTED and REVERTED for cause the same day; see Tasks. Remaining: D5's second clause (properly traced), the two selftest
-controls, the stale-comment fix. Owner: f4da5c2e
+Status: partially executed -- D1-D4 and D5's first clause landed 2026-09-15, verified
+against the live tree, NOT re-derived from this checklist (which still read "draft" and every task unchecked despite the commits below existing). D5's second clause was ATTEMPTED and REVERTED for cause the same day; see Tasks. Remaining: D5's second clause (properly traced), the two selftest controls, the stale-comment fix.
+Owner: f4da5c2e
 
 ## Why
 

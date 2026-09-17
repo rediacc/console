@@ -1,5 +1,8 @@
 # PLAN: chunk-store BROWSE, engine-first
-Status: compacted Full-Text: f7a5351a9 agent/PLAN-chunk-store-browse-engine.md Full-Text-Blob: cf248906f1dd29b1206e9331c84bfcc95eee8314 Record-Sig: 8207a732
+Status: compacted
+Full-Text: f7a5351a9 agent/PLAN-chunk-store-browse-engine.md
+Full-Text-Blob: cf248906f1dd29b1206e9331c84bfcc95eee8314
+Record-Sig: 8207a732
 
 ## Why
 An operator wanting to know whether a particular file is inside a backup had no way to ask. The decisive finding, established by reading the manifest struct rather than the design docs, is that a file listing is NOT derivable from a chunk-store manifest at any cost: the manifest is a fixed grid of SHA-256 hashes over the repository's LUKS CIPHERTEXT, carrying no filename, inode,
@@ -37,10 +40,16 @@ what let stage 1 ship at all. The stages that needed both are the ones still unb
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: proposal Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:10Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/grid.go, private/renet/pkg/repodiff/types.go, private/renet/pkg/filesystem/ext4.go, private/renet/pkg/repodiff/mountset.go,
-private/renet/pkg/repodiff/walk.go, private/renet/pkg/chunkstore/restore.go, private/account/src/services/backup-chunk-store.ts, private/account/src/services/backup-gc.service.ts, private/account/src/routes/backups.ts, private/renet/pkg/luks/luks.go, private/renet/pkg/credentials/keyfile.go, private/renet/pkg/vaultcrypto/vault.go, private/renet/pkg/embed/embed.go,
-packages/cli/src/commands/storage.ts, packages/cli/src/commands/repo-backup-list.ts, packages/e2e-tests/playwright.config.ts, .e2e-coverage-allowlist, .ci/tutorials/tutorial-backup-restore.sh, .github/workflows/ci-ops-test.yml Gates: none Why-Source: auto Read-History: `git show cf248906f1dd29b1206e9331c84bfcc95eee8314` recovers the text; `git log
---find-object=cf248906f1dd29b1206e9331c84bfcc95eee8314 --all` names the commit
+Record-Kind: compacted
+Prior-Status: proposal
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:10Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/grid.go, private/renet/pkg/repodiff/types.go, private/renet/pkg/filesystem/ext4.go, private/renet/pkg/repodiff/mountset.go, private/renet/pkg/repodiff/walk.go, private/renet/pkg/chunkstore/restore.go, private/account/src/services/backup-chunk-store.ts, private/account/src/services/backup-gc.service.ts, private/account/src/routes/backups.ts, private/renet/pkg/luks/luks.go, private/renet/pkg/credentials/keyfile.go, private/renet/pkg/vaultcrypto/vault.go, private/renet/pkg/embed/embed.go, packages/cli/src/commands/storage.ts, packages/cli/src/commands/repo-backup-list.ts, packages/e2e-tests/playwright.config.ts, .e2e-coverage-allowlist, .ci/tutorials/tutorial-backup-restore.sh, .github/workflows/ci-ops-test.yml
+Gates: none
+Why-Source: auto
+Read-History: `git show cf248906f1dd29b1206e9331c84bfcc95eee8314` recovers the text; `git log --find-object=cf248906f1dd29b1206e9331c84bfcc95eee8314 --all` names the commit
 
 ## History
 - 2026-09-06T17:06:10Z compacted by 8f55d4f0 from `proposal` (record-sig 8207a732)

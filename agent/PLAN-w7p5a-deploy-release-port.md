@@ -1,5 +1,6 @@
 # PLAN: W7P5-a deploy/release port — close the real-run-note gap, not re-port anything
-Status: draft -- design only, not implemented Owner: f4da5c2e
+Status: draft -- design only, not implemented
+Owner: f4da5c2e
 
 ## Why
 

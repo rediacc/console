@@ -1,5 +1,9 @@
 # PLAN: enable custom/require-testid across private/account/web
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-require-testid-sweep.md Full-Text-Blob: d9c09956f72585468cd1af419f11a2077981748c Record-Sig: 4b99cd88
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-require-testid-sweep.md
+Full-Text-Blob: d9c09956f72585468cd1af419f11a2077981748c
+Record-Sig: 4b99cd88
 
 ## Why
 `custom/require-testid` was configured at error level but switched `off` for `private/account/**/*.{ts,tsx}`, the one tree with 287 outstanding findings. Neither half proves the rule on its own: enabled-but-unlinted is a dead rule, lint-clean-but-disabled is a vacuous pass. The operator decided to ENABLE it rather than record it or delete it.
@@ -19,8 +23,16 @@ after a refactor moves its config, which is exactly what happened here when `esl
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:53Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: eslint.config.js Gates: check:ci-lint-rule-liveness, check:lint Why-Source: author Read-History: `git show d9c09956f72585468cd1af419f11a2077981748c` recovers the text; `git log
---find-object=d9c09956f72585468cd1af419f11a2077981748c --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:53Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: eslint.config.js
+Gates: check:ci-lint-rule-liveness, check:lint
+Why-Source: author
+Read-History: `git show d9c09956f72585468cd1af419f11a2077981748c` recovers the text; `git log --find-object=d9c09956f72585468cd1af419f11a2077981748c --all` names the commit
 
 ## History
 - 2026-09-06T17:08:53Z compacted by 8f55d4f0 from `done` (record-sig 4b99cd88)

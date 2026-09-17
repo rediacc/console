@@ -1,7 +1,8 @@
 # www round 5: comprehension, docs information architecture, typographic enforcement
 
-Scope: `packages/www`, the marketing and documentation site. Round 5 follows four landed rounds (last: `28b152649 feat(www): round-4 docs browse, thumbnails, tutorial player, voice rewrite`). The through-line is that the site is now correct but still reads as machine-assembled: text-heavy sections with no visual anchor, a docs taxonomy that exists in the data and is never surfaced,
-chrome that fades itself to nothing, and line breaks that fall mid-sentence. Round 5 makes the existing structure legible and adds gates so the regressions cannot come back.
+Scope: `packages/www`, the marketing and documentation site. Round 5 follows four landed
+rounds (last: `28b152649 feat(www): round-4 docs browse, thumbnails, tutorial player, voice rewrite`). The through-line is that the site is now correct but still reads as machine-assembled: text-heavy sections with no visual anchor, a docs taxonomy that exists in the data and is never surfaced, chrome that fades itself to nothing, and line breaks that fall mid-sentence. Round 5
+makes the existing structure legible and adds gates so the regressions cannot come back.
 
 Planned by session `a68f3ab4` (`console-39`) on 2026-08-23, in `~/monorepo/console` before the repo moved to `~/console`. Every measurement in this suite was taken live against `http://localhost:4321` with `agent-browser`, not read off a file. Branch at handoff: `0823-1`.
 
@@ -90,4 +91,6 @@ end.
 5. **The player cap at 1440 (item 8).** Plain `min(960px, 80%)` gives a good 960px at 1920
 but **612px at 1440, narrower than the 688px paragraph above it** and narrower than today. RECOMMENDED: `min(960px, max(80%, var(--docs-prose)))`, so the player is never narrower than the text it illustrates. Alternative: tie it to the prose with `min(960px, calc(var(--docs-prose) * 1.4))`.
 6. **How far to take the reference parity (item 9).** The `/tmp/aim.png` reference also has
-a nested collapsible TOC, a persistent question composer and a copy-page dropdown. RECOMMENDED: ship the category eyebrow, the grouped sidebar, What's next cards, `Ctrl/Cmd+K` and the inline language picker; leave the persistent composer out, since the Ask Assistant menu already covers that job without a floating element.
+a nested collapsible TOC, a persistent question composer and a copy-page dropdown.
+   RECOMMENDED: ship the category eyebrow, the grouped sidebar, What's next cards,
+`Ctrl/Cmd+K` and the inline language picker; leave the persistent composer out, since the Ask Assistant menu already covers that job without a floating element.

@@ -17,11 +17,14 @@ with one exception introduced by section 2. The completeness gate in 03 (T2) enf
 
 ## 2. Fork-metering fix (closes hole 1)
 
-Intent: a fork is a licensed event ("each fork = a slot claim"), including datastore and whole-cluster forks, including same-node forks.
+Intent: a fork is a licensed event ("each fork = a slot claim"), including datastore
+and whole-cluster forks, including same-node forks.
 
 RECOMMENDED variant: **bind repo licenses to datastore identity**.
 - Make fork identity real on disk: `datastore fork` (or first `attach` of a fork)
-writes the fork's own registry key (`<parent>:<tag>`) into the cloned descriptor (`.rediacc/datastore.json` Name field; today the clone keeps the parent's). SPIKE: confirm where attach mounts the clone and the safe write point; confirm the descriptor is inside the snapshot scope so nested forks chain correctly.
+writes the fork's own registry key (`<parent>:<tag>`) into the cloned descriptor (`.rediacc/datastore.json` Name field; today the clone keeps the parent's).
+  SPIKE: confirm where attach mounts the clone and the safe write point; confirm the
+descriptor is inside the snapshot scope so nested forks chain correctly.
 - Add a datastore-identity field to the repo-license payload (issued by account,
 validated by renet exactly like `luksUuid`/`storageFingerprint`: mismatch = `identity_mismatch`, fail fast). The CLI supplies the datastore identity at issuance (it already supplies luksUuid and storageFingerprint; find the scan in `repository_license_scan.go` and `license.ts` issuance body).
 - Effect: a clone's repos carry the parent's datastore identity in their inherited

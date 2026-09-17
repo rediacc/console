@@ -3,7 +3,8 @@
 Implementation spec for the P3 feature-layer CSI driver adopted in `docs/design/05-feature-layer.md` §3b (review F6). It builds on the CSI-adoptable volume layout ruled in `docs/design/spec/05-k8s-templates-and-fork-hygiene.md` §2, which the driver adopts UNCHANGED. Code citations are against the current tree (console worktree `0707-1`, renet submodule as checked out there).
 Decisions this document makes are tagged **[CSI-DECIDED]**; unresolved residuals are collected in §14. Sources for every externally-verified claim are in the dated appendix (§15) — the builder needs no web access.
 
-Naming: `<ds>` = datastore name, `<repo>` = repo name (= its k8s namespace; a fork namespace is `<repo>-<tag>`), `<kubelet-root>` = the node's relocated kubelet root directory. Driver name: **`csi.rediacc.io`** (matches the StorageClass provisioner name reserved in spec 05 §2).
+Naming: `<ds>` = datastore name, `<repo>` = repo name (= its k8s namespace; a fork
+namespace is `<repo>-<tag>`), `<kubelet-root>` = the node's relocated kubelet root directory. Driver name: **`csi.rediacc.io`** (matches the StorageClass provisioner name reserved in spec 05 §2).
 
 ---
 
@@ -190,7 +191,8 @@ the same namespace's repo folder) share the repo key by design, exactly like for
 4. Respond: `volume_id` (relative path), `capacity_bytes`, `volume_context`,
 and **`accessible_topology: [{rediacc.io/ds-<ds>: "true"}]`** — this is what the provisioner turns into the PV's `nodeAffinity`, making CSI PVs follow the datastore label across failover exactly like the static PVs.
 
-**DeleteVolume**: resolve `volume_id` across local datastores; already-absent → `OK` (idempotent per spec); image currently open/mounted (staged) → `FAILED_PRECONDITION`; else `rm` the image file. Snapshots of the volume remain valid (reflink files are independent extents-sharing copies; BTRFS keeps shared extents alive) — deleting a volume never cascades to its snapshots.
+**DeleteVolume**: resolve `volume_id` across local datastores; already-absent →
+`OK` (idempotent per spec); image currently open/mounted (staged) → `FAILED_PRECONDITION`; else `rm` the image file. Snapshots of the volume remain valid (reflink files are independent extents-sharing copies; BTRFS keeps shared extents alive) — deleting a volume never cascades to its snapshots.
 
 ## 5. Staging/publish split [CSI-DECIDED]
 

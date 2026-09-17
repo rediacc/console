@@ -1,4 +1,5 @@
-Status: partially implemented 2026-09-05 — every line a session can execute has been executed; the 7 open boxes are operator-only or land in other repos (a GitLab commit for private/growth, renames in private/generative, the GPG revocation certificate, and the mc_migrate_claude machine-account token only the operator can mint).
+Status: partially implemented 2026-09-05 — every line a session can execute has been
+executed; the 7 open boxes are operator-only or land in other repos (a GitLab commit for private/growth, renames in private/generative, the GPG revocation certificate, and the mc_migrate_claude machine-account token only the operator can mint).
 
 The header said `done` until 2026-09-05, and that is why this file reds check:ci-plan-boxes rather than being exempted by it: a finished status switches the Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them from the one mechanism that surfaces them. The boxes were always there; the header was the inaccurate half. What remains is not a step in
 it: three secrets whose two copies hold different VALUES, which only the operator can reconcile. That is recorded where it will be found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`, which carries each drift with the run that found it, its door, and a `$resolution` block naming the steps. Worklist `[?] #fbd35dba` was closed 2026-09-03 with
@@ -191,7 +192,8 @@ Both PEMs were corrupt in the vault, differently: `rediacc-ci-cd.2026-02-01.priv
 Streamed the released `s3://rediacc-releases/cli/stable/rdc-linux-x64` (503 MB) and grepped: the vault's public key appears **6 times**; the dev key from `.env` appears **0 times** (the control that makes it non-vacuous). That binary carries `keys.ProductionPublicKey`, injected from `ACCOUNT_ED25519_PUBLIC_KEY` at `.ci/scripts/build/build-renet.sh:201`. Fingerprint
 `fb37f1ae16f8b7c0` via `packages/shared/src/subscription/fingerprint.ts`.
 
-Corroborating: vault `ACCOUNT_X25519_PUBLIC_KEY` equals `~/.config/rediacc/rediacc.json` `account.e2ePublicKey` byte-for-byte (server `edge-eu.rediacc.com`, fp `ee936479b32d3162`); dev differs. **renet contains ZERO X25519 references** — X25519 is the CLI config-encryption key, ED25519 is the licence key. Worth stating because it was a live question.
+Corroborating: vault `ACCOUNT_X25519_PUBLIC_KEY` equals `~/.config/rediacc/rediacc.json`
+`account.e2ePublicKey` byte-for-byte (server `edge-eu.rediacc.com`, fp `ee936479b32d3162`); dev differs. **renet contains ZERO X25519 references** — X25519 is the CLI config-encryption key, ED25519 is the licence key. Worth stating because it was a live question.
 
 ### Do NOT re-derive coverage with a name-equality diff (added 2026-09-02)
 
@@ -414,7 +416,8 @@ Marketing docs and **baked video source payloads** reference `STRIPE_KEY`/`STRIP
 
 **There are FOUR namespaces, not three.** The one missing from earlier analysis is the **workflow-env shim**: GitHub secret → `SECRET_*` / `<PREFIX>_<SUFFIX>` → Worker binding. Contract documented at `.ci/scripts/deploy/set-account-worker-secrets.sh:26-41`, consumed at `:92-141`. Decision 2 deletes this layer.
 
-Distribution: `.github/workflows` + `.ci/` are ~75% of all occurrences. **`packages/` has 7 hits (2 files) and `workers/` has 1** — the product code is not in the blast radius at all. Heaviest names: `CLOUDFLARE_API_TOKEN` 182, `R2_ENDPOINT` 147, `R2_ACCESS_KEY_ID` 91, `APP_PRIVATE_KEY` 90, `ACCOUNT_ED25519_PUBLIC_KEY` 87.
+Distribution: `.github/workflows` + `.ci/` are ~75% of all occurrences. **`packages/` has 7
+hits (2 files) and `workers/` has 1** — the product code is not in the blast radius at all. Heaviest names: `CLOUDFLARE_API_TOKEN` 182, `R2_ENDPOINT` 147, `R2_ACCESS_KEY_ID` 91, `APP_PRIVATE_KEY` 90, `ACCOUNT_ED25519_PUBLIC_KEY` 87.
 
 **16 of the 44 never reach a Worker** (CI-only) and rename with zero cross-namespace coordination. **19 collapse** through the shim — the region suffix is stripped, and `env.ts` only ever sees the short name.
 
@@ -701,7 +704,8 @@ provider-first; this is that rule applied.
 
 ## The table
 
-Columns: current GitHub secret → target → where the value lives today. `SM` = the `ci-shared` project, `V` = vault item `c38d82bb`, `—` = nowhere readable.
+Columns: current GitHub secret → target → where the value lives today.
+`SM` = the `ci-shared` project, `V` = vault item `c38d82bb`, `—` = nowhere readable.
 
 ### Account component — already conforming, no rename
 
@@ -761,7 +765,8 @@ Established by the operator directly in the Stripe dashboard, not inferred. **Th
 
 (The other accounts in the switcher, "Mercor" and "New Business", are unrelated businesses.)
 
-**Consequence: `STRIPE_SECRET_KEY_{EU,US,ASIA}` are three GitHub secrets holding ONE value.** A single live secret key serves every region, so the region suffix on the SECRET KEY is a fiction. This is the purest instance of the "what is for what" complaint that started this programme, and the migration should collapse it:
+**Consequence: `STRIPE_SECRET_KEY_{EU,US,ASIA}` are three GitHub secrets holding ONE
+value.** A single live secret key serves every region, so the region suffix on the SECRET KEY is a fiction. This is the purest instance of the "what is for what" complaint that started this programme, and the migration should collapse it:
 
 | current | target | why |
 |---|---|---|
@@ -950,7 +955,8 @@ must change together.
 ### Part 10 rows that are missing, reported for a ruling
 
 1. `BWS_ACCESS_TOKEN` (composite action, `check_bws_map.py:107`, credentials.ts) versus the
-table's `BITWARDEN_SM_ACCESS_TOKEN`: two names, one token, neither settled. DEFAULT: `BWS_ACCESS_TOKEN` stays; it is what `bws` itself reads.
+table's `BITWARDEN_SM_ACCESS_TOKEN`: two names, one token, neither settled.
+   DEFAULT: `BWS_ACCESS_TOKEN` stays; it is what `bws` itself reads.
 2. `STRIPE_SANDBOX_SECRET_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET`: live secrets, no row.
 3. `vars.APP_ID` and `vars.TURNSTILE_SITE_KEY`: the public halves of renamed pairs.
 4. `CF_GLOBAL_API_KEY`/`CF_EMAIL`, `R2_MEDIA_BUCKET`, `OTEL_ENDPOINT`: `.env` keys adjacent
@@ -1003,8 +1009,9 @@ excused a reference to `ANTHROPIC_API_KEY`; the operator ruled out pay-as-you-go
 
 ### 5. The Worker-side namespace is NOT the GitHub namespace, and conflating them is a live hazard
 
-Decision 2 collapsed the shim so the Worker reads full names. But five names are now HOMOGRAPHS: `STRIPE_SECRET_KEY`, `CLOUDFLARE_TURNSTILE_SECRET_KEY`, `OBS_OTLP_CREDENTIALS` and the `CLOUDFLARE_R2_BACKUP_*` family exist as BOTH a Worker binding key and a GitHub secret name, and they rename on different schedules. A file-wide find-and-replace over `set-account-worker-secrets.sh`
-corrupts the Worker contract at exactly those lines while looking correct.
+Decision 2 collapsed the shim so the Worker reads full names. But five names are now
+HOMOGRAPHS: `STRIPE_SECRET_KEY`, `CLOUDFLARE_TURNSTILE_SECRET_KEY`, `OBS_OTLP_CREDENTIALS`
+and the `CLOUDFLARE_R2_BACKUP_*` family exist as BOTH a Worker binding key and a GitHub secret name, and they rename on different schedules. A file-wide find-and-replace over `set-account-worker-secrets.sh` corrupts the Worker contract at exactly those lines while looking correct.
 
 ~~Related and still open as an operator question:~~ **ANSWERED — see Decision 10.** `CLOUDFLARE_R2_BACKUP_*` (the S3-API presign path) read as a sibling of `BACKUP_R2_*` (the native-binding grant minter, `env.ts:183-192`), and they are different things. The S3 family is also what an on-prem MinIO or RustFS install sets, which made `CLOUDFLARE_` wrong for that surface. The operator
 ruled on both: they are now `ACCOUNT_BACKUP_S3_*` and `ACCOUNT_BACKUP_R2_GRANT_*`, and the homograph list above loses one of its five members — `CLOUDFLARE_R2_BACKUP_*` no longer exists as a Worker key, so the Worker key and the GitHub secret `BACKUP_S3_*` can no longer be confused for each other by a file-wide replace.
@@ -1510,7 +1517,9 @@ pre-image names the shadow comparison needs as its left operand. What the rename
 `env:`/`with:` and passthroughs; zero `secrets: inherit`; zero environment-scoped secrets. Of 664 reads, 7 sit in a step BEFORE the fetch (all `GITHUB_APP_PRIVATE_KEY` feeding `app-token`) and reorder cleanly. Of 48 stored secrets: 43 deletable, 3 blocked, 1 stays.
 
 **The risk that matters is not the deletion.** The Bitwarden layer HAS NEVER RUN: the composite action is not in HEAD and not one of the 63 comparisons has executed. Everything Parts 17-21 built is unproven against a live run. The mitigation is already in the design — each compare step sits between the fetch and every consumer IN ITS OWN JOB and fails on mismatch OR on either side
-being empty, so through the soak it is a precondition rather than an observer. Second-order: after deletion Bitwarden is the only copy CI can reach and `gh secret` has no `get`; recovery covers roughly 90% of rows (vault, `.env` under new spellings, re-mintable slugs) but Stripe, Dockerhub and the App key are dashboard-or-reissue only.
+being empty, so through the soak it is a precondition rather than an observer.
+Second-order: after deletion Bitwarden is the only copy CI can reach and `gh secret` has no
+`get`; recovery covers roughly 90% of rows (vault, `.env` under new spellings, re-mintable slugs) but Stripe, Dockerhub and the App key are dashboard-or-reissue only.
 
 ### The pre-landing audit, and the one that was fail-OPEN
 

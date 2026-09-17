@@ -1,4 +1,5 @@
-Status: partially implemented 2026-09-02 (D3, the ban, and the docs box; D2 and D4 remain) Owner: 74de73ca
+Status: partially implemented 2026-09-02 (D3, the ban, and the docs box; D2 and D4 remain)
+Owner: 74de73ca
 
 # Branch-aware workflows: 18 of 18 call sites already are
 
@@ -69,7 +70,8 @@ reviewer into both repos — contradicts its stated purpose of having exactly on
 **The trust boundary here is already "write access to `rediacc/console`."** Anyone with write access can open a PR editing `ci-quality.yml` and CI runs their version with the full secret set. D1 and D2 add **no** new exposure — same boundary, different door. Fork PRs stay outside it and fail closed (`ci.yml:243-247`). D4 is the only genuine widening, and only for a dispatcher who
 could push that logic to main anyway.
 
-Also: checkout v7 now refuses fork-PR code under `pull_request_target`/`workflow_run` unless `allow-unsafe-pr-checkout` is passed (enforced 2026-07-20). That flag belongs in `check-workflows.sh`'s banned-pattern list so it can never appear unreviewed.
+Also: checkout v7 now refuses fork-PR code under `pull_request_target`/`workflow_run` unless
+`allow-unsafe-pr-checkout` is passed (enforced 2026-07-20). That flag belongs in `check-workflows.sh`'s banned-pattern list so it can never appear unreviewed.
 
 ## Controls
 

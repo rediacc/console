@@ -20,7 +20,8 @@ you have not read is a hypothesis, not a fact.
 
 **Testing and concurrency are first-class deliverables**, not afterthoughts. The testing substrate (03) lands before the licensing model so the model lands on rails.
 
-**Staffing**: code changes go through writing sub-agents, Opus by default, Fable for the challenging pieces (listed in 05), Sonnet for translations/naturalization. At most 2 concurrent writers with disjoint file ownership, exact ownership stated in every prompt.
+**Staffing**: code changes go through writing sub-agents, Opus by default, Fable for the
+challenging pieces (listed in 05), Sonnet for translations/naturalization. At most 2 concurrent writers with disjoint file ownership, exact ownership stated in every prompt.
 
 ## Scope
 

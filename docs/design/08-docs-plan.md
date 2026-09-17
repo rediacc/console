@@ -1,6 +1,7 @@
 # 08 — Docs Plan (rewrite for the new architecture)
 
-**Status: forward-looking (P7).** The plan below is unchanged, but the ground under it has moved: the claims the current docs make falsely are now TRUE and PROVEN, so P7 is a rewrite against measured evidence rather than against a design.
+**Status: forward-looking (P7).** The plan below is unchanged, but the ground under it has
+moved: the claims the current docs make falsely are now TRUE and PROVEN, so P7 is a rewrite against measured evidence rather than against a design.
 
 User decision 2026-07-10: with the redesign implemented in the same program, the public docs are REWRITTEN for the new architecture (the interim "falsehood patch" of current docs is skipped as dead work). Docs land in the program's final phase, AFTER code passes the examples suite, so every claim is backed by something that ran.
 

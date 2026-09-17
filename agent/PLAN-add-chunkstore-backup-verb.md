@@ -1,5 +1,9 @@
 # PLAN: add the chunk-store backup verb (`renet backup snapshot` / `rdc backup snapshot`)
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-add-chunkstore-backup-verb.md Full-Text-Blob: 5de64f0839c4781cfdef2f2f3249a695cc96d2ef Record-Sig: 51edf5ee
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-add-chunkstore-backup-verb.md
+Full-Text-Blob: 5de64f0839c4781cfdef2f2f3249a695cc96d2ef
+Record-Sig: 51edf5ee
 
 ## Why
 `pkg/chunkstore` was a complete content-addressed upload engine that nothing called: the plan opens by reproducing that `chunkstore.Upload` had zero callers, so the backup store the team had built was unreachable from any operator-facing verb. Two things had to happen together. First a prerequisite: the Go client had been written against a sketch of the server API and had drifted
@@ -44,10 +48,16 @@ piece of a multi-file change most likely to be dropped: the code, the contract, 
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: draft Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:09Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/license/tiermap.go, packages/shared/src/renet-contract/data/functions.generated.ts, packages/cli/src/config/command-metadata.ts,
-packages/cli/src/commands/backup.ts, scripts/drills/backup.sh, docs/backup-storage/02-design.md, private/account/src/errors.ts, packages/cli/src/services/renet/renet-license-contract.ts, packages/cli/src/types/index.ts, packages/cli/src/commands/backup-storage.ts, .ci/scripts/quality/check-e2e-coverage.sh, .ci/scripts/quality/check-renet-types.sh,
-private/renet/cmd/renet/functions_commands.go, scripts/gates/check-e2e-coverage.ts, private/renet/.ci/scripts/quality/i18n.sh, packages/cli/scripts/check-command-planes.ts, packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts, docs/design/06-cli-reshape.md, scripts/gates/check-design-tree.ts Gates: check:ci-design-tree Why-Source: auto Read-History: `git show
-5de64f0839c4781cfdef2f2f3249a695cc96d2ef` recovers the text; `git log --find-object=5de64f0839c4781cfdef2f2f3249a695cc96d2ef --all` names the commit
+Record-Kind: compacted
+Prior-Status: draft
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:09Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/license/tiermap.go, packages/shared/src/renet-contract/data/functions.generated.ts, packages/cli/src/config/command-metadata.ts, packages/cli/src/commands/backup.ts, scripts/drills/backup.sh, docs/backup-storage/02-design.md, private/account/src/errors.ts, packages/cli/src/services/renet/renet-license-contract.ts, packages/cli/src/types/index.ts, packages/cli/src/commands/backup-storage.ts, .ci/scripts/quality/check-e2e-coverage.sh, .ci/scripts/quality/check-renet-types.sh, private/renet/cmd/renet/functions_commands.go, scripts/gates/check-e2e-coverage.ts, private/renet/.ci/scripts/quality/i18n.sh, packages/cli/scripts/check-command-planes.ts, packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts, docs/design/06-cli-reshape.md, scripts/gates/check-design-tree.ts
+Gates: check:ci-design-tree
+Why-Source: auto
+Read-History: `git show 5de64f0839c4781cfdef2f2f3249a695cc96d2ef` recovers the text; `git log --find-object=5de64f0839c4781cfdef2f2f3249a695cc96d2ef --all` names the commit
 
 ## History
 - 2026-09-06T17:06:09Z compacted by 8f55d4f0 from `draft` (record-sig 51edf5ee)

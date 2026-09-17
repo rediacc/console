@@ -1,6 +1,8 @@
 # PLAN: W7P4-W docker sub-slice — cut the 3 already-ported docker scripts over from bash to Python
-Status: Stages 0-5 executed 2026-09-15, uncommitted. Canary clean (all 3 scripts, byte- identical twin vs port) after an operator scope refresh closed the credential gap. Differential 133/133. All 9 call sites flipped, guard widened (deviated from §3's literal instruction — see Tasks), caller flipped, guard re-confirmed, lint/dead-code gates clean. One open item: the
-cleanup_staging.py DELETE drill needs `delete:packages` (not granted), leaving a disposable image on production GHCR — see "## LEFTOVER PRODUCTION ARTIFACT". Owner: f4da5c2e
+Status: Stages 0-5 executed 2026-09-15, uncommitted. Canary clean (all 3 scripts, byte-
+identical twin vs port) after an operator scope refresh closed the credential gap. Differential 133/133. All 9 call sites flipped, guard widened (deviated from §3's literal instruction — see Tasks), caller flipped, guard re-confirmed, lint/dead-code gates clean. One open item: the cleanup_staging.py DELETE drill needs `delete:packages` (not granted), leaving a disposable image on
+production GHCR — see "## LEFTOVER PRODUCTION ARTIFACT".
+Owner: f4da5c2e
 
 ## Why
 
@@ -134,10 +136,12 @@ non-critical". Flipping line 66's call target changes zero observed production b
 ### 4a. Three new entry-point files (new, thin, headerless — matching the
 convention at `.ci/scripts/quality/check_editorconfig.py` / `.ci/scripts/quality/_cipath.py`, the closest existing precedent for "a workflow can't run a package module by `-m`, and nothing puts `.ci` on `sys.path` for a bare path invocation")
 
-New: `.ci/scripts/docker/_cipath.py` — copy of `.ci/scripts/quality/_cipath.py`'s logic (same `parents[2]` depth: both are two directories below `.ci`), not a shared import (each entry point's own directory is what lands on `sys.path[0]`, per that file's own docstring). This is the FIRST `_cipath.py` outside `.ci/scripts/quality/` — confirm no other copy exists elsewhere in
-`.ci/scripts/**` before assuming this is a copy vs. should-be-shared decision (measured in this pass: it is the only one; a second, disjoint copy is consistent with the existing pattern, not a new one).
+New: `.ci/scripts/docker/_cipath.py` — copy of
+`.ci/scripts/quality/_cipath.py`'s logic (same `parents[2]` depth: both are two directories below `.ci`), not a shared import (each entry point's own directory is what lands on `sys.path[0]`, per that file's own docstring). This is the FIRST `_cipath.py` outside `.ci/scripts/quality/` — confirm no other copy exists elsewhere in `.ci/scripts/**` before assuming this is a copy vs.
+should-be-shared decision (measured in this pass: it is the only one; a second, disjoint copy is consistent with the existing pattern, not a new one).
 
-New: `.ci/scripts/docker/create_manifest.py`, `.ci/scripts/docker/retag_image.py`, `.ci/scripts/docker/cleanup_staging.py` — each:
+New: `.ci/scripts/docker/create_manifest.py`, `.ci/scripts/docker/retag_image.py`,
+`.ci/scripts/docker/cleanup_staging.py` — each:
 ```python
 #!/usr/bin/env python3
 """Entry point for the ported <name> docker script. Logic is in the package.
@@ -188,9 +192,11 @@ This is a bash file editing its own internal call target; it is not a new `.sh` 
 
 ## 5. Sequencing / rollback
 
-Sequencing: §2's Stage 0-5 order (create-manifest lowest stakes first, cleanup-staging + gate-scanner widening last since it's the only one touching shared CI-gate machinery).
+Sequencing: §2's Stage 0-5 order (create-manifest lowest stakes first,
+cleanup-staging + gate-scanner widening last since it's the only one touching shared CI-gate machinery).
 
-Rollback: every diff in §4 is a pure text change with no state migration (no lockfile, no lock-json registration since these are not gates, no allowlist entry). A revert of the commit/PR is sufficient and instant. The irreversibility risk is NOT in the code change, it is in what a REAL run does between merge and a caught problem:
+Rollback: every diff in §4 is a pure text change with no state migration
+(no lockfile, no lock-json registration since these are not gates, no allowlist entry). A revert of the commit/PR is sufficient and instant. The irreversibility risk is NOT in the code change, it is in what a REAL run does between merge and a caught problem:
 - `create_manifest.py`/`retag_image.py` real runs push/retag real registry
 content. A bad push cannot be "unpushed", but every one of these has an IDEMPOTENT-shaped fix: re-run the same step with the (reverted) bash twin against the same tag and it overwrites the bad manifest/tag with the correct one — this is normal operation for these scripts already (retagging is idempotent by design; recreating a manifest is idempotent by design).
 - `cleanup_staging.py`'s DELETE is the one truly non-reversible action (a
@@ -354,8 +360,8 @@ or delete version id `1253038485` by hand via the GitHub UI/API with an account 
 
 ## Execution log (2026-09-15)
 
-Environment: `gh` authenticated as `mfbayraktar`, token scopes measured via `curl -I -H "Authorization: token $(gh auth token)" https://api.github.com/user`: `x-oauth-scopes: admin:org, gist, repo, workflow` — **no `read:packages`, no `write:packages`**. `docker login ghcr.io` with that same token succeeds (identity is valid), but GHCR's own authorization still denies per-package
-based on scope, independent of docker login succeeding.
+Environment: `gh` authenticated as `mfbayraktar`, token scopes measured via
+`curl -I -H "Authorization: token $(gh auth token)" https://api.github.com/user`: `x-oauth-scopes: admin:org, gist, repo, workflow` — **no `read:packages`, no `write:packages`**. `docker login ghcr.io` with that same token succeeds (identity is valid), but GHCR's own authorization still denies per-package based on scope, independent of docker login succeeding.
 
 **Stage 0 (already landed, re-verified):** `git log --oneline -1 -- .ci/scripts/docker/_cipath.py` → `7d4dee70e feat(ci): W7P4-W stage 0+1, docker script entry points`, same for `cleanup_staging.py`/`create_manifest.py`/`retag_image.py` under `.ci/scripts/docker/`. `git status --short` on all 4 is empty (clean, matches HEAD).
 

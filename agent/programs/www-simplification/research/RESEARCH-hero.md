@@ -1,6 +1,7 @@
 # RESEARCH — hero (`/en` above-the-fold)
 
-Specialist: `sx-hero`. Date: 2026-08-17. Nothing in `packages/www` was modified. Screenshots: `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-hero/`
+Specialist: `sx-hero`. Date: 2026-08-17. Nothing in `packages/www` was modified.
+Screenshots: `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-hero/`
 
 ---
 
@@ -33,7 +34,8 @@ both desktop and mobile.
 
 ### 2.2 Measured, at 1440×900, `http://localhost:4321/en`
 
-Commands: `agent-browser set viewport 1440 900`, then `eval` with `getBoundingClientRect` / `getComputedStyle` (session `sx-hero`).
+Commands: `agent-browser set viewport 1440 900`, then `eval` with `getBoundingClientRect` /
+`getComputedStyle` (session `sx-hero`).
 
 | Measurement | Value |
 |---|---|
@@ -91,7 +93,9 @@ common.terminalSimulationDisclaimer = "Illustrative output; actual runs may incl
 
 ## 3. The anthropic.com hero component, dissected
 
-Measured live at `https://www.anthropic.com/`, 2026-08-17, Chrome headless via `agent-browser`. Screenshots: `anthropic-1440-top.png`, `anthropic-cta-t0.png`, `anthropic-cta-t3.png`, `anthropic-cta-t6.png`, `anthropic-card-mid-scroll.png`, `anthropic-390-top.png`, `anthropic-390-cta.png`, `anthropic-1440-reducedmotion.png`.
+Measured live at `https://www.anthropic.com/`, 2026-08-17, Chrome headless via `agent-browser`.
+Screenshots: `anthropic-1440-top.png`, `anthropic-cta-t0.png`, `anthropic-cta-t3.png`,
+`anthropic-cta-t6.png`, `anthropic-card-mid-scroll.png`, `anthropic-390-top.png`, `anthropic-390-cta.png`, `anthropic-1440-reducedmotion.png`.
 
 **There is no single "special component". There are three stacked moves**, and the impression the operator has comes from all three firing in sequence within the first screen and a half. Taken apart:
 
@@ -107,7 +111,8 @@ words `research` and `products`, underlined inside the headline itself, linking 
 
 **What you see:** the headline's words fade up into place at slightly different moments, so the line assembles rather than appears. It fires once, on load.
 
-**Mechanism: plain DOM + CSS transitions. No GSAP, no canvas, no library.** ~55 lines of inline JS in the footer plus ~12 lines of CSS in `<head>`.
+**Mechanism: plain DOM + CSS transitions. No GSAP, no canvas, no library.** ~55 lines of inline
+JS in the footer plus ~12 lines of CSS in `<head>`.
 
 Rendered markup (measured `h1.outerHTML`):
 
@@ -197,7 +202,8 @@ document.documentElement.classList.remove("js-anim");   // reveal, before the 1.
 
 **What you see:** below the hero sits a dark, rounded, inset card. As you scroll, it grows outward until it is a full-bleed black band. The page appears to open.
 
-**Mechanism: GSAP ScrollTrigger scrubbing `max-width`, `border-radius` and vertical margin.** Measured on `.big-cta_scroll-bg.is-kt3` by scrolling and reading `getComputedStyle` after settling:
+**Mechanism: GSAP ScrollTrigger scrubbing `max-width`, `border-radius` and vertical margin.**
+Measured on `.big-cta_scroll-bg.is-kt3` by scrolling and reading `getComputedStyle` after settling:
 
 | `window.scrollY` | `max-width` | `border-radius` | margin-top/bottom | rendered box |
 |---|---|---|---|---|
@@ -231,7 +237,8 @@ Note the inverse guard on the copy inside it — content is hidden **only** when
 **What you see:** inside the dark card, a field of ~28 small photographic tiles connected by hair- thin lines to five serif question labels ("How does AI work?", "How should I use AI?", "Who should govern AI?", "How does AI affect the economy?", "What is AI's impact on society?"). It draws itself in when scrolled to, then breathes almost imperceptibly. See
 `anthropic-card-mid-scroll.png` for the full field.
 
-**Mechanism: one self-contained 31,754-byte IIFE that builds an inline SVG and drives it with GSAP + ScrollTrigger.** Not canvas, not WebGL, not video — `document.querySelectorAll('canvas')` → 0, `'video'` → 0.
+**Mechanism: one self-contained 31,754-byte IIFE that builds an inline SVG and drives it with
+GSAP + ScrollTrigger.** Not canvas, not WebGL, not video — `document.querySelectorAll('canvas')` → 0, `'video'` → 0.
 
 **Structure it builds** (measured off the live DOM):
 
@@ -366,7 +373,8 @@ single `IntersectionObserver`, no GSAP,
 - the drift as one CSS `@keyframes` per column with different durations and negative
 `animation-delay`s (the Lissajous wander is what buys their organic feel, but two out-of-phase keyframed translations at ~2.5 s and ~3.1 s get 80 % of it for 0 bytes of JS).
 
-Estimate: ~120 lines of SVG-generating Astro, ~40 lines of CSS, ~15 lines of JS, **0 KB of images, 0 dependencies** — against their 31.7 KB of JS + GSAP + 787 KB of images.
+Estimate: ~120 lines of SVG-generating Astro, ~40 lines of CSS, ~15 lines of JS, **0 KB of images,
+0 dependencies** — against their 31.7 KB of JS + GSAP + 787 KB of images.
 
 ---
 
@@ -463,10 +471,13 @@ this item.
 
 The fake terminal is the largest single object in the hero (800 × 371 desktop, 598 px tall on mobile), it fails contrast in three of its classes, it wraps into nonsense at 390 px, and it ships an apology for being fake. Neither reference site puts a simulated artifact in its hero.
 
-**Option A (recommended): delete it from the homepage hero.** After P0+P1 the hero becomes headline + one line + one CTA, ~420 px, and the real content below the fold does the selling. Files: `src/pages/[lang]/index.astro:14-26` (the `heroTerminalLines` array) and `SPHomePage.astro:49`. `SPTerminalMockup` itself stays for the pages that still use it.
+**Option A (recommended): delete it from the homepage hero.** After P0+P1 the hero becomes headline + one line + one CTA, ~420 px, and the real content below the fold does the selling.
+Files: `src/pages/[lang]/index.astro:14-26` (the `heroTerminalLines` array) and
+`SPHomePage.astro:49`. `SPTerminalMockup` itself stays for the pages that still use it.
 
 **Option B: keep it but fix it.** Raise `.sp-terminal-line` from `#777` and `.sp-terminal-dots` from `#555` to ≥ 4.5:1 against `#1e1e1e` (computed: `#8a8a8a` → 4.83:1, `#9a9a9a` → 5.92:1; the `✓` at `#4a7c3f` needs a lighter green entirely), and add a `max-width: 768px` rule that switches `.sp-terminal-body` to `white-space: pre; overflow-x: auto` or drops the leader-dot spans
-entirely so nothing wraps. Files: `src/styles/solution-pages.css:212-250` plus a new mobile block.
+entirely so nothing wraps.
+Files: `src/styles/solution-pages.css:212-250` plus a new mobile block.
 
 **Proof.** For A: assert `.sp-terminal-wrapper` absent from `.sp-hero`. For B: recompute the four ratios from §2.3(b) and assert ≥ 4.5; at 390 px assert every `.sp-terminal-line` `getBoundingClientRect().height` equals the single-line height.
 

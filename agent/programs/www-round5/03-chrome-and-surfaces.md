@@ -1,6 +1,7 @@
 # 03. Chrome and surfaces (Wave A)
 
-Status: planned, not started. Covers operator items 3, 5, 6, and the accessibility defects that live in this wave's files.
+Status: planned, not started. Covers operator items 3, 5, 6, and the accessibility defects
+that live in this wave's files.
 
 **File ownership for this wave.** `src/components/Navigation.tsx`, `src/components/Footer.astro`, `public/styles/main.css`, `src/styles/language-switcher.css`, `src/styles/solution-pages.css`.
 

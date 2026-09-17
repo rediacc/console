@@ -546,6 +546,11 @@ REFLOW = [
         "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n",
         "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n",
     ),
+    (
+        "doc-header key:value lines never merge into each other",
+        "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n",
+        "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n",
+    ),
     ("a heading does not absorb the next line", "# H\ntext\n", "# H\ntext\n"),
     ("a blockquote is untouched", "> a\n> b\n", "> a\n> b\n"),
     ("frontmatter is untouched", "---\na: b\n---\nc\n", "---\na: b\n---\nc\n"),
@@ -577,6 +582,193 @@ def test_reflow_over_the_width_rewraps_and_loses_no_word():
     assert max(len(line) for line in out.splitlines()) <= 80
     assert out.split() == text.split()
     assert ps.reflow_markdown(out, 80) == out
+
+
+# ---------------------------------------------------------------------------
+# Reflow of source comments, where a LEXER decides what a comment is
+# ---------------------------------------------------------------------------
+#
+# THE FIRST FOUR CASES ARE THE GATE, and each was run against the reverted
+# `^\s*#` / `^\s*//` implementation before being kept: every one of them comes
+# back corrupted there. That version rewrote 52 of the 1051 `.py` files in this
+# repository into a different `ast.dump`, because a docstring quoting an example
+# `# ...` line reads to a per-line regex exactly like the real comment paragraph
+# under it. The fixtures are shaped around the two ways that bug hides:
+#
+#   the docstring must END on the `#` line -- a `"""` on a line of its own
+#   already stops the paragraph, so the obvious fixture passes while broken
+#
+#   the template literal must carry NO `;` -- CODE_SHAPED_COMMENT catches the
+#   semicolon, and the broken version then passes for the wrong reason
+#
+# A `/* */` span is a STOP, never a paragraph: reflowing inside one would move
+# its own asterisk alignment, and nothing asks for that.
+
+REFLOW_COMMENTS = [
+    (
+        "a `#` line inside a docstring is not a comment",
+        ".py",
+        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n",
+        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+    ),
+    (
+        "a `//` line inside a template literal is not a comment",
+        ".ts",
+        "const t = `\n// looks like a comment`\n"
+        "// a real comment that is\n// hard wrapped over two lines\n",
+        "const t = `\n// looks like a comment`\n"
+        "// a real comment that is hard wrapped over two lines\n",
+    ),
+    (
+        "a `//` line inside a `/* */` block is not a comment line",
+        ".ts",
+        "/*\n// inside a block comment */\n// a real one that is\n// hard wrapped\n",
+        "/*\n// inside a block comment */\n// a real one that is hard wrapped\n",
+    ),
+    (
+        "a trailing comment on a docstring's closing line is never joined",
+        ".py",
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n",
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+    ),
+    (
+        "a file tokenize cannot read is returned unchanged",
+        ".py",
+        "def f(:\n# a comment that is\n# hard wrapped\n",
+        "def f(:\n# a comment that is\n# hard wrapped\n",
+    ),
+    (
+        "a plain hard-wrapped comment paragraph joins",
+        ".py",
+        "# one two\n# three four\n",
+        "# one two three four\n",
+    ),
+    (
+        "a blank comment line separates paragraphs",
+        ".py",
+        "# a\n# b\n#\n# c\n# d\n",
+        "# a b\n#\n# c d\n",
+    ),
+    (
+        "an indentation change ends the paragraph",
+        ".py",
+        "if x:\n    # a\n    # b\n        # c\n    pass\n",
+        "if x:\n    # a b\n        # c\n    pass\n",
+    ),
+    (
+        "a trailing comment on a code line is left alone",
+        ".py",
+        "x = 1  # note\ny = 2  # more\n",
+        "x = 1  # note\ny = 2  # more\n",
+    ),
+    (
+        "a directive comment never absorbs a neighbour",
+        ".py",
+        "# a comment that is\n# noqa: E501\n# hard wrapped\n",
+        "# a comment that is\n# noqa: E501\n# hard wrapped\n",
+    ),
+    (
+        "a go:build directive never absorbs a neighbour",
+        ".go",
+        "//go:build linux\n// a comment that is\n// hard wrapped\n",
+        "//go:build linux\n// a comment that is hard wrapped\n",
+    ),
+    (
+        "a triple-slash reference has no space and is left alone",
+        ".ts",
+        '/// <reference types="node" />\n/// <reference types="vite/client" />\n',
+        '/// <reference types="node" />\n/// <reference types="vite/client" />\n',
+    ),
+    (
+        "commented-out code is never joined",
+        ".py",
+        "# def foo():\n#     return 1\n",
+        "# def foo():\n#     return 1\n",
+    ),
+    (
+        "a `//` inside a url is not a comment",
+        ".ts",
+        'const u = "https://x/a"\n// a comment that is\n// hard wrapped\n',
+        'const u = "https://x/a"\n// a comment that is hard wrapped\n',
+    ),
+    (
+        "an unknown suffix is returned unchanged",
+        ".rb",
+        "# one two\n# three four\n",
+        "# one two\n# three four\n",
+    ),
+    (
+        "no trailing newline is preserved as none",
+        ".py",
+        "# one two\n# three four",
+        "# one two three four",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "suffix", "before", "after"),
+    REFLOW_COMMENTS,
+    ids=[c[0] for c in REFLOW_COMMENTS],
+)
+def test_reflow_comments(label, suffix, before, after):
+    assert ps.reflow_comments(before, suffix, 384) == after, label
+
+
+@pytest.mark.parametrize(
+    ("label", "suffix", "before", "_after"),
+    REFLOW_COMMENTS,
+    ids=[c[0] for c in REFLOW_COMMENTS],
+)
+def test_reflow_comments_is_idempotent(label, suffix, before, _after):
+    once = ps.reflow_comments(before, suffix, 384)
+    assert ps.reflow_comments(once, suffix, 384) == once, label
+
+
+def test_reflow_comments_over_the_width_rewraps_and_loses_no_word():
+    text = "# " + ("word " * 200).strip() + "\n"
+    out = ps.reflow_comments(text, ".py", 80)
+    assert max(len(line) for line in out.splitlines()) <= 80
+    assert out.replace("#", "").split() == ["word"] * 200
+    assert ps.reflow_comments(out, ".py", 80) == out
+
+
+def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
+    """THE test that caught the regex version: 52 of 1051 files, silently rewritten.
+
+    A comment is not part of the AST, so a reflow that only ever touches comments
+    cannot move `ast.dump`. A reflow that mistakes a docstring line for a comment
+    moves it on the first file that quotes one, which is what this asserts against
+    the real corpus rather than a fixture.
+    """
+    import ast
+
+    files = gitx.ls_files("*.py", root=ROOT, existing=True)
+    assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
+    mismatched = []
+    reflowed = 0
+    for rel in files:
+        before = (ROOT / rel).read_text(encoding="utf-8")
+        try:
+            expected = ast.dump(ast.parse(before))
+        except SyntaxError:
+            continue
+        after = ps.reflow_comments(before, ".py", 384)
+        reflowed += after != before
+        try:
+            if ast.dump(ast.parse(after)) != expected:
+                mismatched.append(rel)
+        except SyntaxError:
+            mismatched.append(rel)
+    assert reflowed > 100, "only %d file(s) changed at all; this asserts nothing" % reflowed
+    assert not mismatched, "reflow_comments changed the AST of %d file(s): %s" % (
+        len(mismatched),
+        mismatched[:10],
+    )
 
 
 def test_reflow_of_the_real_corpus_is_a_dry_run_by_default(tmp_path, capsys):

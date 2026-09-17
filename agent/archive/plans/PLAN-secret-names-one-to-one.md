@@ -1,4 +1,5 @@
-Status: DESIGN, not started. Measured 2026-09-02 against the working tree as it then stood (the Part 19 rename already applied, uncommitted; org secrets not yet renamed). Every count below was produced by running a parser over the real files, not by reading; the parsers are named so the numbers can be re-derived rather than believed.
+Status: DESIGN, not started. Measured 2026-09-02 against the working tree as it then
+stood (the Part 19 rename already applied, uncommitted; org secrets not yet renamed). Every count below was produced by running a parser over the real files, not by reading; the parsers are named so the numbers can be re-derived rather than believed.
 
 # One credential, one name: the alias inventory and the 1-1 target state
 
@@ -166,7 +167,8 @@ today          197 × "NAME > BWS_NAME"   +  197 × "GH_NAME: ${{ secrets.NAME }
 after cutover  197 × "NAME"              +    0                                   +   0
 ```
 
-Net: **−394 alias lines, −197 lines of YAML, −62 steps, and 0 aliases in this class.** It is the single largest de-aliasing available and it costs no new machinery.
+Net: **−394 alias lines, −197 lines of YAML, −62 steps, and 0 aliases in this class.**
+It is the single largest de-aliasing available and it costs no new machinery.
 
 `SHADOW_NAMES` (62 definitions, union = 197 words, e.g. `cd-deploy-worker.yml:110`) disappears with the compare steps. It is a third copy of the same name list and needs no separate treatment.
 
@@ -295,26 +297,33 @@ disagree. It should be marked historical rather than left as a description of to
 
 Each carries a recommendation, and each recommendation is what should execute if the question goes unanswered.
 
-**Q1. Does the cutover ever happen, or does the shadow live forever?** 394 of the 465 alias lines exist only as scaffolding for a cutover that has executed zero times. If the answer is "not soon", the honest move is to say so here rather than carry the largest alias class as if it were about to vanish. *RECOMMEND: cut over.* It is the single largest de-aliasing available, the
-machinery is built and gated, and steps 1-5 are already the migration plan's operator half.
+**Q1. Does the cutover ever happen, or does the shadow live forever?** 394 of the 465 alias lines exist only as scaffolding for a cutover that has executed zero times. If the answer is "not soon", the honest move is to say so here rather than carry the largest alias class as if it were about to vanish.
+*RECOMMEND: cut over.* It is the single largest de-aliasing available, the machinery is
+built and gated, and steps 1-5 are already the migration plan's operator half.
 
-**Q2. `AWS_SES_*_ASIA`: keep the dead org secrets and the runtime substitution, or make the substitution a region property?** Today two org secrets exist, are read at `set-account-worker-secrets.sh:123-126`, are discarded at `:128-131`, and cost two `superseded-at-runtime` exemptions plus a special-cased gate `kind`. *RECOMMEND: add `sesCredentialRegion: "eu"` to `regions.json`'s
-asia entry* (which already carries `sesRegion: "eu-central-1"`), read it in the deploy script, and delete both ASIA names. Removes 2 dead names, 1 invisible substitution, and 2 exemptions at once, and turns a fact that today exists only inside an `if` into committed data. Operator-only for the `gh secret delete` half.
+**Q2. `AWS_SES_*_ASIA`: keep the dead org secrets and the runtime substitution, or make the substitution a region property?** Today two org secrets exist, are read at `set-account-worker-secrets.sh:123-126`, are discarded at `:128-131`, and cost two `superseded-at-runtime` exemptions plus a special-cased gate `kind`.
+*RECOMMEND: add `sesCredentialRegion: "eu"` to `regions.json`'s asia entry* (which already
+carries `sesRegion: "eu-central-1"`), read it in the deploy script, and delete both ASIA names. Removes 2 dead names, 1 invisible substitution, and 2 exemptions at once, and turns a fact that today exists only inside an `if` into committed data. Operator-only for the `gh secret delete` half.
 
-**Q3. Delete the `STRIPE_KEY_${SUFFIX}` fan-in?** All three names already read one secret (`cd-deploy-account.yml:334-336`). *RECOMMEND: yes* — export `STRIPE_SECRET_KEY` directly and drop `:341-342`. One caveat to verify before cutting: the `SUFFIX` loop still legitimately drives `STRIPE_WEBHOOK_SECRET_${SUFFIX}`, so the loop stays; only the Stripe *key* leaves it.
+**Q3. Delete the `STRIPE_KEY_${SUFFIX}` fan-in?** All three names already read one secret (`cd-deploy-account.yml:334-336`).
+*RECOMMEND: yes* — export `STRIPE_SECRET_KEY` directly and drop `:341-342`. One caveat to
+verify before cutting: the `SUFFIX` loop still legitimately drives `STRIPE_WEBHOOK_SECRET_${SUFFIX}`, so the loop stays; only the Stripe *key* leaves it.
 
-**Q4. `BWS_ACCESS_TOKEN` versus Part 10's `BITWARDEN_SM_ACCESS_TOKEN`.** *RECOMMEND: `BWS_ACCESS_TOKEN` stays* — `bws` reads that exact name from its own environment (`rotation/lib/credentials.ts:144-155`), so it is FORCED. **Delete the `BITWARDEN_SM_ACCESS_TOKEN` row from Part 10's table**, so the two names stop coexisting on paper. This re-affirms Part 12's stated default; the
-new part is deleting the losing row rather than leaving it as a second spelling.
+**Q4. `BWS_ACCESS_TOKEN` versus Part 10's `BITWARDEN_SM_ACCESS_TOKEN`.**
+*RECOMMEND: `BWS_ACCESS_TOKEN` stays* — `bws` reads that exact name from its own
+environment (`rotation/lib/credentials.ts:144-155`), so it is FORCED. **Delete the `BITWARDEN_SM_ACCESS_TOKEN` row from Part 10's table**, so the two names stop coexisting on paper. This re-affirms Part 12's stated default; the new part is deleting the losing row rather than leaving it as a second spelling.
 
-**Q5. `.env`'s `CF_EMAIL` / `CF_GLOBAL_API_KEY`.** Two names, local-only, no org secret, no Bitwarden entry, and the only two `.env` keys still off the provider-prefix convention. *RECOMMEND: rename to `CLOUDFLARE_ACCOUNT_EMAIL` / `CLOUDFLARE_GLOBAL_API_KEY`* in the same pass as row D. Cheap. Note `.env` is untracked, so `secret-rename.py:269`'s `.pre-rename.bak` protection is what
-makes this safe.
+**Q5. `.env`'s `CF_EMAIL` / `CF_GLOBAL_API_KEY`.** Two names, local-only, no org secret, no Bitwarden entry, and the only two `.env` keys still off the provider-prefix convention.
+*RECOMMEND: rename to `CLOUDFLARE_ACCOUNT_EMAIL` / `CLOUDFLARE_GLOBAL_API_KEY`* in the
+same pass as row D. Cheap. Note `.env` is untracked, so `secret-rename.py:269`'s `.pre-rename.bak` protection is what makes this safe.
 
-**Q6. Delete the unsuffixed `STRIPE_WEBHOOK_SECRET` and `OBS_OTLP_CREDENTIALS` store entries?** These are the homograph inside the store itself: one name holding one region's value while the regional trio is authoritative. Keeping them is precisely what makes `STRIPE_WEBHOOK_SECRET` mean three different things across three layers. *RECOMMEND: delete, but only after the regional
-trio has deployed green at least once*, and accept that the deletion is effectively irreversible (Part 18's live probe). Note the complication: `OBS_OTLP_CREDENTIALS` is *also* a live `env.ts` key (one of the 21-name overlap) and a live `.env` key, so the store entry and the Worker binding share a name legitimately. Only the **store's regional ambiguity** is the problem.
-Operator-only.
+**Q6. Delete the unsuffixed `STRIPE_WEBHOOK_SECRET` and `OBS_OTLP_CREDENTIALS` store entries?** These are the homograph inside the store itself: one name holding one region's value while the regional trio is authoritative. Keeping them is precisely what makes `STRIPE_WEBHOOK_SECRET` mean three different things across three layers.
+*RECOMMEND: delete, but only after the regional trio has deployed green at least once*,
+and accept that the deletion is effectively irreversible (Part 18's live probe). Note the complication: `OBS_OTLP_CREDENTIALS` is *also* a live `env.ts` key (one of the 21-name overlap) and a live `.env` key, so the store entry and the Worker binding share a name legitimately. Only the **store's regional ambiguity** is the problem. Operator-only.
 
-**Q7. Register the 46 FORCED crossings, or detect them structurally?** *RECOMMEND: both, split by shape.* Action inputs (26 of 46) are detectable for free from `with:` versus `env:` and need no file. The six env-name conventions (18 lines) need a register, because "the `aws` binary reads this" is not inferable from the YAML alone. A register of 6 entries is auditable; a register of
-46 is a second name table, which is the exact defect assertion 8 exists to find.
+**Q7. Register the 46 FORCED crossings, or detect them structurally?**
+*RECOMMEND: both, split by shape.* Action inputs (26 of 46) are detectable for free from
+`with:` versus `env:` and need no file. The six env-name conventions (18 lines) need a register, because "the `aws` binary reads this" is not inferable from the YAML alone. A register of 6 entries is auditable; a register of 46 is a second name table, which is the exact defect assertion 8 exists to find.
 
 ---
 

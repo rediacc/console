@@ -30,7 +30,8 @@ disk.**
 
 `.github/workflows/ci.yml:464` calls `.github/workflows/ci-quality.yml`. The i18n gates live in three of its lanes: `quality-i18n` (`ci-quality.yml:948-1050`), `quality-content` (`:138` value-types) and `quality-www-build` (`:1126` render parity). Grepping `ci.yml` for `i18n` returns one comment because the lanes are a reusable workflow, not because the gates are absent.
 
-Legend: **LIVE** = I made it fail and restored. **DEAD** = I made the defect it exists for and it stayed green. **UNPROVEN** = baseline green, not driven to red here.
+Legend: **LIVE** = I made it fail and restored. **DEAD** = I made the defect it exists for
+and it stayed green. **UNPROVEN** = baseline green, not driven to red here.
 
 | # | CI step (`quality-i18n` unless noted) | Command | Implementation | Asserts | Verdict |
 |---|---|---|---|---|---|
@@ -57,7 +58,8 @@ Legend: **LIVE** = I made it fail and restored. **DEAD** = I made the defect it 
 
 Plus four CLI-scoped members of the same lane, out of www's blast radius but in the same job: `check:ci-i18n-command-parity`, `check:ci-i18n-cli-key-usage`, `check:ci-i18n-cli-help-render`, and `check:cli-docs`.
 
-**Tally: 20 rows, 18 of which touch www. 15 proven live, 1 proven dead, 2 unproven, plus 2 CLI-only rows that are live for their own surface and simply do not cover www.**
+**Tally: 20 rows, 18 of which touch www. 15 proven live, 1 proven dead, 2 unproven, plus
+2 CLI-only rows that are live for their own surface and simply do not cover www.**
 
 ### 1.1 Transcripts
 
@@ -211,7 +213,8 @@ one component string**, and because `allPlansInclude` is a ledger-covered key it
 
 ### 3.4 148 search-index entries per locale carry raw `{{t:...}}`
 
-Verified: `search-index-de.json` holds 1,408 entries, of which **148** contain `{{t:`. Fourteen index files × 148 = 2,072 entries site-wide. Example entry:
+Verified: `search-index-de.json` holds 1,408 entries, of which **148** contain `{{t:`.
+Fourteen index files × 148 = 2,072 entries site-wide. Example entry:
 
 ```json
 {"id":"search-2831","content":"CLI-Anwendung","body":"# {{t:cli.docs.pageTitle}}",
@@ -345,7 +348,8 @@ print(f, len(s), {n: len(re.findall(r, s)) for n, r in
 EOF
 ```
 
-Target: the largest asset under 500,000 B, and **Hangul + Arabic + CJK counts at zero in any chunk a `/en` page loads**. A byte number alone can be met by minification; the script counts are what prove the locales left.
+Target: the largest asset under 500,000 B, and **Hangul + Arabic + CJK counts at zero in
+any chunk a `/en` page loads**. A byte number alone can be met by minification; the script counts are what prove the locales left.
 
 **Step 4, run these in this order** (all are fast except the last):
 

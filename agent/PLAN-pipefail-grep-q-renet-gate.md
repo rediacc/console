@@ -1,5 +1,7 @@
 # PLAN: give private/renet its own pipefail/grep -q gate
-Status: draft Owner: d778be9d Updated: 2026-09-16
+Status: draft
+Owner: d778be9d
+Updated: 2026-09-16
 
 Console's `.ci/scripts/quality/check-pipefail-grep-q.sh` and its port `.ci/rediacc_ci/quality/pipefail_grep_q.py` cannot reach `private/renet`. The two real instances of the class found in renet on 2026-09-16 were found BY HAND, not by a gate, and the next one will be too unless renet gets its own detection. This plan specifies that gate, the wiring, and the proof it can fire.
 
@@ -64,7 +66,8 @@ into `grep -q`. That is a 20-line second detector with a real coupling behind it
 
 ## 4. Decision: a standalone bash gate in renet, not a Go check and not a Python import
 
-**Recommended: port the detector to bash, into `private/renet/.ci/scripts/quality/pipefail-grep-q.sh`.**
+**Recommended: port the detector to bash, into
+`private/renet/.ci/scripts/quality/pipefail-grep-q.sh`.**
 
 Against a **Go** checker, three costs measured in the renet tree:
 

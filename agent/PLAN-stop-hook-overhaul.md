@@ -1,4 +1,6 @@
-Status: ready Owner: f4da5c2e Date: 2026-09-09
+Status: ready
+Owner: f4da5c2e
+Date: 2026-09-09
 
 # Stop-hook overhaul: noise, rulings, idempotence, focus
 
@@ -114,8 +116,8 @@ That is the three-identical-stops mechanism exactly.
 
 ## 4. The planning agent per context: a Stop check
 
-**Verdict: a Stop check, armed by the existing PostCompact epoch. Not PostCompact alone. Not a cron.** PostCompact cannot refuse anything -- `.claude/hooks/context/epoch-reset.py:14`: "PostCompact has no decision control ... Exit 0, always." A printed requirement is a document, and `.claude/hooks/stop/wl_checks.py:4488` already says a document an agent can skip is not a control. A
-cron cannot express "per context" at all.
+**Verdict: a Stop check, armed by the existing PostCompact epoch. Not PostCompact alone. Not
+a cron.** PostCompact cannot refuse anything -- `.claude/hooks/context/epoch-reset.py:14`: "PostCompact has no decision control ... Exit 0, always." A printed requirement is a document, and `.claude/hooks/stop/wl_checks.py:4488` already says a document an agent can skip is not a control. A cron cannot express "per context" at all.
 
 - [ ] Arm: add `planagent_due` and `planagent_armed_at` to the existing `save_state` at
       `.claude/hooks/context/epoch-reset.py:26`.

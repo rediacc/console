@@ -1,6 +1,7 @@
 # 02. Inherited decisions
 
-Status: **Locked elsewhere. Do not relitigate.** Each item below was decided by the operator or ratified in a prior program. Re-opening one wastes the session that settled it.
+Status: **Locked elsewhere. Do not relitigate.** Each item below was decided by the
+operator or ratified in a prior program. Re-opening one wastes the session that settled it.
 
 ## From `agent/programs/www-simplification/02-locked-decisions.md`
 

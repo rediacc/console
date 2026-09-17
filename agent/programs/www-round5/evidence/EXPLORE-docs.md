@@ -240,7 +240,8 @@ visible cards        18   tally "18 / 79"
 .docs-sidebar        absent   .docs-top-tabs absent   .toc-sidebar absent
 ```
 
-Breakpoint: `docs-browse.css:145` - below 60rem the rail stacks above the grid and loses `position: sticky`.
+Breakpoint: `docs-browse.css:145` - below 60rem the rail stacks above the grid and loses
+`position: sticky`.
 
 ---
 
@@ -281,7 +282,8 @@ All of it, in one component:
 
 ### 3.3 What grouping by topic would take
 
-Small: swap `groupBySubcategory` (`:83-92`) for a tag-based grouper and delete the `=== 'Tutorials'` gate at `:106`. Everything downstream (`:163-200`) is already generic over `{key, groupId, label, entries, expandedAttr}`, and `makeTagLabel` from `utils/docs-categories.ts:141-152` supplies the labels.
+Small: swap `groupBySubcategory` (`:83-92`) for a tag-based grouper and delete the
+`=== 'Tutorials'` gate at `:106`. Everything downstream (`:163-200`) is already generic over `{key, groupId, label, entries, expandedAttr}`, and `makeTagLabel` from `utils/docs-categories.ts:141-152` supplies the labels.
 
 Two real snags:
 
@@ -362,7 +364,8 @@ div.tutorial-video-container[data-video-src=...]   <- emitted by src/plugins/rem
     div.tvp-root                                   <- 16/9 box; Plyr lives inside
 ```
 
-Component: `src/components/TutorialVideoPlayer.tsx` (Plyr-based; `.tvp-shell` at `:540`, `.tvp-root` at `:581`).
+Component: `src/components/TutorialVideoPlayer.tsx` (Plyr-based; `.tvp-shell` at `:540`,
+`.tvp-root` at `:581`).
 
 `src/styles/tutorial-video.css`:
 
@@ -543,7 +546,9 @@ One blocker for reusing them: `DocsLayout`'s `Props.frontmatter` interface decla
 
 ### 6.3 Related: `DocsTopTabs.astro` (170 lines)
 
-`variant="article"` -> each tab links to the FIRST doc of that category (`:48-50`). Measured: Tutorials -> `/en/docs/tutorial-installation`, Guides -> `/en/docs/quick-start`, Concepts -> `/en/docs/architecture`, Reference -> `/en/docs/cli-application`, Use Cases -> `/en/docs/dynamic-resource-scaling`, Legal -> `/en/docs/legal-overview`.
+`variant="article"` -> each tab links to the FIRST doc of that category (`:48-50`).
+Measured: Tutorials -> `/en/docs/tutorial-installation`, Guides -> `/en/docs/quick-start`,
+Concepts -> `/en/docs/architecture`, Reference -> `/en/docs/cli-application`, Use Cases -> `/en/docs/dynamic-resource-scaling`, Legal -> `/en/docs/legal-overview`.
 
 `variant="index"` -> `#<categoryAnchor>` fragments, but the browse page does not render this component at all (`DocsLayout.astro:112`), so that branch is currently dead. The anchors it would target DO exist (`index.astro:161`).
 

@@ -1,5 +1,7 @@
 # PLAN: the scope gate's false-line assertion is locale-dependent, not key-dependent
-Status: draft Owner: 854ac1c6 Updated: 2026-08-26
+Status: draft
+Owner: 854ac1c6
+Updated: 2026-08-26
 
 ## 0. Verdict, re-verified in this pass
 
@@ -80,11 +82,13 @@ C2 — MISSING-KEY PLANT (proves the assertion still detects a real emitter defe
 
 In .ci/scripts/ci/scope-shadow.sh:240, temporarily:
       for (const key of Object.keys(JOB_SURFACES).filter((k) => k !== "e2e_k8s_ceph")) {
-Expect: 16 false lines, case (a) RED naming the missing key. This targets precisely what the sorted comparison is FOR — set equality of key names — and it does not trip the drift refusal at :234-237, which reads plan.jobs rather than the emitted lines. Then restore `for (const key of Object.keys(JOB_SURFACES)) {` by hand and re-run: GREEN.
+  Expect: 16 false lines, case (a) RED naming the missing key. This targets
+precisely what the sorted comparison is FOR — set equality of key names — and it does not trip the drift refusal at :234-237, which reads plan.jobs rather than the emitted lines. Then restore `for (const key of Object.keys(JOB_SURFACES)) {` by hand and re-run: GREEN.
 
 C3 — EMISSION-ORDER PLANT (must STAY GREEN — proves set-based, not order-based) In .ci/scripts/ci/scope-shadow.sh:240, temporarily:
       for (const key of [...Object.keys(JOB_SURFACES)].reverse()) {
-Expect: still GREEN. $GITHUB_OUTPUT is a key=value map and emission order is not part of the contract; if this reds, the test has regained an order dependency it must not have. Restore by hand.
+  Expect: still GREEN. $GITHUB_OUTPUT is a key=value map and emission order is
+not part of the contract; if this reds, the test has regained an order dependency it must not have. Restore by hand.
 
 After C2 and C3, `git diff .ci/scripts/ci/scope-shadow.sh` MUST be empty.
 

@@ -1,6 +1,7 @@
 You are performing the FIRST automated review of this pull request.
 
-REPO: {{REPO}} PR NUMBER: {{PR_NUMBER}} HEAD SHA: {{HEAD_SHA}}
+REPO: {{REPO}}
+PR NUMBER: {{PR_NUMBER}} HEAD SHA: {{HEAD_SHA}}
 
 {{EPIC_SCOPE}}
 

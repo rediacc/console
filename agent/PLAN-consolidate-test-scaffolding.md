@@ -1,6 +1,7 @@
 # Consolidate the duplicated gate-test scaffolding
 
-Status: done Owner: 8f55d4f0
+Status: done
+Owner: 8f55d4f0
 
 ## Why
 
@@ -20,7 +21,8 @@ The count reached three today because W6 extended `test-run-sh.sh` from 14 contr
 `.ci/scripts/lib/gate-controls.sh` was extracted earlier for exactly this shape after the duplication gate caught a `_c()` tally at three copies. The extraction converted ONE of the three. That took the count to two, below the gate's threshold, so the gate went quiet while the new library's header asserted the job was done. The remaining two were found today, by a different route,
 and converted.
 
-So: all three, or none. Converting two would silence the gate at its own threshold and leave the third looking finished.
+So: all three, or none. Converting two would silence the gate at its own threshold and
+leave the third looking finished.
 
 ## What is NOT being changed
 

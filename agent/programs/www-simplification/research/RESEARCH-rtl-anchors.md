@@ -88,7 +88,9 @@ So the TOC never highlights where you are, in every affected locale. Same root c
 
 ### 3.1 Live crawl of every docs page in every locale
 
-Method: fetch all 1,015 pages from the running dev server, extract `id` from every `<h2..h6>`, extract `href` from every `a.sidebar-link.toc-link`, and from every `<a href="#...">` inside `.article-content`; compare after `decodeURIComponent`. Script: `scratchpad/crawl.mjs`, raw results `scratchpad/crawl.json`.
+Method: fetch all 1,015 pages from the running dev server, extract `id` from every
+`<h2..h6>`, extract `href` from every `a.sidebar-link.toc-link`, and from every `<a href="#...">` inside `.article-content`; compare after `decodeURIComponent`.
+Script: `scratchpad/crawl.mjs`, raw results `scratchpad/crawl.json`.
 
 | locale | pages | pages with a dead TOC anchor | TOC links | dead | duplicate fragments | in-article `#` links | dead |
 |---|---|---|---|---|---|---|---|
@@ -207,7 +209,8 @@ en   [113,721] [721,113] [113,721] [721,113] [113,721] [721,113]   alternating
 ar   [721,113] [721,113] [721,113] [721,113] [721,113] [721,113]   all identical
 ```
 
-Screenshot: `ar-pricing-trustrow.png`. Consumers: `PricingTrustSection.astro:62,140,221` and `HomeDifference.astro:74` (which reaches the site through `solution-pages/SPHomeBeforeAfter.astro:12`).
+Screenshot: `ar-pricing-trustrow.png`. Consumers: `PricingTrustSection.astro:62,140,221`
+and `HomeDifference.astro:74` (which reaches the site through `solution-pages/SPHomeBeforeAfter.astro:12`).
 
 ### 4.4 Search: the anchor is computed and then discarded
 

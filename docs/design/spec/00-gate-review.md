@@ -1,13 +1,15 @@
 # P0 Gate Review — Spec Consistency + Rulings
 
-Reviewer: Fable (P0 pre-gate, fully-autonomous mode; this review stands in for the user at this gate). Date: 2026-07-10. Subject: `docs/design/spec/01..05` against the authoritative suite `docs/design/01..09` + README. Spike-dependent items (NetworkPolicy proxy rule → spike e; PKI file-set detail → spike d) are marked PENDING-SPIKE and were not re-litigated here.
+Reviewer: Fable (P0 pre-gate, fully-autonomous mode; this review stands in for the user
+at this gate). Date: 2026-07-10. Subject: `docs/design/spec/01..05` against the authoritative suite `docs/design/01..09` + README. Spike-dependent items (NetworkPolicy proxy rule → spike e; PKI file-set detail → spike d) are marked PENDING-SPIKE and were not re-litigated here.
 
 ---
 
 ## VERDICT: APPROVED-WITH-RULINGS
 
-The five specs are individually strong (every one verified its code citations and flagged its own deviations honestly), but they were written in parallel and disagree at four load-bearing seams. Two of those (volume layout, bridge dispatch model) are MAJOR: P1 cannot start until spec 01 applies the rulings below. Nothing found requires re-opening a suite decision beyond the one
-mount-path override spec 01 itself flagged for sign-off (approved, R1).
+The five specs are individually strong (every one verified its code citations and flagged its own deviations honestly), but they were written in parallel and disagree at four load-bearing seams. Two of those (volume layout, bridge dispatch model) are
+MAJOR: P1 cannot start until spec 01 applies the rulings below. Nothing found requires
+re-opening a suite decision beyond the one mount-path override spec 01 itself flagged for sign-off (approved, R1).
 
 Per-file dispositions:
 
@@ -63,11 +65,12 @@ repo folder.
 - Spec 05 §2: `repos/<repo>/volumes/<pvc>.img` + mounts at
 `<ds-mount>/mounts/volumes/<repo>/<pvc>/`, with the explicit invariant **no mountpoints inside `repos/<repo>/`**.
 
-Ruling: spec 05. The fork unit is ONE reflink of `repos/<repo>`; a live ext4 mountpoint inside that tree makes `cp --archive --reflink=always` either FAIL (reflink cannot cross filesystems) or, under any fallback, byte-copy decrypted plaintext into the fork — spec 01's own fork procedure (§1.2 `ForkNamespacePrepare`: one reflink after syncfs, no unmount step) is unexecutable on
-spec 01's own layout. Spec 05's scheme mirrors the docker world exactly (image files in the pool, `mounts/` tree outside the snapshotted unit), keeps PV objects stable across cluster fork/migrate (paths reference `<ds-mount>/mounts/volumes/<repo>/<pvc>`, deterministic and unchanged), and carries the explicit CSI-adoption section (F6). Spec 01's stated reason for its `images/` split
-(file-vs-mountpoint name collision) dissolves once mounts leave the repo folder.
+Ruling: spec 05. The fork unit is ONE reflink of `repos/<repo>`; a live ext4 mountpoint
+inside that tree makes `cp --archive --reflink=always` either FAIL (reflink cannot cross filesystems) or, under any fallback, byte-copy decrypted plaintext into the fork — spec 01's own fork procedure (§1.2 `ForkNamespacePrepare`: one reflink after syncfs, no unmount step) is unexecutable on spec 01's own layout. Spec 05's scheme mirrors the docker world exactly (image files in the
+pool, `mounts/` tree outside the snapshotted unit), keeps PV objects stable across cluster fork/migrate (paths reference `<ds-mount>/mounts/volumes/<repo>/<pvc>`, deterministic and unchanged), and carries the explicit CSI-adoption section (F6). Spec 01's stated reason for its `images/` split (file-vs-mountpoint name collision) dissolves once mounts leave the repo folder.
 
-Fixes: spec 01 §1.2 layout block + §1.3 path helpers (`ImagePath` → `repos/<repo>/volumes/<vol>.img`, `MountPath` → `mounts/volumes/<repo>/<vol>`); spec 02 §1.7 `ProvisionVolumes` row and CT-09 wording adopt image-at `<RepoPath>/volumes/<pvc>.img`, mount under `<ds-mount>/mounts/...`.
+Fixes: spec 01 §1.2 layout block + §1.3 path helpers (`ImagePath` →
+`repos/<repo>/volumes/<vol>.img`, `MountPath` → `mounts/volumes/<repo>/<vol>`); spec 02 §1.7 `ProvisionVolumes` row and CT-09 wording adopt image-at `<RepoPath>/volumes/<pvc>.img`, mount under `<ds-mount>/mounts/...`.
 
 ### C2 — Bridge dispatch model: spec 02 §3.3 WINS; spec 01 §4 reworked. [MAJOR]
 
@@ -90,8 +93,9 @@ unless the rework finds a concrete caller that cannot ride `repository_up`'s exi
 ### C3 — Registry: spec 05 §5 WINS (per-repo zot units); spec 01 §1.8/§4 reframed.
 
 Spec 01 frames F4 as "default StorageDir change only" on the machine-level zot — but a SINGLE machine instance with its store inside ONE repo's folder is incoherent for multiple repos, and the machine-level pull-through cache must keep its upstream-mirror role. Spec 05's design (one `rediacc-registry-<networkID>.service` per opted-in repo, sync disabled, store at
-`repos/<repo>/registry/`, port range 21000-28999, logical host `registry.<repo>.rediacc.internal` wired via registries.yaml + hosts.toml, units started at datastore attach — failover story included) is the only complete solution. Fixes: spec 01 §1.8 + §4 rows reframe (`kube_registry_up`/`kube_registry_wire` keep the CACHE role unchanged; the per-repo unit lifecycle is internal to
-datastore attach/detach per spec 05 §4 step 5 — state whether that needs a bridge-visible verb); spec 04 adds the port field (G3).
+`repos/<repo>/registry/`, port range 21000-28999, logical host `registry.<repo>.rediacc.internal` wired via registries.yaml + hosts.toml, units started at datastore attach — failover story included) is the only complete solution.
+Fixes: spec 01 §1.8 + §4 rows reframe (`kube_registry_up`/`kube_registry_wire` keep the
+CACHE role unchanged; the per-repo unit lifecycle is internal to datastore attach/detach per spec 05 §4 step 5 — state whether that needs a bridge-visible verb); spec 04 adds the port field (G3).
 
 ### C4 — Secret label convention: spec 05 (`rediacc.io/injected=true`) WINS.
 
@@ -109,7 +113,9 @@ unhealthy, gate fails immediately. The gate runs right after cutover/boot where 
 - Per-attempt timeout 30 s (a timeout counts as one 75); gate window default 300 s.
 The retry LOOP lives in the gate caller (cluster/migrate layer); `RepoRuntime.Health` is one evaluation — spec 02 adds a "warming" disposition to `HealthReport` (exact Go shape is spec 02 owner's call).
 - Layering per spec 05 §6 (distro /readyz → k8s readiness / container-health default →
-health()); spec 02's discovery-order + first-unhealthy-wins rule for multi-Rediaccfile repos carries over. Losers: spec 02 §1.8 (timeout + missing 75), spec 05 (42 carve-out). Spec 03 gains the window flags (G6).
+health()); spec 02's discovery-order + first-unhealthy-wins rule for multi-Rediaccfile repos carries over.
+Losers: spec 02 §1.8 (timeout + missing 75), spec 05 (42 carve-out). Spec 03 gains the
+window flags (G6).
 
 ### C6 — On-datastore descriptor file: spec 05 WINS.
 
@@ -122,8 +128,8 @@ Spec 02 §3.2 [P0-DECIDED, correct]: runtime derives from the datastore's cluste
 cluster), suite 03 §3 (local-tier members documented outside the group instant), spec 03's own `--group` local-tier warning, and spec 01's registry (`cluster` label independent of backend); and (b) forbids docker-world rbd datastores (the `machine set-ceph` replacement, 06 §2). Spec 03 §5.3 compounds it: `datastore create` has NO `--cluster` flag at all, so the runtime-derivation
 keystone has no CLI source (spec 04's own transform-7 warning text uses the flag).
 
-Fixes: spec 04 lifts `cluster?: resourceName` OUT of the backend union to a top-level optional field on `DatastoreConfigSchema` (both backends may carry it; set ⇒ kube repos only, unset ⇒ docker repos only, immutable per spec 02). Spec 03 §5.3 adds `--cluster <c>` to `datastore create` (optional; validated against config clusters; name recorded as the one-world backref). Spec 01
-§3.1 already agrees; no change there.
+Fixes: spec 04 lifts `cluster?: resourceName` OUT of the backend union to a top-level
+optional field on `DatastoreConfigSchema` (both backends may carry it; set ⇒ kube repos only, unset ⇒ docker repos only, immutable per spec 02). Spec 03 §5.3 adds `--cluster <c>` to `datastore create` (optional; validated against config clusters; name recorded as the one-world backref). Spec 01 §3.1 already agrees; no change there.
 
 ### C8 — Local-backend datastore fork: spec 01 WINS.
 
@@ -145,8 +151,9 @@ family-level refine enforces the aggregate; migration transform 8 re-validates a
 
 ### C12 — Role enum + REDIACC_WRITES on plain attach.
 
-Spec 05 §1e defines `replica` in the ROLE enum (reserved for `repo replicate`) and spec 01's `kube_deploy` role param lists it; spec 02 §1.2's Go `Role` consts omit it. Fix: spec 02 adds `RoleReplica` (documented as P3-consumed). Separately, spec 02 and spec 01's registry define `writes: ""` for a plain (non-fork) attach, while spec 05 §1e's ConfigMap example shows `REDIACC_WRITES:
-"ceph"` for a primary — fix the spec 05 comment: plain attach ⇒ empty/omitted, `ceph|local` only for fork attaches.
+Spec 05 §1e defines `replica` in the ROLE enum (reserved for `repo replicate`) and spec 01's `kube_deploy` role param lists it; spec 02 §1.2's Go `Role` consts omit it.
+Fix: spec 02 adds `RoleReplica` (documented as P3-consumed). Separately, spec 02 and
+spec 01's registry define `writes: ""` for a plain (non-fork) attach, while spec 05 §1e's ConfigMap example shows `REDIACC_WRITES: "ceph"` for a primary — fix the spec 05 comment: plain attach ⇒ empty/omitted, `ceph|local` only for fork attaches.
 
 ### C13 — `kube_identity_rewrite` schema: add `role` + `writes` to the fork arm
 (spec 01 §4 row), matching spec 05 §3's `IdentityOp` + Role + writes-disposition inputs (F7 rewrites the ROLE ConfigMap with both).
@@ -216,7 +223,8 @@ hook exit codes never propagate to the CLI surface (§2 confirmations), the answ
 2. Spike d's correction (kine `/bootstrap` restores the parent CA byte-identical after
 a bare `tls/` removal; true re-mint is the 8-step scrub) supersedes the shorthand in spec 01 §1.5's `OpFork` arm ("delete `<data-dir>/server/tls/`") and spec 02 §1.7's cluster-boundary note. Both should point at spec 05 §3's corrected F1 step list as the single procedure owner once the dispatched spec 05 rewrite lands — the fork-PKI procedure must have exactly one home.
 
-DISPOSITION: spec 01 is now APPROVED. No returning items remain from this review; the spec set is gate-complete once the spec 05 spike-d rewrite lands (tracked separately, not a finding of this review).
+DISPOSITION: spec 01 is now APPROVED. No returning items remain from this review; the
+spec set is gate-complete once the spec 05 spike-d rewrite lands (tracked separately, not a finding of this review).
 
 ## 5. Gate instructions
 

@@ -1,6 +1,9 @@
 # RESEARCH — icons, illustrations, motion
 
-Specialist: `sx-motion`. Date: 2026-08-17. **Nothing in `packages/www` was modified** (`git status --porcelain packages/www` → empty at start and at end). Screenshots: `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-motion/` Browser session `sx-motion`, agent-browser 0.34.0, 1440x900.
+Specialist: `sx-motion`. Date: 2026-08-17. **Nothing in `packages/www` was modified**
+(`git status --porcelain packages/www` → empty at start and at end).
+Screenshots: `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-motion/`
+Browser session `sx-motion`, agent-browser 0.34.0, 1440x900.
 
 ---
 
@@ -212,7 +215,8 @@ Live counts on `/en`: **25 inline SVGs, 6 viewBoxes, 8 stroke-widths, 6 rendered
 </svg>
 ```
 
-Computed: `fill: rgb(20,20,19)`, `stroke: none`, rendered **16x16** inside a `.u-icon-16` slot. Everyone else draws that arrow as a 2 px stroke; they draw it as one filled outline. **That is the entire icon philosophy: one filled path, `currentColor`, no stroke-width to disagree about.**
+Computed: `fill: rgb(20,20,19)`, `stroke: none`, rendered **16x16** inside a `.u-icon-16`
+slot. Everyone else draws that arrow as a 2 px stroke; they draw it as one filled outline. **That is the entire icon philosophy: one filled path, `currentColor`, no stroke-width to disagree about.**
 
 **Their button has two optional icon slots.** `.btn_main_wrap` children, live: `.u-hide-if-empty.u-icon-16` → `.btn_main_text` → `.u-hide-if-empty.u-icon-16`. An empty slot collapses. One button component, leading and trailing 16 px icon, both optional.
 
@@ -474,7 +478,9 @@ block, its stagger ladder and `scroll-reveal.js` sit in their file, not mine. M0
 sit under `@media (prefers-reduced-motion: no-preference)`, because the nuke zeroes durations and does not undo an opacity. (2) "port claude.com's `AnimatedReveal` pattern (12 lines)" — **we already have it**, at `main.css:3348-3387` + `scroll-reveal.js`, shipping on every page since before this program. Wave 3 is an adoption, not a port. This also changes the synthesis' Wave 3
 cost estimate downward.
 - **`sx-homepage`.** M0 and M3 touch `SPHomeWhyNow.astro`, `SPHomeNotASlice.astro` and
-`HomeDifference.astro`, which are their sections. If `home-difference` is cut to ~600 px as they propose, M2's homepage half shrinks with it — coordinate before either starts. Also: `HomeDifference.astro` contains the **second** lightbox; whichever of us deletes one must not leave `.difference-row-zoom` without a handler.
+`HomeDifference.astro`, which are their sections. If `home-difference` is cut to ~600 px as they propose, M2's homepage half shrinks with it — coordinate before either starts.
+  Also: `HomeDifference.astro` contains the **second** lightbox; whichever of us deletes one
+must not leave `.difference-row-zoom` without a handler.
 - **`sx-pricing`.** M1 regrids `CategoryIcons.tsx` and the 6 `0 0 400 280` SVGs in
 `PricingTrustSection.astro:30,68,103,146,191,227` (weights `1`, `1.5`, `2.5`, `3` in one file). Those are drawings, so M3's rule applies to them too — but the file is arguably theirs. Flagging.
 - **i18n.** M2 moves **92 English strings x 13 locales = 1,196 values** into

@@ -1,5 +1,10 @@
-Status: draft Owner: 8f55d4f0 Date: 2026-09-06 Supersedes: `.ci/config/bws-token-expiry.json` and its reader entirely, and the `docs/ci-overhaul/08-driver-contract.md:92` row that assigns that file to W0/W8. Scope: design. Every measurement below was read-only. No value of any secret was read, printed or written. The `bws` error strings were measured with deliberately bogus tokens,
-never with the live one.
+Status: draft
+Owner: 8f55d4f0
+Date: 2026-09-06
+Supersedes: `.ci/config/bws-token-expiry.json` and its reader entirely, and the
+`docs/ci-overhaul/08-driver-contract.md:92` row that assigns that file to W0/W8.
+Scope: design. Every measurement below was read-only. No value of any secret was
+read, printed or written. The `bws` error strings were measured with deliberately bogus tokens, never with the live one.
 
 # BWS rotation is triggered by the failure, not by a date
 
@@ -69,7 +74,8 @@ WHAT REPLACES IT: nothing in this repo, deliberately. Expiry is a property of th
 WHAT THE TRADE ACTUALLY IS: a scheduled outage that arrives silently becomes an unscheduled one that arrives with its own diagnosis and a one-command fix. The part that gets worse is CD. A4 is the mitigation, which is why A4 is not optional.
 
 ### Part D: submodule propagation
-Measured: `private/account` and `private/renet` hold the secret (set 2026-09-02) but NOTHING in those repos reads it today; `private/elite` and `private/homebrew-tap` hold none, and homebrew-tap has no `.github/` at all. `private/account/.env` is the local root every console-side path reads.
+Measured: `private/account` and `private/renet` hold the secret (set 2026-09-02)
+but NOTHING in those repos reads it today; `private/elite` and `private/homebrew-tap` hold none, and homebrew-tap has no `.github/` at all. `private/account/.env` is the local root every console-side path reads.
 - [ ] D1. Refresh-only propagation with a named report for the rest. Automatic adoption would push a live credential into two repos with no consumer, which is the opposite of what a rotation is for. Control: five faked repos, exactly three written and two named; then fake elite into holding one and it must be written, proving the rule is derived from live state and not a hardcoded list.
 - [ ] D2. The two dormant secrets are a DECISION for the operator, not a change to make: keep them current, or delete them as least-privilege. Recorded because a script that silently keeps two unused credentials alive is a fact someone should have chosen.
 

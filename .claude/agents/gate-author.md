@@ -24,8 +24,9 @@ lookup was rate limited. Fourteen unknown means fourteen UNCHECKED.
 - `npm run <name>` for a script that does not exist: **exit 1 with zero bytes on both
 streams** under `--silent`. That looks exactly like a gate failing for a real reason. Check the name is in package.json before diagnosing the failure.
 
-**Corollary: a control that does NOT fire is a claim about your control before it is a claim about your gate.** Two plants failed to fire here for reasons that had nothing to do with the gate: one planted a token into a file the gate correctly ignored (a favicon, which is a `<link rel=icon>`, not an `<img src>`), another named a probe `__gate_probe_Dockerfile` when the glob matches
-basenames STARTING with `Dockerfile`. Both looked briefly like gates that could not fail. Fix the control first.
+**Corollary: a control that does NOT fire is a claim about your control before it is a
+claim about your gate.** Two plants failed to fire here for reasons that had nothing to do with the gate: one planted a token into a file the gate correctly ignored (a favicon, which is a `<link rel=icon>`, not an `<img src>`), another named a probe `__gate_probe_Dockerfile` when the glob matches basenames STARTING with `Dockerfile`. Both looked briefly like gates that could not
+fail. Fix the control first.
 
 ## Anti-vacuity, in the gate itself
 
@@ -52,7 +53,8 @@ drain with `--write-baseline`. That second half is what keeps the set shrinking.
 
 **The composition trap, and it is subtle.** A shrink-only baseline guarantees the TOTAL cannot grow. It guarantees nothing about composition. A drain here printed `2,189 -> 2,160` and went green; diffing the two sets showed 30 removed and **one added** - a brand new violation, in a key created that same hour, silently enshrined by `--write-baseline`.
 
-**So: after any drain, diff the OLD and NEW sets and assert the ADDED side is empty.** Comparing sizes is not the same claim. If something was added, fix the value instead of baselining it.
+**So: after any drain, diff the OLD and NEW sets and assert the ADDED side is empty.**
+Comparing sizes is not the same claim. If something was added, fix the value instead of baselining it.
 
 **The re-keying trap, which is the composition trap's twin.** If an entry is keyed on the finding's TEXT and that text is a CSS selector list, then editing the selector re-keys the entry. Real case: a baseline held `.chip, .integrations-strip-badge`; deleting the dead component left `.chip` alone, and the gate reported the unchanged `.chip` rule as a BRAND-NEW finding while the old
 entry looked fixed. Nothing about that rule had changed.

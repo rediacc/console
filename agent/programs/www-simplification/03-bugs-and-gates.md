@@ -1,8 +1,10 @@
 # 03. Bugs and gates
 
-Status: **verified 2026-08-17**, every high-severity item re-confirmed against `https://www.rediacc.com` rather than the dev server. Re-verify before fixing.
+Status: **verified 2026-08-17**, every high-severity item re-confirmed against
+`https://www.rediacc.com` rather than the dev server. Re-verify before fixing.
 
-Counts: **5 high, 11 medium, 8 low** from the systematic hunt, plus the anchor class and the RTL class below. Coverage was 56 routes x 2 viewports x 2 themes, 7 locales x 5 pages, the production funnel, and every form submitted empty and filled.
+Counts: **5 high, 11 medium, 8 low** from the systematic hunt, plus the anchor
+class and the RTL class below. Coverage was 56 routes x 2 viewports x 2 themes, 7 locales x 5 pages, the production funnel, and every form submitted empty and filled.
 
 ## High severity
 
@@ -40,8 +42,9 @@ The fix model already exists in-repo: `privacy-policy.astro:46` reads a stable A
 
 ## RTL, underneath a correct `dir="rtl"`
 
-The share control covers the first 40 px of **every** heading in Arabic, so `مقدمة` renders as `دمة` (`DocsLayout.astro:990-1001`, physical `padding-right` and `right: 0`). Code blocks inherit `direction: rtl`, reordering shell commands with Arabic comments. The alternating zig-zag on `/pricing` no-ops in Arabic. Site-wide: **144 physical inline-axis properties against 37 logical
-ones, and exactly 6 `[dir='rtl']` rules.** `▶` chevrons are literal U+25B6 and never mirror.
+The share control covers the first 40 px of **every** heading in Arabic, so `مقدمة` renders as `دمة` (`DocsLayout.astro:990-1001`, physical `padding-right` and `right: 0`). Code blocks inherit `direction: rtl`, reordering shell commands with Arabic comments. The alternating zig-zag on `/pricing` no-ops in Arabic.
+Site-wide: **144 physical inline-axis properties against 37 logical ones, and
+exactly 6 `[dir='rtl']` rules.** `▶` chevrons are literal U+25B6 and never mirror.
 
 ## Also confirmed
 
@@ -97,7 +100,8 @@ The cost concern stands and is unresolved by that fix: the full serial suite cos
 
 ## G13, added late: an SVG that asks for a theme token it can never receive
 
-**Status: WRITTEN, wired, and proven by a plant.** `scripts/check-svg-theme-reach.ts`, `check:ci-svg-theme-reach`, a real `SVG theme reach` step in `quality-content`.
+**Status: WRITTEN, wired, and proven by a plant.**
+`scripts/check-svg-theme-reach.ts`, `check:ci-svg-theme-reach`, a real `SVG theme reach` step in `quality-content`.
 
 This gate came from the Stop hook's regression judge rather than from the research pass, and it names a blind spot the twelve above genuinely share. All 521 illustrations shipped with a hardcoded `#f5f5f5` ground and no dark-mode hook. That reads like theming nobody had got round to. It was not: an SVG loaded through `<img src="...">` is a SEPARATE DOCUMENT, so a
 `var(--illustration-ink)` written inside it resolves against nothing at all. Meanwhile Wave 3 had declared `--illustration-*` and the census recorded zero consumers.
@@ -111,7 +115,8 @@ The plant took two attempts and the first failure is the instructive one. Planti
 
 ## G14, found while verifying my own work: biome could not see a single gate script
 
-**Status: FIXED.** `biome.json` includes `scripts/**/*.ts`; 99 files brought to clean; the last one needed a hand edit the formatter would not apply.
+**Status: FIXED.** `biome.json` includes `scripts/**/*.ts`; 99 files brought to
+clean; the last one needed a hand edit the formatter would not apply.
 
 I passed five edited files to `npx biome check` and it answered `Checked 1 file`. Four of the five were under `scripts/`. The include list at `biome.json:53` reads `scripts/**/*.js`, and **there are zero `.js` files under `scripts/`** and 99 `.ts` files. The pattern matched nothing, and had matched nothing for as long as it had been there, while `.ci/**/*.ts` two lines below was
 correctly in scope. So every gate script in this repository, including the twelve this programme wrote to catch regressions, was outside the linter.
@@ -127,7 +132,8 @@ plainly shows, distrust the count first: `cat -A` settled it immediately.
 
 ## G15, the gate this programme most obviously needed and did not have
 
-**Status: WRITTEN, wired, baselined at 95.** `scripts/check-dead-css.ts`, `check:ci-dead-css`, a real `Dead CSS` step in `quality-content`.
+**Status: WRITTEN, wired, baselined at 95.** `scripts/check-dead-css.ts`,
+`check:ci-dead-css`, a real `Dead CSS` step in `quality-content`.
 
 The repo gates dead bash, dead case arms, dead service methods and dead translation keys. It did not gate dead CSS, which is the largest surface this programme touches and the one where every wave has been deleting by hand.
 

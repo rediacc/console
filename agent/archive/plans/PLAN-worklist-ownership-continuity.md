@@ -1,7 +1,10 @@
 # PLAN: worklist ownership must survive a compaction
-Status: draft Owner: 74de73ca Updated: 2026-09-03
+Status: draft
+Owner: 74de73ca
+Updated: 2026-09-03
 
-Scope: teach the worklist store that a session which compacted into a new id is the SAME session, so it can tick its own items -- without giving any session a way to seize a genuinely concurrent peer's. Every transcript fact below was measured on this machine by the design agent, not recalled from a doc page, and the principal spot-checked the load-bearing ones.
+Scope: teach the worklist store that a session which compacted into a new id is the
+SAME session, so it can tick its own items -- without giving any session a way to seize a genuinely concurrent peer's. Every transcript fact below was measured on this machine by the design agent, not recalled from a doc page, and the principal spot-checked the load-bearing ones.
 
 ## 0. The incident, and the exact cost
 
@@ -35,9 +38,11 @@ population it would be applied to, and its failure mode is one session silently 
 
 ## 2. The adoption model: LINEAGE, not an ownership rewrite
 
-Rejected: appending `reassign` events to move `o` from A to B. It costs one event per item per hop, and it makes `o` say something untrue about who WROTE the item while the `(a276391d)` tag inside the item text still says `a276391d` -- a half-corrected log, worse than an untouched one.
+Rejected: appending `reassign` events to move `o` from A to B. It costs one event per
+item per hop, and it makes `o` say something untrue about who WROTE the item while the `(a276391d)` tag inside the item text still says `a276391d` -- a half-corrected log, worse than an untouched one.
 
-Chosen: one `lineage` event per compaction; nothing rewritten; the tag stays truthful. `wl_core.owned_by_me` is already the single chokepoint for 25 call sites, so one alias-set consult there fixes Stop blocking, the guided slice, dead-session cleanup and the deferral surfaces at once -- and cannot roll out partially.
+Chosen: one `lineage` event per compaction; nothing rewritten; the tag stays truthful.
+`wl_core.owned_by_me` is already the single chokepoint for 25 call sites, so one alias-set consult there fixes Stop blocking, the guided slice, dead-session cleanup and the deferral surfaces at once -- and cannot roll out partially.
 
 `--reassign` repairs a FICTION, proven by ABSENCE. `--adopt` records that two REAL identities are one session, proven by PRESENCE. Opposite evidence directions; they must not be merged.
 

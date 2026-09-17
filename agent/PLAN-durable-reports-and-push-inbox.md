@@ -1,5 +1,9 @@
 # PLAN: durable sub-agent reports, and a pushed inbox
-Status: compacted Owner: written by branch `0804-1`, 2026-08-05; closed by session e6500e92, 2026-08-18 Full-Text: f7a5351a9 agent/PLAN-durable-reports-and-push-inbox.md Full-Text-Blob: a91ac53ed56cfecca406211ee76856603b192686 Record-Sig: f5fe26b0
+Status: compacted
+Owner: written by branch `0804-1`, 2026-08-05; closed by session e6500e92, 2026-08-18
+Full-Text: f7a5351a9 agent/PLAN-durable-reports-and-push-inbox.md
+Full-Text-Blob: a91ac53ed56cfecca406211ee76856603b192686
+Record-Sig: f5fe26b0
 
 ## Why
 Two operator asks. (A) A teammate's report arrived by SendMessage into the lead's conversation and nowhere the lead could look afterwards, so after a compaction a substantive report and a silent agent were indistinguishable to a fresh session. (B) The inbox was polled by a `*/5` cron running `worklist.py --poll`, where almost every firing printed nothing and each one cost a full
@@ -32,8 +36,16 @@ class of empty turns rather than making them cheaper.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:36Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .claude/agents/pr-babysitter.md Gates: none Why-Source: author Read-History: `git show a91ac53ed56cfecca406211ee76856603b192686` recovers the text; `git log --find-object=a91ac53ed56cfecca406211ee76856603b192686 --all` names
-the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:36Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .claude/agents/pr-babysitter.md
+Gates: none
+Why-Source: author
+Read-History: `git show a91ac53ed56cfecca406211ee76856603b192686` recovers the text; `git log --find-object=a91ac53ed56cfecca406211ee76856603b192686 --all` names the commit
 
 ## History
 - 2026-09-06T17:32:36Z compacted by 8f55d4f0 from `done` (record-sig f5fe26b0)

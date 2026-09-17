@@ -1,6 +1,7 @@
 # Datastore-Centric Redesign: Design Suite
 
-Status: **AS-BUILT for P0-P4; forward-looking for P5-P7** (updated 2026-07-13). Supersedes the deleted `docs/DESIGN-CEPH-KUBERNETES.md`.
+Status: **AS-BUILT for P0-P4; forward-looking for P5-P7** (updated 2026-07-13).
+Supersedes the deleted `docs/DESIGN-CEPH-KUBERNETES.md`.
 
 This suite began (2026-07-10) as a design. It is no longer one. Phases P0 through P3 are **built, gate-reviewed, and proven on real infrastructure**; the storage core, the cluster layer, and the CSI driver all exist in the working tree and have been run live. What follows describes the system that was built, including the places where the build contradicted the design and the
 design lost.

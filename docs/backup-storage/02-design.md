@@ -8,7 +8,8 @@
 > Where a scored decision below conflicts with 07, 07 wins.
 
 
-Status: Locked design, scored 2026-08-09. Items marked RECOMMENDED are defaults the operator can still override in the early decision round; everything marked Locked was decided by the operator in the source session and is not to be relitigated.
+Status: Locked design, scored 2026-08-09. Items marked RECOMMENDED are defaults the
+operator can still override in the early decision round; everything marked Locked was decided by the operator in the source session and is not to be relitigated.
 
 ## Locked by the operator (do not relitigate)
 
@@ -40,16 +41,17 @@ in-flight cell. Journal + server exists-batch resumes exactly.
 - GC/retention: manifests are GC roots; retention is a policy over manifests (GFS
 knobs per strategy); chunks die at refcount zero. No compaction of image data, only kilobyte-scale manifest consolidation, done server-side.
 
-Manifests: delta manifests (parent + changed cells) with periodic server-side synthetic-full consolidation; grid geometry (cell size) recorded in every manifest; GC never deletes a manifest a retained delta manifest references. Manifests are bucket-resident (self-describing store) and structurally plaintext (server must read chunk references for GC; they leak geometry/churn only),
-with a D1 index.
+Manifests: delta manifests (parent + changed cells) with periodic server-side
+synthetic-full consolidation; grid geometry (cell size) recorded in every manifest; GC never deletes a manifest a retained delta manifest references. Manifests are bucket-resident (self-describing store) and structurally plaintext (server must read chunk references for GC; they leak geometry/churn only), with a D1 index.
 
 Cell size: chosen by measurement (wave 0 churn instrument), recorded per repo, fixed until an explicit re-seed. Expect 1-4 MiB. Ops costs push weakly larger, churn amplification pushes strongly smaller; storage is the entire bill. Single-part PUTs always. No compression anywhere (ciphertext is incompressible; ZERO-cell elision via FIEMAP is the only "compression").
 
 ## Scored decisions (winners)
 
 1. Cloud data-plane grant: LOCALLY-SIGNED R2 temp credentials with an `actions`
-allowlist (PutObject + multipart set, NO delete verbs), prefix-scoped, about 1h TTL, re-minted mid-run as a normal event. Rationale: no REST call in the mint path (the REST API is capped at 1,200 req/5min account-wide) and the only write-without-delete option. Fallback and customer-S3 path: presigned batches. Rejected: REST-minted creds (rate cap, delete included),
-proxy-through-Worker (streaming rewrite, no gain; pricing difference is cents either way).
+allowlist (PutObject + multipart set, NO delete verbs), prefix-scoped, about 1h TTL, re-minted mid-run as a normal event. Rationale: no REST call in the mint path (the REST API is capped at 1,200 req/5min account-wide) and the only write-without-delete option. Fallback and customer-S3 path: presigned batches.
+   Rejected: REST-minted creds (rate cap, delete included), proxy-through-Worker
+(streaming rewrite, no gain; pricing difference is cents either way).
 2. Elite data plane. RECOMMENDED: filesystem-backed chunk PUT/GET routes in the
 elite hono server (Node streams, atomic rename, create-only and no-delete enforced in code, fs usage = metering). Alternative kept alive: pinned RustFS behind a conformance probe suite (presigned round-trip, conditional PUT, multipart, DeleteObjects, expiry), which is built regardless as the acceptance test for any customer-supplied S3. MinIO is dead (archived). renet's uploader
 speaks a grant abstraction: r2-temp-creds | presigned-s3 | direct-https.

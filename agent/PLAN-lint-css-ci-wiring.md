@@ -1,5 +1,9 @@
 # PLAN: Delete the unwired `lint:css` checkers and repair the wired gate they exposed
-Status: compacted Owner: e6500e92 Full-Text: f7a5351a9 agent/PLAN-lint-css-ci-wiring.md Full-Text-Blob: e97837565b685d82e72fd542652a452a05df1e97 Record-Sig: 4b4a21b1
+Status: compacted
+Owner: e6500e92
+Full-Text: f7a5351a9 agent/PLAN-lint-css-ci-wiring.md
+Full-Text-Blob: e97837565b685d82e72fd542652a452a05df1e97
+Record-Sig: 4b4a21b1
 
 ## Why
 `packages/www` carried two unwired dead-CSS checkers, `lint:css` and `lint:css-files`, and the open question was whether to wire them into CI. Measured head to head against the WIRED `check:ci-dead-css`, the unwired checker found zero real findings the wired gate missed, missed six the wired gate caught, and invented three the wired gate correctly rejected. Wiring it would have
@@ -34,8 +38,16 @@ own output. The three false positives and six misses were only visible as a set 
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:03:35Z Boxes: 0 attested, 0 open, 0 abandoned Epics: e87fa3ce Touched: packages/www/package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, packages/www/src/components/solution-pages/SPHowItWorks.astro, agent/programs/www-simplification/research/RESEARCH-docs.md,
-agent/PLAN-localize-cheat-sheet-rendering.md Gates: check:ci-css-dom-refs, check:ci-dead-css, check:ci-gate-reachability-coverage, check:ci-parity Why-Source: auto Read-History: `git show e97837565b685d82e72fd542652a452a05df1e97` recovers the text; `git log --find-object=e97837565b685d82e72fd542652a452a05df1e97 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:03:35Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: e87fa3ce
+Touched: packages/www/package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, packages/www/src/components/solution-pages/SPHowItWorks.astro, agent/programs/www-simplification/research/RESEARCH-docs.md, agent/PLAN-localize-cheat-sheet-rendering.md
+Gates: check:ci-css-dom-refs, check:ci-dead-css, check:ci-gate-reachability-coverage, check:ci-parity
+Why-Source: auto
+Read-History: `git show e97837565b685d82e72fd542652a452a05df1e97` recovers the text; `git log --find-object=e97837565b685d82e72fd542652a452a05df1e97 --all` names the commit
 
 ## History
 - 2026-09-06T17:03:35Z compacted by 8f55d4f0 from `done` (record-sig 4b4a21b1)

@@ -23,4 +23,5 @@ Both fixed, both directions verified with natural sentences, real command still 
 
 All 7 fixed guards (your 4 + these 2 + the empty-commit one from earlier) proven with planted-regression-then-restore: each plant makes the gate red and names the file, each restore is byte-identical and green.
 
-Final: **35 probed + 6 static across 3 chains**, `check:ci-parity` 324/324 both directions, lint/format clean.
+Final: **35 probed + 6 static across 3 chains**, `check:ci-parity` 324/324 both
+directions, lint/format clean.

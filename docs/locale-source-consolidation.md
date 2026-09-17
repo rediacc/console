@@ -57,7 +57,8 @@ set `rootDir: "./src"`, so a relative import out of `src` either trips TS6059 or
 - **A generated artifact** — nothing to generate *from*; it would be more machinery for the
 same guarantee the gate already provides.
 
-Consumers: bare specifier everywhere (Node's upward `node_modules` walk reaches the root workspace link, which is the whole reason to use a package rather than a path), except `workers/www/src/*.ts` which uses a relative import because `workers/www` is not a root workspace and already relative-imports across the tree.
+Consumers: bare specifier everywhere (Node's upward `node_modules` walk reaches the root
+workspace link, which is the whole reason to use a package rather than a path), except `workers/www/src/*.ts` which uses a relative import because `workers/www` is not a root workspace and already relative-imports across the tree.
 
 **Cost, stated up front:** step 2 writes `package-lock.json` (one additive workspace node) via `npx -y npm@10 install --package-lock-only --ignore-scripts`. It is the only shared-state write in the plan. `knip.jsonc` also needs a workspaces entry or `lint:unused` fails.
 

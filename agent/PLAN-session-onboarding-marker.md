@@ -1,5 +1,7 @@
 # PLAN: what a session is told at its FIRST TOUCH, and how we would know it changed anything
-Status: draft Owner: 74de73ca Updated: 2026-09-03
+Status: draft
+Owner: 74de73ca
+Updated: 2026-09-03
 
 Every `file:line` anchor below was verified against the tree on 2026-09-03, and the baseline in section 5 was MEASURED on this checkout rather than estimated.
 
@@ -76,7 +78,8 @@ Arm (a) fires at the first tool call when the session owns items. Arm (b) defers
 
 **Three of four were refused at a stop before they had ever written to the store, and `a276391d` edited files for 19h37m without recording a single item.** That is the operator's complaint, measured.
 
-Metrics: refusal-before-first-write (the headline), lag from start to first write, lag from delivery to first write (says it was ACTED ON rather than merely delivered), delivery latency, and the SILENCE RATE -- which should be HIGH, because a low one means the notice is firing on sessions with nothing to do.
+Metrics: refusal-before-first-write (the headline), lag from start to first write, lag
+from delivery to first write (says it was ACTED ON rather than merely delivered), delivery latency, and the SILENCE RATE -- which should be HIGH, because a low one means the notice is firing on sessions with nothing to do.
 
 **Caveat that keeps the audit honest:** `worklist.py --compact` rewrites the event log stamping `by: "compact"`, destroying historical attribution. The audit must skip any session whose start precedes the log's first entry, or it silently under-counts and reads as an improvement.
 

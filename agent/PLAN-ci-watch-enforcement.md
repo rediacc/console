@@ -1,5 +1,7 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
-Status: draft Owner: unowned (drafted by 9d92d9b6, 2026-08-28) Updated: 2026-08-28
+Status: draft
+Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
+Updated: 2026-08-28
 
 A session cannot stop while a head IT pushed has no terminal verdict on record and nothing running to produce one. The enforcement is a join between two local ledgers, costs no network, and cannot fire on a peer's push by construction.
 
@@ -29,7 +31,8 @@ Security` (hook suite, PASS=1557 FAIL=2, machine-specific test paths). The secon
 - run 33135196245: `Quality / Submodule Branches`, because a pointer bump
 demanded a reply to an automated review on rediacc/renet#109. Found only when the operator asked "what are we waiting for more than 3 hours?".
 
-Operator: *"Why you don't watch the PR CI process? Actually, stop judge should have caught that!"*
+Operator: *"Why you don't watch the PR CI process? Actually, stop judge should
+have caught that!"*
 
 ONE head carries SEVERAL runs (3c151275 has 33135268915 success AND 33135196245 cancelled), so a receipt keyed on a run id would be wrong. The head SHA is the key, which is what `.ci/scripts/ci/ci-trace.py` already keys on.
 
@@ -83,8 +86,8 @@ moved) is a terminal answer, so a watch overtaken by a push is not held against 
 
 ## 5. Detecting "there is a pushed head"
 
-**RECOMMENDED: a PostToolUse hook on `git push`.** It fires only in the session that ran the command and its payload carries `session_id`, so ownership is established by the event rather than inferred from shared state — the whole answer to the shared-worktree constraint. The precedent is exact: `post-bash/cancel-old-ci.sh` already fires on this event and already parses `src:dst`
-refspecs.
+**RECOMMENDED: a PostToolUse hook on `git push`.** It fires only in the session
+that ran the command and its payload carries `session_id`, so ownership is established by the event rather than inferred from shared state — the whole answer to the shared-worktree constraint. The precedent is exact: `post-bash/cancel-old-ci.sh` already fires on this event and already parses `src:dst` refspecs.
 
 Failure modes, stated rather than discovered later: a push outside the session's Bash tool is invisible (desired); it fires on a FAILED push, so record only when `origin/<dest>` equals local HEAD afterwards; submodule pushes must be excluded the way `block-unverified-push.sh` already excludes them; prose containing the words must not over-record, so use `lib/command-scan.sh`'s
 command-position matcher; and a silently disabled chain would make it vacuous — see §6.

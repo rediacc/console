@@ -98,7 +98,8 @@ blocks `git worktree add` unconditionally from the assistant's Bash tool. It is 
 3. **It does not solve the interesting problem.** A worktree is a checkout of a
 *commit*, and this program is uncommitted by standing rule. The rig has to carry the working tree, so a worktree still needs an rsync on top, plus a `node_modules` link. The worktree's only remaining advantage is git-native provenance, and §3.5 gets better provenance from a recorded SHA plus a patch file, because that is an artifact you keep rather than a state you query.
 
-**So: no operator action is required for the rig.** See §9 for what genuinely does need the operator.
+**So: no operator action is required for the rig.** See §9 for what genuinely
+does need the operator.
 
 ### 3.3 R0, bring-up (run once, at program start)
 
@@ -375,7 +376,9 @@ Hard dependencies from `01-SYNTHESIS.md` are encoded as gate entry conditions.
 
 `01-SYNTHESIS.md` §6 lists defects that are not design work: the `cf-badge` "Strategic anchor" string live on production, the mega-menu click that closes the menu, `#image-modal` `aria-hidden` around focusable buttons on every page, the docs share menu corrupting every heading's accessible name, search returning "Pruning" for `pricing`.
 
-They are not a wave. They are **owned by whichever specialist owns the file**, and `sx-bughunt` hands each owner its list at the gate *before* that owner's slot. Reason: these fixes touch files that are already spoken for, and a third writer in someone else's files is exactly the collision the 2-writer rule exists to prevent.
+They are not a wave. They are **owned by whichever specialist owns the file**, and `sx-bughunt` hands each owner its list at the gate *before* that owner's slot.
+Reason: these fixes touch files that are already spoken for, and a third writer in
+someone else's files is exactly the collision the 2-writer rule exists to prevent.
 
 **One exception.** The `cf-badge` string is live on production and is visitor- facing internal jargon. It should not wait for Wave 2. Fix it in W0's slot, as a one-line change, declared in W0's handoff as out-of-scope-but-shipped, per CLAUDE.md's "do the minimum, then say so loudly".
 
@@ -518,8 +521,9 @@ If that prints nothing but `SNAPSHOT-CURRENT`, the snapshot is exactly the worki
 
 Wave 1's blast radius is everything, so its outside-set is empty and `sha256sum -c` over an empty set exits 0. A future reader sees "pixel gate: passed" and concludes nothing regressed.
 
-**Detector:** the gate must print the *count* of surfaces compared, and a count of zero is a failure, not a pass. This is the same anti-vacuity discipline the repo already applies elsewhere (`check_i18n_value_types.py` has `MIN_PAIRS = 8`). Concretely: `sha256sum -c` output must be accompanied by `wc -l < /tmp/s1.sums`, and the handoff records both. Wave 1's entry says **"pixel
-gate vacuous by declaration"** in §5.3 for exactly this reason.
+**Detector:** the gate must print the *count* of surfaces compared, and a count of zero is a failure, not a pass. This is the same anti-vacuity discipline the repo already applies elsewhere (`check_i18n_value_types.py` has `MIN_PAIRS = 8`).
+Concretely: `sha256sum -c` output must be accompanied by
+`wc -l < /tmp/s1.sums`, and the handoff records both. Wave 1's entry says **"pixel gate vacuous by declaration"** in §5.3 for exactly this reason.
 
 ### 8.3 The rig diverging from reality without saying so
 

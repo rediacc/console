@@ -2,7 +2,8 @@
 
 **Status: §7 (the kube e2e suites) is AS-BUILT. Everything else is forward-looking (P5/P6).**
 
-Purpose: the `rdc` surface has ZERO CI e2e coverage today (e2e drives `renet` over bridge SSH; grep confirms no cli-bundle/rdc invocation in packages/e2e-tests). The examples suite is simultaneously (a) user-facing copy-pasteable documentation-as-code, (b) the local validation vehicle for the redesign, (c) the CI rdc coverage. Examples target the NEW command surface (06).
+Purpose: the `rdc` surface has ZERO CI e2e coverage today (e2e drives `renet` over bridge
+SSH; grep confirms no cli-bundle/rdc invocation in packages/e2e-tests). The examples suite is simultaneously (a) user-facing copy-pasteable documentation-as-code, (b) the local validation vehicle for the redesign, (c) the CI rdc coverage. Examples target the NEW command surface (06).
 
 ## 1. Catalog (~24 self-contained folders, 5 tracks)
 

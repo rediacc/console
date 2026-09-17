@@ -1,5 +1,6 @@
 # PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops)
-Status: draft -- design only, not implemented Owner: f4da5c2e
+Status: draft -- design only, not implemented
+Owner: f4da5c2e
 
 ## Why
 
@@ -68,8 +69,7 @@ There is no need to reach for a different box (W1P4 or otherwise); the completed
 
 ## 4. `gates.lock.json`'s real edit surface
 
-Confirmed: `gates.lock.json` is generated, never hand-edited. `package.json:181` -- `"check:ci-gates-lock": "tsx scripts/gen-gates-lock.ts --selftest && tsx scripts/gen-gates-lock.ts"` -- verifies it against `manifest.ts`; `package.json:169` -- `"gen:gates-lock": "tsx scripts/gen-gates-lock.ts --write"` -- is what actually rewrites it. So the real hand-edit surface for both legs
-is:
+Confirmed: `gates.lock.json` is generated, never hand-edited. `package.json:181` -- `"check:ci-gates-lock": "tsx scripts/gen-gates-lock.ts --selftest && tsx scripts/gen-gates-lock.ts"` -- verifies it against `manifest.ts`; `package.json:169` -- `"gen:gates-lock": "tsx scripts/gen-gates-lock.ts --write"` -- is what actually rewrites it. So the real hand-edit surface for both legs is:
 
 1. `scripts/ci-runner/manifest.ts` -- `paths:`/`leaves:` string literals naming the moved files (2 entries reference `scripts/gen-gates-lock.ts`, 1 references `scripts/gen-docs.ts`, all in the `check:ci-gates-lock` / `gen:gates-lock` / `gen:docs` block at `scripts/ci-runner/manifest.ts:2195-2293`; zero entries reference any `scripts/dev/**` or `scripts/docker/**` path, since none are registered).
 2. `package.json` -- the `gen:docs` / `gen:gates-lock` / `check:ci-gates-lock` / `check:ci-doc-region-parity` script strings if any hardcode the old path (checked: they invoke by npm script name and `tsx scripts/gen-gates-lock.ts` / `tsx scripts/gen-docs.ts` literally -- both need the path segment updated).

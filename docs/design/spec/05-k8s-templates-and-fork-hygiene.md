@@ -78,7 +78,8 @@ means "ANY process in that node's host netns" (proxy, root shells, kubelet probe
 - **same-node host→pod traffic BYPASSES NetworkPolicy entirely** (verified: 200
 under pure default-deny with zero allow rules; kube-router exempts node-local cni0-sourced traffic as the kubelet-probe path). On the datastore node itself a host-side "proxy-only" rule is therefore not merely imprecise but unenforceable.
 
-Consequence: the proxy's CLUSTER-FACING leg runs as a pod in `rediacc-system` (proxy-side work item, P1/P2), and the allow rule ships as:
+Consequence: the proxy's CLUSTER-FACING leg runs as a pod in `rediacc-system`
+(proxy-side work item, P1/P2), and the allow rule ships as:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -350,8 +351,9 @@ Re-running `up()` re-applies both Secrets idempotently: that IS the rotation sto
 
 The control-plane data-dir stays at the existing distro layout inside its own repo folder in `ds-control`: `<mount>/.rediacc/k3s/data` (`pkg/kube/distro/k3s.go:75-77`, `distro.go:159-162`), kubelet root at `<mount>/.rediacc/k3s/kubelet` (`distro.go:179-181`).
 
-**Invariant: no mountpoints inside `repos/<repo>/`.** A reflink fork copies the repo folder as a plain BTRFS subtree; an ext4 filesystem mounted on a directory inside it would either break the reflink or be traversed as a foreign filesystem (the exact bug class `PrepFork` sweeps for the CP image, `pkg/kube/distro/prepfork.go:29-57`). Volume data reaches the fork through the `.img`
-files, which capture everything crash-consistently; mountpoints live under `<ds-mount>/mounts/`, which is never part of a fork and is rebuilt at attach.
+**Invariant: no mountpoints inside `repos/<repo>/`.** A reflink fork copies the
+repo folder as a plain BTRFS subtree; an ext4 filesystem mounted on a directory inside it would either break the reflink or be traversed as a foreign filesystem (the exact bug class `PrepFork` sweeps for the CP image, `pkg/kube/distro/prepfork.go:29-57`). Volume data reaches the fork through the `.img` files, which capture everything crash-consistently; mountpoints live under
+`<ds-mount>/mounts/`, which is never part of a fork and is rebuilt at attach.
 
 ### LUKS keying [P0-DECIDED]
 
@@ -440,7 +442,8 @@ Rewritten to the scope spike d proved (`reports/spikes/spike-d-pki-remint.md`). 
 `2F:39:84:…:1F:5F` identical before and after; same SA pubkey `3ffeb4…`). A fork built with tls-removal-only silently ships the parent's CA and SA signing key, voiding F1 while appearing to work. The full scrub below produced a genuinely new PKI (spike d §3: server-ca `2A:6B:48:…:CF:4E`, SA pubkey `3ffeb4…` → `eb0f9b…`, client-ca `90:13:AB…` → `EF:01:79…`) with the whole kine
 payload (pre-existing Secret, workloads, PV objects) intact and serving.
 
-Preconditions: the clone/reflink is placed and attached; k3s for this image is NOT running (`PrepFork` drained, stopped, and swept nested mounts, `prepfork.go:29-57`); the caller passed `IdentityOpFork` + target role (`fork`|`rehearsal`) + `--writes` disposition. Data-dir is `<mount>/.rediacc/k3s/data` (verified live in spike d: `/mnt/rediacc/mounts/spike0/.rediacc/k3s/data`).
+Preconditions: the clone/reflink is placed and attached; k3s for this image is NOT
+running (`PrepFork` drained, stopped, and swept nested mounts, `prepfork.go:29-57`); the caller passed `IdentityOpFork` + target role (`fork`|`rehearsal`) + `--writes` disposition. Data-dir is `<mount>/.rediacc/k3s/data` (verified live in spike d: `/mnt/rediacc/mounts/spike0/.rediacc/k3s/data`).
 
 F1. **Remove `server/tls/`** (CA pairs, SA signing key `service.key`, request-header CA, all leaves, dynamic-cert cache). REQUIRED but proven insufficient alone (spike d §2). `server/cred/*.kubeconfig` need no manual action: they regenerate from the new CA on boot (spike d scrub-scope item 4), but must never be shipped as fork identity.
 
@@ -549,8 +552,9 @@ tolerations:
     tolerationSeconds: 60
 ```
 
-Justification: the codified sequence does NOT depend on taint eviction (step 2's Node delete is the force-release), so this default only governs the unattended window before failover runs. 60 s is chosen over the k8s default 300 s because the only pods that can usefully reschedule early are stateless ones (volume-claiming pods just go Pending until step 6, which is harmless and
-more honest than Terminating), and over aggressive values (5-15 s) because it clears one node-monitor grace period (40 s) plus margin, so a k3s single-binary restart or upgrade bounce never triggers a spurious cluster-wide eviction. Not configurable per-flag in v1; authors who need different behavior declare their own tolerations, which the stamp respects.
+Justification: the codified sequence does NOT depend on taint eviction (step 2's
+Node delete is the force-release), so this default only governs the unattended window before failover runs. 60 s is chosen over the k8s default 300 s because the only pods that can usefully reschedule early are stateless ones (volume-claiming pods just go Pending until step 6, which is harmless and more honest than Terminating), and over aggressive values (5-15 s) because it clears
+one node-monitor grace period (40 s) plus margin, so a k3s single-binary restart or upgrade bounce never triggers a spurious cluster-wide eviction. Not configurable per-flag in v1; authors who need different behavior declare their own tolerations, which the stamp respects.
 
 ---
 
@@ -607,8 +611,9 @@ Path identity across the two names: containerd's mirror rewrite preserves the re
 
 ## 6. health() contract [P0-DECIDED: dedicated Rediaccfile health() function]
 
-Decision: an optional Rediaccfile `health()` function; the `info()` exit-code convention is REJECTED. Rationale: `info()` is a display hook invoked by status paths; overloading its exit code makes every status render a health probe (a formatting failure would read as "unhealthy") and forbids health checks from being slower or more invasive than a status line. A dedicated function
-mirrors `up()/down()` naming, is independently timeout-able, and its ABSENCE is cleanly detectable.
+Decision: an optional Rediaccfile `health()` function; the `info()` exit-code
+convention is REJECTED. Rationale: `info()` is a display hook invoked by status paths; overloading its exit code makes every status render a health probe (a formatting failure would read as "unhealthy") and forbids health checks from being slower or more invasive than a status line. A dedicated function mirrors `up()/down()` naming, is independently timeout-able, and its ABSENCE is
+cleanly detectable.
 
 Exit semantics:
 

@@ -1,5 +1,7 @@
 # PLAN: docker image freshness must soak on release age, not rebuild age
-Status: done Owner: 854ac1c6 Updated: 2026-08-25
+Status: done
+Owner: 854ac1c6
+Updated: 2026-08-25
 
 ## The defect
 

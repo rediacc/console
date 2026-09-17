@@ -1,5 +1,9 @@
 # PLAN: Licence the restore target, so disaster recovery works on a bare machine
-Status: compacted Owner: 97604f47 Full-Text: f7a5351a9 agent/PLAN-backup-restore-target-license.md Full-Text-Blob: 65118820f452478aba55580152843d0a14188c75 Record-Sig: e9455a6c
+Status: compacted
+Owner: 97604f47
+Full-Text: f7a5351a9 agent/PLAN-backup-restore-target-license.md
+Full-Text-Blob: 65118820f452478aba55580152843d0a14188c75
+Record-Sig: e9455a6c
 
 ## Why
 `renet backup restore` refused to run on a machine holding no repository licence, because the chunk-store session it needs is authenticated by a signed licence blob that doubles as the address book. That is precisely the disaster-recovery case, a bare replacement machine, so the verb failed exactly where it was needed, and it failed with a plain error string rather than the exit-10
@@ -36,9 +40,15 @@ the failure a bare machine would produce. The plan ranked the drill leg as the h
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: draft Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:06:10Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: private/renet/cmd/renet/backup_restore.go, private/renet/pkg/license/store.go, packages/cli/src/services/executor/local-executor.ts, private/account/src/services/subscription.service.ts,
-private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-chunk-store.ts, private/renet/pkg/chunkstore/session.go, private/account/src/routes/backups.ts, packages/cli/src/commands/backup.ts, private/renet/pkg/license/tiermap.go, private/renet/pkg/functions/executor_local.go, packages/cli/src/services/renet/renet-license-contract.ts,
-packages/cli/src/services/account/license.ts, private/account/src/routes/license.ts, private/renet/pkg/functions/commands/registry.go, packages/cli/src/services/config/config-resources.ts, packages/cli/src/commands/machine/register.ts, packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts, packages/shared/src/subscription/constants.ts Gates: none Why-Source: auto
+Record-Kind: compacted
+Prior-Status: draft
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:06:10Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: private/renet/cmd/renet/backup_restore.go, private/renet/pkg/license/store.go, packages/cli/src/services/executor/local-executor.ts, private/account/src/services/subscription.service.ts, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-chunk-store.ts, private/renet/pkg/chunkstore/session.go, private/account/src/routes/backups.ts, packages/cli/src/commands/backup.ts, private/renet/pkg/license/tiermap.go, private/renet/pkg/functions/executor_local.go, packages/cli/src/services/renet/renet-license-contract.ts, packages/cli/src/services/account/license.ts, private/account/src/routes/license.ts, private/renet/pkg/functions/commands/registry.go, packages/cli/src/services/config/config-resources.ts, packages/cli/src/commands/machine/register.ts, packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts, packages/shared/src/subscription/constants.ts
+Gates: none
+Why-Source: auto
 Read-History: `git show 65118820f452478aba55580152843d0a14188c75` recovers the text; `git log --find-object=65118820f452478aba55580152843d0a14188c75 --all` names the commit
 
 ## History

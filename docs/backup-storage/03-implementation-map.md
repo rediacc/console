@@ -1,6 +1,7 @@
 # 03. Implementation map
 
-Status: verified seams, 2026-08-09, branch main. Every file:line is a hypothesis to re-verify before editing. This file is organized by wave-1/wave-2 writer ownership.
+Status: verified seams, 2026-08-09, branch main. Every file:line is a hypothesis to
+re-verify before editing. This file is organized by wave-1/wave-2 writer ownership.
 
 ## Writer A (wave 1): private/renet, exclusive ownership
 

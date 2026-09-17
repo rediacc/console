@@ -38,7 +38,9 @@ by the manifest, and are NOT mine to delete.
 
 ## Gates
 
-Green: cast gate, tutorial-parity, tutorial-card-fonts, validate:tutorial-audio, locale-tutorial-assets, CLI 2394/2394, eslint (FROM REPO ROOT), ci-parity, shell-format, dead-bash, tutorial-commands, tutorial-noninteractive, healthcheck-headroom, guard-mutations, em-dash surfaces, hook suite 773. Red: check:ci-tutorial-caption-sync, being fixed above.
+Green: cast gate, tutorial-parity, tutorial-card-fonts, validate:tutorial-audio,
+locale-tutorial-assets, CLI 2394/2394, eslint (FROM REPO ROOT), ci-parity, shell-format, dead-bash, tutorial-commands, tutorial-noninteractive, healthcheck-headroom, guard-mutations, em-dash surfaces, hook suite 773.
+Red: check:ci-tutorial-caption-sync, being fixed above.
 
 ## Environment
 

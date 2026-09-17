@@ -17,5 +17,6 @@ remain-held (never auto-start). Backlog: one-line setup-workspace wiring + burn 
 go, allowlist value confirmed by them first; fixture-race fix; install-methods 404 surfaced to its owner.
 
 ## Next action
-A: NOTHING self-starts. Inbox waiter + hourly cron are listening. On the operator's word: execute phase 2 via Opus writers (max 2, disjoint files). If compaction lands first: read #9b7741bb's tick and #a2d57c2b's text; do not re-validate what phase 1 already proved.
+A: NOTHING self-starts. Inbox waiter + hourly cron are listening. On the
+operator's word: execute phase 2 via Opus writers (max 2, disjoint files). If compaction lands first: read #9b7741bb's tick and #a2d57c2b's text; do not re-validate what phase 1 already proved.
 

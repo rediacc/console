@@ -16,8 +16,7 @@ the driver's own canonical mount. It retries forever; `DeleteVolume` then correc
 
 **SPIKED AND DECIDED (see `reports/p87-design-spike.md` for the full consumer enumeration with file:line).**
 
-**Ruling: option (a)** — stage the device ONLY at kubelet's `staging_target_path`; the canonical tree keeps holding volume **images as files**, not mounts. **(b) symlink and (c) reconciler are both REJECTED**: (b) breaks the static-PV path outright and does not even address the failure, whose cause is the *device's* mount-ref count, not the path's type; (c) cannot work from inside
-the driver at all, because kubelet's precondition runs *before* it calls `NodeUnstageVolume` — a reconciler would have to race kubelet by force-unmounting a reference out from under a live device.
+**Ruling: option (a)** — stage the device ONLY at kubelet's `staging_target_path`; the canonical tree keeps holding volume **images as files**, not mounts. **(b) symlink and (c) reconciler are both REJECTED**: (b) breaks the static-PV path outright and does not even address the failure, whose cause is the *device's* mount-ref count, not the path's type; (c) cannot work from inside the driver at all, because kubelet's precondition runs *before* it calls `NodeUnstageVolume` — a reconciler would have to race kubelet by force-unmounting a reference out from under a live device.
 
 **Why CSI dies and the static path does not** (the asymmetry that decides everything): both double-mount, but static PVs are served by kubelet's **in-tree local-volume plugin**, which never calls `NodeUnstageVolume` and therefore never runs `GetDeviceMountRefs`. Only the CSI flow carries that precondition. Our canonical mount is the one reference too many.
 
@@ -173,8 +172,8 @@ A pattern worth naming, because it recurred three times in one phase and each ti
 | CLI orphan i18n keys | 408 | **2** real orphans × 12 locales = 24 (408 was a docs gate double-counting 58 stale keys across languages) |
 | Stale translator keys | 82 | **130** derived from the hash manifest (120 hash-stale + 4 missing + 8 still-English); `i18n:naturalize-status` reports "all 12 OK" and by its own output cannot fail an individual stale key |
 
-**The lesson is not that people were careless — it is that these numbers had no reproducible oracle.** A count with no single definition cannot be checked, and the program's own rule ("a count that moved is a question") is inert against it: any observed value can be explained away as a different counting convention. **P5: every gated number gets one definition, printed by the tool,
-reproducible in one command.**
+**The lesson is not that people were careless — it is that these numbers had no reproducible oracle.** A count with no single definition cannot be checked, and the program's own rule ("a count that moved is a question") is inert against it: any observed value can be explained away as a different counting convention.
+**P5: every gated number gets one definition, printed by the tool, reproducible in one command.**
 
 ## The `pt` locale is dialect-inconsistent (P7, quality)
 
@@ -218,8 +217,8 @@ The single most consequential find of the phase, and **the last thing anyone tho
 **H1 — `help.repo.keyConcepts`, the authoritative repo-addressing document read by users AND agents, still taught the DELETED `--name` model**, verbatim: *"A bare `--name` resolves to the exact config key, else falls back to `<repo>:latest`… `--name app` targets the GRAND; `--name app:test` targets that FORK."* `--name` does not exist on `repo up`/`down`/`delete`/`term`/`sync`.
 **English contradicted itself inside one file**: three keys away, `help.agentMode` already said *"A repository ref derives its own machine, so `-m` is not needed."* Two eras of the CLI side by side.
 
-Also: `machine.description` advertised `query` and **`rename`** as key subcommands (neither exists — `rename` was deleted outright); `help.machine.keyConcepts` advertised `containers --health-check` / `services --stability-check` (merged into `machine status --containers/--services`); and `errors.agent.commandBlocked` — **the error shown to a blocked agent** — recommended the MCP
-tool `machine_query`, **which does not exist**. We blocked the agent and handed it a dead tool name.
+Also: `machine.description` advertised `query` and **`rename`** as key subcommands (neither exists —
+`rename` was deleted outright); `help.machine.keyConcepts` advertised `containers --health-check` / `services --stability-check` (merged into `machine status --containers/--services`); and `errors.agent.commandBlocked` — **the error shown to a blocked agent** — recommended the MCP tool `machine_query`, **which does not exist**. We blocked the agent and handed it a dead tool name.
 
 ### Nothing in the repo could ever have caught this — four gates, four blind spots
 
@@ -374,11 +373,13 @@ MERGED policy"* (participle), not `unità` (*unit*). A mechanical accent-fixer c
 
 The H9 fix rewrote `commands.repo.fork.completed` (the fork success message that printed two commands which both failed). The fix correctly removed `-m {{machine}}` from both — so English went to `{{repository}}` ×4 with **zero** `{{machine}}`. But that key **was not on the hand-written "final English delta" list** handed to the 12 translators, so none of them touched it.
 
-**Result: a placeholder mismatch in all 12 locales** (locales still carried `{{machine}}` ×2). Every translator reported clean — and every one *was* clean **against the list they were given**. The defect was in the relay, not in any of them.
+**Result: a placeholder mismatch in all 12 locales** (locales still carried `{{machine}}` ×2). Every
+translator reported clean — and every one *was* clean **against the list they were given**. The defect was in the relay, not in any of them.
 
 **The authoritative delta was always available, mechanically:** `git diff <sha>^..<sha> -- packages/cli/src/i18n/locales/en/cli.json` names **every** changed key, with no possibility of omission. Instead the list was assembled by hand — twice: the lead's earlier relay also dropped `commands.repo.push.optionUp` (caught by the German translator) while naming its sibling deletion.
 
-**Rule: never hand-assemble a change list that a diff can generate.** The same principle as everything else this phase found — *ask the thing that decides*. A human-curated list of what changed is a **memory** of what changed, and memory is the failure mode.
+**Rule: never hand-assemble a change list that a diff can generate.** The same principle as everything else
+this phase found — *ask the thing that decides*. A human-curated list of what changed is a **memory** of what changed, and memory is the failure mode.
 
 **Also caught in the same pass:** `docs.sectionTitles.ops` is the ONLY English value still saying "experimental", while `commands.ops.description(Short)` correctly dropped that framing. **English now contradicts itself, three keys apart, in the same file** — the exact shape of H1. The Estonian translator found it independently and flagged it as out of scope; it was not out of
 scope, it was the same bug.
@@ -412,7 +413,8 @@ And a `datastore attach` on a worker **succeeds** — that is the entire point o
 
 **This program's disease, inside this program's own fix, in the very bug whose defect was silence.**
 
-Fix: `surfaceRenetWarnings()` in the CLI executor (+25 lines) — renet's warnings reach the operator on a **successful** run too. The nine files ship together or #86 is theatre.
+Fix: `surfaceRenetWarnings()` in the CLI executor (+25 lines) — renet's warnings reach the operator on a
+**successful** run too. The nine files ship together or #86 is theatre.
 
 ## Two holes found in a verification script — by its own author
 
@@ -494,8 +496,8 @@ is the validator's entire scan root, exactly as with `check:i18n:docs`).
 - **Dropping the validators from the chain removes them from CI forever** — worse than a baseline that
 self-destructs.
 
-**So: record each of the 24 docs with its EXACT violation count. Per-file, never a global total** — with one number, a fix in one doc and a regression in another **cancel out silently**; with per-file counts they cannot. A new doc, or a rising count in a baselined doc, **still fails**. Every entry **must vanish when P7 rewrites the docs — a count that outlives the rewrite is a bug,
-not a deferral.**
+**So: record each of the 24 docs with its EXACT violation count. Per-file, never a global total** — with one
+number, a fix in one doc and a regression in another **cancel out silently**; with per-file counts they cannot. A new doc, or a rising count in a baselined doc, **still fails**. Every entry **must vanish when P7 rewrites the docs — a count that outlives the rewrite is a bug, not a deferral.**
 
 **And the baseline must be PROVEN to fail before it ships** (red on a rising count, red on a new doc, green as-is). *We have found twelve gates that were green because they could not fail. Do not build the thirteenth while fixing the twelfth.*
 

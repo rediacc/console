@@ -1,5 +1,9 @@
 # PLAN: the nightly asserts an unreleased version against the last released image
-Status: compacted Owner: e6500e92 Full-Text: f01516cac agent/PLAN-sync-docker-latest-tag-with-releases.md Full-Text-Blob: 785e89eea1f5954063ba22f0fe60adc16ce7eed1 Record-Sig: 0b752061
+Status: compacted
+Owner: e6500e92
+Full-Text: f01516cac agent/PLAN-sync-docker-latest-tag-with-releases.md
+Full-Text-Blob: 785e89eea1f5954063ba22f0fe60adc16ce7eed1
+Record-Sig: 0b752061
 
 ## Why
 Scheduled Console CI failed deterministically on Validate Install Methods with "expected 1.2.27, got 1.2.26". Four facts in sequence: the scope step is gated on `pull_request` so on a schedule run every scope output is empty; the job admits on `run_install_methods != 'false'` and empty is not `'false'`, so it runs; the channel assertion requires `schedule` to resolve an EMPTY
@@ -41,8 +45,16 @@ read as a guard for years and was unreachable by construction.
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: done Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:32:37Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .ci/config/constants.sh Gates: check:ci-parity, check:ci-workflow-invariants Why-Source: author Read-History: `git show 785e89eea1f5954063ba22f0fe60adc16ce7eed1` recovers the text; `git log
---find-object=785e89eea1f5954063ba22f0fe60adc16ce7eed1 --all` names the commit
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:32:37Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .ci/config/constants.sh
+Gates: check:ci-parity, check:ci-workflow-invariants
+Why-Source: author
+Read-History: `git show 785e89eea1f5954063ba22f0fe60adc16ce7eed1` recovers the text; `git log --find-object=785e89eea1f5954063ba22f0fe60adc16ce7eed1 --all` names the commit
 
 ## History
 - 2026-09-06T17:32:37Z compacted by 8f55d4f0 from `done` (record-sig 0b752061)

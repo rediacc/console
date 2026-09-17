@@ -1,5 +1,9 @@
 # PLAN: Unify the trap corpus
-Status: compacted Owner: 99ccf057 Full-Text: f7a5351a9 agent/PLAN-unify-trap-corpus.md Full-Text-Blob: 477232b48be389ccf464567572800f6dde8b0d5a Record-Sig: 4dd2aa8b
+Status: compacted
+Owner: 99ccf057
+Full-Text: f7a5351a9 agent/PLAN-unify-trap-corpus.md
+Full-Text-Blob: 477232b48be389ccf464567572800f6dde8b0d5a
+Record-Sig: 4dd2aa8b
 
 ## Why
 The repo kept two trap documents, a gitignored `.agent/TRAPS.md` that the Stop hook read and a tracked one that it did not, each blind to the other. The plan wanted one corpus at a tracked path, read by the hook and pointed at by CLAUDE.md, with a gate that reds if a second one ever appears.
@@ -19,8 +23,16 @@ nothing, so it holds by luck. That is the difference between a fixed day and a f
 (this plan carried no checkbox tasks)
 
 ## Record
-Record-Kind: compacted Prior-Status: superseded Compacted-By: 8f55d4f0 Compacted-At: 2026-09-06T17:08:54Z Boxes: 0 attested, 0 open, 0 abandoned Epics: none Touched: .gitignore, CLAUDE.md, .ci/scripts/quality/check-probe-parity.sh, docs/agent-reference/TRAPS.md, .claude/settings.json, .claude/hooks/pre-edit/block-agent-state-shape.sh Gates: check:ci-dead-bash,
-check:ci-gate-id-convention, check:ci-gate-reachability-coverage, check:ci-probe-parity, check:ci-shell-format Why-Source: author Read-History: `git show 477232b48be389ccf464567572800f6dde8b0d5a` recovers the text; `git log --find-object=477232b48be389ccf464567572800f6dde8b0d5a --all` names the commit
+Record-Kind: compacted
+Prior-Status: superseded
+Compacted-By: 8f55d4f0
+Compacted-At: 2026-09-06T17:08:54Z
+Boxes: 0 attested, 0 open, 0 abandoned
+Epics: none
+Touched: .gitignore, CLAUDE.md, .ci/scripts/quality/check-probe-parity.sh, docs/agent-reference/TRAPS.md, .claude/settings.json, .claude/hooks/pre-edit/block-agent-state-shape.sh
+Gates: check:ci-dead-bash, check:ci-gate-id-convention, check:ci-gate-reachability-coverage, check:ci-probe-parity, check:ci-shell-format
+Why-Source: author
+Read-History: `git show 477232b48be389ccf464567572800f6dde8b0d5a` recovers the text; `git log --find-object=477232b48be389ccf464567572800f6dde8b0d5a --all` names the commit
 
 ## History
 - 2026-09-06T17:08:54Z compacted by 8f55d4f0 from `superseded` (record-sig 4dd2aa8b)
