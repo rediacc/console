@@ -563,3 +563,19 @@ sys.path-hop tier-3 escalation ruled and resolved with an EXEMPT entry rather th
 babysitter's own proposed dispatch.py alternative, and two class sweeps confirming no
 further siblings of either defect) touched none of this plan's files or its precondition.
 Status stays `executing`, commit 3 stays not started.
+
+### Re-checked a twenty-sixth time 2026-09-17, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still 16
+files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twenty-fifth check (a PR #589 review pass finding three real defects in the prose-style commit
+guard -- a missing `re.MULTILINE` anchor, `_is_docstring()` misreading implicitly concatenated
+string fragments as prose, and `scope` computed once per chained command instead of per message
+-- all three fixed and pushed for review at `f69745394`; a fourth, related defect found live
+while replying to those threads (`_is_target()` had no heredoc/quote-context awareness and was
+routed through `shellscan.scan_target()` instead), fixed at `fb5212cd3`; a follow-up plan for a
+new under-wrap detection rule researched against real formatting-tool documentation and updated
+per the operator's scope answer; and a new `docs/ci-overhaul/06-progress.md` section recording
+that whole wave) touched none of this plan's files or its precondition. Status stays
+`executing`, commit 3 stays not started.
