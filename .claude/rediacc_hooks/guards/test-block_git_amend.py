@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block-git-amend.sh.
 
-Both directions, because a one-sided control is satisfiable by a broken hook:
-one that always blocks passes the positive cases, one that never blocks passes
-the negative ones.
+Both directions, because a one-sided control is satisfiable by a broken hook: one that always blocks passes the positive cases, one that never blocks passes the negative ones.
 """
 
 import json

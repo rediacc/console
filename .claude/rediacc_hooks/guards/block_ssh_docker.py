@@ -1,21 +1,12 @@
 """Block raw ssh+docker on a rediacc-managed machine (allow bridge VM 192.168.111.*).
 
-ROUTED THROUGH lib/command-scan.sh 2026-08-27, which in this tree is
-`rediacc_hooks.shellscan`. Matching the raw command meant matching PROSE:
-`echo '<the banned command>'` was refused, and so was a worklist note or a doc
-quoting it. `scan_target` removes heredoc bodies and quoted spans while still
-extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is
-scanned exactly as before -- this narrows what the guard refuses, never what it
-catches.
+ROUTED THROUGH lib/command-scan.sh 2026-08-27, which in this tree is `rediacc_hooks.shellscan`. Matching the raw command meant matching PROSE: `echo '<the banned command>'` was refused, and so was a worklist note or a doc quoting it. `scan_target` removes heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is scanned
+exactly as before -- this narrows what the guard refuses, never what it catches.
 
 PORT NOTE. `SCAN=$(hook_scan_target "$CMD")` is a command substitution, so the
 trailing newline `scan_target` writes is removed before grep ever sees it; and
-the subject is fed with `printf '%s'`, not a here-string, so an EMPTY subject
-would give grep no records at all. Neither detail can be inferred from the
-Python, and both change what matches, so `scan_target` is wrapped in
-`_command_substitution` and the plain `grep_q` is used rather than
-`grep_q_line`. `shellscan.hook_init` performs exactly this pair, which is why
-it is called here instead of a second spelling of it.
+the subject is fed with `printf '%s'`, not a here-string, so an EMPTY subject would give grep no records at all. Neither detail can be inferred from the Python, and both change what matches, so `scan_target` is wrapped in `_command_substitution` and the plain `grep_q` is used rather than `grep_q_line`. `shellscan.hook_init` performs exactly this pair, which is why it is called here
+instead of a second spelling of it.
 """
 
 from rediacc_hooks import hookio, shellscan

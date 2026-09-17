@@ -2,45 +2,29 @@
 
 WHY. The review now runs once per epic, and it selects an epic's commits with
 `git log --grep='^PR-TASK: <id>'`. A commit with no trailer belongs to no epic,
-so it is reviewed by nobody, silently. That is the same shape as the flat
-review's licence to leave areas unreviewed, moved one level down to where
-nothing reports it at all.
+so it is reviewed by nobody, silently. That is the same shape as the flat review's licence to leave areas unreviewed, moved one level down to where nothing reports it at all.
 
-ANCHORED TO LINE START, deliberately. The sibling guard block-commit-meta.sh
-states the rule this follows in its own header: a guard whose only failure mode
-is refusing CORRECT input teaches people to reword honest messages until it
+ANCHORED TO LINE START, deliberately. The sibling guard block-commit-meta.sh states the rule this follows in its own header: a guard whose only failure mode is refusing CORRECT input teaches people to reword honest messages until it
 stops complaining. A commit whose prose merely mentions PR-TASK is not tagged;
 only a real trailer line is.
 
-THE `-F` BLIND SPOT WAS WIDER THAN IT NEEDED TO BE, and it mattered: measured
-2026-08-27, `git commit -F -` was exempted outright, and that is the form
-every message longer than one line uses. Thirty-six consecutive commits in one
-session went through this guard without it ever looking at them. They happened
+THE `-F` BLIND SPOT WAS WIDER THAN IT NEEDED TO BE, and it mattered: measured 2026-08-27, `git commit -F -` was exempted outright, and that is the form every message longer than one line uses. Thirty-six consecutive commits in one session went through this guard without it ever looking at them. They happened
 to carry trailers; nothing checked.
 
 Two of the three unreadable shapes were never unreadable:
   -F -  with a heredoc  -> the BODY is in the command string, right there
   -F <file>             -> the file is on disk, and readable
-Only a piped stdin or a command-substituted message is genuinely opaque, and
-that case still ALLOWS rather than refusing a commit it cannot judge.
+Only a piped stdin or a command-substituted message is genuinely opaque, and that case still ALLOWS rather than refusing a commit it cannot judge.
 
-A TYPO IS WORSE THAN A MISSING TRAILER, which is why shape is no longer
-enough. `PR-TASK: f2757831` (one character off) looks tagged, routes to an
-epic that does not exist, and no review pass ever reads it. The id is checked
-against agent/pr/<branch>.md -- the COMMITTED snapshot, not the worklist
-sidecar, because the sidecar lives in TMPDIR and was found empty on this very
-branch while 35 commits carried a live id.
+A TYPO IS WORSE THAN A MISSING TRAILER, which is why shape is no longer enough. `PR-TASK: f2757831` (one character off) looks tagged, routes to an epic that does not exist, and no review pass ever reads it. The id is checked against agent/pr/<branch>.md -- the COMMITTED snapshot, not the worklist sidecar, because the sidecar lives in TMPDIR and was found empty on this very branch
+while 35 commits carried a live id.
 
 =============================================================================
 PORT NOTES
 =============================================================================
 
 THE PCRE. `grep -oP '(^|\\n|\\n)[[:space:]]*PR-TASK:[[:space:]]*\\K[0-9a-f]{6,32}'`
-is the only PCRE in the whole chain, and the alternation is not a typo: written
-in the shell it is `(^|\\n|\n)`, so the first alternative is a LITERAL
-backslash-n and the second is a real newline. That matters because the message
-text this reads can arrive either way -- a real multi-line `-m` body, or a
-command string in which the newline is still escaped. `\\K` drops everything
+is the only PCRE in the whole chain, and the alternation is not a typo: written in the shell it is `(^|\\n|\n)`, so the first alternative is a LITERAL backslash-n and the second is a real newline. That matters because the message text this reads can arrive either way -- a real multi-line `-m` body, or a command string in which the newline is still escaped. `\\K` drops everything
 matched so far, which Python spells as a capture group; a lookbehind cannot be
 used because the alternation is variable width.
 
@@ -48,13 +32,8 @@ used because the alternation is variable width.
 either, so the two features actually used (`\\K` and `{6,32}`) are reproduced
 directly rather than the engine being emulated.
 
-WHAT THIS GUARD INHERITS FROM `shellscan.target_root`. Its `-C` hint grep
-accepts a TAB, but the sed that strips the flag demands a literal space, so a
-TAB-separated `git -C<tab><path>` resolves to the empty root and this guard then
-judges the console tree instead of the named submodule. That is a defect in the
-bash and it is reproduced deliberately, because a port that quietly improved it
-would disagree with its oracle and the disagreement would be reported as the
-port being wrong.
+WHAT THIS GUARD INHERITS FROM `shellscan.target_root`. Its `-C` hint grep accepts a TAB, but the sed that strips the flag demands a literal space, so a TAB-separated `git -C<tab><path>` resolves to the empty root and this guard then judges the console tree instead of the named submodule. That is a defect in the bash and it is reproduced deliberately, because a port that quietly
+improved it would disagree with its oracle and the disagreement would be reported as the port being wrong.
 """
 
 import os
@@ -98,11 +77,7 @@ Add a trailer line naming the epic this change belongs to:
 def _fixture(path):
     """A checkout on a branch that HAS an epic snapshot.
 
-    Without it the id-validation arm is unreachable: this worktree carries no
-    `agent/pr/<branch>.md`, so `KNOWN` is empty on every case and the guard can
-    only ever answer "missing trailer" or "allowed". The corpus would then have
-    compared two constants for the branch that the 2026-08-27 typo finding
-    exists for.
+    Without it the id-validation arm is unreachable: this worktree carries no `agent/pr/<branch>.md`, so `KNOWN` is empty on every case and the guard can only ever answer "missing trailer" or "allowed". The corpus would then have compared two constants for the branch that the 2026-08-27 typo finding exists for.
     """
     env = dict(
         os.environ,
@@ -173,10 +148,7 @@ EDGE_CASES = [
 def _grep_qx(needle, haystack):
     """`grep -qx -- "$FOUND" <<<"$KNOWN"` -- a whole-RECORD match.
 
-    `-x` and not `-Fx`: the needle is a PATTERN, and every value that reaches
-    here is hex, so no metacharacter can appear. Reproduced as a pattern anyway
-    rather than as equality, because equality would be a different check that
-    happens to agree today.
+    `-x` and not `-Fx`: the needle is a PATTERN, and every value that reaches here is hex, so no metacharacter can appear. Reproduced as a pattern anyway rather than as equality, because equality would be a different check that happens to agree today.
     """
     pattern = re.compile(needle)
     records, _ = hookio._records(hookio._here_string(haystack))

@@ -1,51 +1,25 @@
 """wl_planfid: block a session that papers over an APPROVED PLAN with umbrella
 worklist items instead of tracking the plan's actual tasks.
 
-WHY THIS EXISTS, from an incident on 2026-08-19 rather than from theory. The
-operator approved a plan at ~/.claude/plans/memoized-gliding-kay.md carrying four
-waves and roughly fifteen discrete tasks. The session seeded its worklist with
-exactly two items:
+WHY THIS EXISTS, from an incident on 2026-08-19 rather than from theory. The operator approved a plan at ~/.claude/plans/memoized-gliding-kay.md carrying four waves and roughly fifteen discrete tasks. The session seeded its worklist with exactly two items:
 
     www round 4 Wave A
     www round 4 Waves B-D
 
-The operator caught it by hand: "you took it easy and wrote Round 4 which is not
-precise! We need individual items for stop hook."
+The operator caught it by hand: "you took it easy and wrote Round 4 which is not precise! We need individual items for stop hook."
 
-That is not a cosmetic naming complaint. The Stop battery's entire enforcement is
-"a turn cannot end while an open item tagged with this session remains", and that
-enforcement is only as good as the DECOMPOSITION behind it. One umbrella item is
-indistinguishable, to every check in this directory, from one small task: the
-hook sees a queue of length two and asks the same questions it would ask of a
-session with two afternoons of work left. Worse, an umbrella item can be TICKED,
-and the tick-evidence gate accepts one citation for twenty tasks. So the failure
-is not "an item was badly worded", it is "the instrument was disarmed and still
-reported green" -- the exact class TRAPS.md exists for.
+That is not a cosmetic naming complaint. The Stop battery's entire enforcement is "a turn cannot end while an open item tagged with this session remains", and that enforcement is only as good as the DECOMPOSITION behind it. One umbrella item is indistinguishable, to every check in this directory, from one small task: the hook sees a queue of length two and asks the same questions
+it would ask of a session with two afternoons of work left. Worse, an umbrella item can be TICKED, and the tick-evidence gate accepts one citation for twenty tasks. So the failure is not "an item was badly worded", it is "the instrument was disarmed and still reported green" -- the exact class TRAPS.md exists for.
 
-WHY IT BLOCKS, and this is the deliberate opposite of wl_admit next door.
-wl_admit never blocks because it triggers on PROSE, on a session voluntarily
+WHY IT BLOCKS, and this is the deliberate opposite of wl_admit next door. wl_admit never blocks because it triggers on PROSE, on a session voluntarily
 writing "I broke something", and punishing that teaches evasion; the honesty is
-the asset and must not be taxed. Nothing here is voluntary. The trigger is the
-SHAPE of tracked work measured against a document the operator already approved,
-and the remedy is bounded, mechanical, and known in advance: write down the tasks
-the plan already lists. There is no confession to chill and no judgement call to
-punish. A non-blocking version would also be self-defeating in a way the
-admission detector is not: its only non-blocking consequence could be to add a
-worklist item, and the defect under detection is precisely that this session
-writes worklist items which do not mean what they say. Asking an umbrella-writing
-session to police itself with one more item it can tick with a sentence is not a
-control. So it blocks, with three named exits, exactly like wl_reggate.
+the asset and must not be taxed. Nothing here is voluntary. The trigger is the SHAPE of tracked work measured against a document the operator already approved, and the remedy is bounded, mechanical, and known in advance: write down the tasks the plan already lists. There is no confession to chill and no judgement call to punish. A non-blocking version would also be self-defeating
+in a way the admission detector is not: its only non-blocking consequence could be to add a worklist item, and the defect under detection is precisely that this session writes worklist items which do not mean what they say. Asking an umbrella-writing session to police itself with one more item it can tick with a sentence is not a control. So it blocks, with three named exits,
+exactly like wl_reggate.
 
-WHY IT FAILS OPEN ON A BROKEN JUDGE, which is the opposite of wl_judge's
-no-escape-hatch contract, and the difference is the TRIGGER. wl_judge gates every
-stop and wl_reggate triggers on ARTIFACTS (a fix commit, a tick), so failing
-closed there costs a session that really did land a fix. This one triggers on a
-HEURISTIC about item shape. Failing closed would mean that any session with an
-approved plan and a coarse-looking queue is walled in permanently the moment the
-claude CLI is unavailable, for a suspicion no artifact supports. And unlike the
-stop judge, its absence opens no hatch: every other check in the battery, open
-items included, still runs. A failure is QUEUED for the session's next clean stop
-rather than dropped, because the queue survives the block stops this session is
+WHY IT FAILS OPEN ON A BROKEN JUDGE, which is the opposite of wl_judge's no-escape-hatch contract, and the difference is the TRIGGER. wl_judge gates every stop and wl_reggate triggers on ARTIFACTS (a fix commit, a tick), so failing closed there costs a session that really did land a fix. This one triggers on a HEURISTIC about item shape. Failing closed would mean that any session
+with an approved plan and a coarse-looking queue is walled in permanently the moment the claude CLI is unavailable, for a suspicion no artifact supports. And unlike the stop judge, its absence opens no hatch: every other check in the battery, open items included, still runs. A failure is QUEUED for the session's next clean stop rather than dropped, because the queue survives the
+block stops this session is
 likely to be having; the trade is that it is told late rather than not at all.
 
 TWO TIERS, same discipline as wl_admit:
@@ -70,9 +44,7 @@ TWO TIERS, same discipline as wl_admit:
                           DECISIONS at a worklist that was already correctly
                           decomposed. See apply_planfid_verdict.
 
-WHY THE MODEL IS NOT OPTIONAL. The two prefilter signals are both shape, and
-shape is exactly what a coarse item can fake. "r4-B implement the solution-page
-bottom" is long, specific-sounding, carries no wave word, and is still one item
+WHY THE MODEL IS NOT OPTIONAL. The two prefilter signals are both shape, and shape is exactly what a coarse item can fake. "r4-B implement the solution-page bottom" is long, specific-sounding, carries no wave word, and is still one item
 covering four plan tasks. The regexes cannot see that; only reading the plan
 next to the items can. The prefilter is a COST FILTER and never the last word.
 
@@ -132,12 +104,9 @@ WINDOW = 4096
 def scan_plan_exit(path, start=0):
     """(plan_path_or_empty, bytes_scanned).
 
-    Scans FORWARD from `start` for the LAST plan_mode_exit attachment and returns
-    the plan file it names. `bytes_scanned` is the caller's next `start`, so a
-    long-lived session pays the full scan once and the delta thereafter.
+    Scans FORWARD from `start` for the LAST plan_mode_exit attachment and returns the plan file it names. `bytes_scanned` is the caller's next `start`, so a long-lived session pays the full scan once and the delta thereafter.
 
-    Never raises. A transcript that shrank (a rotation, a different session)
-    resets to zero rather than reading from a meaningless offset.
+    Never raises. A transcript that shrank (a rotation, a different session) resets to zero rather than reading from a meaningless offset.
     """
     if not path or not os.path.exists(path):
         return "", 0
@@ -212,17 +181,10 @@ ACTION_WORD_RE = re.compile(
 def is_action_heading(title):
     """True when a heading NAMES work, tested on its first three words only.
 
-    MEASURED against the real plan, and the anchoring is the whole point. A
-    plain "does an action word appear anywhere" test matched
-    "Verified facts the plan depends on" on the word `plan`, which pulled ten
-    background FACTS into the task list. That inflates the count (harmless, it
-    only makes the shortfall signal shyer) and, far worse, makes every one of
-    those facts quotable as an untracked "task" -- reopening exactly the false
-    positive the missing-entry verification was tightened to close.
+    MEASURED against the real plan, and the anchoring is the whole point. A plain "does an action word appear anywhere" test matched "Verified facts the plan depends on" on the word `plan`, which pulled ten background FACTS into the task list. That inflates the count (harmless, it only makes the shortfall signal shyer) and, far worse, makes every one of those facts quotable as an
+    untracked "task" -- reopening exactly the false positive the missing-entry verification was tightened to close.
 
-    A section is about work when its NAME leads with a work word, not when a
-    work word turns up in the middle of a sentence-shaped heading. `scope` was
-    dropped from the vocabulary for the same reason: it leads "Out of scope".
+    A section is about work when its NAME leads with a work word, not when a work word turns up in the middle of a sentence-shaped heading. `scope` was dropped from the vocabulary for the same reason: it leads "Out of scope".
     """
     words = re.sub(r"[^A-Za-z0-9\s-]", " ", title or "").split()[:3]
     return bool(ACTION_WORD_RE.search(" ".join(words)))
@@ -245,18 +207,12 @@ MIN_MATCH_TOKENS = 3
 def matches_a_task(claim, task_tokens):
     """Is this claimed missing task actually one of the plan's task lines?
 
-    NOT a substring test, and the loosening is measured rather than a hunch. The
-    strict version demanded the claim appear VERBATIM inside a task, and the
-    corpus run then MISSED the real incident in one round of two: haiku quotes
-    accurately but not always literally, and a re-wrapped or lightly shortened
-    quote of a genuine task was thrown away as a hallucination. Recall matters
-    here because the missing list is the only thing that can block.
+    NOT a substring test, and the loosening is measured rather than a hunch. The strict version demanded the claim appear VERBATIM inside a task, and the corpus run then MISSED the real incident in one round of two: haiku quotes accurately but not always literally, and a re-wrapped or lightly shortened quote of a genuine task was thrown away as a hallucination. Recall matters here
+    because the missing list is the only thing that can block.
 
-    Containment of the CLAIM in a task, not the other way round and not Jaccard:
-    a short quote of a long bullet must verify (that is the honest, common case),
+    Containment of the CLAIM in a task, not the other way round and not Jaccard: a short quote of a long bullet must verify (that is the honest, common case),
     while a claim mostly made of words no task uses must not. Anti-hallucination
-    survives intact -- the claim still has to be built out of a real task line,
-    so an invented task and a quoted DECISION both fail.
+    survives intact -- the claim still has to be built out of a real task line, so an invented task and a quoted DECISION both fail.
     """
     toks = set(_norm(claim).split())
     if len(toks) < MIN_MATCH_TOKENS:
@@ -267,9 +223,7 @@ def matches_a_task(claim, task_tokens):
 def plan_tasks(text):
     """The plan's discrete tasks, as a de-duplicated list of strings.
 
-    A checkbox line is a task WHEREVER it appears: the author wrote a box, which
-    is as explicit as a plan gets. A plain bullet counts only under an
-    action-shaped heading, for the reason on ACTION_HEADING_RE.
+    A checkbox line is a task WHEREVER it appears: the author wrote a box, which is as explicit as a plan gets. A plain bullet counts only under an action-shaped heading, for the reason on ACTION_HEADING_RE.
     """
     tasks, seen, fenced, action = [], set(), False, False
     for raw in (text or "").splitlines():
@@ -318,11 +272,7 @@ UMBRELLA_MAX_WORDS = int(os.environ.get("WORKLIST_PLANFID_UMBRELLA_WORDS", "8"))
 def is_umbrella(text):
     """A container label masquerading as a task.
 
-    Two shapes, both taken from the incident. A RANGE names several units in one
-    item and is an umbrella at any length ("www round 4 Waves B-D"). A BARE label
-    is an umbrella only when the item is short and cites nothing, so that
-    "r4-A-V verify Wave A in-browser: header gutters equal at 1440, ..." -- a
-    real task that happens to name its wave -- is not accused.
+    Two shapes, both taken from the incident. A RANGE names several units in one item and is an umbrella at any length ("www round 4 Waves B-D"). A BARE label is an umbrella only when the item is short and cites nothing, so that "r4-A-V verify Wave A in-browser: header gutters equal at 1440, ..." -- a real task that happens to name its wave -- is not accused.
     """
     t = (text or "").strip()
     if not t:
@@ -341,11 +291,7 @@ SHORTFALL_RATIO = float(os.environ.get("WORKLIST_PLANFID_RATIO", "0.6"))
 def prefilter(tasks, mine):
     """[(signal, detail)] for every Tier-1 signal that fires.
 
-    `mine` is [(id, state, text)] for every item this session owns, in ANY state.
-    Tracked items are counted across all states on purpose: fidelity is about
-    what was WRITTEN DOWN, not about what is still open. Counting open items only
-    would re-fire on a session that decomposed correctly and then ticked its way
-    down to two, which is the false positive that would teach people to route
+    `mine` is [(id, state, text)] for every item this session owns, in ANY state. Tracked items are counted across all states on purpose: fidelity is about what was WRITTEN DOWN, not about what is still open. Counting open items only would re-fire on a session that decomposed correctly and then ticked its way down to two, which is the false positive that would teach people to route
     around this.
     """
     hits = []
@@ -373,8 +319,7 @@ def prefilter(tasks, mine):
 def plan_sig(plan_path, plan_text):
     """Identity of the QUESTION: this plan, at this content.
 
-    Deliberately NOT a function of the item set. Keying on the items would make
-    every added item a new question and re-pay the model call all the way through
+    Deliberately NOT a function of the item set. Keying on the items would make every added item a new question and re-pay the model call all the way through
     a correct decomposition; keying on the plan means a settled verdict stands
     until the plan itself changes, and a re-approved plan is asked again.
     """
@@ -421,14 +366,8 @@ def save_state(path, state):
 def verdict_log_path(worklist, session_id):
     """The Tier-2 observation log. Beside the worklist, per session, append-only.
 
-    A SIDECAR rather than a field in the state file, and the choice is the point.
-    load_state discards a malformed state file WHOLE -- no field-wise salvage,
-    because a half-read decision file silently resurrects an answered question as
-    settled -- so an observation field living in there could take every settled
-    verdict and the scan offset down with it. Instrumentation must not be able to
-    damage the thing it observes. Nothing reads this file to make a decision, it
-    never round-trips through a read-modify-write, and it does not enlarge a file
-    that is rewritten on every stop. Same shape, same reason, as wl_admit Tier R.
+    A SIDECAR rather than a field in the state file, and the choice is the point. load_state discards a malformed state file WHOLE -- no field-wise salvage, because a half-read decision file silently resurrects an answered question as settled -- so an observation field living in there could take every settled verdict and the scan offset down with it. Instrumentation must not be
+    able to damage the thing it observes. Nothing reads this file to make a decision, it never round-trips through a read-modify-write, and it does not enlarge a file that is rewritten on every stop. Same shape, same reason, as wl_admit Tier R.
     """
     sid = (session_id or "unknown")[:8]
     return pathlib.Path(str(worklist) + ".planfid-verdicts-%s.jsonl" % sid)
@@ -439,19 +378,10 @@ def record_verdict(
 ):
     """Append ONE Tier-2 outcome. Best effort, never raises, never blocks.
 
-    A MEASUREMENT, not a mechanism, and it exists because of a specific thing
-    nobody currently knows. Four clean corpus runs put the miss rate near 8%, all
-    of it on the shape whose items are NOT umbrella-shaped. Which BRANCH a miss
-    lands on was never established: it could not be reproduced in four further
-    attempts. That distinction decides how bad the hole is, because `faithful`
-    banks for the life of the plan while `unevidenced` expires the moment the
-    worklist grows. Building a remedy without counting that first is building
-    confidently for a failure whose shape nobody has seen.
+    A MEASUREMENT, not a mechanism, and it exists because of a specific thing nobody currently knows. Four clean corpus runs put the miss rate near 8%, all of it on the shape whose items are NOT umbrella-shaped. Which BRANCH a miss lands on was never established: it could not be reproduced in four further attempts. That distinction decides how bad the hole is, because `faithful`
+    banks for the life of the plan while `unevidenced` expires the moment the worklist grows. Building a remedy without counting that first is building confidently for a failure whose shape nobody has seen.
 
-    `signals` is what makes this answer the real question instead of merely
-    counting outcomes: it records WHICH Tier-1 signals fired, so a week of live
-    sessions says whether misses cluster on the shortfall-only shape -- the one
-    a deterministic floor cannot reach by construction -- or spread evenly.
+    `signals` is what makes this answer the real question instead of merely counting outcomes: it records WHICH Tier-1 signals fired, so a week of live sessions says whether misses cluster on the shortfall-only shape -- the one a deterministic floor cannot reach by construction -- or spread evenly.
 
     Read it back with:
         python3 -c "import json,sys; [print(json.loads(l)) for l in open(sys.argv[1])]" \\
@@ -479,18 +409,10 @@ def record_verdict(
 def is_settled(state, sig, n_items):
     """Has this plan's question already been answered, for this many items?
 
-    `faithful` and `deferred` settle for good: the plan was judged sound, or the
-    operator owns the call, and only editing the plan reopens either.
+    `faithful` and `deferred` settle for good: the plan was judged sound, or the operator owns the call, and only editing the plan reopens either.
 
-    `unevidenced` settles CONDITIONALLY, and the condition is the hole it closes.
-    Banking it unconditionally was the first design and it is a real blind spot:
-    the first stop after an approval can legitimately find a session that has not
-    written its items yet, the model has nothing concrete to point at, and a
-    permanent bank would then silence the check for that plan forever -- so the
-    two umbrella items written five minutes later would never be seen. Recording
-    the item count instead means the question reopens the moment the worklist
-    grows, which is exactly when a new answer is available. It still cannot loop:
-    a session that adds nothing is never re-asked.
+    `unevidenced` settles CONDITIONALLY, and the condition is the hole it closes. Banking it unconditionally was the first design and it is a real blind spot: the first stop after an approval can legitimately find a session that has not written its items yet, the model has nothing concrete to point at, and a permanent bank would then silence the check for that plan forever -- so
+    the two umbrella items written five minutes later would never be seen. Recording the item count instead means the question reopens the moment the worklist grows, which is exactly when a new answer is available. It still cannot loop: a session that adds nothing is never re-asked.
     """
     rec = (state.get("settled") or {}).get(sig)
     if not isinstance(rec, dict):
@@ -524,8 +446,7 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
                                            block needs the checkable half.
       otherwise                         -> block, naming the three exits.
 
-    `item_re` is injected (wl_core.ITEM) so this module stays importable without
-    dragging the store in, which is what keeps --selftest hermetic.
+    `item_re` is injected (wl_core.ITEM) so this module stays importable without dragging the store in, which is what keeps --selftest hermetic.
     """
     if not isinstance(pf, dict) or any(k not in pf for k in REQUIRED):
         missing = [k for k in REQUIRED if not isinstance(pf, dict) or k not in pf]
@@ -712,9 +633,7 @@ RECALL_FLOOR = float(os.environ.get("WORKLIST_PLANFID_RECALL_FLOOR", "0.6"))
 def _corpus_selftest(repeat=2):
     """Run the REAL model over CORPUS `repeat` times and report per-case stability.
 
-    WHY REPEAT DEFAULTS ABOVE ONE, same lesson wl_admit records: one run cannot
-    tell a prompt improvement from noise, and a tuning session that believes it
-    can will chase variance and ship a regression convinced it fixed something.
+    WHY REPEAT DEFAULTS ABOVE ONE, same lesson wl_admit records: one run cannot tell a prompt improvement from noise, and a tuning session that believes it can will chase variance and ship a regression convinced it fixed something.
     """
     stats = {c[0]: {"right": 0, "wrong": 0, "err": 0, "expect": c[1]} for c in CORPUS}
     for _r in range(max(1, repeat)):
@@ -770,11 +689,7 @@ def _fake_transcript(path, records):
 def _selftest():
     """Controls. Run: wl_planfid.py --selftest
 
-    The DETERMINISTIC half: plan discovery from a transcript, task counting, both
-    prefilter signals in BOTH directions on the REAL before/after item sets, and
-    the verification that stands between a model claim and a block. The other
-    half -- whether haiku can separate the incident from its own correction --
-    cannot be stubbed and lives behind --corpus, because a stub that answers
+    The DETERMINISTIC half: plan discovery from a transcript, task counting, both prefilter signals in BOTH directions on the REAL before/after item sets, and the verification that stands between a model claim and a block. The other half -- whether haiku can separate the incident from its own correction -- cannot be stubbed and lives behind --corpus, because a stub that answers
     "unfaithful" proves nothing.
     """
     ok = True

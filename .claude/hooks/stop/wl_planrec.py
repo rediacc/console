@@ -4,49 +4,30 @@ keeps its own path, so the plan stops aging out and nothing that cites it breaks
 ------------------------------------------------------------------------------
 WHY THIS EXISTS, and it has a date on it.
 
-`.ci/scripts/quality/check-plan-housekeeping.sh` DEMANDS deletion of any plan
-whose file has not moved for `delete_days` (33, from `.ci/config/plan-lifecycle.json`).
-Measured 2026-09-06 on this tree: 81 tracked plans, **33 of them last touched on
+`.ci/scripts/quality/check-plan-housekeeping.sh` DEMANDS deletion of any plan whose file has not moved for `delete_days` (33, from `.ci/config/plan-lifecycle.json`). Measured 2026-09-06 on this tree: 81 tracked plans, **33 of them last touched on
 2026-08-21**, which goes red on **2026-09-23**; 13 more follow on 2026-10-06.
-The operator's standing rule is that NOTHING is deleted. Those two facts are a
-deadlock with a date, and this module is the third door: a plan that is finished
-is COMPACTED IN PLACE -- the file keeps its path and shrinks to a record whose
-full text lives in a git blob.
+The operator's standing rule is that NOTHING is deleted. Those two facts are a deadlock with a date, and this module is the third door: a plan that is finished is COMPACTED IN PLACE -- the file keeps its path and shrinks to a record whose full text lives in a git blob.
 
-Archiving is not that door and never was. The archive is `agent/archive/plans/`,
-and `.ci/config/plan-lifecycle.json`'s own `$comment` says the clock is CONTENT
-age precisely so a move cannot reset it. (The gate as written measures
+Archiving is not that door and never was. The archive is `agent/archive/plans/`, and `.ci/config/plan-lifecycle.json`'s own `$comment` says the clock is CONTENT age precisely so a move cannot reset it. (The gate as written measures
 `git log -1 --format=%cI` -- last commit touching the path -- and its
-non-recursive `git ls-files agent/PLAN-*.md` glob drops the archive from the
-corpus entirely, so today archiving hides a plan rather than resetting it.
-Either way it is not a record, and a hidden plan is exactly the "committed lie"
-`agent/README.md:11` warns about.)
+non-recursive `git ls-files agent/PLAN-*.md` glob drops the archive from the corpus entirely, so today archiving hides a plan rather than resetting it. Either way it is not a record, and a hidden plan is exactly the "committed lie" `agent/README.md:11` warns about.)
 
 ------------------------------------------------------------------------------
 WHY BLOB IDS AND NOT COMMIT SHAS. This is the single load-bearing decision.
 
-This repo merges with `gh pr merge --rebase`. A rebase REWRITES every commit on
-the branch, so a sha recorded while the work was in flight names nothing once it
-lands. Measured 2026-09-06: of 71 commit-shaped tokens already cited across the
-plans in `agent/`, **37 no longer resolve** -- more than half of the durable
-pointers this tree already relies on are dead, and nothing reported it.
+This repo merges with `gh pr merge --rebase`. A rebase REWRITES every commit on the branch, so a sha recorded while the work was in flight names nothing once it lands. Measured 2026-09-06: of 71 commit-shaped tokens already cited across the plans in `agent/`, **37 no longer resolve** -- more than half of the durable pointers this tree already relies on are dead, and nothing
+reported it.
 
-A blob id is content-addressed: `git hash-object` of the same bytes is the same
-id in every clone, before the commit exists, after the rebase, and after the
-history rewrite of #532 that changed every sha in this repo. So:
+A blob id is content-addressed: `git hash-object` of the same bytes is the same id in every clone, before the commit exists, after the rebase, and after the history rewrite of #532 that changed every sha in this repo. So:
 
     THE POINTER IS THE BLOB. The commit is a convenience.
 
-`Full-Text: <sha9> <path>` is therefore OPTIONAL -- legal to omit while the text
-is not on `origin/main` yet, and upgraded later by the gate's `--update` once it
-is. `Full-Text-Blob:` is mandatory and is what recovery actually uses:
+`Full-Text: <sha9> <path>` is therefore OPTIONAL -- legal to omit while the text is not on `origin/main` yet, and upgraded later by the gate's `--update` once it is. `Full-Text-Blob:` is mandatory and is what recovery actually uses:
 
     git show <blob>                      the text itself, always
     git log --find-object=<blob> --all   which commit(s) carried it
 
-Both commands are written INTO the record, on a `Read-History:` line, because a
-recovery recipe that lives only in this docstring is a recipe the reader of the
-record does not have.
+Both commands are written INTO the record, on a `Read-History:` line, because a recovery recipe that lives only in this docstring is a recipe the reader of the record does not have.
 
 ------------------------------------------------------------------------------
 THE GRAMMAR, and what each part is defending.
@@ -101,13 +82,9 @@ Five properties, each with a reason that cost something:
 ------------------------------------------------------------------------------
 `done=` IS PROVED AGAINST THE LEDGER, NOT ASSERTED.
 
-`.ci/config/plan-boxes.json` is a COMMITTED second reading of every plan's boxes
-(`check_plan_boxes.py --update`), carrying `done_sigs` per plan. So "when was this
-box ticked" has a mechanical answer: walk that file's git history oldest-first and
-find the first commit whose ledger blob lists the box's signature under
+`.ci/config/plan-boxes.json` is a COMMITTED second reading of every plan's boxes (`check_plan_boxes.py --update`), carrying `done_sigs` per plan. So "when was this box ticked" has a mechanical answer: walk that file's git history oldest-first and find the first commit whose ledger blob lists the box's signature under
 `done_sigs`. That commit sha is what `done=` records, and
-`check_plan_record.py` re-derives it from `git show <sha>:<ledger>` rather than
-believing the record.
+`check_plan_record.py` re-derives it from `git show <sha>:<ledger>` rather than believing the record.
 
 Three values, and the third one is an admission rather than a claim:
 
@@ -115,17 +92,11 @@ Three values, and the third one is an admission rather than a claim:
     done=open        the box is `- [ ]` (only reachable under --park)
     done=abandoned   the box is `- [x]` and NO ledger commit attests it
 
-`abandoned` cannot be used as a dodge: the gate reds when a box marked
-`abandoned` has its signature in the CURRENT ledger's `done_sigs`, because that
-is a proof that was available and was not used.
+`abandoned` cannot be used as a dodge: the gate reds when a box marked `abandoned` has its signature in the CURRENT ledger's `done_sigs`, because that is a proof that was available and was not used.
 
 ------------------------------------------------------------------------------
-WHAT THIS MODULE DOES NOT DO. It never commits, never runs `git checkout`,
-`restore`, `stash` or `clean`, and never writes a file that is not the record
-itself or `agent/INDEX.md`. Writes go through a tempfile plus `os.replace`, the
-same atomicity the worklist store uses, so a crash mid-write cannot leave a plan
-half-compacted -- which would be a plan whose full text is in neither the file
-nor a reachable blob.
+WHAT THIS MODULE DOES NOT DO. It never commits, never runs `git checkout`, `restore`, `stash` or `clean`, and never writes a file that is not the record itself or `agent/INDEX.md`. Writes go through a tempfile plus `os.replace`, the same atomicity the worklist store uses, so a crash mid-write cannot leave a plan half-compacted -- which would be a plan whose full text is in neither
+the file nor a reachable blob.
 """
 
 from __future__ import annotations
@@ -266,15 +237,8 @@ def _git_out(root, *args) -> str:
 def _git_raw(root, *args) -> str:
     """stdout EXACTLY as git produced it, or "" on failure.
 
-    NOT `wl_core._git`, and the difference is the whole promise of this module.
-    `_git` ends in `r.stdout.strip()`, which exists for the sha-and-branch
-    answers it was written for and is CORRUPTING here: `cat-file blob` returns a
-    document, and stripping it silently drops a leading blank line, a trailing
-    blank line, or trailing whitespace on the last line. A revived file that
-    differs from the blob by one byte no longer hashes to `Full-Text-Blob`, so
-    re-compacting it mints a DIFFERENT blob -- which contradicts the one claim
-    this design rests on. Measured 2026-09-06: `agent/PLAN-migrate-command.md`
-    ends with a blank line, so it is already in the affected set.
+    NOT `wl_core._git`, and the difference is the whole promise of this module. `_git` ends in `r.stdout.strip()`, which exists for the sha-and-branch answers it was written for and is CORRUPTING here: `cat-file blob` returns a document, and stripping it silently drops a leading blank line, a trailing blank line, or trailing whitespace on the last line. A revived file that differs
+    from the blob by one byte no longer hashes to `Full-Text-Blob`, so re-compacting it mints a DIFFERENT blob -- which contradicts the one claim this design rests on. Measured 2026-09-06: `agent/PLAN-migrate-command.md` ends with a blank line, so it is already in the affected set.
     """
     try:
         r = subprocess.run(
@@ -357,8 +321,7 @@ def resolve(root, kind, token):
 
     wl_checks IS IMPORTED INSIDE THE FUNCTION, not at module top. wl_checks is
     6,100 lines and pulls in most of this directory; this module is imported by
-    a CI gate that only needs the parser, and paying that import to answer a
-    question about a blob would make the gate slower than the thing it checks.
+    a CI gate that only needs the parser, and paying that import to answer a question about a blob would make the gate slower than the thing it checks.
     """
     token = (token or "").strip()
     if not token:
@@ -407,16 +370,10 @@ def resolve(root, kind, token):
 def launder(root, text):
     """(text, [replaced]) -- every unresolvable pointer becomes `[unresolved]`.
 
-    WHY THIS IS NOT OPTIONAL ON MODEL PROSE. A record is the durable artifact,
-    read months later by someone who cannot check it. A model asked to summarise
-    a plan will happily produce a sha-shaped token, and a decorative sha in a
-    record is strictly worse than no sha: it costs the reader a `git show` and a
-    wrong conclusion. The same reasoning is already in `completion_evidence`,
+    WHY THIS IS NOT OPTIONAL ON MODEL PROSE. A record is the durable artifact, read months later by someone who cannot check it. A model asked to summarise a plan will happily produce a sha-shaped token, and a decorative sha in a record is strictly worse than no sha: it costs the reader a `git show` and a wrong conclusion. The same reasoning is already in `completion_evidence`,
     which verifies hex tokens against real objects rather than accepting the shape.
 
-    Deliberately CONSERVATIVE about what it inspects. Only four shapes -- hex
-    object ids, `file:line` citations, `check:` gate ids and `agent/PLAN-*.md`
-    paths -- because those are the four a reader would try to follow. Prose is
+    Deliberately CONSERVATIVE about what it inspects. Only four shapes -- hex object ids, `file:line` citations, `check:` gate ids and `agent/PLAN-*.md` paths -- because those are the four a reader would try to follow. Prose is
     left alone; this is not a fact-checker.
     """
     replaced = []
@@ -473,10 +430,7 @@ def launder(root, text):
 def _sections(text):
     """{title: body} for every `## ` section, in file order, bodies unstripped.
 
-    Fence-aware, because a `## ` inside a fenced block is a code sample and not a
-    section -- the same distinction `wl_planfid.plan_tasks` makes, and for the
-    same reason: a record that quotes a markdown example must not sprout a phantom
-    section from it.
+    Fence-aware, because a `## ` inside a fenced block is a code sample and not a section -- the same distinction `wl_planfid.plan_tasks` makes, and for the same reason: a record that quotes a markdown example must not sprout a phantom section from it.
     """
     out, cur, buf, fenced = {}, None, [], False
     for raw in (text or "").splitlines():
@@ -500,8 +454,7 @@ def _sections(text):
 def _trailer(body):
     """`Key: value` lines from a `## Record` body, in the TRAPS trailer grammar.
 
-    Stops at the first line that is not a trailer, so prose beneath the trailer
-    is not silently read as fields.
+    Stops at the first line that is not a trailer, so prose beneath the trailer is not silently read as fields.
     """
     out = {}
     for raw in (body or "").splitlines():
@@ -517,11 +470,7 @@ def _trailer(body):
 def _owner_line(head):
     """The raw `Owner:` value, preserved VERBATIM across compaction.
 
-    Not `wl_checks.plan_owner`, which resolves the value down to a session id --
-    correct for scoping the Stop hook's advisory, and lossy here. A record that
-    rewrote `Owner: unowned (drafted by 9d92d9b6)` as `9d92d9b6` would hand the
-    plan to a session that explicitly disclaimed it, which is the exact defect
-    plan_owner's own docstring records paying for.
+    Not `wl_checks.plan_owner`, which resolves the value down to a session id -- correct for scoping the Stop hook's advisory, and lossy here. A record that rewrote `Owner: unowned (drafted by 9d92d9b6)` as `9d92d9b6` would hand the plan to a session that explicitly disclaimed it, which is the exact defect plan_owner's own docstring records paying for.
     """
     m = re.search(r"^Owner:[ \t]*(.*)$", head or "", re.MULTILINE)
     return m.group(1).strip() if m else ""
@@ -530,10 +479,7 @@ def _owner_line(head):
 def parse(text):
     """A record as a dict, or None when this is not a record at all.
 
-    Never raises: this is called from a CI gate over every plan in the tree, and
-    a malformed file must produce a FINDING rather than a traceback. The dict
-    always carries `problems`, which is where a malformed record's diagnosis
-    lives.
+    Never raises: this is called from a CI gate over every plan in the tree, and a malformed file must produce a FINDING rather than a traceback. The dict always carries `problems`, which is where a malformed record's diagnosis lives.
     """
     text = text or ""
     lines = text.splitlines()
@@ -591,9 +537,7 @@ def parse_boxes(body):
     """([box dicts], [problems]) for a `## Boxes` body.
 
     Each box is {line, mark, body, sig, done}. A box with no `(record)` line
-    beneath it is a PROBLEM rather than a silent skip: an unannotated box in a
-    record is a claim with no attestation, which is the whole thing this file
-    is here to stop.
+    beneath it is a PROBLEM rather than a silent skip: an unannotated box in a record is a claim with no attestation, which is the whole thing this file is here to stop.
     """
     boxes, problems = [], []
     lines = (body or "").splitlines()
@@ -642,17 +586,11 @@ def record_sig(rec):
     raw line plus its signature plus its `done=` value. So a re-worded box, a
     swapped blob, a downgraded status or a forged `done=` all move the signature.
 
-    NOT covered: `## Why`, `## Outcome`, `## Lessons`, `## Record` and
-    `## History`. Prose must stay editable -- `agent/README.md:57` puts durable
+    NOT covered: `## Why`, `## Outcome`, `## Lessons`, `## Record` and `## History`. Prose must stay editable -- `agent/README.md:57` puts durable
     designs in the "sharpen; edit in place when wrong" lifetime, and a signature
-    that froze the prose would make the record the one document in this tree that
-    cannot be corrected. `## History` is excluded for the same reason plus one
-    more: it is append-only, so covering it would invalidate the signature on
-    every append, which is a signature that fails routinely and is therefore
-    ignored.
+    that froze the prose would make the record the one document in this tree that cannot be corrected. `## History` is excluded for the same reason plus one more: it is append-only, so covering it would invalidate the signature on every append, which is a signature that fails routinely and is therefore ignored.
 
-    The `Record-Sig:` line itself is excluded by construction -- it is not part
-    of the canonical string -- so the signature is computable before it is written.
+    The `Record-Sig:` line itself is excluded by construction -- it is not part of the canonical string -- so the signature is computable before it is written.
     """
     parts = [
         "status=%s" % rec.get("status", ""),
@@ -669,12 +607,8 @@ def record_sig(rec):
 def box_sig(task_body):
     """`check_plan_boxes.sig`, restated ONCE and asserted equal by the tests.
 
-    Not imported: this module lives in `.claude/hooks/stop` and the gate lives in
-    `.ci/scripts/quality`, and the import already runs the other way (the gate
-    imports this directory's parser). Importing back would make the two
-    directories mutually dependent for a four-line function. `test-planrec.py`
-    asserts equality against the gate's own implementation, which is what keeps
-    the two from drifting.
+    Not imported: this module lives in `.claude/hooks/stop` and the gate lives in `.ci/scripts/quality`, and the import already runs the other way (the gate imports this directory's parser). Importing back would make the two directories mutually dependent for a four-line function. `test-planrec.py` asserts equality against the gate's own implementation, which is what keeps the two
+    from drifting.
     """
     return hashlib.sha256(PFID._norm(task_body or "")[:120].encode("utf-8")).hexdigest()[:8]
 
@@ -687,9 +621,7 @@ def ledger_history(root, ledger_rel=LEDGER_REL):
     """[(commit, {plans: ...})] for the ledger, OLDEST FIRST.
 
     Oldest first because `done=` records the FIRST commit that attests a tick.
-    Taking the newest would record the most recent regeneration of the ledger,
-    which is a date with no meaning: the ledger is rewritten wholesale by
-    `--update`, so every sig in it appears in every later commit.
+    Taking the newest would record the most recent regeneration of the ledger, which is a date with no meaning: the ledger is rewritten wholesale by `--update`, so every sig in it appears in every later commit.
     """
     out = []
     log = _git_out(root, "log", "--reverse", "--format=%H", "--", ledger_rel)
@@ -744,25 +676,12 @@ def derive(root, rel, text=None, history=None):
     """The pointer, the epics, the touched paths, the cited gates, and the boxes
     with their `done=` values. Never raises; refusals come back as `problems`.
 
-    THE POINTER IS COMPUTED FROM CONTENT, NOT FROM THE INDEX. `git hash-object`
-    hashes the bytes on disk, so it answers identically in every clone and after
-    any rebase. That is the property the whole design rests on (see the module
-    docstring).
+    THE POINTER IS COMPUTED FROM CONTENT, NOT FROM THE INDEX. `git hash-object` hashes the bytes on disk, so it answers identically in every clone and after any rebase. That is the property the whole design rests on (see the module docstring).
 
-    IT DOES NOT STORE ANYTHING, and that distinction is load-bearing rather than
-    pedantic. Without `-w`, `hash-object` computes an id and writes no object --
-    so the id alone is not a promise that anything is recoverable. What makes the
-    pointer real is `compact`'s refusal of a DIRTY path: a committed file's blob
-    is already in the object database and stays reachable through history for as
-    long as the repository exists. The refusal and the pointer are therefore one
-    mechanism, not two, and the check below turns that argument into a test --
-    a blob that does not resolve is reported rather than recorded.
+    IT DOES NOT STORE ANYTHING, and that distinction is load-bearing rather than pedantic. Without `-w`, `hash-object` computes an id and writes no object -- so the id alone is not a promise that anything is recoverable. What makes the pointer real is `compact`'s refusal of a DIRTY path: a committed file's blob is already in the object database and stays reachable through history
+    for as long as the repository exists. The refusal and the pointer are therefore one mechanism, not two, and the check below turns that argument into a test -- a blob that does not resolve is reported rather than recorded.
 
-    The commit half is found with `git log --find-object`, restricted to commits
-    that are ANCESTORS OF origin/main. A blob that exists only on this branch has
-    no landed commit yet, and saying so honestly -- by omitting `Full-Text:` --
-    is better than naming a sha that the merge will rewrite. The gate's
-    `--update` fills it in later, once the text has landed.
+    The commit half is found with `git log --find-object`, restricted to commits that are ANCESTORS OF origin/main. A blob that exists only on this branch has no landed commit yet, and saying so honestly -- by omitting `Full-Text:` -- is better than naming a sha that the merge will rewrite. The gate's `--update` fills it in later, once the text has landed.
     """
     root = pathlib.Path(root)
     p = root / rel
@@ -869,11 +788,7 @@ READ_HISTORY = "`git show %s` recovers the text; `git log --find-object=%s --all
 def render(rec):
     """The record, as the exact bytes that go on disk.
 
-    ORDER IS PART OF THE GRAMMAR, not a style choice: the header block must land
-    inside the first HEADER_LINES (10) lines or `wl_checks.plan_records` cannot
-    see the Status line, and the whole file then reads as an ordinary plan with
-    an unparseable header -- which is worse than not compacting it, because it
-    stays on the housekeeping clock while LOOKING like a record.
+    ORDER IS PART OF THE GRAMMAR, not a style choice: the header block must land inside the first HEADER_LINES (10) lines or `wl_checks.plan_records` cannot see the Status line, and the whole file then reads as an ordinary plan with an unparseable header -- which is worse than not compacting it, because it stays on the housekeeping clock while LOOKING like a record.
     """
     status = rec["status"]
     lines = ["# %s" % (rec.get("title") or "record"), "Status: %s" % status]
@@ -957,12 +872,9 @@ def render_index(rows):
 
     "" IS A REAL ANSWER and the gate treats an absent file as equal to it. A repo
     with no records yet must not be forced to carry an empty table, and
-    `--update` writing one would be a generated file that says nothing -- the
-    committed-lie shape `agent/README.md:11` names.
+    `--update` writing one would be a generated file that says nothing -- the committed-lie shape `agent/README.md:11` names.
 
-    `rows` is [(rel, status, n_attested, n_open, n_abandoned, blob)], sorted here
-    rather than by the caller so the render is a pure function of the SET and two
-    callers cannot disagree about order.
+    `rows` is [(rel, status, n_attested, n_open, n_abandoned, blob)], sorted here rather than by the caller so the render is a pure function of the SET and two callers cannot disagree about order.
     """
     if not rows:
         return ""
@@ -987,10 +899,7 @@ def render_index(rows):
 def index_rows(root, plan_records):
     """[(rel, status, attested, open, abandoned, blob)] for every record on disk.
 
-    `plan_records` is passed in (it is `wl_checks.plan_records(root)`) rather than
-    imported, for the same reason `wl_planfile.plan_rows` takes it: this module is
-    driven by a CI gate and by a test fixture, and neither should have to own the
-    6,100-line import to enumerate a directory.
+    `plan_records` is passed in (it is `wl_checks.plan_records(root)`) rather than imported, for the same reason `wl_planfile.plan_rows` takes it: this module is driven by a CI gate and by a test fixture, and neither should have to own the 6,100-line import to enumerate a directory.
     """
     rows = []
     for rel, status, _n in plan_records:
@@ -1062,13 +971,8 @@ def trailer_paths(value):
 def index_edges(rows):
     """{path: [record, ...]} from index rows, both keys and values sorted.
 
-    THE SEVENTH ELEMENT IS OPTIONAL. `check_plan_record.py` hand-builds
-    six-element rows in its R8 controls and that file is not this one's to edit,
-    so a row with no edges contributes none rather than raising. The cost of the
-    tolerance is that a caller which forgets the element gets a smaller table
-    instead of an error -- acceptable here because the only two producers of real
-    rows are `index_rows` and the gate, and the gate compares the render against
-    the file rather than against a count.
+    THE SEVENTH ELEMENT IS OPTIONAL. `check_plan_record.py` hand-builds six-element rows in its R8 controls and that file is not this one's to edit, so a row with no edges contributes none rather than raising. The cost of the tolerance is that a caller which forgets the element gets a smaller table instead of an error -- acceptable here because the only two producers of real rows
+    are `index_rows` and the gate, and the gate compares the render against the file rather than against a count.
     """
     out = {}
     for row in rows:
@@ -1083,9 +987,7 @@ def index_edges(rows):
 def render_edges(edges):
     """The edge table, or "" when there are no edges.
 
-    "" is deliberate and matches `render_index`'s own empty answer: a table with
-    no rows is a generated document that says nothing, which is the committed-lie
-    shape `agent/README.md:11` names.
+    "" is deliberate and matches `render_index`'s own empty answer: a table with no rows is a generated document that says nothing, which is the committed-lie shape `agent/README.md:11` names.
     """
     if not edges:
         return ""
@@ -1104,9 +1006,7 @@ def why_index(root):
     """{path: [record, ...]} read back out of `agent/INDEX.md`. ONE file read.
 
     Returns {} for an absent file, an index with no edge section, or an
-    unreadable one. The three are indistinguishable HERE on purpose -- the
-    distinction that matters to a caller is "is there an index at all", which
-    `why_lines` answers separately by asking whether the file exists.
+    unreadable one. The three are indistinguishable HERE on purpose -- the distinction that matters to a caller is "is there an index at all", which `why_lines` answers separately by asking whether the file exists.
     """
     try:
         text = (pathlib.Path(root) / INDEX_REL).read_text(encoding="utf-8", errors="replace")
@@ -1126,10 +1026,7 @@ def why_index(root):
 def why_first_line(text):
     """The first real sentence of a record's `## Why`, or "".
 
-    First LINE and not the whole section, because this is a push: the reader gets
-    one line per record and follows the pointer if it matters. A bullet marker is
-    stripped so a `## Why` written as a list reads the same as one written as a
-    paragraph.
+    First LINE and not the whole section, because this is a push: the reader gets one line per record and follows the pointer if it matters. A bullet marker is stripped so a `## Why` written as a list reads the same as one written as a paragraph.
     """
     rec = parse(text)
     if rec is None:
@@ -1147,12 +1044,8 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
     `state` is WHY_EDGES, WHY_NO_EDGE or WHY_NO_INDEX. The caller decides how
     loudly to say each; this function never prints and never guesses.
 
-    THE PATH IS NORMALISED TO THE REPO-RELATIVE SPELLING the index uses, because
-    every caller has a different one: a hook gets an absolute path from the tool
-    payload, a session types `./agent/...`, and the index stores neither. A
-    lookup that missed on the prefix would return WHY_NO_EDGE -- a confident
-    "nothing is recorded" about a file that has a record -- which is the one
-    wrong answer this function must not produce.
+    THE PATH IS NORMALISED TO THE REPO-RELATIVE SPELLING the index uses, because every caller has a different one: a hook gets an absolute path from the tool payload, a session types `./agent/...`, and the index stores neither. A lookup that missed on the prefix would return WHY_NO_EDGE -- a confident "nothing is recorded" about a file that has a record -- which is the one wrong
+    answer this function must not produce.
     """
     root = pathlib.Path(root)
     try:
@@ -1210,9 +1103,7 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
 def why_for_paths(root, paths, limit=WHY_MAX_RECORDS):
     """A block naming the records that cover any of `paths`, or "".
 
-    `limit` caps the number of PATHS reported, not the number of records: a
-    session with forty files in flight gets the first few and the pointer to
-    `--plan-why`, because a block nobody finishes reading taught nothing.
+    `limit` caps the number of PATHS reported, not the number of records: a session with forty files in flight gets the first few and the pointer to `--plan-why`, because a block nobody finishes reading taught nothing.
     """
     index = why_index(root)
     if not index:
@@ -1247,10 +1138,7 @@ def why_for_paths(root, paths, limit=WHY_MAX_RECORDS):
 def write_atomic(path, text):
     """The worklist store's own write discipline, for the same reason it has it.
 
-    A half-written record is the one state this design cannot survive: the full
-    text would be in neither the file nor a blob anything points at. `os.replace`
-    is atomic within a filesystem, and the tempfile is created in the TARGET
-    directory so it always is one.
+    A half-written record is the one state this design cannot survive: the full text would be in neither the file nor a blob anything points at. `os.replace` is atomic within a filesystem, and the tempfile is created in the TARGET directory so it always is one.
     """
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1280,9 +1168,7 @@ def write_atomic(path, text):
 def pointer_stamp(root, rel):
     """(blob, resolves, sentence) for the bytes at `rel` RIGHT NOW.
 
-    Call it BEFORE the overwrite. `sentence` is written for a human reading a
-    terminal, and it says which of the two cases holds rather than making the
-    reader infer it from the presence of a hash.
+    Call it BEFORE the overwrite. `sentence` is written for a human reading a terminal, and it says which of the two cases holds rather than making the reader infer it from the presence of a hash.
     """
     root = pathlib.Path(root)
     blob = (_git_out(root, "hash-object", "--", str(root / rel)) or "").split("\n")[0].strip()
@@ -1301,11 +1187,8 @@ def pointer_stamp(root, rel):
 def is_dirty(root, rel):
     """Is this path modified, staged or untracked?
 
-    A dirty path is REFUSED, and the reason is the blob. `git hash-object` hashes
-    the bytes on disk, so compacting a dirty file would mint a pointer to content
-    that exists in no commit and, once the file is overwritten by the record, in
-    no working tree either. The text would be gone. This is the one refusal in
-    this module that protects against data loss rather than against a wrong claim.
+    A dirty path is REFUSED, and the reason is the blob. `git hash-object` hashes the bytes on disk, so compacting a dirty file would mint a pointer to content that exists in no commit and, once the file is overwritten by the record, in no working tree either. The text would be gone. This is the one refusal in this module that protects against data loss rather than against a wrong
+    claim.
     """
     return bool(_git_out(root, "status", "--porcelain", "--", rel).strip())
 
@@ -1364,14 +1247,9 @@ def ask_why(plan_text):
 
     THE RECURSION GUARD IS NOT OPTIONAL. `claude -p` fires the Stop hook, and the
     Stop hook is this file's own process tree; without `STOPHOOK_CHILD=1` the
-    child blocks on the parent's open items and the call hangs until the timeout.
-    Every other model call in this directory carries it (`wl_shapedup.ask`,
-    `wl_judge.run_triage`, `run_judge`), and this is the fourth.
+    child blocks on the parent's open items and the call hangs until the timeout. Every other model call in this directory carries it (`wl_shapedup.ask`, `wl_judge.run_triage`, `run_judge`), and this is the fourth.
 
-    The model, the budget and the timeout are wl_judge's -- `WORKLIST_JUDGE_MODEL`
-    defaults to haiku. Not a new knob: a second model setting is a second thing to
-    calibrate, and CLAUDE.md's i18n section already records what happens when the
-    cheap default is not the one that gets used.
+    The model, the budget and the timeout are wl_judge's -- `WORKLIST_JUDGE_MODEL` defaults to haiku. Not a new knob: a second model setting is a second thing to calibrate, and CLAUDE.md's i18n section already records what happens when the cheap default is not the one that gets used.
     """
     import wl_judge  # noqa: PLC0415 -- see resolve()
 
@@ -1445,11 +1323,7 @@ ANY_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s")
 def title_of(text, rel):
     """The record's `# ` heading.
 
-    NOT `lines[0]`, which is what the first cut used and which is wrong on 9 of
-    the 81 plans in this tree: they open with the `Status:` / `Owner:` header
-    block and put the H1 underneath it. Taking line 0 there produced
-    `# Status: partially implemented ...` as the record's title, which puts a
-    SECOND `Status:`-shaped string inside the header window that
+    NOT `lines[0]`, which is what the first cut used and which is wrong on 9 of the 81 plans in this tree: they open with the `Status:` / `Owner:` header block and put the H1 underneath it. Taking line 0 there produced `# Status: partially implemented ...` as the record's title, which puts a SECOND `Status:`-shaped string inside the header window that
     `wl_checks.PLAN_STATUS_INLINE_RE` -- the unanchored fallback -- can match.
     The anchored regex wins today, so the bug was cosmetic; it is fixed anyway
     because a header window with two status-shaped lines in it is one edit away
@@ -1488,19 +1362,12 @@ def clip(text, limit):
 
     TWO FAILURES IN ONE FUNCTION, and the second is the expensive one.
 
-    A raw `[:limit]` cuts mid-line, which is ugly. It also cuts BETWEEN a ```
-    and its partner, which is not ugly at all -- it is a correctness bug. An odd
-    fence count makes `wl_planfid.plan_tasks` treat everything after it as
-    fenced, including `## Boxes`, so the record parses to ZERO boxes and
-    `_assert_boxes_preserved` refuses the compaction while blaming the boxes.
-    Reproduced 2026-09-06 on a synthetic `## Status` section of 1064 characters
+    A raw `[:limit]` cuts mid-line, which is ugly. It also cuts BETWEEN a ``` and its partner, which is not ugly at all -- it is a correctness bug. An odd fence count makes `wl_planfid.plan_tasks` treat everything after it as fenced, including `## Boxes`, so the record parses to ZERO boxes and `_assert_boxes_preserved` refuses the compaction while blaming the boxes. Reproduced
+    2026-09-06 on a synthetic `## Status` section of 1064 characters
     of prose followed by a fenced block; no plan in this tree hits it today, and
-    `## Status` sections with fenced blocks are common here, so it is one plan
-    edit away.
+    `## Status` sections with fenced blocks are common here, so it is one plan edit away.
 
-    Returns "" only for empty input: a clip that cannot keep a whole first line
-    still keeps that line, because a truncated record is better than a record
-    that silently lost a section.
+    Returns "" only for empty input: a clip that cannot keep a whole first line still keeps that line, because a truncated record is better than a record that silently lost a section.
     """
     text = (text or "").rstrip()
     if not text or len(text) <= limit:
@@ -1520,11 +1387,7 @@ def clip(text, limit):
 def _auto_prose(text):
     """Why/Outcome/Lessons pulled out of the plan's OWN sections, no model.
 
-    Deliberately dumb. It lifts `## Why`/`## Problem`/`## Status`/`## Outcome`
-    verbatim when they exist and leaves a placeholder when they do not, because a
-    mechanical paraphrase of a design document is exactly the "generic prose"
-    failure `08-driver-contract.md:200` names: it satisfies a length check while
-    dropping the paragraph that named a dated incident.
+    Deliberately dumb. It lifts `## Why`/`## Problem`/`## Status`/`## Outcome` verbatim when they exist and leaves a placeholder when they do not, because a mechanical paraphrase of a design document is exactly the "generic prose" failure `08-driver-contract.md:200` names: it satisfies a length check while dropping the paragraph that named a dated incident.
     """
     secs = _sections(text)
     lower = {k.lower(): v for k, v in secs.items()}
@@ -1552,8 +1415,7 @@ def _auto_prose(text):
 def compact(root, rel, me, why="author", park=False, now=None):
     """Build the record for one plan. Returns (text, notes); raises RecordError.
 
-    REFUSALS, and each one is a data-loss or a false-claim guard rather than a
-    style preference:
+    REFUSALS, and each one is a data-loss or a false-claim guard rather than a style preference:
 
       dirty path      the blob would point at bytes no commit carries, and the
                       record overwrites the file, so the text would be GONE.
@@ -1564,9 +1426,7 @@ def compact(root, rel, me, why="author", park=False, now=None):
                       status over open boxes -- so this refusal is what keeps the
                       two gates from contradicting each other.
 
-    `--park` records `parked` WHATEVER the box count, including zero. A plan can
-    carry unfinished work in prose with no checkbox anywhere, and until 2026-09-06
-    that case silently produced `compacted` instead.
+    `--park` records `parked` WHATEVER the box count, including zero. A plan can carry unfinished work in prose with no checkbox anywhere, and until 2026-09-06 that case silently produced `compacted` instead.
     """
     # ARGUMENTS FIRST, before anything reads or hashes a file. A bad `--why` is
     # the caller's typo and must be answered as one; validating it after the
@@ -1749,16 +1609,11 @@ def _assert_boxes_preserved(plan_text, record_text, rel):
 
     `wl_planfid.plan_tasks` must resolve EXACTLY the same open and done tasks
     from the record as it did from the plan. This is not belt-and-braces: it is
-    the precondition of `check_plan_boxes.py`'s A1, which asserts that no box
-    open at the merge-base is gone at HEAD, and which cannot tell "compacted"
+    the precondition of `check_plan_boxes.py`'s A1, which asserts that no box open at the merge-base is gone at HEAD, and which cannot tell "compacted"
     from "quietly deleted". A record that loses a box, gains one from prose it
-    lifted, or re-words one so its signature moves is indistinguishable to that
-    gate from the exact abuse it exists to catch.
+    lifted, or re-words one so its signature moves is indistinguishable to that gate from the exact abuse it exists to catch.
 
-    Checked here, at the moment of construction, rather than only in the CI
-    gate, because CI is a round trip and the plan's text is still in memory
-    right now. Raising is correct: `compact` has produced nothing yet and the
-    caller writes nothing, so a refusal costs a message and never a file.
+    Checked here, at the moment of construction, rather than only in the CI gate, because CI is a round trip and the plan's text is still in memory right now. Raising is correct: `compact` has produced nothing yet and the caller writes nothing, so a refusal costs a message and never a file.
     """
     before_open, before_done = PF.plan_boxes(plan_text)
     after_open, after_done = PF.plan_boxes(record_text)
@@ -1784,28 +1639,18 @@ def dirty_paths(root, under="agent"):
 
     ONE `git status --porcelain` for the whole directory, not one per plan.
     `is_dirty` is the right shape for the single-plan path it guards; asking it
-    81 times to build a listing is 81 git processes to answer a question one
-    call already answers.
+    81 times to build a listing is 81 git processes to answer a question one call already answers.
 
-    `_git_raw`, NEVER `_git_out`, AND THE DIFFERENCE WAS A LIVE DEFECT. Porcelain
-    format is two status characters then a space then the path, and for an
-    unstaged modification the FIRST character is a space. `wl_core._git` ends in
-    `.strip()`, which eats it -- so the first line of output loses one character
-    and `ln[3:]` returns a truncated path. Measured 2026-09-06 in a fixture:
+    `_git_raw`, NEVER `_git_out`, AND THE DIFFERENCE WAS A LIVE DEFECT. Porcelain format is two status characters then a space then the path, and for an unstaged modification the FIRST character is a space. `wl_core._git` ends in `.strip()`, which eats it -- so the first line of output loses one character and `ln[3:]` returns a truncated path. Measured 2026-09-06 in a fixture:
 
         git status --porcelain  ->  ' M run.sh'
         through _git_out        ->  'M run.sh'
         ln[3:]                  ->  'un.sh'
 
-    The consequence was quiet and pointed the wrong way: `candidates()` compares
-    plan paths against this set to print "REFUSED: uncommitted changes", so a
-    dirty plan on the first line of `git status` was listed as **ready**. The
-    write path was never at risk -- `compact` calls `is_dirty`, which tests one
-    path and only for truthiness -- but the LISTING is what the 33-plan wave is
-    driven from, and it was telling the driver the opposite of the truth about
-    one plan per run. The same `.strip()` trap `_git_raw` was added for.
+    The consequence was quiet and pointed the wrong way: `candidates()` compares plan paths against this set to print "REFUSED: uncommitted changes", so a dirty plan on the first line of `git status` was listed as **ready**. The write path was never at risk -- `compact` calls `is_dirty`, which tests one path and only for truthiness -- but the LISTING is what the 33-plan wave is
+    driven from, and it was telling the driver the opposite of the truth about one plan per run. The same `.strip()` trap `_git_raw` was added for.
 
-    A RENAME reports `R  old -> new`, and it is the NEW path that is dirty.
+    A RENAME reports `R old -> new`, and it is the NEW path that is dirty.
     """
     out = set()
     for ln in (_git_raw(root, "status", "--porcelain", "--", under) or "").splitlines():
@@ -1821,14 +1666,9 @@ def dirty_paths(root, under="agent"):
 def candidates(root, plan_records):
     """[(rel, status, n_open, n_done, verdict)] for every plan that is not a record.
 
-    THE LISTING THE 33-PLAN WAVE NEEDS. `--plan-compact <me>` with no path answers
-    "what can I compact right now, and what would each one refuse", so the wave is
-    a read before it is a write. It also gives the CLI a `<me>`-taking mode whose
-    effect is a printed line rather than a file, which is what lets the identity
-    suite drive both verbs without planting a git repository per verb.
+    THE LISTING THE 33-PLAN WAVE NEEDS. `--plan-compact <me>` with no path answers "what can I compact right now, and what would each one refuse", so the wave is a read before it is a write. It also gives the CLI a `<me>`-taking mode whose effect is a printed line rather than a file, which is what lets the identity suite drive both verbs without planting a git repository per verb.
 
-    Oldest content first, by mtime, because the housekeeping clock is what makes
-    this list urgent and the oldest plan is the one about to go red.
+    Oldest content first, by mtime, because the housekeeping clock is what makes this list urgent and the oldest plan is the one about to go red.
     """
     root = pathlib.Path(root)
     dirty = dirty_paths(root)
@@ -1907,10 +1747,7 @@ TICK_EVIDENCE_MAX = int(os.environ.get("WORKLIST_TICK_EVIDENCE_MAX", "300"))
 def open_boxes(text):
     """[(line_index, line, body, sig)] for every OPEN box the real parser resolves.
 
-    The line index is what makes the flip surgical: the replacement rewrites one
-    line at one offset and leaves every other byte of the plan alone, so a plan
-    that happens to contain the same sentence twice cannot have the wrong copy
-    edited.
+    The line index is what makes the flip surgical: the replacement rewrites one line at one offset and leaves every other byte of the plan alone, so a plan that happens to contain the same sentence twice cannot have the wrong copy edited.
     """
     open_t, _done = PF.plan_boxes(text)
     out = []
@@ -1930,10 +1767,7 @@ def select_box(boxes, selector):
 
     Two spellings, and both are needed. A signature is what the ledger and the
     record speak, so it is what a machine will pass; a substring is what a person
-    has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match,
-    because the whole point of the verb is that it edits a file nobody is
-    watching -- picking one of two candidates silently is how the wrong box gets
-    ticked and the evidence lands under it.
+    has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match, because the whole point of the verb is that it edits a file nobody is watching -- picking one of two candidates silently is how the wrong box gets ticked and the evidence lands under it.
     """
     sel = (selector or "").strip()
     if not sel:
@@ -1962,10 +1796,7 @@ def ledger_row(root, rel, text):
     """The ledger entry for one plan, computed the way `check_plan_boxes.scan`
     computes it and not one field differently.
 
-    RESTATED RATHER THAN IMPORTED, for the reason `box_sig` is: the import
-    already runs the other way (the gate imports this directory), and importing
-    back would make the two directories mutually dependent. The equality is
-    pinned by a control in test-planrec.py, which is what keeps the restatement
+    RESTATED RATHER THAN IMPORTED, for the reason `box_sig` is: the import already runs the other way (the gate imports this directory), and importing back would make the two directories mutually dependent. The equality is pinned by a control in test-planrec.py, which is what keeps the restatement
     from drifting into a second opinion.
     """
     import wl_checks as CK  # noqa: PLC0415 -- see resolve()
@@ -1990,10 +1821,7 @@ def merge_ledger(doc, rel, row):
     """The ledger document with ONE plan's row replaced, keys re-sorted.
 
     Re-sorted because `--update` writes `{k: scanned[k] for k in sorted(scanned)}`
-    and the two outputs have to be byte-identical: a surgical write that produced
-    a differently-ordered file would show up as a whole-file diff, and the next
-    session would "fix" it by regenerating, which is the churn this verb exists
-    to remove.
+    and the two outputs have to be byte-identical: a surgical write that produced a differently-ordered file would show up as a whole-file diff, and the next session would "fix" it by regenerating, which is the churn this verb exists to remove.
     """
     out = dict(doc if isinstance(doc, dict) else {})
     plans = dict(out.get("plans") or {})
@@ -2008,9 +1836,7 @@ TICKABLE_HEADER = "open boxes that --plan-tick can flip in place (records are ex
 def tickable(root, plan_records):
     """[(rel, [box, ...])] for every LIVE plan that still has an open box.
 
-    Records are excluded rather than listed-and-refused, because a listing whose
-    rows mostly cannot be acted on trains the reader to skim it. The refusal in
-    `plan_tick` explains the record case where it is actually reached.
+    Records are excluded rather than listed-and-refused, because a listing whose rows mostly cannot be acted on trains the reader to skim it. The refusal in `plan_tick` explains the record case where it is actually reached.
     """
     root = pathlib.Path(root)
     out = []
@@ -2030,8 +1856,7 @@ def tickable(root, plan_records):
 def plan_tick(root, rel, selector, evidence, me, now=None):
     """(new_plan_text, new_ledger_doc, note) for one tick. Raises RecordError.
 
-    Writes NOTHING. The caller writes both files, so a refusal on the second
-    cannot leave the first half-applied.
+    Writes NOTHING. The caller writes both files, so a refusal on the second cannot leave the first half-applied.
     """
     root = pathlib.Path(root)
     p = root / rel
@@ -2108,9 +1933,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
 def revive(root, rel):
     """(full_text, note) -- the plan's own text back from the blob. Raises RecordError.
 
-    The blob first, ALWAYS, and the commit only as a label. That ordering is the
-    whole point of the design: `git cat-file blob <id>` answers in any clone that
-    has the object, whatever happened to the commit that once carried it.
+    The blob first, ALWAYS, and the commit only as a label. That ordering is the whole point of the design: `git cat-file blob <id>` answers in any clone that has the object, whatever happened to the commit that once carried it.
     """
     root = pathlib.Path(root)
     p = root / rel

@@ -1,61 +1,29 @@
 """The Bash half of block-edit-of-running-script.
 
-WHY A SECOND FILE. The pre-EDIT guard only sees the Edit/Write tools. Within
-an hour of shipping it I walked into the same trap through Bash instead --
-a `python3 - <<PY ... p.write_text(...) PY` rewriting test-hooks.sh while FOUR
-copies of it were executing. The guard did not fire because it never saw the
-call. A guard that covers one of two doors is a guard you will walk around
+WHY A SECOND FILE. The pre-EDIT guard only sees the Edit/Write tools. Within an hour of shipping it I walked into the same trap through Bash instead -- a `python3 - <<PY ... p.write_text(...) PY` rewriting test-hooks.sh while FOUR copies of it were executing. The guard did not fire because it never saw the call. A guard that covers one of two doors is a guard you will walk around
 without noticing, which is exactly what happened.
 
-THE MECHANISM, since the error never points at it: bash reads a script LAZILY,
-by byte offset. Rewrite it mid-run and the interpreter resumes at its old
-offset inside the new bytes and starts parsing mid-token. It dies naming an
-INNOCENT line while `bash -n` on that same file stays clean. Documented at
-docs/agent-reference/TRAPS.md, and hit three times on 2026-08-26/27.
+THE MECHANISM, since the error never points at it: bash reads a script LAZILY, by byte offset. Rewrite it mid-run and the interpreter resumes at its old offset inside the new bytes and starts parsing mid-token. It dies naming an INNOCENT line while `bash -n` on that same file stays clean. Documented at docs/agent-reference/TRAPS.md, and hit three times on 2026-08-26/27.
 
-HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and excluding them is not a
-loophole -- it is the difference between this guard working and this guard
-making a whole directory uneditable. Every pre-bash guard executes on EVERY
-Bash call, including the one carrying your edit. So while you edit
-block-binary-deploy.sh, that guard is running, as a sibling in the chain
-evaluating that very edit. This fired on exactly that on 2026-08-27, and the
-block is PERMANENT: there is no moment when a pre-bash guard is not running
-during a Bash call, so no amount of waiting clears it. It cost four blocked
-commands before the cause was visible, one of them the fix itself.
+HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and excluding them is not a loophole -- it is the difference between this guard working and this guard making a whole directory uneditable. Every pre-bash guard executes on EVERY Bash call, including the one carrying your edit. So while you edit block-binary-deploy.sh, that guard is running, as a sibling in the chain evaluating that very
+edit. This fired on exactly that on 2026-08-27, and the block is PERMANENT: there is no moment when a pre-bash guard is not running during a Bash call, so no amount of waiting clears it. It cost four blocked commands before the cause was visible, one of them the fix itself.
 
-The exclusion costs close to nothing. A chain evaluator lives for
-milliseconds and is re-read from scratch on the next call, so the lazy-read
-corruption below needs a window that does not exist here. What this guard is
-actually for -- a suite, a build, a background job running for minutes -- is
-untouched, test-hooks.sh included: that runs from the hooks ROOT, not a chain
-directory, so it still matches and still blocks.
+The exclusion costs close to nothing. A chain evaluator lives for milliseconds and is re-read from scratch on the next call, so the lazy-read corruption below needs a window that does not exist here. What this guard is actually for -- a suite, a build, a background job running for minutes -- is untouched, test-hooks.sh included: that runs from the hooks ROOT, not a chain directory,
+so it still matches and still blocks.
 
-WRITE INTENT IS REQUIRED, not merely the filename. Every second command in
-this repo mentions a .sh path -- running it, grepping it, checking its
-processes. Blocking on the name alone would be the over-matching that gets a
-guard switched off, so this needs a write operator AND a live process.
+WRITE INTENT IS REQUIRED, not merely the filename. Every second command in this repo mentions a .sh path -- running it, grepping it, checking its processes. Blocking on the name alone would be the over-matching that gets a guard switched off, so this needs a write operator AND a live process.
 
-PORT NOTE ON THE DUPLICATION WITH ITS EDIT-TOOL SIBLING. `pattern_for` and the
-pgrep loop below are the same twenty lines as block_edit_of_running_script.py,
-and that is deliberate: the two BASH files duplicate them too, and the
-duplication is exactly what produced the sibling drift their comments record
-(the path anchor reached the Edit-side guard on 2026-08-30, three days after
+PORT NOTE ON THE DUPLICATION WITH ITS EDIT-TOOL SIBLING. `pattern_for` and the pgrep loop below are the same twenty lines as block_edit_of_running_script.py, and that is deliberate: the two BASH files duplicate them too, and the duplication is exactly what produced the sibling drift their comments record (the path anchor reached the Edit-side guard on 2026-08-30, three days after
 this one got it on 2026-08-27). A port whose job is fidelity does not get to
 unify them, because each half is judged against its own twin; unifying is a P6
 change, once there is no twin left to diverge from.
 
-PORT NOTE ON `for cand in $TARGETS`. That is an UNQUOTED expansion, so bash
-splits on IFS -- dropping empty fields, which is why an empty first line from
-`printf '%s\\n%s'` costs nothing -- and then GLOBS each word against the
-filesystem. The globbing has never mattered here (a `.sh` path holding a `*`
-or a `?` would already have been skipped by the `$` test or failed to match a
+PORT NOTE ON `for cand in $TARGETS`. That is an UNQUOTED expansion, so bash splits on IFS -- dropping empty fields, which is why an empty first line from `printf '%s\\n%s'` costs nothing -- and then GLOBS each word against the filesystem. The globbing has never mattered here (a `.sh` path holding a `*` or a `?` would already have been skipped by the `$` test or failed to match a
 process) and is not reproduced; the splitting is, because the empty-field case
 happens on every command that reaches the fallback with no redirect targets.
 
 PORT NOTE ON `sort -u`. Under `LC_ALL=C` sort orders by BYTE, so the key below
-is the UTF-8 encoding rather than Python's default codepoint comparison. The
-two agree on every ASCII path and can differ on anything else, and the order is
-observable: it decides which of several targets is reported first.
+is the UTF-8 encoding rather than Python's default codepoint comparison. The two agree on every ASCII path and can differ on anything else, and the order is observable: it decides which of several targets is reported first.
 """
 
 import atexit
@@ -212,13 +180,8 @@ _CHILDREN = []
 def _reap():
     """Kill the world by PATH, not by the pids `Popen` handed back.
 
-    MEASURED 2026-09-06: on this host `bash` is not `/usr/bin/bash`. A wrapper
-    at ~/.local/share/rediacc/bin/bashcov-sup takes its place on PATH and
-    re-execs the real interpreter as a CHILD, so `Popen(["bash", script])`
-    yields a supervisor plus a grandchild, and killing the supervisor's process
-    group left the grandchild alive and re-parented -- four such shells were
-    still running after a clean pytest exit. Reaping by cmdline finds both,
-    which is the same predicate `_kill_stale` uses on the way in.
+    MEASURED 2026-09-06: on this host `bash` is not `/usr/bin/bash`. A wrapper at ~/.local/share/rediacc/bin/bashcov-sup takes its place on PATH and re-execs the real interpreter as a CHILD, so `Popen(["bash", script])` yields a supervisor plus a grandchild, and killing the supervisor's process group left the grandchild alive and re-parented -- four such shells were still running
+    after a clean pytest exit. Reaping by cmdline finds both, which is the same predicate `_kill_stale` uses on the way in.
     """
     _kill_stale((LIVE_SCRIPT, SIBLING_SCRIPT))
 
@@ -242,9 +205,7 @@ _LOCK_FDS = []
 def _hold_world_lock(world):
     """flock the world, or proceed after a bounded wait rather than hang.
 
-    The descriptor is deliberately never closed: the lock is released by the
-    kernel when this interpreter exits, which is exactly the lifetime the
-    spawned shells have.
+    The descriptor is deliberately never closed: the lock is released by the kernel when this interpreter exits, which is exactly the lifetime the spawned shells have.
     """
     import fcntl  # noqa: PLC0415
     import time  # noqa: PLC0415
@@ -269,17 +230,10 @@ def _hold_world_lock(world):
 def _kill_stale(paths):
     """Kill any leftover fixture shells from an EARLIER run before spawning.
 
-    THIS IS NOT TIDINESS, it is the difference between a green differential and
-    a red one. The world sits at a fixed path so the payloads can name it, and
-    `atexit` does not fire when the interpreter is killed by a timeout -- so a
-    previous run can leave its shells alive. `head -2` in the loop below then
-    keeps the FIRST few matches, and a set that changes between the bash sweep
-    and the Python sweep reports different pids for the same case. Observed
-    exactly that: three processes for one script, two of them from runs that had
-    already finished, and the two sides disagreed on which two they saw.
+    THIS IS NOT TIDINESS, it is the difference between a green differential and a red one. The world sits at a fixed path so the payloads can name it, and `atexit` does not fire when the interpreter is killed by a timeout -- so a previous run can leave its shells alive. `head -2` in the loop below then keeps the FIRST few matches, and a set that changes between the bash sweep and
+    the Python sweep reports different pids for the same case. Observed exactly that: three processes for one script, two of them from runs that had already finished, and the two sides disagreed on which two they saw.
 
-    Only processes running THESE fixture scripts are touched -- nothing else on
-    the machine can match a path under this world -- and each was started with
+    Only processes running THESE fixture scripts are touched -- nothing else on the machine can match a path under this world -- and each was started with
     `start_new_session=True`, so it leads its own group and killing the group
     takes its `sleep` child with it.
     """
@@ -383,26 +337,13 @@ def _pipe(pattern, text):
 def pattern_for(base):
     """`(^|[/[:space:]])[<first>]<escaped rest>`.
 
-    BRACKET THE FIRST CHARACTER so this pgrep cannot match the shell running
-    this hook, whose command line carries the path it was handed. That is the
-    self-matching trap block-self-matching-pgrep exists for, and this is
-    exactly where it would bite again.
+    BRACKET THE FIRST CHARACTER so this pgrep cannot match the shell running this hook, whose command line carries the path it was handed. That is the self-matching trap block-self-matching-pgrep exists for, and this is exactly where it would bite again.
 
-    ANCHOR TO A PATH BOUNDARY. `pgrep -f` matches anywhere in a command line,
-    so a bare basename matches any process whose command line merely CONTAINS
-    it as a substring: `ver.sh` matched a running `wslServer.sh`, and the
-    guard reported VS Code's server as the job about to be corrupted. The
-    basename must start at the beginning, after a `/`, or after whitespace.
+    ANCHOR TO A PATH BOUNDARY. `pgrep -f` matches anywhere in a command line, so a bare basename matches any process whose command line merely CONTAINS it as a substring: `ver.sh` matched a running `wslServer.sh`, and the guard reported VS Code's server as the job about to be corrupted. The basename must start at the beginning, after a `/`, or after whitespace.
 
-    ESCAPE THE DOTS. `.` is a regex wildcard and the basename was interpolated raw, so a
-    target whose name is one letter plus `.sh` produced the pattern `[x].sh`, which
-    matches any process containing `x<any>sh` -- and for the letter `b` that is
-    **/bin/bash**, i.e. every bash process on the machine.
+    ESCAPE THE DOTS. `.` is a regex wildcard and the basename was interpolated raw, so a target whose name is one letter plus `.sh` produced the pattern `[x].sh`, which matches any process containing `x<any>sh` -- and for the letter `b` that is **/bin/bash**, i.e. every bash process on the machine.
 
-    Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one
-    letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the
-    job it would corrupt. No script of that name was running anywhere. Round six of this
-    guard's over-matching, and the first that is not about command shape at all -- the
+    Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the job it would corrupt. No script of that name was running anywhere. Round six of this guard's over-matching, and the first that is not about command shape at all -- the
     previous five were all "a mention scored as a target"; this one is the TARGET name
     itself becoming a wildcard.
     """
@@ -413,15 +354,10 @@ def pattern_for(base):
 def live_shells(pat, limit):
     """The pgrep loop, as its accumulated text.
 
-    `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the
-    very trap this guard exists to prevent, wearing a different hat. Measured
-    2026-08-27: an edit to the hook suite was refused because a PEER session's
-    `claude -p` carried a long prompt that happened to contain that filename. No
-    interpreter was executing the script at all, and the refusal was unarguable.
+    `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the very trap this guard exists to prevent, wearing a different hat. Measured 2026-08-27: an edit to the hook suite was refused because a PEER session's `claude -p` carried a long prompt that happened to contain that filename. No interpreter was executing the script at all, and the refusal was
+    unarguable.
 
-    A process is RUNNING the script only if an interpreter is executing it. So require
-    the matching process to BE a shell, and the name to sit in the first few argv slots
-    where a script argument lives, rather than buried in a prose payload.
+    A process is RUNNING the script only if an interpreter is executing it. So require the matching process to BE a shell, and the name to sit in the first few argv slots where a script argument lives, rather than buried in a prose payload.
     """
     try:
         pids = proc.pgrep_full(pat)

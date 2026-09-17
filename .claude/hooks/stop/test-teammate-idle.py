@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Controls for wl_liveness.teammate_state -- the subagent idle/liveness verdict.
 
-Every control here is a RED/GREEN PAIR or it is not a control. The one that
-matters most is Control 1, the mutation pair: an idle fixture asserting `idle`
-proves nothing on its own, because a function that returned "idle"
-unconditionally would pass it. Flipping the single `stop_reason` field to
-`tool_use` and asserting the claim STOPS is what makes the first assertion mean
+Every control here is a RED/GREEN PAIR or it is not a control. The one that matters most is Control 1, the mutation pair: an idle fixture asserting `idle` proves nothing on its own, because a function that returned "idle" unconditionally would pass it. Flipping the single `stop_reason` field to `tool_use` and asserting the claim STOPS is what makes the first assertion mean
 something. See agent/PLAN-subagent-idle-detection.md.
 """
 

@@ -1,20 +1,11 @@
 """The one-block assertion runner the fixture cases use.
 
-WHY A SEPARATE OBJECT FROM `hookcases.STATIC`. Most of the suite is data: an event,
-an expected exit code, a label. The cases here are not, and no amount of table
-design makes them so -- they need a temporary git repo in a known state, a `gh`
-stub on PATH, an exported CLAUDE_PROJECT_DIR pointing at a stale clone, or a
-genuinely LIVE process for a guard whose whole claim is that it reads the process
-table. Those live beside the code that builds them.
+WHY A SEPARATE OBJECT FROM `hookcases.STATIC`. Most of the suite is data: an event, an expected exit code, a label. The cases here are not, and no amount of table design makes them so -- they need a temporary git repo in a known state, a `gh` stub on PATH, an exported CLAUDE_PROJECT_DIR pointing at a stale clone, or a genuinely LIVE process for a guard whose whole claim is that it
+reads the process table. Those live beside the code that builds them.
 
-A BLOCK KEEPS GOING AFTER A FAILING CASE, exactly as the shell suite did. One
-pytest function covers a whole fixture block, so raising on the first mismatch
-would hide every later case in that block AND skip the teardown that kills the
-fixture's background process. Failures are collected and reported together.
+A BLOCK KEEPS GOING AFTER A FAILING CASE, exactly as the shell suite did. One pytest function covers a whole fixture block, so raising on the first mismatch would hide every later case in that block AND skip the teardown that kills the fixture's background process. Failures are collected and reported together.
 
-`spec` IS THE COVERAGE READER'S TEXT, not a label. See the note in hookcases.py:
-`hook_integrity.covmap` scans declared `case_sources` for the literal shape
-`check 2 guards/block_x.py`, so a case's identity is written in that shape here too.
+`spec` IS THE COVERAGE READER'S TEXT, not a label. See the note in hookcases.py: `hook_integrity.covmap` scans declared `case_sources` for the literal shape `check 2 guards/block_x.py`, so a case's identity is written in that shape here too.
 """
 
 import os
@@ -75,9 +66,7 @@ class Block:
     def done(self) -> None:
         """Fail the pytest function if anything in the block did, naming every case.
 
-        ZERO CASES IS A FAILURE. A block whose fixture silently produced nothing to
-        assert would otherwise report a clean green over an empty loop, which is the
-        exact shape the suite's own controls exist to refuse.
+        ZERO CASES IS A FAILURE. A block whose fixture silently produced nothing to assert would otherwise report a clean green over an empty loop, which is the exact shape the suite's own controls exist to refuse.
         """
         # `raise AssertionError`, not `assert`. This is not a test module, and a bare
         # `assert` in one is stripped under -O; the repo holds every non-test file to
@@ -94,9 +83,7 @@ class Block:
 def env_with(**overrides: str) -> dict:
     """The current environment plus `overrides`, for a case that needs one exported.
 
-    A COPY, never a mutation of os.environ. Under `pytest -n` several blocks run in
-    one worker process, and a leaked CLAUDE_PROJECT_DIR would silently re-point every
-    later case in that worker at a throwaway clone.
+    A COPY, never a mutation of os.environ. Under `pytest -n` several blocks run in one worker process, and a leaked CLAUDE_PROJECT_DIR would silently re-point every later case in that worker at a throwaway clone.
     """
     merged = dict(os.environ)
     merged.update(overrides)

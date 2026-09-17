@@ -3,9 +3,7 @@
 
 WHAT THIS HAS TO PROVE, and why a one-directional suite would be worthless here.
 
-W12 P1.7 replaced a plans block that opened every `agent/PLAN-*.md` with one that
-reads a committed census. That trade is only safe if TWO things hold, and they
-pull in opposite directions:
+W12 P1.7 replaced a plans block that opened every `agent/PLAN-*.md` with one that reads a committed census. That trade is only safe if TWO things hold, and they pull in opposite directions:
 
   1. when the census is fresh, the listing is the SAME listing and no plan is
      opened -- otherwise the change is a lie about its own cost, and
@@ -13,13 +11,9 @@ pull in opposite directions:
      TOLD -- otherwise the change is a silent correctness regression, which is
      strictly worse than the 2 MB it saves.
 
-So every state below is asserted with its opposite beside it. The one that
-matters most is the perturbation control: a staleness check that cannot fire
-looks exactly like a repo that is never stale, and the only way to tell them
-apart is to break the census on purpose and watch it be caught.
+So every state below is asserted with its opposite beside it. The one that matters most is the perturbation control: a staleness check that cannot fire looks exactly like a repo that is never stale, and the only way to tell them apart is to break the census on purpose and watch it be caught.
 
-Run: python3 .claude/hooks/stop/test-planindex.py
-Reached by: .claude/hooks/test-hooks.sh (the per-module suite loop).
+Run: python3 .claude/hooks/stop/test-planindex.py Reached by: .claude/hooks/test-hooks.sh (the per-module suite loop).
 """
 
 from __future__ import annotations
@@ -82,8 +76,7 @@ def plan_text(slug, status="draft", body="Prose.", open_n=0, done_n=0, pad=0):
 
 class Tree:
     """A throwaway repo root with an agent/ directory. NOTHING under the real
-    agent/ is touched by this suite -- W12's standing decision is never-delete,
-    and a test that perturbs the live corpus to prove a staleness check would be
+    agent/ is touched by this suite -- W12's standing decision is never-delete, and a test that perturbs the live corpus to prove a staleness check would be
     the exact accident that decision exists to prevent."""
 
     def __init__(self, plans):

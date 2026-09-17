@@ -1,24 +1,14 @@
 """wl_reggate: the v7 regression-gate machinery and its v8 bookkeeping.
 
-WHY (v7, operator request): "you fixed but we didn't have a mechanism for
-future regressions." A fix without a gate is a defect scheduled to return,
-and the i18n cross-locale bug proved it: fixed by hand, then invisible to
-every existing check by construction. On every stop where a fix landed, the
-judge is asked whether a gate protects it, and every model claim is VERIFIED
+WHY (v7, operator request): "you fixed but we didn't have a mechanism for future regressions." A fix without a gate is a defect scheduled to return, and the i18n cross-locale bug proved it: fixed by hand, then invisible to every existing check by construction. On every stop where a fix landed, the judge is asked whether a gate protects it, and every model claim is VERIFIED
 against artifacts: a named existing gate must be a real check:* key; a new
-gate counts only when WIRED (reachable from `npm run ci` TRANSITIVELY) and
-its bounded run is green (cached by content hash).
+gate counts only when WIRED (reachable from `npm run ci` TRANSITIVELY) and its bounded run is green (cached by content hash).
 
-Detection is from ARTIFACTS, never prose: commit subjects matching
-^(fix|revert)[(!:] between the marker's last-seen HEAD and current HEAD,
-plus newly ticked `- [x]` items owned by this session. A fix-set touching
-only docs/** and **/*.md never asks. A settled fix-set is NEVER re-asked.
+Detection is from ARTIFACTS, never prose: commit subjects matching ^(fix|revert)[(!:] between the marker's last-seen HEAD and current HEAD, plus newly ticked `- [x]` items owned by this session. A fix-set touching only docs/** and **/*.md never asks. A settled fix-set is NEVER re-asked.
 
 FAIL SAFE: a missing marker initialises to current HEAD and asks nothing
 that stop; a corrupt one does the same plus ONE systemMessage line. Never a
-block, never silent. No field-wise salvage: any invalid shape discards the
-file, because half-parsed fixsets silently resurrect a blocked question as
-settled.
+block, never silent. No field-wise salvage: any invalid shape discards the file, because half-parsed fixsets silently resurrect a blocked question as settled.
 """
 
 import contextlib
@@ -74,13 +64,8 @@ REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_
 def debt_dir(root=None):
     """Directory holding the per-branch ledgers. See wl_store.AGENT_RESERVED_DIRS.
 
-    HONOURS $WORKLIST_STORE_DIR, exactly as wl_store.store_dir does, and for the
-    same reason it had to learn it: without the override the test harness runs
-    the hook against the REAL repo root, so every suite run appended a ledger to
-    the operator's own tree. Caught the first time this shipped -- an untracked
-    agent/reggate/agenttest.jsonl appeared in `git status` from a suite run,
-    which is the same footgun as the harness once writing the operator's real
-    worklist. A sibling of the store, so one export redirects both.
+    HONOURS $WORKLIST_STORE_DIR, exactly as wl_store.store_dir does, and for the same reason it had to learn it: without the override the test harness runs the hook against the REAL repo root, so every suite run appended a ledger to the operator's own tree. Caught the first time this shipped -- an untracked agent/reggate/agenttest.jsonl appeared in `git status` from a suite run,
+    which is the same footgun as the harness once writing the operator's real worklist. A sibling of the store, so one export redirects both.
     """
     override = os.environ.get("WORKLIST_STORE_DIR")
     if override:
@@ -101,8 +86,7 @@ def _branch_slug(branch):
 def debt_path(branch, root=None):
     """ONE FILE PER BRANCH, following wl_store's per-writer rule verbatim.
 
-    Both sides of a merge append at EOF, so a single shared ledger conflicts on
-    every concurrent append. Per-branch files never do.
+    Both sides of a merge append at EOF, so a single shared ledger conflicts on every concurrent append. Per-branch files never do.
     """
     return debt_dir(root) / (_branch_slug(branch) + ".jsonl")
 
@@ -164,11 +148,7 @@ def load_reggate(path):
 def append_ledger(branch, record, root=None):
     """Append ONE ledger record under a blocking flock, via the store's own primitive.
 
-    Append-only JSONL, folded on read, NEVER edited. It is deliberately not an
-    `ev:` kind in the item store: wl_epic.py's header records why, and it learned
-    it the hard way -- `compact()` rewrites that log down to the minimal
-    item-reproducing set, so a novel event kind there is SILENTLY DESTROYED.
-    `.requests`, `.intents` and `.epics` are the precedents this follows.
+    Append-only JSONL, folded on read, NEVER edited. It is deliberately not an `ev:` kind in the item store: wl_epic.py's header records why, and it learned it the hard way -- `compact()` rewrites that log down to the minimal item-reproducing set, so a novel event kind there is SILENTLY DESTROYED. `.requests`, `.intents` and `.epics` are the precedents this follows.
     """
     path = debt_path(branch, root)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,10 +163,7 @@ def append_ledger(branch, record, root=None):
 def read_ledger(branch, root=None):
     """(records, forgot), same FAIL SAFE contract as load_reggate.
 
-    `forgot` means the ledger could not be read as written. It is reported rather
-    than swallowed, because a budget computed from an unreadable ledger reads as
-    a FRESH budget -- the most permissive answer possible, and exactly the shape
-    that would let the cap silently stop capping.
+    `forgot` means the ledger could not be read as written. It is reported rather than swallowed, because a budget computed from an unreadable ledger reads as a FRESH budget -- the most permissive answer possible, and exactly the shape that would let the cap silently stop capping.
     """
     path = debt_path(branch, root)
     if not path.exists():
@@ -214,9 +191,7 @@ def read_ledger(branch, root=None):
 def branch_merged(branch, root=None):
     """Has this branch landed on origin/main?
 
-    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone
-    governs the debt -- making it due sooner, never never. A probe that answered
-    True on failure would discharge every debt on any git hiccup.
+    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone governs the debt -- making it due sooner, never never. A probe that answered True on failure would discharge every debt on any git hiccup.
     """
     if not branch:
         return False
@@ -228,9 +203,7 @@ def budget_state(branch, root=None):
     """(charged, remaining, debts, forgot) folded from the ledger.
 
     THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the
-    counter and simultaneously makes every outstanding debt DUE. That inversion
-    is the point: merging is what makes you pay, and there is no ordering in
-    which a merge discharges a debt.
+    counter and simultaneously makes every outstanding debt DUE. That inversion is the point: merging is what makes you pay, and there is no ordering in which a merge discharges a debt.
     """
     records, forgot = read_ledger(branch, root)
     discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
@@ -274,8 +247,7 @@ def _hash_file(path):
 
 def seed_gate_hashes(root):
     """Hashes of every existing check script, recorded at marker init so only
-    scripts that are NEW or CHANGED after that point ever count as candidate
-    proof (or get run). Without this seed, the first fix-signal stop in a real
+    scripts that are NEW or CHANGED after that point ever count as candidate proof (or get run). Without this seed, the first fix-signal stop in a real
     repo would treat ~all 90 existing gates as candidates and try to run them."""
     stamp = C.stamp_now()
     out = {}
@@ -296,11 +268,7 @@ _EVIDENCE_PATH = re.compile(r"(?<![\w/])((?:[\w.@-]+/)+[\w.@-]+\.[A-Za-z0-9]+)")
 def tick_touches_code(line):
     """Does this tick's evidence name a file that is not documentation?
 
-    The operator's rule: only code-touching ticks are asked. This mirrors the
-    docs-only filter already applied to commits, and it FAILS TOWARD ASKING --
-    a tick whose evidence names no path at all is asked, because "no path" is
-    not evidence that nothing shipped, and silently dropping a fix is the
-    failure this whole mechanism exists to prevent.
+    The operator's rule: only code-touching ticks are asked. This mirrors the docs-only filter already applied to commits, and it FAILS TOWARD ASKING -- a tick whose evidence names no path at all is asked, because "no path" is not evidence that nothing shipped, and silently dropping a fix is the failure this whole mechanism exists to prevent.
     """
     paths = _EVIDENCE_PATH.findall(line or "")
     if not paths:
@@ -339,23 +307,14 @@ GATE_NEUTRAL_PREFIXES = ("agent/", "docs/")
 def gate_only_fixset(root, shas):
     """True when every NON-BOOKKEEPING file in the fix-set is a CI-gate artifact.
 
-    ARTIFACTS, NEVER PROSE -- this reads `git diff-tree`, not a commit subject,
-    the same rule fix_signals states for its docs-only skip below.
+    ARTIFACTS, NEVER PROSE -- this reads `git diff-tree`, not a commit subject, the same rule fix_signals states for its docs-only skip below.
 
     WHY IT IS A HINT AND NOT A SKIP. A gate-maintenance fix can still deserve a
     gate of its own, so this never suppresses a fix-set; it tells the judge what
-    it is looking at, so question (0) has something to bite on. Measured
-    2026-09-04/05: two sessions ran a self-generating loop where writing gate A
-    produced the finding that gate B was needed, and every one of those findings
-    had ALREADY been caught by an existing gate. Nothing told the judge the
-    fix-set was gate machinery.
+    it is looking at, so question (0) has something to bite on. Measured 2026-09-04/05: two sessions ran a self-generating loop where writing gate A produced the finding that gate B was needed, and every one of those findings had ALREADY been caught by an existing gate. Nothing told the judge the fix-set was gate machinery.
 
-    Fails toward saying nothing extra: any git error, an empty fix-set, or a
-    fix-set that is ONLY bookkeeping returns False rather than skipping the
-    question. That includes a TICK-BASED fix-set: fix_signals' ids are commit
-    shas OR tick ids, and a tick id is not a tree-ish, so `git diff-tree` fails
-    and this answers False. Correct by construction -- an uncommitted fix has no
-    file list to classify -- and it means the hint is a commit-fix-set feature.
+    Fails toward saying nothing extra: any git error, an empty fix-set, or a fix-set that is ONLY bookkeeping returns False rather than skipping the question. That includes a TICK-BASED fix-set: fix_signals' ids are commit shas OR tick ids, and a tick id is not a tree-ish, so `git diff-tree` fails and this answers False. Correct by construction -- an uncommitted fix has no file
+    list to classify -- and it means the hint is a commit-fix-set feature.
     """
     if not shas:
         return False
@@ -397,21 +356,12 @@ def gate_only_fixset(root, shas):
 def fix_signals(root, lines, session_id, state):
     """(descriptions, ids, new_tick_pairs, current_head, banked_only_ids).
 
-    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in
-    marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this
-    session, covering the uncommitted-tree default. The skip filter is
-    deliberately narrow: a fix commit touching only docs/** and **/*.md never
+    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this session, covering the uncommitted-tree default. The skip filter is deliberately narrow: a fix commit touching only docs/** and **/*.md never
     asks; everything else does, and the judge's four questions sort the
-    one-offs out. A rewound or unreachable old head yields an empty log,
-    which reads as no signals and lets head self-heal by advancing.
+    one-offs out. A rewound or unreachable old head yields an empty log, which reads as no signals and lets head self-heal by advancing.
 
-    `banked_only_ids` is a SEPARATE list from `new_tick_pairs`, deliberately: a
-    docs-only tick must be marked seen so it stops being rediscovered every
-    stop, but it must NOT be asked about and must NOT be subjected to the I7
-    completion-evidence check that `new_tick_pairs` feeds elsewhere. Folding it
-    into `new_tick_pairs` instead (the first version of this fix) would have
-    made that evidence check run over ticks nobody is asking about -- a
-    docs-only tick with a bare `- [x]` line and no evidence would then fail I7
+    `banked_only_ids` is a SEPARATE list from `new_tick_pairs`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_pairs` feeds elsewhere. Folding it into `new_tick_pairs` instead (the first version of this fix) would have made that
+    evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7
     for a reason unrelated to what it actually is. Found in review, not by a
     control: no `- [x]` docs-only fixture exercised that path."""
     head = C._git(root, "rev-parse", "HEAD")
@@ -486,31 +436,15 @@ LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
 def _manifest_entries(root):
     """Every manifest entry, read from `scripts/ci-runner/gates.lock.json`.
 
-    THIS USED TO BE A TYPESCRIPT PARSER WRITTEN IN REGEX, and it shipped wrong.
-    Two functions each ran
-    a finditer over a brace-delimited pattern matching an optional run of
-    whitespace-or-line-comment, then an `id:` string, applied to a 5,700-line TS
-    literal. The whitespace-or-comment alternation in that pattern is a
-    scar: the first version allowed whitespace only, so any entry whose leading comment sat
-    INSIDE the brace was invisible, and the reachability gate checked a smaller
-    set while printing a healthy "agrees with all N registrations". Found
+    THIS USED TO BE A TYPESCRIPT PARSER WRITTEN IN REGEX, and it shipped wrong. Two functions each ran a finditer over a brace-delimited pattern matching an optional run of whitespace-or-line-comment, then an `id:` string, applied to a 5,700-line TS literal. The whitespace-or-comment alternation in that pattern is a scar: the first version allowed whitespace only, so any entry
+    whose leading comment sat INSIDE the brace was invisible, and the reachability gate checked a smaller set while printing a healthy "agrees with all N registrations". Found
     2026-08-20 with a planted entry it went green over; it was already hiding
-    check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at
-    259 of 261 seen. The next TS shape nobody anticipated would have done it
-    again, silently and in the same direction.
+    check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at 259 of 261 seen. The next TS shape nobody anticipated would have done it again, silently and in the same direction.
 
-    The lock is that literal, projected to JSON by `scripts/gen-gates-lock.ts`
-    and kept faithful by `check:ci-gates-lock`, which fails when the two
-    disagree. One parse, no regex archaeology, and a shape error is a JSON
-    error rather than a quietly shorter list.
+    The lock is that literal, projected to JSON by `scripts/gen-gates-lock.ts` and kept faithful by `check:ci-gates-lock`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
 
-    RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by
-    oversight. That matches what the regex version did on an unreadable file,
-    and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs
-    this lookup to empty and requires the probe's verdict to change, which is
-    how that gate proves it can still detect manifest-blindness. Absence is a
-    broken checkout rather than a state to tolerate, and the gate that refuses
-    it is check:ci-gates-lock, not this reader.
+    RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by oversight. That matches what the regex version did on an unreadable file, and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs this lookup to empty and requires the probe's verdict to change, which is how that gate proves it can still detect manifest-blindness. Absence is a broken
+    checkout rather than a state to tolerate, and the gate that refuses it is check:ci-gates-lock, not this reader.
     """
     if root is None:
         return []
@@ -525,8 +459,7 @@ def _manifest_entries(root):
 def _manifest_gate_ids(root):
     """Gate ids registered in the ci-runner manifest, as a set.
 
-    The runner is the dispatcher for every `check:ci-*` in this repo, so a gate
-    listed there with `gate: true` IS run by `npm run ci` even though nothing in
+    The runner is the dispatcher for every `check:ci-*` in this repo, so a gate listed there with `gate: true` IS run by `npm run ci` even though nothing in
     package.json ever says `npm run <that key>`.
     """
     return {g["id"] for g in _manifest_entries(root) if g.get("gate") is True}
@@ -535,14 +468,9 @@ def _manifest_gate_ids(root):
 def _manifest_gate_run_paths(root):
     """`run:` script paths for every `gate: true` manifest entry, as a set.
 
-    A citation of real, ci-runner-scheduled coverage is far more often a FILE
-    PATH ("test-ci-trace-branch.sh" or its full repo-relative path, optionally
+    A citation of real, ci-runner-scheduled coverage is far more often a FILE PATH ("test-ci-trace-branch.sh" or its full repo-relative path, optionally
     with "::test_name" naming the specific case inside it) than the manifest's
-    own `id:` string -- both a human and a judge model reach for the path they
-    can see in the tree, not an id that exists only in manifest.ts. Checking
-    ids alone (the first fix here) left that whole citation shape unrecognized
-    and still reporting real coverage as hallucinated. Same regex/parsing
-    approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
+    own `id:` string -- both a human and a judge model reach for the path they can see in the tree, not an id that exists only in manifest.ts. Checking ids alone (the first fix here) left that whole citation shape unrecognized and still reporting real coverage as hallucinated. Same regex/parsing approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
     """
     return {
         g["run"]
@@ -553,8 +481,7 @@ def _manifest_gate_run_paths(root):
 
 def _citation_matches_gate(eg, root):
     """True when `eg` names real, `npm run ci`-scheduled coverage: either a
-    manifest `id:` (checked by the caller against `_manifest_gate_ids`
-    directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
+    manifest `id:` (checked by the caller against `_manifest_gate_ids` directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
     case qualifier and/or a leading "./" stripped."""
     base = re.split(r"::|#", eg, maxsplit=1)[0].strip()
     while base.startswith("./"):
@@ -565,8 +492,7 @@ def _citation_matches_gate(eg, root):
 
 def gate_reachable(scripts, target, root=None):
     """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
-    references? Transitive, because ci reaches most gates through batch keys.
-    NOT a substring test: a gate's name inside an `echo` is not reachability,
+    references? Transitive, because ci reaches most gates through batch keys. NOT a substring test: a gate's name inside an `echo` is not reachability,
     and the substring version produced real false positives on this repo."""
     seen, todo = set(), ["ci"]
     runner = False
@@ -590,19 +516,12 @@ def gate_reachable(scripts, target, root=None):
 def prove_named_artifact(root, artifact):
     """(proven, note) for a case on ANY surface, by the path the judge named.
 
-    THE GLOB PROBE BELOW CAN ONLY SEE ONE SURFACE. It matches check-*.ts,
-    check-*.sh and the two test suites, so a fix whose regression home is an
-    E2E case, an ops step, an install script or a unit test had no acceptable
-    answer at all: the only thing it could prove was a static gate, which for a
-    behavioural defect asserts that the source still looks right. Enumerating
-    the other five here would rot the moment a sixth appears, so this asks a
-    different question -- the judge names the path, and this checks whether that
-    path CHANGED in this session's tree.
+    THE GLOB PROBE BELOW CAN ONLY SEE ONE SURFACE. It matches check-*.ts, check-*.sh and the two test suites, so a fix whose regression home is an E2E case, an ops step, an install script or a unit test had no acceptable answer at all: the only thing it could prove was a static gate, which for a behavioural defect asserts that the source still looks right. Enumerating the other
+    five here would rot the moment a sixth appears, so this asks a different question -- the judge names the path, and this checks whether that path CHANGED in this session's tree.
 
     Deliberately weaker than the glob probe, and it says so: this proves the
     case was written, not that it runs or that it fails on the defect. The
-    surface's own file in `.claude/skills/testing/` names the run that would.
-    A path that does not exist, or exists unchanged, proves nothing.
+    surface's own file in `.claude/skills/testing/` names the run that would. A path that does not exist, or exists unchanged, proves nothing.
     """
     # `.lstrip("./")` was the first spelling and it is wrong: lstrip takes a CHARACTER SET, so `.claude/hooks/...` came back as `claude/hooks/...` and every hook-surface artifact was reported as nonexistent. Strip the prefix.
     rel = str(artifact or "").strip()
@@ -620,14 +539,8 @@ def prove_named_artifact(root, artifact):
 
 def prove_new_gate(root, scripts, state):
     """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
-    a NEW or CHANGED check script (content hash vs the marker), a check:* key
-    whose command runs it, reachability from `npm run ci` (transitive, see
-    gate_reachable), and a bounded green run. Runs are cached by content hash
-    so a red gate is not re-run every stop and a green one is not re-paid.
-    A green run of a control-first gate IS the planted-defect proof, because
-    such a gate self-fails when its own control cannot fire -- the
-    check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact
-    failure this rule exists for, and check-gate-reachability.ts exists
+    a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of a control-first gate IS the planted-defect proof, because such a gate
+    self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists
     because a gate can be defined yet never run."""
     stamp = C.stamp_now()
     notes, proven = [], False
@@ -706,21 +619,12 @@ def prove_new_gate(root, scripts, state):
 def _new_since_head(rel, root, head):
     """True when `rel` did not exist at the marker's last-seen head.
 
-    _is_dirty used to be the ENTIRE freshness test, which silently assumed a
-    session leaves its work UNCOMMITTED. That holds under this repo's default,
-    but the moment a session COMMITS its gate -- which the findings rule pushes
-    toward as soon as the fix is headed for a PR -- the path is clean, `prev is
-    None`, and prove_new_gate files it at exit -3 as a glob widening.
+    _is_dirty used to be the ENTIRE freshness test, which silently assumed a session leaves its work UNCOMMITTED. That holds under this repo's default, but the moment a session COMMITS its gate -- which the findings rule pushes toward as soon as the fix is headed for a PR -- the path is clean, `prev is None`, and prove_new_gate files it at exit -3 as a glob widening.
 
-    Measured 2026-08-26: check-devbox-exec.sh was written, wired three-point,
-    proven against pre-fix source AND committed inside one stop. The very next
-    stop reported "no NEW or CHANGED check script this stop" while the marker
-    held that exact gate at exit -3, never run. The finding then re-fired every
-    stop with NO REACHABLE EXIT: writing the gate again could not change the
-    outcome, and the judge itself was answering "no further work needed".
+    Measured 2026-08-26: check-devbox-exec.sh was written, wired three-point, proven against pre-fix source AND committed inside one stop. The very next stop reported "no NEW or CHANGED check script this stop" while the marker held that exact gate at exit -3, never run. The finding then re-fired every stop with NO REACHABLE EXIT: writing the gate again could not change the outcome,
+    and the judge itself was answering "no further work needed".
 
-    Errs toward True on any git failure, matching _is_dirty: run the gate
-    rather than silently skip it.
+    Errs toward True on any git failure, matching _is_dirty: run the gate rather than silently skip it.
     """
     if not head:
         return False
@@ -741,9 +645,7 @@ def _new_since_head(rel, root, head):
 def _is_dirty(rel, root):
     """True when the working tree has touched this path (modified or untracked).
 
-    The probe's question is "did the session that just claimed a fix leave a
-    gate", so a gate it did not touch is not evidence either way. Errs toward
-    True: if git cannot answer, run the gate rather than silently skip it.
+    The probe's question is "did the session that just claimed a fix leave a gate", so a gate it did not touch is not evidence either way. Errs toward True: if git cannot answer, run the gate rather than silently skip it.
     """
     try:
         pr = subprocess.run(
@@ -764,8 +666,7 @@ def _is_dirty(rel, root):
 def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     """('malformed'|'settle'|'block', payload, detail).
 
-    Deterministic mapping from the judge's regression_gate object to an
-    action, with every model claim VERIFIED against artifacts:
+    Deterministic mapping from the judge's regression_gate object to an action, with every model claim VERIFIED against artifacts:
       applicable false                      -> settle 'not-applicable'
       existing_gate is a REAL check:* key   -> settle 'covered'
       existing_gate names a key that is not -> hallucinated coverage, counts

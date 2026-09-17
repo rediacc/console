@@ -1,31 +1,19 @@
 """wl_profile: derive STRUCTURAL findings from tree captures. Never blocks a stop.
 
-WHERE THIS LIVES AND WHY. A sibling of the judge, not a fourth marker in it. Two
-verified facts decide that: wl_checks.py:5352/5379 gate the judge on
-`(something_remains or reg_signals)`, so a session that ran the battery, got green
-and has a clean board never reaches it -- exactly the shape a resource verdict is
+WHERE THIS LIVES AND WHY. A sibling of the judge, not a fourth marker in it. Two verified facts decide that: wl_checks.py:5352/5379 gate the judge on `(something_remains or reg_signals)`, so a session that ran the battery, got green and has a clean board never reaches it -- exactly the shape a resource verdict is
 about; and the judge fails CLOSED by contract (worklist.py:91-94) while this signal
-must never turn "we did not measure" into "you may not stop". Unjudgeable is
-silence here, always.
+must never turn "we did not measure" into "you may not stop". Unjudgeable is silence here, always.
 
-THE ONE RULE EVERY PREDICATE MUST PASS: DILATION INVARIANCE. A finding may be
-ENFORCED only if its verdict is unchanged when every duration in the capture is
-multiplied by k>0. The worklist suite measured ~4 min standalone and ~9 min under
+THE ONE RULE EVERY PREDICATE MUST PASS: DILATION INVARIANCE. A finding may be ENFORCED only if its verdict is unchanged when every duration in the capture is multiplied by k>0. The worklist suite measured ~4 min standalone and ~9 min under
 the full battery on identical code -- that is k=2.25 from machine load alone. And
-load stretches WALL, not CPU, so `dilate()` scales timestamps and PSI and leaves
-utime/stime/cutime/cstime alone. Under that operator `cpu/wall` is NOT invariant
+load stretches WALL, not CPU, so `dilate()` scales timestamps and PSI and leaves utime/stime/cutime/cstime alone. Under that operator `cpu/wall` is NOT invariant
 (0.95 -> 0.42 at k=2.25), which is why "saturated" is an R-STATE FRACTION here: on
-Linux `R` covers running AND runnable-but-preempted, so a CPU-bound process starved
-of the CPU is still R. Every predicate below is a count, a ratio of counts, or a set
-relation. Nothing is expressed in seconds, and control D2 reads this file's own
-source to refuse any comparison of a duration field against a numeric literal.
+Linux `R` covers running AND runnable-but-preempted, so a CPU-bound process starved of the CPU is still R. Every predicate below is a count, a ratio of counts, or a set relation. Nothing is expressed in seconds, and control D2 reads this file's own source to refuse any comparison of a duration field against a numeric literal.
 
 MEASUREMENT REFUTES; IT NEVER PROPOSES. A sampled fd table is a LOWER bound on a
-process's write set. A predicate whose safety depends on the ABSENCE of a shared
-write (E1) therefore requires POSITIVE evidence of disjointness -- every child must
+process's write set. A predicate whose safety depends on the ABSENCE of a shared write (E1) therefore requires POSITIVE evidence of disjointness -- every child must
 have an observed write set, and they must be pairwise disjoint; a child with nothing
-observed is unresolved and kills the finding. E4 is the safe direction: it needs
-positive evidence of a SHARED write and never certifies independence.
+observed is unresolved and kills the finding. E4 is the safe direction: it needs positive evidence of a SHARED write and never certifies independence.
 
 THE SILENCE PREDICATE, made computable. A class C may ENFORCE only while its fire
 rate over JUDGEABLE captures satisfies `admissible(F, J)`: J >= 20 AND the one-sided
@@ -73,8 +61,7 @@ SLEEPING = {"hrtimer_nanosleep"}
 def norm_wchan(w: str | None) -> str | None:
     """`do_sigtimedwait.isra.0` -> `do_sigtimedwait`.
 
-    GCC clone suffixes (`.isra.N`, `.constprop.N`) vary per kernel BUILD, so a set
-    membership test against the raw string silently stops matching after an upgrade.
+    GCC clone suffixes (`.isra.N`, `.constprop.N`) vary per kernel BUILD, so a set membership test against the raw string silently stops matching after an upgrade.
     """
     if not w:
         return w
@@ -214,11 +201,7 @@ def overlaps(a: dict, b: dict) -> bool:
 # ------------------------------------------------------------- predicates ---
 def logical_root(cap: Capture, agg: dict[int, dict]) -> int | None:
     """The pid whose children are the WORK. Under the Bash profiler every bash is
-    re-exec'd in place under bashcov-sup, which then forks the real shell -- so a
-    capture rooted at exec.ts's child sees a supervisor root with exactly one
-    `bash` child, and a child-counting predicate would never see the fanout. The
-    supervisor is transparent: descend through any chain of single-child
-    bashcov-sup nodes. A supervisor with 0 or 2+ children is NOT descended (that
+    re-exec'd in place under bashcov-sup, which then forks the real shell -- so a capture rooted at exec.ts's child sees a supervisor root with exactly one `bash` child, and a child-counting predicate would never see the fanout. The supervisor is transparent: descend through any chain of single-child bashcov-sup nodes. A supervisor with 0 or 2+ children is NOT descended (that
     is not the wrapper shape) -- unresolved stays unresolved."""
     root = cap.run.get("root_pid")
     while True:
@@ -407,25 +390,18 @@ E7_MIN_TICKS = 3
 def e7_stalled(c: Capture) -> list[dict]:
     """A tree that is not merely WAITING but STOPPED. Report-only, by construction.
 
-    THE CASE THIS MUST NOT CALL A HANG is the normal one. `test-hooks.sh` captures a
-    whole suite through `$( )`, so the parent sits in `anon_pipe_read` with its stdout
-    frozen BY DESIGN for minutes while its children cycle. Reading that as a hang cost
-    two killed battery runs before walking /proc down the chain showed the children
+    THE CASE THIS MUST NOT CALL A HANG is the normal one. `test-hooks.sh` captures a whole suite through `$( )`, so the parent sits in `anon_pipe_read` with its stdout frozen BY DESIGN for minutes while its children cycle. Reading that as a hang cost two killed battery runs before walking /proc down the chain showed the children
     working. So the predicate never asks "is the parent blocked"; it asks whether the
-    WHOLE TREE stopped moving, on four independent facts that must hold together for
-    E7_MIN_TICKS consecutive samples:
+    WHOLE TREE stopped moving, on four independent facts that must hold together for E7_MIN_TICKS consecutive samples:
 
       1. the live pid set is unchanged  -- a set relation
       2. total tree CPU is unchanged    -- clock TICKS, so dilation cannot move it
       3. no thread anywhere is R or D   -- per-thread, not the lying leader
       4. no frontier reader's pipe has a live writer inside the tree
 
-    (4) is what separates the two: in a healthy capture the parent reads a pipe its
-    own descendant writes, which is deferral. The real hang recorded in TRAPS.md was a
-    blocked read on a pipe with NO writer and no children.
+    (4) is what separates the two: in a healthy capture the parent reads a pipe its own descendant writes, which is deferral. The real hang recorded in TRAPS.md was a blocked read on a pipe with NO writer and no children.
 
-    Derived over the six largest real captures this returns ZERO -- which is the point:
-    a stall detector that fires on `$( )` is worse than none.
+    Derived over the six largest real captures this returns ZERO -- which is the point: a stall detector that fires on `$( )` is worse than none.
     """
     if len(c.samples) < E7_MIN_TICKS:
         return []
@@ -574,9 +550,7 @@ _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
 def _e1(caps) -> list[dict]:
     """E1 findings only. The controls below assert that E1 is SILENT, and until E7
-    existed that was the same statement as `not derive(...)`. It no longer is: a
-    synthetic fixture with no runnable thread and no pipes is a stall by
-    construction, so an unscoped assertion would fail for a reason that has nothing
+    existed that was the same statement as `not derive(...)`. It no longer is: a synthetic fixture with no runnable thread and no pipes is a stall by construction, so an unscoped assertion would fail for a reason that has nothing
     to do with E1. Scoping it keeps each control about its own class."""
     return [f for f in derive(caps) if f["class"] == "E1"]
 
@@ -970,11 +944,8 @@ def selftest() -> int:
 def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
     """High-to-low IMPACT over the time-based corpus (operator ruling 2026-09-03).
 
-    Two tables. SHAPES from exit records: total CPU seconds is the primary key --
-    it is what parallelism or caching would give back -- then invocations, peak RSS,
-    and the wall share. GATES from captures: tree CPU ticks, peak RSS, and the blocked
-    share (samples whose frontier wchan was DEFERRING or a sleep). Findings are counted
-    per gate so a structural finding sits beside the cost it would recover.
+    Two tables. SHAPES from exit records: total CPU seconds is the primary key -- it is what parallelism or caching would give back -- then invocations, peak RSS, and the wall share. GATES from captures: tree CPU ticks, peak RSS, and the blocked share (samples whose frontier wchan was DEFERRING or a sleep). Findings are counted per gate so a structural finding sits beside the cost
+    it would recover.
     """
     import time  # noqa: PLC0415
 

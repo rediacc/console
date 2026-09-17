@@ -1,16 +1,10 @@
 """The differential corpus: real commands, harvested from the real suite.
 
-WHY NOT A HAND-WRITTEN LIST. A port is judged by the inputs it was never
-imagined against. `.claude/hooks/test-hooks.sh` holds 339 `bash_json` /
-`bash_bg_json` payloads, each one a command some guard was actually built or
+WHY NOT A HAND-WRITTEN LIST. A port is judged by the inputs it was never imagined against. `.claude/hooks/test-hooks.sh` holds 339 `bash_json` / `bash_bg_json` payloads, each one a command some guard was actually built or
 repaired against -- heredocs that hid an amend, `sh -c` wrappers, `FOO=bar `
-prefixes, quoted `/bin/bash` paths, multi-invocation `gh pr` lines. That file
-is the accumulated memory of every bypass this repo has paid for, so it is the
-corpus, and a list invented here would be a list of the cases the author of
-the port already had in mind.
+prefixes, quoted `/bin/bash` paths, multi-invocation `gh pr` lines. That file is the accumulated memory of every bypass this repo has paid for, so it is the corpus, and a list invented here would be a list of the cases the author of the port already had in mind.
 
-HOW THE PAYLOADS ARE RECOVERED. The suite writes them as shell words, so this
-module unquotes them the way bash would: single quotes literal, double quotes
+HOW THE PAYLOADS ARE RECOVERED. The suite writes them as shell words, so this module unquotes them the way bash would: single quotes literal, double quotes
 with backslash escapes, `$'...'` ANSI-C escapes, and adjacent segments
 concatenated. Two deliberate limits, both stated rather than hidden:
 
@@ -99,10 +93,7 @@ def _skip_substitution(src, i):
 
 def _expand_printf(text):
     """`$(printf FMT ARG...)` without a shell, or the literal text if it is
-    anything else. The suite uses printf only to smuggle quotes and newlines
-    into a payload, so `%s` and the usual backslash escapes are the whole
-    surface -- and a `%d` or a `%*s` appearing later would come out as itself
-    rather than being silently mis-rendered.
+    anything else. The suite uses printf only to smuggle quotes and newlines into a payload, so `%s` and the usual backslash escapes are the whole surface -- and a `%d` or a `%*s` appearing later would come out as itself rather than being silently mis-rendered.
     """
     inner = text[2:-1]
     words = []
@@ -200,8 +191,7 @@ def harvest():
     """Every distinct `bash_json` / `bash_bg_json` payload in the suite.
 
     Returns `(commands, stats)`; `stats` carries the call-site count and the
-    recovery ratio so the floor above can be checked against the same pass
-    that produced the corpus.
+    recovery ratio so the floor above can be checked against the same pass that produced the corpus.
     """
     src = SUITE.read_text(encoding="utf-8")
     names = _assignments(src)

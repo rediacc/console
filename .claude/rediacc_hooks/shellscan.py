@@ -2,14 +2,9 @@
 """Shared command scanning for the gh-pr guardrail hooks (block-admin-merge,
 block-nondraft-pr-create, block-premature-ready).
 
-The old inline approach (strip every quoted span, then anchor `gh pr <verb>`
-at a command position) had a review-found bypass class: stripping ALL quotes
-also erases a command hidden inside a shell-execution wrapper, so
-`sh -c 'gh pr merge --admin'`, `bash -c "..."`, `eval "..."`, variable
+The old inline approach (strip every quoted span, then anchor `gh pr <verb>` at a command position) had a review-found bypass class: stripping ALL quotes also erases a command hidden inside a shell-execution wrapper, so `sh -c 'gh pr merge --admin'`, `bash -c "..."`, `eval "..."`, variable
 indirection (`X=--admin; gh pr merge $X`), and `--admin=true` all sailed past
-the bans. The stripping exists to avoid PROSE false positives
-(`git commit -m "...gh pr merge --admin..."`), so it cannot simply be
-removed. This lib keeps the prose defense AND scans wrapper payloads.
+the bans. The stripping exists to avoid PROSE false positives (`git commit -m "...gh pr merge --admin..."`), so it cannot simply be removed. This lib keeps the prose defense AND scans wrapper payloads.
 
 scan_target builds the string the anchor runs against, from three parts:
   1. Heredoc bodies removed. A `<<MARKER ... MARKER` body is DATA, never
@@ -24,47 +19,25 @@ scan_target builds the string the anchor runs against, from three parts:
 flag_present matches a long flag in every form a shell accepts:
 `--flag`, `--flag=value`, `--flag;`, and inside a quoted/assignment token,
 so `--admin=true` and `X="--admin"` are caught. Combined with a
-command-position verb match, over-blocking a command that both names the flag
-and runs the verb is the safe direction.
+command-position verb match, over-blocking a command that both names the flag and runs the verb is the safe direction.
 
 =============================================================================
 THIS FILE IS A TRANSLITERATION, NOT A REWRITE
 =============================================================================
 
-The original is `.claude/hooks/pre-bash/lib/command-scan.sh`, and its comments
-record SIX separate rounds of bypass findings (rounds 39-40 flag shapes, 42
-path-qualified shells, 44 quoted paths, 46 line-wide field scope, the
+The original is `.claude/hooks/pre-bash/lib/command-scan.sh`, and its comments record SIX separate rounds of bypass findings (rounds 39-40 flag shapes, 42 path-qualified shells, 44 quoted paths, 46 line-wide field scope, the
 `FOO=bar ` env-prefix bypass of seven guards, and the `<<-` tab-indented
-terminator). Those rounds are the specification: each one names a command that
-slipped past an earlier version, and none of them is visible in the behaviour
-of the current code alone. So every function below is ported line for line,
+terminator). Those rounds are the specification: each one names a command that slipped past an earlier version, and none of them is visible in the behaviour of the current code alone. So every function below is ported line for line,
 with its comment carried across in the same position relative to the code it
-explains, and `tests/test_shellscan_differential.py` feeds the same corpus to
-both implementations and refuses any divergence.
+explains, and `tests/test_shellscan_differential.py` feeds the same corpus to both implementations and refuses any divergence.
 
-ONE FUNCTION IN THE ORIGINAL IS DELIBERATELY NOT PORTED: `hook_read_payload`,
-added 2026-09-08. It reads the hook event body from stdin under a deadline,
-because `$(cat)` and a bare `jq` reading stdin bound nothing -- a stdin that
-stays open and silent blocks them forever, and in a PreToolUse hook that is not
-a slow check, it is a tool call that never returns. `require-python.sh:66`
-carries the measurement that settled it: with the interpreter hidden from PATH
-so the arm is actually reached and stdin held open by a writer that never
-writes, the unbounded form exits 124 under an external timeout against exit 2
-in 0s once stdin is closed.
+ONE FUNCTION IN THE ORIGINAL IS DELIBERATELY NOT PORTED: `hook_read_payload`, added 2026-09-08. It reads the hook event body from stdin under a deadline, because `$(cat)` and a bare `jq` reading stdin bound nothing -- a stdin that stays open and silent blocks them forever, and in a PreToolUse hook that is not a slow check, it is a tool call that never returns.
+`require-python.sh:66` carries the measurement that settled it: with the interpreter hidden from PATH so the arm is actually reached and stdin held open by a writer that never writes, the unbounded form exits 124 under an external timeout against exit 2 in 0s once stdin is closed.
 
-It has no Python counterpart and should not get one. This module is a SCANNER:
-callers hand it a command string they already read. Reading stdin is the
-caller's job, and the four bash entry points that do it (`hook_init` in the
-original, `block-pathspecless-git-commit.sh`, `cancel-old-ci.sh`,
-`refresh-pr-body.sh`) have Python siblings that receive their payload through
-`rediacc_hooks.hookio` instead, which never had the unbounded form. The note
-lives here rather than nowhere because the differential above checks that the
-port keeps the original's dated evidence, and evidence for a function that is
-absent by design still has to be answerable.
+It has no Python counterpart and should not get one. This module is a SCANNER: callers hand it a command string they already read. Reading stdin is the caller's job, and the four bash entry points that do it (`hook_init` in the original, `block-pathspecless-git-commit.sh`, `cancel-old-ci.sh`, `refresh-pr-body.sh`) have Python siblings that receive their payload through
+`rediacc_hooks.hookio` instead, which never had the unbounded form. The note lives here rather than nowhere because the differential above checks that the port keeps the original's dated evidence, and evidence for a function that is absent by design still has to be answerable.
 
-WHERE THE PYTHON LOOKS UNIDIOMATIC, IT IS ON PURPOSE. Four bash behaviours
-have no natural Python spelling and are reproduced by hand rather than
-improved away:
+WHERE THE PYTHON LOOKS UNIDIOMATIC, IT IS ON PURPOSE. Four bash behaviours have no natural Python spelling and are reproduced by hand rather than improved away:
 
   * `$(...)` strips EVERY trailing newline from a command's output, so a
     filter's raw stdout and the value a caller sees are different strings.
@@ -86,11 +59,7 @@ improved away:
     than switching to Python's slicing, because the join it controls is where
     the wrapper payload's spacing comes from.
 
-NAMES. The bash `hook_` prefix existed because bash has one namespace. Here
-the module supplies it: `hook_scan_target` is `shellscan.scan_target`,
-`_hook_wrapper_payload` is `shellscan._wrapper_payload`, and so on. The
-differential maps them pair by pair, so the mapping is checked and not merely
-asserted here.
+NAMES. The bash `hook_` prefix existed because bash has one namespace. Here the module supplies it: `hook_scan_target` is `shellscan.scan_target`, `_hook_wrapper_payload` is `shellscan._wrapper_payload`, and so on. The differential maps them pair by pair, so the mapping is checked and not merely asserted here.
 """
 
 import json
@@ -109,11 +78,7 @@ SHELL_NAMES = ("sh", "bash", "dash", "zsh", "ash", "ksh")
 def _records(text):
     """Split text the way awk, sed and grep read records.
 
-    Returns `(records, terminated)`. `terminated` says whether the input's
-    last record carried its newline, which is what GNU sed reproduces and awk
-    does not. The empty string is ZERO records: `printf '%s' ""` gives a tool
-    no input at all, so its main block never runs -- which is why an empty
-    command produces an empty wrapper payload rather than an empty line.
+    Returns `(records, terminated)`. `terminated` says whether the input's last record carried its newline, which is what GNU sed reproduces and awk does not. The empty string is ZERO records: `printf '%s' ""` gives a tool no input at all, so its main block never runs -- which is why an empty command produces an empty wrapper payload rather than an empty line.
     """
     if text == "":
         return [], False
@@ -294,8 +259,7 @@ def _jq_raw_command(payload):
       * command missing/null       -> `null`                           -> "null"
       * command is a string        -> the string, raw (no JSON quoting)
       * command is a non-string    -> its compact JSON form
-    The trailing newline jq writes is removed by the command substitution, and
-    so is any newline the command itself ends with.
+    The trailing newline jq writes is removed by the command substitution, and so is any newline the command itself ends with.
     """
     try:
         doc = json.loads(payload)
@@ -343,11 +307,7 @@ def scan_target(cmd):
 def _sed_strip_quoted_spans(text):
     """`sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g'`, in that order.
 
-    The order is not cosmetic: single-quoted spans go first, so a double quote
-    living inside a single-quoted span is gone before the second expression
-    can pair it with an unrelated quote later in the line. The caller has
-    already mapped newlines to \\001, so "multi-line aware" means the whole
-    command is ONE record here and a quoted span may cross what were lines.
+    The order is not cosmetic: single-quoted spans go first, so a double quote living inside a single-quoted span is gone before the second expression can pair it with an unrelated quote later in the line. The caller has already mapped newlines to \\001, so "multi-line aware" means the whole command is ONE record here and a quoted span may cross what were lines.
     """
     records, terminated = _records(text)
     out = []
@@ -507,8 +467,7 @@ def target_root(scan, this_root):
 def _printf_line(text):
     """`printf '%s\\n' "$x"` -- exactly one newline appended, whatever `x` ends
     with. Not the same as a here-string only in name: both add one newline, and
-    both are written out here so a reader does not have to remember which
-    call site used which.
+    both are written out here so a reader does not have to remember which call site used which.
     """
     return text + "\n"
 
@@ -517,8 +476,7 @@ def _grep_only(pattern, text):
     """`grep -oE <pattern>` -- every non-overlapping match, in order, one per
     line, across every record. Python's finditer scans left to right and
     resumes after each match, which is GNU grep's rule too; what differs is
-    leftmost-longest versus leftmost-first, and the module docstring records
-    why the alternations here do not feel it.
+    leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
     """
     compiled = re.compile(pattern)
     records, _ = _records(text)
@@ -554,8 +512,6 @@ def _git_stdout(args, want_rc=False):
 def repo_root_env():
     """`CLAUDE_PROJECT_DIR`, the root every guard passes as `this_root`.
 
-    Not part of the bash lib -- each guard computes it itself -- but every
-    caller of `target_root` needs the same answer, and a second spelling of it
-    is exactly the drift `.ci/rediacc_ci/paths.py` was written to end.
+    Not part of the bash lib -- each guard computes it itself -- but every caller of `target_root` needs the same answer, and a second spelling of it is exactly the drift `.ci/rediacc_ci/paths.py` was written to end.
     """
     return os.environ.get("CLAUDE_PROJECT_DIR", "")

@@ -1,10 +1,6 @@
 """Message catalogue for worklist.py, the Stop hook.
 
-WHY THIS FILE EXISTS (operator request, 2026-07-30): worklist.py had grown
-past 3300 lines and a large share of that was user-facing prose -- violation
-texts, block reasons, the judge prompts. A future session must be able to
-load and reason about the LOGIC without spending its context on prose it
-will not change, so the prose lives here and the logic imports it.
+WHY THIS FILE EXISTS (operator request, 2026-07-30): worklist.py had grown past 3300 lines and a large share of that was user-facing prose -- violation texts, block reasons, the judge prompts. A future session must be able to load and reason about the LOGIC without spending its context on prose it will not change, so the prose lives here and the logic imports it.
 
 THE CONTRACT, deliberately boring:
   - Named %-format template constants ONLY. No logic, no functions, no
@@ -30,12 +26,8 @@ WHAT IS DELIBERATELY NOT HERE:
     liners, systemMessage part headers, xsession_ok reason returns). Moving
     a two-line string behind a name saves nothing and costs a hop.
 
-FAILURE MODE (decided, not accidental): worklist.py imports this module
-inside a try/except. On ImportError or any load-time breakage it installs a
-shim whose every attribute access raises, so query modes that use no
-messages (--path, --brief, --poll on an empty inbox) keep working, while the
-first message USE on the Stop path raises and is caught by the __main__
-crash handler, which BLOCKS with the traceback. A broken catalogue therefore
+FAILURE MODE (decided, not accidental): worklist.py imports this module inside a try/except. On ImportError or any load-time breakage it installs a shim whose every attribute access raises, so query modes that use no messages (--path, --brief, --poll on an empty inbox) keep working, while the first message USE on the Stop path raises and is caught by the __main__ crash handler,
+which BLOCKS with the traceback. A broken catalogue therefore
 fails closed and names itself; it can never fail open (a top-level crash
 used to read as ALLOW) and never wedges the path-query plumbing.
 """

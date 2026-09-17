@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 """block-unverified-push.sh: both directions, against a real git repo.
 
-HERMETIC BY CONSTRUCTION. Every case runs against a scratch repo with its own
-CLAUDE_PROJECT_DIR, so this never reads or writes the real
-.ci/cache/prepush-receipt.json. An earlier draft backed the real one up and
-restored it, which works right up until the process is killed between the two
-and leaves the session unable to push for a reason nothing explains.
+HERMETIC BY CONSTRUCTION. Every case runs against a scratch repo with its own CLAUDE_PROJECT_DIR, so this never reads or writes the real .ci/cache/prepush-receipt.json. An earlier draft backed the real one up and restored it, which works right up until the process is killed between the two and leaves the session unable to push for a reason nothing explains.
 
-The refusal arms need a receipt planted at a specific tree sha, which is why
-they live here rather than in test-hooks.sh: that suite's `check` helper drives
-a guard against the live tree with no env or cwd control.
+The refusal arms need a receipt planted at a specific tree sha, which is why they live here rather than in test-hooks.sh: that suite's `check` helper drives a guard against the live tree with no env or cwd control.
 """
 
 import json

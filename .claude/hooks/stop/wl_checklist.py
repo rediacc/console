@@ -1,14 +1,9 @@
 """wl_checklist: the /handoff checklist gate over agent/programs/<slug>/CHECKLIST.md.
 
-WHY THIS EXISTS: /handoff distills a session into an agent/programs/<slug>/ suite
-and then told the FUTURE session, in prose inside PROMPT.md, to seed the
-worklist. Prose is not a gate. Nothing verified that the producing session
-actually wrote every deliverable, and nothing verified that the consuming
-sessions ever covered the waves, so an ignored or compacted-away PROMPT.md
+WHY THIS EXISTS: /handoff distills a session into an agent/programs/<slug>/ suite and then told the FUTURE session, in prose inside PROMPT.md, to seed the worklist. Prose is not a gate. Nothing verified that the producing session actually wrote every deliverable, and nothing verified that the consuming sessions ever covered the waves, so an ignored or compacted-away PROMPT.md
 dropped program work silently and nobody found out.
 
-The checklist is the machine-readable half of a handoff. Its two halves are
-enforced by DIFFERENT means, and confusing them is the whole trap:
+The checklist is the machine-readable half of a handoff. Its two halves are enforced by DIFFERENT means, and confusing them is the whole trap:
 
   * DELIVERABLES ARE FILE-VERIFIED, period. Every `file:<path>` token must
     exist and be non-empty. The tick is bookkeeping; the FILE is the truth,
@@ -20,17 +15,9 @@ enforced by DIFFERENT means, and confusing them is the whole trap:
     gate rather than being re-invented here, and no checklist state is
     written into the JSONL store (one source of truth, no reconciliation).
 
-FAIL CLOSED, everywhere. A checklist this module cannot parse gates nothing,
-so it BLOCKS rather than passing quietly (the V_CI_UNREADABLE precedent), and
-an unexpected exception becomes an ALWAYS-tier violation naming itself. The
-hook never WRITES a checklist: every exit is one file edit or one worklist
-command a session can complete alone in a single turn.
+FAIL CLOSED, everywhere. A checklist this module cannot parse gates nothing, so it BLOCKS rather than passing quietly (the V_CI_UNREADABLE precedent), and an unexpected exception becomes an ALWAYS-tier violation naming itself. The hook never WRITES a checklist: every exit is one file edit or one worklist command a session can complete alone in a single turn.
 
-COST: the full Stop battery reads these files, because they are the
-enforcement point, and a repo with none pays exactly one glob. The poll fast
-path never opens one -- checklists_sig() is stat-only and is banked in the
-pollbase, so a live checklist forfeits the silent path without ever costing a
-read on it.
+COST: the full Stop battery reads these files, because they are the enforcement point, and a repo with none pays exactly one glob. The poll fast path never opens one -- checklists_sig() is stat-only and is banked in the pollbase, so a live checklist forfeits the silent path without ever costing a read on it.
 """
 
 import glob
@@ -77,12 +64,8 @@ def checklists_sig(root):
     """A STAT-ONLY signature of every checklist: sha1 over sorted
     (relpath, mtime_ns, size).
 
-    Never opens a file, and that is a contract rather than an optimisation:
-    this is what the poll fast path compares against its banked baseline, and
-    a poll that read files would pay the cost the fast path exists to avoid.
-    A path that cannot be stat'd contributes a sentinel instead of raising, so
-    a permission-denied checklist still MOVES the signature (which forfeits
-    the silent path) rather than wedging the poll.
+    Never opens a file, and that is a contract rather than an optimisation: this is what the poll fast path compares against its banked baseline, and a poll that read files would pay the cost the fast path exists to avoid. A path that cannot be stat'd contributes a sentinel instead of raising, so a permission-denied checklist still MOVES the signature (which forfeits the silent
+    path) rather than wedging the poll.
     """
     h = hashlib.sha1()
     for path in checklist_paths(root):
@@ -103,10 +86,7 @@ def _err(lineno, line, why):
 def parse_checklist(root, path):
     """{path, rel, slug, status, owner, deliverables, waves, errors}.
 
-    EVERY shape problem is collected, never the first one only: a session
-    handed one error per stop would pay one turn per typo. `status` is the
-    lowercased value and is empty when the header is unusable, which the
-    caller reads as malformed rather than as a state.
+    EVERY shape problem is collected, never the first one only: a session handed one error per stop would pay one turn per typo. `status` is the lowercased value and is empty when the header is unusable, which the caller reads as malformed rather than as a state.
     """
     out = {
         "path": str(path),
@@ -217,11 +197,7 @@ def parse_checklist(root, path):
 def verify_files(root, files):
     """[(token, 'ok'|'missing'|'empty')] for the file: tokens of one item.
 
-    A zero-byte file is EMPTY and named distinctly from MISSING, because the
-    two have different causes (a write that never happened versus one that
-    was truncated) and reading them as one hid a truncated PROMPT.md. A path
-    that exists but is not a regular file reads as missing: a directory is
-    not a deliverable.
+    A zero-byte file is EMPTY and named distinctly from MISSING, because the two have different causes (a write that never happened versus one that was truncated) and reading them as one hid a truncated PROMPT.md. A path that exists but is not a regular file reads as missing: a directory is not a deliverable.
     """
     out = []
     for tok in files:
@@ -256,10 +232,7 @@ def _deliverable_rows(root, parsed):
 def _covering_items(fold, token):
     """Live store records whose text carries the linkage token.
 
-    Word-bounded and literal-escaped, so `cl:demo/w1` never matches
-    `cl:demo/w10`. Any live state counts as coverage: an open item, a lease
-    and a deferral are all somebody having CLAIMED the wave, which is exactly
-    what an uncovered wave lacks.
+    Word-bounded and literal-escaped, so `cl:demo/w1` never matches `cl:demo/w10`. Any live state counts as coverage: an open item, a lease and a deferral are all somebody having CLAIMED the wave, which is exactly what an uncovered wave lacks.
     """
     rx = re.compile(r"\b%s\b" % re.escape(token))
     return [
@@ -282,12 +255,8 @@ def _closed_through_door(rec):
 def _wave_rows(fold, parsed, session_id, actor=None):
     """Problem rows for the unticked waves, each carrying its one-command exit.
 
-    `actor` is whose prefix the `--add` exit names. It defaults to this session,
-    which is right whenever this session is the one that must act. On a FOREIGN
-    checklist it is the owner's prefix instead: the row is then a description of
-    what that session will do, not an instruction to this one. Naming the reader
-    there would contradict the advisory in the same breath -- "the owner creates
-    these items" directly above a command that claims them for somebody else.
+    `actor` is whose prefix the `--add` exit names. It defaults to this session, which is right whenever this session is the one that must act. On a FOREIGN checklist it is the owner's prefix instead: the row is then a description of what that session will do, not an instruction to this one. Naming the reader there would contradict the advisory in the same breath -- "the owner
+    creates these items" directly above a command that claims them for somebody else.
     """
     me8 = (actor or session_id or "unknown")[:8]
     slug, rel, rows = parsed["slug"], parsed["rel"], []
@@ -320,19 +289,11 @@ def _wave_rows(fold, parsed, session_id, actor=None):
 def _door_parked_rows(fold, parsed):
     """Rows for unticked waves whose covering items were ALL closed through a door.
 
-    _wave_rows above skips these on purpose and the reasoning there is right:
-    the work did not happen, no session can make it happen, and demanding a tick
-    would be demanding a lie. But it skipped them into TOTAL silence, and that
-    is a different claim. Such a wave emits no violation, and its covering item
-    is `[x]` so it has also left `--list --open`: nothing in the machinery
+    _wave_rows above skips these on purpose and the reasoning there is right: the work did not happen, no session can make it happen, and demanding a tick would be demanding a lie. But it skipped them into TOTAL silence, and that is a different claim. Such a wave emits no violation, and its covering item is `[x]` so it has also left `--list --open`: nothing in the machinery
     surfaces it again, ever.
 
-    What kept `cl:backup-storage/w8` (the credentialed cutover legs) visible for
-    a whole day was one session choosing to write it into STATE.md and into
-    every report. That is discipline, not a control, and the doors exist
-    precisely because discipline is what fails across a compaction. So these are
-    reported as an ADVISORY: never blocking, because nothing here can act on
-    them, but never silent either, because the operator can.
+    What kept `cl:backup-storage/w8` (the credentialed cutover legs) visible for a whole day was one session choosing to write it into STATE.md and into every report. That is discipline, not a control, and the doors exist precisely because discipline is what fails across a compaction. So these are reported as an ADVISORY: never blocking, because nothing here can act on them, but
+    never silent either, because the operator can.
     """
     slug, rows = parsed["slug"], []
     for w in parsed["waves"]:
@@ -376,9 +337,7 @@ def _adopt_hint(owner, projects_dir, rel):
 def _ckey(prefix, slug):
     """The finding key for ONE checklist: `<check-class>:<slug>`.
 
-    A FIXED key per check class was the bug (automated review, PR #563). Two
-    things downstream read the key as an identity, and both starve the second
-    checklist rather than delaying it:
+    A FIXED key per check class was the bug (automated review, PR #563). Two things downstream read the key as an identity, and both starve the second checklist rather than delaying it:
 
       * the focused block's rotation (wl_checks.py) ties-breaks on
         `order = {v[0]: i for ...}`, a dict comp in which duplicate keys
@@ -387,11 +346,7 @@ def _ckey(prefix, slug):
       * outq_add finds a non-sticky entry by key alone, so the second
         advisory's text OVERWRITES the first's instead of queueing beside it.
 
-    Two concurrent handoffs is an ordinary state here, so the second one simply
-    vanished into the "N more outstanding" count. Scoping by slug costs
-    nothing: the rotation prunes any key that is no longer outstanding, so a
-    settled checklist's key leaves `served` on the next stop. The PREFIX is
-    preserved verbatim so a grep on the check class still matches.
+    Two concurrent handoffs is an ordinary state here, so the second one simply vanished into the "N more outstanding" count. Scoping by slug costs nothing: the rotation prunes any key that is no longer outstanding, so a settled checklist's key leaves `served` on the next stop. The PREFIX is preserved verbatim so a grep on the check class still matches.
     """
     return "%s:%s" % (prefix, slug)
 
@@ -527,13 +482,9 @@ def checklist_findings(root, fold, session_id, projects_dir):
     """(violations, advisories, live_count) for every checklist in the repo.
 
     violations are (key, always, text) ready for run_stop's vadd; advisories
-    are (key, text, prio) ready for outq_add. live_count is what the poll
-    fast path banks: 0 means no checklist can block, so a poll may still take
-    the silent path.
+    are (key, text, prio) ready for outq_add. live_count is what the poll fast path banks: 0 means no checklist can block, so a poll may still take the silent path.
 
-    NEVER RAISES. Any unexpected exception becomes the ALWAYS-tier unreadable
-    violation and counts as live, because a gate that went blind must say so
-    and must not also hand the poll path a clean baseline.
+    NEVER RAISES. Any unexpected exception becomes the ALWAYS-tier unreadable violation and counts as live, because a gate that went blind must say so and must not also hand the poll path a clean baseline.
     """
     violations, advisories, live = [], [], 0
     try:
@@ -558,11 +509,9 @@ def checklist_findings(root, fold, session_id, projects_dir):
 
 def checklists_block(root):
     """(listing, n): one line per live-or-malformed checklist, for
-    SessionStart and PostCompact. ("", 0) when there is nothing to say, so a
-    repo without handoffs emits no block at all.
+    SessionStart and PostCompact. ("", 0) when there is nothing to say, so a repo without handoffs emits no block at all.
 
-    Reading files HERE is fine: these two events fire once each, unlike the
-    poll path this module is otherwise careful never to charge.
+    Reading files HERE is fine: these two events fire once each, unlike the poll path this module is otherwise careful never to charge.
     """
     lines = []
     for path in checklist_paths(root):

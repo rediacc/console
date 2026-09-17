@@ -26,7 +26,7 @@ Terraform Provider (Go)
 
 **Why this is the only option:**
 - rdc manages everything: config, SSH keys, renet binary provisioning, vault
-building, network ID allocation, cross-machine credential resolution
+  building, network ID allocation, cross-machine credential resolution
 - renet requires a RenetVault payload that only rdc knows how to build
 - If rdc is missing a command or JSON output, the fix goes into rdc
 - Same approach as Ansible modules — one consistent interface
@@ -571,7 +571,7 @@ The recommended workflow uses `dev_overrides` — no `make install` or
 # ~/.terraformrc (one-time setup)
 cat > ~/.terraformrc <<'EOF' provider_installation { dev_overrides {
     "rediacc/rediacc" = "/home/user/monorepo/console/packages/terraform/terraform-provider-rediacc"
-} direct {} } EOF
+  } direct {} } EOF
 
 # Development workflow
 cd packages/terraform/terraform-provider-rediacc go build -o terraform-provider-rediacc # Just rebuild, no install step

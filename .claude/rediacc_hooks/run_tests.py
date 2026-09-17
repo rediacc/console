@@ -1,31 +1,20 @@
 #!/usr/bin/env python3
 """Run this package's tests with the pytest `.ci/bootstrap.sh` provisions.
 
-WHY A RUNNER AT ALL, when `pytest .claude/rediacc_hooks/tests` from the repo
-root does the same thing. Because on the host these hooks run on, `pytest` is
-not on PATH and neither is pip, pipx, uv or uvx (measured 2026-09-06 and
-recorded in `.ci/bootstrap.sh`'s own header). Typing `pytest` there gets
-"command not found", which reads as "the suite is broken" rather than "the
-toolchain is not installed". This asks the bootstrap where pytest is, exactly
-as the bootstrap defines it, and says what to run when it is absent.
+WHY A RUNNER AT ALL, when `pytest .claude/rediacc_hooks/tests` from the repo root does the same thing. Because on the host these hooks run on, `pytest` is not on PATH and neither is pip, pipx, uv or uvx (measured 2026-09-06 and recorded in `.ci/bootstrap.sh`'s own header). Typing `pytest` there gets "command not found", which reads as "the suite is broken" rather than "the
+toolchain is not installed". This asks the bootstrap where pytest is, exactly as the bootstrap defines it, and says what to run when it is absent.
 
-IT DOES NOT REIMPLEMENT THE RESOLUTION ORDER. `.ci/bootstrap.sh install` is
-idempotent by resolution rather than by a stamp -- it asks the binary its
-version -- so calling it on every run costs one process and cannot disagree
+IT DOES NOT REIMPLEMENT THE RESOLUTION ORDER. `.ci/bootstrap.sh install` is idempotent by resolution rather than by a stamp -- it asks the binary its version -- so calling it on every run costs one process and cannot disagree
 with itself. Copying its search order here would be a second place the answer
-is written down, which is the failure `.ci/rediacc_ci/paths.py` was written to
-end.
+is written down, which is the failure `.ci/rediacc_ci/paths.py` was written to end.
 
     python3 .claude/rediacc_hooks/run_tests.py            the whole package
     python3 .claude/rediacc_hooks/run_tests.py -k shellscan   pass-through args
     PYTEST_BIN=/usr/bin/pytest python3 ... run_tests.py   an explicit binary
 
-Arguments after the script name go to pytest unchanged. With none, it runs
-this package's tests directory.
+Arguments after the script name go to pytest unchanged. With none, it runs this package's tests directory.
 
-NOT A GATE. A gate's entry point has to live where `scripts/gate-bind.ts` can
-see it (driver contract 5d), and registering this one is the root driver's
-call, not this file's -- see the report accompanying phase 1.
+NOT A GATE. A gate's entry point has to live where `scripts/gate-bind.ts` can see it (driver contract 5d), and registering this one is the root driver's call, not this file's -- see the report accompanying phase 1.
 """
 
 import os

@@ -1,26 +1,18 @@
 """ONE extractor, applied to both sides of the port.
 
-WHAT THIS IS FOR. D3 moved a 2,774-line bash suite into pytest, and the acceptance
-was never "the diff looks right": it was that the MULTISET OF ASSERTION LABELS the
-ported suite emits equals the multiset the bash suite emitted, read by the same
+WHAT THIS IS FOR. D3 moved a 2,774-line bash suite into pytest, and the acceptance was never "the diff looks right": it was that the MULTISET OF ASSERTION LABELS the ported suite emits equals the multiset the bash suite emitted, read by the same
 function on both sides. A comparison of two hand-written inventories proves that two
 inventories agree; a comparison of two RUNS proves that every case executed.
 
-WHY THE LINE, AND NOT THE SOURCE TEXT. Reading labels out of the two sources would
-need two different parsers -- the bash label is the fourth word-ish of a `check`
-call, the Python one is the third argument of `case(...)` -- and two parsers is two
-things that can be wrong in the same direction. Both suites PRINT the same line:
+WHY THE LINE, AND NOT THE SOURCE TEXT. Reading labels out of the two sources would need two different parsers -- the bash label is the fourth word-ish of a `check` call, the Python one is the third argument of `case(...)` -- and two parsers is two things that can be wrong in the same direction. Both suites PRINT the same line:
 
     ok   [0] raw-pr-body(blocked) (exit 0)
 
-so one regex reads both, and a case that exists but never ran contributes nothing,
-which is exactly the failure a static comparison cannot see.
+so one regex reads both, and a case that exists but never ran contributes nothing, which is exactly the failure a static comparison cannot see.
 
-HOW THE PYTHON SIDE PRINTS IT. pytest captures stdout, so `record()` appends to a
-file named by $HOOK_LABEL_DIR instead. ONE FILE PER PROCESS, because the suite runs
+HOW THE PYTHON SIDE PRINTS IT. pytest captures stdout, so `record()` appends to a file named by $HOOK_LABEL_DIR instead. ONE FILE PER PROCESS, because the suite runs
 under `pytest -n <jobs> --dist loadgroup` and several workers append at once; a
-shared file would interleave partial lines and the extractor would read a corrupted
-label as a missing one.
+shared file would interleave partial lines and the extractor would read a corrupted label as a missing one.
 
     HOOK_LABEL_DIR=/tmp/labels <pytest ...>
     python3 -m rediacc_hooks.tests.hooklabels /tmp/labels <baseline.out>

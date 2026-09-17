@@ -6,19 +6,10 @@
 Run by `.claude/hooks/test-hooks.sh` beside the other stop-hook selftests.
 
 WHY A PINNED SET RATHER THAN A RULE. The admission rule for `always=True` is
-prose (I1/I2/I3, in wl_checks.py beside `vadd`), and prose is exactly what
-failed: the file DESCRIBED the rule, named the three checks where another party
-pays in `carry_through_pause`, and left all three in the rotating tier where a
-crowded session could starve them 23 keys deep. Nobody could point at a failing
-assertion, because there was none. A pinned literal cannot be talked past: a
-promotion or a demotion is a diff to this file, which is where the argument for
-it belongs.
+prose (I1/I2/I3, in wl_checks.py beside `vadd`), and prose is exactly what failed: the file DESCRIBED the rule, named the three checks where another party pays in `carry_through_pause`, and left all three in the rotating tier where a crowded session could starve them 23 keys deep. Nobody could point at a failing assertion, because there was none. A pinned literal cannot be talked
+past: a promotion or a demotion is a diff to this file, which is where the argument for it belongs.
 
-THE THIRD ASSERTION IS THE ONE THAT WOULD HAVE CAUGHT THE SEAM -- every key the
-ladder classifies must be a key some `vadd` can actually produce. A ladder entry
-naming a check that does not exist is silent by construction: the tier looks
-populated, the check it meant to promote stays hygiene, and everything still
-passes.
+THE THIRD ASSERTION IS THE ONE THAT WOULD HAVE CAUGHT THE SEAM -- every key the ladder classifies must be a key some `vadd` can actually produce. A ladder entry naming a check that does not exist is silent by construction: the tier looks populated, the check it meant to promote stays hygiene, and everything still passes.
 """
 
 import ast

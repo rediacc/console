@@ -1,53 +1,26 @@
 """Refuse a push whose tree no local gate run has judged.
 
-WHY. A CI round costs ~15 minutes. Measured on PR #579, three of the five
-reds this wave were `check:format` (1.72s), `check:ci-python-lint` (0.59s) and
-`check:ci-parity` (1.29s) -- 3.6 seconds of gate time between them, and they
-cost roughly 45 minutes of CI. The gates were there, the runner was there, and
-nothing made anyone run them.
+WHY. A CI round costs ~15 minutes. Measured on PR #579, three of the five reds this wave were `check:format` (1.72s), `check:ci-python-lint` (0.59s) and `check:ci-parity` (1.29s) -- 3.6 seconds of gate time between them, and they cost roughly 45 minutes of CI. The gates were there, the runner was there, and nothing made anyone run them.
 
-PROSE ALREADY TRIED. docs/agent-reference/ci-gates.md says "Run it before
-pushing to catch issues early" and CLAUDE.md points at it. Five rounds
-happened anyway. wl_git.py's own header states the principle this guard
-follows: prose is not a safety mechanism, and the recorded incidents show it
-failing.
+PROSE ALREADY TRIED. docs/agent-reference/ci-gates.md says "Run it before pushing to catch issues early" and CLAUDE.md points at it. Five rounds happened anyway. wl_git.py's own header states the principle this guard follows: prose is not a safety mechanism, and the recorded incidents show it failing.
 
-WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which
-fires on EVERY Bash call, so it must cost microseconds -- one `git rev-parse`
-and one file read. The expensive half (33 seconds, 254 gates) happens in an
-ordinary Bash call the session makes itself, where the runner's untruncated
-failure block is readable. Splitting them is the only shape that is both
+WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which fires on EVERY Bash call, so it must cost microseconds -- one `git rev-parse` and one file read. The expensive half (33 seconds, 254 gates) happens in an ordinary Bash call the session makes itself, where the runner's untruncated failure block is readable. Splitting them is the only shape that is both
 enforceable and cheap.
 
 KEYED ON `HEAD^{tree}`. CI checks out the pushed commit, so the tree object is
-exactly what CI will judge. It is also invariant to the dozens of dirty paths
-this repo's tree normally carries from OTHER live sessions -- keying on the
-worktree would invalidate the receipt on someone else's keystroke and make it
-unobtainable, which is how a guard becomes a wall and then gets bypassed.
+exactly what CI will judge. It is also invariant to the dozens of dirty paths this repo's tree normally carries from OTHER live sessions -- keying on the worktree would invalidate the receipt on someone else's keystroke and make it unobtainable, which is how a guard becomes a wall and then gets bypassed.
 
 =============================================================================
 PORT NOTES
 =============================================================================
 
-`command -v jq` IS KEPT, AND IT NOW GUARDS NOTHING THIS FILE DOES. The bash
-reads the receipt with six `jq -r` calls, so it fails open when jq is missing:
-"FAIL OPEN ON A BROKEN ENVIRONMENT, never on a broken verdict". This port reads
-the receipt with `json.loads` and needs no jq at all, so the probe is now a pure
-environment test with no consumer. It is reproduced anyway, because the port is
-judged by AGREEMENT with its twin and a machine without jq is a case the
-differential can be handed. Deleting it is a BEHAVIOUR CHANGE and therefore
-P6's call, made when the last bash guard goes and `require-jq.sh` retires with
-it. Recorded here so that decision is a decision rather than an omission.
+`command -v jq` IS KEPT, AND IT NOW GUARDS NOTHING THIS FILE DOES. The bash reads the receipt with six `jq -r` calls, so it fails open when jq is missing: "FAIL OPEN ON A BROKEN ENVIRONMENT, never on a broken verdict". This port reads the receipt with `json.loads` and needs no jq at all, so the probe is now a pure environment test with no consumer. It is reproduced anyway, because
+the port is judged by AGREEMENT with its twin and a machine without jq is a case the differential can be handed. Deleting it is a BEHAVIOUR CHANGE and therefore P6's call, made when the last bash guard goes and `require-jq.sh` retires with it. Recorded here so that decision is a decision rather than an omission.
 
-THE `jq` FILTERS, spelled out because their defaults are load-bearing:
-`.headTree // ""`, `.whole // false`, `.exitCode // 1`, `(.failed // []) |
-join(", ")`, `.dirtyDigest // ""`, `(.blocked // []) | join(", ")`. `//` is
-falsy-tested, not null-tested, so a `whole` of `false` and a `whole` that is
-absent produce the same string, which is what makes the narrowed-run refusal
-fail CLOSED on a receipt shape the runner has not written yet.
+THE `jq` FILTERS, spelled out because their defaults are load-bearing: `.headTree // ""`, `.whole // false`, `.exitCode // 1`, `(.failed // []) | join(", ")`, `.dirtyDigest // ""`, `(.blocked // []) | join(", ")`. `//` is falsy-tested, not null-tested, so a `whole` of `false` and a `whole` that is absent produce the same string, which is what makes the narrowed-run refusal fail
+CLOSED on a receipt shape the runner has not written yet.
 
-WHAT THIS GUARD INHERITS FROM `shellscan.target_root`: the TAB-after-`-C`
-defect, reproduced deliberately. See `block_untagged_commit`'s port notes.
+WHAT THIS GUARD INHERITS FROM `shellscan.target_root`: the TAB-after-`-C` defect, reproduced deliberately. See `block_untagged_commit`'s port notes.
 """
 
 import hashlib
@@ -109,10 +82,7 @@ def _env():
 def _repo_with_receipt(path, receipt, carried=None):
     """A checkout whose `.ci/cache/prepush-receipt.json` says what we want.
 
-    The receipt's `headTree` is filled in AFTER the commit, because the whole
-    point of the key is that it names the tree object git actually produced.
-    A hand-written hash would make every fixture take the "judged a different
-    tree" branch and the other four would be unreachable.
+    The receipt's `headTree` is filled in AFTER the commit, because the whole point of the key is that it names the tree object git actually produced. A hand-written hash would make every fixture take the "judged a different tree" branch and the other four would be unreachable.
     """
     path.mkdir(parents=True)
     subprocess.run(
@@ -222,8 +192,7 @@ EDGE_CASES = [
 def _jq_join(value, sep=", "):
     """`(.x // []) | join(", ")` -- a jq join, over a list that may be absent.
 
-    jq stringifies a non-string element rather than refusing, which is why this
-    does not assume the list holds strings.
+    jq stringifies a non-string element rather than refusing, which is why this does not assume the list holds strings.
     """
     if not isinstance(value, list):
         return ""
@@ -425,10 +394,7 @@ def run(ev):
 def _dirty_digest(root):
     """`git status --porcelain=v1 -z | sha256sum | cut -c1-16`.
 
-    `sha256sum` prints `<hex>  -`, and `cut -c1-16` takes the first sixteen
-    characters of the hex, never of the filename field. A pipeline, so a git
-    failure yields an empty digest rather than an error, and the caller treats
-    an empty digest as "no comparison to make".
+    `sha256sum` prints `<hex> -`, and `cut -c1-16` takes the first sixteen characters of the hex, never of the filename field. A pipeline, so a git failure yields an empty digest rather than an error, and the caller treats an empty digest as "no comparison to make".
     """
     try:
         proc = subprocess.run(

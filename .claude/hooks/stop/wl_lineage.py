@@ -1,15 +1,9 @@
 """wl_lineage: is session B the same conversation as session A, continued after a compaction?
 
-WHY THIS EXISTS. The store refuses to let one session tick another's items, and that
-rule is right: two sessions sharing this worktree must not resolve each other's
-tracking. But a compaction can give one continuous conversation a NEW session id, and
-then the rule fires against the session's own work. On 2026-09-02 that left four
-settled decisions open for a whole night, reported to the operator every stop as a
-peer's, while the session reasoned about a peer that did not exist. The operator had
-to say "I've never switched to another window."
+WHY THIS EXISTS. The store refuses to let one session tick another's items, and that rule is right: two sessions sharing this worktree must not resolve each other's tracking. But a compaction can give one continuous conversation a NEW session id, and then the rule fires against the session's own work. On 2026-09-02 that left four settled decisions open for a whole night, reported
+to the operator every stop as a peer's, while the session reasoned about a peer that did not exist. The operator had to say "I've never switched to another window."
 
-WHAT IS AND IS NOT EVIDENCE. Everything here is written by the harness into the
-transcripts under ~/.claude/projects/<slug>/, and nothing here is a heuristic:
+WHAT IS AND IS NOT EVIDENCE. Everything here is written by the harness into the transcripts under ~/.claude/projects/<slug>/, and nothing here is a heuristic:
 
   E1  the predecessor's transcript ends with {"type":"continued-in", ...,
       "continuedInSessionId": <me>}. Explicit and directional. NOT available
@@ -24,18 +18,12 @@ transcripts under ~/.claude/projects/<slug>/, and nothing here is a heuristic:
       another's file. E3 is checked even when E1 fires, because E1 is a single line
       and a single line is the easiest thing to forge.
 
-THERE IS NO HEURISTIC RUNG, and that is the load-bearing decision. The obvious
-fallback is "same cwd + same branch + time-adjacency". Measured on this machine, four
+THERE IS NO HEURISTIC RUNG, and that is the load-bearing decision. The obvious fallback is "same cwd + same branch + time-adjacency". Measured on this machine, four
 sessions all carry cwd=/home/developer/console and gitBranch=main with overlapping
-times: concurrent sessions in one worktree on one branch are ROUTINE here. So that
-heuristic's false-positive rate is highest on exactly the population it would judge,
-and its failure mode is one session silently resolving another's tracking -- the thing
-the ownership rule exists to prevent. When E1/E2 find nothing the answer is "cannot
-establish", and the operator's WORKLIST_SESSION_ID override remains the way a human
-declares it, recorded as a human's declaration.
+times: concurrent sessions in one worktree on one branch are ROUTINE here. So that heuristic's false-positive rate is highest on exactly the population it would judge, and its failure mode is one session silently resolving another's tracking -- the thing the ownership rule exists to prevent. When E1/E2 find nothing the answer is "cannot establish", and the operator's
+WORKLIST_SESSION_ID override remains the way a human declares it, recorded as a human's declaration.
 
-Bounded reads only: a tail window per candidate and two mmap scans. Measured on the
-live directory (52 transcripts, 192 MB): 19 ms for the E1 sweep, 7 ms for E2.
+Bounded reads only: a tail window per candidate and two mmap scans. Measured on the live directory (52 transcripts, 192 MB): 19 ms for the E1 sweep, 7 ms for E2.
 """
 
 from __future__ import annotations
@@ -107,11 +95,7 @@ def _record_uuids(records):
 def transcript_for(session_id, projects=None):
     """This session's transcript path, when the harness did not hand us one.
 
-    The Stop hook receives CLAUDE_TRANSCRIPT_PATH, but the CLI verbs do not, and
-    `--adopt` is a CLI verb. The file is named for the session id, so this is a
-    lookup rather than a guess -- and it returns None rather than a best match,
-    because adopting on the strength of the wrong transcript is exactly the
-    failure this module exists to prevent.
+    The Stop hook receives CLAUDE_TRANSCRIPT_PATH, but the CLI verbs do not, and `--adopt` is a CLI verb. The file is named for the session id, so this is a lookup rather than a guess -- and it returns None rather than a best match, because adopting on the strength of the wrong transcript is exactly the failure this module exists to prevent.
     """
     if not session_id:
         return None
@@ -128,8 +112,7 @@ def transcript_for(session_id, projects=None):
 def boundary_of(transcript):
     """My compact_boundary head record, or None when I did not arrive by compaction.
 
-    GATE 1, and it is the cheap one: a session that did not arrive by a compaction can
-    never adopt anything, so this is asked before any candidate is opened.
+    GATE 1, and it is the cheap one: a session that did not arrive by a compaction can never adopt anything, so this is asked before any candidate is opened.
     """
     for rec in _head_records(transcript):
         if not isinstance(rec, dict):

@@ -1,46 +1,30 @@
 """Block edits that put Python SOURCE inside a JavaScript/TypeScript file.
 
-THE INCIDENT THIS EXISTS FOR. packages/cli/src/remote/vscode/bootstrap.ts held
-a 130-line Python program inside a template literal, executed on a remote host
-over SSH. No linter, formatter or type checker in this repo could see it, and
-it had grown a code-injection hole: four of the six values interpolated into it
+THE INCIDENT THIS EXISTS FOR. packages/cli/src/remote/vscode/bootstrap.ts held a 130-line Python program inside a template literal, executed on a remote host over SSH. No linter, formatter or type checker in this repo could see it, and it had grown a code-injection hole: four of the six values interpolated into it
 went in unescaped, so a universalUser of `'; import os; os.system('id'); x='`
 parsed cleanly and executed, under `sudo -u` on the user-switch path. CI now
 catches the class (check:ci-no-inline-python), but CI runs after the edit; this
-refuses it at the keystroke, which is what the operator asked for by name:
-"improve .claude/hooks/ to avoid future incidents".
+refuses it at the keystroke, which is what the operator asked for by name: "improve .claude/hooks/ to avoid future incidents".
 
-ONE RULE, TWO ENTRY POINTS, on purpose. The decision lives entirely in
-.ci/scripts/quality/check_inline_python.py, invoked here with --file. A hook
+ONE RULE, TWO ENTRY POINTS, on purpose. The decision lives entirely in .ci/scripts/quality/check_inline_python.py, invoked here with --file. A hook
 with its own private regex would drift from the gate, and the direction of
-drift is always the same: the hook grows lenient, the gate stays strict, and
-the difference shows up as a CI failure the author could not reproduce.
+drift is always the same: the hook grows lenient, the gate stays strict, and the difference shows up as a CI failure the author could not reproduce.
 
 THE ESCAPE, and why there is one. Set REDIACC_ALLOW_INLINE_PYTHON=1 in the
-shell that launches the session. A guard with no way past it is a guard
-somebody deletes the first time it is wrong, and deleting it removes the
-protection permanently rather than for one edit. The CI gate is unaffected by
-this variable, so an override buys a local edit, never a merge.
+shell that launches the session. A guard with no way past it is a guard somebody deletes the first time it is wrong, and deleting it removes the protection permanently rather than for one edit. The CI gate is unaffected by this variable, so an override buys a local edit, never a merge.
 
 PORT NOTE ON FINDING THE DETECTOR. The bash computes
 `REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"`, three
-levels up from `.claude/hooks/pre-edit/`. That arithmetic is exactly what
-`hookio.repo_root()` refuses to do: it LOOKS for the directory holding both
-`.claude` and `.ci` instead of counting, so the answer survives this file
-moving. Same tree, different failure mode -- a miscount here would silently
-find no detector and the guard would degrade to its warning branch, which is
-the one shape of breakage this guard's own header says must not read as clean.
+levels up from `.claude/hooks/pre-edit/`. That arithmetic is exactly what `hookio.repo_root()` refuses to do: it LOOKS for the directory holding both `.claude` and `.ci` instead of counting, so the answer survives this file moving. Same tree, different failure mode -- a miscount here would silently find no detector and the guard would degrade to its warning branch, which is the one
+shape of breakage this guard's own header says must not read as clean.
 
 PORT NOTE ON `2>&1`. `FINDINGS=$("$DETECTOR" --file "$TMP" 2>&1)` merges the two
-streams into one, and the detector writes its findings to STDERR, so a port
-that captured only stdout would emit an empty findings block and still exit 2.
+streams into one, and the detector writes its findings to STDERR, so a port that captured only stdout would emit an empty findings block and still exit 2.
 `hookio.run_out` deliberately discards stderr, so it is the wrong tool here;
 the private helper below spells the merge as `stderr=STDOUT`, which is the same
 file-descriptor duplication the shell performs.
 
-PORT NOTE ON THE `case` WITH NO EMPTY ARM. Unlike block-suppressions.sh, this
-guard's `case` has no `"")` arm, so a payload naming no file exits 0 and the
-detector is never forked for it. That asymmetry between two neighbouring
+PORT NOTE ON THE `case` WITH NO EMPTY ARM. Unlike block-suppressions.sh, this guard's `case` has no `"")` arm, so a payload naming no file exits 0 and the detector is never forked for it. That asymmetry between two neighbouring
 pre-edit guards is real and is preserved; it is also why the corpus's
 `edit_json` payloads cost this guard nothing.
 """
@@ -143,8 +127,7 @@ THE_ESCAPE = (
 def _detector_output(detector, path):
     """`$("$DETECTOR" --file "$TMP" 2>&1)` -- merged streams, status kept.
 
-    Returns `(ok, text)`. The text has its trailing newlines stripped, which is
-    the command substitution's doing and not the detector's.
+    Returns `(ok, text)`. The text has its trailing newlines stripped, which is the command substitution's doing and not the detector's.
     """
     try:
         proc = subprocess.run(

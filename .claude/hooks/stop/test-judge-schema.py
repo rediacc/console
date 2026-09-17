@@ -2,27 +2,18 @@
 """Controls for wl_judge: which objects the judge MUST return, and the class-sweep rule.
 
 Two rules live here. The first is judge_schema_for's marker contract; the second is
-wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at
-PART 2 and carry their own argument.
+wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at PART 2 and carry their own argument.
 
-Why this exists. The fix-signal is a separate prompt section (M.REGGATE_PROMPT, appended
-as `extra`), while v7 deliberately shipped ONE schema in which `regression_gate` is
-optional at the top level. Those two facts together let the model satisfy the schema while
-omitting the object, after which wl_reggate reports
+Why this exists. The fix-signal is a separate prompt section (M.REGGATE_PROMPT, appended as `extra`), while v7 deliberately shipped ONE schema in which `regression_gate` is optional at the top level. Those two facts together let the model satisfy the schema while omitting the object, after which wl_reggate reports
 
     regression_gate missing or incomplete: None
 
 and the stop hook blocks by the no-escape-hatch rule. The block is correct; what is wrong
-is that the session is blocked by a JUDGE error rather than by anything it did. Observed
-live on 2026-08-28, on a turn whose fix was already gated.
+is that the session is blocked by a JUDGE error rather than by anything it did. Observed live on 2026-08-28, on a turn whose fix was already gated.
 
-Every control is a PAIR, because asserting that the signal makes the field required proves
-nothing on its own: a builder that always required it would pass that half and would break
-every ordinary stop. The paired assertion is that WITHOUT the signal it stays optional.
+Every control is a PAIR, because asserting that the signal makes the field required proves nothing on its own: a builder that always required it would pass that half and would break every ordinary stop. The paired assertion is that WITHOUT the signal it stays optional.
 
-The third pair is the one that matters most and is easiest to get wrong: the builder must
-not mutate the module-level JUDGE_SCHEMA. A dict returned by reference would make the
-first fix-signal stop poison every later call in the same process.
+The third pair is the one that matters most and is easiest to get wrong: the builder must not mutate the module-level JUDGE_SCHEMA. A dict returned by reference would make the first fix-signal stop poison every later call in the same process.
 """
 
 import json
@@ -1515,10 +1506,7 @@ control("PART 6: the schema corpus is all nine definitions", len(SCHEMA_SITES), 
 def _object_subschemas(node, path=""):
     """[(path, node)] for every nested object schema, root included.
 
-    THE TOP LEVEL IS NOT THE WHOLE SCHEMA. Checking only the root would have
-    passed a JUDGE_SCHEMA whose `admission` object had lost its constraint while
-    the root kept one -- and the nested objects are where the model's actual
-    answer shape is pinned down. 22 of them across this corpus, against 9 roots.
+    THE TOP LEVEL IS NOT THE WHOLE SCHEMA. Checking only the root would have passed a JUDGE_SCHEMA whose `admission` object had lost its constraint while the root kept one -- and the nested objects are where the model's actual answer shape is pinned down. 22 of them across this corpus, against 9 roots.
     """
     out = []
     if isinstance(node, dict):

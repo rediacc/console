@@ -1,48 +1,25 @@
 """Block empty commits used to re-trigger CI.
 
-THE ONE CASE THIS USED TO GET WRONG. The block is unconditional, and its advice
-is "rerun the run" -- which presupposes a run EXISTS. On 2026-08-26 GitHub
-created no run at all for PR #577: Actions was enabled, the workflow was
+THE ONE CASE THIS USED TO GET WRONG. The block is unconditional, and its advice is "rerun the run" -- which presupposes a run EXISTS. On 2026-08-26 GitHub created no run at all for PR #577: Actions was enabled, the workflow was
 `state=active`, `pull_request: [opened, synchronize]` matched, the branch was
-not a fork, there was no draft filter, and an unrelated scheduled run was
-created 13 seconds after the PR was opened -- so Actions was demonstrably
-alive. `gh api .../commits/<head>/check-runs` returned `total_count: 0`, and no
-`startup_failure` run existed either. There was nothing to rerun, and
-`workflow_dispatch` is guarded to `main` and cannot satisfy PR checks, so the
-only remaining lever was a commit -- which this hook refused.
+not a fork, there was no draft filter, and an unrelated scheduled run was created 13 seconds after the PR was opened -- so Actions was demonstrably alive. `gh api .../commits/<head>/check-runs` returned `total_count: 0`, and no `startup_failure` run existed either. There was nothing to rerun, and `workflow_dispatch` is guarded to `main` and cannot satisfy PR checks, so the only
+remaining lever was a commit -- which this hook refused.
 
-THE CAUSE, established after the fact: githubstatus.com reported Actions in
-`major_outage` with a critical open incident. So the trigger was an outage, not
-a repo misconfiguration -- but that is exactly the point rather than a reason
-to revert this. An outage is the most likely way a head ends up with no run at
-all, it is invisible from inside the repo (every local signal said "should have
-run"), and it is precisely when a session needs the one lever this hook was
+THE CAUSE, established after the fact: githubstatus.com reported Actions in `major_outage` with a critical open incident. So the trigger was an outage, not a repo misconfiguration -- but that is exactly the point rather than a reason to revert this. An outage is the most likely way a head ends up with no run at all, it is invisible from inside the repo (every local signal said
+"should have run"), and it is precisely when a session needs the one lever this hook was
 refusing. Check githubstatus.com BEFORE spending rounds on config archaeology;
 it cost several here.
 
-A guard whose advice is unreachable in the case it fires on stops being a
-guard. So the escape is a CHECK, not a flag: name the head sha you believe has
-no run, and the hook VERIFIES that against GitHub. If a run exists the block
-stands and you are told to rerun it, which is the original advice arriving at
-the moment it is actually true.
+A guard whose advice is unreachable in the case it fires on stops being a guard. So the escape is a CHECK, not a flag: name the head sha you believe has no run, and the hook VERIFIES that against GitHub. If a run exists the block stands and you are told to rerun it, which is the original advice arriving at the moment it is actually true.
 
   CI_RETRIGGER_NO_RUN_FOR=<head-sha> git commit --allow-empty -m "..."
 
-It cannot be used to dodge the rerun advice: the verification fails whenever
-there is something to rerun. It fails CLOSED on every uncertainty -- no `gh`,
-an API error, a sha that is not HEAD -- because "I could not check" must never
-read as "there is no run".
+It cannot be used to dodge the rerun advice: the verification fails whenever there is something to rerun. It fails CLOSED on every uncertainty -- no `gh`, an API error, a sha that is not HEAD -- because "I could not check" must never read as "there is no run".
 
-ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant
-matching PROSE: `echo '<the banned command>'` was refused, and so was a
-worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and
-quoted spans while still extracting `sh -c` / `eval` payloads, so a command
-hidden in a wrapper is scanned exactly as before -- this narrows what the
-guard refuses, never what it catches.
+ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant matching PROSE: `echo '<the banned command>'` was refused, and so was a worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is scanned exactly as before -- this narrows what the guard
+refuses, never what it catches.
 
-PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere,
-so HEAD is read from the hook process's own working directory and NOT from
-CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call
+PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, so HEAD is read from the hook process's own working directory and NOT from CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call
 below; passing the project dir would be a fix, and this is a port.
 """
 

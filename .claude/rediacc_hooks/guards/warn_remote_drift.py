@@ -1,43 +1,24 @@
 """On `git push`, check whether the remote branch has moved past local HEAD
 and STOP the push before it burns a CI round.
 
-WHY (operator, 2026-07-31): a babysat branch gets rebased on the REMOTE by
-GitHub's update-branch (strict_required_status_checks_policy keeps PR
-branches current with main), so a session's local branch silently falls
-behind its own remote. The session then watches a superseded run, or worse
-pushes its stale head, minting a non-fast-forward failure or an extra full
-CI round. One `git fetch` here is cheaper than either.
+WHY (operator, 2026-07-31): a babysat branch gets rebased on the REMOTE by GitHub's update-branch (strict_required_status_checks_policy keeps PR branches current with main), so a session's local branch silently falls behind its own remote. The session then watches a superseded run, or worse pushes its stale head, minting a non-fast-forward failure or an extra full CI round. One
+`git fetch` here is cheaper than either.
 
 Scope: plain `git push` in this superproject only. Submodule pushes name
 their own remotes and refs too many ways to second-guess; force-pushes are
 already blocked by block-git-force-push.sh; `--dry-run` is harmless.
-Fail-open on every environmental error (no network, no upstream, detached
-HEAD): a drift CHECK must never become a push outage.
+Fail-open on every environmental error (no network, no upstream, detached HEAD): a drift CHECK must never become a push outage.
 
-ANOTHER REPO'S PUSH IS NOT THIS TREE'S DRIFT. Everything below reads THIS checkout's
-branch, HEAD and origin ref, so a `git -C <other> push` would be judged against console.
-Latent rather than live -- it only misfires when console's remote happens to be ahead --
-but it is the same defect block-unverified-push.sh had for real, so it is closed the same
-way, with the shared resolver rather than a third hand-rolled copy.
+ANOTHER REPO'S PUSH IS NOT THIS TREE'S DRIFT. Everything below reads THIS checkout's branch, HEAD and origin ref, so a `git -C <other> push` would be judged against console. Latent rather than live -- it only misfires when console's remote happens to be ahead -- but it is the same defect block-unverified-push.sh had for real, so it is closed the same way, with the shared resolver
+rather than a third hand-rolled copy.
 
-PORT NOTE ON WHAT IS HANDED TO THE RESOLVER. The bash calls
-`hook_target_root "$CMD" ...` with the RAW command, not with
-`hook_scan_target`'s output, so a `-C` hint inside a quoted span is still
-found. That is the opposite convention from warn-stale-index.sh next door, and
-it is carried across unchanged rather than harmonised: widening or narrowing it
-here would be a behaviour change made by tidying, which is the one thing a port
-must not do.
+PORT NOTE ON WHAT IS HANDED TO THE RESOLVER. The bash calls `hook_target_root "$CMD" ...` with the RAW command, not with `hook_scan_target`'s output, so a `-C` hint inside a quoted span is still found. That is the opposite convention from warn-stale-index.sh next door, and it is carried across unchanged rather than harmonised: widening or narrowing it here would be a behaviour
+change made by tidying, which is the one thing a port must not do.
 
-PORT NOTE ON `timeout 15 git fetch`. `timeout(1)` exits 124 when it fires, and
-the `|| exit 0` treats that identically to any other failure. `subprocess`
-raises instead of returning a status, so the helper below catches
-`TimeoutExpired` and folds it into the same fail-open branch. Losing that
-catch would turn a slow network into a traceback out of a hook, which is the
-outage this guard's own header forbids.
+PORT NOTE ON `timeout 15 git fetch`. `timeout(1)` exits 124 when it fires, and the `|| exit 0` treats that identically to any other failure. `subprocess` raises instead of returning a status, so the helper below catches `TimeoutExpired` and folds it into the same fail-open branch. Losing that catch would turn a slow network into a traceback out of a hook, which is the outage this
+guard's own header forbids.
 
-PORT NOTE ON THE HEREDOC. `cat >&2 <<EOF ... EOF` emits its body with the final
-newline included and nothing appended, so it is `ev.warn_raw`, not `ev.warn`.
-`warn` would add a second newline and the differential compares that byte.
+PORT NOTE ON THE HEREDOC. `cat >&2 <<EOF ... EOF` emits its body with the final newline included and nothing appended, so it is `ev.warn_raw`, not `ev.warn`. `warn` would add a second newline and the differential compares that byte.
 """
 
 import subprocess
@@ -78,15 +59,9 @@ def _fixture_git(cwd, *args):
 def _behind_tree(path):
     """A checkout whose origin has one commit it has never seen.
 
-    Built with a LOCAL bare remote and a second clone, never over the network:
-    the fetch this guard performs must succeed deterministically, and a
-    differential that reached github.com would be a network test whose two
-    sides ran seconds apart.
+    Built with a LOCAL bare remote and a second clone, never over the network: the fetch this guard performs must succeed deterministically, and a differential that reached github.com would be a network test whose two sides ran seconds apart.
 
-    `nested/` is an independent repository inside the work tree, and it is what
-    makes the `hook_target_root` arm reachable: the resolver turns a relative
-    `-C nested` hint into `<this_root>/nested`, and only a hint that resolves to
-    a DIFFERENT toplevel exempts the push.
+    `nested/` is an independent repository inside the work tree, and it is what makes the `hook_target_root` arm reachable: the resolver turns a relative `-C nested` hint into `<this_root>/nested`, and only a hint that resolves to a DIFFERENT toplevel exempts the push.
     """
     bare = path.parent / (path.name + ".origin.git")
     bare.mkdir(parents=True)

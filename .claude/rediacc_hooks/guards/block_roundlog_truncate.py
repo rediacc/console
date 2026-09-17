@@ -1,60 +1,37 @@
 """Deny TRUNCATING Bash writes to a pr-babysit round log. Appends and reads pass.
 
-WHY A SECOND GUARD. block-roundlog-write.sh (pre-edit) stops the Write tool,
-which is what an agent reaches for first. It cannot see Bash. Its neighbour
-block-agent-state-shape.sh names that residual honestly and leaves it open:
-"a Bash heredoc straight onto the path, which no PreToolUse hook can see".
+WHY A SECOND GUARD. block-roundlog-write.sh (pre-edit) stops the Write tool, which is what an agent reaches for first. It cannot see Bash. Its neighbour block-agent-state-shape.sh names that residual honestly and leaves it open: "a Bash heredoc straight onto the path, which no PreToolUse hook can see".
 
-For STATE.md that residual is theoretical. For the round log it is the ACTUAL
-incident: on 2026-08-19 the appendix was destroyed by
+For STATE.md that residual is theoretical. For the round log it is the ACTUAL incident: on 2026-08-19 the appendix was destroyed by
 
     python3 - <<'PY' ... p.write_text(s[:i] + new) ... PY
 
-run through Bash, by a session that had a perfectly good reason to be editing
-the file and no idea it was about to truncate it. A pre-edit-only guard would
-have watched that go past.
+run through Bash, by a session that had a perfectly good reason to be editing the file and no idea it was about to truncate it. A pre-edit-only guard would have watched that go past.
 
-WHAT IS DENIED, AND WHY NOT EVERYTHING. The failure is silent truncation, so
-the guard targets operations that can REPLACE the file wholesale:
+WHAT IS DENIED, AND WHY NOT EVERYTHING. The failure is silent truncation, so the guard targets operations that can REPLACE the file wholesale:
 
     >  redirection      sed -i      tee (without -a)      truncate
     cp/mv onto it       dd of=      python write_text / open(...,'w')
 
-Appends are deliberately allowed: `>>` and `tee -a` cannot delete a history
-appendix, and appending to it is a normal, sanctioned thing to do. Reads are
-untouched. So is `worklist.py --roundlog` itself, which is the whole point of
-having somewhere to send people.
+Appends are deliberately allowed: `>>` and `tee -a` cannot delete a history appendix, and appending to it is a normal, sanctioned thing to do. Reads are untouched. So is `worklist.py --roundlog` itself, which is the whole point of having somewhere to send people.
 
 FAILS OPEN. This matches on a path shape plus a write verb; anything it does
-not recognise runs. A guard that blocked on suspicion would be routed around,
-and being routed around is worse than a named residual.
+not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
 
-NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime
-(a variable holding the filename, a shell glob that expands to it) is invisible
-here, exactly as it is to every other command-text guard in this directory.
-The verb's own success line is the backstop for that case: it reports the bytes
-kept above and below STATUS, so a session that used the verb can SEE the
-appendix survived, and a session that bypassed it has no such line to point at.
+NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime (a variable holding the filename, a shell glob that expands to it) is invisible here, exactly as it is to every other command-text guard in this directory. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
+the appendix survived, and a session that bypassed it has no such line to point at.
 
 =============================================================================
-PORT NOTES, and the bash's own two are worth keeping because they are about
-what a naive reader would write instead.
+PORT NOTES, and the bash's own two are worth keeping because they are about what a naive reader would write instead.
 =============================================================================
 
-`grep -q ... | grep -qv ...` IS NOT THE CHECK IT READS AS, and the tee arm used
-to be written that way: `-q` suppresses stdout, so the downstream grep always
-sees empty input and its exit status says nothing whatever about the first
-pattern. Measured in the bash: the pipeline returns 0 on a match AND on a miss.
-It happened not to set the flag in practice, which is worse than failing loudly,
-because it made the line look tested when the controls were passing for an
-unrelated reason. In Python the two tests are simply two calls, so the trap
+`grep -q ... | grep -qv ...` IS NOT THE CHECK IT READS AS, and the tee arm used to be written that way: `-q` suppresses stdout, so the downstream grep always sees empty input and its exit status says nothing whatever about the first pattern. Measured in the bash: the pipeline returns 0 on a match AND on a miss. It happened not to set the flag in practice, which is worse than
+failing loudly, because it made the line look tested when the controls were passing for an unrelated reason. In Python the two tests are simply two calls, so the trap
 cannot recur; the record of it is here because the NEXT person to "simplify"
 this arm is the reader this paragraph is for.
 
 `${RL}` BRACED, NOT `$RL`, in the bash: a `[` directly after a bare name reads
-as an array subscript to shellcheck (SC1087, an error not a warning), and here
-the bracket opens a character class in the regex rather than an index. Python
-has no such ambiguity, which is why the braces are gone and the reason is not.
+as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
 from rediacc_hooks import hookio

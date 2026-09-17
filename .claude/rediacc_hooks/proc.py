@@ -2,16 +2,10 @@
 """Reading the process table, for the two guards that refuse to corrupt a
 running script.
 
-WHO NEEDS THIS. `block-bash-write-to-running-script.sh` and
-`block-edit-of-running-script.sh` cover the two doors -- Bash and Edit -- onto
-the same failure: bash reads a script LAZILY, by byte offset, so rewriting it
-mid-run makes the interpreter resume at its old offset inside the new bytes
-and die parsing mid-token, naming an INNOCENT line while `bash -n` on that same
-file stays clean. Documented at docs/agent-reference/TRAPS.md, hit three times
-on 2026-08-26/27 and again on 2026-08-09.
+WHO NEEDS THIS. `block-bash-write-to-running-script.sh` and `block-edit-of-running-script.sh` cover the two doors -- Bash and Edit -- onto the same failure: bash reads a script LAZILY, by byte offset, so rewriting it mid-run makes the interpreter resume at its old offset inside the new bytes and die parsing mid-token, naming an INNOCENT line while `bash -n` on that same file stays
+clean. Documented at docs/agent-reference/TRAPS.md, hit three times on 2026-08-26/27 and again on 2026-08-09.
 
-Both guards answer the same question three ways, and this module is those three
-reads with nothing else attached:
+Both guards answer the same question three ways, and this module is those three reads with nothing else attached:
 
     pgrep -f -- "$PAT"                 which processes match at all
     ps -o comm= -p "$rpid"             is it an interpreter, or something that
@@ -21,20 +15,11 @@ reads with nothing else attached:
                                        lives rather than buried in a prose
                                        payload
 
-THE SECOND AND THIRD READS ARE NOT DECORATION. `pgrep -af` matches any process
-whose ARGUMENTS mention the name, which is the very trap the guards exist to
-prevent wearing a different hat: on 2026-08-27 an edit to the hook suite was
-refused because a PEER session's `claude -p` carried a long prompt containing
-that filename, and no interpreter was executing the script at all. So a match
-is only a match when the process IS a shell and the name sits in the first few
-argv slots.
+THE SECOND AND THIRD READS ARE NOT DECORATION. `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the very trap the guards exist to prevent wearing a different hat: on 2026-08-27 an edit to the hook suite was refused because a PEER session's `claude -p` carried a long prompt containing that filename, and no interpreter was executing the script at all. So a
+match is only a match when the process IS a shell and the name sits in the first few argv slots.
 
-WHY A BACKEND SEAM. `/proc` does not exist on macOS, and a hook that silently
-finds nothing is worse than one that refuses: it reports "no process is running
-this script" for every script, forever, and the guard becomes a no-op that
-still looks green. `REDIACC_PROC_BACKEND` selects `proc` or `ps` explicitly and
-`auto` (the default) probes for `/proc/self/cmdline`, so a test on Linux can
-force the macOS path and prove it agrees rather than trusting that it would.
+WHY A BACKEND SEAM. `/proc` does not exist on macOS, and a hook that silently finds nothing is worse than one that refuses: it reports "no process is running this script" for every script, forever, and the guard becomes a no-op that still looks green. `REDIACC_PROC_BACKEND` selects `proc` or `ps` explicitly and `auto` (the default) probes for `/proc/self/cmdline`, so a test on
+Linux can force the macOS path and prove it agrees rather than trusting that it would.
 
 WHAT THE TWO BACKENDS CANNOT AGREE ON, stated rather than smoothed over:
 
@@ -52,13 +37,8 @@ WHAT THE TWO BACKENDS CANNOT AGREE ON, stated rather than smoothed over:
     `pgrep -f`: measured on this machine, `pgrep -f '^$'` matches nothing.
     Both backends reproduce that by skipping empty cmdlines.
 
-A NAME COLLISION, REPORTED RATHER THAN RESOLVED HERE. `.ci/rediacc_ci/proc.py`
-landed in the same window and is a DIFFERENT thing: running a command, bounding
-it in time and retrying it (the `run`/`timeout`/`retry` family). This module
-READS the process table and starts nothing. Both are `proc`, and a guard that
-later imports both will read `from rediacc_ci import proc` and
-`from rediacc_hooks import proc` in one file. The filename here is the one the
-workstream brief specifies, so it is kept and the clash is handed to the root
+A NAME COLLISION, REPORTED RATHER THAN RESOLVED HERE. `.ci/rediacc_ci/proc.py` landed in the same window and is a DIFFERENT thing: running a command, bounding it in time and retrying it (the `run`/`timeout`/`retry` family). This module READS the process table and starts nothing. Both are `proc`, and a guard that later imports both will read `from rediacc_ci import proc` and `from
+rediacc_hooks import proc` in one file. The filename here is the one the workstream brief specifies, so it is kept and the clash is handed to the root
 driver; `proctable` would be the unambiguous name for this one.
 """
 
@@ -88,9 +68,7 @@ class ProcError(RuntimeError):
 def backend_name():
     """`proc`, `ps`, or whatever `auto` resolves to on this host.
 
-    Read at CALL time and not at import: the seam exists so a test can flip it
-    between two calls in one process, and a module-level constant would freeze
-    whichever value happened to be set when pytest imported the module.
+    Read at CALL time and not at import: the seam exists so a test can flip it between two calls in one process, and a module-level constant would freeze whichever value happened to be set when pytest imported the module.
     """
     choice = os.environ.get(BACKEND_ENV, "auto").strip().lower() or "auto"
     if choice == "auto":
@@ -144,9 +122,7 @@ class _ProcBackend:
 class _PsBackend:
     """`ps`, for hosts with no /proc. One invocation answers everything.
 
-    The whole table is fetched in a single call rather than one `ps -p <pid>`
-    per question: on a machine with a few hundred processes the per-pid form is
-    a few hundred forks, and the guards run on EVERY Bash and Edit call.
+    The whole table is fetched in a single call rather than one `ps -p <pid>` per question: on a machine with a few hundred processes the per-pid form is a few hundred forks, and the guards run on EVERY Bash and Edit call.
     """
 
     name = "ps"
@@ -202,9 +178,7 @@ class _PsBackend:
 def _backend():
     """A FRESH backend per call.
 
-    The ps backend caches its table, which is right within one question and
-    wrong across two: a guard that asked twice would be answered from a
-    snapshot taken before the process it is looking for started.
+    The ps backend caches its table, which is right within one question and wrong across two: a guard that asked twice would be answered from a snapshot taken before the process it is looking for started.
     """
     return _ProcBackend() if backend_name() == "proc" else _PsBackend()
 
@@ -227,10 +201,7 @@ def argv(pid):
 def cmdline(pid):
     """The argv joined by single spaces, with NO trailing space.
 
-    This is the string `pgrep -f` matches against: measured on this machine, a
-    process running `sleep 19` matches `sleep 19$` and does NOT match
-    `sleep 19 $`, so pgrep drops the final NUL rather than mapping it to a
-    space.
+    This is the string `pgrep -f` matches against: measured on this machine, a process running `sleep 19` matches `sleep 19$` and does NOT match `sleep 19 $`, so pgrep drops the final NUL rather than mapping it to a space.
     """
     parts = argv(pid)
     return None if parts is None else " ".join(parts)
@@ -239,11 +210,7 @@ def cmdline(pid):
 def cmdline_tr(pid):
     """The `tr '\\0' ' ' < /proc/<pid>/cmdline` form, trailing space included.
 
-    A SECOND spelling of the same data, and it earns its place: the two guards
-    pipe this exact string through `cut -d' ' -f1-4` and a `grep -E`, so a port
-    of them must be able to reproduce it byte for byte. The trailing space is
-    invisible to both of those, which is precisely why it would be dropped by
-    accident and never noticed until something else depended on it.
+    A SECOND spelling of the same data, and it earns its place: the two guards pipe this exact string through `cut -d' ' -f1-4` and a `grep -E`, so a port of them must be able to reproduce it byte for byte. The trailing space is invisible to both of those, which is precisely why it would be dropped by accident and never noticed until something else depended on it.
     """
     parts = argv(pid)
     if parts is None:
@@ -257,9 +224,7 @@ def is_shell(pid):
     """Whether the process IS an interpreter, rather than merely naming one.
 
     The guards' `case "$(ps -o comm= -p "$rpid")" in bash | sh | dash | zsh |
-    ksh)` test, in one place, because both of them run it and a sibling drift
-    between two copies of a guard is a documented cost in this tree (the path
-    anchor reached the Edit-side guard three days after the Bash-side one).
+    ksh)` test, in one place, because both of them run it and a sibling drift between two copies of a guard is a documented cost in this tree (the path anchor reached the Edit-side guard three days after the Bash-side one).
     """
     return comm(pid) in SHELL_COMMS
 
@@ -267,18 +232,12 @@ def is_shell(pid):
 def pgrep_full(pattern):
     """`pgrep -f -- <pattern>`: pids whose full command line matches.
 
-    THE PATTERN IS AN ERE, and it is the CALLER's, unescaped. Both guards build
-    it deliberately -- a bracket class on the first character so the pattern
-    cannot match the shell running the hook itself, a path-boundary anchor, and
-    every regex metacharacter in the rest of the basename escaped after a
-    one-letter name plus `.sh` produced `[b].sh`, which matches **/bin/bash**,
-    i.e. every bash process on the machine (measured 2026-09-01). Escaping it
-    here would break all three.
+    THE PATTERN IS AN ERE, and it is the CALLER's, unescaped. Both guards build it deliberately -- a bracket class on the first character so the pattern cannot match the shell running the hook itself, a path-boundary anchor, and every regex metacharacter in the rest of the basename escaped after a one-letter name plus `.sh` produced `[b].sh`, which matches **/bin/bash**, i.e. every
+    bash process on the machine (measured 2026-09-01). Escaping it here would break all three.
 
     NOTHING IS EXCLUDED. Real pgrep hides only the pgrep process itself, never
     its parent, which is why the guards need the bracket trick at all; here
-    there is no separate process to hide, and the caller is as visible as the
-    hook's shell was. The trap and its defence are unchanged.
+    there is no separate process to hide, and the caller is as visible as the hook's shell was. The trap and its defence are unchanged.
     """
     compiled = re.compile(pattern)
     backend = _backend()

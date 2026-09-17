@@ -1,10 +1,6 @@
 """WARN when a commit is about to capture a STALE staged version of a file.
 
-`git commit` commits THE INDEX, not the working tree. Stage a path, edit it
-afterwards, and the commit takes the version from `git add` time while the
-message you just wrote describes what is on disk. Nothing in git says so: the
-commit succeeds, the file list looks right, and the diff is quietly one
-revision behind.
+`git commit` commits THE INDEX, not the working tree. Stage a path, edit it afterwards, and the commit takes the version from `git add` time while the message you just wrote describes what is on disk. Nothing in git says so: the commit succeeds, the file list looks right, and the diff is quietly one revision behind.
 
 THIS COST TWO REAL DEFECTS IN A SINGLE SESSION (2026-08-28):
 
@@ -16,27 +12,16 @@ THIS COST TWO REAL DEFECTS IN A SINGLE SESSION (2026-08-28):
      reworded), then committed. The commit message claimed the rewording; the
      commit did not contain it. Caught only by grepping the commit afterwards.
 
-WHY WARN AND NOT BLOCK. Staging a deliberately partial version is legitimate
-(`git add -p` exists). The failure here is not that it is possible, it is that
-it is SILENT -- so the fix is to say it out loud, not to forbid it. A block
+WHY WARN AND NOT BLOCK. Staging a deliberately partial version is legitimate (`git add -p` exists). The failure here is not that it is possible, it is that it is SILENT -- so the fix is to say it out loud, not to forbid it. A block
 would be wrong on a real workflow; a warning is right on every case.
 
-ROUTED THROUGH lib/command-scan.sh so prose quoting `git commit` is not
-matched -- a worklist note or a doc mentioning the command is not a commit.
+ROUTED THROUGH lib/command-scan.sh so prose quoting `git commit` is not matched -- a worklist note or a doc mentioning the command is not a commit.
 
-PORT NOTE ON `comm -12 <(sort -u) <(sort -u)`. Two process substitutions and a
-set intersection, which Python spells directly. What must survive the
+PORT NOTE ON `comm -12 <(sort -u) <(sort -u)`. Two process substitutions and a set intersection, which Python spells directly. What must survive the
 translation is the ORDER and the DEDUPLICATION: `sort -u` under `LC_ALL=C`
-(which the harness exports, and which a hook inherits from the session) sorts
-by BYTE, not by locale collation, so the result is ordered by the UTF-8
-encoding of each path and not by Python's default code-point comparison. The
-two agree on ASCII and can disagree on anything else, so the key is spelled
-out rather than left to the default.
+(which the harness exports, and which a hook inherits from the session) sorts by BYTE, not by locale collation, so the result is ordered by the UTF-8 encoding of each path and not by Python's default code-point comparison. The two agree on ASCII and can disagree on anything else, so the key is spelled out rather than left to the default.
 
-PORT NOTE ON `grep -c .`. That is a count of records matching the regex `.`,
-i.e. NON-EMPTY lines, not a line count. It happens to equal the number of
-paths here because `comm` never emits a blank line, but the two are different
-questions and the port answers the one the bash asked.
+PORT NOTE ON `grep -c .`. That is a count of records matching the regex `.`, i.e. NON-EMPTY lines, not a line count. It happens to equal the number of paths here because `comm` never emits a blank line, but the two are different questions and the port answers the one the bash asked.
 """
 
 import subprocess
@@ -93,9 +78,7 @@ def _seeded(path, names):
 def _stale_tree(path):
     """staged {a, b}, unstaged {a, c} -- the intersection is exactly {a}.
 
-    `b` and `c` are not padding: without `b` the intersection would equal the
-    staged set and without `c` it would equal the unstaged set, and a port that
-    printed either whole set instead of the intersection would still pass.
+    `b` and `c` are not padding: without `b` the intersection would equal the staged set and without `c` it would equal the unstaged set, and a port that printed either whole set instead of the intersection would still pass.
     """
     _seeded(path, ["a.txt", "b.txt", "c.txt"])
     (path / "a.txt").write_text("v2\n", encoding="utf-8")
@@ -110,8 +93,7 @@ def _stale_tree(path):
 def _disjoint_tree(path):
     """staged {b}, unstaged {c}: both sets non-empty, no overlap.
 
-    The ALLOW side that a fixture with nothing staged could not provide, since
-    that one leaves through the earlier `-n` test and never reaches `comm`.
+    The ALLOW side that a fixture with nothing staged could not provide, since that one leaves through the earlier `-n` test and never reaches `comm`.
     """
     _seeded(path, ["a.txt", "b.txt", "c.txt"])
     (path / "b.txt").write_text("v2\n", encoding="utf-8")

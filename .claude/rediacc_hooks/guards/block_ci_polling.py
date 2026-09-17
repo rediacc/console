@@ -1,35 +1,18 @@
 """Block CI polling: a wait, then gh run view/list.
 
-The guidance below deliberately POINTS AT the ci-watch skill instead of
-embedding a copy of the watch loop. It used to embed one, and that copy went
-stale on 2026-08-25: the recipe it handed out exited on the first
+The guidance below deliberately POINTS AT the ci-watch skill instead of embedding a copy of the watch loop. It used to embed one, and that copy went stale on 2026-08-25: the recipe it handed out exited on the first
 `status == completed`, which is not terminal, because the watchdog re-runs a
-transient failure and bumps `run_attempt`. Six places held that same snippet
-and all six had to be corrected at once. One source, many pointers.
+transient failure and bumps `run_attempt`. Six places held that same snippet and all six had to be corrected at once. One source, many pointers.
 
-Known false positive, accepted deliberately: this matches per line, so a
-command that merely DESCRIBES the polling pattern (editing these docs, or a
-patch script carrying the old snippet as a search string) is blocked too. The
-check is not narrowed to avoid it, because every narrowing that would let the
-doc edit through also opens a hole for the habit this guards against, and the
+Known false positive, accepted deliberately: this matches per line, so a command that merely DESCRIBES the polling pattern (editing these docs, or a patch script carrying the old snippet as a search string) is blocked too. The check is not narrowed to avoid it, because every narrowing that would let the doc edit through also opens a hole for the habit this guards against, and the
 workaround is trivial (write the file with the Write tool instead).
 
 
-NOT ROUTED THROUGH `shellscan`, and that is a decision rather than an
-oversight. On 2026-08-27 nine sibling guards moved to the shared scanner to
-stop them matching prose. This one did not: the scanner drops heredoc bodies,
-and the operator ruled on 2026-08-25 -- four scored options -- that this guard
-keeps its prose false positive. It fails LOUDLY (a blocked command that names
-its workaround) while every narrowing fails SILENTLY, and a heredoc is exactly
-where a real one would hide. test-hooks.sh pins that ruling with a case
-asserting exit 2, and that case is what caught the attempt.
+NOT ROUTED THROUGH `shellscan`, and that is a decision rather than an oversight. On 2026-08-27 nine sibling guards moved to the shared scanner to stop them matching prose. This one did not: the scanner drops heredoc bodies, and the operator ruled on 2026-08-25 -- four scored options -- that this guard keeps its prose false positive. It fails LOUDLY (a blocked command that names its
+workaround) while every narrowing fails SILENTLY, and a heredoc is exactly where a real one would hide. test-hooks.sh pins that ruling with a case asserting exit 2, and that case is what caught the attempt.
 
-PORT NOTE. The two guards in this pair look interchangeable and are not: this
-one wants the wait FIRST and `gh run view|list` after it, its sibling
-`block_ci_reverse_poll` wants them the other way round and additionally
-requires `--jq`. Reproduced as two separate patterns rather than merged, for
-the reason the sibling's header gives about one source and many pointers: a
-merged pattern would be a third spelling neither file could be checked against.
+PORT NOTE. The two guards in this pair look interchangeable and are not: this one wants the wait FIRST and `gh run view|list` after it, its sibling `block_ci_reverse_poll` wants them the other way round and additionally requires `--jq`. Reproduced as two separate patterns rather than merged, for the reason the sibling's header gives about one source and many pointers: a merged
+pattern would be a third spelling neither file could be checked against.
 """
 
 from rediacc_hooks import hookio

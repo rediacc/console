@@ -1,9 +1,6 @@
 """trapguard PostToolUse rules: they INJECT rather than block.
 
-The product is stdout, not the exit code. A rule that exits 0 silently and a rule
-that exits 0 having warned are indistinguishable without asserting on the text, so
-every case here is `fires` or `silent` plus, where the message is the point, the
-needle the message must carry.
+The product is stdout, not the exit code. A rule that exits 0 silently and a rule that exits 0 having warned are indistinguishable without asserting on the text, so every case here is `fires` or `silent` plus, where the message is the point, the needle the message must carry.
 """
 
 import os
@@ -33,20 +30,10 @@ def run_inject(payload: str) -> str:
 def inject(spec: tuple[str, str], payload: str, label: str) -> tuple:
     """One trapguard case.
 
-    THE SPEC AND ITS NEEDLE ARE ONE TUPLE, and that is not a style choice.
-    `trap_registry.Registry.inject_cases` reads a `check_inject <fires|silent>` call by
-    taking the LAST quoted argument ON THAT LINE as the needle
-    (`.ci/rediacc_ci/quality/trap_registry.py:414`, the awk `match(line,
-    /"[^"]*"[^"]*$/)` it ports), and `hook_is_live` then asks whether that needle appears
-    in the trapguard rule's own source. Spread the needle onto a fourth line and the
-    reader picks up the SPEC as the needle, finds it in no rule body, and every
-    `enforced_by: hook:<rule>` pointer in TRAPS.md reads as one-sided coverage.
+    THE SPEC AND ITS NEEDLE ARE ONE TUPLE, and that is not a style choice. `trap_registry.Registry.inject_cases` reads a `check_inject <fires|silent>` call by taking the LAST quoted argument ON THAT LINE as the needle (`.ci/rediacc_ci/quality/trap_registry.py:414`, the awk `match(line, /"[^"]*"[^"]*$/)` it ports), and `hook_is_live` then asks whether that needle appears in the
+    trapguard rule's own source. Spread the needle onto a fourth line and the reader picks up the SPEC as the needle, finds it in no rule body, and every `enforced_by: hook:<rule>` pointer in TRAPS.md reads as one-sided coverage.
 
-    Passing them as two ARGUMENTS is not enough: `ruff format` explodes a call with a
-    magic trailing comma one argument per line, which separated them and turned all five
-    rules one-sided. A tuple is one argument, so it stays on one line whatever the
-    formatter decides about the call around it. A silent case passes "" -- the reader
-    never uses a silent case's needle.
+    Passing them as two ARGUMENTS is not enough: `ruff format` explodes a call with a magic trailing comma one argument per line, which separated them and turned all five rules one-sided. A tuple is one argument, so it stays on one line whatever the formatter decides about the call around it. A silent case passes "" -- the reader never uses a silent case's needle.
     """
     text, needle = spec
     verb, _, want = text.partition(" ")

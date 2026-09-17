@@ -1,27 +1,15 @@
 """Block reverse CI polling: gh run view ... --jq then a wait.
 
-The guidance POINTS AT the ci-watch skill rather than embedding a copy of the
-loop. It used to embed one, and on 2026-08-25 that copy was found to be one of
-nine divergent versions across the repo, several of them handing out a form
+The guidance POINTS AT the ci-watch skill rather than embedding a copy of the loop. It used to embed one, and on 2026-08-25 that copy was found to be one of nine divergent versions across the repo, several of them handing out a form
 that exits on the first `status == completed` -- which is not terminal,
 because the watchdog re-runs a transient failure and bumps run_attempt.
 
 
-NOT ROUTED THROUGH `shellscan`, and that is a decision rather than an
-oversight. On 2026-08-27 nine sibling guards moved to the shared scanner to
-stop them matching prose. This one did not: the scanner drops heredoc bodies,
-and the operator ruled on 2026-08-25 -- four scored options -- that this guard
-keeps its prose false positive. It fails LOUDLY (a blocked command that names
-its workaround) while every narrowing fails SILENTLY, and a heredoc is exactly
-where a real one would hide. test-hooks.sh pins that ruling with a case
-asserting exit 2, and that case is what caught the attempt.
+NOT ROUTED THROUGH `shellscan`, and that is a decision rather than an oversight. On 2026-08-27 nine sibling guards moved to the shared scanner to stop them matching prose. This one did not: the scanner drops heredoc bodies, and the operator ruled on 2026-08-25 -- four scored options -- that this guard keeps its prose false positive. It fails LOUDLY (a blocked command that names its
+workaround) while every narrowing fails SILENTLY, and a heredoc is exactly where a real one would hide. test-hooks.sh pins that ruling with a case asserting exit 2, and that case is what caught the attempt.
 
-PORT NOTE, because two details of the bash are invisible once it is Python.
-There is no `[ -z "$CMD" ] && exit 0` here, so an event with no command reaches
-the pattern as the four characters `null` (see `hookio._jq_raw`) and is scanned.
-And `echo "$CMD" | grep` appends a newline, which is why `grep_q_line` is used
-rather than `grep_q`: on an empty command the two differ, one giving grep a
-single empty record and the other giving it none.
+PORT NOTE, because two details of the bash are invisible once it is Python. There is no `[ -z "$CMD" ] && exit 0` here, so an event with no command reaches the pattern as the four characters `null` (see `hookio._jq_raw`) and is scanned. And `echo "$CMD" | grep` appends a newline, which is why `grep_q_line` is used rather than `grep_q`: on an empty command the two differ, one giving
+grep a single empty record and the other giving it none.
 """
 
 from rediacc_hooks import hookio

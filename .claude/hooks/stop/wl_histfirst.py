@@ -1,29 +1,15 @@
 """When CI goes red, put the commits that could have caused it in front of the session.
 
-THE BLIND SPOT, and it is the operator's observation rather than a theory: an agent
-debugging a failure reads the CODE and never the HISTORY. This repo writes unusually
-substantial commit messages -- they carry measurements, rejected hypotheses and
-corrections -- so the cheapest evidence available is the one thing systematically skipped.
+THE BLIND SPOT, and it is the operator's observation rather than a theory: an agent debugging a failure reads the CODE and never the HISTORY. This repo writes unusually substantial commit messages -- they carry measurements, rejected hypotheses and corrections -- so the cheapest evidence available is the one thing systematically skipped.
 
-MEASURED ON THE SESSION THAT PROMPTED THIS. `packages/www/scripts/
-test-tutorial-player-release-gate.js` went red four times. Across 2,494 Bash calls in that
-session's transcript there were ZERO `git log`/`blame`/`bisect` invocations naming it,
+MEASURED ON THE SESSION THAT PROMPTED THIS. `packages/www/scripts/ test-tutorial-player-release-gate.js` went red four times. Across 2,494 Bash calls in that session's transcript there were ZERO `git log`/`blame`/`bisect` invocations naming it,
 while eight lines of `git log --oneline -- <that file>` held both decisive facts: the
-readiness matcher had changed minutes earlier (and was the regression), and the same gate
-had failed before. The session guessed wrong twice and only got there via a downloaded
-artifact, hours later.
+readiness matcher had changed minutes earlier (and was the regression), and the same gate had failed before. The session guessed wrong twice and only got there via a downloaded artifact, hours later.
 
-WHY THIS IS MECHANICAL AND NOT A JUDGED RULE, which is structural and not a preference.
-The red-CI path emits and EXITS before the judge is ever reached: `wl_checks` adds the
-`ci-red` violation, the `if violations and not pause:` block calls `C.emit`, and
-`wl_core.emit` ends with `sys.exit(0)` -- all of it upstream of `wl_judge.run_judge`. A
-judged history rule could not fire on the stop that matters. And no model is needed: every
-fact wanted here comes from `git log` plus the failing job name already in hand.
+WHY THIS IS MECHANICAL AND NOT A JUDGED RULE, which is structural and not a preference. The red-CI path emits and EXITS before the judge is ever reached: `wl_checks` adds the `ci-red` violation, the `if violations and not pause:` block calls `C.emit`, and `wl_core.emit` ends with `sys.exit(0)` -- all of it upstream of `wl_judge.run_judge`. A judged history rule could not fire on
+the stop that matters. And no model is needed: every fact wanted here comes from `git log` plus the failing job name already in hand.
 
-IT DEMANDS NOTHING, DELIBERATELY. It appends facts to a block that is already being
-emitted. That is what keeps it from becoming a wall -- this repo has the scar of a rule
-that fired on every stop -- and it cannot be faked, because there is no claim to make.
-Enforcement (checking the session actually ran the command) is a later increment, and only
+IT DEMANDS NOTHING, DELIBERATELY. It appends facts to a block that is already being emitted. That is what keeps it from becoming a wall -- this repo has the scar of a rule that fired on every stop -- and it cannot be faked, because there is no claim to make. Enforcement (checking the session actually ran the command) is a later increment, and only
 if the printed facts turn out to be skimmed.
 """
 
@@ -96,12 +82,8 @@ def tokens(text):
 def suspects(root, window, job_tokens):
     """[(sha, subject, [paths])] for commits in `window` touching a matching path.
 
-    THE JOB -> FILE BRIDGE IS A TOKEN MATCH, NOT A RESOLUTION CHAIN. An exact chain does
-    exist -- workflow step name, to the `npm run` key, to the workspace script, to the file
-    -- and it was rejected: it is three files of parsing across a workspace, and this repo
-    already has `wl_reggate.gate_reachable` on record as a manifest-walking probe that
-    returned False for EVERY gate, "the same defect as a check that cannot fail". A token
-    match needs no parsing and degrades to silence rather than to a confident wrong answer.
+    THE JOB -> FILE BRIDGE IS A TOKEN MATCH, NOT A RESOLUTION CHAIN. An exact chain does exist -- workflow step name, to the `npm run` key, to the workspace script, to the file -- and it was rejected: it is three files of parsing across a workspace, and this repo already has `wl_reggate.gate_reachable` on record as a manifest-walking probe that returned False for EVERY gate, "the
+    same defect as a check that cannot fail". A token match needs no parsing and degrades to silence rather than to a confident wrong answer.
     """
     if not job_tokens:
         return []
@@ -125,10 +107,7 @@ def suspects(root, window, job_tokens):
 def render(root, rows, last_green):
     """The block text, or "" when there is nothing worth saying.
 
-    RETURNING "" IS A REAL ANSWER in three of the four cases, which is what stops this
-    becoming a deferral pile: no window, no commits, or no commit touching anything named
-    like the failing job. That last one is affirmative evidence for a FLAKE, so it is
-    printed rather than swallowed.
+    RETURNING "" IS A REAL ANSWER in three of the four cases, which is what stops this becoming a deferral pile: no window, no commits, or no commit touching anything named like the failing job. That last one is affirmative evidence for a FLAKE, so it is printed rather than swallowed.
     """
     if not rows:
         return ""
@@ -182,13 +161,9 @@ def render(root, rows, last_green):
 def apply_verdict(root, rows, last_green):
     """(kind, text). kind is 'fire' when there is something to print, else 'silent'.
 
-    Shaped like the judged rules' `apply_verdict` on purpose: `check_judged_rule_wiring`
-    discovers a rule by a `*_MARKER` plus this function, so deleting the call site turns
-    that gate red. A rule nothing calls does not run, and this one has no other symptom.
+    Shaped like the judged rules' `apply_verdict` on purpose: `check_judged_rule_wiring` discovers a rule by a `*_MARKER` plus this function, so deleting the call site turns that gate red. A rule nothing calls does not run, and this one has no other symptom.
 
-    FAIL SEMANTICS ARE wl_classsweep's: any git failure or unreadable window degrades to
-    silent. It can only ADD to a block that is already happening, so degrading loses a
-    hint and can never grant an exit that was otherwise refused.
+    FAIL SEMANTICS ARE wl_classsweep's: any git failure or unreadable window degrades to silent. It can only ADD to a block that is already happening, so degrading loses a hint and can never grant an exit that was otherwise refused.
     """
     try:
         text = render(root, rows, last_green)

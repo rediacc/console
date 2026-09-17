@@ -1,21 +1,12 @@
 """Enforce the draft-PR flow on `gh pr create`.
 
-The org is on the GitHub FREE plan: draft PRs exist only on PUBLIC repos.
-console + homebrew-tap are public -> their PRs MUST be created as drafts
+The org is on the GitHub FREE plan: draft PRs exist only on PUBLIC repos. console + homebrew-tap are public -> their PRs MUST be created as drafts
 (the PR stays draft until CI is green; `gh pr ready` is gated by
-block-premature-ready.sh). renet/account/elite are private -> GitHub
-rejects --draft there, so the hook blocks it up front with a real message
-instead of letting the API fail cryptically.
+block-premature-ready.sh). renet/account/elite are private -> GitHub rejects --draft there, so the hook blocks it up front with a real message instead of letting the API fail cryptically.
 
-Target-repo resolution order: explicit --repo/-R flag > a cd/`git -C` into a
-private/<submodule> path inside the command > the session cwd's origin
-remote. Unknown/foreign repos are not policed.
+Target-repo resolution order: explicit --repo/-R flag > a cd/`git -C` into a private/<submodule> path inside the command > the session cwd's origin remote. Unknown/foreign repos are not policed.
 
-PORT NOTE ON THE LOOP'S FEED. `done <<<"$(hook_gh_pr_segment ...)"` is a
-here-string, so the segment list arrives with exactly one trailing newline
-whatever the substitution stripped, and `read` therefore always sees a final
-record. That is why the records below are taken from `_here_string(segs)` and
-not from `segs` itself: on a single segment with no trailing newline the two
+PORT NOTE ON THE LOOP'S FEED. `done <<<"$(hook_gh_pr_segment ...)"` is a here-string, so the segment list arrives with exactly one trailing newline whatever the substitution stripped, and `read` therefore always sees a final record. That is why the records below are taken from `_here_string(segs)` and not from `segs` itself: on a single segment with no trailing newline the two
 differ by one iteration, which is the whole loop.
 """
 
@@ -44,8 +35,8 @@ PRIVATE_MESSAGE = (
     "--draft; only the console PR uses the draft flow."
 )
 
-# REST parity for the draft-flow ban. `gh api .../pulls -X POST` reaches the SAME GitHub create mutation as `gh pr create` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it creates a non-draft PR on a public repo with none of this guard's checks ever running.
-# Endpoint and method are matched INDEPENDENTLY, reusing the split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form. The endpoint match requires "pulls" to END the path segment (a space or the line's end), not merely appear in it: `pulls/<n>/comments -X POST` posts a COMMENT, not a PR, and losing that boundary would ban it too.
+# REST parity for the draft-flow ban. `gh api .../pulls -X POST` reaches the SAME GitHub create mutation as `gh pr create` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it creates a non-draft PR on a public repo with none of this guard's checks ever running. Endpoint and method are matched INDEPENDENTLY, reusing the
+# split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form. The endpoint match requires "pulls" to END the path segment (a space or the line's end), not merely appear in it: `pulls/<n>/comments -X POST` posts a COMMENT, not a PR, and losing that boundary would ban it too.
 API_VERB = hookio.rx(r"^[{S}]*gh[{S}]+api([{S}]|$)")
 API_PULLS_BARE = hookio.rx(r"pulls([{S}]|$)")
 API_POST_METHOD = hookio.rx(r"(^|[{S}])(-X|--method)[{S}]+POST([{S}]|$)")

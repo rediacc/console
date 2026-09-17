@@ -1,9 +1,6 @@
 """wl_liveness: worker verification and the 45/90/120 ladder (v10).
 
-THE ASK (operator, 2026-07-30): "stale background shells and stale 'ongoing'
-statements... catch the gaps like 'ongoing' but there is no working
-background agent or background shell to trace... 45 mins check that ping, 90
-mins investigate, 120 think about stopping it."
+THE ASK (operator, 2026-07-30): "stale background shells and stale 'ongoing' statements... catch the gaps like 'ongoing' but there is no working background agent or background shell to trace... 45 mins check that ping, 90 mins investigate, 120 think about stopping it."
 
 WHAT IS ACTUALLY VERIFIABLE, measured on this machine rather than assumed:
 
@@ -20,18 +17,11 @@ WHAT IS ACTUALLY VERIFIABLE, measured on this machine rather than assumed:
   * On a machine without /proc, `ps -axo pid=,ppid=,args=` substitutes; if
     that also fails, the OS layer is honestly blind.
 
-THE HONESTY RULE, which is the whole design: the event payload is
-authoritative for EXISTENCE (a task the harness lists as running will wake
-the session when it ends, whatever the OS says), and the OS layer only ever
+THE HONESTY RULE, which is the whole design: the event payload is authoritative for EXISTENCE (a task the harness lists as running will wake the session when it ends, whatever the OS says), and the OS layer only ever
 ADDS facts. A worker the OS cannot find is SUSPECT, reported in those words;
-it is never demoted to dead, because "your worker is dead" said wrongly is
-worse than no check at all. The only verdict that says a delegate is gone --
-GONE -- requires the harness itself to no longer list the declared worker
-id, which the OS cannot contradict into a false accusation.
+it is never demoted to dead, because "your worker is dead" said wrongly is worse than no check at all. The only verdict that says a delegate is gone -- GONE -- requires the harness itself to no longer list the declared worker id, which the OS cannot contradict into a false accusation.
 
-THE LADDER, and why it cannot deadlock (the poll_fast_path lesson, fixed by
-operator decision in 860f47b04: a gate needing a state only an allowed stop
-could write pinned a session all night):
+THE LADDER, and why it cannot deadlock (the poll_fast_path lesson, fixed by operator decision in 860f47b04: a gate needing a state only an allowed stop could write pinned a session all night):
   * every rung's exit is an action the session completes ALONE: refresh the
     item with evidence (--update), restart or replace the worker, or defer
     with a DEFAULT -- the last is unconditionally executable;
@@ -60,24 +50,12 @@ LADDER_RESOLVE_MIN = int(os.environ.get("WORKLIST_LADDER_RESOLVE_MIN", "120"))
 def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False, idle=False):
     """Would the ladder actually FIRE a blocking rung for this subject?
 
-    WHY THIS EXISTS. The ladder is latched: `fire_once` records each rung
-    against the subject's stamp, so "investigate" fires ONCE and then stays
-    quiet until the stamp moves. `poll_fast_path` forfeited on raw age
-    instead, never consulting that latch, so the two disagreed: the report
-    went silent while the forfeit kept firing.
+    WHY THIS EXISTS. The ladder is latched: `fire_once` records each rung against the subject's stamp, so "investigate" fires ONCE and then stays quiet until the stamp moves. `poll_fast_path` forfeited on raw age instead, never consulting that latch, so the two disagreed: the report went silent while the forfeit kept firing.
 
-    Measured 2026-07-30. Task #20 sat in_progress for 298 minutes, legitimately,
-    waiting on an operator decision and a running agent. Its rung had long since
-    fired, yet EVERY five-minute inbox poll forfeited the silent path and
-    demanded the full battery and a full report. There was no way to discharge
-    it short of finishing or abandoning a task that was not the session's to
-    finish. That is precisely the "a gate that cannot be satisfied deadlocks
-    the session" trap the v10 brief warned any new time-based check to avoid,
-    and it was reintroduced by a threshold comparison that looked harmless.
+    Measured 2026-07-30. Task #20 sat in_progress for 298 minutes, legitimately, waiting on an operator decision and a running agent. Its rung had long since fired, yet EVERY five-minute inbox poll forfeited the silent path and demanded the full battery and a full report. There was no way to discharge it short of finishing or abandoning a task that was not the session's to finish.
+    That is precisely the "a gate that cannot be satisfied deadlocks the session" trap the v10 brief warned any new time-based check to avoid, and it was reintroduced by a threshold comparison that looked harmless.
 
-    The 45-minute ping is deliberately NOT a blocking rung: it is report-only,
-    the horizon bounds how long it can be deferred, and forfeiting a silent
-    poll for it would reinstate the same noise at a lower threshold.
+    The 45-minute ping is deliberately NOT a blocking rung: it is report-only, the horizon bounds how long it can be deferred, and forfeiting a silent poll for it would reinstate the same noise at a lower threshold.
     """
     if age_min is None:
         return False
@@ -159,10 +137,7 @@ def proc_table():
 
 def harness_ancestors(table):
     """The pid set of this process's ancestors (a few hops: hook -> sh ->
-    harness -> ...). WORKLIST_HARNESS_PID overrides for tests and for setups
-    where the walk cannot see the harness. Matching workers against ANY
-    ancestor is deliberate: it needs no knowledge of which ancestor is the
-    harness binary, and a false positive requires an unrelated ancestor to
+    harness -> ...). WORKLIST_HARNESS_PID overrides for tests and for setups where the walk cannot see the harness. Matching workers against ANY ancestor is deliberate: it needs no knowledge of which ancestor is the harness binary, and a false positive requires an unrelated ancestor to
     have spawned a child whose cmdline embeds this exact command text."""
     override = os.environ.get("WORKLIST_HARNESS_PID", "")
     if override.isdigit():
@@ -183,10 +158,7 @@ def _needle(command):
     """A distinctive, quote-free substring of a declared command, or ''.
     The harness wraps the command in an eval with shell re-quoting, so quote
     characters may be rewritten in the child cmdline; but re-quoting only
-    inserts or replaces QUOTE characters, so any maximal quote-free run of
-    the original text survives contiguously. Segments, not whole lines: the
-    CI-watch poll loop is one long line with a quoted middle, and requiring
-    the whole line quote-free left exactly that worker unverifiable, which
+    inserts or replaces QUOTE characters, so any maximal quote-free run of the original text survives contiguously. Segments, not whole lines: the CI-watch poll loop is one long line with a quoted middle, and requiring the whole line quote-free left exactly that worker unverifiable, which
     let the pure-wait check-in call a healthy silent poll loop POSSIBLY
     STUCK (2026-07-31)."""
     best = ""
@@ -201,12 +173,9 @@ def _needle(command):
 def bg_output_facts(cwd, session_id, live_bg):
     """[(id, desc, age_min, size, stale)] for each running background task.
 
-    v15 (operator, 2026-07-31): a session whose only remaining work is
-    waiting on background jobs is in a LEGITIMATE state, but the hook must
-    still know whether those jobs are alive. The harness writes each task's
+    v15 (operator, 2026-07-31): a session whose only remaining work is waiting on background jobs is in a LEGITIMATE state, but the hook must still know whether those jobs are alive. The harness writes each task's
     stream to <tmp>/<munged-cwd>/<session>/tasks/<id>.output; the mtime of
-    that file is direct evidence of progress no self-report can fake. age is
-    minutes since the last write (None when the file does not exist, e.g. a
+    that file is direct evidence of progress no self-report can fake. age is minutes since the last write (None when the file does not exist, e.g. a
     teammate agent that reports only at completion); stale is True when the
     file exists and has not grown for BG_STALE_MIN minutes.
     """
@@ -244,9 +213,7 @@ BG_REPORT_MIN = int(os.environ.get("WORKLIST_BG_REPORT_MIN", "15"))
 def verify_background(event_bg, table=None, ancestors=None):
     """{task_id: verdict} for RUNNING background tasks.
 
-    Verdicts: 'confirmed' (a live descendant-of-harness process carries the
-    command), 'suspect' (shell task, OS visible, no matching process found),
-    'unverifiable' (teammate task, unusable needle, or no OS view). Only
+    Verdicts: 'confirmed' (a live descendant-of-harness process carries the command), 'suspect' (shell task, OS visible, no matching process found), 'unverifiable' (teammate task, unusable needle, or no OS view). Only
     ever ADDS information; existence remains the event's word.
     """
     if table is None:
@@ -288,13 +255,8 @@ def waiter_tasks(live_bg):
 def confirmed_waiters(live_bg, verdicts):
     """Waiters whose liveness the OS has CONFIRMED, never merely claimed.
 
-    Both callers in wl_checks trade a supervision demand for this verdict, so
-    `confirmed` is the only verdict that may buy the trade. A waiter that is
-    `suspect` or `unverifiable` is treated exactly as any other background task:
-    it still owes the check-in and it still does not substitute for a poll cron.
-    That is the safe direction -- the whole argument for relaxing those checks is
-    that this process's EXIT is itself the wake-up, which is worth nothing if
-    nobody can see the process.
+    Both callers in wl_checks trade a supervision demand for this verdict, so `confirmed` is the only verdict that may buy the trade. A waiter that is `suspect` or `unverifiable` is treated exactly as any other background task: it still owes the check-in and it still does not substitute for a poll cron. That is the safe direction -- the whole argument for relaxing those checks is
+    that this process's EXIT is itself the wake-up, which is worth nothing if nobody can see the process.
     """
     return [
         b
@@ -309,22 +271,15 @@ TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
 def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     """How many in-process teammates have a transcript that is still growing.
 
-    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists
-    because `verify_background` cannot help: it returns `unverifiable` for
-    anything whose type is not "shell", and a teammate has no OS process of its
+    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists because `verify_background` cannot help: it returns `unverifiable` for anything whose type is not "shell", and a teammate has no OS process of its
     own to find. A teammate that is working writes to its transcript; one that
     stopped does not.
 
     Deliberately a COUNT and not a mapping. There is no join from a background
     task id to an agent: the task carries only {id, type, status, description},
-    the description is the PROMPT truncated to ~50 characters, and that prefix is
-    provably not unique -- measured on a live roster, 10 of 19 teammate tasks
-    collided on it ("You are an Opus writer sub-agent in /home/muh..." matched
-    five different agents). The disambiguating text is exactly what the
-    truncation removes, so no amount of care recovers it.
+    the description is the PROMPT truncated to ~50 characters, and that prefix is provably not unique -- measured on a live roster, 10 of 19 teammate tasks collided on it ("You are an Opus writer sub-agent in /home/muh..." matched five different agents). The disambiguating text is exactly what the truncation removes, so no amount of care recovers it.
 
-    Reads the filesystem, never the session's memory, so it is unaffected by a
-    compaction -- which is the case this exists for.
+    Reads the filesystem, never the session's memory, so it is unaffected by a compaction -- which is the case this exists for.
     """
     import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
 
@@ -380,21 +335,10 @@ IDLE_EDGE_EPSILON_S = float(os.environ.get("WORKLIST_IDLE_EDGE_EPSILON_S", "2"))
 def _teammate_meta(cwd, session_id, name):
     """Resolve a teammate NAME to (jsonl path, agent id), or (None, None).
 
-    THE JOIN THAT `live_teammate_transcripts` SAYS DOES NOT EXIST -- and its
-    docstring is right about the case it describes and wrong as a general claim.
-    There is no join from a BACKGROUND TASK to an agent, because the task's only
-    human-readable field is the prompt truncated to ~50 characters and that
-    prefix provably collides. But a NAMED teammate is a different object: the
-    harness writes `subagents/agent-a<hex>.meta.json` carrying `"name"`
-    verbatim, and that is the same string a `--lease` records as
-    `worker:<name>`. Measured on this machine: 970 of 2260 meta files carry a
-    name, every one of them `taskKind: in_process_teammate`.
+    THE JOIN THAT `live_teammate_transcripts` SAYS DOES NOT EXIST -- and its docstring is right about the case it describes and wrong as a general claim. There is no join from a BACKGROUND TASK to an agent, because the task's only human-readable field is the prompt truncated to ~50 characters and that prefix provably collides. But a NAMED teammate is a different object: the harness
+    writes `subagents/agent-a<hex>.meta.json` carrying `"name"` verbatim, and that is the same string a `--lease` records as `worker:<name>`. Measured on this machine: 970 of 2260 meta files carry a name, every one of them `taskKind: in_process_teammate`.
 
-    On collision (a name reused across spawns) take the NEWEST sibling .jsonl by
-    mtime. That is the only defensible choice: the lease names a worker that is
-    supposed to be current, and an older transcript would answer about a dead
-    predecessor -- reporting idle for a name whose live agent is working, which
-    is the one direction this design refuses to fail in.
+    On collision (a name reused across spawns) take the NEWEST sibling .jsonl by mtime. That is the only defensible choice: the lease names a worker that is supposed to be current, and an older transcript would answer about a dead predecessor -- reporting idle for a name whose live agent is working, which is the one direction this design refuses to fail in.
     """
     import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
 
@@ -425,9 +369,7 @@ def _teammate_meta(cwd, session_id, name):
 def _last_record(jsonl, tail_bytes=None):
     """The last parseable JSON object in a .jsonl, or None.
 
-    Reads a bounded TAIL rather than the file: a teammate transcript reaches
-    tens of megabytes and the Stop hook runs on every turn. Scans upward from
-    the end because the last line can be a partial write -- the harness appends
+    Reads a bounded TAIL rather than the file: a teammate transcript reaches tens of megabytes and the Stop hook runs on every turn. Scans upward from the end because the last line can be a partial write -- the harness appends
     while this reads, and a half-flushed final line must not be read as "no
     parseable record" (which would report `unverifiable` for a live agent).
     """
@@ -457,10 +399,7 @@ def _last_record(jsonl, tail_bytes=None):
 def _record_is_idle(rec):
     """Does this record say the agent ENDED ITS TURN?
 
-    THE FAILURE DIRECTION IS THE WHOLE DESIGN. A false `working` is the status
-    quo -- exactly what happens today, and nothing regresses. A false `idle`
-    would be NEW harm: it is the claim that licenses a blocking rung. So every
-    ambiguous shape falls through to not-idle:
+    THE FAILURE DIRECTION IS THE WHOLE DESIGN. A false `working` is the status quo -- exactly what happens today, and nothing regresses. A false `idle` would be NEW harm: it is the claim that licenses a blocking rung. So every ambiguous shape falls through to not-idle:
 
       - `type` other than "assistant"          -> a user/tool_result record, mid-turn
       - `stop_reason: None`                    -> streaming partial. 410 of 701
@@ -487,17 +426,10 @@ def teammate_state(cwd, session_id, name, now=None):
 
     THE BLINDNESS THIS CLOSES. `ladder()` computes
     `gone = wid and wid not in now_bg and rec.get("worker_verified")`, and
-    `worker_verified` is set only when the worker id appears in the harness's
-    running list. A NAME never appears there, so for a name-leased teammate
-    `gone` is unreachable BY CONSTRUCTION and the item falls through to the raw
-    45/90/120 age ladder. Four items once sat `[>]` on a stopped worker for 3.5
-    hours, their leases running 110 minutes past the point the work was done and
-    the report filed.
+    `worker_verified` is set only when the worker id appears in the harness's running list. A NAME never appears there, so for a name-leased teammate `gone` is unreachable BY CONSTRUCTION and the item falls through to the raw 45/90/120 age ladder. Four items once sat `[>]` on a stopped worker for 3.5 hours, their leases running 110 minutes past the point the work was done and the
+    report filed.
 
-    `gone` is NOT loosened here -- it was deliberately tightened after a false
-    death, and loosening it would re-open that. This adds a verdict that is
-    POSITIVELY PROVEN from a record the agent wrote about ITSELF, rather than
-    inferred from absence:
+    `gone` is NOT loosened here -- it was deliberately tightened after a false death, and loosening it would re-open that. This adds a verdict that is POSITIVELY PROVEN from a record the agent wrote about ITSELF, rather than inferred from absence:
 
       idle          last record ended the turn. Positively proven not working.
       working       mid-turn, and quiet for less than BG_STALE_MIN.
@@ -506,17 +438,10 @@ def teammate_state(cwd, session_id, name, now=None):
       unverifiable  no meta matched, unreadable, or no parseable record.
                     UNCHANGED, and never reported as death.
 
-    `idle` IS NOT A DEATH CLAIM. It says the worker finished its turn, which is
-    true whether it is resumable or terminated. This reads a LEVEL, not a
-    transition, so a teammate that resumes flips straight back to `working` on
-    the next stop -- which one proved in live use by resuming 11 minutes later.
+    `idle` IS NOT A DEATH CLAIM. It says the worker finished its turn, which is true whether it is resumable or terminated. This reads a LEVEL, not a transition, so a teammate that resumes flips straight back to `working` on the next stop -- which one proved in live use by resuming 11 minutes later.
 
-    THE SIDECAR (see the plan's 2026-08-23 addendum) only sharpens `quiet_min`.
-    A `TeammateIdle` hook records the exact moment a teammate went idle, which
-    an mtime can only lower-bound. It CANNOT manufacture the verdict: there is
-    no un-idle event, so a journal read alone would report idle forever once
-    written, and the transcript is what sees the resume. Where the two disagree
-    the transcript wins toward `working`.
+    THE SIDECAR (see the plan's 2026-08-23 addendum) only sharpens `quiet_min`. A `TeammateIdle` hook records the exact moment a teammate went idle, which an mtime can only lower-bound. It CANNOT manufacture the verdict: there is no un-idle event, so a journal read alone would report idle forever once written, and the transcript is what sees the resume. Where the two disagree the
+    transcript wins toward `working`.
     """
     now = time.time() if now is None else now
     jsonl, agent_id = _teammate_meta(cwd, session_id, name)
@@ -558,12 +483,8 @@ def teammate_state(cwd, session_id, name, now=None):
 def idle_edge(cwd, session_id, name):
     """Epoch seconds of the newest recorded TeammateIdle edge for `name`, or None.
 
-    Absence is NOT a signal. It means the hook has not fired for this teammate --
-    which is indistinguishable from a teammate that never went idle, and may
-    simply mean `TeammateIdle` does not fire for this class of agent in this
-    harness at all (unobserved as of 2026-08-23). Reading absence as evidence is
-    the exact `ListAgents` error this whole item exists to replace, so the
-    caller degrades to the transcript rather than changing its verdict.
+    Absence is NOT a signal. It means the hook has not fired for this teammate -- which is indistinguishable from a teammate that never went idle, and may simply mean `TeammateIdle` does not fire for this class of agent in this harness at all (unobserved as of 2026-08-23). Reading absence as evidence is the exact `ListAgents` error this whole item exists to replace, so the caller
+    degrades to the transcript rather than changing its verdict.
     """
     import wl_store as S  # noqa: PLC0415 -- stdlib-only sibling, no cycle
 
@@ -618,18 +539,10 @@ def prune_background(event_bg, worklist, session_id, cwd):
 
     TWO MECHANISMS, and the split is the whole safety argument.
 
-    AUTOMATIC, and only where it is a CERTAINTY: when NOT ONE teammate transcript
-    is fresh, every teammate task in the roster is dead, whatever its id. No join
-    is needed to know that, and nothing live can be hidden by it -- if even one
-    teammate were working, its transcript would be growing and this branch would
-    not be taken. This is the compaction case: a session reopened hours later
-    inherits a roster of twenty and none of them exist.
+    AUTOMATIC, and only where it is a CERTAINTY: when NOT ONE teammate transcript is fresh, every teammate task in the roster is dead, whatever its id. No join is needed to know that, and nothing live can be hidden by it -- if even one teammate were working, its transcript would be growing and this branch would not be taken. This is the compaction case: a session reopened hours
+    later inherits a roster of twenty and none of them exist.
 
-    MANUAL for the in-between. With some transcripts fresh but fewer than the
-    roster claims, at least (claimed - fresh) are dead and NOTHING CAN SAY WHICH.
-    Guessing there would mean dropping a live worker's supervision, which is
-    worse than a stale entry, so those are KEPT and reported as `unknown` -- and
-    the session can retire specific ids by hand with `worklist.py --reap`.
+    MANUAL for the in-between. With some transcripts fresh but fewer than the roster claims, at least (claimed - fresh) are dead and NOTHING CAN SAY WHICH. Guessing there would mean dropping a live worker's supervision, which is worse than a stale entry, so those are KEPT and reported as `unknown` -- and the session can retire specific ids by hand with `worklist.py --reap`.
     """
     bg = [b for b in (event_bg or []) if isinstance(b, dict)]
     reaped = read_reaped(worklist, session_id)
@@ -685,16 +598,10 @@ ROSTER_MAX = int(os.environ.get("WORKLIST_ROSTER_MAX", "6"))
 
 def worker_facts(event, session_id):
     """One human line per RUNNING background task, with everything the OS
-    could add. This is the raw material for the ladder messages: facts, not
-    verdicts, in the submodule_pointer_moves handover style.
+    could add. This is the raw material for the ladder messages: facts, not verdicts, in the submodule_pointer_moves handover style.
 
-    CAPPED since v19, and the cap is ordered by usefulness rather than by
-    arrival. A session running ~48 agents printed ~48 lines into EVERY ladder
-    message and every bg-report, which is a context bill charged on the stop
-    that can least afford it -- and the rows that matter are always the few
-    that are suspect, quiet, or gone, never the forty that are streaming
-    normally. So: actionable rows first and in full, ordinary ones only until
-    the budget runs out, then ONE counted summary line.
+    CAPPED since v19, and the cap is ordered by usefulness rather than by arrival. A session running ~48 agents printed ~48 lines into EVERY ladder message and every bg-report, which is a context bill charged on the stop that can least afford it -- and the rows that matter are always the few that are suspect, quiet, or gone, never the forty that are streaming normally. So:
+    actionable rows first and in full, ordinary ones only until the budget runs out, then ONE counted summary line.
 
     The summary line is not decoration. A silent truncation reads as "that is
     everything", which is the failure this file's own doctrine names; the
@@ -751,14 +658,10 @@ def ladder(fold, session_id, event, state_doc):
 
     Subjects: my fresh [>] items (age = minutes since their last store
     event) and my in_progress harness tasks (age = minutes since the status
-    was first seen by this session, tracked in the state doc). A [>] whose
-    declared worker: id is no longer listed by the harness enters
-    investigate immediately, whatever its age -- that is the "ongoing with
-    no worker to trace" gap this exists to catch.
+    was first seen by this session, tracked in the state doc). A [>] whose declared worker: id is no longer listed by the harness enters investigate immediately, whatever its age -- that is the "ongoing with no worker to trace" gap this exists to catch.
 
     Once-per-rung: fired rungs are recorded against the stamp they fired at;
-    the same rung re-fires only after the item's stamp moves (which also
-    resets its age, so in practice it fires once per generation).
+    the same rung re-fires only after the item's stamp moves (which also resets its age, so in practice it fires once per generation).
     """
     now_bg = {
         str(b.get("id") or ""): b

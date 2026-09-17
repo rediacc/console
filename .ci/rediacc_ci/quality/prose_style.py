@@ -1026,7 +1026,11 @@ def reflow_markdown(text, width):
         if kind == "raw":
             out.append(payload)
         else:
-            out.extend(_join_and_wrap(payload, width))
+            # A PARAGRAPH KEEPS ITS OWN LEFT MARGIN, and losing it is how the paragraph above stopped being true of the code beneath it. `_join_and_wrap` strips every piece before joining, which is right for the words and wrong for the column they start in, so an indented list CONTINUATION came back at column 0
+            # and detached itself from the item it belongs to. Measured 2026-09-17 across the markdown this session had already rewritten: 95 such lines across 7 files, reported by the operator from the rendered result rather than caught here. The stop list protects the `-` line itself; nothing protected the
+            # lines beneath it. The width shrinks by the indent so the reflowed lines still end inside the limit once the margin is put back.
+            indent = payload[0][: len(payload[0]) - len(payload[0].lstrip(" \t"))]
+            out.extend(indent + piece for piece in _join_and_wrap(payload, width - len(indent)))
     trailing = "\n" if text.endswith("\n") else ""
     return "\n".join(out) + trailing
 
@@ -1444,8 +1448,15 @@ def _cstyle_reflow_lines(text):
         if item[0] != "line":
             continue
         _, lineno, indent, body = item
-        if not indent.strip():
-            found[lineno] = (indent, body, "//")
+        if indent.strip():
+            continue
+        # THE SAME STOPS THE `#` BRANCH ABOVE APPLIES, and leaving them off here was a sibling of the very bug that added them. Fixing the Python path alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because a `//` comment block carries section
+        # structure exactly as a `#` block does. Found by re-running the cluster sweep over the scopes that had not been rewritten yet rather than by assuming one fix covered both languages.
+        if _is_structural_comment_line(body):
+            continue
+        if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
+            continue
+        found[lineno] = (indent, body, "//")
     return found
 
 

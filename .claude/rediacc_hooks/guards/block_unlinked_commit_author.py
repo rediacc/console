@@ -1,24 +1,15 @@
 """Refuse a `git commit` whose author email GitHub does not link to an account.
 
-WHAT IT COST WHEN NOTHING CHECKED. On 2026-09-03, 30 of 42 commits on branch
-0903-1 carried `muhammed@rediacc.com` -- same DISPLAY NAME as the good ones, so
-`git log` looked uniform, while GitHub rendered them with a bare name, no avatar,
-no profile link and no contribution credit. The submodules had it too (7 of 9, 2
-of 2, 1 of 1). Fixing it took a history rewrite across four repositories and a
-force push.
+WHAT IT COST WHEN NOTHING CHECKED. On 2026-09-03, 30 of 42 commits on branch 0903-1 carried `muhammed@rediacc.com` -- same DISPLAY NAME as the good ones, so `git log` looked uniform, while GitHub rendered them with a bare name, no avatar, no profile link and no contribution credit. The submodules had it too (7 of 9, 2 of 2, 1 of 1). Fixing it took a history rewrite across four
+repositories and a force push.
 
-THE CONFIG WAS NOT THE CAUSE, and that decides the whole design. Measured in that
-checkout: no local user.email at all, and `git config --show-origin --get-all
-user.email` named exactly one source, the global file, with the CORRECT address.
+THE CONFIG WAS NOT THE CAUSE, and that decides the whole design. Measured in that checkout: no local user.email at all, and `git config --show-origin --get-all user.email` named exactly one source, the global file, with the CORRECT address.
 So those 30 came from an override at commit time -- `-c user.email=`, `--author=`,
-GIT_AUTHOR_EMAIL, or a different HOME. A guard that only read `git config` would
-have watched all 30 go past.
+GIT_AUTHOR_EMAIL, or a different HOME. A guard that only read `git config` would have watched all 30 go past.
 
 WHY THIS DOES NOT PATTERN-MATCH THE COMMAND TEXT. The author identity is not IN
 the command; it comes from git's ident resolution. That is why this guard cannot
-repeat the failure recorded in block-commit-meta.sh's header, where a phrase check
-fired on prose and even on `grep -rn 'co-authored-by' docs/` -- its own audit. A
-command that merely MENTIONS an address is not a commit and is never scanned here.
+repeat the failure recorded in block-commit-meta.sh's header, where a phrase check fired on prose and even on `grep -rn 'co-authored-by' docs/` -- its own audit. A command that merely MENTIONS an address is not a commit and is never scanned here.
 
 `git var GIT_AUTHOR_IDENT` implements git's entire precedence chain except
 `--author=`, so this does not reimplement it. Verified:
@@ -26,33 +17,19 @@ command that merely MENTIONS an address is not a commit and is never scanned her
     git -c user.email=x@y.z var GIT_AUTHOR_IDENT      -> x@y.z
     GIT_AUTHOR_EMAIL=e@e.e git var GIT_AUTHOR_IDENT   -> e@e.e
 
-The allowed set is .ci/config/commit-identity.json, GENERATED from GitHub by
-`.ci/scripts/quality/check-commit-identity.sh --refresh` and never hand-authored.
-It cannot be used to smuggle a bad address past CI: the CI gate never consults it
-to PASS a commit -- its verdict is GitHub's own `.author`.
+The allowed set is .ci/config/commit-identity.json, GENERATED from GitHub by `.ci/scripts/quality/check-commit-identity.sh --refresh` and never hand-authored. It cannot be used to smuggle a bad address past CI: the CI gate never consults it to PASS a commit -- its verdict is GitHub's own `.author`.
 
 =============================================================================
 PORT NOTES
 =============================================================================
 
-A NAME COLLISION WORTH STATING. The bash calls its captured environment
-overrides `ENVS`. In this package `ENVS` is the differential harness's key for
-the environments a port is judged in, so the local variable is spelled
-`env_overrides` here. Same value, different name, and the rename is the only
-thing that changed.
+A NAME COLLISION WORTH STATING. The bash calls its captured environment overrides `ENVS`. In this package `ENVS` is the differential harness's key for the environments a port is judged in, so the local variable is spelled `env_overrides` here. Same value, different name, and the rename is the only thing that changed.
 
-`set -uo pipefail` HAS NO PORT. It makes an unset variable fatal and a pipeline
-inherit its first failure, both of which are properties of the shell rather than
-of this guard, and neither has a Python analogue that would change any answer.
-Recorded rather than dropped, because its absence in a port is the kind of
-detail a later reader reasonably wonders about.
+`set -uo pipefail` HAS NO PORT. It makes an unset variable fatal and a pipeline inherit its first failure, both of which are properties of the shell rather than of this guard, and neither has a Python analogue that would change any answer. Recorded rather than dropped, because its absence in a port is the kind of detail a later reader reasonably wonders about.
 
 THE TWO SEDS ARE ONE EXPRESSION LIST APPLIED IN ORDER, which matters for
 `OVERRIDE`: `sed -nE 's/A/\\1/p; s/B/\\1/p'` runs A over the line, prints if it
-substituted, and then runs B over WHAT A LEFT. `head -1` after it takes the
-first line either printed. Written out here rather than collapsed into one
-regex, because collapsing them would be a different program that happens to
-agree on today's inputs.
+substituted, and then runs B over WHAT A LEFT. `head -1` after it takes the first line either printed. Written out here rather than collapsed into one regex, because collapsing them would be a different program that happens to agree on today's inputs.
 """
 
 import json
@@ -125,9 +102,7 @@ def _sed_ident(text):
 def _resolve(which, target, cflags, env_overrides):
     """`env <overrides> git -C <target> <-c flags> var <which>`, then the sed.
 
-    A command substitution, so a git failure is an empty answer rather than an
-    error: the caller's next test is `[ -z "$AUTHOR_EMAIL" ]`, which is the
-    "git cannot resolve an author identity" refusal.
+    A command substitution, so a git failure is an empty answer rather than an error: the caller's next test is `[ -z "$AUTHOR_EMAIL" ]`, which is the "git cannot resolve an author identity" refusal.
     """
     env = dict(os.environ)
     for pair in env_overrides:
@@ -150,8 +125,7 @@ def _allowed(email, identity):
     `[ .identities[] | .emails[], "\\(.id)+\\(.login)@users.noreply.github.com",
        "\\(.login)@users.noreply.github.com" ] | index($e) != null`
 
-    The two synthesised addresses are GitHub's noreply forms, which attribute
-    correctly and are therefore allowed without appearing in `emails`.
+    The two synthesised addresses are GitHub's noreply forms, which attribute correctly and are therefore allowed without appearing in `emails`.
     """
     pool = []
     identities = identity.get("identities") if isinstance(identity, dict) else None

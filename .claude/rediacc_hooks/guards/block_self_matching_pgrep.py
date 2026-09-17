@@ -1,52 +1,24 @@
 """Block a wait loop whose `pgrep -f` pattern matches the waiting shell itself.
 
-WHY A HOOK AND NOT A DOCUMENT. This is written down already, in full, at
-docs/agent-reference/TRAPS.md ("A `pgrep -f <pattern>` guard inside a shell
-whose own command line contains that pattern waits forever"), where it is
-recorded as costing 317 minutes. It was also recorded a second time, in
-block-shell-background-waiter.sh's own header: "three rounds chasing
-'respawning' waiters that were its own pgrep wrappers self-matching". On
-2026-08-26 a session read neither and launched TWO more, which ran 70 and 63
-minutes past conditions that had already been satisfied. A trap written down
-three times and hit anyway is a trap that needs a gate.
+WHY A HOOK AND NOT A DOCUMENT. This is written down already, in full, at docs/agent-reference/TRAPS.md ("A `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever"), where it is recorded as costing 317 minutes. It was also recorded a second time, in block-shell-background-waiter.sh's own header: "three rounds chasing 'respawning' waiters
+that were its own pgrep wrappers self-matching". On 2026-08-26 a session read neither and launched TWO more, which ran 70 and 63 minutes past conditions that had already been satisfied. A trap written down three times and hit anyway is a trap that needs a gate.
 
-WHAT MAKES IT INVISIBLE. `pgrep -f` matches full command lines, and the
-waiting shell's own command line CONTAINS the pattern, because the pattern is
-part of the command being run. So pgrep always finds at least itself, the
-negation is permanently false, and the loop cannot exit. Nothing looks wrong
+WHAT MAKES IT INVISIBLE. `pgrep -f` matches full command lines, and the waiting shell's own command line CONTAINS the pattern, because the pattern is part of the command being run. So pgrep always finds at least itself, the negation is permanently false, and the loop cannot exit. Nothing looks wrong
 from outside: the Stop hook's liveness check reports "silent but its OS
-process is VERIFIED ALIVE (a loop that prints only at the end is healthy)",
-which is a CORRECT reading of a loop that is genuinely running. A wedged loop
+process is VERIFIED ALIVE (a loop that prints only at the end is healthy)", which is a CORRECT reading of a loop that is genuinely running. A wedged loop
 and a patient one are indistinguishable by liveness; only the exit condition
 tells them apart, and nothing checks that.
 
-THE TEST IS THE BUG ITSELF, which is what makes this precise rather than a
-keyword ban: run the pattern as a regex against the command that contains it.
-If it matches, pgrep will match the waiter too. The documented remedy -- a
-bracket class, `[t]est-hooks.sh` -- makes the regex NOT match its own literal
-text, so a correctly written waiter passes here by construction rather than by
+THE TEST IS THE BUG ITSELF, which is what makes this precise rather than a keyword ban: run the pattern as a regex against the command that contains it. If it matches, pgrep will match the waiter too. The documented remedy -- a bracket class, `[t]est-hooks.sh` -- makes the regex NOT match its own literal text, so a correctly written waiter passes here by construction rather than by
 an allowlist someone has to maintain.
 
-SCOPE: loops only. A one-shot `pgrep -cf X` is contaminated the same way (it
-counts the caller, so it reads one too high) but it costs a wrong number
-rather than an unbounded wait, and blocking every diagnostic pgrep would be
-the over-matching this repo has paid for repeatedly. The message says so.
+SCOPE: loops only. A one-shot `pgrep -cf X` is contaminated the same way (it counts the caller, so it reads one too high) but it costs a wrong number rather than an unbounded wait, and blocking every diagnostic pgrep would be the over-matching this repo has paid for repeatedly. The message says so.
 
-PORT NOTE ON "AN UNPARSEABLE REGEX IS NOT A VERDICT". The bash spells that as
-`grep -qE -- "$PAT" 2>/dev/null || continue`, where a malformed ERE makes grep
-exit 2 with a message the redirect eats, and the `||` treats that exactly like
-"did not match". In Python the same input raises `re.error` from `compile`,
-which would come out of a hook as a traceback rather than as an allow, so the
-compile is guarded and the exception folded into the same `continue`. Losing
-that would turn a user typing `pgrep -f '['` into a crashed guard.
+PORT NOTE ON "AN UNPARSEABLE REGEX IS NOT A VERDICT". The bash spells that as `grep -qE -- "$PAT" 2>/dev/null || continue`, where a malformed ERE makes grep exit 2 with a message the redirect eats, and the `||` treats that exactly like "did not match". In Python the same input raises `re.error` from `compile`, which would come out of a hook as a traceback rather than as an allow,
+so the compile is guarded and the exception folded into the same `continue`. Losing that would turn a user typing `pgrep -f '['` into a crashed guard.
 
-PORT NOTE ON ERE VERSUS PYTHON'S DIALECT. The pattern being tested is the
-USER's, run as a regex against the user's own command line, so the two engines
-must agree on it for the verdict to agree. They do for everything the corpus
-contains, and the shapes where they would not (a POSIX back-reference, an
-interval on an unsupported atom) are shapes `pgrep -f` would itself reject.
-This is stated rather than asserted: the differential is what pins it, and it
-compares against real grep on every case.
+PORT NOTE ON ERE VERSUS PYTHON'S DIALECT. The pattern being tested is the USER's, run as a regex against the user's own command line, so the two engines must agree on it for the verdict to agree. They do for everything the corpus contains, and the shapes where they would not (a POSIX back-reference, an interval on an unsupported atom) are shapes `pgrep -f` would itself reject. This
+is stated rather than asserted: the differential is what pins it, and it compares against real grep on every case.
 """
 
 import re
@@ -139,8 +111,7 @@ EDGE_CASES = [
 def _matches(pattern, text):
     """`printf '%s' "$CMD" | grep -qE -- "$PAT" 2>/dev/null`.
 
-    False for a pattern grep would refuse, which the `|| continue` above turns
-    into "not a verdict". See the port note in the module docstring.
+    False for a pattern grep would refuse, which the `|| continue` above turns into "not a verdict". See the port note in the module docstring.
     """
     try:
         return hookio.grep_q(pattern, text)

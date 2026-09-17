@@ -2,14 +2,9 @@
 
 WHY THIS EXISTS, in the operator's words: "I want braver defaults!"
 
-CLAUDE.md already says a `DEFAULT:` is time-boxed autonomy, not a parking bay,
-and that an unanswered deferral whose window closes "becomes an order to do the
-default". That machinery is real -- wl_checks executes expired defaults. It is
-also decorative whenever the default does NOTHING: the timer fires, the no-op
-executes, and the item is exactly the parking bay the rule forbids.
+CLAUDE.md already says a `DEFAULT:` is time-boxed autonomy, not a parking bay, and that an unanswered deferral whose window closes "becomes an order to do the default". That machinery is real -- wl_checks executes expired defaults. It is also decorative whenever the default does NOTHING: the timer fires, the no-op executes, and the item is exactly the parking bay the rule forbids.
 
-MEASURED, not theorised. Every default written in the session that commissioned
-this rule, plus one from a live peer, in one evening:
+MEASURED, not theorised. Every default written in the session that commissioned this rule, plus one from a live peer, in one evening:
 
     DEFAULT: keep carrying it.
     DEFAULT: leave it on its branch.
@@ -18,25 +13,13 @@ this rule, plus one from a live peer, in one evening:
 
 Four for four, all inaction.
 
-THE PROMPT INVITES IT. The catalogue asks for `DEFAULT: <what you do if
-unanswered>` in four places, which reads perfectly well as "nothing". Rewording
-those is worth doing and is not enough on its own, which is why this is a judged
-rule: telling a no-op apart from an action is a reading of what the sentence
-COMMITS TO, and a regex cannot do it. "hold until CI green" and "land the work
-when CI is green" differ by one verb and by everything.
+THE PROMPT INVITES IT. The catalogue asks for `DEFAULT: <what you do if unanswered>` in four places, which reads perfectly well as "nothing". Rewording those is worth doing and is not enough on its own, which is why this is a judged rule: telling a no-op apart from an action is a reading of what the sentence COMMITS TO, and a regex cannot do it. "hold until CI green" and "land the
+work when CI is green" differ by one verb and by everything.
 
-(Merging, pushing main and releasing are excluded from the braver form on
-purpose. They are the operator's, this judge is already forbidden to order them
--- sanitize_next_action rewrites any next_action that does -- and an example
-list that offered "merge it into the open PR" as the brave default would have
-generated orders the sanitiser then blanked. That is not hypothetical: it was
-in the first draft of this rubric.)
+(Merging, pushing main and releasing are excluded from the braver form on purpose. They are the operator's, this judge is already forbidden to order them -- sanitize_next_action rewrites any next_action that does -- and an example list that offered "merge it into the open PR" as the brave default would have generated orders the sanitiser then blanked. That is not hypothetical: it
+was in the first draft of this rubric.)
 
-THE BOUNDARY, drawn explicitly, because "never hold" would be wrong. A hold is
-legitimate when the act it declines is IRREVERSIBLE or lands on someone else:
-publishing, releasing, deleting, pushing to a second repo, spending money,
-mailing a human. So the rule does not ask "does it hold?" -- it asks WHY it
-holds, as one of five reasons, and rejects exactly two of them:
+THE BOUNDARY, drawn explicitly, because "never hold" would be wrong. A hold is legitimate when the act it declines is IRREVERSIBLE or lands on someone else: publishing, releasing, deleting, pushing to a second repo, spending money, mailing a human. So the rule does not ask "does it hold?" -- it asks WHY it holds, as one of five reasons, and rejects exactly two of them:
 
     irreversible     the act cannot be undone            -> legitimate
     outward          it leaves this repo or reaches a
@@ -47,26 +30,15 @@ holds, as one of five reasons, and rejects exactly two of them:
                      other way"                          -> REJECTED
     none             no reason given at all              -> REJECTED
 
-`preference` is the whole point. The operator "almost always takes the
-recommended action", so deferring on the possibility that they might not is not
-caution, it is a round trip bought with a certainty.
+`preference` is the whole point. The operator "almost always takes the recommended action", so deferring on the possibility that they might not is not caution, it is a round trip bought with a certainty.
 
-TRIGGER BOUNDARY. Asked only on a stop whose remaining list actually contains a
-`- [?]` carrying a `DEFAULT:` token -- the same token wl_checks already requires
-on every deferral. No deferrals, no question, no cost. That is a narrow trigger
-on purpose: this rule reads on EVERY stop that has a parked decision, which is
-most of them, and a rule that fires always is a rule that gets skimmed.
+TRIGGER BOUNDARY. Asked only on a stop whose remaining list actually contains a `- [?]` carrying a `DEFAULT:` token -- the same token wl_checks already requires on every deferral. No deferrals, no question, no cost. That is a narrow trigger on purpose: this rule reads on EVERY stop that has a parked decision, which is most of them, and a rule that fires always is a rule that gets
+skimmed.
 
-FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or
-malformed object degrades to a reported non-answer and never blocks, because the
-only thing this object can do is turn a stop into a continue.
+FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed object degrades to a reported non-answer and never blocks, because the only thing this object can do is turn a stop into a continue.
 
-WEDGE BOUND. Unlike the class sweep, this rule needs no marker to persist -- the
-timid `[?]` sits in the worklist until it is rewritten, so the trigger renews
-itself. The marker exists ONLY as a cap: three fires on the same deferral inside
-the TTL and it goes quiet, so a session that cannot satisfy the judge is not
-walled in by it. The cap resets when the deferral changes, which is the event
-that means the session responded.
+WEDGE BOUND. Unlike the class sweep, this rule needs no marker to persist -- the timid `[?]` sits in the worklist until it is rewritten, so the trigger renews itself. The marker exists ONLY as a cap: three fires on the same deferral inside the TTL and it goes quiet, so a session that cannot satisfy the judge is not walled in by it. The cap resets when the deferral changes, which is
+the event that means the session responded.
 """
 
 import hashlib
@@ -307,10 +279,7 @@ def _key(quote):
 def apply_verdict(out, path=None):
     """(kind, note). Mutates `out` when the rule fires; owns the cap.
 
-    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means the same
-    deferral has already been blocked on BRAVE_MAX_FIRES times inside the TTL:
-    the finding stands but the session is let past, because a rule that cannot
-    be satisfied must not be a wall.
+    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means the same deferral has already been blocked on BRAVE_MAX_FIRES times inside the TTL: the finding stands but the session is let past, because a rule that cannot be satisfied must not be a wall.
     """
     kind, payload = read_verdict(out)
     if kind != "fire":

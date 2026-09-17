@@ -18,16 +18,8 @@
      Network paths are NOT covered by test-hooks.sh; verification
      failures fail CLOSED.
 
-PORT NOTE ON WHAT THE DIFFERENTIAL CAN AND CANNOT REACH. Under the harness's
-default `gh` stub (exit 1, nothing on stdout) every merge resolves to an empty
-`PRDATA`, so the corpus exercises arms 1 and 2 and stops at "could not resolve
-the PR". Arms 3 to 5 are ported line for line and are NOT covered here, and
-that is deliberate rather than an omission: reaching them means stubbing `gh`
-into answering AND letting `check-review-report-replies.sh` run, and that
-script makes its own live calls, so a stub deep enough to reach the branch
-would make this differential a network test -- the exact failure the harness's
-own header says the stub exists to prevent. The bash's line 20 already says
-those paths are not covered by test-hooks.sh either.
+PORT NOTE ON WHAT THE DIFFERENTIAL CAN AND CANNOT REACH. Under the harness's default `gh` stub (exit 1, nothing on stdout) every merge resolves to an empty `PRDATA`, so the corpus exercises arms 1 and 2 and stops at "could not resolve the PR". Arms 3 to 5 are ported line for line and are NOT covered here, and that is deliberate rather than an omission: reaching them means stubbing
+`gh` into answering AND letting `check-review-report-replies.sh` run, and that script makes its own live calls, so a stub deep enough to reach the branch would make this differential a network test -- the exact failure the harness's own header says the stub exists to prevent. The bash's line 20 already says those paths are not covered by test-hooks.sh either.
 """
 
 import json
@@ -83,8 +75,8 @@ JQ_UNRESOLVED = (
     "[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length"
 )
 
-# REST parity for the --admin ban. `gh api .../pulls/<n>/merge -X PUT` reaches the SAME GitHub merge mutation as `gh pr merge` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it merges over the --admin ban, the CI-green check and the review-thread/report-reply hygiene checks all at once.
-# Endpoint and method are matched INDEPENDENTLY because `gh api` flags are order-independent (the method flag may precede or follow the endpoint), reusing the split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form, rather than a new shared shellscan helper for a three-line regex.
+# REST parity for the --admin ban. `gh api .../pulls/<n>/merge -X PUT` reaches the SAME GitHub merge mutation as `gh pr merge` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it merges over the --admin ban, the CI-green check and the review-thread/report-reply hygiene checks all at once. Endpoint and method are matched INDEPENDENTLY
+# because `gh api` flags are order-independent (the method flag may precede or follow the endpoint), reusing the split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form, rather than a new shared shellscan helper for a three-line regex.
 API_VERB = hookio.rx(r"^[{S}]*gh[{S}]+api([{S}]|$)")
 API_MERGE_ENDPOINT = r"pulls/[0-9]+/merge"
 API_PUT_METHOD = hookio.rx(r"(^|[{S}])(-X|--method)[{S}]+PUT([{S}]|$)")
@@ -164,9 +156,7 @@ def _jq_number(text):
 def _jq_conclusion(text):
     """`[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"`.
 
-    `first` of an EMPTY array is `null`, and `null.conclusion` is `null` in jq
-    rather than an error, so the alternative supplies "ABSENT" -- which is why
-    an absent check and a check with no conclusion read the same here.
+    `first` of an EMPTY array is `null`, and `null.conclusion` is `null` in jq rather than an error, so the alternative supplies "ABSENT" -- which is why an absent check and a check with no conclusion read the same here.
     """
     if text == "":
         return ""
@@ -197,8 +187,8 @@ def run(ev):
     # --admin'` and `--admin=true` MUST. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
-    # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
-    # Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method independently, since either flag may come first on the line.
+    # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation. Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method
+    # independently, since either flag may come first on the line.
     split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
     api_lines = hookio.grep_lines(API_VERB, split)
     api_lines = [line for line in api_lines if hookio.grep_q_line(API_MERGE_ENDPOINT, line)]

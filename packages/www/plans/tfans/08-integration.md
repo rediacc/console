@@ -11,11 +11,11 @@ All integration patterns call the `rdc` CLI only. Renet is a low-level internal 
 ### JSON Output Behavior
 
 - **Query commands** (`config show`, `machine containers`, etc.) return a JSON
-envelope: `{success, command, data, errors, warnings, metrics}`
+  envelope: `{success, command, data, errors, warnings, metrics}`
 - **Lifecycle commands** (`repo create`, `repo up`, etc.) stream renet's output
-directly — only the exit code matters (0 = success)
+  directly — only the exit code matters (0 = success)
 - Both Ansible modules and the Terraform provider handle this via separate
-methods: `run()`/`RunQuery()` for queries, `run_lifecycle()`/`RunLifecycle()` for mutations
+  methods: `run()`/`RunQuery()` for queries, `run_lifecycle()`/`RunLifecycle()` for mutations
 
 ## When to Use Which Tool
 

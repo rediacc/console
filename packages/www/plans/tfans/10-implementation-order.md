@@ -2,8 +2,7 @@
 
 ## Testing Philosophy: Gate Every Milestone
 
-Every milestone ends with a **Gate** — a concrete, runnable verification that the
-milestone is complete. Gates are not aspirational; they are pass/fail checkpoints.
+Every milestone ends with a **Gate** — a concrete, runnable verification that the milestone is complete. Gates are not aspirational; they are pass/fail checkpoints.
 
 ### Rules
 
@@ -49,8 +48,7 @@ See `09-test-environment.md` for smoke test content definitions.
 
 ### 0.1 Fix BLOCKING CLI JSON Output Gaps
 
-These must be fixed before Ansible/Terraform development begins.
-See `00-overview.md` "Complete JSON Output Audit" for the full picture.
+These must be fixed before Ansible/Terraform development begins. See `00-overview.md` "Complete JSON Output Audit" for the full picture.
 
 **Fix 1: `backup schedule show`** — BLOCKING for Terraform `rediacc_backup_schedule`
 - File: `packages/cli/src/commands/backup.ts`
@@ -105,8 +103,7 @@ These were audited and confirmed working:
 - [x] `queue list`, `queue trace`
 - [x] `repo up/down/delete --dry-run` — returns structured JSON in dry-run mode
 
-The dry-run capability is particularly valuable: it enables Ansible check mode
-and Terraform plan to show what would change without executing.
+The dry-run capability is particularly valuable: it enables Ansible check mode and Terraform plan to show what would change without executing.
 
 ### 0.4 Test Environment Setup
 - [ ] Create setup/teardown scripts (see `09-test-environment.md`)
@@ -578,8 +575,7 @@ TF_ACC=1 go test ./... -v -timeout 30m                                          
 - [ ] Announce, gather feedback, iterate
 
 **Rationale**: The Dokku provider stayed at 0.x for months and improved based
-on real user feedback. Shipping early catches schema design issues before
-they become breaking changes in 1.0.
+on real user feedback. Shipping early catches schema design issues before they become breaking changes in 1.0.
 
 **Gate:**
 ```bash

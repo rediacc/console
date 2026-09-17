@@ -1,34 +1,19 @@
 """Block launching a long-lived waiter/watcher with a shell `&` instead of the
 harness's run_in_background.
 
-WHY. On 2026-08-08 a session launched wl_wait.py with a trailing `&`. A
-shell-backgrounded process is untracked: the harness cannot notify on its
-exit, so the waiter fires into the void and the session stops hearing
-cross-session mail without any visible failure. The same session then spent
-three rounds chasing "respawning" waiters that were its own pgrep wrappers
+WHY. On 2026-08-08 a session launched wl_wait.py with a trailing `&`. A shell-backgrounded process is untracked: the harness cannot notify on its exit, so the waiter fires into the void and the session stops hearing cross-session mail without any visible failure. The same session then spent three rounds chasing "respawning" waiters that were its own pgrep wrappers
 self-matching. Every instruction file already says run_in_background: true;
 instructions demonstrably did not hold under load, so this hook does.
 
-SCOPE IS DELIBERATELY NARROW: only the known long-lived instruments
-(wl_wait.py today) followed by a backgrounding `&`. A general `&` ban would
-be wrong -- `cmd1 & cmd2 & wait` fan-outs and `disown` teardowns are
-legitimate. `&&` never matches (the regex requires a NON-& character or
-end-of-line after the single `&`).
+SCOPE IS DELIBERATELY NARROW: only the known long-lived instruments (wl_wait.py today) followed by a backgrounding `&`. A general `&` ban would be wrong -- `cmd1 & cmd2 & wait` fan-outs and `disown` teardowns are legitimate. `&&` never matches (the regex requires a NON-& character or end-of-line after the single `&`).
 
 PORT NOTE ON THE awk STRIPPER'S UNINITIALISED STATE. `indoc` and `delim` are
 never assigned before use, so the first record is judged with `indoc == 0` and
 `delim == ""`. The port names them explicitly, which is the same behaviour
 written down rather than inherited from the language.
 
-PORT NOTE ON `print` VERSUS THE SUBSTITUTION. awk's `print` TERMINATES every
-record it emits, input newline or not, and the surrounding `$( )` then strips
-the trailing newlines again. Both steps are spelled out below (`_awk_out` then
-`_command_substitution`) because a port that joined the records with newlines
-would agree on every multi-line input and differ on a one-line one. `_awk_out`
-is reached through `shellscan` rather than `hookio`: `hookio` re-exports the
-primitives its own guards needed and awk's output rule was not one of them, and
-a private second copy here would be exactly the drift `hookio`'s header argues
-against.
+PORT NOTE ON `print` VERSUS THE SUBSTITUTION. awk's `print` TERMINATES every record it emits, input newline or not, and the surrounding `$( )` then strips the trailing newlines again. Both steps are spelled out below (`_awk_out` then `_command_substitution`) because a port that joined the records with newlines would agree on every multi-line input and differ on a one-line one.
+`_awk_out` is reached through `shellscan` rather than `hookio`: `hookio` re-exports the primitives its own guards needed and awk's output rule was not one of them, and a private second copy here would be exactly the drift `hookio`'s header argues against.
 """
 
 import re
@@ -91,11 +76,7 @@ EDGE_CASES = [
 def _strip_heredoc_bodies(text):
     """The awk program, record for record.
 
-    Also strip HEREDOC BODIES, which are data rather than commands. Caught as a
-    live false positive: a session writing its recovery document with
-    `worklist.py --state <<EOF ... EOF` was blocked because the DOCUMENT explained
-    this very rule, so the hook forbade documenting itself. Quoted-delimiter
-    heredocs are never expanded or executed.
+    Also strip HEREDOC BODIES, which are data rather than commands. Caught as a live false positive: a session writing its recovery document with `worklist.py --state <<EOF ... EOF` was blocked because the DOCUMENT explained this very rule, so the hook forbade documenting itself. Quoted-delimiter heredocs are never expanded or executed.
     """
     records, _ = hookio._records(text)
     out = []

@@ -1,13 +1,8 @@
 """wl_classsweep: the "sweep the class, not the instance" rule of the stop judge.
 
-WHY THIS EXISTS, in the operator's words: "I've been fixing my instance each time
-instead of the system that lets every session make the same mistake."
+WHY THIS EXISTS, in the operator's words: "I've been fixing my instance each time instead of the system that lets every session make the same mistake."
 
-CLAUDE.md already carries the rule -- "Sweep the class, not the instance. Before
-calling a bug fixed, grep for its siblings. One bad call site usually has
-several." -- and it is routinely not followed, because nothing ever asks. Five
-defects from ONE night, each fixed at a single site while the siblings were
-found later by luck or by a human noticing:
+CLAUDE.md already carries the rule -- "Sweep the class, not the instance. Before calling a bug fixed, grep for its siblings. One bad call site usually has several." -- and it is routinely not followed, because nothing ever asks. Five defects from ONE night, each fixed at a single site while the siblings were found later by luck or by a human noticing:
 
   1. block-bash-write-to-running-script.sh matched a MENTION where it needed a
      TARGET. Fixed. The identical line in block-roundlog-truncate.sh was found
@@ -22,43 +17,22 @@ found later by luck or by a human noticing:
   5. A guard false positive was fixed on the python-heredoc path; the redirect
      path had the same hole and was found only when it fired again.
 
-The shape is identical every time: a fix lands, the message describes ONE site,
-and no evidence is offered that anything looked for the others.
+The shape is identical every time: a fix lands, the message describes ONE site, and no evidence is offered that anything looked for the others.
 
-WHY IT IS NOT wl_reggate, which asks a neighbouring question on the same stop.
-The regression gate asks "will this defect COME BACK?" and is satisfied by a
-test. This asks "is this defect ALREADY THERE, somewhere else, right now?" and
-is satisfied only by a search. A fix can be perfectly gated against recurrence
+WHY IT IS NOT wl_reggate, which asks a neighbouring question on the same stop. The regression gate asks "will this defect COME BACK?" and is satisfied by a test. This asks "is this defect ALREADY THERE, somewhere else, right now?" and is satisfied only by a search. A fix can be perfectly gated against recurrence
 at the one site it was found and still leave three live siblings in the tree;
-example 2 above is exactly that. So it is a separate object with a separate
-verdict, riding the SAME judge call and the same artifact-detected fix signal,
-which is what keeps it free: no second model call, no second detector.
+example 2 above is exactly that. So it is a separate object with a separate verdict, riding the SAME judge call and the same artifact-detected fix signal, which is what keeps it free: no second model call, no second detector.
 
-TRIGGER BOUNDARY, and why it is drawn here. The rule is asked ONLY on a stop
-that already carries wl_reggate's fix signal (`A FIX LANDED THIS TURN`). That
-signal is artifact-derived -- a `^(fix|revert)[(!:]` commit subject between the
-marker head and HEAD, or a `- [x]` this session ticked -- is de-duplicated per
-fix-set so a settled fix-set is never re-asked, and already excludes docs-only
-fix-sets. Every other trigger considered was prose-based ("the message says it
-fixed something"), which fires on status reports, on plans, and on the same fix
-described twice. A rule that fires always is a rule that gets skimmed, and this
-one has to survive being read on every fix for months.
+TRIGGER BOUNDARY, and why it is drawn here. The rule is asked ONLY on a stop that already carries wl_reggate's fix signal (`A FIX LANDED THIS TURN`). That signal is artifact-derived -- a `^(fix|revert)[(!:]` commit subject between the marker head and HEAD, or a `- [x]` this session ticked -- is de-duplicated per fix-set so a settled fix-set is never re-asked, and already excludes
+docs-only fix-sets. Every other trigger considered was prose-based ("the message says it fixed something"), which fires on status reports, on plans, and on the same fix described twice. A rule that fires always is a rule that gets skimmed, and this one has to survive being read on every fix for months.
 
-The model is then given an explicit escape: a defect with no possible second
-occurrence (a typo in one string, a value correct only at that call site, the
+The model is then given an explicit escape: a defect with no possible second occurrence (a typo in one string, a value correct only at that call site, the
 only file of its kind) answers applicable=false and nothing fires.
 
-ENFORCEMENT is a verdict flip, not a new blocking path: when the rule fires,
-the judge's "stop" becomes "continue" with a reason naming the class and a
-next_action carrying the exact search command. wl_checks already turns a
-"continue" into a block. Nothing else in the stop battery had to change.
+ENFORCEMENT is a verdict flip, not a new blocking path: when the rule fires, the judge's "stop" becomes "continue" with a reason naming the class and a next_action carrying the exact search command. wl_checks already turns a "continue" into a block. Nothing else in the stop battery had to change.
 
-FAIL SEMANTICS. Unlike regression_gate, a missing or malformed class_sweep
-object NEVER fails closed. It cannot become an escape hatch by degrading,
-because the only thing it can do is turn a stop into a continue -- degrading
-loses a demand, it never grants an exit that was otherwise refused. And an
-unactionable block ("sweep the class" with no class and no search named) is
-noise, which is the one thing this rule cannot afford.
+FAIL SEMANTICS. Unlike regression_gate, a missing or malformed class_sweep object NEVER fails closed. It cannot become an escape hatch by degrading, because the only thing it can do is turn a stop into a continue -- degrading loses a demand, it never grants an exit that was otherwise refused. And an unactionable block ("sweep the class" with no class and no search named) is noise,
+which is the one thing this rule cannot afford.
 """
 
 import os
@@ -248,8 +222,7 @@ def _clean(obj, key, limit):
 def read_verdict(out):
     """(kind, payload). kind is 'silent', 'fire' or 'degraded'.
 
-    'degraded' means the object was missing or unusable, which is reported and
-    never blocked on -- see the module docstring's FAIL SEMANTICS.
+    'degraded' means the object was missing or unusable, which is reported and never blocked on -- see the module docstring's FAIL SEMANTICS.
     """
     cs = out.get("class_sweep") if isinstance(out, dict) else None
     if not isinstance(cs, dict):
@@ -318,10 +291,7 @@ def names_destructive(text):
 
     THE SECOND DOOR, and it stayed open after the first was shut. `search` is a command
     and is validated as one; `instruction` is model-authored PROSE that reaches the
-    session verbatim through V_ACTION_NOSEARCH whenever `search` is empty. Prose is not
-    a command line, so it is not tokenised -- but a session told "next step: git clean
-    -xdf" may well run it, and the read-only guarantee a sweep carries has to hold on
-    every path out of this module, not only the one wearing the word "Run:".
+    session verbatim through V_ACTION_NOSEARCH whenever `search` is empty. Prose is not a command line, so it is not tokenised -- but a session told "next step: git clean -xdf" may well run it, and the read-only guarantee a sweep carries has to hold on every path out of this module, not only the one wearing the word "Run:".
     """
     return wl_rules.names_write(text)
 
@@ -451,10 +421,7 @@ def clear_outstanding(path=None):
 def apply_verdict(out, outstanding=None, path=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
-    kind is 'fire', 'silent' or 'degraded'. A silent OR degraded answer
-    discharges any outstanding demand: carrying one forward on an answer nobody
-    could read would block a session on the judge's malfunction rather than on
-    anything it did.
+    kind is 'fire', 'silent' or 'degraded'. A silent OR degraded answer discharges any outstanding demand: carrying one forward on an answer nobody could read would block a session on the judge's malfunction rather than on anything it did.
     """
     kind, payload = read_verdict(out)
     if kind == "fire":

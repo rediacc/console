@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """wl_report: durable capture of sub-agent reports, and a pushed unread inbox.
 
-THE DEFECT THIS CLOSES. A teammate's report arrives by SendMessage into the
-lead's conversation and nowhere the lead can look afterwards. After a compaction
-or a restart, a substantive report and an agent that went idle saying nothing are
-INDISTINGUISHABLE -- there is no artifact to consult and no record that the agent
-ever spoke. That is not a persistence problem in the abstract: it is capture at a
-known moment, addressing that survives a restart, and unread-ness.
+THE DEFECT THIS CLOSES. A teammate's report arrives by SendMessage into the lead's conversation and nowhere the lead can look afterwards. After a compaction or a restart, a substantive report and an agent that went idle saying nothing are INDISTINGUISHABLE -- there is no artifact to consult and no record that the agent ever spoke. That is not a persistence problem in the abstract:
+it is capture at a known moment, addressing that survives a restart, and unread-ness.
 
 All three have an answer here:
 
@@ -28,24 +24,16 @@ All three have an answer here:
               purpose: a REPORT is addressed by branch, a READ MARK is scoped by
               reader.
 
-NO LOCK, ANYWHERE IN THIS MODULE, AND THAT IS LOAD-BEARING. One `os.write` of a
-single line under 1024 bytes onto an `O_APPEND` handle is atomic on POSIX (below
-PIPE_BUF) and serialised by the OS on Windows. Because it needs no lock it
-imports no `fcntl`, so it does not inherit the Windows import death that kills
-`wl_store.py` (line 46) and `worklist.py` (line 109) before they run a single
-check. The 1024-byte cap enforced by `_fit` is what keeps that guarantee true, and
-it is enforced by SHRINKING values, never by dropping fields -- a reader that
-must tolerate missing keys cannot tell a capped line from a corrupt one.
+NO LOCK, ANYWHERE IN THIS MODULE, AND THAT IS LOAD-BEARING. One `os.write` of a single line under 1024 bytes onto an `O_APPEND` handle is atomic on POSIX (below PIPE_BUF) and serialised by the OS on Windows. Because it needs no lock it imports no `fcntl`, so it does not inherit the Windows import death that kills `wl_store.py` (line 46) and `worklist.py` (line 109) before they run
+a single check. The 1024-byte cap enforced by `_fit` is what keeps that guarantee true, and it is enforced by SHRINKING values, never by dropping fields -- a reader that must tolerate missing keys cannot tell a capped line from a corrupt one.
 
 Bodies never go in the index and never go in the worklist event log. Measured
 over n=47 authored reports: min 3 938 B, median 17 575 B, max 115 720 B. The
 MEDIAN is over 4x `AGENT_STATE_MAX_CHARS` (wl_store.py:82), so every existing
 carrier is disqualified at the middle of the distribution, not at its tail; and
-a 115 KB record inlined into the event log would be re-read IN FULL by `S.load`
-on every future stop, making it a permanent tax rather than a one-time write.
+a 115 KB record inlined into the event log would be re-read IN FULL by `S.load` on every future stop, making it a permanent tax rather than a one-time write.
 
-Stdlib only, no sibling imports beyond `wl_core` (which is itself stdlib-only and
-fcntl-free). Portable to linux, macOS and Windows on amd64 and arm64.
+Stdlib only, no sibling imports beyond `wl_core` (which is itself stdlib-only and fcntl-free). Portable to linux, macOS and Windows on amd64 and arm64.
 """
 
 import contextlib
@@ -109,20 +97,12 @@ _FS_RE = re.compile(r"[^A-Za-z0-9._-]+")
 def store_root(start):
     """`$HOME/.claude/agent-reports/<repo-slug>/`, or `WORKLIST_REPORTS_DIR`.
 
-    The slug is the one `C.worklist_for` (wl_core.py:161) already derives from
-    the repo root, so two worktrees of one repo stay separate WITHOUT inventing a
-    second naming scheme that could disagree with the first.
+    The slug is the one `C.worklist_for` (wl_core.py:161) already derives from the repo root, so two worktrees of one repo stay separate WITHOUT inventing a second naming scheme that could disagree with the first.
 
     Not `/tmp`: reboot deletes it.
 
-    Not the repo's `agent/<session>/` tree either, and the migration of
-    2026-08-14 STRENGTHENED that rather than weakening it. There used to be two
-    objections to two different trees: a tracked `docs/agent/<branch>/` would put
-    roughly 142 machine-written files per session into every PR diff, and a
-    gitignored `.agent/<branch>/` would die with the worktree while a report is
-    most wanted after the branch is gone. Those trees are now ONE tree, and it is
-    tracked -- so the diff-noise objection applies to all of it, with nothing
-    left to trade against. Reports stay outside the repo.
+    Not the repo's `agent/<session>/` tree either, and the migration of 2026-08-14 STRENGTHENED that rather than weakening it. There used to be two objections to two different trees: a tracked `docs/agent/<branch>/` would put roughly 142 machine-written files per session into every PR diff, and a gitignored `.agent/<branch>/` would die with the worktree while a report is most
+    wanted after the branch is gone. Those trees are now ONE tree, and it is tracked -- so the diff-noise objection applies to all of it, with nothing left to trade against. Reports stay outside the repo.
     """
     env = os.environ.get("WORKLIST_REPORTS_DIR")
     if env:
@@ -142,11 +122,7 @@ def read_path(store):
 def short_id(agent_id):
     """The LAST 12 characters of the agent id, never the first.
 
-    Both id shapes end in a random hex run (`a<17hex>` for a Task sub-agent,
-    `a<name>-<16hex>` for a teammate), and only the tail is unique: two teammates
-    named `design-statesplit` and `design-statefoo` share their first 12
-    characters exactly, so a leading truncation would collide on precisely the
-    long-lived named agents this mechanism is for.
+    Both id shapes end in a random hex run (`a<17hex>` for a Task sub-agent, `a<name>-<16hex>` for a teammate), and only the tail is unique: two teammates named `design-statesplit` and `design-statefoo` share their first 12 characters exactly, so a leading truncation would collide on precisely the long-lived named agents this mechanism is for.
     """
     a = str(agent_id or "")
     return a[-12:] if len(a) > 12 else a
@@ -180,12 +156,8 @@ def _append_line(path, obj):
 def _fit(obj):
     """Shrink VALUES until the line fits; never drop a KEY.
 
-    A reader forced to tolerate absent keys cannot distinguish a deliberately
-    capped line from a torn one, which would make the torn-tail rule below
-    unenforceable. So `title` shrinks first (it is a convenience), then the
-    transcript path (recoverable from `agent_transcript_path` conventions), and
-    only a pathological id/agent pair could still overflow -- which raises, and
-    the caller drops the whole capture rather than writing a malformed index.
+    A reader forced to tolerate absent keys cannot distinguish a deliberately capped line from a torn one, which would make the torn-tail rule below unenforceable. So `title` shrinks first (it is a convenience), then the transcript path (recoverable from `agent_transcript_path` conventions), and only a pathological id/agent pair could still overflow -- which raises, and the caller
+    drops the whole capture rather than writing a malformed index.
     """
     for shrink in (TITLE_MAX, 80, 40, 20, 0):
         obj["title"] = obj["title"][:shrink]
@@ -223,12 +195,9 @@ def is_phantom(agent_type, transcript):
     for the session's own main-loop turns, which the design never modelled. Each
     such turn was captured as a "report"; the waiter saw a new report and fired;
     the session spent a turn reading and re-arming; THAT turn was captured; the
-    waiter fired again. Two consecutive firings served the lead its own session
-    summary three minutes apart. It does not converge, and every cycle costs the
-    exact turn the waiter exists to save.
+    waiter fired again. Two consecutive firings served the lead its own session summary three minutes apart. It does not converge, and every cycle costs the exact turn the waiter exists to save.
 
-    REJECTS ONLY WHEN BOTH SIGNALS FAIL, which is the safe direction and is the
-    opposite of over-strict. A real agent whose transcript has not flushed yet
+    REJECTS ONLY WHEN BOTH SIGNALS FAIL, which is the safe direction and is the opposite of over-strict. A real agent whose transcript has not flushed yet
     still has a type; a hypothetical typeless agent kind still has a transcript.
     Only the phantom class fails both.
 
@@ -242,16 +211,11 @@ def is_phantom(agent_type, transcript):
 
 def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
     """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never
-    fatal -- same rule every `.requests` reader follows, and the reason a crash
-    mid-append cannot wedge the inbox.
+    fatal -- same rule every `.requests` reader follows, and the reason a crash mid-append cannot wedge the inbox.
 
-    BOUNDED BY DEFAULT, because since v18 this file is read on EVERY stop and it
-    grows forever by design (a line is the durable record that an agent ran and
+    BOUNDED BY DEFAULT, because since v18 this file is read on EVERY stop and it grows forever by design (a line is the durable record that an agent ran and
     whether it said anything, so nothing prunes it; only bodies are pruned). At
-    roughly 200 bytes a line and ~140 agents a session, an unbounded read would
-    be a few megabytes per stop within months. The index is append-ordered, so
-    the tail is the recent end -- exactly what every hook path wants. `--list
-    --all` passes None to see the whole history.
+    roughly 200 bytes a line and ~140 agents a session, an unbounded read would be a few megabytes per stop within months. The index is append-ordered, so the tail is the recent end -- exactly what every hook path wants. `--list --all` passes None to see the whole history.
     """
     p = index_path(store)
     out = []
@@ -286,13 +250,9 @@ def reader_id(explicit=None):
 
     THE ENV LOOKUP MOVED to wl_core.resolve_session_id, which carries this
     function's hard-won note verbatim: the variable is CLAUDE_CODE_SESSION_ID
-    and CLAUDE_SESSION_ID does not exist, checked against a live environment
-    rather than assumed, because a wrong name resolves to the empty reader
-    forever -- which reads as "has read nothing" and would surface every report
-    on every stop while looking like it worked.
+    and CLAUDE_SESSION_ID does not exist, checked against a live environment rather than assumed, because a wrong name resolves to the empty reader forever -- which reads as "has read nothing" and would surface every report on every stop while looking like it worked.
 
-    It moved because this was the ONLY place in the CLI that ever asked the
-    environment who it was, and the answer was never generalised past this one
+    It moved because this was the ONLY place in the CLI that ever asked the environment who it was, and the answer was never generalised past this one
     verb. Two definitions of "who am I" is how the drift starts; there is now
     one, and every `<me>` argument is checked against it."""
     if explicit:
@@ -303,29 +263,16 @@ def reader_id(explicit=None):
 def read_marks(store, reader):
     """Report ids marked read BY THIS READER. Empty when the reader is unknown.
 
-    A READ MARK IS PER-READER, KEYED ON SESSION ID (operator decision, overriding
-    this design's own earlier recommendation of a branch-level mark). `by` is a
-    SCOPING KEY here, not provenance.
+    A READ MARK IS PER-READER, KEYED ON SESSION ID (operator decision, overriding this design's own earlier recommendation of a branch-level mark). `by` is a SCOPING KEY here, not provenance.
 
-    WHY, because the rejected option is the tempting one. Branch-level means ONE
-    ledger shared by every session in the worktree, so if session A reads a
-    report, session B never learns it existed. Two concurrent sessions per
-    worktree is this repo's normal state, so that is not a corner case -- and it
-    is a quieter restatement of the exact failure this whole file exists to fix:
-    a report that was written and that nobody sees.
+    WHY, because the rejected option is the tempting one. Branch-level means ONE ledger shared by every session in the worktree, so if session A reads a report, session B never learns it existed. Two concurrent sessions per worktree is this repo's normal state, so that is not a corner case -- and it is a quieter restatement of the exact failure this whole file exists to fix: a
+    report that was written and that nobody sees.
 
-    THE ACCEPTED COST, stated so nobody later mistakes it for a bug and
-    "fixes" it: `C.same_session` matches by PREFIX (wl_core.py:20-26), so a
-    restarted session is a different reader and re-sees every report on the
-    branch. That resurfacing IS the compaction-recovery case working. A fresh
-    session inheriting the branch's reports is the entire point of the feature.
+    THE ACCEPTED COST, stated so nobody later mistakes it for a bug and "fixes" it: `C.same_session` matches by PREFIX (wl_core.py:20-26), so a restarted session is a different reader and re-sees every report on the branch. That resurfacing IS the compaction-recovery case working. A fresh session inheriting the branch's reports is the entire point of the feature.
     Do NOT add machinery to suppress it; if the list is long the correct lever is
-    PRESENTATION (surface_block already collapses to a bounded count), never
-    suppression. Surfacing less than exists is the thing being fixed.
+    PRESENTATION (surface_block already collapses to a bounded count), never suppression. Surfacing less than exists is the thing being fixed.
 
-    An UNKNOWN reader returns no marks, so everything reads as unread. That is
-    the safe direction under the same rule: too much is recoverable, too little
-    is the defect.
+    An UNKNOWN reader returns no marks, so everything reads as unread. That is the safe direction under the same rule: too much is recoverable, too little is the defect.
     """
     if not reader:
         return set()
@@ -390,29 +337,14 @@ OPEN_BOX_CAP = 99
 def open_boxes(body):
     """How many UNFINISHED worklist boxes the sub-agent's own report declares.
 
-    WHY THIS IS THE SIGNAL, and why nothing better exists at SubagentStop. Every
-    rule the Stop hook enforces on the main loop -- drain the queue, end with
-    `## Remaining`, do not stop with work in hand -- is structurally
-    unenforceable for a sub-agent, because `SubagentStop` is a CAPTURE hook that
-    can never refuse a turn (dispatch wraps this whole path in
+    WHY THIS IS THE SIGNAL, and why nothing better exists at SubagentStop. Every rule the Stop hook enforces on the main loop -- drain the queue, end with `## Remaining`, do not stop with work in hand -- is structurally unenforceable for a sub-agent, because `SubagentStop` is a CAPTURE hook that can never refuse a turn (dispatch wraps this whole path in
     `contextlib.suppress` and returns 0, deliberately; see
-    `handle_subagent_stop`). Making it blocking would be the wrong fix: a wedged
-    sub-agent costs more than a lost report. So the middle path is to RECORD the
-    condition where it is visible and let the PARENT's blocking Stop surface it.
+    `handle_subagent_stop`). Making it blocking would be the wrong fix: a wedged sub-agent costs more than a lost report. So the middle path is to RECORD the condition where it is visible and let the PARENT's blocking Stop surface it.
 
-    THE STORE CANNOT ANSWER THIS. Worklist items are owned per session
-    (`agent/worklist/<owner>.jsonl`), and a sub-agent has no owner file -- it
-    reports to its principal instead of tracking its own items. So the only
-    honest source is what the agent itself wrote, and the repo already has one
-    machine-readable convention for that: the same box syntax `wl_core.ITEM`
-    parses. This counts it and claims nothing more than "the report declares N
-    unfinished boxes", which is exactly what a reader needs to know before
-    assuming the delegated work landed.
+    THE STORE CANNOT ANSWER THIS. Worklist items are owned per session (`agent/worklist/<owner>.jsonl`), and a sub-agent has no owner file -- it reports to its principal instead of tracking its own items. So the only honest source is what the agent itself wrote, and the repo already has one machine-readable convention for that: the same box syntax `wl_core.ITEM` parses. This counts
+    it and claims nothing more than "the report declares N unfinished boxes", which is exactly what a reader needs to know before assuming the delegated work landed.
 
-    Counted over the WHOLE body rather than under a `## Remaining` heading:
-    agents write that heading a dozen ways ("Remaining", "## Remaining work",
-    "Still open"), and a heading matcher that misses is a marker that silently
-    reads zero -- the vacuous-check class. Over-counting a quoted box is visible
+    Counted over the WHOLE body rather than under a `## Remaining` heading: agents write that heading a dozen ways ("Remaining", "## Remaining work", "Still open"), and a heading matcher that misses is a marker that silently reads zero -- the vacuous-check class. Over-counting a quoted box is visible
     and harmless; under-counting is the failure this exists to prevent.
     """
     n = 0
@@ -428,11 +360,7 @@ def open_boxes(body):
 def _body_key(body):
     """A short content key for one report body.
 
-    Not the whole body and not its length: length collides trivially across an
-    agent's own sign-offs ("Done." twice is two different stops), and the whole
-    body cannot live on a 1024-byte index line. 16 hex characters of sha256 is
-    64 bits, which is not a security claim -- it only has to separate one
-    agent's successive reports from a re-scan of the same one.
+    Not the whole body and not its length: length collides trivially across an agent's own sign-offs ("Done." twice is two different stops), and the whole body cannot live on a 1024-byte index line. 16 hex characters of sha256 is 64 bits, which is not a security claim -- it only has to separate one agent's successive reports from a re-scan of the same one.
     """
     return hashlib.sha256((body or "").encode("utf-8")).hexdigest()[:16]
 
@@ -454,26 +382,14 @@ def capture(
     tx="ok",
 ):
     """Write the body whole, then append one index line. Returns the entry, or
-    None when this exact report is already indexed, so the hook and `--scan` can
-    both run over the same agent without producing a duplicate.
+    None when this exact report is already indexed, so the hook and `--scan` can both run over the same agent without producing a duplicate.
 
     DEDUP IS ON (agent, BODY), NOT ON AGENT ALONE, and the difference is a whole
     class of lost report. An agent stops MANY times here: `SendMessage` resumes
-    it, and every resume ends in another `SubagentStop`. Keying on the id alone
-    meant only an agent's FIRST stop was ever recorded and every later one hit
-    `return None`. Measured live 2026-09-07 on `a41545ec804647d3b`: the store
-    holds its 75-byte SILENT sign-off from 20:06Z, and DISCARDED both substantive
-    reports that followed -- the full batch-9 delivery and the stand-down -- from
-    a transcript that had meanwhile grown to 2.1 MB. That is this module's own
-    stated purpose running backwards: it exists so that "reported substantively"
-    and "went idle saying nothing" stop being indistinguishable, and it was
-    keeping the silence and dropping the substance.
+    it, and every resume ends in another `SubagentStop`. Keying on the id alone meant only an agent's FIRST stop was ever recorded and every later one hit `return None`. Measured live 2026-09-07 on `a41545ec804647d3b`: the store holds its 75-byte SILENT sign-off from 20:06Z, and DISCARDED both substantive reports that followed -- the full batch-9 delivery and the stand-down -- from
+    a transcript that had meanwhile grown to 2.1 MB. That is this module's own stated purpose running backwards: it exists so that "reported substantively" and "went idle saying nothing" stop being indistinguishable, and it was keeping the silence and dropping the substance.
 
-    A LATER STOP THEREFORE GETS ITS OWN ID, `<rid>-2`, `<rid>-3`. It cannot share
-    the base id: `unread()` suppresses by id, so a second capture under a
-    read id would be born already-read and never surface -- the same bug wearing
-    a different hat. `resolve()` still answers the bare `rid` exactly, because it
-    checks exact matches before prefixes.
+    A LATER STOP THEREFORE GETS ITS OWN ID, `<rid>-2`, `<rid>-3`. It cannot share the base id: `unread()` suppresses by id, so a second capture under a read id would be born already-read and never surface -- the same bug wearing a different hat. `resolve()` still answers the bare `rid` exactly, because it checks exact matches before prefixes.
     """
     rid = short_id(agent_id)
     if not rid:
@@ -634,13 +550,9 @@ def handle_subagent_stop(event):
 
 def surface_block(store, branch, hook_path, reader):
     """The unread index, COLLAPSED. Bodies are never inlined: at a median of
-    17.5 KB and a max of 115 KB, even a handful would be a context bomb on every
-    single compaction, which is the moment context is scarcest.
+    17.5 KB and a max of 115 KB, even a handful would be a context bomb on every single compaction, which is the moment context is scarcest.
 
-    The collapse matters more under per-reader marks than it would have under
-    branch-level ones: a restarted session legitimately re-sees every report on
-    its branch, so this is the lever that keeps that honest rather than
-    overwhelming. It bounds the LINES, never the SET -- the count always names
+    The collapse matters more under per-reader marks than it would have under branch-level ones: a restarted session legitimately re-sees every report on its branch, so this is the lever that keeps that honest rather than overwhelming. It bounds the LINES, never the SET -- the count always names
     the full total."""
     items = unread(store, branch, reader)
     if not items:
@@ -689,8 +601,7 @@ def surface_block(store, branch, hook_path, reader):
 
 def handle_surface(event, hook_event, hook_path):
     """SessionStart and PostCompact both emit; SessionStart declines the
-    `compact` source. Claude Code fires SessionStart *and* PostCompact on every
-    compaction, and emitting from both was a real, shipped defect in the sibling
+    `compact` source. Claude Code fires SessionStart *and* PostCompact on every compaction, and emitting from both was a real, shipped defect in the sibling
     handler (`wl_checks.py:1232-1241`) -- the duplicate is not hypothetical."""
     if hook_event == "SessionStart" and str(event.get("source") or "") == "compact":
         return
@@ -716,32 +627,20 @@ def running_agent_ids(start):
     """(ids, evidence) -- the sub-agents the HARNESS says are running right now.
 
     THE ORACLE `scan()` WAS MISSING. mtime answers "is it writing?"; this answers
-    "is it alive?", and only the second one licenses the word "finished". The
-    harness records the answer already: `wl_checks.py` dumps the whole Stop event
-    to `<worklist>.lastevent-<prefix>.json` on every full stop, and its
-    `background_tasks` array carries one entry per task with `type`, `status` and
-    `id`.
+    "is it alive?", and only the second one licenses the word "finished". The harness records the answer already: `wl_checks.py` dumps the whole Stop event to `<worklist>.lastevent-<prefix>.json` on every full stop, and its `background_tasks` array carries one entry per task with `type`, `status` and `id`.
 
     THE JOIN IS THE WHOLE CLAIM, and it is exact rather than heuristic: for a
     `type: "subagent"` entry the harness's `id` is byte-identical to the stem of
     the transcript `scan()` globs. Verified live 2026-09-07 --
     `background_tasks[].id == "ad7126a7fed2d4a5e"` beside
-    `agent-ad7126a7fed2d4a5e.jsonl` -- so `jsonl.stem.removeprefix("agent-")`
-    already produces the lookup key with no mapping in between. Case 13b in
-    test-report-inbox.sh pins that, so if the convention ever changes CI goes red
-    instead of quietly restoring the defect.
+    `agent-ad7126a7fed2d4a5e.jsonl` -- so `jsonl.stem.removeprefix("agent-")` already produces the lookup key with no mapping in between. Case 13b in test-report-inbox.sh pins that, so if the convention ever changes CI goes red instead of quietly restoring the defect.
 
     EVERY SESSION, NOT JUST THIS ONE. `scan()` walks all sessions' `subagents/`
     dirs, so one session's roster is not enough; all sessions of a repo write
     their sidecar beside the same worklist, which is why this globs.
 
-    FAIL-OPEN, AND THE DIRECTION MATTERS. The roster may only ever add a reason
-    to SKIP, never a reason to CAPTURE. An id in no roster, a stale roster, or no
-    readable sidecar at all all fall through to the mtime rule -- i.e. to exactly
-    today's behaviour. Refusing to capture when the oracle cannot see would be
-    fail-OFF, not fail-open, and would turn `scan()` into a permanent no-op.
-    Blindness is therefore RETURNED IN WORDS rather than as an innocent empty
-    set, because a check that cannot fail must say so.
+    FAIL-OPEN, AND THE DIRECTION MATTERS. The roster may only ever add a reason to SKIP, never a reason to CAPTURE. An id in no roster, a stale roster, or no readable sidecar at all all fall through to the mtime rule -- i.e. to exactly today's behaviour. Refusing to capture when the oracle cannot see would be fail-OFF, not fail-open, and would turn `scan()` into a permanent no-op.
+    Blindness is therefore RETURNED IN WORDS rather than as an innocent empty set, because a check that cannot fail must say so.
     """
     try:
         wl = C.worklist_for(start)
@@ -792,11 +691,7 @@ def _munged(root):
 def _resolves(path):
     """Does this path name an existing file? False for ANY failure to find out.
 
-    NOT `Path.is_file()`. That only swallows a WHITELIST of errnos (ENOENT,
-    ENOTDIR, EBADF, ELOOP) and lets everything else propagate -- so a 3 KB path
-    raises ENAMETOOLONG, which crashed the whole capture and LOST the report,
-    strictly worse than the unresolved-path bug this check exists to catch.
-    Caught by the suite's own long-path case, which is why that case exists.
+    NOT `Path.is_file()`. That only swallows a WHITELIST of errnos (ENOENT, ENOTDIR, EBADF, ELOOP) and lets everything else propagate -- so a 3 KB path raises ENAMETOOLONG, which crashed the whole capture and LOST the report, strictly worse than the unresolved-path bug this check exists to catch. Caught by the suite's own long-path case, which is why that case exists.
     """
     try:
         return pathlib.Path(path).is_file()
@@ -807,10 +702,7 @@ def _resolves(path):
 def _bounded_lines(path, max_bytes=TRANSCRIPT_MAX_BYTES):
     """Every line of a JSONL file, or the last `max_bytes` worth of them.
 
-    A transcript here already reaches 1.4 MB and nothing bounds its growth, so an
-    unconditional read_text() puts an unbounded file in memory inside a hook that
-    must never wedge a sub-agent's stop. On overflow the first (necessarily
-    partial) line is dropped, which the callers already tolerate: both of them
+    A transcript here already reaches 1.4 MB and nothing bounds its growth, so an unconditional read_text() puts an unbounded file in memory inside a hook that must never wedge a sub-agent's stop. On overflow the first (necessarily partial) line is dropped, which the callers already tolerate: both of them
     skip unparseable lines by rule."""
     try:
         size = path.stat().st_size
@@ -827,20 +719,10 @@ def _bounded_lines(path, max_bytes=TRANSCRIPT_MAX_BYTES):
 def harvest_transcript(jsonl):
     """(sends, final_text, last_record) from an agent's transcript.
 
-    WHY THIS READS SendMessage AND NOT JUST THE FINAL MESSAGE -- this is the
-    whole defect, one layer deeper than it first appears. A teammate delivers its
-    report by CALLING SendMessage and then signs off in prose. The harness's
-    `last_assistant_message` therefore hands over the SIGN-OFF, not the report.
-    Measured on a real teammate (`rm-deployments`): `last_assistant_message` was
-    "Released. Task complete." -- 24 characters -- while the two SendMessage
-    payloads it had just sent ran 8 646 and 6 331 characters. Capturing only the
-    final message would have indexed that agent as having said essentially
-    nothing, and would have marked several genuinely substantive agents `silent`.
+    WHY THIS READS SendMessage AND NOT JUST THE FINAL MESSAGE -- this is the whole defect, one layer deeper than it first appears. A teammate delivers its report by CALLING SendMessage and then signs off in prose. The harness's `last_assistant_message` therefore hands over the SIGN-OFF, not the report. Measured on a real teammate (`rm-deployments`): `last_assistant_message` was
+    "Released. Task complete." -- 24 characters -- while the two SendMessage payloads it had just sent ran 8 646 and 6 331 characters. Capturing only the final message would have indexed that agent as having said essentially nothing, and would have marked several genuinely substantive agents `silent`.
 
-    That is not a corner case: "the report arrives by SendMessage and nowhere the
-    lead can look afterwards" is the literal statement of the problem this file
-    exists to solve, so the SendMessage payload is the PRIMARY artifact and the
-    final message is the postscript.
+    That is not a corner case: "the report arrives by SendMessage and nowhere the lead can look afterwards" is the literal statement of the problem this file exists to solve, so the SendMessage payload is the PRIMARY artifact and the final message is the postscript.
     """
     sends, final, rec = [], "", {}
     for line in _bounded_lines(jsonl):
@@ -903,10 +785,7 @@ def assemble_body(sends, final):
 def _title_of(sends, final):
     """The LAST SendMessage's opening line, else the final message's.
 
-    Deliberately the last send and not the first: an agent that reports progress
-    and then reports its conclusion should be indexed by the conclusion. Falling
-    back to the final message keeps a plain `Task` sub-agent (which returns its
-    report AS its final message and may never call SendMessage) titled properly.
+    Deliberately the last send and not the first: an agent that reports progress and then reports its conclusion should be indexed by the conclusion. Falling back to the final message keeps a plain `Task` sub-agent (which returns its report AS its final message and may never call SendMessage) titled properly.
     """
     for source in ([sends[-1]["message"]] if sends else []) + [final or ""]:
         for line in str(source).splitlines():
@@ -920,17 +799,10 @@ def scan(store, start, idle_min=None):
 
     THIS IS WHAT MAKES THE INDEX CORRECT RATHER THAN MERELY LIKELY. The hook is
     the fast path; this is the one that survives a crash, an interrupt, a
-    settings.json that lost its wiring, and any task kind whose stop event turns
-    out not to fire. It reads the same `subagents/` directory the hook's own
-    `agent_transcript_path` points into, so the two agree on naming by
-    construction rather than by convention.
+    settings.json that lost its wiring, and any task kind whose stop event turns out not to fire. It reads the same `subagents/` directory the hook's own `agent_transcript_path` points into, so the two agree on naming by construction rather than by convention.
 
-    The meta sidecar's shape DIFFERS BY TASK KIND and every field but `agentType`
-    is optional here. Measured over one live session: 74 sidecars, 44 teammates
-    carrying `name`/`taskKind`/`teamName`, and 30 plain `Task` sub-agents
-    carrying NONE of them. Keying on `name` or `taskKind` would therefore skip
-    40% of the population in silence -- which is the "capture everything"
-    requirement failing invisibly, the exact failure mode this file exists for.
+    The meta sidecar's shape DIFFERS BY TASK KIND and every field but `agentType` is optional here. Measured over one live session: 74 sidecars, 44 teammates carrying `name`/`taskKind`/`teamName`, and 30 plain `Task` sub-agents carrying NONE of them. Keying on `name` or `taskKind` would therefore skip 40% of the population in silence -- which is the "capture everything" requirement
+    failing invisibly, the exact failure mode this file exists for.
     """
     idle_min = SCAN_IDLE_MIN if idle_min is None else idle_min
     root = C.project_root(start)
@@ -1005,9 +877,7 @@ def _iso_of(stamp):
 def prune(store):
     """Delete BODIES past the retention window; keep index lines forever.
 
-    The asymmetry is deliberate: a line is ~200 bytes and IS the history (it is
-    what proves an agent ran and whether it said anything), while the bodies are
-    the only part that costs real disk. A pruned body's index line still answers
+    The asymmetry is deliberate: a line is ~200 bytes and IS the history (it is what proves an agent ran and whether it said anything), while the bodies are the only part that costs real disk. A pruned body's index line still answers
     the question (A) is about."""
     if RETENTION_DAYS <= 0:
         return []

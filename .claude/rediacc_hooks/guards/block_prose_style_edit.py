@@ -1,33 +1,20 @@
 """Refuse an Edit or Write whose NEW prose breaks the house writing style.
 
-THE STYLE, in one line: make the work, the event or the artifact the subject, or
-use the shared `we`. Never `you`, never `I`. The eighteen rules, their
-severities, their scopes and their examples live in
+THE STYLE, in one line: make the work, the event or the artifact the subject, or use the shared `we`. Never `you`, never `I`. The eighteen rules, their severities, their scopes and their examples live in
 `.ci/config/prose-style-rules.json` and nowhere else; this guard loads them and
-holds no rule text of its own, so a rule edited there is enforced here with no
-edit to this file.
+holds no rule text of its own, so a rule edited there is enforced here with no edit to this file.
 
 =============================================================================
 THIS GUARD HAS NO BASH TWIN, AND IT IS THE FIRST ONE THAT DOES NOT
 =============================================================================
 
 `TWIN = None` below is a sentinel, not an oversight, and it was added for this
-guard. Every one of the 46 guards in this package landed on ONE day, 2026-09-06,
-the P7 cutover, because every one of them is a PORT of a pre-existing bash hook.
-There was consequently no precedent for a guard that was never bash, and the
-harness assumed there could not be one: `test_dispatch.py` asserted
-`isinstance(module.TWIN, str)`, and `test_guards_differential.py` read
-`ORACLES / module.TWIN` in four places, one of which
-(`test_every_port_has_a_present_twin`) asserted the oracle file exists.
+guard. Every one of the 46 guards in this package landed on ONE day, 2026-09-06, the P7 cutover, because every one of them is a PORT of a pre-existing bash hook. There was consequently no precedent for a guard that was never bash, and the harness assumed there could not be one: `test_dispatch.py` asserted `isinstance(module.TWIN, str)`, and `test_guards_differential.py` read
+`ORACLES / module.TWIN` in four places, one of which (`test_every_port_has_a_present_twin`) asserted the oracle file exists.
 
-A twin could not be written even as a formality.
-`.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files
-under `.ci` and `.claude` and refuses a new one -- "the surface may shrink and
-may never grow" -- so inventing a bash file purely to satisfy an assertion would
-have been blocked by a different gate, and would have been a lie to this one.
+A twin could not be written even as a formality. `.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files under `.ci` and `.claude` and refuses a new one -- "the surface may shrink and may never grow" -- so inventing a bash file purely to satisfy an assertion would have been blocked by a different gate, and would have been a lie to this one.
 
-WHAT REPLACES THE ORACLE, because "no twin" must not mean "no evidence". A
-TWIN-less guard is held to MORE, not less:
+WHAT REPLACES THE ORACLE, because "no twin" must not mean "no evidence". A TWIN-less guard is held to MORE, not less:
 
   * a dedicated per-guard suite beside it, `test-block_prose_style_edit.py`,
     which `check-hook-integrity.sh` already recognises as covering both
@@ -45,32 +32,18 @@ TWIN-less guard is held to MORE, not less:
 WHAT IT REFUSES, AND THE THREE THINGS IT DELIBERATELY DOES NOT
 =============================================================================
 
-ONLY THE NEW PROSE. The payload's `content` / `new_string` / `new_source` /
-`edits[].new_string` is what gets linted. Nothing else in the file is read.
+ONLY THE NEW PROSE. The payload's `content` / `new_string` / `new_source` / `edits[].new_string` is what gets linted. Nothing else in the file is read.
 
-PRE-EXISTING DEBT IS A WARNING, NEVER A BLOCK. A whole-file `Write` carries the
-lines that were already there, and refusing those would block every rewrite of a
-legacy document -- the exact over-block that gets a guard deleted within a week. So a finding whose stable id is already in
-`.ci/config/prose-style-baseline.json` is reported and ALLOWED. Only a finding
-that is genuinely new is refused, which is the same shrink-only contract the CI
-gate runs under.
+PRE-EXISTING DEBT IS A WARNING, NEVER A BLOCK. A whole-file `Write` carries the lines that were already there, and refusing those would block every rewrite of a legacy document -- the exact over-block that gets a guard deleted within a week. So a finding whose stable id is already in `.ci/config/prose-style-baseline.json` is reported and ALLOWED. Only a finding that is genuinely
+new is refused, which is the same shrink-only contract the CI gate runs under.
 
-WARNINGS NEVER BLOCK. Nine of the eighteen rules are advisory and several more
-are `severity: warning` (R7's absolutes, R11's imperatives). Those are printed
-and allowed. Only `severity: error` refuses.
+WARNINGS NEVER BLOCK. Nine of the eighteen rules are advisory and several more are `severity: warning` (R7's absolutes, R11's imperatives). Those are printed and allowed. Only `severity: error` refuses.
 
-OUT-OF-SCOPE FILES PASS SILENTLY. `.sh` is not scanned at all (this repository's
-shell surface is shrinking under a migration and will not outlive the effort of
-teaching a linter its comment syntax), `packages/www` is excluded (217
-translated, hash-pinned files whose English is the source of twelve derived
-locales), and `private/` is excluded (four git submodules, other repositories).
+OUT-OF-SCOPE FILES PASS SILENTLY. `.sh` is not scanned at all (this repository's shell surface is shrinking under a migration and will not outlive the effort of teaching a linter its comment syntax), `packages/www` is excluded (217 translated, hash-pinned files whose English is the source of twelve derived locales), and `private/` is excluded (four git submodules, other
+repositories).
 
-IT FAILS OPEN, LOUDLY. If the engine cannot be imported -- a moved `.ci`, a
-broken rules file, a partial checkout -- the edit is ALLOWED and stderr says the
-prose went UNEXAMINED. `block_settled_questions.py` argues the same case for a
-missing jq: blocking a legitimate edit over a missing module is worse than the
-thing being guarded, and reporting nothing at all is worse than both, because
-"the operator never learns what was not asked".
+IT FAILS OPEN, LOUDLY. If the engine cannot be imported -- a moved `.ci`, a broken rules file, a partial checkout -- the edit is ALLOWED and stderr says the prose went UNEXAMINED. `block_settled_questions.py` argues the same case for a missing jq: blocking a legitimate edit over a missing module is worse than the thing being guarded, and reporting nothing at all is worse than both,
+because "the operator never learns what was not asked".
 """
 
 import fnmatch
@@ -249,15 +222,9 @@ EDGE_CASES = [
 def _engine(root):
     """Import the prose-style engine, restoring `sys.path` on the way out.
 
-    THE INSERT IS SCOPED AND REMOVED, which matters because the dispatcher runs
-    this guard in the SAME process as every other one in its chain. A permanent
-    `sys.path` entry pointing at `.ci` would put `rediacc_ci` and `_cipath` on
-    every later guard's import path, and a name collision there would surface as
-    a guard misbehaving with nothing pointing back at this line.
+    THE INSERT IS SCOPED AND REMOVED, which matters because the dispatcher runs this guard in the SAME process as every other one in its chain. A permanent `sys.path` entry pointing at `.ci` would put `rediacc_ci` and `_cipath` on every later guard's import path, and a name collision there would surface as a guard misbehaving with nothing pointing back at this line.
     `block_plan_without_tasks.py` avoids the question entirely by shelling out;
-    this guard imports instead, because the engine is pure Python with no bash
-    contract to reproduce and an in-process call is what lets the whole suite run
-    in one process.
+    this guard imports instead, because the engine is pure Python with no bash contract to reproduce and an in-process call is what lets the whole suite run in one process.
     """
     cipath = str(pathlib.Path(root) / ".ci")
     inserted = cipath not in sys.path
@@ -274,29 +241,16 @@ def _engine(root):
 def _relative(root, file_path, cwd=None):
     """The repo-relative path, or "" when the edit is outside the tree.
 
-    An edit to `/tmp/scratch.md` is not this repository's prose and is not this
-    guard's business. Returning a `../..` path for it is deliberate too: the
-    caller's `_in_scope` refuses anything starting with `..`, and the baseline is
-    keyed on repo-relative paths, so an invented `../` prefix that got through
-    would silently miss every baseline entry and turn legacy debt into a block.
+    An edit to `/tmp/scratch.md` is not this repository's prose and is not this guard's business. Returning a `../..` path for it is deliberate too: the caller's `_in_scope` refuses anything starting with `..`, and the baseline is keyed on repo-relative paths, so an invented `../` prefix that got through would silently miss every baseline entry and turn legacy debt into a block.
 
-    `cwd` IS PASSED IN RATHER THAN READ FROM THE PROCESS, and it was MEASURED
-    rather than reasoned about. The first cut called `os.path.abspath`, which
-    resolves a relative `file_path` against the INTERPRETER's working directory.
-    Running the per-guard harness from `/tmp` on 2026-09-16 produced:
+    `cwd` IS PASSED IN RATHER THAN READ FROM THE PROCESS, and it was MEASURED rather than reasoned about. The first cut called `os.path.abspath`, which resolves a relative `file_path` against the INTERPRETER's working directory. Running the per-guard harness from `/tmp` on 2026-09-16 produced:
 
         22 case(s), 0 blocked, 22 allowed
         FAILURES: 6
 
-    Every relative path resolved outside the repository, every case fell out of
-    scope, and the guard reported clean on six payloads it had refused a minute
-    earlier from the repo root. A guard whose verdict depends on who invoked it
-    is a guard that reads as working, because the common case is an absolute path
-    where the difference never shows.
+    Every relative path resolved outside the repository, every case fell out of scope, and the guard reported clean on six payloads it had refused a minute earlier from the repo root. A guard whose verdict depends on who invoked it is a guard that reads as working, because the common case is an absolute path where the difference never shows.
 
-    The caller passes the event's OWN `cwd` -- the top-level key Claude Code sends
-    on every hook payload -- and falls back to the repository root rather than to
-    the process. Neither fallback is the interpreter's directory.
+    The caller passes the event's OWN `cwd` -- the top-level key Claude Code sends on every hook payload -- and falls back to the repository root rather than to the process. Neither fallback is the interpreter's directory.
     """
     if not file_path:
         return ""
@@ -312,14 +266,9 @@ def _relative(root, file_path, cwd=None):
 def _in_scope(engine, globals_, rel):
     """Whether an edited file is scanned at all.
 
-    SUFFIX ALONE IS NOT ENOUGH, since `.json` widened `include` to two
-    directories (`.ci/config/*.json`, `.ci/policy/*.json`) rather than every
-    tracked `.json` -- the 740-finding flood a whole-tree `.json` scan would
-    produce, most of it translated CLI copy where second person is the
-    correct register. `SCOPE_BY_SUFFIX` answers "what SCANNER", `include`
+    SUFFIX ALONE IS NOT ENOUGH, since `.json` widened `include` to two directories (`.ci/config/*.json`, `.ci/policy/*.json`) rather than every tracked `.json` -- the 740-finding flood a whole-tree `.json` scan would produce, most of it translated CLI copy where second person is the correct register. `SCOPE_BY_SUFFIX` answers "what SCANNER", `include`
     answers "which FILES"; a suffix present in the first without being
-    checked against the second would scan every `.json` in the tree the
-    moment `discover()`'s own corpus wants only two directories of it.
+    checked against the second would scan every `.json` in the tree the moment `discover()`'s own corpus wants only two directories of it.
     """
     if not rel or rel.startswith(".."):
         return False

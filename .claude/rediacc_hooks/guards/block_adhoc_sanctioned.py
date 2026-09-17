@@ -3,16 +3,11 @@
 The rules live in .claude/hooks/lib/sanctioned.py, one row per class, so a new
 class is a row rather than a 22nd copy of this file. See that module's header
 for why a table replaced per-guard scripts, and for the deliberately-kept
-false positive on prose that merely DESCRIBES a banned shape (operator ruling
-2026-08-25, worklist #6a2c9652).
+false positive on prose that merely DESCRIBES a banned shape (operator ruling 2026-08-25, worklist #6a2c9652).
 
-Fails OPEN on its own breakage: if python3 or the registry is unavailable this
-exits 0 rather than blocking every command in the session. A guard that bricks
-the shell when it breaks gets deleted, and then nothing is guarded.
+Fails OPEN on its own breakage: if python3 or the registry is unavailable this exits 0 rather than blocking every command in the session. A guard that bricks the shell when it breaks gets deleted, and then nothing is guarded.
 
-PORT NOTE ON THE FORK THAT IS NOT ONE. The bash spells the lookup as
-`python3 -c` with the command and the library directory in the ENV PREFIX, and
-its comment records why:
+PORT NOTE ON THE FORK THAT IS NOT ONE. The bash spells the lookup as `python3 -c` with the command and the library directory in the ENV PREFIX, and its comment records why:
 
     Both values go in the ENV PREFIX. An earlier draft passed LIB= as a python
     ARGUMENT, so os.environ["LIB"] raised, `|| exit 0` swallowed it, and the
@@ -21,8 +16,7 @@ its comment records why:
 
 Here the registry is imported into this interpreter instead, so there is no
 argument to misplace; what survives from that finding is the shape of the
-failure it names, which is why every step below still fails open and why the
-differential asserts the block direction on its own cases.
+failure it names, which is why every step below still fails open and why the differential asserts the block direction on its own cases.
 """
 
 import importlib.util
@@ -60,9 +54,7 @@ EDGE_CASES = [
 def _registry():
     """`import sanctioned`, once, failing open exactly as the bash does.
 
-    The bash's inner script wraps the import in `except Exception: sys.exit(0)`
-    and lets any later failure fall to `|| exit 0`. Both are reproduced by the
-    empty list this returns on any failure, since `match` over no rows is None.
+    The bash's inner script wraps the import in `except Exception: sys.exit(0)` and lets any later failure fall to `|| exit 0`. Both are reproduced by the empty list this returns on any failure, since `match` over no rows is None.
     """
     if _REGISTRY:
         return _REGISTRY[0]

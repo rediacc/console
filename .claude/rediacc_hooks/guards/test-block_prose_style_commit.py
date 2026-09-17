@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """Control harness for block_prose_style_commit.
 
-BOTH DIRECTIONS, and here the ALLOW side carries most of the weight. A guard
-that refused every commit message would pass every block case in this file and
+BOTH DIRECTIONS, and here the ALLOW side carries most of the weight. A guard that refused every commit message would pass every block case in this file and
 would be uninstalled the same day; the cases that must pass -- a
-Conventional-Commits imperative subject, a backticked identifier, `git log
---grep` -- are what make the block cases mean anything.
+Conventional-Commits imperative subject, a backticked identifier, `git log --grep` -- are what make the block cases mean anything.
 
 WHY THIS FILE IS LOAD-BEARING. The guard declares `TWIN = None`, so the
-differential has no bash oracle for it, and `test_guards_differential.py` now
-requires a `test-<stem>.py` beside any guard carrying that sentinel. This is that
-file. `check-hook-integrity.sh` reads its existence as well, crediting the guard
+differential has no bash oracle for it, and `test_guards_differential.py` now requires a `test-<stem>.py` beside any guard carrying that sentinel. This is that file. `check-hook-integrity.sh` reads its existence as well, crediting the guard
 with both directions under section B.
 
-IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover
-exists: a suite driving anything else keeps passing while the thing that runs
-goes unchecked.
+IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that runs goes unchecked.
 """
 
 import json

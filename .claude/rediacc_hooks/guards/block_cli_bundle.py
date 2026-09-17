@@ -1,9 +1,6 @@
 """Block running the CLI bundle directly via node.
 
-THE ENTRY ARGUMENT IS THE TEST, not the presence of a path anywhere in the
-line. The original pattern was `node .*(cli-bundle|packages/cli/)`, and `.*`
-spans the whole command, so it refused three things it had no business
-refusing:
+THE ENTRY ARGUMENT IS THE TEST, not the presence of a path anywhere in the line. The original pattern was `node .*(cli-bundle|packages/cli/)`, and `.*` spans the whole command, so it refused three things it had no business refusing:
 
   node packages/cli/bundle.mjs        <- this repo's OWN build entry, the
                                          `build:bundle` script and line 144
@@ -13,27 +10,15 @@ refusing:
                                          program being run
   any command merely QUOTING one of those strings
 
-The third is not hypothetical: while measuring this guard on 2026-08-27 it
-blocked the measurement twice, because the probe's own command line contained
-the fixture text. That is the mention-as-execution class, and this session hit
-it nine times across these guards and the ones written to catch it.
+The third is not hypothetical: while measuring this guard on 2026-08-27 it blocked the measurement twice, because the probe's own command line contained the fixture text. That is the mention-as-execution class, and this session hit it nine times across these guards and the ones written to catch it.
 
-So: match `node`, skip its flags, and require the FIRST non-flag argument --
-the program -- to be the bundle. `bundle.mjs` is not `cli-bundle`, so the
-build entry passes by construction rather than by an allowlist.
+So: match `node`, skip its flags, and require the FIRST non-flag argument -- the program -- to be the bundle. `bundle.mjs` is not `cli-bundle`, so the build entry passes by construction rather than by an allowlist.
 
-ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant
-matching PROSE: `echo '<the banned command>'` was refused, and so was a
-worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and
-quoted spans while still extracting `sh -c` / `eval` payloads, so a command
-hidden in a wrapper is scanned exactly as before -- this narrows what the
-guard refuses, never what it catches.
+ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant matching PROSE: `echo '<the banned command>'` was refused, and so was a worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is scanned exactly as before -- this narrows what the guard
+refuses, never what it catches.
 
-PORT NOTE ON A LINE THAT DOES NOTHING. The bash computes `SCAN` and only THEN
-writes `[ -z "$CMD" ] && exit 0`, so the empty-command test is dead weight:
-`hook_scan_target ""` has already run, and its answer for the empty command
-matches nothing anyway. The order is carried across rather than tidied, because
-the differential compares behaviour and the tidy version would be a change made
+PORT NOTE ON A LINE THAT DOES NOTHING. The bash computes `SCAN` and only THEN writes `[ -z "$CMD" ] && exit 0`, so the empty-command test is dead weight: `hook_scan_target ""` has already run, and its answer for the empty command matches nothing anyway. The order is carried across rather than tidied, because the differential compares behaviour and the tidy version would be a change
+made
 for taste rather than from a finding.
 """
 

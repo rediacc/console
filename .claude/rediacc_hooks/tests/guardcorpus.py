@@ -1,14 +1,8 @@
 """The guard differential's corpus: every case the real suite already pairs
 with the guard it was written for.
 
-WHY THIS AND NOT `corpus.harvest()`. That harvester answers "what command
-strings has this repo ever fed a hook", which is the right question for
-`shellscan`, whose subject is one text filter applied to all of them. A guard
-is different: it is 46 separate programs, each with its own preamble, its own
-event shape and its own message, and the thing worth proving is that EACH port
-answers as its own twin does. `.claude/hooks/test-hooks.sh` already holds that
-pairing, and holds it as the accumulated record of every bypass and every
-over-block this repo has paid for:
+WHY THIS AND NOT `corpus.harvest()`. That harvester answers "what command strings has this repo ever fed a hook", which is the right question for `shellscan`, whose subject is one text filter applied to all of them. A guard is different: it is 46 separate programs, each with its own preamble, its own event shape and its own message, and the thing worth proving is that EACH port
+answers as its own twin does. `.claude/hooks/test-hooks.sh` already holds that pairing, and holds it as the accumulated record of every bypass and every over-block this repo has paid for:
 
     check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit ...')" "label"
     ^     ^ ^                                 ^                              ^
@@ -19,28 +13,15 @@ are the inputs; the ORACLE is the bash guard itself, run on the same bytes.
 
 THE KEY SPELLING CHANGED AT THE P7 CUTOVER and the reason is not cosmetic. A
 case names its guard by the key `check-hook-integrity.sh` inventories it under,
-so that one spelling drives the suite, credits the coverage assertion and keys
-this corpus. The guards are Python modules now, living at
+so that one spelling drives the suite, credits the coverage assertion and keys this corpus. The guards are Python modules now, living at
 `.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`; the bash
-original the differential compares against was moved to
-`.claude/oracles/<chain>/<name>.sh` and is reached through the
-port module's own TWIN field rather than by rewriting the key.
+original the differential compares against was moved to `.claude/oracles/<chain>/<name>.sh` and is reached through the port module's own TWIN field rather than by rewriting the key.
 
-THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE ORACLE, and that is
-the difference between a differential and a re-run of the suite. Several
-payloads interpolate suite-local variables (`$PB_DIR`, `$PLAN_TMP`, `$BW_TMP`)
-that this module does not reconstruct, so the bytes it recovers are not always
-the bytes the suite fed. That weakens nothing: both implementations receive the
-IDENTICAL bytes, and disagreement between them is the finding. It also means a
-payload reconstructed imperfectly is still a perfectly good differential input,
-which is why no attempt is made to run the suite.
+THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE ORACLE, and that is the difference between a differential and a re-run of the suite. Several payloads interpolate suite-local variables (`$PB_DIR`, `$PLAN_TMP`, `$BW_TMP`) that this module does not reconstruct, so the bytes it recovers are not always the bytes the suite fed. That weakens nothing: both implementations
+receive the IDENTICAL bytes, and disagreement between them is the finding. It also means a payload reconstructed imperfectly is still a perfectly good differential input, which is why no attempt is made to run the suite.
 
-CROSS-FEEDING IS HALF THE CORPUS. A guard tested only on the events it was
-written for is tested only where it says no. Over-blocking is the failure mode
-that gets a guard deleted -- `check-hook-integrity.sh` says so in as many
-words, "an over-blocking guard is one that gets deleted, which is how the rule
-dies" -- and it only shows up on somebody else's input. So every guard is also
-run against a deterministic sample of the WHOLE payload pool.
+CROSS-FEEDING IS HALF THE CORPUS. A guard tested only on the events it was written for is tested only where it says no. Over-blocking is the failure mode that gets a guard deleted -- `check-hook-integrity.sh` says so in as many words, "an over-blocking guard is one that gets deleted, which is how the rule dies" -- and it only shows up on somebody else's input. So every guard is
+also run against a deterministic sample of the WHOLE payload pool.
 """
 
 import hashlib
@@ -90,9 +71,7 @@ CROSS_SAMPLE = 40
 def _skip_blanks(src, i):
     r"""Whitespace, INCLUDING a backslash-newline continuation.
 
-    Dozens of the call sites wrap their arguments across lines, and a skipper
-    that did not know about `\` + newline would read the backslash as the start
-    of the next word and recover that many payloads of garbage.
+    Dozens of the call sites wrap their arguments across lines, and a skipper that did not know about `\` + newline would read the backslash as the start of the next word and recover that many payloads of garbage.
     """
     while i < len(src):
         if src[i] in " \t":
@@ -107,11 +86,7 @@ def _skip_blanks(src, i):
 def _raw_word(src, i):
     """The SOURCE SLICE of one shell word, quotes and all.
 
-    `corpus._read_word` unquotes as it goes, which is what the shellscan corpus
-    wants and precisely not what this one does: a payload argument is
-    `"$(bash_json 'x')"`, and the builder name is only visible BEFORE the
-    unquoting removes the substitution. So the span is measured first and
-    interpreted afterwards.
+    `corpus._read_word` unquotes as it goes, which is what the shellscan corpus wants and precisely not what this one does: a payload argument is `"$(bash_json 'x')"`, and the builder name is only visible BEFORE the unquoting removes the substitution. So the span is measured first and interpreted afterwards.
     """
     start = i
     n = len(src)
@@ -159,8 +134,7 @@ def _words(src, i):
 def _payload_from(raw, names):
     """One payload argument, as the JSON text the guard will read on stdin.
 
-    Returns None for a shape this does not reconstruct, which is counted
-    against the recovery ratio rather than guessed at.
+    Returns None for a shape this does not reconstruct, which is counted against the recovery ratio rather than guessed at.
     """
     text = raw.strip()
     if len(text) > 1 and text.startswith('"') and text.endswith('"'):
@@ -187,11 +161,7 @@ def _payload_from(raw, names):
 def harvest_cases():
     """`[(guard, payload, label, suite_rc)]` plus the stats the floors read.
 
-    `guard` is the key `check-hook-integrity.sh` inventories the guard under --
-    `guards/block_x.py` for a port, `pre-bash/block-x.sh` for one still in bash
-    -- because "two chains can never collide on one basename" is a property
-    worth keeping in both places, and because one spelling driving the suite and
-    keying the coverage gate is what stops the two drifting.
+    `guard` is the key `check-hook-integrity.sh` inventories the guard under -- `guards/block_x.py` for a port, `pre-bash/block-x.sh` for one still in bash -- because "two chains can never collide on one basename" is a property worth keeping in both places, and because one spelling driving the suite and keying the coverage gate is what stops the two drifting.
     """
     src = SUITE.read_text(encoding="utf-8")
     names = corpus._assignments(src)
@@ -232,10 +202,7 @@ def harvest_cases():
 def builder_shape_drift():
     """Every builder whose real `printf` no longer matches BUILDER_SHAPES.
 
-    The transcription above is the only place this corpus decides what event a
-    suite case produces. If the suite changes a builder and this table does not,
-    every payload for that builder is silently the wrong shape, both sides get
-    it, and the differential goes on passing while testing something else.
+    The transcription above is the only place this corpus decides what event a suite case produces. If the suite changes a builder and this table does not, every payload for that builder is silently the wrong shape, both sides get it, and the differential goes on passing while testing something else.
     """
     src = SUITE.read_text(encoding="utf-8")
     drift = []
@@ -251,10 +218,7 @@ def builder_shape_drift():
 def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
     """A deterministic slice of the whole payload pool, per guard.
 
-    Keyed by a hash of the guard name AND the payload, so two guards get
-    DIFFERENT foreign samples. A single shared sample would mean every guard
-    tested against the same forty strings, and a shape absent from those forty
-    would be absent from the whole cross-feed.
+    Keyed by a hash of the guard name AND the payload, so two guards get DIFFERENT foreign samples. A single shared sample would mean every guard tested against the same forty strings, and a shape absent from those forty would be absent from the whole cross-feed.
     """
     scored = []
     for payload in payloads:

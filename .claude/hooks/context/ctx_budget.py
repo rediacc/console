@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Shared context-budget arithmetic for the compaction-proximity hooks.
 
-WHY THIS EXISTS. `agent/<session>/STATE.md` is the document that survives
-compaction, and until now it was refreshed on a 60-minute TIMER. A timer is
-blind to the only event that matters: it rewrites when nothing has changed and
-stays quiet when the window is about to close. This module gives the hooks a
-real proximity signal instead.
+WHY THIS EXISTS. `agent/<session>/STATE.md` is the document that survives compaction, and until now it was refreshed on a 60-minute TIMER. A timer is blind to the only event that matters: it rewrites when nothing has changed and stays quiet when the window is about to close. This module gives the hooks a real proximity signal instead.
 
 WHAT CLAUDE CODE ACTUALLY EXPOSES (verified against 2.1.235, not assumed):
 
@@ -19,14 +15,11 @@ WHAT CLAUDE CODE ACTUALLY EXPOSES (verified against 2.1.235, not assumed):
   * Every hook gets `transcript_path`. So any hook can compute proximity from
     a tail read of one file. That is the whole mechanism.
 
-THE THRESHOLD IS MEASURED, NOT DERIVED. There is no "reserve" setting, and the
-formula in the bundle turned out to predict the wrong number in the only unit
+THE THRESHOLD IS MEASURED, NOT DERIVED. There is no "reserve" setting, and the formula in the bundle turned out to predict the wrong number in the only unit
 this module can see; see COMPACT_MARGIN below for what was measured instead and
-why the derivation misled. With the window at 900_000 the trigger is treated as
-885_000.
+why the derivation misled. With the window at 900_000 the trigger is treated as 885_000.
 
-RESOLUTION ORDER, as this module implements it (env, then settings
-highest-scope-first, then the model cap, then evidence):
+RESOLUTION ORDER, as this module implements it (env, then settings highest-scope-first, then the model cap, then evidence):
 
     1. CLAUDE_CODE_AUTO_COMPACT_WINDOW           clamped to [100_000, 1_000_000]
     2. <project>/.claude/settings.local.json     autoCompactWindow
@@ -87,9 +80,7 @@ BOUNDARY_200K = 200_000
 def model_max_context(model):
     """Model max context in tokens, or None when the id is unrecognised.
 
-    None is a real answer and the callers treat it as one: an unknown model
-    means the derived threshold is a guess, and a guess is reported as such
-    rather than dressed up as a measurement.
+    None is a real answer and the callers treat it as one: an unknown model means the derived threshold is a guess, and a guess is reported as such rather than dressed up as a measurement.
     """
     if not model:
         return None
@@ -107,9 +98,7 @@ def model_max_context(model):
 def _settings_files(project_dir):
     """Settings sources for `autoCompactWindow`, highest priority first.
 
-    Managed/policy settings outrank all of these and are NOT read here: they
-    live outside the repo and outside this hook's business. If one is ever set,
-    this module's threshold will be wrong in the safe direction only when the
+    Managed/policy settings outrank all of these and are NOT read here: they live outside the repo and outside this hook's business. If one is ever set, this module's threshold will be wrong in the safe direction only when the
     managed window is LARGER; `--explain` names the sources it actually read so
     the gap is inspectable.
     """
@@ -156,14 +145,8 @@ def configured_window(project_dir):
 def resolve_threshold(model, project_dir, window_floor=None):
     """Return the dict of everything the caller needs to explain itself.
 
-    `window_floor` is the caller's accumulated EVIDENCE about this session,
-    and it outranks every configured value. It exists because settings are
-    read by Claude Code once, at session start, while this module reads them
-    live: a window pinned into settings.json today does not apply to a session
-    that started yesterday, and nothing in any hook payload reveals which
-    window the running session actually got. A session that has carried more
-    tokens than the configured window allows has answered that question by
-    surviving.
+    `window_floor` is the caller's accumulated EVIDENCE about this session, and it outranks every configured value. It exists because settings are read by Claude Code once, at session start, while this module reads them live: a window pinned into settings.json today does not apply to a session that started yesterday, and nothing in any hook payload reveals which window the running
+    session actually got. A session that has carried more tokens than the configured window allows has answered that question by surviving.
     """
     configured, source = configured_window(project_dir)
     mmax = model_max_context(model)
@@ -226,13 +209,8 @@ def _iter_tail_lines(path, chunk):
 def _is_compact_boundary(d):
     """True for the `system` / `compact_boundary` entry a compaction writes.
 
-    Kept SEPARATE from reading its size on purpose. The two questions have
-    different answers when the entry is malformed, and conflating them is a
-    real defect this project's own test caught: a boundary carrying no usable
-    `postTokens` must still STOP the backward scan, because the entries behind
-    it belong to a context that no longer exists. Treating "no size" as "no
-    boundary" walks straight back to the pre-compaction peak -- the exact bug
-    the boundary check exists to prevent.
+    Kept SEPARATE from reading its size on purpose. The two questions have different answers when the entry is malformed, and conflating them is a real defect this project's own test caught: a boundary carrying no usable `postTokens` must still STOP the backward scan, because the entries behind it belong to a context that no longer exists. Treating "no size" as "no boundary" walks
+    straight back to the pre-compaction peak -- the exact bug the boundary check exists to prevent.
     """
     return d.get("type") == "system" and d.get("subtype") == "compact_boundary"
 
@@ -240,10 +218,7 @@ def _is_compact_boundary(d):
 def _compact_post_tokens(d):
     """Post-compaction context size from a compact_boundary entry, or None.
 
-    The boundary entry carries `compactMetadata.postTokens` -- the size of the
-    context the summary produced. It is the authoritative answer to "how much
-    is in use" for the window between the compaction and the first assistant
-    entry that follows it.
+    The boundary entry carries `compactMetadata.postTokens` -- the size of the context the summary produced. It is the authoritative answer to "how much is in use" for the window between the compaction and the first assistant entry that follows it.
     """
     if not _is_compact_boundary(d):
         return None
@@ -255,35 +230,17 @@ def _compact_post_tokens(d):
 def last_usage(transcript_path):
     """(context_tokens, model) from the last real assistant entry, or None.
 
-    Reads the TAIL, growing the window until an entry is found, because a
-    single transcript line here can be hundreds of kilobytes and the file can
-    be tens of megabytes. Sidechain entries are skipped: a subagent's usage is
-    not this session's context.
+    Reads the TAIL, growing the window until an entry is found, because a single transcript line here can be hundreds of kilobytes and the file can be tens of megabytes. Sidechain entries are skipped: a subagent's usage is not this session's context.
 
-    THE SCAN STOPS AT A COMPACTION BOUNDARY, and that is the whole point of the
-    boundary check below. Measured on this project's own transcript 2026-08-26:
-    a PostToolUse hook fired in the gap between the compact_boundary entry and
-    the first assistant entry after it, so the backward scan ran straight past
-    the summary and returned the PRE-compaction peak -- 958,036 against a
-    967,000 threshold, i.e. "0.9% until auto-compact, a headroom of 8,964
-    tokens", when the real post-compaction size was 30,359. Truncating the
+    THE SCAN STOPS AT A COMPACTION BOUNDARY, and that is the whole point of the boundary check below. Measured on this project's own transcript 2026-08-26: a PostToolUse hook fired in the gap between the compact_boundary entry and the first assistant entry after it, so the backward scan ran straight past the summary and returned the PRE-compaction peak -- 958,036 against a 967,000
+    threshold, i.e. "0.9% until auto-compact, a headroom of 8,964 tokens", when the real post-compaction size was 30,359. Truncating the
     transcript one line earlier reproduces it exactly; one line later returns
     98,043.
 
-    That is the worst possible direction to be wrong in: the stale value is by
-    construction the session's MAXIMUM, so the notice screams "nearly full" at
-    precisely the moment the context has just been emptied. It is also not
-    self-correcting within the turn -- the session reads the notice, believes
-    it, and makes real decisions on it (this one delegated work and rushed a
-    hand-off it did not need to). The usage-drop backstop in band-notice does
-    clean up afterwards, but only on a LATER call, and only after the ladder
-    has already been re-seated from a false peak.
+    That is the worst possible direction to be wrong in: the stale value is by construction the session's MAXIMUM, so the notice screams "nearly full" at precisely the moment the context has just been emptied. It is also not self-correcting within the turn -- the session reads the notice, believes it, and makes real decisions on it (this one delegated work and rushed a hand-off it
+    did not need to). The usage-drop backstop in band-notice does clean up afterwards, but only on a LATER call, and only after the ladder has already been re-seated from a false peak.
 
-    So: walking back past a compact_boundary is never valid. Its own
-    `postTokens` is the correct reading for that window, and returning it beats
-    returning nothing -- the notice stays useful instead of going silent for a
-    call. The model is unchanged by compaction, so the scan continues purely to
-    recover it.
+    So: walking back past a compact_boundary is never valid. Its own `postTokens` is the correct reading for that window, and returning it beats returning nothing -- the notice stays useful instead of going silent for a call. The model is unchanged by compaction, so the scan continues purely to recover it.
     """
     p = Path(transcript_path)
     if not p.is_file():
@@ -350,8 +307,7 @@ def band_for(usage, threshold):
 def state_dir():
     """Where the per-session band marker lives.
 
-    Overridable so the control suite can drive the real hooks against a
-    scratch directory instead of the live one.
+    Overridable so the control suite can drive the real hooks against a scratch directory instead of the live one.
     """
     override = os.environ.get("CTX_BAND_STATE_DIR")
     d = Path(override) if override else Path(__file__).resolve().parent / "state"
@@ -386,9 +342,7 @@ def save_state(session_id, data):
 def log_error(where, exc):
     """A hook that fails silently is a hook that cannot fire.
 
-    Every entry point swallows its exceptions so it can never block a tool call
-    or a compaction, which means the ONLY way a broken hook becomes visible is
-    this file. It is append-only and never read by the hooks themselves.
+    Every entry point swallows its exceptions so it can never block a tool call or a compaction, which means the ONLY way a broken hook becomes visible is this file. It is append-only and never read by the hooks themselves.
     """
     try:
         line = "%s\t%s\t%s: %s\n" % (

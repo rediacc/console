@@ -5,18 +5,10 @@ and refuse a NEW plan that is a near-duplicate of one already on disk.
 ------------------------------------------------------------------------------
 WHY THIS EXISTS, and it is the other half of compaction.
 
-W12 lets a finished `agent/PLAN-*.md` shrink into a RECORD: the file keeps its
-path, and its full text moves into a git blob. That trade only pays if somebody
-reads the record. Nobody goes looking for a record about a file they are about
-to change, because they do not know it exists -- which is the same blind spot
-`wl_histfirst.py` records for commit history, measured on a real session: 2,494
-Bash calls, zero `git log` invocations naming the file that was failing, while
-eight lines of history held the answer.
+W12 lets a finished `agent/PLAN-*.md` shrink into a RECORD: the file keeps its path, and its full text moves into a git blob. That trade only pays if somebody reads the record. Nobody goes looking for a record about a file they are about to change, because they do not know it exists -- which is the same blind spot `wl_histfirst.py` records for commit history, measured on a real
+session: 2,494 Bash calls, zero `git log` invocations naming the file that was failing, while eight lines of history held the answer.
 
-So the record is pushed at the EDIT rather than waiting to be asked for. Every
-record already carries a `Touched:` trailer naming the paths its plan cited, and
-`agent/INDEX.md` carries the reverse map, so the question "what is recorded about
-this file" is one file read.
+So the record is pushed at the EDIT rather than waiting to be asked for. Every record already carries a `Touched:` trailer naming the paths its plan cited, and `agent/INDEX.md` carries the reverse map, so the question "what is recorded about this file" is one file read.
 
 ------------------------------------------------------------------------------
 FOUR PROPERTIES, each of which is what keeps a push from becoming a wall.
@@ -47,25 +39,16 @@ FOUR PROPERTIES, each of which is what keeps a push from becoming a wall.
 ------------------------------------------------------------------------------
 THE ONE THING IT BLOCKS, and why that one is worth a refusal.
 
-A `Write` that CREATES a new `agent/PLAN-<slug>.md` whose slug is a near
-duplicate of a plan already on disk. This tree holds 79 plans and 2.0 MB, and it
+A `Write` that CREATES a new `agent/PLAN-<slug>.md` whose slug is a near duplicate of a plan already on disk. This tree holds 79 plans and 2.0 MB, and it
 got there one reasonable plan at a time; the housekeeping gate now demands 33 of
-them be dealt with on a dated deadline. A second plan about the same thing is
-not a second plan, it is the first one forgotten, and by the time anyone notices
-both are on the clock.
+them be dealt with on a dated deadline. A second plan about the same thing is not a second plan, it is the first one forgotten, and by the time anyone notices both are on the clock.
 
-The refusal is narrow on purpose. It fires only on CREATION (an existing file is
-being edited, and editing a plan is the normal thing to do), only on a slug
-whose significant tokens are a SUBSET of a neighbour's or overlap it past
-`WHY_ON_EDIT_SIMILAR`, and only when both slugs carry at least two significant
-tokens. `PLAN-w12-records.md` against `PLAN-w12-registers.md` is one shared
+The refusal is narrow on purpose. It fires only on CREATION (an existing file is being edited, and editing a plan is the normal thing to do), only on a slug whose significant tokens are a SUBSET of a neighbour's or overlap it past `WHY_ON_EDIT_SIMILAR`, and only when both slugs carry at least two significant tokens. `PLAN-w12-records.md` against `PLAN-w12-registers.md` is one
+shared
 token out of three and is NOT refused; `PLAN-secret-migration-2.md` against
 `PLAN-secret-migration.md` is a subset and is.
 
-FAILS OPEN IN EVERY OTHER DIRECTION. No event, no path, an unreadable payload,
-a missing module, an unparseable index: exit 0, silently. This hook can only
-ever turn an allowed edit into a refused one, so every uncertainty resolves to
-allowing it, and `check:ci-plan-record` is the backstop for anything it misses.
+FAILS OPEN IN EVERY OTHER DIRECTION. No event, no path, an unreadable payload, a missing module, an unparseable index: exit 0, silently. This hook can only ever turn an allowed edit into a refused one, so every uncertainty resolves to allowing it, and `check:ci-plan-record` is the backstop for anything it misses.
 """
 
 from __future__ import annotations
@@ -127,10 +110,7 @@ def tokens(slug):
 def similar_plans(root, slug):
     """[(rel, why)] for every existing plan whose slug is a near duplicate.
 
-    FILENAMES ONLY. No plan is opened: this runs on the Write of every new plan
-    and the whole point of the index is that the answer costs one directory
-    listing. A near duplicate that differs in filename and matches in content is
-    out of scope here and belongs to a person reading `--plan-why`.
+    FILENAMES ONLY. No plan is opened: this runs on the Write of every new plan and the whole point of the index is that the answer costs one directory listing. A near duplicate that differs in filename and matches in content is out of scope here and belongs to a person reading `--plan-why`.
     """
     mine = tokens(slug)
     if len(mine) < 2:
@@ -160,9 +140,7 @@ def similar_plans(root, slug):
 def epoch_of(session_id):
     """The harness's own epoch counter, or 0 when the context hooks are absent.
 
-    READ, NEVER WRITTEN. `ctx_budget.save_state` replaces the whole document, so
-    writing our keys into that file would clobber whatever `band-notice.py` had
-    put there and vice versa. Our own state lives beside it.
+    READ, NEVER WRITTEN. `ctx_budget.save_state` replaces the whole document, so writing our keys into that file would clobber whatever `band-notice.py` had put there and vice versa. Our own state lives beside it.
     """
     try:
         import ctx_budget as B  # noqa: PLC0415 -- optional; absence must not block an edit

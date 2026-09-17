@@ -7,25 +7,14 @@ branch and then merely READ a protected file was refused:
   git checkout main && cat .claude/settings.json
 
 Nothing there restores anything. `[^;&|]*` keeps the match inside one clause,
-which is the smallest change that tells "restore this file" apart from
-"restore something, then look at this file".
+which is the smallest change that tells "restore this file" apart from "restore something, then look at this file".
 
-Verified on 2026-08-27, when this guard blocked the very command that was
-measuring it -- the probe's line contained the fixture text and never ran. A
-guard that cannot be measured without tripping over itself is one nobody
-measures, which is how it sat with a block case and no allow case.
+Verified on 2026-08-27, when this guard blocked the very command that was measuring it -- the probe's line contained the fixture text and never ran. A guard that cannot be measured without tripping over itself is one nobody measures, which is how it sat with a block case and no allow case.
 
-ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant
-matching PROSE: `echo '<the banned command>'` was refused, and so was a
-worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and
-quoted spans while still extracting `sh -c` / `eval` payloads, so a command
-hidden in a wrapper is scanned exactly as before -- this narrows what the
-guard refuses, never what it catches.
+ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant matching PROSE: `echo '<the banned command>'` was refused, and so was a worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is scanned exactly as before -- this narrows what the guard
+refuses, never what it catches.
 
-PORT NOTE. `PROTECTED` is interpolated into the ERE by the bash, so the two
-paths keep their backslash-escaped dots here too. Escaping them a second time
-through `re.escape` would be a change in what is matched, which is the one
-thing this port may not make.
+PORT NOTE. `PROTECTED` is interpolated into the ERE by the bash, so the two paths keep their backslash-escaped dots here too. Escaping them a second time through `re.escape` would be a change in what is matched, which is the one thing this port may not make.
 """
 
 from rediacc_hooks import hookio, shellscan

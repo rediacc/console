@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """PostToolUse: state the context budget once per band, per compaction epoch.
 
-This replaces a 60-minute timer with the only signal that actually predicts
-compaction. It reads the transcript tail, derives the auto-compact threshold
-the way Claude Code derives it, and when usage crosses a band it has not yet
-crossed in this epoch it returns `hookSpecificOutput.additionalContext`.
+This replaces a 60-minute timer with the only signal that actually predicts compaction. It reads the transcript tail, derives the auto-compact threshold the way Claude Code derives it, and when usage crosses a band it has not yet crossed in this epoch it returns `hookSpecificOutput.additionalContext`.
 
 THREE THINGS THIS HOOK DELIBERATELY DOES NOT DO:
 
@@ -48,9 +45,7 @@ def describe_state_md(path, st, usage, threshold):
     """A factual line about the recovery document, including how stale it is
     IN CONTEXT TERMS rather than in minutes.
 
-    Minutes were the old trigger and they were the wrong unit: a session can
-    burn 200K tokens in ten minutes or 5K in an hour. What matters is how much
-    of the window has gone by since the document was last true.
+    Minutes were the old trigger and they were the wrong unit: a session can burn 200K tokens in ten minutes or 5K in an hour. What matters is how much of the window has gone by since the document was last true.
     """
     if not path.is_file():
         return "No compact-recovery document exists for this session at %s." % path.as_posix()
@@ -73,17 +68,10 @@ def describe_state_md(path, st, usage, threshold):
 def build_text(band_name, usage, res, st, state_md):
     """THE PERCENTAGE COUNTS DOWN, because the status line counts down.
 
-    This used to report `usage / threshold` -- 98% meaning "nearly full". Claude
-    Code's own display says "N% until auto-compact", which reads 2% at that same
-    moment. Two numbers for one quantity, pointing opposite ways, in a notice
-    whose entire job is to be believed at a glance: the operator saw 100% and 0%
-    describing the same instant and asked for them aligned. So the only
+    This used to report `usage / threshold` -- 98% meaning "nearly full". Claude Code's own display says "N% until auto-compact", which reads 2% at that same moment. Two numbers for one quantity, pointing opposite ways, in a notice whose entire job is to be believed at a glance: the operator saw 100% and 0% describing the same instant and asked for them aligned. So the only
     percentage this hook prints is REMAINING, in the status line's direction.
 
-    It will still not match the status line DIGIT for digit, and that is
-    expected rather than a bug to chase: Claude Code divides by its internal
-    token estimate over the message list, this divides by the measured threshold
-    in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction
+    It will still not match the status line DIGIT for digit, and that is expected rather than a bug to chase: Claude Code divides by its internal token estimate over the message list, this divides by the measured threshold in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction
     and the unit are what were misleading; the residual gap is a few points.
     """
     threshold = res["threshold"]

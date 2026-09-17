@@ -1,16 +1,9 @@
 """Refuse a hand-written PR body edit; route it through the tool that rebuilds it.
 
-WHY. The console PR description is not free text any more: it carries a
-delimited worklist-epics block generated from agent/pr/<branch>.md, and CI
-gates on that block matching the published snapshot. A raw
-`gh pr edit --body`/`--body-file` writes the WHOLE body, so it silently drops
-the block, and the next thing anyone learns is a red gate several minutes
-later with no hint of what removed it.
+WHY. The console PR description is not free text any more: it carries a delimited worklist-epics block generated from agent/pr/<branch>.md, and CI gates on that block matching the published snapshot. A raw `gh pr edit --body`/`--body-file` writes the WHOLE body, so it silently drops the block, and the next thing anyone learns is a red gate several minutes later with no hint of what
+removed it.
 
-THE SAME CLASS ALREADY BIT THIS REPO ONCE, one level down:
-.ci/scripts/autopilot/submodule-prs.sh's header warns that its block must not
-share markers with refresh-pr-body.sh, "because that hook rewrites the WHOLE
-body on every push and anything inside its markers is destroyed on the next
+THE SAME CLASS ALREADY BIT THIS REPO ONCE, one level down: .ci/scripts/autopilot/submodule-prs.sh's header warns that its block must not share markers with refresh-pr-body.sh, "because that hook rewrites the WHOLE body on every push and anything inside its markers is destroyed on the next
 one." A whole-body writer is the hazard; this guard is that lesson applied to
 the model's own hands.
 
@@ -35,13 +28,9 @@ PORT NOTE: A DEAD VARIABLE, REPRODUCED RATHER THAN REPAIRED
 =============================================================================
 
 The bash declares `HOOK_SAW_BODY_FILE=0` and sets it to 1 inside
-`hook_visible_body`. That function is only ever called in a command
-substitution, so the assignment happens in a SUBSHELL and cannot reach the
+`hook_visible_body`. That function is only ever called in a command substitution, so the assignment happens in a SUBSHELL and cannot reach the
 caller; and nothing reads the variable afterwards in any case. It is dead twice
-over. The port keeps neither the variable nor a Python stand-in for it, because
-reproducing a value nobody reads would be reproducing nothing, and the record of
-why it is gone is this paragraph. Reported as a finding rather than fixed in the
-bash, which must stay byte-identical until the P6 cutover.
+over. The port keeps neither the variable nor a Python stand-in for it, because reproducing a value nobody reads would be reproducing nothing, and the record of why it is gone is this paragraph. Reported as a finding rather than fixed in the bash, which must stay byte-identical until the P6 cutover.
 """
 
 import pathlib
@@ -170,10 +159,7 @@ def _body_files(cmd, pattern, strip):
 def _visible_body(cmd, seg, root):
     """Read whatever body text this command makes visible.
 
-    --body is in the command, --body-file is on disk. Shared by both arms,
-    because both ask the same question: does the body this call writes carry the
-    block? Content, unlike flags, is read from the RAW command, since a quoted
-    body may itself contain a separator and a segment would truncate it.
+    --body is in the command, --body-file is on disk. Shared by both arms, because both ask the same question: does the body this call writes carry the block? Content, unlike flags, is read from the RAW command, since a quoted body may itself contain a separator and a segment would truncate it.
     """
     body = cmd if shellscan.flag_present(seg, "body") else ""
     saw_file = False

@@ -1,16 +1,11 @@
 """Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when
-the single required check, "CI Complete", is SUCCESS on its current head.
-Flipping ready is what triggers the automated Claude review, and the review
-invariant is "non-draft AND green" -- this hook enforces the green half.
+the single required check, "CI Complete", is SUCCESS on its current head. Flipping ready is what triggers the automated Claude review, and the review invariant is "non-draft AND green" -- this hook enforces the green half.
 
-`gh pr ready --undo` (back to draft) is always allowed: it can never expose
-an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh
+`gh pr ready --undo` (back to draft) is always allowed: it can never expose an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh
 (only the pattern paths are); verification failures fail CLOSED.
 
 PORT NOTE ON `${CONCLUSION:-verification failed}`. `:-` fires on an EMPTY value
-as well as an unset one, and empty is precisely what the network path yields
-when `gh` cannot answer -- so the fail-closed message reads "got: verification
-failed" rather than "got: ". The Python below therefore tests for the empty
+as well as an unset one, and empty is precisely what the network path yields when `gh` cannot answer -- so the fail-closed message reads "got: verification failed" rather than "got: ". The Python below therefore tests for the empty
 string, not for None; there is no unset case to distinguish.
 """
 

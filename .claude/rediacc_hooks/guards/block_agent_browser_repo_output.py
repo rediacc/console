@@ -1,7 +1,6 @@
 """Block agent-browser output that would land inside the repo working tree.
 
-WHY THIS EXISTS. Two different mechanisms have each put untracked files into this repo,
-and BOTH exit 0 and print a success line, so nothing catches them:
+WHY THIS EXISTS. Two different mechanisms have each put untracked files into this repo, and BOTH exit 0 and print a success line, so nothing catches them:
 
   1. POSITIONAL FLAG-EATING. `screenshot [selector] [path]` has two positional slots.
      `--full-page` is not a real flag (the real one is `--full`), so it is consumed as
@@ -16,16 +15,10 @@ and BOTH exit 0 and print a success line, so nothing catches them:
 The rule already existed in prose and had no enforcement surface. This is that surface.
 
 THE UNKNOWN-FLAG ALLOWLIST IS DELIBERATE AND MUST NOT BE WIDENED TO SILENCE A FIRE.
-An unrecognised `--flag` on an output subcommand is exactly the bug in case 1. When
-agent-browser gains a genuinely new flag, ADD IT HERE on purpose. Narrowing the match
-instead fails silently, which is the trade this repo has already ruled on.
+An unrecognised `--flag` on an output subcommand is exactly the bug in case 1. When agent-browser gains a genuinely new flag, ADD IT HERE on purpose. Narrowing the match instead fails silently, which is the trade this repo has already ruled on.
 
-PORT NOTE ON `for tok in $SEGMENT`. The bash leaves `$SEGMENT` UNQUOTED, so the shell
-does two things to it: IFS word splitting, and PATHNAME EXPANSION. A token containing
-`*`, `?` or `[` is therefore replaced by the files it matches in the CURRENT DIRECTORY,
-sorted, and left alone only when nothing matches. `_expand` reproduces both, because a
-port that only split would judge a different set of tokens than the twin whenever a
-selector carries a glob character -- which is not exotic for a CSS selector.
+PORT NOTE ON `for tok in $SEGMENT`. The bash leaves `$SEGMENT` UNQUOTED, so the shell does two things to it: IFS word splitting, and PATHNAME EXPANSION. A token containing `*`, `?` or `[` is therefore replaced by the files it matches in the CURRENT DIRECTORY, sorted, and left alone only when nothing matches. `_expand` reproduces both, because a port that only split would judge a
+different set of tokens than the twin whenever a selector carries a glob character -- which is not exotic for a CSS selector.
 """
 
 import glob

@@ -76,7 +76,7 @@ Phase 1 experience informs which resources matter most. The provider calls `rdc`
 - Adds plan/apply, drift detection, dependency graph
 - Needs careful design around data safety (repos contain user data)
 - Must solve concurrency: Terraform runs operations in parallel but rdc
-cannot handle concurrent ops on the same machine
+  cannot handle concurrent ops on the same machine
 
 ### Phase 3: Integration Layer (implement last)
 
@@ -198,35 +198,35 @@ The CLI has two output methods:
 **BLOCKING (must fix before implementation):**
 
 1. **`backup schedule show`** — uses `outputService.info()` instead of `print()`.
-Without this, Terraform cannot implement Read() for `rediacc_backup_schedule`.
+   Without this, Terraform cannot implement Read() for `rediacc_backup_schedule`.
    Fix: change to `outputService.print(config, getOutputFormat())`.
 
 2. **`repo list`** — pipes renet's raw stdout, no JSON formatting at all.
-Workaround exists (`config repositories` gives repo config, `machine containers` gives running state), but a direct `repo list` with JSON would simplify modules.
+   Workaround exists (`config repositories` gives repo config, `machine containers` gives running state), but a direct `repo list` with JSON would simplify modules.
 
 3. **`backup list`** — no JSON output. The disaster_recovery role and Terraform
-import both need to enumerate available backups programmatically.
+   import both need to enumerate available backups programmatically.
 
 **IMPORTANT (should fix, workarounds exist):**
 
 4. **`repo status`** — pipes renet's raw stdout. Workaround: use `machine containers`
-filtered by repository name. Document this pattern.
+   filtered by repository name. Document this pattern.
 
 5. **`autostart list`** — no JSON. Workaround: Terraform can track autostart state
-internally without read-back, but drift detection won't work.
+   internally without read-back, but drift detection won't work.
 
 6. **All repo lifecycle commands** — return human messages, not structured data.
    Workaround: execute-then-query pattern (run command → query state separately).
-Acceptable but adds latency (2 SSH calls per operation).
+   Acceptable but adds latency (2 SSH calls per operation).
 
 7. **`datastore status`** — renet function outputs clean JSON to stdout, but the
-CLI streams it via `outputService.info()` (stderr) + `executeFunction()` (stdout pass-through) instead of routing through `outputService.print()`. Workaround: runners parse stdout as plain JSON (no envelope). Fix: route through `outputService.print()` for consistent envelope wrapping. This partially closes the "volume size not queryable" drift detection gap — `datastore status`
-returns `size`, `used`, `available`, `backend`, `mounted` at the datastore level.
+   CLI streams it via `outputService.info()` (stderr) + `executeFunction()` (stdout pass-through) instead of routing through `outputService.print()`. Workaround: runners parse stdout as plain JSON (no envelope). Fix: route through `outputService.print()` for consistent envelope wrapping. This partially closes the "volume size not queryable" drift detection gap — `datastore status`
+   returns `size`, `used`, `available`, `backend`, `mounted` at the datastore level.
 
 **NICE-TO-HAVE (workarounds are adequate):**
 
 8. **`repo up/down/delete --dry-run`** DO return JSON — this is useful for
-Ansible check mode. The plans should leverage this.
+   Ansible check mode. The plans should leverage this.
 
 9. **Sync commands** — exit-code-only is fine for Ansible (`changed: true` always).
 
@@ -264,7 +264,7 @@ The rdc config (`~/.config/rediacc/rediacc.json`) contains:
 - **Query commands**: data → stdout (JSON envelope), status messages → stderr
 - **Lifecycle commands**: renet's raw output → stdout, rdc's status → stderr
 - **Auto-TTY detection**: when stdout is piped (non-TTY), CLI defaults to JSON
-even without `--output json`. This means Ansible/Terraform will get JSON from query commands automatically, but should still pass `--output json` explicitly for clarity.
+  even without `--output json`. This means Ansible/Terraform will get JSON from query commands automatically, but should still pass `--output json` explicitly for clarity.
 
 ## Key Design Decisions
 
@@ -401,13 +401,13 @@ The `datastore fork` command enables instant copy-on-write cloning of entire dat
 **Design implications:**
 
 - **Ansible** owns fork workflows — fork/unfork is procedural (do X, then Y, then cleanup).
-New module: `rediacc_datastore_fork`. New roles: `fork_environment`, preview/canary patterns.
+  New module: `rediacc_datastore_fork`. New roles: `fork_environment`, preview/canary patterns.
 - **Terraform** manages fork *lifecycle* — `rediacc_datastore_fork` as a managed resource
-where Create=fork, Read=`datastore status` (check `cow_mode`), Delete=unfork. Fork metadata (snapshot name, clone name) stored as computed attributes in state.
+  where Create=fork, Read=`datastore status` (check `cow_mode`), Delete=unfork. Fork metadata (snapshot name, clone name) stored as computed attributes in state.
 - **Ceph is optional** — all existing functionality works with local backend.
-Ceph adds the instant fork capability for users who need it.
+  Ceph adds the instant fork capability for users who need it.
 - **Machine resource extended** — `rediacc_machine` gains an optional `ceph {}` block
-for Ceph RBD configuration. When present, `config set-ceph` + `datastore init --backend ceph` run during machine setup.
+  for Ceph RBD configuration. When present, `config set-ceph` + `datastore init --backend ceph` run during machine setup.
 
 **Two datastore backends:**
 
@@ -425,19 +425,19 @@ The `datastore status` command returns JSON (plain, no envelope) with: `type`, `
 Most users already run `rdc` manually. The tools should meet them where they are, not require a greenfield setup. The adoption path:
 
 1. **Already using rdc manually** — import existing machines and repos
-into Terraform state without recreating them. This is the #1 adoption barrier for IaC tools (learned from Dokku/Coolify/Proxmox providers).
+   into Terraform state without recreating them. This is the #1 adoption barrier for IaC tools (learned from Dokku/Coolify/Proxmox providers).
 
 2. **Start with Terraform for new machines** — provision cloud VMs and
-register them with `rediacc_machine`. Keep managing repos via `rdc` directly. This is the "Kamal model" (TF for infrastructure, CLI for apps).
+   register them with `rediacc_machine`. Keep managing repos via `rdc` directly. This is the "Kamal model" (TF for infrastructure, CLI for apps).
 
 3. **Add repos to Terraform as needed** — import existing repos one at a
-time with `terraform import`. Don't require all-or-nothing migration.
+   time with `terraform import`. Don't require all-or-nothing migration.
 
 4. **Add Ansible for fleet operations** — when managing 5+ machines,
-Ansible adds value for rolling deploys and health gates. Terraform handles what exists; Ansible handles what happens.
+   Ansible adds value for rolling deploys and health gates. Terraform handles what exists; Ansible handles what happens.
 
 5. **Add Ceph for instant operations** — when fork speed matters
-(staging environments, preview deployments, DR testing, canary releases), provision a Ceph cluster and switch machines to Ceph-backed datastores. Forks go from minutes (rsync) to seconds (Ceph COW). This unlocks the preview environment and canary release patterns that no other self-hosted tool can offer.
+   (staging environments, preview deployments, DR testing, canary releases), provision a Ceph cluster and switch machines to Ceph-backed datastores. Forks go from minutes (rsync) to seconds (Ceph COW). This unlocks the preview environment and canary release patterns that no other self-hosted tool can offer.
 
 ### Import as a Day-One Feature
 

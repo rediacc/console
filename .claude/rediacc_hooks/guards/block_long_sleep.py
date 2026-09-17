@@ -16,42 +16,21 @@ Two corrections landed 2026-08-25, both found while landing console#574.
    stable watch (same run_attempt seen twice, 90s apart) expressible at all.
    block-ci-polling.sh still catches real foreground polling shapes.
 
-Known false positive, shared with block-ci-polling.sh and accepted for the
-same reason: this reads the command TEXT, so a command that merely describes
-a long sleep -- a commit message quoting the recipe, a doc edit -- is blocked
-as if it were one. Taking the maximum widened that slightly (the first-sleep
-reading used to let such text through by accident). Narrowing it to exempt
+Known false positive, shared with block-ci-polling.sh and accepted for the same reason: this reads the command TEXT, so a command that merely describes a long sleep -- a commit message quoting the recipe, a doc edit -- is blocked as if it were one. Taking the maximum widened that slightly (the first-sleep reading used to let such text through by accident). Narrowing it to exempt
 heredoc bodies would exempt the shape most likely to hide a real long sleep,
 so it stays; write the file with the Write tool and pass it by path instead.
 
-RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through
-lib/command-scan.sh that day to stop them matching prose, and this one was
-routed with them. The suite case pinning the 2026-08-25 ruling turned red and
-reverted it: the shared scanner drops heredoc bodies, which is the option the
-ruling names as the most tempting and the worst. The pin worked as designed.
+RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through lib/command-scan.sh that day to stop them matching prose, and this one was routed with them. The suite case pinning the 2026-08-25 ruling turned red and reverted it: the shared scanner drops heredoc bodies, which is the option the ruling names as the most tempting and the worst. The pin worked as designed.
 
-PORT NOTE ON THE COMPARISON, and the transliteration OUTLIVED the bug it
-faithfully copied. `[[ "$SLEEP_VAL" -gt "$LIMIT" ]]` was bash ARITHMETIC, so a
-value with a leading zero was read as OCTAL: `024` was twenty, not twenty-four,
-and the command was allowed even though `sleep` itself waits twenty-four
-seconds. `08` and `09` are not valid octal at all, so bash printed
-`[[: 08: value too great for base` on stderr and the test evaluated false --
-the guard both complained and permitted.
+PORT NOTE ON THE COMPARISON, and the transliteration OUTLIVED the bug it faithfully copied. `[[ "$SLEEP_VAL" -gt "$LIMIT" ]]` was bash ARITHMETIC, so a value with a leading zero was read as OCTAL: `024` was twenty, not twenty-four, and the command was allowed even though `sleep` itself waits twenty-four seconds. `08` and `09` are not valid octal at all, so bash printed `[[: 08:
+value too great for base` on stderr and the test evaluated false -- the guard both complained and permitted.
 
-This port reproduced all of that, correctly, because a port's job is to answer
-what its twin answers. THE TWIN WAS THEN FIXED (2026-09-06): it forces base ten
+This port reproduced all of that, correctly, because a port's job is to answer what its twin answers. THE TWIN WAS THEN FIXED (2026-09-06): it forces base ten
 with `10#`, so `024` now blocks and `08` is allowed silently. Faithfulness is to
-the twin as it IS, so `_arith` was changed with it, in the same breath. Keeping
-the octal reading here would have turned a shared bug into a divergence and the
-differential would have caught it -- which is the differential working.
+the twin as it IS, so `_arith` was changed with it, in the same breath. Keeping the octal reading here would have turned a shared bug into a divergence and the differential would have caught it -- which is the differential working.
 
-"AND NO CASE HERE PROVOKES IT" WAS THE WRONG ANSWER, corrected here after the
-divergence was found by hand rather than by the suite. A port that differs from
-its twin on an input the corpus never carries is a difference nothing reports,
-which is exactly the class this whole workstream is built against. So the input
-is DECLARED in `KNOWN_DIVERGENCES` below: the harness runs it, requires the
-exit code and stdout to match, and requires stderr to keep differing -- so the
-declaration cannot rot into an excuse for a match.
+"AND NO CASE HERE PROVOKES IT" WAS THE WRONG ANSWER, corrected here after the divergence was found by hand rather than by the suite. A port that differs from its twin on an input the corpus never carries is a difference nothing reports, which is exactly the class this whole workstream is built against. So the input is DECLARED in `KNOWN_DIVERGENCES` below: the harness runs it,
+requires the exit code and stdout to match, and requires stderr to keep differing -- so the declaration cannot rot into an excuse for a match.
 """
 
 from rediacc_hooks import hookio
@@ -110,10 +89,7 @@ KNOWN_DIVERGENCES = []
 def _arith(value):
     """The twin's `$(( 10#value ))`: base ten, leading zeros and all.
 
-    This used to emulate bash's OCTAL reading of a leading zero, because that is
-    what the twin did. The twin was fixed on 2026-09-06 to force base ten, so
-    this follows it. `08` and `09` are ordinary numbers now on both sides, and
-    neither implementation writes an arithmetic error.
+    This used to emulate bash's OCTAL reading of a leading zero, because that is what the twin did. The twin was fixed on 2026-09-06 to force base ten, so this follows it. `08` and `09` are ordinary numbers now on both sides, and neither implementation writes an arithmetic error.
     """
     return int(value, 10)
 

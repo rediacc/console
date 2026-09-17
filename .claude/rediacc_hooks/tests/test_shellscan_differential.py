@@ -1,13 +1,7 @@
 """The proof for `rediacc_hooks.shellscan`: a differential against the bash.
 
-WHY A DIFFERENTIAL AND NOT A TEST SUITE. A suite written alongside a port
-tests what the porter understood. The thing that has to be preserved here is
-what the porter did NOT understand -- six rounds of bypass findings recorded
-only in `.claude/hooks/pre-bash/lib/command-scan.sh`'s comments, each one a
-command shape that beat an earlier version of that file. So the oracle is the
-bash itself: every case below is fed to BOTH implementations and every field
-of the result is compared, not just a blocked/allowed boolean. A field that
-differs names itself and its input.
+WHY A DIFFERENTIAL AND NOT A TEST SUITE. A suite written alongside a port tests what the porter understood. The thing that has to be preserved here is what the porter did NOT understand -- six rounds of bypass findings recorded only in `.claude/hooks/pre-bash/lib/command-scan.sh`'s comments, each one a command shape that beat an earlier version of that file. So the oracle is the
+bash itself: every case below is fed to BOTH implementations and every field of the result is compared, not just a blocked/allowed boolean. A field that differs names itself and its input.
 
 WHAT IS COMPARED, per command:
   * the raw stdout of each of the three filters (`_hook_strip_heredocs`,
@@ -20,14 +14,9 @@ WHAT IS COMPARED, per command:
   * `hook_target_root` against the real repo root AND against a root that does
     not exist, since its two branches differ only in what git answers.
 
-THE BASH SIDE RUNS THE REAL FILE. `command-scan.sh` is sourced, never copied
-and never modified: a differential against a transcribed copy of the oracle
-proves the transcription, not the port. It is read-only here.
+THE BASH SIDE RUNS THE REAL FILE. `command-scan.sh` is sourced, never copied and never modified: a differential against a transcribed copy of the oracle proves the transcription, not the port. It is read-only here.
 
-ONE BASH PROCESS FOR THE WHOLE CORPUS. Each case drives roughly fifty forks
-(awk, sed, grep, tr and git), so a subprocess per case would spend its life in
-`fork`. The driver below loops inside one shell and frames its results with
-the two ASCII control characters that exist for exactly this (0x1f between a
+ONE BASH PROCESS FOR THE WHOLE CORPUS. Each case drives roughly fifty forks (awk, sed, grep, tr and git), so a subprocess per case would spend its life in `fork`. The driver below loops inside one shell and frames its results with the two ASCII control characters that exist for exactly this (0x1f between a
 field name and its value, 0x1e between fields); `corpus.harvest` drops any
 payload containing either, so the frame cannot be forged by the input.
 """
@@ -111,10 +100,7 @@ done
 def build_cases():
     """The corpus, in the order the driver will see it.
 
-    Harvested payloads first, then the labelled edge cases. Both are named, so
-    a failing parametrisation says `harvest-207` or
-    `edge-r44-quoted-absolute-shell` rather than an index into a list nobody
-    can look up.
+    Harvested payloads first, then the labelled edge cases. Both are named, so a failing parametrisation says `harvest-207` or `edge-r44-quoted-absolute-shell` rather than an index into a list nobody can look up.
     """
     harvested, stats = corpus.harvest()
     cases = [("harvest-%03d" % i, cmd) for i, cmd in enumerate(harvested)]
@@ -276,9 +262,7 @@ def test_corpus_is_real_and_large_enough():
 def test_corpus_covers_the_shapes_the_findings_name():
     """A large corpus of `ls -la` would still be a large corpus.
 
-    Each predicate here is one of the six rounds. This is the control on the
-    corpus: if a class disappears from `test-hooks.sh`, the differential goes
-    on passing while no longer testing that round, and this is what says so.
+    Each predicate here is one of the six rounds. This is the control on the corpus: if a class disappears from `test-hooks.sh`, the differential goes on passing while no longer testing that round, and this is what says so.
     """
     commands = [cmd for _, cmd in CASES]
     classes = {
@@ -320,12 +304,8 @@ def test_hook_init_matches_bash(bash_results, label, payload):
 def test_every_compared_field_actually_varies():
     """No field may be constant across the corpus.
 
-    A comparison of two constants is a comparison that cannot fail, and a
-    differential made of enough of them is green by construction. This is the
-    control ON the differential: it re-derives every field over the whole
-    corpus and refuses any that takes a single value. It found one -- the
-    `target_root` field evaluated against an absent root was "" on all 385
-    cases -- which is why `corpus._absolute_cd_cases` exists.
+    A comparison of two constants is a comparison that cannot fail, and a differential made of enough of them is green by construction. This is the control ON the differential: it re-derives every field over the whole corpus and refuses any that takes a single value. It found one -- the `target_root` field evaluated against an absent root was "" on all 385 cases -- which is why
+    `corpus._absolute_cd_cases` exists.
     """
     seen = {}
     for _, cmd in CASES:
@@ -341,9 +321,7 @@ def test_every_compared_field_actually_varies():
 def test_the_differential_can_fail(tmp_path):
     """A differential that has never failed is not evidence.
 
-    This is the planted defect, run every time rather than by hand: one branch
-    of the port is disabled in a copy of the module and the comparison must
-    catch it. `_strip_env_prefix` is the branch chosen because its finding is
+    This is the planted defect, run every time rather than by hand: one branch of the port is disabled in a copy of the module and the comparison must catch it. `_strip_env_prefix` is the branch chosen because its finding is
     the most expensive one in the file -- a single `FOO=bar ` token that
     turned five guards from refusing to permitting.
     """
@@ -386,9 +364,7 @@ def bash_comment_bytes(path):
 def python_comment_bytes(path):
     """`#` comments plus docstrings, counted CONSERVATIVELY.
 
-    A comment token is counted from its `#` (its indentation is not counted,
-    though the bash side's is), and a docstring from its opening quote. The
-    asymmetry is deliberate and in the strict direction: the port is credited
+    A comment token is counted from its `#` (its indentation is not counted, though the bash side's is), and a docstring from its opening quote. The asymmetry is deliberate and in the strict direction: the port is credited
     with less than it has, so a ratio that clears the floor clears it honestly.
     """
     text = path.read_text(encoding="utf-8")

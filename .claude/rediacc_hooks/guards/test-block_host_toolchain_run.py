@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """block-host-toolchain-run.sh: both directions.
 
-The interesting half is the ALLOW half. A guard that pushes every `npm run` into
-a container would be routed around within a day: most gates are node and
-TypeScript, run identically on the host, and are faster there. This one fires
-only when the named gate needs a binary THIS host lacks.
+The interesting half is the ALLOW half. A guard that pushes every `npm run` into a container would be routed around within a day: most gates are node and TypeScript, run identically on the host, and are faster there. This one fires only when the named gate needs a binary THIS host lacks.
 
-PATH is manipulated per case rather than mocked, so "the host lacks it" is a
-fact the guard establishes with `command -v`, exactly as it does in the wild.
+PATH is manipulated per case rather than mocked, so "the host lacks it" is a fact the guard establishes with `command -v`, exactly as it does in the wild.
 """
 
 import json

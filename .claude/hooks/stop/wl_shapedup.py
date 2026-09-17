@@ -1,30 +1,14 @@
 """wl_shapedup: "is this the Nth copy of a shape you already have?"
 
-THE QUESTION NOBODY ASKS. The stop judge asks two things -- did you sweep the class
-(wl_classsweep), and is there a gate (wl_reggate). Neither asks whether the thing you just
-wrote already exists three times, so every finding correctly answers "add a script + a
-manifest entry + a workflow step + controls" and nothing is ever pointed at the
-accumulated surface.
+THE QUESTION NOBODY ASKS. The stop judge asks two things -- did you sweep the class (wl_classsweep), and is there a gate (wl_reggate). Neither asks whether the thing you just wrote already exists three times, so every finding correctly answers "add a script + a manifest entry + a workflow step + controls" and nothing is ever pointed at the accumulated surface.
 
-This repo reached that conclusion by hand THREE times and wrote it down each time:
-`scripts/lib/shrink-only-baseline.ts:25-31` ("a class, not an instance... seven chances to
-drift"), `.claude/hooks/pre-bash/block-adhoc-sanctioned.sh:4-8` (a new class is "a row
-rather than a 22nd copy of this file"), and `scripts/gates/check-shared-constant-duplication.ts`
-(one constant existing twice while "nothing failed"). Three times a person noticed.
+This repo reached that conclusion by hand THREE times and wrote it down each time: `scripts/lib/shrink-only-baseline.ts:25-31` ("a class, not an instance... seven chances to drift"), `.claude/hooks/pre-bash/block-adhoc-sanctioned.sh:4-8` (a new class is "a row rather than a 22nd copy of this file"), and `scripts/gates/check-shared-constant-duplication.ts` (one constant existing
+twice while "nothing failed"). Three times a person noticed.
 
-ITS OWN MODEL CALL, and the reason is a measurement rather than a preference. The approved
-plan rode this rule on the existing judge call, paid for by trimming SWEEP_PROMPT's five
-worked examples to three -- estimated at ~2,300 characters freed. Measured after the trim
-landed (`eb34b3a47`): **62**. The five examples were ~700 characters in total. A fix stop
-already carries 17,735 characters of rubric (JUDGE 5,762 + REGGATE 2,646 + SWEEP 5,683 +
-BRAVE 3,644), and adding a fourth object unoffset degrades two rubrics that are calibrated
-against operator-supplied worked examples. So this rule pays its own way: one extra
-`claude -p` only on the stops where the COUNTER has already fired, which is rare by
-construction.
+ITS OWN MODEL CALL, and the reason is a measurement rather than a preference. The approved plan rode this rule on the existing judge call, paid for by trimming SWEEP_PROMPT's five worked examples to three -- estimated at ~2,300 characters freed. Measured after the trim landed (`eb34b3a47`): **62**. The five examples were ~700 characters in total. A fix stop already carries 17,735
+characters of rubric (JUDGE 5,762 + REGGATE 2,646 + SWEEP 5,683 + BRAVE 3,644), and adding a fourth object unoffset degrades two rubrics that are calibrated against operator-supplied worked examples. So this rule pays its own way: one extra `claude -p` only on the stops where the COUNTER has already fired, which is rare by construction.
 
-THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes
-sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is
-silent, and fires only when a shape that was NOT already present reaches its third copy. A
+THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is silent, and fires only when a shape that was NOT already present reaches its third copy. A
 model asked "is there duplication?" answers yes far too often; a counter answers only when
 a real Nth instance lands. The model is never asked to FIND anything -- `instances` comes
 from the counter and is not read back off the model, so it cannot be fabricated.
@@ -302,17 +286,12 @@ def ask(instances):
 def apply_verdict(out, instances, shape_hash, root=None, path=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
-    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means this same shape has
-    already been blocked on SHAPE_MAX_FIRES times inside the TTL: the finding stands but
-    the session is let past, because a rule that cannot be satisfied must not be a wall.
+    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means this same shape has already been blocked on SHAPE_MAX_FIRES times inside the TTL: the finding stands but the session is let past, because a rule that cannot be satisfied must not be a wall.
 
     THE CAP IS READ WITH `peek`, NOT `load`, and `bank` is given the PRIOR record. The
     first version of this used `load(path) is None and fires(path) >= MAX` and banked with
     `prior=None`, which is wrong twice: `bank` computes `fires = prior.fires + 1`, so
-    without a prior the count is pinned at 1 forever, and `load` returns None only once the
-    cap is ALREADY reached, so the guard could not fire while a live demand existed. The
-    rule blocked on the same shape indefinitely. Caught by the control below, not by
-    reading the code.
+    without a prior the count is pinned at 1 forever, and `load` returns None only once the cap is ALREADY reached, so the guard could not fire while a live demand existed. The rule blocked on the same shape indefinitely. Caught by the control below, not by reading the code.
     """
     demand = demand_for(shape_hash)
     kind, payload = read_verdict(out, root)

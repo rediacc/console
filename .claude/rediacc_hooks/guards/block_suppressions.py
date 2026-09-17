@@ -2,21 +2,13 @@
 
 NOTE: the banned tokens are written with a trailing char class (e.g.
 eslint-disabl[e]) so this very file never contains the literal token
-contiguously, otherwise this guard would block edits to its own source. The
-[x] class still matches the real token. That convention is not decoration:
-drafting the comment below WITHOUT it got the repair refused by the very guard
-being repaired.
+contiguously, otherwise this guard would block edits to its own source. The [x] class still matches the real token. That convention is not decoration: drafting the comment below WITHOUT it got the repair refused by the very guard being repaired.
 
-TWO NARROWINGS, both paid for. The original test was "does this content
-contain the token, anywhere, in any file", which is the mention-as-execution
-shape this repo hit twelve times in one session. Measured 2026-08-27, it
-refused:
+TWO NARROWINGS, both paid for. The original test was "does this content contain the token, anywhere, in any file", which is the mention-as-execution shape this repo hit twelve times in one session. Measured 2026-08-27, it refused:
 
   docs/style.md   "Never write @ts-ignor[e]; fix the type instead."
 
-That is not a suppression, it is the RULE being written down -- so the guard
-refused the documentation of itself. Its own header had named this exact
-over-block class as a known risk without ever testing for it, which is what an
+That is not a suppression, it is the RULE being written down -- so the guard refused the documentation of itself. Its own header had named this exact over-block class as a known risk without ever testing for it, which is what an
 allow case of `const x = 1;` buys you: proof the regex is not matching
 literally everything, and nothing else.
 
@@ -30,20 +22,14 @@ literally everything, and nothing else.
      need maintaining as people find new ways to phrase a sentence.
 
 PORT NOTE ON THE TRAILING-CHAR-CLASS CONVENTION, WHICH SURVIVES FOR A SECOND
-REASON HERE. In the pattern it is doing exactly what the header says. In the
-MESSAGE it is doing something the bash spelled differently: the original writes
+REASON HERE. In the pattern it is doing exactly what the header says. In the MESSAGE it is doing something the bash spelled differently: the original writes
 `"...eslint-disabl""e, @ts-ignor""e..."`, two adjacent double-quoted strings
-that the shell concatenates, so the emitted bytes carry the whole token while
-the SOURCE never does. The port keeps both halves apart for the same reason and
-joins them once, at module level, so the message this guard prints is byte for
-byte what its twin prints while the file remains editable.
+that the shell concatenates, so the emitted bytes carry the whole token while the SOURCE never does. The port keeps both halves apart for the same reason and joins them once, at module level, so the message this guard prints is byte for byte what its twin prints while the file remains editable.
 
 PORT NOTE ON THE EXTENSION TEST. `case "$FILE" in *.ts | ... ) ;; "") ;; *)
 exit 0 ;; esac` is a shell GLOB, not a regex, and the empty arm is a
 deliberate hole-closer with its own comment. `hookio.case_glob` is the glob;
-the empty string is spelled as its own disjunct rather than folded into the
-pattern list, because `case_glob("", "*.ts")` is false and an empty payload
-must NOT be dismissed as "not code".
+the empty string is spelled as its own disjunct rather than folded into the pattern list, because `case_glob("", "*.ts")` is false and an empty payload must NOT be dismissed as "not code".
 """
 
 from rediacc_hooks import hookio

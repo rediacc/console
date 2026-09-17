@@ -1,20 +1,12 @@
 """Block edits that add a fat inline `run:` block to a GitHub workflow.
 
-The rule (enforced in CI by .ci/scripts/quality/check-workflows.sh): a workflow
-`run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does
-not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is
+The rule (enforced in CI by .ci/scripts/quality/check-workflows.sh): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is
 locally runnable and shareable across CI systems; the workflow step is env
 wiring + one script call.
 
-This is the fast local nudge for that rule: it fires only for
-.github/workflows/*.yml|yaml edits, only when the new content introduces a
-`run:` block that already crosses the threshold within the edited fragment.
-The CI gate remains the source of truth: it parses whole files, so a fat block
-assembled across several edits still fails there even if no single fragment
-trips this hook.
+This is the fast local nudge for that rule: it fires only for .github/workflows/*.yml|yaml edits, only when the new content introduces a `run:` block that already crosses the threshold within the edited fragment. The CI gate remains the source of truth: it parses whole files, so a fat block assembled across several edits still fails there even if no single fragment trips this hook.
 
-PORT NOTE ON THE awk PROGRAM, which is the whole guard. Four of its details are
-invisible once it is Python and each one changes the count:
+PORT NOTE ON THE awk PROGRAM, which is the whole guard. Four of its details are invisible once it is Python and each one changes the count:
 
   * UNINITIALISED awk VARIABLES ARE 0. `n`, `max`, `inblock` and `keyindent`
     are never assigned before use, and the program leans on that: the first
@@ -30,11 +22,7 @@ invisible once it is Python and each one changes the count:
     `line[cur + 1:]`. An off-by-one there would read the second character of
     every line and never see a `#`.
 
-PORT NOTE ON THE SUBJECT'S NEWLINE. `printf '%s\\n' "$CONTENT"` appends exactly
-one newline whatever the content ends with, so the last line is a full record.
-`hookio._printf_line` is that, and it is NOT the here-string: the difference
-only shows on an empty subject, which the `-z` test above has already returned
-on.
+PORT NOTE ON THE SUBJECT'S NEWLINE. `printf '%s\\n' "$CONTENT"` appends exactly one newline whatever the content ends with, so the last line is a full record. `hookio._printf_line` is that, and it is NOT the here-string: the difference only shows on an empty subject, which the `-z` test above has already returned on.
 """
 
 import re

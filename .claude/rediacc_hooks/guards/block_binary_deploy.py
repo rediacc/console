@@ -1,34 +1,21 @@
 """Block manual binary deploys via scp / sudo cp of the renet binary.
 
-DEPLOYING IS UPLOADING. The original pattern was `^scp `, which refuses every
-scp of every file in either direction -- including the one that is not a
-deploy at all:
+DEPLOYING IS UPLOADING. The original pattern was `^scp `, which refuses every scp of every file in either direction -- including the one that is not a deploy at all:
 
   scp host:/var/log/renet.log ./logs/     <- pulling a log back to diagnose
 
-That is the opposite of deploying a binary, and refusing it pushes the work
-onto a clumsier path with no benefit. A guard is judged by what it lets
-through as much as by what it stops, and until 2026-08-27 nothing here
-asserted this one let anything through.
+That is the opposite of deploying a binary, and refusing it pushes the work onto a clumsier path with no benefit. A guard is judged by what it lets through as much as by what it stops, and until 2026-08-27 nothing here asserted this one let anything through.
 
-The direction is decidable: scp's LAST argument is its destination, and a
-destination naming a remote host (`host:path`, `user@host:path`) is an
-upload. Anything else is a download.
+The direction is decidable: scp's LAST argument is its destination, and a destination naming a remote host (`host:path`, `user@host:path`) is an upload. Anything else is a download.
 
-PORT NOTE ON THE LOOP THE BASH HAD TO GET RIGHT TWICE. The original's second
-arm reads:
+PORT NOTE ON THE LOOP THE BASH HAD TO GET RIGHT TWICE. The original's second arm reads:
 
     while IFS= read -r clause; do ... done <<<"$(printf '%s' "$CMD" | tr ';&|' '\\n\\n\\n')"
 
 and its comment records both mistakes in one line. Piping put the loop in a
 subshell where `exit 2` could not leave the script; and `printf '%s'` gave the
-clauses no trailing newline, so `read` returned non-zero on the only line and
-the body never ran at all -- the guard reported every upload as ALLOWED while
-its block case went green on a no-op. Neither hazard exists in Python, so the
-prose above is the only surviving record of them, which is exactly what
-section 5c of the driver contract is about. What DOES survive as behaviour is
-the here-string's newline: `<<<` terminates its subject, so a command with no
-trailing newline still yields one final clause. `_here_string` supplies it.
+clauses no trailing newline, so `read` returned non-zero on the only line and the body never ran at all -- the guard reported every upload as ALLOWED while its block case went green on a no-op. Neither hazard exists in Python, so the prose above is the only surviving record of them, which is exactly what section 5c of the driver contract is about. What DOES survive as behaviour is
+the here-string's newline: `<<<` terminates its subject, so a command with no trailing newline still yields one final clause. `_here_string` supplies it.
 """
 
 from rediacc_hooks import hookio

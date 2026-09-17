@@ -2,19 +2,10 @@
 
 Stderr/dev-null redirects (2>&1, 2>/dev/null, >/dev/null) are read-only plumbing, not writes.
 
-Scan the command, not the prose. Matching raw text meant `echo 'cat a | ssh
-host tee /etc/x'` was refused -- a string, not a write. hook_scan_target drops
-heredoc bodies and quoted spans while still extracting `sh -c` / `eval`
-payloads, so a wrapped ssh-write is caught exactly as before.
+Scan the command, not the prose. Matching raw text meant `echo 'cat a | ssh host tee /etc/x'` was refused -- a string, not a write. hook_scan_target drops heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a wrapped ssh-write is caught exactly as before.
 
-PORT NOTE ON THE MISSING EMPTY GUARD. Unlike nearly every sibling, this file
-has no `[ -z "$CMD" ] && exit 0`: it reads `.tool_input.command` with a bare
-`jq -r` (so an absent key is the four characters `null`) and scans whatever it
-got, empty string included. `scan_target("")` returns a single newline that the
-command substitution then removes, so the empty case reaches grep as one empty
-record and matches nothing. That is why `hook_init` is NOT used here and
-`ev.raw` plus `scan_target` are spelled out instead -- `hook_init` would return
-None on the empty command and skip a scan the bash really does perform.
+PORT NOTE ON THE MISSING EMPTY GUARD. Unlike nearly every sibling, this file has no `[ -z "$CMD" ] && exit 0`: it reads `.tool_input.command` with a bare `jq -r` (so an absent key is the four characters `null`) and scans whatever it got, empty string included. `scan_target("")` returns a single newline that the command substitution then removes, so the empty case reaches grep as
+one empty record and matches nothing. That is why `hook_init` is NOT used here and `ev.raw` plus `scan_target` are spelled out instead -- `hook_init` would return None on the empty command and skip a scan the bash really does perform.
 """
 
 from rediacc_hooks import hookio, shellscan

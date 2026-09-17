@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """Controls for the context-band hooks, plus the controls on those controls.
 
-A check that cannot fail is worse than no check, so this suite has two halves.
-The first half asserts the hooks behave (fires here, silent there, resets on
-PostCompact, never exits 2). The second half MUTATES the hooks -- breaks each
-behaviour on purpose in a scratch copy -- and asserts the first half goes RED.
-A green run therefore means both "the hooks work" and "these assertions can
-detect them not working".
+A check that cannot fail is worse than no check, so this suite has two halves. The first half asserts the hooks behave (fires here, silent there, resets on PostCompact, never exits 2). The second half MUTATES the hooks -- breaks each behaviour on purpose in a scratch copy -- and asserts the first half goes RED. A green run therefore means both "the hooks work" and "these assertions
+can detect them not working".
 
-Everything runs against synthetic transcripts in a temp tree. It touches no
-live state, no live transcript, and nothing in the repo.
+Everything runs against synthetic transcripts in a temp tree. It touches no live state, no live transcript, and nothing in the repo.
 
-Run:  python3 .claude/hooks/context/test-context-bands.py
+Run: python3 .claude/hooks/context/test-context-bands.py
 """
 
 import json
@@ -823,17 +818,10 @@ def test_arithmetic_in(hooks_dir):
 def test_compact_boundary(hooks_dir):
     """last_usage must never walk back PAST a compaction boundary.
 
-    THE BUG THIS PINS, measured on this project's own transcript 2026-08-26.
-    A PostToolUse hook fired in the gap between the `compact_boundary` entry
-    and the first assistant entry after it. The backward scan sailed past the
-    summary and returned the PRE-compaction peak: 958,036 against a 967,000
-    threshold, printed as "0.9% until auto-compact, a headroom of 8,964
-    tokens", while the real post-compaction size was 30,359.
+    THE BUG THIS PINS, measured on this project's own transcript 2026-08-26. A PostToolUse hook fired in the gap between the `compact_boundary` entry and the first assistant entry after it. The backward scan sailed past the summary and returned the PRE-compaction peak: 958,036 against a 967,000 threshold, printed as "0.9% until auto-compact, a headroom of 8,964 tokens", while the
+    real post-compaction size was 30,359.
 
-    Wrong in the worst direction: the stale value is by construction the
-    session's MAXIMUM, so the notice screams "nearly full" exactly when the
-    context has just been emptied -- and the session then makes real decisions
-    on it.
+    Wrong in the worst direction: the stale value is by construction the session's MAXIMUM, so the notice screams "nearly full" exactly when the context has just been emptied -- and the session then makes real decisions on it.
     """
     code = (
         "import sys, json; sys.path.insert(0, %r); import ctx_budget as B; "

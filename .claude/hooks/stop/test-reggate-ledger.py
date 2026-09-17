@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Controls for the reggate effort-cap ledger's ERROR paths.
 
-WHY THIS FILE EXISTS. The cap (operator ruling 2026-09-05T01:55Z) is an escape
-hatch from a blocking gate, so the question that matters is not "does it fire?"
-but "what happens when its own machinery breaks?" Every error path here has one
-correct direction -- FAIL STRICT -- and a silent flip to the lax direction is
-invisible from the outside: a demand that vanishes looks exactly like a demand
-that was never raised.
+WHY THIS FILE EXISTS. The cap (operator ruling 2026-09-05T01:55Z) is an escape hatch from a blocking gate, so the question that matters is not "does it fire?" but "what happens when its own machinery breaks?" Every error path here has one correct direction -- FAIL STRICT -- and a silent flip to the lax direction is invisible from the outside: a demand that vanishes looks exactly
+like a demand that was never raised.
 
 Three paths shipped with error handling and no test, which is what this fixes:
 
@@ -14,9 +10,7 @@ Three paths shipped with error handling and no test, which is what this fixes:
   branch_merged git fails  -> False (not merged), so the grace clock governs
   the cap       any raise  -> falls through to the normal block
 
-Each assertion is PAIRED with a control proving the opposite input produces the
-opposite answer. Without the pair, a function hard-coded to return the strict
-answer would pass every strict assertion while having stopped working.
+Each assertion is PAIRED with a control proving the opposite input produces the opposite answer. Without the pair, a function hard-coded to return the strict answer would pass every strict assertion while having stopped working.
 """
 
 import json

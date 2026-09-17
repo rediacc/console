@@ -1,29 +1,18 @@
 """wl_admit: turn a session's own admission of an unpreventable mistake into
 tracked prevention work.
 
-WHY THIS EXISTS, from this repo's own transcripts rather than from theory. A
-sweep of 906 session transcripts found seven distinct admissions where a session
-said, in its own words, that it had done something it could not take back. The
-decisive pair:
+WHY THIS EXISTS, from this repo's own transcripts rather than from theory. A sweep of 906 session transcripts found seven distinct admissions where a session said, in its own words, that it had done something it could not take back. The decisive pair:
 
     "I clobbered 84611aab's STATE.md section twice tonight by rewriting the
      whole file"
     "I clobbered 84611aab's STATE.md section A SECOND TIME ... going forward
      I'll read the file fresh"
 
-The remedy in the second one is an INTENTION. It did not survive the session,
-and the clobber happened again. That is the entire argument for this module: an
-admission is currently a well-written paragraph and nothing else, and the next
-session starts with none of it.
+The remedy in the second one is an INTENTION. It did not survive the session, and the clobber happened again. That is the entire argument for this module: an admission is currently a well-written paragraph and nothing else, and the next session starts with none of it.
 
-WHY IT IS NOT wl_reggate. Its sibling asks "a fix landed, is it gated?" and
-triggers on ARTIFACTS: commit subjects matching `^(fix|revert)[(!:]` and newly
-ticked items. The 2026-08-19 truncation produced no fix commit and no tick. It
-was harm with no fix, so reggate is blind to it by construction. The only
-artifact that event leaves is prose, so prose is what this triggers on.
+WHY IT IS NOT wl_reggate. Its sibling asks "a fix landed, is it gated?" and triggers on ARTIFACTS: commit subjects matching `^(fix|revert)[(!:]` and newly ticked items. The 2026-08-19 truncation produced no fix commit and no tick. It was harm with no fix, so reggate is blind to it by construction. The only artifact that event leaves is prose, so prose is what this triggers on.
 
-THE THREE PREDICATES, which are what make this actionable rather than a mood
-detector:
+THE THREE PREDICATES, which are what make this actionable rather than a mood detector:
 
     AGENCY     this session did it, not the product and not a teammate
     COMPLETED  it already happened, not a plan and not a counterfactual
@@ -33,17 +22,10 @@ detector:
                               preventing a recurrence is the session's stated
                               intention
 
-`machinery` is the highest-value class in the corpus precisely because the
-second clobber above proves an intention is not a control.
+`machinery` is the highest-value class in the corpus precisely because the second clobber above proves an intention is not a control.
 
-IT MUST NEVER BLOCK, and this is a deliberate inversion of the fail-closed rule
-that governs the judge next door. A session blocked by a phantom regret learns to
-phrase things evasively, and evasive reporting costs far more than a missed
-detection: the whole mechanism depends on sessions still being willing to write
-"I did this wrong" in plain words. So the only consequence of a positive is ONE
-worklist item, which the existing Stop machinery already refuses to leave open.
-A session that disagrees argues with an item and ticks it with a reason, instead
-of arguing with a wall.
+IT MUST NEVER BLOCK, and this is a deliberate inversion of the fail-closed rule that governs the judge next door. A session blocked by a phantom regret learns to phrase things evasively, and evasive reporting costs far more than a missed detection: the whole mechanism depends on sessions still being willing to write "I did this wrong" in plain words. So the only consequence of a
+positive is ONE worklist item, which the existing Stop machinery already refuses to leave open. A session that disagrees argues with an item and ticks it with a reason, instead of arguing with a wall.
 
 TWO TIERS, for two different failure modes:
 
@@ -54,13 +36,8 @@ TWO TIERS, for two different failure modes:
                         the admission on disk.
     Tier P (precision)  only a verdict with all three predicates adds an item.
 
-WHY THE MODEL CALL IS NOT OPTIONAL. Measured against the real corpus, the
-prefilter regexes MISS two of the cases that matter most: a real one
-("I ran the validator piped through a head filter, which truncated away the exit
-code") and the euphemistic phrasing a cautious session would naturally reach for
-("the tail below the marker is no longer present and there is no copy of it
-anywhere"). A regex-only detector swallows exactly the class most worth catching,
-so the regex is a COST FILTER and never the last word on a negative.
+WHY THE MODEL CALL IS NOT OPTIONAL. Measured against the real corpus, the prefilter regexes MISS two of the cases that matter most: a real one ("I ran the validator piped through a head filter, which truncated away the exit code") and the euphemistic phrasing a cautious session would naturally reach for ("the tail below the marker is no longer present and there is no copy of it
+anywhere"). A regex-only detector swallows exactly the class most worth catching, so the regex is a COST FILTER and never the last word on a negative.
 """
 
 import contextlib
@@ -104,16 +81,10 @@ TAIL_BYTES = 2 * 1024 * 1024
 def turn_text(path):
     """Assistant text for the WHOLE turn, tool calls included.
 
-    Deliberately not `wl_core.transcript_tail`. That one resets its accumulator
-    on ANY record of type `user`, and in this repo tool results ARE user records
-    (2,172 of 2,371 in the incident transcript), so it holds only the text since
-    the last tool result. Correct for its own caller, which wants the final
-    message, and a ceiling here: the 2026-08-09 admission ("I clobbered another
-    live session's block. Restoring the merged form immediately:") was mid-turn
-    narration followed by tool calls, and would be invisible to it.
+    Deliberately not `wl_core.transcript_tail`. That one resets its accumulator on ANY record of type `user`, and in this repo tool results ARE user records (2,172 of 2,371 in the incident transcript), so it holds only the text since the last tool result. Correct for its own caller, which wants the final message, and a ceiling here: the 2026-08-09 admission ("I clobbered another
+    live session's block. Restoring the merged form immediately:") was mid-turn narration followed by tool calls, and would be invisible to it.
 
-    So this resets only on a REAL operator turn, meaning a `user` record with no
-    tool_result block in it.
+    So this resets only on a REAL operator turn, meaning a `user` record with no tool_result block in it.
     """
     if not path or not os.path.exists(path):
         return ""
@@ -161,9 +132,7 @@ def turn_text(path):
 def prefilter(text):
     """[(family, matched span, offset)] for every family that fires.
 
-    Recall-first on purpose. Its ONLY sanctioned effect is not spending a model
-    call, so a hit it drops is invisible forever. That asymmetry is why every hit
-    is logged before anything else can fail.
+    Recall-first on purpose. Its ONLY sanctioned effect is not spending a model call, so a hit it drops is invisible forever. That asymmetry is why every hit is logged before anything else can fail.
     """
     if not text:
         return []
@@ -190,10 +159,7 @@ def admit_log_path(worklist, session_id):
 def record_hits(worklist, session_id, hits, sig, extra=None):
     """Tier R. Append every prefilter hit BEFORE any model call.
 
-    Best effort by design: this must never be able to fail a stop. But it is also
-    never skipped, because a hit recorded only after a successful verdict would
-    vanish exactly when the judge times out, which is when the record matters
-    most.
+    Best effort by design: this must never be able to fail a stop. But it is also never skipped, because a hit recorded only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
     """
     if not hits:
         return False
@@ -217,9 +183,7 @@ def record_hits(worklist, session_id, hits, sig, extra=None):
 def load_settled(worklist, session_id):
     """{sig: verdict} of turns already answered. Corrupt state is DISCARDED.
 
-    Not salvaged field by field, for the reason wl_reggate.load_reggate gives:
-    a half-parsed state file silently resurrects an answered question as settled,
-    or worse, an unanswered one as settled.
+    Not salvaged field by field, for the reason wl_reggate.load_reggate gives: a half-parsed state file silently resurrects an answered question as settled, or worse, an unanswered one as settled.
     """
     p = pathlib.Path(str(worklist) + ".admit-settled-%s.json" % (session_id or "unknown")[:8])
     try:
@@ -247,9 +211,7 @@ REQUIRED = ("present", "quote", "agency", "completed", "residue", "artifact", "r
 def apply_admission_verdict(ad, text):
     """('malformed'|'none'|'track', item_text, detail).
 
-    Every model claim is checked against the message before it can create work.
-    Nothing here blocks: 'malformed' is reported and dropped, exactly as
-    wl_reggate promises for its own failures ("Never a block, never silent").
+    Every model claim is checked against the message before it can create work. Nothing here blocks: 'malformed' is reported and dropped, exactly as wl_reggate promises for its own failures ("Never a block, never silent").
     """
     if not isinstance(ad, dict) or any(k not in ad for k in REQUIRED):
         missing = [k for k in REQUIRED if not isinstance(ad, dict) or k not in ad]
@@ -288,15 +250,11 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
     """Apply a verdict and record it. ONE implementation, two callers.
 
     The judge-ran path passes `verdict.get("admission")`; the judge-skipped path
-    passes the result of a standalone call. Duplicating this was the obvious
-    shortcut and would have meant two places to keep the anti-hallucination check
-    in step.
+    passes the result of a standalone call. Duplicating this was the obvious shortcut and would have meant two places to keep the anti-hallucination check in step.
 
-    `add_item` is injected rather than imported so this module stays testable
-    without dragging the store in.
+    `add_item` is injected rather than imported so this module stays testable without dragging the store in.
 
-    Returns (kind, item_id_or_None, detail). NEVER raises, and never blocks:
-    a detector that could fail a stop would punish the honesty that triggered it.
+    Returns (kind, item_id_or_None, detail). NEVER raises, and never blocks: a detector that could fail a stop would punish the honesty that triggered it.
     """
     kind, item_text, detail = apply_admission_verdict(ad, text)
     new_id = None
@@ -390,12 +348,8 @@ def _is_operator_turn(rec):
         hook feedback    `isMeta: true` -- this machinery talking to itself
         a tool result    content is an ARRAY whose blocks include `tool_result`
 
-    wl_core.transcript_tail resets its accumulators on ALL THREE, which is
-    correct for its own caller and useless here: the reset that matters for this
-    gate is "since the operator last had the floor", and tool results are the
-    overwhelming majority of user records (2,172 of 2,371 in one measured
-    transcript), so a tool-result reset makes the tool window almost always
-    empty -- i.e. makes condition 2 always true and the gate a rubber stamp.
+    wl_core.transcript_tail resets its accumulators on ALL THREE, which is correct for its own caller and useless here: the reset that matters for this gate is "since the operator last had the floor", and tool results are the overwhelming majority of user records (2,172 of 2,371 in one measured transcript), so a tool-result reset makes the tool window almost always empty -- i.e.
+    makes condition 2 always true and the gate a rubber stamp.
     """
     if rec.get("type") != "user" or rec.get("isMeta"):
         return False
@@ -410,14 +364,9 @@ def _is_operator_turn(rec):
 def turn_tools(path):
     """(tool_names, last_operator_text) since the operator last spoke.
 
-    The tool list is what condition 2 reads. The operator text is returned
-    because it was, until now, information no Stop-time check could obtain at
-    all -- transcript_tail collects assistant text only -- and a gate about what
-    the session promised the operator is the first thing that will want it.
+    The tool list is what condition 2 reads. The operator text is returned because it was, until now, information no Stop-time check could obtain at all -- transcript_tail collects assistant text only -- and a gate about what the session promised the operator is the first thing that will want it.
 
-    Tail-read and exception-free for the same reasons transcript_tail is: this
-    runs on every stop, and a reader that can raise turns a detector into an
-    outage.
+    Tail-read and exception-free for the same reasons transcript_tail is: this runs on every stop, and a reader that can raise turns a detector into an outage.
     """
     if not path or not os.path.exists(path):
         return [], ""
@@ -463,11 +412,7 @@ def turn_tools(path):
 def defer_sig(fold, session_id):
     """A digest of MY `[?]` items. Moves when a deferral of mine appears or goes.
 
-    Deliberately narrower than wl_checks.closed_sig, which digests every
-    non-open state: a tick or a lease is not "I parked this on the operator",
-    and letting either of them satisfy condition 3 would hand the gate an exit
-    it never offered. Returns "" when the store cannot be read, and the caller
-    treats "" as unknown.
+    Deliberately narrower than wl_checks.closed_sig, which digests every non-open state: a tick or a lease is not "I parked this on the operator", and letting either of them satisfy condition 3 would hand the gate an exit it never offered. Returns "" when the store cannot be read, and the caller treats "" as unknown.
     """
     try:
         rows = sorted(
@@ -483,17 +428,9 @@ def defer_sig(fold, session_id):
 def defer_created(state_doc, fold, session_id):
     """True when a `[?]` of mine appeared (or vanished) since the previous stop.
 
-    FIRST SIGHT IS LENIENT, NOT SILENT, and the distinction is the whole design.
-    idle_stall's baseline rule is "first sight never fires", which is right for a
-    check whose subject is a whole turn of inactivity. Here the first stop of a
-    session is an ordinary place to announce an ask, so refusing to look would
-    concede the common case.
+    FIRST SIGHT IS LENIENT, NOT SILENT, and the distinction is the whole design. idle_stall's baseline rule is "first sight never fires", which is right for a check whose subject is a whole turn of inactivity. Here the first stop of a session is an ordinary place to announce an ask, so refusing to look would concede the common case.
 
-    Instead, with no baseline, ANY `[?]` of mine counts as possibly-this-turn.
-    That is the safe direction: it can only make the gate quieter, and it closes
-    the one way this gate could have deadlocked -- a session that deferred
-    BEFORE its first stop, whose deferral would otherwise look identical on
-    every later stop and be refused forever.
+    Instead, with no baseline, ANY `[?]` of mine counts as possibly-this-turn. That is the safe direction: it can only make the gate quieter, and it closes the one way this gate could have deadlocked -- a session that deferred BEFORE its first stop, whose deferral would otherwise look identical on every later stop and be refused forever.
     """
     sig = defer_sig(fold, session_id)
     slot = state_doc.setdefault("pendingask", {}) if isinstance(state_doc, dict) else {}
@@ -560,9 +497,7 @@ def ask_refusals(worklist, session_id):
     """(n_this_session, path) -- how many of MY questions the pre-ask hook ate.
 
     Session-scoped because that is the number this session can act on; the file
-    keeps every session's rows so the operator reading it sees the whole
-    denominator. Unreadable or absent is (0, path), never an exception: an
-    advisory that can fail a stop is a worse bug than a missing advisory.
+    keeps every session's rows so the operator reading it sees the whole denominator. Unreadable or absent is (0, path), never an exception: an advisory that can fail a stop is a worse bug than a missing advisory.
     """
     path = ask_refusal_path(worklist)
     sid = (session_id or "")[:8]
@@ -706,17 +641,9 @@ CORPUS = [
 def _corpus_selftest(limit=None, repeat=3):
     """Run the REAL model over CORPUS `repeat` times and report per-case STABILITY.
 
-    WHY REPEAT DEFAULTS ABOVE ONE. Measured 2026-08-19: two runs of the IDENTICAL
-    prompt disagreed on 3 of 12 cases. A single run therefore cannot tell a prompt
-    improvement from noise, and a tuning session that believes it can will chase
-    variance and ship a regression convinced it fixed something. That is not
-    hypothetical either: it happened here, between the first and second run.
+    WHY REPEAT DEFAULTS ABOVE ONE. Measured 2026-08-19: two runs of the IDENTICAL prompt disagreed on 3 of 12 cases. A single run therefore cannot tell a prompt improvement from noise, and a tuning session that believes it can will chase variance and ship a regression convinced it fixed something. That is not hypothetical either: it happened here, between the first and second run.
 
-    WHAT WAS STABLE, and it is the half that matters for anything that CREATES
-    work: zero false positives, every negative rejected in every run, the
-    counterfactual near-miss included. The instability is confined to recall on
-    borderline positives, which is the tolerable direction, because Tier R has
-    already written the prefilter hit to disk. A missed borderline case is still
+    WHAT WAS STABLE, and it is the half that matters for anything that CREATES work: zero false positives, every negative rejected in every run, the counterfactual near-miss included. The instability is confined to recall on borderline positives, which is the tolerable direction, because Tier R has already written the prefilter hit to disk. A missed borderline case is still
     auditable rather than gone.
 
     So the gate is asymmetric on purpose:
@@ -787,11 +714,7 @@ def _corpus_selftest(limit=None, repeat=3):
 def _selftest():
     """Controls. Run: wl_admit.py --selftest
 
-    These are the DETERMINISTIC half. They prove the plumbing: that a verdict is
-    checked against the message, that a hallucinated quote cannot manufacture
-    work, and that the prefilter has the recall the design claims. The other half,
-    whether the model can separate the twelve corpus cases, cannot be stubbed and
-    is a separate gate: a stub answering "yes" proves nothing.
+    These are the DETERMINISTIC half. They prove the plumbing: that a verdict is checked against the message, that a hallucinated quote cannot manufacture work, and that the prefilter has the recall the design claims. The other half, whether the model can separate the twelve corpus cases, cannot be stubbed and is a separate gate: a stub answering "yes" proves nothing.
     """
     ok = True
 

@@ -3,15 +3,9 @@
 
     python3 .claude/hooks/stop/test-planrec.py
 
-EVERY CASE IS A PAIR, the same discipline as test-planfile.py beside it: a
-"this must be reported" is followed by a "this must be SILENT" built from the
-same fixture with one thing changed. A suite with only positive cases cannot
-tell a working matcher from one that returns the same answer for everything.
+EVERY CASE IS A PAIR, the same discipline as test-planfile.py beside it: a "this must be reported" is followed by a "this must be SILENT" built from the same fixture with one thing changed. A suite with only positive cases cannot tell a working matcher from one that returns the same answer for everything.
 
-THE FIXTURE IS A REAL GIT REPOSITORY, with a real `refs/remotes/origin/main`, a
-real ledger with TWO commits, and a real blob. Nothing here is mocked, and that
-is not thoroughness for its own sake. Four of this module's rules are exactly
-the kind that a stub satisfies while being broken against git:
+THE FIXTURE IS A REAL GIT REPOSITORY, with a real `refs/remotes/origin/main`, a real ledger with TWO commits, and a real blob. Nothing here is mocked, and that is not thoroughness for its own sake. Four of this module's rules are exactly the kind that a stub satisfies while being broken against git:
 
     resolve(..., "ancestor")   `merge-base --is-ancestor` returns EMPTY output
                                on success, so `wl_core._git` -- which collapses
@@ -25,14 +19,8 @@ the kind that a stub satisfies while being broken against git:
                                and a one-commit fixture cannot express it.
     revive()                   round-tripping the exact original bytes.
 
-THE ONE PROPERTY THIS FILE EXISTS FOR, if it must be reduced to one: a record's
-`(record)` annotation lines must be INVISIBLE to `wl_planfid.plan_tasks`, and the
-record must parse to exactly the same boxes as the plan it replaced. That is a
-property of a parser this module does not own -- `BULLET_RE` requires a bullet
-marker at indent 0-3 -- so it holds today by construction and could be lost by a
-change made somewhere else for an unrelated reason. Pinned here so that change
-fails loudly instead of quietly turning every compacted record into a source of
-phantom boxes for check:ci-plan-boxes.
+THE ONE PROPERTY THIS FILE EXISTS FOR, if it must be reduced to one: a record's `(record)` annotation lines must be INVISIBLE to `wl_planfid.plan_tasks`, and the record must parse to exactly the same boxes as the plan it replaced. That is a property of a parser this module does not own -- `BULLET_RE` requires a bullet marker at indent 0-3 -- so it holds today by construction and
+could be lost by a change made somewhere else for an unrelated reason. Pinned here so that change fails loudly instead of quietly turning every compacted record into a source of phantom boxes for check:ci-plan-boxes.
 """
 
 import json

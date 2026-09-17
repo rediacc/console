@@ -1,9 +1,6 @@
 """Mediated git capability for submodule work and force-push.
 
-WHY THIS EXISTS. The two operations that fix a diverged tree -- a submodule
-merge with a pointer bump, and the force-push a rebase requires -- were until
-now either hand-executed from a 240-line prose checklist or blocked outright.
-Prose is not a safety mechanism, and the recorded incidents show it failing:
+WHY THIS EXISTS. The two operations that fix a diverged tree -- a submodule merge with a pointer bump, and the force-push a rebase requires -- were until now either hand-executed from a 240-line prose checklist or blocked outright. Prose is not a safety mechanism, and the recorded incidents show it failing:
 
   * 2026-07-28: console#541 merged while rediacc/account#69 was still open, so
     main's gitlink pointed at a commit that existed only on a PR branch. Had
@@ -15,31 +12,20 @@ Prose is not a safety mechanism, and the recorded incidents show it failing:
     clean tree and a rebase that reports success, so nothing downstream catches
     the rollback.
 
-WHY THIS CAN RUN A FORCE-PUSH AT ALL. The pre-bash hooks inspect the Bash tool's
-COMMAND LINE. This module runs git through subprocess, which no pre-bash hook
-ever sees. Verified: `worklist.py --git force-push --execute` is allowed while
-`git push --force-with-lease origin x` is blocked. So raw force-push stays
-blocked exactly as before and this is simply a path the block regex does not
-match. NOBODY SHOULD "FIX" THAT BY ADDING AN ALLOW-LIST TO THE HOOK: the hook
-staying strict is the whole security story, and this module's safety comes from
-its own checks, not from permission.
+WHY THIS CAN RUN A FORCE-PUSH AT ALL. The pre-bash hooks inspect the Bash tool's COMMAND LINE. This module runs git through subprocess, which no pre-bash hook ever sees. Verified: `worklist.py --git force-push --execute` is allowed while `git push --force-with-lease origin x` is blocked. So raw force-push stays blocked exactly as before and this is simply a path the block regex
+does not match. NOBODY SHOULD "FIX" THAT BY ADDING AN ALLOW-LIST TO THE HOOK: the hook staying strict is the whole security story, and this module's safety comes from its own checks, not from permission.
 
-WHAT IT IS NOT. It does not prove operator approval and does not try to. The
-operator's ruling is "AI authorized, just be safe", so the checks here are about
+WHAT IT IS NOT. It does not prove operator approval and does not try to. The operator's ruling is "AI authorized, just be safe", so the checks here are about
 CORRECTNESS, not authority. Everything is dry-run by default; --execute writes.
 
-THE TWO ORACLES, and they are the whole design. This repo has exactly two
-correctness tests for a gitlink, and both are ANCESTRY. Every incident above is
-a case of someone reaching for a third, worse one ("is this mine?", "is this
-newer-looking?"):
+THE TWO ORACLES, and they are the whole design. This repo has exactly two correctness tests for a gitlink, and both are ANCESTRY. Every incident above is a case of someone reaching for a third, worse one ("is this mine?", "is this newer-looking?"):
 
   1. REACHABILITY  -- is the gitlink reachable from the submodule's origin/main?
      (main must never depend on a commit that lives only on a branch)
   2. CONTAINMENT   -- does the submodule HEAD contain origin/main?
      (the only check that catches an --ours/--theirs mistake)
 
-When neither direction holds the histories genuinely diverged, and this refuses
-rather than guessing. Fail closed: an unreadable probe is never a pass.
+When neither direction holds the histories genuinely diverged, and this refuses rather than guessing. Fail closed: an unreadable probe is never a pass.
 """
 
 import json
@@ -103,8 +89,7 @@ def run_git(args, cwd, timeout=TIMEOUT_S):
 def parse_gitmodules(text):
     """[(path, branch)] from .gitmodules text.
 
-    READ, NEVER HARDCODE. check-submodule-branches.sh hardcodes the four paths
-    and is therefore blind to a fifth and to the non-submodule siblings under
+    READ, NEVER HARDCODE. check-submodule-branches.sh hardcodes the four paths and is therefore blind to a fifth and to the non-submodule siblings under
     private/; detect-pointer-bump.sh and worktree.sh read this file instead.
     """
     out, path, branch = [], None, None
@@ -139,8 +124,7 @@ def submodules(root):
 def sibling_repos(root):
     """Independent git repos under private/ that are NOT submodules.
 
-    They are gitignored and invisible to `git status` and `git submodule`.
-    Agents have repeatedly assumed everything under private/ is a submodule and
+    They are gitignored and invisible to `git status` and `git submodule`. Agents have repeatedly assumed everything under private/ is a submodule and
     walked past uncommitted work in them. This module never touches them; it
     only REPORTS them.
     """
@@ -163,9 +147,7 @@ def sibling_repos(root):
 def is_ancestor(repo, maybe_ancestor, descendant):
     """True/False, or None when the probe itself could not run.
 
-    None is NOT False. check-submodule-branches.sh records the same lesson
-    twice: `|| echo "[]"` once made an unreadable probe indistinguishable from a
-    clean result, and the caller then read a guess as a fact.
+    None is NOT False. check-submodule-branches.sh records the same lesson twice: `|| echo "[]"` once made an unreadable probe indistinguishable from a clean result, and the caller then read a guess as a fact.
     """
     rc, _, _ = run_git(["merge-base", "--is-ancestor", maybe_ancestor, descendant], cwd=repo)
     if rc == 0:
@@ -178,14 +160,9 @@ def is_ancestor(repo, maybe_ancestor, descendant):
 def rebase_state(root):
     """Where an in-progress rebase stopped, read from GIT's own state.
 
-    NOTHING IS PERSISTED HERE, deliberately, and that is the design. `git rebase`
-    is already resumable: on a halt it keeps `msgnum`/`end` (step N of M),
-    `stopped-sha`, and the remaining todo under .git/rebase-merge, plus the
-    conflict stages in the index. Anything this module wrote down would be a
-    SECOND copy of a truth git already holds, and a second copy drifts.
+    NOTHING IS PERSISTED HERE, deliberately, and that is the design. `git rebase` is already resumable: on a halt it keeps `msgnum`/`end` (step N of M), `stopped-sha`, and the remaining todo under .git/rebase-merge, plus the conflict stages in the index. Anything this module wrote down would be a SECOND copy of a truth git already holds, and a second copy drifts.
 
-    Returns None when no rebase is in progress -- which is not an error, it is
-    the normal case, and the caller must not report it as a halt.
+    Returns None when no rebase is in progress -- which is not an error, it is the normal case, and the caller must not report it as a halt.
     """
     for d in ("rebase-merge", "rebase-apply"):
         base = os.path.join(root, ".git", d)
@@ -229,17 +206,12 @@ def conflicted_paths(root):
 def classify_conflict(_root, path, stages):
     """'gitlink' | 'registry' | 'judgement', and WHY.
 
-    THE TAXONOMY IS MEASURED, not invented. Ten conflicts across two real
-    rebases of this branch on 2026-08-26/27: one gitlink (an oracle already
-    decides it), six mechanical unions of append-only registries, two genuine
-    design collisions (`run.sh setup()`, and a test suite that one wave had
-    refactored from a monolith into 22 case files). Refusing all ten to protect
-    the two is the trade this classifier exists to stop making.
+    THE TAXONOMY IS MEASURED, not invented. Ten conflicts across two real rebases of this branch on 2026-08-26/27: one gitlink (an oracle already decides it), six mechanical unions of append-only registries, two genuine design collisions (`run.sh setup()`, and a test suite that one wave had refactored from a monolith into 22 case files). Refusing all ten to protect the two is the
+    trade this classifier exists to stop making.
 
     Conservative by construction: anything it cannot place is 'judgement', which
     means untouched. A wrong 'judgement' costs a human a look; a wrong
-    'registry' silently corrupts a file, which is the failure mode that shipped
-    a glued stopword seam today.
+    'registry' silently corrupts a file, which is the failure mode that shipped a glued stopword seam today.
     """
     if any(mode == "160000" for _sha, mode in stages.values()):
         return "gitlink", "a submodule pointer; resolve_gitlink_target decides it by ancestry"
@@ -260,10 +232,7 @@ REGISTRY_KEYS = ("id", "name", "key", "slug")
 def _entry_ids(value):
     """The identity set of a parsed registry, or None if it is not one.
 
-    Three shapes, and nothing else: a list of scalars (identity IS the value), a
-    list of objects sharing a key field, and an object (identity is the key).
-    Anything else refuses -- a union needs to know what "the same entry" means,
-    and inventing an answer is how a merge silently drops one.
+    Three shapes, and nothing else: a list of scalars (identity IS the value), a list of objects sharing a key field, and an object (identity is the key). Anything else refuses -- a union needs to know what "the same entry" means, and inventing an answer is how a merge silently drops one.
     """
     if isinstance(value, dict):
         return ("dict", list(value.keys()))
@@ -281,15 +250,9 @@ def _entry_ids(value):
 def json_union(base_text, ours_text, theirs_text):
     """Union two edits to an APPEND-ONLY keyed JSON registry.
 
-    Returns (merged_text, why). merged_text is None when the union is refused,
-    and `why` then says which invariant failed -- a refusal is a result, not an
-    error, because 'this needs a human' is the correct answer for most files.
+    Returns (merged_text, why). merged_text is None when the union is refused, and `why` then says which invariant failed -- a refusal is a result, not an error, because 'this needs a human' is the correct answer for most files.
 
-    THE INVARIANTS, all of which must hold, because a union that merely PARSES
-    proves nothing. The failure this guards against actually shipped: merging
-    both waves' additions to a Python stopword list produced adjacent string
-    literals with no separating space, `touched` + `see` became `touchedsee`,
-    two real stopwords stopped existing, the file parsed, and the suite passed.
+    THE INVARIANTS, all of which must hold, because a union that merely PARSES proves nothing. The failure this guards against actually shipped: merging both waves' additions to a Python stopword list produced adjacent string literals with no separating space, `touched` + `see` became `touchedsee`, two real stopwords stopped existing, the file parsed, and the suite passed.
 
       1. all three sides parse, and agree on SHAPE (a list of scalars does not
          merge with an object);
@@ -412,12 +375,9 @@ def stage_blob(root, sha):
 def resolve_registry(root, path, stages):
     """Merged text for one conflicted registry file, or (None, why).
 
-    Only .json today. classify_conflict also calls sectioned markdown a
-    registry, and it is -- but "both heading sets survive" is a DIFFERENT
-    invariant and it is not written yet, so this refuses rather than reaching
+    Only .json today. classify_conflict also calls sectioned markdown a registry, and it is -- but "both heading sets survive" is a DIFFERENT invariant and it is not written yet, so this refuses rather than reaching
     for the JSON one. A resolver that applies the wrong invariant is worse than
-    one that stops: the plan's rule is that a class with no invariant is
-    judgement, and an unwritten invariant is no invariant.
+    one that stops: the plan's rule is that a class with no invariant is judgement, and an unwritten invariant is no invariant.
     """
     if not path.lower().endswith(".json"):
         return None, "no invariant is implemented for this registry shape yet"
@@ -435,13 +395,11 @@ def resolve_registry(root, path, stages):
 def resolve_halt(root):
     """Decide every conflicted path at the CURRENT halt.
 
-    Returns (resolved, blocked). `resolved` maps path -> ("gitlink", sha) or
-    ("text", merged). `blocked` is a list of (path, kind, why).
+    Returns (resolved, blocked). `resolved` maps path -> ("gitlink", sha) or ("text", merged). `blocked` is a list of (path, kind, why).
 
     ONE resolver, two verbs. rebase-resolve reports it and rebase-continue acts
     on it; had each grown its own copy, the one that reports and the one that
-    writes would eventually disagree about what is safe -- which is the failure
-    mode where a dry run and its --execute do different things.
+    writes would eventually disagree about what is safe -- which is the failure mode where a dry run and its --execute do different things.
     """
     resolved, blocked = {}, []
     paths = conflicted_paths(root)
@@ -493,11 +451,7 @@ def stage_resolution(plan, root, resolved):
 def equivalent(repo, base, old_tip, new_tip, runner=None):
     """Which of base..old_tip survived into new_tip, and how.
 
-    THE ORACLE A COUNT CANNOT BE. All five repos are rebase-merge only, so
-    merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases
-    onto main, git correctly DROPS the commits whose patches are already
-    upstream, and `rev-list --count` legitimately falls. Only a patch-identity
-    question tells that apart from a `--skip` that ate a commit.
+    THE ORACLE A COUNT CANNOT BE. All five repos are rebase-merge only, so merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases onto main, git correctly DROPS the commits whose patches are already upstream, and `rev-list --count` legitimately falls. Only a patch-identity question tells that apart from a `--skip` that ate a commit.
 
     TWO PROBES, EACH ASKED DIRECTLY OF GIT:
 
@@ -510,21 +464,15 @@ def equivalent(repo, base, old_tip, new_tip, runner=None):
                                        was right to drop it: ABSORBED. `+` means
                                        it was the branch's own work: CARRIED.
 
-    THE FIRST VERSION COMPARED SHAS, WHICH A REBASE HAS JUST REWRITTEN. It read
-    `git cherry base new_tip` for marks keyed by NEW shas and looked up OLD shas
-    in them, so every commit fell through to `missing` -- and it then rescued
+    THE FIRST VERSION COMPARED SHAS, WHICH A REBASE HAS JUST REWRITTEN. It read `git cherry base new_tip` for marks keyed by NEW shas and looked up OLD shas in them, so every commit fell through to `missing` -- and it then rescued
     itself with `if len(carried) + len(absorbed) >= len(old_shas): missing = []`,
-    a COUNT, in the function whose docstring says a count cannot answer this.
-    On its second live run it reported 48 of 48 commits missing on a rebase that
-    was perfectly correct.
+    a COUNT, in the function whose docstring says a count cannot answer this. On its second live run it reported 48 of 48 commits missing on a rebase that was perfectly correct.
 
     Its controls passed throughout, because the fake used the SAME sha strings
     for the old and new ranges -- the one thing a rebase never does. The
     controls below use distinct ids for exactly that reason.
 
-    Returns (carried, absorbed, missing) as lists of pre-rebase shas. `None` on
-    an unreadable probe, never an empty result, because "nothing missing" and
-    "could not tell" must not look the same.
+    Returns (carried, absorbed, missing) as lists of pre-rebase shas. `None` on an unreadable probe, never an empty result, because "nothing missing" and "could not tell" must not look the same.
     """
     run = runner or run_git
 
@@ -571,9 +519,7 @@ def classify(repo, gitlink, base_ref="origin/main"):
 def staged_deletions(repo):
     """Paths staged for deletion inside a submodule.
 
-    THE CURRENTLY-UNGUARDED GAP. The parent reports only `m private/<sub>` for a
-    dirty submodule and `git status` in the parent never shows what is staged
-    INSIDE one. A staged rm of the entire homebrew-tap contents once sat
+    THE CURRENTLY-UNGUARDED GAP. The parent reports only `m private/<sub>` for a dirty submodule and `git status` in the parent never shows what is staged INSIDE one. A staged rm of the entire homebrew-tap contents once sat
     unnoticed for hours; committing it would have deleted the published formula.
     """
     rc, out, _ = run_git(["diff", "--cached", "--name-only", "--diff-filter=D"], cwd=repo)
@@ -592,9 +538,7 @@ VOLATILE_STATE_RE = re.compile(r"^agent/([^/]+)/STATE\.md$")
 def dirty_paths(repo):
     """Every path git reports as changed, or None when the PROBE ITSELF failed.
 
-    None is not "clean". An unreadable probe is never a pass -- the same rule
-    `staged_deletions` had to learn after `if dels:` let a failed probe through
-    on two of its three call sites.
+    None is not "clean". An unreadable probe is never a pass -- the same rule `staged_deletions` had to learn after `if dels:` let a failed probe through on two of its three call sites.
     """
     rc, out, _ = run_git(["status", "--porcelain", "-z"], cwd=repo)
     if rc != 0:
@@ -618,9 +562,7 @@ def dirty_paths(repo):
 def classify_dirt(paths):
     """Split dirty paths into volatile per-session state and everything else.
 
-    Returns (owners, real): `owners` maps a session id to its document, `real`
-    is every path that is somebody's actual work. The split is what turns "the
-    tree is dirty" into "ask e580532b to commit theirs".
+    Returns (owners, real): `owners` maps a session id to its document, `real` is every path that is somebody's actual work. The split is what turns "the tree is dirty" into "ask e580532b to commit theirs".
     """
     owners, real = {}, []
     for path in paths:
@@ -666,10 +608,7 @@ def dirt_verdict(repo, me=None):
 def trees_identical(repo, a, b):
     """True when two commits have byte-identical trees.
 
-    This is the one pre-merge safety check the repo already had: rebase-merge
-    produces a NEW SHA with an IDENTICAL tree, so tree-identity is the proof
-    that moving a pointer to the rebased tip is content-neutral. A non-empty
-    diff means something diverged (main advanced mid-merge) -- stop.
+    This is the one pre-merge safety check the repo already had: rebase-merge produces a NEW SHA with an IDENTICAL tree, so tree-identity is the proof that moving a pointer to the rebased tip is content-neutral. A non-empty diff means something diverged (main advanced mid-merge) -- stop.
     """
     rc, out, _ = run_git(["diff", "--stat", a, b], cwd=repo)
     if rc != 0:
@@ -680,11 +619,7 @@ def trees_identical(repo, a, b):
 def conflict_stages(root, path):
     """{stage: sha} for a conflicted gitlink, from `git ls-files -u <path>`.
 
-    Stage 1 is the common ancestor, 2 is OURS (during a rebase that is the
-    UPSTREAM you are replaying onto), 3 is THEIRS (the commit being replayed).
-    Naming them ours/theirs is exactly what makes people reach for
-    `checkout --ours`, so this returns numbers and the caller reasons about
-    content instead.
+    Stage 1 is the common ancestor, 2 is OURS (during a rebase that is the UPSTREAM you are replaying onto), 3 is THEIRS (the commit being replayed). Naming them ours/theirs is exactly what makes people reach for `checkout --ours`, so this returns numbers and the caller reasons about content instead.
     """
     rc, out, _ = run_git(["ls-files", "-u", "--", path], cwd=root)
     if rc != 0:
@@ -708,17 +643,13 @@ def branch_exists(repo, branch):
 def resolve_gitlink_target(repo, stages, rebased_tip=None):
     """Which commit the gitlink must point at. Raises RefusalError when unknowable.
 
-    THE CASE TABLE, and the reason this function exists at all. On a gitlink
-    conflict BOTH obvious answers are wrong, and both leave a clean tree and a
-    rebase that reports success, so nothing downstream catches the rollback:
+    THE CASE TABLE, and the reason this function exists at all. On a gitlink conflict BOTH obvious answers are wrong, and both leave a clean tree and a rebase that reports success, so nothing downstream catches the rollback:
 
       checkout --ours   -> stage 2, the base's pointer: DROPS your submodule work
       checkout --theirs -> stage 3, your PRE-rebase tip: DROPS the base's work,
                            and pins a commit the submodule rebase just orphaned
 
-    The correct commit is in NEITHER stage when the submodule has its own
-    branch: it is that branch's REBASED tip, which does not exist until the
-    submodule has itself been rebased. That is why rebase-submodules runs first.
+    The correct commit is in NEITHER stage when the submodule has its own branch: it is that branch's REBASED tip, which does not exist until the submodule has itself been rebased. That is why rebase-submodules runs first.
     """
     if rebased_tip:
         return rebased_tip, "the submodule's rebased tip (in neither conflict stage)"
@@ -748,8 +679,7 @@ def validate_push_args(args):
     """Refuse anything but --force-with-lease, and refuse pushing main.
 
     --force overwrites blindly; --force-with-lease refuses to clobber a push
-    somebody else made. --mirror and a leading + on a refspec force too, and
-    both were holes in the pre-bash guard's regex before they were closed.
+    somebody else made. --mirror and a leading + on a refspec force too, and both were holes in the pre-bash guard's regex before they were closed.
     """
     for a in args:
         if a in FORBIDDEN_PUSH_FLAGS or a.startswith("--force="):
@@ -794,11 +724,7 @@ class Plan:
     def write(self, path, text):
         """A file write, as a STEP -- so the dry run prints it and execute does it.
 
-        A resolver that returns merged bytes has nothing to say in `git` verbs,
-        and doing the write outside the step list would break this class's one
-        invariant: what is printed is what runs. That invariant is not
-        decorative -- its absence is what let `--execute` print five push lines
-        and write nothing.
+        A resolver that returns merged bytes has nothing to say in `git` verbs, and doing the write outside the step list would break this class's one invariant: what is printed is what runs. That invariant is not decorative -- its absence is what let `--execute` print five push lines and write nothing.
         """
         self.steps.append(("write", path, text, None))
 
@@ -821,20 +747,14 @@ class Plan:
     def run(self, runner=None):
         """Execute the cmd steps in order, HALTING on the first failure.
 
-        THIS DID NOT EXIST UNTIL 2026-08-26, and its absence was the module's
-        worst defect. `--execute` flipped one word in render() and nothing else:
-        the tool printed `force-push (EXECUTE)`, five `[run] git ... push` lines
-        and NO "Nothing was written" footer, then wrote nothing. A session
-        reading that transcript reports a completed five-repo force-push.
-        Demonstrated before the fix: origin/0826-2 byte-identical across the run.
+        THIS DID NOT EXIST UNTIL 2026-08-26, and its absence was the module's worst defect. `--execute` flipped one word in render() and nothing else: the tool printed `force-push (EXECUTE)`, five `[run] git ... push` lines and NO "Nothing was written" footer, then wrote nothing. A session reading that transcript reports a completed five-repo force-push. Demonstrated before the
+        fix: origin/0826-2 byte-identical across the run.
 
-        HALT ON FIRST FAILURE IS LOAD-BEARING, not tidiness. The steps are
-        ordered submodules-then-console precisely because a console push naming
+        HALT ON FIRST FAILURE IS LOAD-BEARING, not tidiness. The steps are ordered submodules-then-console precisely because a console push naming
         an unpushed submodule commit is how PR #541 broke; continuing past a
         failed submodule push would publish exactly that.
 
-        `runner` is injectable so the controls can prove ordering and halting
-        without a remote.
+        `runner` is injectable so the controls can prove ordering and halting without a remote.
         """
         run = runner or run_git
         done, failed = [], None

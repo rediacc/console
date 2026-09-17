@@ -1,36 +1,23 @@
 """A PR must not be opened from a branch carrying an OLD date.
 
-WHAT WENT WRONG, 2026-08-26: PR #575 was opened from branch `0825-2`. The
-branch itself was created correctly at 23:50 the previous night, but the PR
-was filed the NEXT day, so it shipped with yesterday's number. Nothing
-noticed, because every existing pr-create guard asks a different question:
-block-nondraft-pr-create.sh asks "is it a draft", block-second-open-pr.sh
-asks "is one already open". Neither looks at the branch NAME.
+WHAT WENT WRONG, 2026-08-26: PR #575 was opened from branch `0825-2`. The branch itself was created correctly at 23:50 the previous night, but the PR was filed the NEXT day, so it shipped with yesterday's number. Nothing noticed, because every existing pr-create guard asks a different question: block-nondraft-pr-create.sh asks "is it a draft", block-second-open-pr.sh asks "is one
+already open". Neither looks at the branch NAME.
 
 The convention is stated in .claude/commands/pr-babysit.md's state block:
 
     Today (branch base): `date +%m%d`   (feature branches are `MMDD-N`)
 
-It is keyed to the day the WAVE is filed, which is what makes a stale branch
-name misleading rather than merely untidy: `git branch -r | grep "$(date
-+%m%d)-"` is how a session finds today's waves, and a PR filed from an older
-name is invisible to that lookup.
+It is keyed to the day the WAVE is filed, which is what makes a stale branch name misleading rather than merely untidy: `git branch -r | grep "$(date +%m%d)-"` is how a session finds today's waves, and a PR filed from an older name is invisible to that lookup.
 
-WHY THIS BLOCKS RATHER THAN RENAMING FOR YOU. A hook that mutated git state
-mid-command would rename the local branch while the remote kept the old one,
-leaving the push tracking a branch that no longer exists -- a worse mess than
-the one it fixed, created at the exact moment the session is not looking. So
-it does the whole computation (including picking the next free N against the
+WHY THIS BLOCKS RATHER THAN RENAMING FOR YOU. A hook that mutated git state mid-command would rename the local branch while the remote kept the old one, leaving the push tracking a branch that no longer exists -- a worse mess than the one it fixed, created at the exact moment the session is not looking. So it does the whole computation (including picking the next free N against the
 remote) and hands back a ready-to-run command.
 
 ESCAPE HATCH: PR_BRANCH_DATE_OK=1 for a deliberately long-lived branch, e.g.
-resuming a genuinely multi-day wave onto its original PR. It is an env var and
-not a flag so it cannot be pasted in by habit.
+resuming a genuinely multi-day wave onto its original PR. It is an env var and not a flag so it cannot be pasted in by habit.
 
 PORT NOTE ON THE CLOCK, and the defect it hid until 2026-09-07.
 
-`date +%m%d` is the one input here that neither side controls. The differential
-runs both implementations within seconds of each other, so they agree except
+`date +%m%d` is the one input here that neither side controls. The differential runs both implementations within seconds of each other, so they agree except
 across a midnight boundary, and `TZ=UTC` is pinned in the harness environment
 for BOTH sides so that boundary is at least the same boundary.
 
@@ -38,20 +25,16 @@ THAT PIN IS ALSO WHAT MADE THE DIFFERENTIAL BLIND. This port read the clock as
 `datetime.now(tz=datetime.UTC)` -- UTC unconditionally -- while the twin's bare
 `date +%m%d` reads LOCAL time and merely honours TZ. Under the harness both are
 UTC, so the two could never disagree there; in production, on a machine at
-UTC+2, they disagreed for the two hours after local midnight. Measured on
-2026-09-07 at 00:47 CEST: `test-hooks.sh` reported
+UTC+2, they disagreed for the two hours after local midnight. Measured on 2026-09-07 at 00:47 CEST: `test-hooks.sh` reported
 
     FAIL [0] stale-pr-branch: today's MMDD allowed (got exit 2)
 
 with the port refusing branch `0907-9` and saying "today is 0906" while the twin
-allowed it. That is a guard REFUSING correct work, which is the shape that gets a
-guard bypassed rather than obeyed.
+allowed it. That is a guard REFUSING correct work, which is the shape that gets a guard bypassed rather than obeyed.
 
 The fix is one call: `datetime.now()` is local and honours TZ, exactly as `date`
 does, so the harness's `TZ=UTC` still makes both sides agree and production now
-agrees too. The general lesson is worth the paragraph: a harness that PINS an
-environment variable removes the only input that distinguishes two
-implementations, and the differential then proves they agree about everything
+agrees too. The general lesson is worth the paragraph: a harness that PINS an environment variable removes the only input that distinguishes two implementations, and the differential then proves they agree about everything
 except the thing that differs.
 """
 

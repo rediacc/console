@@ -1,38 +1,21 @@
 """Deny a tool edit that would rewrite the SPINE of a compacted plan record.
 
-WHY THIS EXISTS. `agent/PLAN-*.md` files can be COMPACTED (W12,
-.claude/hooks/stop/wl_planrec.py): the file keeps its path, so the 2,539
-citations of those paths still resolve, and its full text moves into a git
-BLOB. The header then carries the only pointer back to that text:
+WHY THIS EXISTS. `agent/PLAN-*.md` files can be COMPACTED (W12, .claude/hooks/stop/wl_planrec.py): the file keeps its path, so the 2,539 citations of those paths still resolve, and its full text moves into a git BLOB. The header then carries the only pointer back to that text:
 
     Status: compacted
     Full-Text: <sha9> <path>
     Full-Text-Blob: <40 hex>
     Record-Sig: <8 hex>
 
-Rewrite that header by hand and the pointer is gone. Nothing errors. The file
-still looks like a document, `git show` on the old blob still works for
-whoever remembers the id, and nobody does -- so the plan's full text becomes
-unreachable in practice while the record goes on advertising a recovery
-command that returns nothing. That is strictly worse than the deletion this
-whole mechanism exists to avoid: a deleted plan announces its own absence.
+Rewrite that header by hand and the pointer is gone. Nothing errors. The file still looks like a document, `git show` on the old blob still works for whoever remembers the id, and nobody does -- so the plan's full text becomes unreachable in practice while the record goes on advertising a recovery command that returns nothing. That is strictly worse than the deletion this whole
+mechanism exists to avoid: a deleted plan announces its own absence.
 
-WHY A GUARD AND NOT A GATE ALONE. check:ci-plan-record already catches a
-broken pointer, and catching it in CI is a round trip AFTER the plan text is
-only in an object nobody can name any more. The blob is still reachable at
-that point -- `git log --find-object` will find it if you know to look -- but
-the session that made the edit has moved on, and the next reader inherits a
-file whose header is self-consistent and wrong. The cheap moment to refuse is
-the edit.
+WHY A GUARD AND NOT A GATE ALONE. check:ci-plan-record already catches a broken pointer, and catching it in CI is a round trip AFTER the plan text is only in an object nobody can name any more. The blob is still reachable at that point -- `git log --find-object` will find it if you know to look -- but the session that made the edit has moved on, and the next reader inherits a file
+whose header is self-consistent and wrong. The cheap moment to refuse is the edit.
 
-WHY IT DENIES THE SPINE AND NOT THE WHOLE FILE, which was the first design and
-was wrong. A record is meant to be SHARPENED: `Record-Sig` deliberately
-canonicalises status, pointer and the box table and NOT the prose, exactly so
-`## Why`, `## Outcome` and `## Lessons` stay editable in place -- that is the
+WHY IT DENIES THE SPINE AND NOT THE WHOLE FILE, which was the first design and was wrong. A record is meant to be SHARPENED: `Record-Sig` deliberately canonicalises status, pointer and the box table and NOT the prose, exactly so `## Why`, `## Outcome` and `## Lessons` stay editable in place -- that is the
 "sharpen; edit in place when wrong" lifetime agent/README.md:57 assigns to a
-durable design. A guard that refused every edit would make the record the one
-document in this tree nobody may correct, and an uncorrectable document is one
-people route around. So:
+durable design. A guard that refused every edit would make the record the one document in this tree nobody may correct, and an uncorrectable document is one people route around. So:
 
   DENIED   a Write (whole-file replacement always carries the spine), and any
            Edit/MultiEdit/NotebookEdit whose old or new text contains a header
@@ -40,43 +23,26 @@ people route around. So:
   ALLOWED  a prose edit, silently. That is the common case and it must stay
            frictionless.
 
-THE TWO LEGITIMATE WAYS TO CHANGE A SPINE both go through Python and neither
-touches the Edit tool, so neither is affected by this guard:
+THE TWO LEGITIMATE WAYS TO CHANGE A SPINE both go through Python and neither touches the Edit tool, so neither is affected by this guard:
 
     worklist.py --plan-revive  <me> <path> --write   full text back from the blob
     worklist.py --plan-compact <me> <path> --write   re-derive the record
 
-FAILS OPEN, on purpose and in every direction: no jq, no file, an unreadable
-payload, a path that is not a plan, a plan that is not a record. This guard
-can only ever turn an allowed edit into a refused one, so every uncertainty
-resolves to `exit 0`. The gate is the backstop.
+FAILS OPEN, on purpose and in every direction: no jq, no file, an unreadable payload, a path that is not a plan, a plan that is not a record. This guard can only ever turn an allowed edit into a refused one, so every uncertainty resolves to `exit 0`. The gate is the backstop.
 
-RESIDUAL, named rather than implied: a session can still `cat > file` from
-Bash, which this chain never sees. That is not a hole worth a second guard --
-check:ci-plan-record fails on the result, and the pre-bash chain already
-refuses the shapes worth refusing. What this closes is the ACCIDENT, which is
-the one that actually happens: an Edit aimed at prose that swallows the header
+RESIDUAL, named rather than implied: a session can still `cat > file` from Bash, which this chain never sees. That is not a hole worth a second guard -- check:ci-plan-record fails on the result, and the pre-bash chain already refuses the shapes worth refusing. What this closes is the ACCIDENT, which is the one that actually happens: an Edit aimed at prose that swallows the header
 because the old_string was anchored one line too high.
 
-PORT NOTE ON `set -uo pipefail`. `-u` turns an unset variable into an error and
-`pipefail` gives a pipeline the status of its first failing stage. Neither has
-an observable effect on this guard's three outputs -- every variable it reads is
-assigned first, and every pipeline's status is discarded or already handled by a
-`|| exit 0` -- and neither concept exists in Python, so the line survives only
-here. It is worth recording because it is the ONLY guard in this chain that sets
-either option, which is a fact about the file rather than about bash.
+PORT NOTE ON `set -uo pipefail`. `-u` turns an unset variable into an error and `pipefail` gives a pipeline the status of its first failing stage. Neither has an observable effect on this guard's three outputs -- every variable it reads is assigned first, and every pipeline's status is discarded or already handled by a `|| exit 0` -- and neither concept exists in Python, so the
+line survives only here. It is worth recording because it is the ONLY guard in this chain that sets either option, which is a fact about the file rather than about bash.
 
 PORT NOTE ON `${#_body}`. bash counts CHARACTERS in the current locale, so the
 12-character floor below is a byte count under `LC_ALL=C` (which the
-differential exports) and a codepoint count under a UTF-8 session. The port
-spells it as `len()` on the string, i.e. the UTF-8 reading, because that is the
+differential exports) and a codepoint count under a UTF-8 session. The port spells it as `len()` on the string, i.e. the UTF-8 reading, because that is the
 locale a session actually runs in; the two answers can only differ for a box
 body that is non-ASCII AND within a few characters of the floor.
 
-PORT NOTE ON `break 2`. The bash breaks out of BOTH loops at once, which is why
-the box search cannot report a second match. The port returns the reason
-straight out of a helper instead, which is the same control flow with the
-nesting made explicit rather than counted.
+PORT NOTE ON `break 2`. The bash breaks out of BOTH loops at once, which is why the box search cannot report a second match. The port returns the reason straight out of a helper instead, which is the same control flow with the nesting made explicit rather than counted.
 """
 
 import os
@@ -305,10 +271,7 @@ def _field(pattern, head10):
 def _box_body_hit(file_text, fragments):
     """The `break 2` double loop: does any fragment name a box's TEXT?
 
-    BOTH DIRECTIONS, because an Edit quotes a MINIMAL unique substring and a
-    one-direction test misses half the cases. `old_string` may be the whole box
-    body (body inside the fragment) or the shortest distinguishing part of it
-    (fragment inside the body).
+    BOTH DIRECTIONS, because an Edit quotes a MINIMAL unique substring and a one-direction test misses half the cases. `old_string` may be the whole box body (body inside the fragment) or the shortest distinguishing part of it (fragment inside the body).
     """
     lines = hookio.grep_lines(BOX_LINE, file_text)
     pieces, _ = hookio._records(hookio._here_string(fragments))

@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 """First touch of a context epoch: say what this session already owns.
 
-WHY THIS EXISTS. The Stop hook already tells a session what to do -- but only
-once it tries to stop, which is after the work. A fresh session, and above all a
-POST-COMPACTION session, arrives with no memory of the store and learns the rules
-by hitting the wall: it finishes a job, writes a `## Remaining` section from
-memory, and the hook refuses it. The operator's words were that these sessions
-"hit the wall and repeat the same mistakes like completing the job without
-updating the remainings by invoking stop hook's commands with specific
-arguments".
+WHY THIS EXISTS. The Stop hook already tells a session what to do -- but only once it tries to stop, which is after the work. A fresh session, and above all a POST-COMPACTION session, arrives with no memory of the store and learns the rules by hitting the wall: it finishes a job, writes a `## Remaining` section from memory, and the hook refuses it. The operator's words were that
+these sessions "hit the wall and repeat the same mistakes like completing the job without updating the remainings by invoking stop hook's commands with specific arguments".
 
-WHERE IT FIRES, and both alternatives were measured rather than argued (see
-agent/PLAN-session-onboarding-marker.md section 4):
+WHERE IT FIRES, and both alternatives were measured rather than argued (see agent/PLAN-session-onboarding-marker.md section 4):
 
   * NOT SessionStart. Its output lands behind a large system prompt and two
     other blocks, and this repo has already concluded a wall of text there is
@@ -22,19 +15,14 @@ agent/PLAN-session-onboarding-marker.md section 4):
   * The first TOOL CALL of the epoch. Across four working sessions those landed
     at +0.3, +3.0, +0.1 and +0.3 minutes -- before every observed refusal.
 
-THE ANTI-NAG RULE IS THE LOAD-BEARING PART. In the corpus 38 of 41 sessions never
-edited a file and used 6-39 tool calls each. An unconditional first-tool-call
-notice would have fired on all 38 with nothing to say, and a notice that is noise
-38 times out of 41 is a notice nobody reads on the other three. So:
+THE ANTI-NAG RULE IS THE LOAD-BEARING PART. In the corpus 38 of 41 sessions never edited a file and used 6-39 tool calls each. An unconditional first-tool-call notice would have fired on all 38 with nothing to say, and a notice that is noise 38 times out of 41 is a notice nobody reads on the other three. So:
 
   arm (a)  the session OWNS open items -> speak at tool call #1.
   arm (b)  it owns nothing -> stay silent until it edits a file, then speak once.
 
 Never both, at most one emission per epoch.
 
-SAFETY. This is a PostToolUse hook, so it must never break a tool call: every
-path exits 0, every exception is swallowed and written to state/errors.log, and
-stdout stays empty unless there is genuinely something to say.
+SAFETY. This is a PostToolUse hook, so it must never break a tool call: every path exits 0, every exception is swallowed and written to state/errors.log, and stdout stays empty unless there is genuinely something to say.
 """
 
 import contextlib
@@ -56,10 +44,7 @@ EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
 def marker_file(session_id):
     """Its OWN file, deliberately not a key in the band state.
 
-    band-notice.py load/saves that file on every tool call. Two hooks on one
-    event may run in parallel, and a last-writer-wins clobber would silently
-    lose either this marker or the band ladder -- a failure that looks like
-    "the notice just didn't fire".
+    band-notice.py load/saves that file on every tool call. Two hooks on one event may run in parallel, and a last-writer-wins clobber would silently lose either this marker or the band ladder -- a failure that looks like "the notice just didn't fire".
     """
     return B.state_dir() / ("%s-onboard.json" % B.session_slug(session_id))
 
@@ -81,12 +66,8 @@ def save_marker(session_id, data):
 def current_epoch(session_id):
     """Read-only peek at the band state's epoch counter.
 
-    THE ASYMMETRY THIS EXISTS FOR: an in-place compaction can fire NEITHER
-    SessionStart nor PostCompact. It still moves the epoch, through the
-    usage-drop backstop in band-notice.py -- the only thing in the tree that
-    sees that case. So a marker whose recorded epoch differs from the current
-    one re-arms itself, and that mismatch is how this marker learns about a
-    compaction no hook saw.
+    THE ASYMMETRY THIS EXISTS FOR: an in-place compaction can fire NEITHER SessionStart nor PostCompact. It still moves the epoch, through the usage-drop backstop in band-notice.py -- the only thing in the tree that sees that case. So a marker whose recorded epoch differs from the current one re-arms itself, and that mismatch is how this marker learns about a compaction no hook
+    saw.
     """
     try:
         return int(B.load_state(session_id).get("epoch", 0))
@@ -97,9 +78,7 @@ def current_epoch(session_id):
 def my_open_items(session_id):
     """(rows, count) for THIS session's open slice, or ([], None) if unknown.
 
-    None is not zero. A worklist that cannot be run must not read as "owns
-    nothing" -- that is arm (b)'s condition, and firing it on a broken store
-    would deliver the wrong notice with confidence.
+    None is not zero. A worklist that cannot be run must not read as "owns nothing" -- that is arm (b)'s condition, and firing it on a broken store would deliver the wrong notice with confidence.
     """
     hook = Path(__file__).resolve().parents[1] / "stop" / "worklist.py"
     if not hook.is_file():
@@ -172,10 +151,7 @@ def emit(text):
 def arm(session_id):
     """SessionStart / PostCompact. epoch is written as null ON PURPOSE.
 
-    At PostCompact the registered hooks may run in parallel, so this cannot know
-    whether the epoch counter has been bumped yet, and reading it here would be
-    a race. The next tool call adopts whatever epoch it sees, in a
-    single-writer context.
+    At PostCompact the registered hooks may run in parallel, so this cannot know whether the epoch counter has been bumped yet, and reading it here would be a race. The next tool call adopts whatever epoch it sees, in a single-writer context.
     """
     m = load_marker(session_id)
     now = time.time()

@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """Stop hook: refuse to end a turn while tracked work remains unhandled.
 
-WHY: the failure this prevents is stopping to REPORT a discovery instead of
-acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state
-machine, the harness task queue, cross-session requests, the regression
-gate, the poll fast path) lives in the sibling modules beside each piece of
+WHY: the failure this prevents is stopping to REPORT a discovery instead of acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state machine, the harness task queue, cross-session requests, the regression gate, the poll fast path) lives in the sibling modules beside each piece of
 logic; this file is only the ENTRY POINT: the recursion guard, the CLI
 dispatch, and the fail-closed wrapper.
 
-v10 (2026-07-30, operator request): the item store moved from the markdown
-file to an append-only JSONL event log (wl_store: the markdown stays as a
+v10 (2026-07-30, operator request): the item store moved from the markdown file to an append-only JSONL event log (wl_store: the markdown stays as a
 synced INBOX, so nothing written there is ever silently ignored); every item
 carries start and last-update stamps; in-flight claims are verified against
 the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals
@@ -19,49 +15,22 @@ staleness; and the judge caches identical verdicts (wl_judge). The one
 3600-line file became nine modules; worklist_messages.py remains the
 catalogue of user-facing prose.
 
-v12 (2026-07-30, operator request: "Too many '[?]'. This is an escape
-hatch."): a deferral must EARN its seat. --defer validates WHY:/HOW: (plus
-optional TRIED:/NEEDS:/BLOCKED_ON:) at creation and stores them as real
+v12 (2026-07-30, operator request: "Too many '[?]'. This is an escape hatch."): a deferral must EARN its seat. --defer validates WHY:/HOW: (plus optional TRIED:/NEEDS:/BLOCKED_ON:) at creation and stores them as real
 fields; an aged [?] without them is demanded, bounded per stop (wl_checks);
-a justified one faces the judge's audit riding the existing judge call, and
-a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit
+a justified one faces the judge's audit riding the existing judge call, and a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit
 fails closed); and a session whose only in-flight work is a CI watch is
-FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every
-demand's exit is completable alone in one turn: do it and tick with
-evidence, execute the DEFAULT, or answer the WHY/HOW honestly.
+FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every demand's exit is completable alone in one turn: do it and tick with evidence, execute the DEFAULT, or answer the WHY/HOW honestly.
 
-v17 (2026-08-04, operator report: "normally there is exponential backoff for
-the stop hook. It seems it's running every 5 mins."): it WAS, and the cause
-was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared
-markdown, event log and requests file, so any teammate's --add or --tick broke
+v17 (2026-08-04, operator report: "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins."): it WAS, and the cause was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared markdown, event log and requests file, so any teammate's --add or --tick broke
 every other session's poll baseline and invalidated its judge cache; measured
-on the live store, 32 of 32 events in a three-hour window were foreign and
-polluted half the five-minute windows. The signature is this session's own
-world now (wl_store.world_sig, wl_store.my_requests_sig). Two smaller fixes
-ride with it: the background check-in's clock is cleared when the wait ENDS
-(it used to freeze, so re-entering a wait fired the roster demand on arrival),
-and it prints its last-fired and next-earliest stamps so the latch it claims
-is checkable from the message. New: the NO-OP WAKE LADDER (wl_checks
-.quiet_wake_sig / quiet_wake_bump / quiet_wake_note) counts wakes on which
-nothing measurably moved and, after three, collapses the whole stop to one
-line asking for the next rung of the 5/10/20/40/60 poll ladder. It suppresses
-ADVISORY output only: every violation that can block still blocks.
+on the live store, 32 of 32 events in a three-hour window were foreign and polluted half the five-minute windows. The signature is this session's own world now (wl_store.world_sig, wl_store.my_requests_sig). Two smaller fixes ride with it: the background check-in's clock is cleared when the wait ENDS (it used to freeze, so re-entering a wait fired the roster demand on arrival), and
+it prints its last-fired and next-earliest stamps so the latch it claims is checkable from the message. New: the NO-OP WAKE LADDER (wl_checks .quiet_wake_sig / quiet_wake_bump / quiet_wake_note) counts wakes on which nothing measurably moved and, after three, collapses the whole stop to one line asking for the next rung of the 5/10/20/40/60 poll ladder. It suppresses ADVISORY
+output only: every violation that can block still blocks.
 
-v18 (2026-08-04, operator: "we don't need to print next wakeup times. We
-should just track the hook moments and notify/warn when needed. let's go for
-efficient ai context usage"): two standing sections that printed on every full
-stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled
+v18 (2026-08-04, operator: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage"): two standing sections that printed on every full stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled
 task's next firing plus its prompt label) is gone; the schedules are still
-tracked by the cron-shape checks, the backoff ladder, the loop-death detector
-and the judge's loop line, and the one actionable thing the list carried is
-now its own silent-until-broken warning (wl_checks.broken_schedules,
-V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the
-store") is gone too, which lets a clean stop with nothing queued exit with
-zero bytes the way the poll fast path does. Both supersede earlier deliberate
-choices ("a short honest line, never ambiguous silence"): silence is no longer
-ambiguous now that the fast path is silent many times an hour. The rule going
-forward is silent when there is nothing to act on, one focused message when
-there is.
+tracked by the cron-shape checks, the backoff ladder, the loop-death detector and the judge's loop line, and the one actionable thing the list carried is now its own silent-until-broken warning (wl_checks.broken_schedules, V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the store") is gone too, which lets a clean stop with nothing queued exit with zero
+bytes the way the poll fast path does. Both supersede earlier deliberate choices ("a short honest line, never ambiguous silence"): silence is no longer ambiguous now that the fast path is silent many times an hour. The rule going forward is silent when there is nothing to act on, one focused message when there is.
 
 MODULE MAP:
     wl_core       shared primitives (paths, git, regexes, tasks, transcript)
@@ -92,12 +61,9 @@ INVARIANTS THAT MUST NOT MOVE:
     malformed output BLOCKS. A block you can fix is a bug report with
     teeth, not a deadlock.
 
-SIBLING IMPORTS ARE PROBED, NOT ASSUMED. A top-level ImportError would
-crash before the fail-closed wrapper exists, print nothing to stdout, and
+SIBLING IMPORTS ARE PROBED, NOT ASSUMED. A top-level ImportError would crash before the fail-closed wrapper exists, print nothing to stdout, and
 read as ALLOW. So every sibling is imported inside a probe; a broken one is
-replaced by a shim whose every attribute access raises, naming EVERY broken
-module. Query modes that need no sibling (--path, --help) keep working, and
-the Stop path blocks loudly instead of failing open.
+replaced by a shim whose every attribute access raises, naming EVERY broken module. Query modes that need no sibling (--path, --help) keep working, and the Stop path blocks loudly instead of failing open.
 
 What still allows a stop:
   1. An empty world: no open items, no pending tasks, no obligations.
@@ -126,8 +92,7 @@ _MODS = {}
 
 class _BrokenModule:
     """Every attribute access raises, naming every unusable sibling, so the
-    first USE fails into the crash handler with the full picture. The
-    message lists all broken modules because the first attribute touched is
+    first USE fails into the crash handler with the full picture. The message lists all broken modules because the first attribute touched is
     rarely the interesting one."""
 
     def __init__(self, name):
@@ -183,11 +148,7 @@ if "wl_ci" not in _BROKEN:
 
 def _local_project_start(event=None):
     """Self-contained twin of wl_core.project_start, for the same reason
-    _local_worklist_path exists: --path and the self-contained append modes
-    must answer even when every sibling module is broken, and reaching for
-    C.project_start() there would raise out of _BrokenModule instead. Keep in
-    lockstep with wl_core.project_start -- including the ladder ORDER, since a
-    divergence here would silently point --path at a different store than the
+    _local_worklist_path exists: --path and the self-contained append modes must answer even when every sibling module is broken, and reaching for C.project_start() there would raise out of _BrokenModule instead. Keep in lockstep with wl_core.project_start -- including the ladder ORDER, since a divergence here would silently point --path at a different store than the
     hook writes to."""
     env = os.environ.get("CLAUDE_PROJECT_DIR")
     if env:
@@ -204,8 +165,7 @@ def _local_project_start(event=None):
 
 def _local_worklist_path(start):
     """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the
-    self-contained append modes and the broken-sibling block, so the queries
-    every script depends on work even when every sibling is missing. Keep in
+    self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in
     lockstep with wl_core.worklist_for."""
     p = pathlib.Path(start).resolve()
     root = p
@@ -235,17 +195,9 @@ def _identity_or_die(me, die):
     """Refuse a `<me>` that this process cannot be. See wl_core.check_me for the
     incident that bought this.
 
-    Applied at EVERY `<me>` parse site, and the completeness is the point: the
-    defect's shape is "a rule applied to some call sites and not others", so a
-    partial rollout reproduces the bug in whichever verbs were missed. The
-    suite's anti-vacuity case derives the verb list from this source and fails
-    when a verb it finds has no coverage, so verb 14 cannot silently reopen it.
+    Applied at EVERY `<me>` parse site, and the completeness is the point: the defect's shape is "a rule applied to some call sites and not others", so a partial rollout reproduces the bug in whichever verbs were missed. The suite's anti-vacuity case derives the verb list from this source and fails when a verb it finds has no coverage, so verb 14 cannot silently reopen it.
 
-    A BROKEN wl_core DEGRADES TO PASS rather than crashing. --brief and --loop
-    are deliberately self-contained (a broken sibling must not take the roster
-    or the loop channel down), and an unresolvable identity is already the
-    documented "cannot verify, so say nothing" case. The Stop path still fails
-    closed on the same broken module a few lines below.
+    A BROKEN wl_core DEGRADES TO PASS rather than crashing. --brief and --loop are deliberately self-contained (a broken sibling must not take the roster or the loop channel down), and an unresolvable identity is already the documented "cannot verify, so say nothing" case. The Stop path still fails closed on the same broken module a few lines below.
     """
     if "wl_core" in _BROKEN:
         return
@@ -265,22 +217,11 @@ STATE_STDIN_WAIT_SECONDS = 30.0
 def _read_document(seconds: float = STATE_STDIN_WAIT_SECONDS):
     """Read a document from stdin to EOF, bounded on the FIRST byte. -> (text, ok).
 
-    WHY THIS IS NOT `sys.stdin.read()`, which is what `--state` used to call.
-    `isatty()` catches an interactive terminal and nothing else, and the case it
-    misses is the one that actually happens: stdin inherited from a parent that
-    holds the write end open and never writes. A backgrounded tool invocation
-    hands over exactly that, and a bare read then blocks forever. Measured
-    2026-09-08 -- a `--state` call sat for 81 minutes, silent, its OS process
-    alive, until it was killed by hand. `_read_event` above already carries this
-    lesson in its own docstring: a process that hangs is worse than one that
-    fails, because it stalls the session instead of failing it. The verb that
-    writes the compaction-recovery document had the property the hook beside it
-    was fixed for.
+    WHY THIS IS NOT `sys.stdin.read()`, which is what `--state` used to call. `isatty()` catches an interactive terminal and nothing else, and the case it misses is the one that actually happens: stdin inherited from a parent that holds the write end open and never writes. A backgrounded tool invocation hands over exactly that, and a bare read then blocks forever. Measured
+    2026-09-08 -- a `--state` call sat for 81 minutes, silent, its OS process alive, until it was killed by hand. `_read_event` above already carries this lesson in its own docstring: a process that hangs is worse than one that fails, because it stalls the session instead of failing it. The verb that writes the compaction-recovery document had the property the hook beside it was
+    fixed for.
 
-    THE DEADLINE IS ON THE FIRST BYTE, not on the whole document. A writer that
-    has started is a writer that will finish, and bounding the total would refuse
-    a legitimate slow producer halfway through and write nothing. Nothing arriving
-    at all is the failure being bounded here.
+    THE DEADLINE IS ON THE FIRST BYTE, not on the whole document. A writer that has started is a writer that will finish, and bounding the total would refuse a legitimate slow producer halfway through and write nothing. Nothing arriving at all is the failure being bounded here.
     """
     try:
         fd = sys.stdin.fileno()
@@ -325,8 +266,7 @@ def _read_event():
        that version had to be SIGKILLed. A hook that hangs is worse than one
        that crashes, because it stalls the session instead of failing it.
 
-    So: wait for readability with a DEADLINE, then read what is there. Late
-    payload → we wait for it. No payload → we give up, loudly, in bounded time.
+    So: wait for readability with a DEADLINE, then read what is there. Late payload → we wait for it. No payload → we give up, loudly, in bounded time.
     """
     deadline = time.monotonic() + STDIN_WAIT_SECONDS
     try:
@@ -388,20 +328,12 @@ PLAN_SLUG_RE = re.compile(r"[^a-z0-9-]+")
 def _triage_cli(argv, worklist, me, die):
     """--triage <me> [--id <id>] <finding...>: how does this finding get fixed?
 
-    WHY (operator, 2026-07-31): the fix-in-session rule says a finding is
-    fixed by the session that finds it, and the only excuse that ever beat
-    that rule was "it is too big for right now". So the machinery answers the
-    size question itself and hands back the exact next command: fix it
-    inline, or write a plan file and implement it this session, or the one
-    door that genuinely makes it someone else's.
+    WHY (operator, 2026-07-31): the fix-in-session rule says a finding is fixed by the session that finds it, and the only excuse that ever beat that rule was "it is too big for right now". So the machinery answers the size question itself and hands back the exact next command: fix it inline, or write a plan file and implement it this session, or the one door that genuinely makes
+    it someone else's.
 
-    DELIBERATELY ASYMMETRIC with the stop judge, which fails CLOSED because
-    it gates an exit. This is a decision aid on a CLI path, so a judge error
-    DEGRADES to the self-assessment printout with the error named, exit 0,
+    DELIBERATELY ASYMMETRIC with the stop judge, which fails CLOSED because it gates an exit. This is a decision aid on a CLI path, so a judge error DEGRADES to the self-assessment printout with the error named, exit 0,
     and WORKLIST_JUDGE=off degrades the same way silently. Degraded mode
-    records NO triage event: the machinery must not claim a verdict it did
-    not produce. The `add` event still lands either way, so the finding is
-    tracked regardless of whether the judge could answer.
+    records NO triage event: the machinery must not claim a verdict it did not produce. The `add` event still lands either way, so the finding is tracked regardless of whether the judge could answer.
     """
     args = argv[2:]
     item_id = ""
@@ -478,28 +410,15 @@ def _triage_cli(argv, worklist, me, die):
 def _planrec_cli(argv):
     """--plan-compact / --plan-revive: the W12 record verbs.
 
-    WHY THESE ARE VERBS AND NOT AN EDIT. A record's `Full-Text-Blob` is
-    `git hash-object` of the plan's bytes, and the record then OVERWRITES those
-    bytes. Get the order wrong by hand -- edit first, hash after -- and the
-    pointer names content that exists nowhere, which loses the plan. So the
-    ordering lives in one function, the path is refused when it is dirty, and
-    the write is a tempfile plus `os.replace` (wl_planrec.write_atomic).
+    WHY THESE ARE VERBS AND NOT AN EDIT. A record's `Full-Text-Blob` is `git hash-object` of the plan's bytes, and the record then OVERWRITES those bytes. Get the order wrong by hand -- edit first, hash after -- and the pointer names content that exists nowhere, which loses the plan. So the ordering lives in one function, the path is refused when it is dirty, and the write is a
+    tempfile plus `os.replace` (wl_planrec.write_atomic).
 
-    A DRY RUN IS THE DEFAULT. `--write` is opt-in because compaction is the one
-    operation here that replaces a document with a smaller one, and a session
-    should read the record before it stands in for the plan.
+    A DRY RUN IS THE DEFAULT. `--write` is opt-in because compaction is the one operation here that replaces a document with a smaller one, and a session should read the record before it stands in for the plan.
 
-    THE BLOB EXISTS BECAUSE THE PATH WAS COMMITTED, not because anything here
-    stored it. `git hash-object` without `-w` computes an id and writes NOTHING,
-    and `wl_planrec.derive` does not pass `-w`. What makes the pointer real is
-    the dirty-path refusal: a committed file's blob is already in the object
-    database and stays reachable through history. The two are one mechanism, so
-    do not relax the refusal without giving the pointer another guarantee.
+    THE BLOB EXISTS BECAUSE THE PATH WAS COMMITTED, not because anything here stored it. `git hash-object` without `-w` computes an id and writes NOTHING, and `wl_planrec.derive` does not pass `-w`. What makes the pointer real is the dirty-path refusal: a committed file's blob is already in the object database and stays reachable through history. The two are one mechanism, so do
+    not relax the refusal without giving the pointer another guarantee.
 
-    NEVER COMMITS. Same rule as every other verb in this file, and it matters
-    more here: the record and `.ci/config/plan-boxes.json` must land in the SAME
-    commit or check:ci-plan-boxes reads the ledger's staleness as a vanished box.
-    The success message says so rather than doing it.
+    NEVER COMMITS. Same rule as every other verb in this file, and it matters more here: the record and `.ci/config/plan-boxes.json` must land in the SAME commit or check:ci-plan-boxes reads the ledger's staleness as a vanished box. The success message says so rather than doing it.
     """
 
     def die(msg):
@@ -604,17 +523,10 @@ def _planrec_cli(argv):
 def _planwhy_cli(argv):
     """--plan-why [<me>] <path>: what the compacted history says about one file.
 
-    NO IDENTITY IS REQUIRED and that is deliberate: this verb writes nothing, and
-    the sibling verbs take `<me>` only because a WRITE has to be attributable. A
-    leading argument that looks like a session prefix is accepted and skipped
-    anyway, because a session that has just typed `--plan-compact <me> ...` will
+    NO IDENTITY IS REQUIRED and that is deliberate: this verb writes nothing, and the sibling verbs take `<me>` only because a WRITE has to be attributable. A leading argument that looks like a session prefix is accepted and skipped anyway, because a session that has just typed `--plan-compact <me> ...` will
     type it here too, and refusing that would be a usage error over a habit.
 
-    THE EMPTY ANSWER IS AFFIRMATIVE. "No record names this file" is a RESULT: the
-    index was read, N records were searched, none of them cited this path. That is
-    different from "there is no index", and both are different from printing
-    nothing -- which is what a session reads as "the tool is broken" and then
-    stops using. wl_planrec.why_lines returns which of the three it is, and each
+    THE EMPTY ANSWER IS AFFIRMATIVE. "No record names this file" is a RESULT: the index was read, N records were searched, none of them cited this path. That is different from "there is no index", and both are different from printing nothing -- which is what a session reads as "the tool is broken" and then stops using. wl_planrec.why_lines returns which of the three it is, and each
     gets its own sentence.
     """
 
@@ -649,15 +561,9 @@ def _planwhy_cli(argv):
 def _plantick_cli(argv):
     """--plan-tick <me> <path> <box> <evidence...> [--write].
 
-    ONE RUN, TWO FILES, and the pairing is the whole point. `.ci/config/plan-boxes.json`
-    is a committed second reading of the same boxes and check:ci-plan-boxes's A0
-    compares them for equality, so a box ticked with the Edit tool and a ledger
-    left alone is a red tree with a remedy nobody remembers. Both writes happen
-    here or neither does.
+    ONE RUN, TWO FILES, and the pairing is the whole point. `.ci/config/plan-boxes.json` is a committed second reading of the same boxes and check:ci-plan-boxes's A0 compares them for equality, so a box ticked with the Edit tool and a ledger left alone is a red tree with a remedy nobody remembers. Both writes happen here or neither does.
 
-    NEVER COMMITS, same as every verb in this file, and here it matters twice
-    over: the two files must land in the SAME commit or the gate reads the ledger's
-    staleness as a box that vanished. The success message says so.
+    NEVER COMMITS, same as every verb in this file, and here it matters twice over: the two files must land in the SAME commit or the gate reads the ledger's staleness as a box that vanished. The success message says so.
     """
 
     def die(msg):
@@ -938,15 +844,10 @@ def _item_cli(argv, worklist):
 def _annotated_running(ids, me):
     """Render harness-reported running task ids with their output-file age.
 
-    The bare id list reads as a roster of LIVE workers, and it is not: it is
-    the harness's last word, and an entry stays in it after its process dies.
-    A caller in this session read that list literally, concluded a worker was
-    alive, and came within one command of pointing a second writer at the files
-    a dead worker had been given. The age is the cheapest available correction:
-    it comes from the output stream's mtime, which no self-report can fake.
+    The bare id list reads as a roster of LIVE workers, and it is not: it is the harness's last word, and an entry stays in it after its process dies. A caller in this session read that list literally, concluded a worker was alive, and came within one command of pointing a second writer at the files a dead worker had been given. The age is the cheapest available correction: it
+    comes from the output stream's mtime, which no self-report can fake.
 
-    Silent about what it cannot measure. A task with no output file yet (an
-    agent that reports only at completion) is printed bare rather than accused,
+    Silent about what it cannot measure. A task with no output file yet (an agent that reports only at completion) is printed bare rather than accused,
     for the same reason the ladder reports an unverifiable worker instead of
     declaring it dead.
     """
@@ -983,21 +884,13 @@ def _annotated_running(ids, me):
 def _migrate_cli(argv):
     """`--migrate <me> --candidates [--json]` and `--migrate <me> <prev>...`.
 
-    THE VERB BEHIND /migrate. Its whole reason to exist is a machine switch: the
-    event log now travels in git, so a session's remaining work arrives on the
-    new machine, but it arrives OWNED BY A SESSION THAT IS NOT RUNNING THERE --
-    visible, and blocking nobody. This re-tags it to the session in front of the
-    operator.
+    THE VERB BEHIND /migrate. Its whole reason to exist is a machine switch: the event log now travels in git, so a session's remaining work arrives on the new machine, but it arrives OWNED BY A SESSION THAT IS NOT RUNNING THERE -- visible, and blocking nobody. This re-tags it to the session in front of the operator.
 
-    RE-TAG, chosen by the operator over an alias, and the consequence is the
-    point: after the move the items are MINE, so the Stop hook blocks on them
-    exactly as it would on work I typed myself. The originals are ticked with a
+    RE-TAG, chosen by the operator over an alias, and the consequence is the point: after the move the items are MINE, so the Stop hook blocks on them exactly as it would on work I typed myself. The originals are ticked with a
     note naming the new id; nothing is deleted, and the log still says who did
     the work.
 
-    NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing
-    is one command and the move is another, because "continue everything you
-    find" is precisely the shape that would sweep up a colleague's session.
+    NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing is one command and the move is another, because "continue everything you find" is precisely the shape that would sweep up a colleague's session.
     """
     if len(argv) < 2:
         sys.stderr.write(M.CLI_MIGRATE_USAGE)
@@ -1192,18 +1085,12 @@ def _migrate_cli(argv):
 def _adopt_cli(argv):
     """`--adopt <me> <prev>`: record that a compaction split one conversation.
 
-    THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and
-    is proven by ABSENCE: an identity that wrote events and never stopped. --adopt
-    joins two REAL identities and is proven by PRESENCE: harness-written evidence
-    that both transcripts belong to one conversation. Merging them would mean one
-    verb whose evidence test flips depending on its argument, so they stay apart.
+    THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and is proven by ABSENCE: an identity that wrote events and never stopped. --adopt joins two REAL identities and is proven by PRESENCE: harness-written evidence that both transcripts belong to one conversation. Merging them would mean one verb whose evidence test flips depending on its argument, so they
+    stay apart.
 
     There is deliberately NO --force. The whole value of the edge is that it was
     proven; an unprovable one recorded anyway would let any session claim any
-    other's items, which is precisely what the ownership rule exists to prevent.
-    When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID
-    override remains, and that is recorded as a human's declaration rather than as
-    a derived fact.
+    other's items, which is precisely what the ownership rule exists to prevent. When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID override remains, and that is recorded as a human's declaration rather than as a derived fact.
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_ADOPT_USAGE)
@@ -1262,10 +1149,7 @@ def _adopt_cli(argv):
 def _reassign_cli(argv):
     """`--reassign <me> <phantom-prefix>`: take over a dead identity's work.
 
-    THE REPAIR VERB for what the identity check cannot heal by refusing: items
-    and requests already written under a `<me>` that was never a session. The
-    Stop hook's phantom backstop points here, and a backstop with no fix verb is
-    a nag.
+    THE REPAIR VERB for what the identity check cannot heal by refusing: items and requests already written under a `<me>` that was never a session. The Stop hook's phantom backstop points here, and a backstop with no fix verb is a nag.
 
     THREE RULES, each one guarding a way this could become a weapon:
 
@@ -1280,9 +1164,7 @@ def _reassign_cli(argv):
       is worse than one that is untidy.
 
     Appends `reassign` events; nothing is ever rewritten. Both logs are
-    append-only and fold-derived, which is what makes the lock-free design
-    sound, and the fold arms that read these events live beside the events they
-    interpret (wl_store._fold_events, wl_requests.read_requests).
+    append-only and fold-derived, which is what makes the lock-free design sound, and the fold arms that read these events live beside the events they interpret (wl_store._fold_events, wl_requests.read_requests).
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_REASSIGN_USAGE)
@@ -1364,18 +1246,10 @@ def _reassign_cli(argv):
 def _teammate_idle_cli():
     """Journal one TeammateIdle edge. Best effort, by design.
 
-    The payload carries the COMMON hook fields (session_id, transcript_path,
-    cwd, hook_event_name) plus agent_id/agent_type in subagent context. It does
-    NOT carry the teammate's name, so the name is recovered from the sibling
-    meta.json the harness wrote next to the transcript -- the same file
-    `wl_liveness._teammate_meta` joins on, read from the other end.
+    The payload carries the COMMON hook fields (session_id, transcript_path, cwd, hook_event_name) plus agent_id/agent_type in subagent context. It does NOT carry the teammate's name, so the name is recovered from the sibling meta.json the harness wrote next to the transcript -- the same file `wl_liveness._teammate_meta` joins on, read from the other end.
 
-    A record with NO name is still written, keyed by agent id. It costs one line
-    and it is the only evidence available that this hook fires here AT ALL,
-    which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature
-    that silently writes nothing when the event does not fire is
-    indistinguishable from one that is working, which is the whole class of
-    error this item exists to remove.
+    A record with NO name is still written, keyed by agent id. It costs one line and it is the only evidence available that this hook fires here AT ALL, which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature that silently writes nothing when the event does not fire is indistinguishable from one that is working, which is the whole class of error this item exists to
+    remove.
     """
     import wl_store as S  # noqa: PLC0415 -- sibling, probed not assumed
 

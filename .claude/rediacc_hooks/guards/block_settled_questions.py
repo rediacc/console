@@ -1,71 +1,37 @@
 """Refuse an AskUserQuestion whose answer CLAUDE.md already gives.
 
-THE PROBLEM, in the operator's words: "I don't know why you ask this question
-on each new session. It seems that my CLAUDE.md doesn't override you on each
-new session. See the big-bang statements there. Find a way to go for big-bang
-on each session."
+THE PROBLEM, in the operator's words: "I don't know why you ask this question on each new session. It seems that my CLAUDE.md doesn't override you on each new session. See the big-bang statements there. Find a way to go for big-bang on each session."
 
-They are right that the document is not enough. Anthropic's own guidance says
-so: "CLAUDE.md content is delivered as a user message after the system prompt,
-not as part of the system prompt itself... there's no guarantee of strict
-compliance", and "If the instruction is something that must run at a specific
-point... write it as a hook instead. Hooks execute as shell commands at fixed
-lifecycle events and apply regardless of what Claude decides to do."
-So this is a hook.
+They are right that the document is not enough. Anthropic's own guidance says so: "CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself... there's no guarantee of strict compliance", and "If the instruction is something that must run at a specific point... write it as a hook instead. Hooks execute as shell commands at
+fixed lifecycle events and apply regardless of what Claude decides to do." So this is a hook.
 
-WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about
-committing, branching, pushing, opening a PR or merging, OR a routing question
-about where a task's work should happen (new worktree vs. the current
-checkout). CLAUDE.md settles all of those the same way -- "the default
-deliverable is an uncommitted working tree", "ask for the big-bang, not for
-permission to patch one thing", and (2026-09-16, live) "[a worktree/branch
-routing question] shouldn't have asked ... it has big-bang answering usually"
--- so asking costs the operator a round trip to repeat a rule they already
-wrote down.
+WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree vs. the current checkout). CLAUDE.md settles all of those the same way -- "the default deliverable is an uncommitted working tree", "ask for the big-bang, not for permission to
+patch one thing", and (2026-09-16, live) "[a worktree/branch routing question] shouldn't have asked ... it has big-bang answering usually" -- so asking costs the operator a round trip to repeat a rule they already wrote down.
 
-THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook
-that swallows legitimate questions is worse than the nagging it replaces,
-because the operator never learns what was suppressed. Two independent
-conditions must BOTH hold:
+THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook that swallows legitimate questions is worse than the nagging it replaces, because the operator never learns what was suppressed. Two independent conditions must BOTH hold:
 
   1. a permission-seeking shape  (should I / shall I / do you want / may I /
      would you like / is it ok / can I / want me to)
   2. a git-workflow object       (commit / branch / push / PR / merge)
 
-So "Should I commit this?" is refused, while "Which branch strategy fits this
-repo?" and "Did the rebase drop a commit?" pass untouched: they are questions
-about DESIGN and FACT, not requests for permission this repo already granted.
+So "Should I commit this?" is refused, while "Which branch strategy fits this repo?" and "Did the rebase drop a commit?" pass untouched: they are questions about DESIGN and FACT, not requests for permission this repo already granted.
 
-This is the same over-matching lesson wl_agents.py paid for four separate
-times in one session, where ordinary English words like `while`, `see`, `step`
-and `stop` were scoring as domain terms. Anchor on intent, not vocabulary.
+This is the same over-matching lesson wl_agents.py paid for four separate times in one session, where ordinary English words like `while`, `see`, `step` and `stop` were scoring as domain terms. Anchor on intent, not vocabulary.
 
-WHAT A REFUSAL LEAVES BEHIND. Every refusal below appends one line to a
-ledger beside the worklist state (see LEDGER). Before that it left NO TRACE
-ANYWHERE, and `.claude/hooks/test-hooks.sh` says exactly why that matters:
-"a false positive is invisible by construction: the operator never learns
-what was not asked". A narrow matcher is only trustworthy if its misses are
-countable, so the denominator has to exist on disk.
+WHAT A REFUSAL LEAVES BEHIND. Every refusal below appends one line to a ledger beside the worklist state (see LEDGER). Before that it left NO TRACE ANYWHERE, and `.claude/hooks/test-hooks.sh` says exactly why that matters: "a false positive is invisible by construction: the operator never learns what was not asked". A narrow matcher is only trustworthy if its misses are countable,
+so the denominator has to exist on disk.
 
 PORT NOTE ON `join(" ")`. The other four payload collectors in this chain join
 with a NEWLINE; this one joins with a SPACE, and the difference is load-bearing
-rather than cosmetic. Every regex below is unanchored and grep matches per
-RECORD, so a newline join would put the permission phrase and the object in
-different records and the two-condition test could never fire on a question
+rather than cosmetic. Every regex below is unanchored and grep matches per RECORD, so a newline join would put the permission phrase and the object in different records and the two-condition test could never fire on a question
 whose header carried one of them. `hookio.texts` is therefore not used here;
 `_jq_collect` is called directly and joined the way the original does.
 
 PORT NOTE ON `tr '[:upper:]' '[:lower:]'`. Under `LC_ALL=C` that maps the 26
-ASCII letters and nothing else. Python's `str.lower()` also folds every
-non-ASCII uppercase codepoint, which would make a question containing, say, a
-Turkish dotted capital lowercase differently on the two sides. The translation
-table below is ASCII-only, deliberately.
+ASCII letters and nothing else. Python's `str.lower()` also folds every non-ASCII uppercase codepoint, which would make a question containing, say, a Turkish dotted capital lowercase differently on the two sides. The translation table below is ASCII-only, deliberately.
 
-PORT NOTE ON THE LEDGER'S SIDE EFFECT. This is the only guard in the chain that
-WRITES something, and the port keeps it: the differential compares (rc, stdout,
-stderr) and would pass either way, so dropping the append would be an invisible
-behaviour change -- exactly the class the "no trace anywhere" paragraph above is
-about. `jq -n -c` emits compact JSON with the keys in the order given, which is
+PORT NOTE ON THE LEDGER'S SIDE EFFECT. This is the only guard in the chain that WRITES something, and the port keeps it: the differential compares (rc, stdout, stderr) and would pass either way, so dropping the append would be an invisible behaviour change -- exactly the class the "no trace anywhere" paragraph above is about. `jq -n -c` emits compact JSON with the keys in the order
+given, which is
 `json.dumps(..., separators=(",", ":"))` over a dict built in that same order.
 """
 
@@ -181,10 +147,7 @@ def _first_match(pattern, text):
 def _ledger_path():
     """`python3 .../stop/worklist.py --path` plus the `.ask-refusals.jsonl` suffix.
 
-    BEST EFFORT, ALWAYS. `worklist.py --path` is self-contained (it works with
-    every sibling module broken -- see suite case 118), but if python3 is missing
-    or the write fails, the refusal still happens. A ledger that could veto the
-    gate would be a worse bug than no ledger.
+    BEST EFFORT, ALWAYS. `worklist.py --path` is self-contained (it works with every sibling module broken -- see suite case 118), but if python3 is missing or the write fails, the refusal still happens. A ledger that could veto the gate would be a worse bug than no ledger.
     """
     wlpath = hookio.run_out(
         ["python3", "%s/.claude/hooks/stop/worklist.py" % hookio.repo_root(), "--path"]
@@ -195,14 +158,9 @@ def _ledger_path():
 def _record(ev, question, perm_hit, obj_hit):
     """One line per refusal, appended BEFORE the message is printed.
 
-    It carries the timestamp, the session, the question text this hook actually
-    matched against (lowercased and joined, i.e. what the regexes saw rather
-    than a reconstruction), and the two spans that matched -- so "which
-    condition matched" is answerable from the file instead of by re-deriving it.
+    It carries the timestamp, the session, the question text this hook actually matched against (lowercased and joined, i.e. what the regexes saw rather than a reconstruction), and the two spans that matched -- so "which condition matched" is answerable from the file instead of by re-deriving it.
 
-    It lives beside the worklist state (TMPDIR/claude-worklist/<slug>.md), NOT in
-    the repo: it is per-machine session debris, and a ledger that dirtied the
-    working tree would be deleted by the first person tidying a diff.
+    It lives beside the worklist state (TMPDIR/claude-worklist/<slug>.md), NOT in the repo: it is per-machine session debris, and a ledger that dirtied the working tree would be deleted by the first person tidying a diff.
     """
     ledger = _ledger_path()
     if ledger == "":

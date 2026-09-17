@@ -1,24 +1,12 @@
 """Block `git commit --amend` for PR babysitting.
 
-WHY THE HEREDOC STRIPPING. The first version grepped the raw command text, so
-it fired on any command that merely CONTAINED the phrase -- including
-`cat > RULES.md <<'EOF'` writing documentation that explains this very rule.
-A guard that blocks you from documenting it is a false positive, and false
-positives are how guards get disabled.
+WHY THE HEREDOC STRIPPING. The first version grepped the raw command text, so it fired on any command that merely CONTAINED the phrase -- including `cat > RULES.md <<'EOF'` writing documentation that explains this very rule. A guard that blocks you from documenting it is a false positive, and false positives are how guards get disabled.
 
-The strip is deliberately narrow: only heredocs introduced by `cat` or `tee`,
-which write bytes and cannot execute them. A heredoc fed to an INTERPRETER
-(`bash <<EOF ... EOF`) really can run the command, so those bodies are left
-in place and still match. Widening this to all heredocs would open exactly
-that hole.
+The strip is deliberately narrow: only heredocs introduced by `cat` or `tee`, which write bytes and cannot execute them. A heredoc fed to an INTERPRETER (`bash <<EOF ... EOF`) really can run the command, so those bodies are left in place and still match. Widening this to all heredocs would open exactly that hole.
 
-PORT NOTE ON WHY THIS FILE HAS ITS OWN STRIPPER. `shellscan._strip_heredocs`
-looks like the same function and is not: it strips EVERY heredoc, closes the
-body on a REGEX built from the marker, and knows nothing about who is writing.
-This one strips only a `cat`/`tee` heredoc and closes it on an exact string
+PORT NOTE ON WHY THIS FILE HAS ITS OWN STRIPPER. `shellscan._strip_heredocs` looks like the same function and is not: it strips EVERY heredoc, closes the body on a REGEX built from the marker, and knows nothing about who is writing. This one strips only a `cat`/`tee` heredoc and closes it on an exact string
 comparison (`term == delim` in the awk). Both differences are load-bearing
-here, so the awk is ported rather than replaced, and the two live side by side
-exactly as the bash's own comment below says they must.
+here, so the awk is ported rather than replaced, and the two live side by side exactly as the bash's own comment below says they must.
 """
 
 import re
@@ -74,8 +62,7 @@ EDGE_CASES = [
 def _strip_cat_heredocs(text):
     """The awk pass, record for record.
 
-    PORT NOTE ON THE `<<-` ARM, whose comment in the awk is the longest thing
-    in the file and is worth carrying in full:
+    PORT NOTE ON THE `<<-` ARM, whose comment in the awk is the longest thing in the file and is worth carrying in full:
 
         `<<-` STRIPS LEADING TABS FROM THE TERMINATOR, and comparing $0 raw
         missed that: bash closes the heredoc at a tab-indented delimiter, so

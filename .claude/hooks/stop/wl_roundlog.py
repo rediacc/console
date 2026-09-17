@@ -1,42 +1,22 @@
 """wl_roundlog: replace a pr-babysit round log's STATUS block WITHOUT eating the
 history underneath it.
 
-THE DEFECT THIS CLOSES, and it is a real one from 2026-08-19. The round log's
-contract (`.claude/agents/pr-babysitter.md`, the round-log section) is three
-parts in a fixed order:
+THE DEFECT THIS CLOSES, and it is a real one from 2026-08-19. The round log's contract (`.claude/agents/pr-babysitter.md`, the round-log section) is three parts in a fixed order:
 
     ## Wave header      immutable; superseded by a dated addendum, never rewritten
     ## STATUS           ONE screen, overwritten in place every round
     <history>           the appendix: every round's narrative, appended forever
 
-Two of those three are load-bearing after a compaction: the wave header and
-STATUS are what a warm-start reads first, and in delegated mode the lead's
-watchdog judges the babysitter alive by STATUS's timestamp.
+Two of those three are load-bearing after a compaction: the wave header and STATUS are what a warm-start reads first, and in delegated mode the lead's watchdog judges the babysitter alive by STATUS's timestamp.
 
-"Overwritten in place" is the trap. A session refreshing STATUS reaches for the
-obvious splice -- find the old block, write everything before it, then the new
-block -- and `text[:i] + new` is exactly that thought, one keystroke away from
-correct and silently destructive: it replaces from the STATUS heading to
-END OF FILE, taking the entire history appendix with it. That is not a
-hypothetical. It happened on this wave, in a heartbeat tick whose whole purpose
-was keeping the log current, and there was no backup of that file anywhere.
+"Overwritten in place" is the trap. A session refreshing STATUS reaches for the obvious splice -- find the old block, write everything before it, then the new block -- and `text[:i] + new` is exactly that thought, one keystroke away from correct and silently destructive: it replaces from the STATUS heading to END OF FILE, taking the entire history appendix with it. That is not a
+hypothetical. It happened on this wave, in a heartbeat tick whose whole purpose was keeping the log current, and there was no backup of that file anywhere.
 
-The fix is not "be careful". The splice is now a verb that CANNOT express the
-truncation: it parses the document into (head, status, tail), replaces only the
-middle, and REPORTS the tail's size back to the caller. A caller who reads
-"appendix 4,812 bytes kept" learns the thing a silent success would hide.
+The fix is not "be careful". The splice is now a verb that CANNOT express the truncation: it parses the document into (head, status, tail), replaces only the middle, and REPORTS the tail's size back to the caller. A caller who reads "appendix 4,812 bytes kept" learns the thing a silent success would hide.
 
-WHY THE TOOL STAMPS THE TIME, and the caller does not. STATUS's timestamp is a
-liveness signal that something else reads to decide whether this session is
-wedged. A hand-typed stamp can be copied forward from the previous round without
-anything noticing, which turns the one instrument watching for a stuck loop into
-a copy of the loop's own optimism. `os.time` cannot be copy-pasted.
+WHY THE TOOL STAMPS THE TIME, and the caller does not. STATUS's timestamp is a liveness signal that something else reads to decide whether this session is wedged. A hand-typed stamp can be copied forward from the previous round without anything noticing, which turns the one instrument watching for a stuck loop into a copy of the loop's own optimism. `os.time` cannot be copy-pasted.
 
-WHY IT REFUSES TO CREATE THE FILE. A round log with no wave header is missing
-the half a warm-start needs most (intent, sanctioned reds, frozen surfaces,
-baselines and the commands that measure them). Creating one on demand would let
-a session write STATUS into an empty document and see success, having produced a
-log that answers none of the questions it exists to answer.
+WHY IT REFUSES TO CREATE THE FILE. A round log with no wave header is missing the half a warm-start needs most (intent, sanctioned reds, frozen surfaces, baselines and the commands that measure them). Creating one on demand would let a session write STATUS into an empty document and see success, having produced a log that answers none of the questions it exists to answer.
 """
 
 import re
@@ -66,11 +46,9 @@ def roundlog_path(projects_dir, branch):
 def split(current):
     """(head, status, tail) -- the three parts, concatenating back to `current`.
 
-    `status` is "" when the document has no STATUS block yet, and `head`/`tail`
-    then describe where one belongs: directly after the wave-header section.
+    `status` is "" when the document has no STATUS block yet, and `head`/`tail` then describe where one belongs: directly after the wave-header section.
 
-    The round trip is the property that matters, and `splice` asserts it rather
-    than trusting this docstring.
+    The round trip is the property that matters, and `splice` asserts it rather than trusting this docstring.
     """
     m = STATUS_RE.search(current)
     if m is None:
@@ -109,9 +87,7 @@ def shape(body):
 def splice(current, body, round_no=None, now=None):
     """Return (new_text, report). Replaces ONLY the STATUS block.
 
-    `report` carries the byte counts of the parts that were KEPT, which is the
-    point of the whole module: a caller that can see the appendix survived
-    cannot mistake a truncation for a success.
+    `report` carries the byte counts of the parts that were KEPT, which is the point of the whole module: a caller that can see the appendix survived cannot mistake a truncation for a success.
     """
     head, status, tail = split(current)
     if head + status + tail != current:
@@ -137,8 +113,7 @@ def splice(current, body, round_no=None, now=None):
 def _selftest():
     """Controls for the splice. Run: wl_roundlog.py --selftest
 
-    Every one of these is a property the 2026-08-19 truncation violated, or a
-    way a naive fix for it would break something else.
+    Every one of these is a property the 2026-08-19 truncation violated, or a way a naive fix for it would break something else.
     """
     ok = True
 

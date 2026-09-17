@@ -1,26 +1,16 @@
 #!/usr/bin/env python3
 """Live calibration for the two judged stop rules. NOT a gate; opt-in, costs money.
 
-WHY IT IS SEPARATE FROM test-judge-schema.py. Those controls pin the SEAM: given
-a judge answer, does the machinery fire, stay silent, and produce an actionable
-order? They run offline and they are wired into `npm run ci`. They cannot answer
-the other half of the question -- does haiku, reading a real session message,
-actually recognise "I fixed block-x.sh" as one instance of a class? That needs
-the model, a network, and about two cents a case, which is exactly what a CI
-gate must not need.
+WHY IT IS SEPARATE FROM test-judge-schema.py. Those controls pin the SEAM: given a judge answer, does the machinery fire, stay silent, and produce an actionable order? They run offline and they are wired into `npm run ci`. They cannot answer the other half of the question -- does haiku, reading a real session message, actually recognise "I fixed block-x.sh" as one instance of a
+class? That needs the model, a network, and about two cents a case, which is exactly what a CI gate must not need.
 
 So this exists, and it is run BY HAND when the rubric changes:
 
     python3 .claude/hooks/stop/calibrate-judge-rules.py --live
 
-Each fixture is a real defect from this repo's own history (the five the
-operator supplied for the class-sweep rule, and the four measured timid
-defaults), paired with the answer the rule must give. A fixture that flips is
-the rubric drifting, and the fix is the PROMPT, not the fixture.
+Each fixture is a real defect from this repo's own history (the five the operator supplied for the class-sweep rule, and the four measured timid defaults), paired with the answer the rule must give. A fixture that flips is the rubric drifting, and the fix is the PROMPT, not the fixture.
 
-WHAT A FAILURE HERE MEANS, and it is not the same as a red gate: an over-firing
-rule is a rule that gets skimmed, so a SILENT fixture that fires is at least as
-serious as a FIRE fixture that stays quiet.
+WHAT A FAILURE HERE MEANS, and it is not the same as a red gate: an over-firing rule is a rule that gets skimmed, so a SILENT fixture that fires is at least as serious as a FIRE fixture that stays quiet.
 """
 
 import json

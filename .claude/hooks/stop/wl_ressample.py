@@ -1,16 +1,11 @@
 """wl_ressample: sample a process TREE from /proc at a cadence, forklessly.
 
-WHY A SAMPLER AND NOT JUST THE EXIT RECORDER. wl_resprofile writes one record when
-a process EXITS -- totals, cheap, every process. But the findings that matter are
-about SHAPE OVER TIME: were the children sequential or overlapping (E1/E4), what
-state was each in (R-fraction, the only load-invariant saturation measure), did
-zombies accumulate under a live parent (E6), which paths were held write-open
-(E4). None of that exists at exit. It has to be observed while the tree is alive,
+WHY A SAMPLER AND NOT JUST THE EXIT RECORDER. wl_resprofile writes one record when a process EXITS -- totals, cheap, every process. But the findings that matter are about SHAPE OVER TIME: were the children sequential or overlapping (E1/E4), what state was each in (R-fraction, the only load-invariant saturation measure), did zombies accumulate under a live parent (E6), which paths
+were held write-open (E4). None of that exists at exit. It has to be observed while the tree is alive,
 from the outside, rooted at a pid the caller owns -- for CI gates that root is the
 child `scripts/ci-runner/exec.ts:65` spawns.
 
-THE DISCIPLINE, copied from .ci/scripts/ci/profiler/sampler-linux.sh and
-report.awk because they already paid for it:
+THE DISCIPLINE, copied from .ci/scripts/ci/profiler/sampler-linux.sh and report.awk because they already paid for it:
   * NO FORKS in the loop. Every reading is an open()+read() of a /proc file; a
     sampler that perturbs the box is measuring itself.
   * META FIELDS ARE APPEND-ONLY; a new field goes on the end so an archived
@@ -24,17 +19,10 @@ report.awk because they already paid for it:
     CONSUMER's job (wl_profile), not this module's: a sampler that classifies is a
     sampler that lies consistently.
 
-WHAT IS RECORDED PER PROCESS PER TICK, and what is not. pid, ppid, comm, state,
-wchan, utime/stime/cutime/cstime (clock ticks), minflt/majflt, VmHWM/VmRSS (kB),
-voluntary/nonvoluntary ctxt switches, and the WRITABLE fd targets that resolve to a
-path under the repo root. NEVER argv, never cmdline, never environ, never any fd
-target outside the repo root (a socket or a /tmp path can carry a name that is a
-secret). `comm` is 15 bytes of the executable's basename -- a public string.
+WHAT IS RECORDED PER PROCESS PER TICK, and what is not. pid, ppid, comm, state, wchan, utime/stime/cutime/cstime (clock ticks), minflt/majflt, VmHWM/VmRSS (kB), voluntary/nonvoluntary ctxt switches, and the WRITABLE fd targets that resolve to a path under the repo root. NEVER argv, never cmdline, never environ, never any fd target outside the repo root (a socket or a /tmp path can
+carry a name that is a secret). `comm` is 15 bytes of the executable's basename -- a public string.
 
-SAFETY. Runs beside the thing it measures, so a bug here must cost samples, never
-the run: every per-pid read is individually guarded (a pid that exits between the
-directory listing and the read is normal, not an error), the loop never raises,
-and the output file is opened once with O_APPEND.
+SAFETY. Runs beside the thing it measures, so a bug here must cost samples, never the run: every per-pid read is individually guarded (a pid that exits between the directory listing and the read is normal, not an error), the loop never raises, and the output file is opened once with O_APPEND.
 """
 
 from __future__ import annotations
@@ -147,11 +135,9 @@ def _writable_repo_fds(pid: int, root: Path | None) -> list[str]:
 def _thread_states(pid: int) -> dict[str, int]:
     """Per-THREAD run states, because the leader's state lies about every threaded tool.
 
-    `/proc/<pid>/stat` field 3 is the LEADER thread's. Measured over the real corpus:
-    the go toolchain reads `futex_do_wait` for 59 of 62 ticks and biome for 66 of 82
+    `/proc/<pid>/stat` field 3 is the LEADER thread's. Measured over the real corpus: the go toolchain reads `futex_do_wait` for 59 of 62 ticks and biome for 66 of 82
     while tree CPU climbs from 4 to 18,227 ticks -- both busy, both reading as idle.
-    Any saturation predicate built on the leader is blind to every multi-threaded
-    tool in this repo, which is most of them.
+    Any saturation predicate built on the leader is blind to every multi-threaded tool in this repo, which is most of them.
 
     Returns {"R": n, "S": n, "D": n, ...}; an empty dict means the task dir vanished,
     which is a process exiting, never a verdict.
@@ -171,11 +157,7 @@ def _thread_states(pid: int) -> dict[str, int]:
 def _pipe_inodes(pid: int) -> dict[str, list[int]]:
     """Pipe inodes this pid READS from and WRITES to, split by the fd's access mode.
 
-    This is what tells a STALL from a healthy `$( )` capture: a parent parked on a
-    pipe whose writer is one of its own descendants is the normal shape of every
-    command substitution in this repo, while the real hang recorded in TRAPS.md was
-    a blocked read on a pipe with no writer and no children. Inode numbers carry no
-    command text, so this stays inside the no-argv rule.
+    This is what tells a STALL from a healthy `$( )` capture: a parent parked on a pipe whose writer is one of its own descendants is the normal shape of every command substitution in this repo, while the real hang recorded in TRAPS.md was a blocked read on a pipe with no writer and no children. Inode numbers carry no command text, so this stays inside the no-argv rule.
     """
     out: dict[str, list[int]] = {"r": [], "w": []}
     fddir = "/proc/%d/fd" % pid

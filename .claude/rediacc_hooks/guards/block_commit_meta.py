@@ -1,38 +1,24 @@
 """Block Co-Authored-By / Generated with lines in commits.
 
-IT MUST BE A COMMIT. This guard's whole history is false positives, and the
-header used to record three of them: the unanchored `Generated with` fired
-inside "witho|ut", then on "Re|generated with npm@10" once a word boundary was
-added, then on an ordinary PR body describing a regenerated i18n baseline.
-Each fix narrowed the PHRASE. None of them asked the question that actually
-separates a violation from a sentence -- is this command writing a commit
-message at all?
+IT MUST BE A COMMIT. This guard's whole history is false positives, and the header used to record three of them: the unanchored `Generated with` fired inside "witho|ut", then on "Re|generated with npm@10" once a word boundary was added, then on an ordinary PR body describing a regenerated i18n baseline. Each fix narrowed the PHRASE. None of them asked the question that actually
+separates a violation from a sentence -- is this command writing a commit message at all?
 
-The unfixed half was the trailer token itself, which the old header defended as
-"unambiguous anywhere". It is not. Measured 2026-08-27, it refused:
+The unfixed half was the trailer token itself, which the old header defended as "unambiguous anywhere". It is not. Measured 2026-08-27, it refused:
 
   grep -rn 'co-authored-by' docs/        <- searching for the banned trailer
   echo 'the rule bans <the trailer>'     <- prose naming the rule
 
-Both are how you AUDIT this rule, so the guard was blocking its own
-enforcement. Case-insensitivity made it worse, not better.
+Both are how you AUDIT this rule, so the guard was blocking its own enforcement. Case-insensitivity made it worse, not better.
 
-So the phrase check now runs only when the command authors a message: a git
-commit, a git tag -m, or a gh pr create/edit. A heredoc body still counts,
-because the body is part of the command -- which is the case that matters, and
-the one every earlier narrowing preserved by accident rather than on purpose.
+So the phrase check now runs only when the command authors a message: a git commit, a git tag -m, or a gh pr create/edit. A heredoc body still counts, because the body is part of the command -- which is the case that matters, and the one every earlier narrowing preserved by accident rather than on purpose.
 
-The line anchoring on `Generated with` stays. A guard whose only failure mode
-is refusing CORRECT input teaches people to reword honest messages until it
-stops complaining, and the rewording hides what happened.
+The line anchoring on `Generated with` stays. A guard whose only failure mode is refusing CORRECT input teaches people to reword honest messages until it stops complaining, and the rewording hides what happened.
 
 PORT NOTE ON A BYTE-VERSUS-CHARACTER DIFFERENCE. `[^[:alnum:]]{0,4}` is
 counted by grep in BYTES under LC_ALL=C, and by Python in CHARACTERS. The one
 prefix this clause exists for is a single emoji, which is four bytes and one
 character, so both sides admit it; a prefix of two emoji would be eight bytes
-and two characters and the two sides would disagree. No corpus case has one,
-the widening is in the direction of matching more, and narrowing it here would
-be a behaviour change made for tidiness rather than from a finding.
+and two characters and the two sides would disagree. No corpus case has one, the widening is in the direction of matching more, and narrowing it here would be a behaviour change made for tidiness rather than from a finding.
 """
 
 from rediacc_hooks import hookio

@@ -1,14 +1,8 @@
 """wl_agents: which specialist agent this session should have been told about.
 
-A deterministic matcher over the `description` frontmatter of the agent files
-in `.claude/agents/`. No model call, no network, no writes: this runs on EVERY
-stop, and `wl_judge.py:20-39` records what a second paid call costs (4.9-20.0s,
-and one live timeout that BLOCKED a stop).
+A deterministic matcher over the `description` frontmatter of the agent files in `.claude/agents/`. No model call, no network, no writes: this runs on EVERY stop, and `wl_judge.py:20-39` records what a second paid call costs (4.9-20.0s, and one live timeout that BLOCKED a stop).
 
-WHY IT EXISTS. On 2026-08-14 the operator had to hint twice by hand ("there is
-bench server deployment", "@.claude/agents/ may help for ops as well") because
-nothing surfaced the seven specialists that already existed. The word "bench"
-appeared ZERO times across all seven `description` fields and exactly once in
+WHY IT EXISTS. On 2026-08-14 the operator had to hint twice by hand ("there is bench server deployment", "@.claude/agents/ may help for ops as well") because nothing surfaced the seven specialists that already existed. The word "bench" appeared ZERO times across all seven `description` fields and exactly once in
 the whole directory -- in a BODY. The knowledge existed; the matching surface
 did not.
 
@@ -28,9 +22,7 @@ THREE DESIGN DECISIONS THAT ARE MEASUREMENTS, NOT PREFERENCES
      is precisely what would let a DELETED agent keep being recommended. The
      corpus is re-read from disk on every call.
 
-Errors are RETURNED, never raised: this module is consulted on the path that
-ends every turn in every session, so an exception here is a session that cannot
-stop. A corpus that cannot be read degrades to silence plus a loud note.
+Errors are RETURNED, never raised: this module is consulted on the path that ends every turn in every session, so an exception here is a session that cannot stop. A corpus that cannot be read degrades to silence plus a loud note.
 """
 
 import os
@@ -79,9 +71,7 @@ _FOLD_S_EXCEPT = ("ss", "us", "is", "os")
 def fold(word):
     """Strip ONE suffix: `deployment`/`deploying`/`deploys`/`deployed` -> `deploy`.
 
-    Deliberately NOT stripping a trailing `e`, which would fold `restoring` onto
-    `restore` and buy one more pairing at the cost of printing stems like
-    `restor` at the reader. The hint names its matched terms so that a wrong
+    Deliberately NOT stripping a trailing `e`, which would fold `restoring` onto `restore` and buy one more pairing at the cost of printing stems like `restor` at the reader. The hint names its matched terms so that a wrong
     hint is self-refuting in one second; a line full of fragments spends that.
     """
     for suf in _FOLD_SUFFIXES:
@@ -97,15 +87,11 @@ def fold(word):
 def _stem(word):
     """fold() to a fixed point, or "" when any form along the way is a stopword.
 
-    TWO STEPS ARE REAL, not defensive padding: `deployments` strips its plural
-    to `deployment` and needs a second pass to reach `deploy`, and `deployments`
-    is one of the phrasings a future session will actually type.
+    TWO STEPS ARE REAL, not defensive padding: `deployments` strips its plural to `deployment` and needs a second pass to reach `deploy`, and `deployments` is one of the phrasings a future session will actually type.
 
-    THE STOPWORD CHECK RUNS ON EVERY INTERMEDIATE FORM, which is the whole
-    reason this is a loop rather than `fold(fold(w))`. `settings` folds to
+    THE STOPWORD CHECK RUNS ON EVERY INTERMEDIATE FORM, which is the whole reason this is a loop rather than `fold(fold(w))`. `settings` folds to
     `setting`, a stopword, and must die there; two blind passes would carry it
-    on to `sett` and admit a generic word as a discriminative term under an
-    unreadable name. Same for `runnings` -> `running`.
+    on to `sett` and admit a generic word as a discriminative term under an unreadable name. Same for `runnings` -> `running`.
     """
     seen = word
     for _ in range(3):
@@ -183,10 +169,7 @@ STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 def tokenize(text):
     """The term set of a string: {(kind, text)}, kind in {"path", "word"}.
 
-    THE SAME function for descriptions and for haystacks, which is
-    load-bearing rather than tidy: sharing it is what makes scoring a set
-    intersection, and a set intersection is what makes the substring bug
-    (`read` matching inside `README`) impossible instead of merely unlikely.
+    THE SAME function for descriptions and for haystacks, which is load-bearing rather than tidy: sharing it is what makes scoring a set intersection, and a set intersection is what makes the substring bug (`read` matching inside `README`) impossible instead of merely unlikely.
     """
     terms = set()
     if not text:
@@ -217,10 +200,7 @@ def _weight(term):
 def agents_dir():
     """Where the agent files live.
 
-    `hook_repo_root()`, never `project_root()`: `.claude/agents` is a sibling
-    of `.claude/hooks/stop`, and hook_repo_root is immune to cwd by
-    construction. WORKLIST_AGENTS_DIR is the seam the suite and the CI gate
-    point at fixtures, the same way WORKLIST_REPORTS_DIR is.
+    `hook_repo_root()`, never `project_root()`: `.claude/agents` is a sibling of `.claude/hooks/stop`, and hook_repo_root is immune to cwd by construction. WORKLIST_AGENTS_DIR is the seam the suite and the CI gate point at fixtures, the same way WORKLIST_REPORTS_DIR is.
     """
     env = os.environ.get("WORKLIST_AGENTS_DIR")
     if env:
@@ -236,9 +216,7 @@ def agents_dir():
 def _frontmatter(path):
     """({key: value}, error) for one agent file, reading the HEAD only.
 
-    Stops at the closing `---`, so a 33 KB body is never read and a stray
-    `---` inside prose can never be mistaken for the fence. Continuation
-    lines fold into the previous key, so a wrapped `description:` survives.
+    Stops at the closing `---`, so a 33 KB body is never read and a stray `---` inside prose can never be mistaken for the fence. Continuation lines fold into the previous key, so a wrapped `description:` survives.
     """
     fields, key, opened = {}, None, False
     try:
@@ -268,10 +246,7 @@ def _frontmatter(path):
 def load_corpus(agents_dir_path):
     """({name: {"desc", "path", "terms"}}, [error]) for one directory.
 
-    Errors are RETURNED, never raised and never swallowed: a file with no
-    `name:` or no `description:` is an ERROR ENTRY, not a silent skip. A
-    silent skip is how an agent stops being reachable while everything still
-    looks healthy -- the exact failure this whole feature exists to end.
+    Errors are RETURNED, never raised and never swallowed: a file with no `name:` or no `description:` is an ERROR ENTRY, not a silent skip. A silent skip is how an agent stops being reachable while everything still looks healthy -- the exact failure this whole feature exists to end.
     """
     corpus, errors = {}, []
     d = pathlib.Path(agents_dir_path)
@@ -306,13 +281,9 @@ def load_corpus(agents_dir_path):
 def discriminative(corpus):
     """{name: {term: weight}} keeping ONLY terms unique to one description.
 
-    With 7-8 documents this is a cheaper and sharper substitute for IDF, and
-    it is what stops `config`, `session`, `gate` and `repo` -- words every
-    description in this repo contains -- from ever triggering anything.
+    With 7-8 documents this is a cheaper and sharper substitute for IDF, and it is what stops `config`, `session`, `gate` and `repo` -- words every description in this repo contains -- from ever triggering anything.
 
-    The agent's OWN NAME is injected afterwards at weight 3 and is never
-    subject to the filter, so "ask the i18n-guardian" matches even when the
-    prose shares nothing else with that description.
+    The agent's OWN NAME is injected afterwards at weight 3 and is never subject to the filter, so "ask the i18n-guardian" matches even when the prose shares nothing else with that description.
     """
     seen = {}
     for entry in corpus.values():
@@ -332,9 +303,7 @@ def discriminative(corpus):
 def score(haystack, uniq):
     """[(score, name, hits)] for EVERY agent, best first.
 
-    Every agent is present, including the ones that scored zero, because the
-    runner-up is what the margin is measured against and an absent runner-up
-    would silently read as "no competition".
+    Every agent is present, including the ones that scored zero, because the runner-up is what the margin is measured against and an absent runner-up would silently read as "no competition".
     """
     hay = tokenize(haystack)
     ranked = []
@@ -350,16 +319,9 @@ def score(haystack, uniq):
 def best_hint(haystack, uniq, min_score=None, min_margin=None):
     """(name, score, hits), or None when the evidence does not distinguish one.
 
-    TIES ARE SILENCE BY CONSTRUCTION: a tie makes the margin 0, which is below
-    any positive threshold, so no tie-break rule exists to get wrong. Never
-    break a tie by name order, corpus order or mtime -- a tie means the
-    evidence does not distinguish two specialists, and inventing a winner is
-    how a matcher starts lying.
+    TIES ARE SILENCE BY CONSTRUCTION: a tie makes the margin 0, which is below any positive threshold, so no tie-break rule exists to get wrong. Never break a tie by name order, corpus order or mtime -- a tie means the evidence does not distinguish two specialists, and inventing a winner is how a matcher starts lying.
 
-    NEAR-MISSES ARE SILENCE TOO, and are deliberately not logged: "you almost
-    matched X" is a hint with extra words. When a domain repeatedly scores just
-    under threshold the fix is to sharpen that description, and the CI gate is
-    what surfaces it.
+    NEAR-MISSES ARE SILENCE TOO, and are deliberately not logged: "you almost matched X" is a hint with extra words. When a domain repeatedly scores just under threshold the fix is to sharpen that description, and the CI gate is what surfaces it.
     """
     if not uniq:
         return None
@@ -376,9 +338,7 @@ def best_hint(haystack, uniq, min_score=None, min_margin=None):
 def hint_for(haystack, agents_dir_path=None):
     """((name, score, hits) or None, [error]) -- the whole flow, one call.
 
-    The convenience the hook and the gate both use: load, discriminate, score,
-    threshold. Kept here rather than in wl_checks so the gate exercises the
-    same path the stop does instead of a re-implementation of it.
+    The convenience the hook and the gate both use: load, discriminate, score, threshold. Kept here rather than in wl_checks so the gate exercises the same path the stop does instead of a re-implementation of it.
     """
     corpus, errors = load_corpus(agents_dir() if agents_dir_path is None else agents_dir_path)
     if not corpus:
@@ -471,8 +431,7 @@ _QUOTED_RE = re.compile(
 def unquoted(text):
     """`text` with every quoted, backticked and fenced span blanked out.
 
-    Blanked to a SPACE rather than removed, so two words either side of a quote
-    cannot fuse into a third that matches something neither of them did.
+    Blanked to a SPACE rather than removed, so two words either side of a quote cannot fuse into a third that matches something neither of them did.
     """
     return _QUOTED_RE.sub(" ", text or "")
 
@@ -484,9 +443,7 @@ _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 def _claim_sentences(text):
     """Every sentence carrying a give-up claim, already unquoted by the caller.
 
-    Split on newlines too, not just terminators: the give-up line in a bulleted
-    status list frequently has no full stop at all, and treating the whole list
-    as one sentence would re-admit every unrelated bullet as evidence.
+    Split on newlines too, not just terminators: the give-up line in a bulleted status list frequently has no full stop at all, and treating the whole list as one sentence would re-admit every unrelated bullet as evidence.
     """
     return [
         sent
@@ -498,10 +455,7 @@ def _claim_sentences(text):
 def giveup_claims(text):
     """Labels of every give-up claim in `text`, in the order they are defined.
 
-    Returns [] for the overwhelmingly common case, so the caller can bail
-    before touching the corpus at all. Deduplicated: three phrasings of the
-    same surrender are one claim, and printing all three would read as three
-    separate accusations.
+    Returns [] for the overwhelmingly common case, so the caller can bail before touching the corpus at all. Deduplicated: three phrasings of the same surrender are one claim, and printing all three would read as three separate accusations.
     """
     if not text:
         return []
@@ -519,10 +473,7 @@ def giveup_claims(text):
 def pushback_for(haystack, agents_dir_path=None):
     """((agent, hits, claims) or None, [error]) -- the conjunction, one call.
 
-    ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful
-    of regexes over one message and answers "no" on nearly every stop, so it
-    runs BEFORE the corpus is loaded. On a normal stop this function does not
-    touch the disk.
+    ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful of regexes over one message and answers "no" on nearly every stop, so it runs BEFORE the corpus is loaded. On a normal stop this function does not touch the disk.
     """
     if not PUSHBACK_ENABLED:
         return None, []

@@ -850,6 +850,40 @@ def test_a_list_inside_a_hash_comment_block_is_never_absorbed():
     assert ps.reflow_comments(text, ".py", 384) == text
 
 
+def test_a_list_item_continuation_keeps_its_left_margin():
+    """REPORTED BY THE OPERATOR FROM THE RENDERED RESULT, which is the detail worth keeping: this survived a corpus-wide AST proof, a structural fence/heading/table check and a full reflow, because every one of those counts lines and none of them reads the COLUMN a line starts in.
+    `_join_and_wrap` strips each piece before joining, correct for the words and wrong for the margin, so an indented continuation came back at column 0 and detached from the item above it. `reflow_markdown`'s own docstring already claimed the opposite, which is how the gap stayed invisible.
+    """
+    text = (
+        "- Without JSON output, Terraform can't detect if autostart was changed\n"
+        "  outside of Terraform\n"
+        "- [ ] Evaluate effort\n"
+    )
+    assert ps.reflow_markdown(text, 384) == text
+
+
+def test_an_indented_continuation_joins_without_losing_its_margin():
+    """The other half, so the stop above is not satisfied by refusing to reflow anything indented: several continuation lines under one item SHOULD collapse to a single line, and that line has to keep the item's margin rather than the document's."""
+    text = "- item\n  first continuation line\n  second continuation line\n"
+    assert ps.reflow_markdown(text, 384) == "- item\n  first continuation line second continuation line\n"
+
+
+def test_a_cstyle_comment_block_gets_the_same_stops_as_a_hash_block():
+    """THE SIBLING THE FIRST FIX MISSED, which is the whole reason the class sweep is run against every scope rather than the one that surfaced the bug. Adding the stops to the Python branch alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because `_cstyle_reflow_lines` had no equivalent check.
+    A `//` block carries section structure exactly as a `#` block does.
+    """
+    text = (
+        "// ----------------------------------------\n"
+        "// AI TROUBLESHOOTING GUIDE\n"
+        "// ----------------------------------------\n"
+        "//   1. The first step, which carries a continuation\n"
+        "//      line that belongs to it and must not merge up.\n"
+        "//   2. The second step, which stays its own item.\n"
+        "const x = 1;\n"
+    )
+    assert ps.reflow_comments(text, ".ts", 384) == text
+
+
 def test_a_rest_directive_inside_a_docstring_is_never_rewrapped():
     text = 'def f():\n    """Do a thing.\n\n    .. note::\n\n       an aside\n    """\n'
     assert ps.reflow_comments(text, ".py", 384) == text

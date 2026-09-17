@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
 """Control for completion_evidence's citation scan, BOTH directions.
 
-Separate from test-worklist-v5.sh on purpose. That harness drives the whole hook
-against a fixture repo whose files I cannot cite, and its evidence section is a
-deliberately sequenced fixture: an earlier attempt to add these cases inline
-truncated the shared worklist file and broke the two SHA tests that string-replace
-a line it had just deleted. A control that damages the suite it joins is not a
-control. This calls the function directly against the REAL repo, where a resolving
-path is knowable.
+Separate from test-worklist-v5.sh on purpose. That harness drives the whole hook against a fixture repo whose files I cannot cite, and its evidence section is a deliberately sequenced fixture: an earlier attempt to add these cases inline truncated the shared worklist file and broke the two SHA tests that string-replace a line it had just deleted. A control that damages the suite it
+joins is not a control. This calls the function directly against the REAL repo, where a resolving path is knowable.
 
-The bug: completion_evidence delegated to citation_state, which uses
-CITE_RE.search and therefore judges only the FIRST citation in a line. A tick
-carrying four resolving full paths read as evidence-free because a bare
-"05-docs-and-decommission.md" happened to come first.
+The bug: completion_evidence delegated to citation_state, which uses CITE_RE.search and therefore judges only the FIRST citation in a line. A tick carrying four resolving full paths read as evidence-free because a bare "05-docs-and-decommission.md" happened to come first.
 """
 
 import importlib.util

@@ -1,42 +1,21 @@
 """The guard smoke suite, as data: every case `.claude/hooks/test-hooks.sh` asserts.
 
-WHY THIS IS A PYTHON MODULE AND NOT A SECOND SHELL SCRIPT. The obvious move for a
-2,774-line bash suite is to shard it into several smaller ones. That is ILLEGAL in
-this tree and the refusal is mechanical, not stylistic: `check:ci-language-policy`
-freezes a SET of 521 bash paths under `.ci/` and `.claude/`
+WHY THIS IS A PYTHON MODULE AND NOT A SECOND SHELL SCRIPT. The obvious move for a 2,774-line bash suite is to shard it into several smaller ones. That is ILLEGAL in this tree and the refusal is mechanical, not stylistic: `check:ci-language-policy` freezes a SET of 521 bash paths under `.ci/` and `.claude/`
 (`.ci/scripts/quality/check_language_policy.py:137` `COVERED_ROOTS = (".ci", ".claude")`),
-and a new tracked `.sh` under either root is a 522nd entry that
-`baseline_additions` refuses. `.claude/hooks/test-hooks.sh` is itself entry 472 of
-that 521. The precedent a shard would reach for -- `test-worklist-v5.sh` split into
-27 files -- predates the freeze and cannot be repeated. So the suite is PORTED, which
-is what `.ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py:31` already says in
-code, and pytest already collects this directory
-(`pyproject.toml` `testpaths`), so the destination needed no wiring.
+and a new tracked `.sh` under either root is a 522nd entry that `baseline_additions` refuses. `.claude/hooks/test-hooks.sh` is itself entry 472 of that 521. The precedent a shard would reach for -- `test-worklist-v5.sh` split into 27 files -- predates the freeze and cannot be repeated. So the suite is PORTED, which is what `.ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py:31`
+already says in code, and pytest already collects this directory (`pyproject.toml` `testpaths`), so the destination needed no wiring.
 
-THE SPEC STRING IN COLUMN 1 IS LOAD-BEARING TEXT, NOT A LABEL. Read it before
-editing one. `hook_integrity.covmap` decides whether a guard still has a BLOCK case
-and an ALLOW case by scanning its declared `case_sources` for the literal shape
+THE SPEC STRING IN COLUMN 1 IS LOAD-BEARING TEXT, NOT A LABEL. Read it before editing one. `hook_integrity.covmap` decides whether a guard still has a BLOCK case and an ALLOW case by scanning its declared `case_sources` for the literal shape
 
     check 2 guards/block_x.py
 
-(`.ci/rediacc_ci/quality/hook_integrity.py:459`, `\\b(?:check|check_out)\\s+([0-9]+)\\s+<guard>`).
-That reader is what credits a guard with coverage, and a port that spelled its cases
-`case(2, "guards/block_x.py", ...)` would present ZERO cases for all 46 ported
-guards -- every one of them reading as newly uncovered, whose cheapest fix is to
-baseline them, which retires the assertion for good. Keeping the case's identity as
-one string in the reader's own shape means the port re-keys DATA
-(`scripts/data/hook-audit-scope.json` `case_sources`) and the reader is never opened.
+(`.ci/rediacc_ci/quality/hook_integrity.py:459`, `\\b(?:check|check_out)\\s+([0-9]+)\\s+<guard>`). That reader is what credits a guard with coverage, and a port that spelled its cases `case(2, "guards/block_x.py", ...)` would present ZERO cases for all 46 ported guards -- every one of them reading as newly uncovered, whose cheapest fix is to baseline them, which retires the
+assertion for good. Keeping the case's identity as one string in the reader's own shape means the port re-keys DATA (`scripts/data/hook-audit-scope.json` `case_sources`) and the reader is never opened.
 
-WHAT DID NOT CHANGE. Every payload, every expected exit code, every message needle
-and every label below is the one the bash suite asserted. The proof is the label
-multiset: `hooklabels.py` reads `ok   [rc] label` lines out of whatever a suite
-printed, and it is the SAME function on both sides, so "the port asserts what the
-suite asserted" is a comparison of two runs rather than a claim about a diff.
+WHAT DID NOT CHANGE. Every payload, every expected exit code, every message needle and every label below is the one the bash suite asserted. The proof is the label multiset: `hooklabels.py` reads `ok [rc] label` lines out of whatever a suite printed, and it is the SAME function on both sides, so "the port asserts what the suite asserted" is a comparison of two runs rather than a
+claim about a diff.
 
-HOW A CASE NAMES ITS GUARD. By the key `check-hook-integrity.sh` inventories it
-under: `guards/<module>.py` for the 46 guards ported in W5 -- the file really is at
-`.claude/rediacc_hooks/guards/<module>.py` and the way to RUN one is the dispatcher --
-and the path under `.claude/hooks/` for anything still in bash.
+HOW A CASE NAMES ITS GUARD. By the key `check-hook-integrity.sh` inventories it under: `guards/<module>.py` for the 46 guards ported in W5 -- the file really is at `.claude/rediacc_hooks/guards/<module>.py` and the way to RUN one is the dispatcher -- and the path under `.claude/hooks/` for anything still in bash.
 """
 
 import dataclasses
@@ -66,10 +45,7 @@ GUARD_TIMEOUT_S = 60
 class GuardKeyError(LookupError):
     """A case names a guard key that resolves to no program.
 
-    A NAMED FAILURE, because the alternative is worse than a miss. `python3
-    dispatch.py <typo>` raises ModuleNotFoundError and exits 1, which a case
-    expecting 2 reports as a plain wrong-exit and a case expecting 0 reports as a
-    failure -- both of them wrong about the reason.
+    A NAMED FAILURE, because the alternative is worse than a miss. `python3 dispatch.py <typo>` raises ModuleNotFoundError and exits 1, which a case expecting 2 reports as a plain wrong-exit and a case expecting 0 reports as a failure -- both of them wrong about the reason.
     """
 
 
@@ -93,8 +69,7 @@ def guard_cmd(key: str) -> list[str]:
 def _j(obj: object) -> str:
     """The suite's payloads, byte for byte.
 
-    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII.
-    Python's defaults do the opposite on both counts, and a guard that matches on
+    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII. Python's defaults do the opposite on both counts, and a guard that matches on
     raw text (require-jq.sh greps stdin; several guards scan the command string
     before parsing) would be handed different bytes than the suite handed it.
     """
@@ -108,8 +83,7 @@ def bash_json(command: str) -> str:
 def bash_bg_json(command: str) -> str:
     """Same, but flagged as a harness background task.
 
-    block_long_sleep raises its sleep cap for these: a long sleep only costs
-    anything in the foreground.
+    block_long_sleep raises its sleep cap for these: a long sleep only costs anything in the foreground.
     """
     return _j({"tool_input": {"command": command, "run_in_background": True}})
 
@@ -170,8 +144,7 @@ class Case:
     """One assertion: run `key` on `payload` and expect `expected`.
 
     `spec` is kept verbatim because it is what `hook_integrity.covmap` reads; `verb`,
-    `expected` and `key` are parsed OUT of it rather than passed separately, so the
-    two can never disagree.
+    `expected` and `key` are parsed OUT of it rather than passed separately, so the two can never disagree.
     """
 
     spec: str
@@ -209,9 +182,7 @@ def run_guard(
 ) -> tuple[int, str]:
     """`(exit code, stderr text)`. stdout is discarded, exactly as the suite did.
 
-    The suite ran `... 2>&1 >/dev/null` for the message assertions, which redirects
-    stderr to the pipe and stdout to /dev/null -- NOT the other way round. A guard's
-    product is what it says on stderr.
+    The suite ran `... 2>&1 >/dev/null` for the message assertions, which redirects stderr to the pipe and stdout to /dev/null -- NOT the other way round. A guard's product is what it says on stderr.
     """
     argv = guard_cmd(key)
     completed = subprocess.run(
@@ -1506,12 +1477,8 @@ STATIC: list[Case] = [
         "admin-merge: sibling gh --repo does not donate to the merge segment",
     ),
     # NOT asserted here: per-segment --auto and per-segment PR selectors on block-admin-merge. Both only change behavior once a rediacc repo is resolved, which puts them on the network path this offline harness cannot drive (same limitation as the NOTE above). They are covered by the hook's live proofs, not by a case that would pass either way -- a green assertion that cannot fail
-    # is worse than no assertion.
-    # REST/GraphQL parity (agent/PLAN-rest-graphql-guard-parity.md): the same three
-    # guards also police the REST or GraphQL call that reaches the identical GitHub
-    # mutation as the `gh pr` verb they already gate. One BLOCK and one ALLOW per
-    # guard, mirrored here because hook_integrity.covmap reads coverage off this
-    # exact "check <rc> guards/<module>.py" shape.
+    # is worse than no assertion. REST/GraphQL parity (agent/PLAN-rest-graphql-guard-parity.md): the same three guards also police the REST or GraphQL call that reaches the identical GitHub mutation as the `gh pr` verb they already gate. One BLOCK and one ALLOW per guard, mirrored here because hook_integrity.covmap reads coverage off this exact "check <rc> guards/<module>.py"
+    # shape.
     case(
         "check 2 guards/block_admin_merge.py",
         bash_json("gh api repos/o/r/pulls/589/merge -X PUT -f merge_method=squash"),

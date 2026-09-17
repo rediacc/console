@@ -3,31 +3,31 @@
 ## Design Principles
 
 1. **Query commands for state, lifecycle commands for mutations.** Never parse
-lifecycle command stdout — only check exit codes. Use separate query commands to verify state changes.
+   lifecycle command stdout — only check exit codes. Use separate query commands to verify state changes.
 
 2. **Per-machine locking.** Every resource targets a machine. Acquire the machine
-mutex before any rdc operation. Config-modifying operations also acquire the config mutex. See `05-terraform-provider.md` concurrency design.
+   mutex before any rdc operation. Config-modifying operations also acquire the config mutex. See `05-terraform-provider.md` concurrency design.
 
 3. **Dry-run for plan.** `repo up/down/delete --dry-run` returns JSON — use this
-during `terraform plan` to show what would change without side effects.
+   during `terraform plan` to show what would change without side effects.
 
 4. **Machine CRUD commands have JSON support.** The `machine add/delete/rename`
-commands use `createResourceCommands()` factory which calls `outputService.print()`. This means machine Create/Delete can parse structured responses directly, unlike repo lifecycle commands which need execute-then-query.
+   commands use `createResourceCommands()` factory which calls `outputService.print()`. This means machine Create/Delete can parse structured responses directly, unlike repo lifecycle commands which need execute-then-query.
 
 5. **Design for `for_each`, not just `count`.** Resources use string identifiers
-so they work naturally with `for_each` maps. This prevents the index-shifting problem that plagues `count`-based resources when items are removed from the middle of a list.
+   so they work naturally with `for_each` maps. This prevents the index-shifting problem that plagues `count`-based resources when items are removed from the middle of a list.
 
 6. **Import is day-one.** Every resource supports `ImportState` from v0.1.0.
-Users with existing rdc setups can adopt Terraform without recreating infrastructure. This is the #1 adoption barrier (see `00-overview.md`).
+   Users with existing rdc setups can adopt Terraform without recreating infrastructure. This is the #1 adoption barrier (see `00-overview.md`).
 
 7. **Minimize required attributes.** Only require what's truly necessary for
-Create. Everything else is optional with sensible defaults. This keeps the minimum viable configuration small (3-line resource blocks).
+   Create. Everything else is optional with sensible defaults. This keeps the minimum viable configuration small (3-line resource blocks).
 
 8. **Avoid phantom diffs.** Never store computed values that change between
-reads (timestamps, dynamic IDs) as plan-visible attributes. Use `UseStateForUnknown` plan modifiers for computed attributes that are stable after creation.
+   reads (timestamps, dynamic IDs) as plan-visible attributes. Use `UseStateForUnknown` plan modifiers for computed attributes that are stable after creation.
 
 9. **Attribute-path diagnostics.** Error messages should reference the specific
-attribute that caused the failure, not just "rdc command failed".
+   attribute that caused the failure, not just "rdc command failed".
 
 ## Resources (Managed, CRUD Lifecycle)
 
@@ -672,7 +672,7 @@ The Go client (`internal/client/rdc.go`) is defined in `05-terraform-provider.md
 - **`RunQuery()`** — adds `--output json`, unwraps envelope, returns `data` field
 - **`RunLifecycle()`** — no `--output json`, only checks exit code
 - **Convenience methods** — `ConfigRepositories()`, `MachineContainers()`, `MachineHealth()`,
-`RepoCreate()`, `RepoUp()`, `RepoDown()`, `RepoDelete()`, `DatastoreStatus()`, `DatastoreFork()`, `DatastoreUnfork()`
+  `RepoCreate()`, `RepoUp()`, `RepoDown()`, `RepoDelete()`, `DatastoreStatus()`, `DatastoreFork()`, `DatastoreUnfork()`
 
 ## Implementation Priority
 

@@ -2,15 +2,11 @@
 
 THE OTHER HALF OF `block_prose_style_edit`. That guard sees the bytes going into
 a FILE; this one sees the bytes going into a COMMIT or a PULL REQUEST, which
-never touch the working tree and which no file-scoped hook can reach. A style
-enforced on documents and not on the messages describing them is enforced on the
-half nobody reads.
+never touch the working tree and which no file-scoped hook can reach. A style enforced on documents and not on the messages describing them is enforced on the half nobody reads.
 
 TWIN = None, the same sentinel and for the same reason as its sibling. The
 argument is written out once, in `block_prose_style_edit.py`; the short version
-is that no bash original exists, `check_language_policy.py` refuses a new shell
-file under `.claude`, and the evidence that replaces the oracle is a dedicated
-per-guard suite plus the planted DEFECT below.
+is that no bash original exists, `check_language_policy.py` refuses a new shell file under `.claude`, and the evidence that replaces the oracle is a dedicated per-guard suite plus the planted DEFECT below.
 
 =============================================================================
 WHAT IT READS OUT OF A COMMAND LINE
@@ -35,25 +31,16 @@ WHAT IT READS OUT OF A COMMAND LINE
                                  callers to, and it does not look like `gh pr`
                                  at all)
 
-THE COMMIT SUBJECT IS EXEMPT FROM R11's IMPERATIVE ARM, and that exemption is in
-the rules file rather than here: R11 lists `ai_output`, `pr` and `markdown` as
-its scopes and omits `commit` entirely. This repository's subjects are
-Conventional-Commits-shaped and imperative by house convention -- measured over
-the last 200 commits, median 71 characters, p90 84, max 98 -- so a guard that
-refused `fix(ci): widen the trigger` would refuse the convention itself. The
-brief's own text carves this out, and compatibility with what is already in the
-tree wins.
+THE COMMIT SUBJECT IS EXEMPT FROM R11's IMPERATIVE ARM, and that exemption is in the rules file rather than here: R11 lists `ai_output`, `pr` and `markdown` as its scopes and omits `commit` entirely. This repository's subjects are Conventional-Commits-shaped and imperative by house convention -- measured over the last 200 commits, median 71 characters, p90 84, max 98 -- so a guard
+that refused `fix(ci): widen the trigger` would refuse the convention itself. The brief's own text carves this out, and compatibility with what is already in the tree wins.
 
 PRE-EXISTING DEBT DOES NOT APPLY HERE, unlike the edit side. A commit message is
 written fresh every time; there is nothing carried through from a previous
-version of it, so there is nothing to consult the baseline about and the guard
-does not. The exception is `--amend`, where the message may be an older one being
+version of it, so there is nothing to consult the baseline about and the guard does not. The exception is `--amend`, where the message may be an older one being
 lightly edited; that is still treated as new, deliberately, because an amend is
 the one moment somebody is already looking at the words.
 
-IT FAILS OPEN, LOUDLY, on a missing engine, exactly as its sibling does and for
-the reason `block_settled_questions.py` gives about a missing jq: the message
-says the text went UNEXAMINED rather than letting a green read as a pass.
+IT FAILS OPEN, LOUDLY, on a missing engine, exactly as its sibling does and for the reason `block_settled_questions.py` gives about a missing jq: the message says the text went UNEXAMINED rather than letting a green read as a pass.
 """
 
 import pathlib
@@ -190,21 +177,10 @@ def _engine(root):
 def _is_target(command):
     """Whether `command` invokes `git commit` or a write-shaped `gh pr` verb.
 
-    RUNS AGAINST `shellscan.scan_target(command)`, NOT the raw string. Found live by
-    review 2026-09-17: a `cat > file <<'EOF' ... EOF` heredoc whose BODY quoted an
-    example (`git commit -m "..." && gh pr create ...`, written as illustrative prose
-    in a reply) tripped this function, because the raw-string regex has no notion of
-    "this text is data being written to a file, not a command being executed" -- the
-    literal `&&` immediately before `gh` satisfied the separator class regardless of
-    where it sat. `shellscan.scan_target` already exists to solve exactly this for
-    the `gh`-guard family (`block_admin_merge.py` and siblings): it strips heredoc
-    BODIES (keeping the introducer line, so `git commit -F - <<'EOF'` itself still
-    matches) and quoted spans before a command-position anchor ever runs, which is
-    the shared, tested defense this guard should have used from the start instead of
-    scanning the raw command directly. `messages()` below is unaffected: it re-parses
-    the RAW command on its own (shlex plus its own HEREDOC regex) to extract the
-    actual bodies to LINT, which is a different question from "is this a target" and
-    still needs the real, unstripped text.
+    RUNS AGAINST `shellscan.scan_target(command)`, NOT the raw string. Found live by review 2026-09-17: a `cat > file <<'EOF' ... EOF` heredoc whose BODY quoted an example (`git commit -m "..." && gh pr create ...`, written as illustrative prose in a reply) tripped this function, because the raw-string regex has no notion of "this text is data being written to a file, not a command
+    being executed" -- the literal `&&` immediately before `gh` satisfied the separator class regardless of where it sat. `shellscan.scan_target` already exists to solve exactly this for the `gh`-guard family (`block_admin_merge.py` and siblings): it strips heredoc BODIES (keeping the introducer line, so `git commit -F - <<'EOF'` itself still matches) and quoted spans before a
+    command-position anchor ever runs, which is the shared, tested defense this guard should have used from the start instead of scanning the raw command directly. `messages()` below is unaffected: it re-parses the RAW command on its own (shlex plus its own HEREDOC regex) to extract the actual bodies to LINT, which is a different question from "is this a target" and still needs the
+    real, unstripped text.
     """
     scanned = shellscan._command_substitution(shellscan.scan_target(command))
     return bool(
@@ -217,16 +193,11 @@ def _is_target(command):
 def messages(command, cwd=None):
     """Every message body a target command carries, as `(label, text)`.
 
-    EXPORTED SO THE SUITE CAN DRIVE IT DIRECTLY, without building a payload and
-    running a chain. The parsing is the interesting half of this guard and the
-    half most likely to be wrong, so it is a function rather than an inlined
-    block inside `run`.
+    EXPORTED SO THE SUITE CAN DRIVE IT DIRECTLY, without building a payload and running a chain. The parsing is the interesting half of this guard and the half most likely to be wrong, so it is a function rather than an inlined block inside `run`.
 
-    `shlex.split` RATHER THAN A REGEX OVER `-m`. A regex has to decide what a
-    quote means, and the answers differ between `-m "a b"`, `-m'a b'`, `-m"a b"`
+    `shlex.split` RATHER THAN A REGEX OVER `-m`. A regex has to decide what a quote means, and the answers differ between `-m "a b"`, `-m'a b'`, `-m"a b"`
     and `--message=a\\ b`. shlex is the shell's own answer to that question. It
-    RAISES on an unbalanced quote, which is a command the shell would reject too,
-    and the caller treats that as nothing-to-examine rather than as a finding.
+    RAISES on an unbalanced quote, which is a command the shell would reject too, and the caller treats that as nothing-to-examine rather than as a finding.
     """
     out = []
     for _, body in HEREDOC.findall(command):
@@ -283,11 +254,7 @@ def messages(command, cwd=None):
 def _read_file(name, cwd):
     """`-F <path>`, read from disk. `-F -` is stdin and is not readable here.
 
-    A FAILURE TO READ RETURNS "", which the caller drops. That is the right
-    direction: a path this process cannot see is a message this guard cannot
-    examine, and inventing a finding from a missing file would be worse than
-    missing one. The heredoc arm above already covers `-F -`, which is how this
-    repository actually writes a multi-paragraph message.
+    A FAILURE TO READ RETURNS "", which the caller drops. That is the right direction: a path this process cannot see is a message this guard cannot examine, and inventing a finding from a missing file would be worse than missing one. The heredoc arm above already covers `-F -`, which is how this repository actually writes a multi-paragraph message.
     """
     if name == "-":
         return ""

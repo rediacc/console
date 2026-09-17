@@ -1,31 +1,13 @@
 """Route a gate at the devbox when the host cannot run it but the container can.
 
-WHY. Measured 2026-08-27, over several hours: `check:ci-python-lint` reported
-"ruff is not available and neither is uvx" and `check:ci-renet` reported
-`command not found`, and this session recorded BOTH as environmental gaps and
-moved on -- twice teaching a gate to say "cannot run here" and once nearly
-marking a third that way when the real cause was an empty node_modules.
+WHY. Measured 2026-08-27, over several hours: `check:ci-python-lint` reported "ruff is not available and neither is uvx" and `check:ci-renet` reported `command not found`, and this session recorded BOTH as environmental gaps and moved on -- twice teaching a gate to say "cannot run here" and once nearly marking a third that way when the real cause was an empty node_modules.
 
-The devbox was running the entire time and carries ruff 0.16.1, the pinned
-shfmt 3.13.1, shellcheck and Go. Nothing was missing. The gates were being run
-in the wrong place, and every "environmental" verdict written on that basis
-was wrong.
+The devbox was running the entire time and carries ruff 0.16.1, the pinned shfmt 3.13.1, shellcheck and Go. Nothing was missing. The gates were being run in the wrong place, and every "environmental" verdict written on that basis was wrong.
 
-It cost more than tidiness. `check:ci-renet` inside the container does not
-fail to start -- it RUNS, and reports `govulncheck` exit 3 with six stdlib
-vulnerabilities. Attributed afterwards by running govulncheck in throwaway
-containers at three toolchains: those six belong to go1.26.4, the version this
-image happened to ship. go1.26.6 and go1.25.13 (which is what CI installs, via
-go-version-file on private/renet/go.mod) both report none of them. So the
-finding was about the IMAGE and not the shipped code, and CI was never red on
-it -- but it was invisible from the host either way, behind a message that
-read like a local inconvenience.
+It cost more than tidiness. `check:ci-renet` inside the container does not fail to start -- it RUNS, and reports `govulncheck` exit 3 with six stdlib vulnerabilities. Attributed afterwards by running govulncheck in throwaway containers at three toolchains: those six belong to go1.26.4, the version this image happened to ship. go1.26.6 and go1.25.13 (which is what CI installs, via
+go-version-file on private/renet/go.mod) both report none of them. So the finding was about the IMAGE and not the shipped code, and CI was never red on it -- but it was invisible from the host either way, behind a message that read like a local inconvenience.
 
-WHAT THIS DOES NOT DO. It does not route every `npm run`. Most gates are node
-and TypeScript and run identically on the host, where they are faster and
-their output lands directly in the transcript. It fires only when the command
-names a gate whose toolchain THIS host lacks and the container has -- that is
-the whole condition, and it is checked against the host, not assumed.
+WHAT THIS DOES NOT DO. It does not route every `npm run`. Most gates are node and TypeScript and run identically on the host, where they are faster and their output lands directly in the transcript. It fires only when the command names a gate whose toolchain THIS host lacks and the container has -- that is the whole condition, and it is checked against the host, not assumed.
 
 =============================================================================
 PORT NOTES
@@ -33,37 +15,19 @@ PORT NOTES
 
 TWO BASH ASSOCIATIVE ARRAYS ARE ITERATED, AND THEIR ORDER IS A HASH ORDER.
 `for key in "${!NEEDS[@]}"` does not visit the keys in the order they were
-written, nor in sorted order: it visits them in the order bash's hash table
-yields, and the FIRST match wins because both loops `break`. That is
-observable, because `check:ci-renet` is a substring of `check:ci-renet-tiers`
-so a command naming the longer key matches both, and `$HIT` reaches the
-message and the suggested `npm run` line.
+written, nor in sorted order: it visits them in the order bash's hash table yields, and the FIRST match wins because both loops `break`. That is observable, because `check:ci-renet` is a substring of `check:ci-renet-tiers` so a command naming the longer key matches both, and `$HIT` reaches the message and the suggested `npm run` line.
 
-Measured on bash 5.3.9 on this host, and hard-coded below in exactly that
-order rather than sorted:
+Measured on bash 5.3.9 on this host, and hard-coded below in exactly that order rather than sorted:
 
     NEEDS      check:ci-python-lint, check:ci-renet, check:ci-renet-tiers
     NEEDS_ENV  sync-media-from-r2, sync-media-to-r2, --publish-www
 
-A different bash could hash differently. That is a property of the ORIGINAL,
-not of this port, and the differential is what would report it: the two sides
-would disagree on `$HIT` for a command naming two keys, on the machine where
-the hash order differs. Recorded here so such a report is read as what it is.
+A different bash could hash differently. That is a property of the ORIGINAL, not of this port, and the differential is what would report it: the two sides would disagree on `$HIT` for a command naming two keys, on the machine where the hash order differs. Recorded here so such a report is read as what it is.
 
-`command -v` DOES NOT MEAN "EXECUTABLE", and this guard's own comment says so.
-Measured on bash 5.3.9: with a mode-0600 file on PATH, `command -v faketool`
-prints its path and exits 0, while `test -x` on that path exits 1. The port
-therefore resolves the path the way `command -v` does -- first PATH entry
-holding a file of that name, executability NOT consulted -- and then applies
-`os.access(..., X_OK)` separately. Collapsing the two into one `which()` would
-be a different test that agrees on a healthy host and disagrees on the
-half-installed one this line exists for.
+`command -v` DOES NOT MEAN "EXECUTABLE", and this guard's own comment says so. Measured on bash 5.3.9: with a mode-0600 file on PATH, `command -v faketool` prints its path and exits 0, while `test -x` on that path exits 1. The port therefore resolves the path the way `command -v` does -- first PATH entry holding a file of that name, executability NOT consulted -- and then applies
+`os.access(..., X_OK)` separately. Collapsing the two into one `which()` would be a different test that agrees on a healthy host and disagrees on the half-installed one this line exists for.
 
-`for tok in $SCAN` IS UNQUOTED, so bash both word-splits it on IFS and then
-PATHNAME-EXPANDS each word against the current directory. With no `nullglob`, a
-word that matches nothing stays literal. Both halves are reproduced, because a
-token carrying a `*` is not exotic in a command line and dropping the expansion
-would make the host-bound walk look at a different set of paths.
+`for tok in $SCAN` IS UNQUOTED, so bash both word-splits it on IFS and then PATHNAME-EXPANDS each word against the current directory. With no `nullglob`, a word that matches nothing stays literal. Both halves are reproduced, because a token carrying a `*` is not exotic in a command line and dropping the expansion would make the host-bound walk look at a different set of paths.
 """
 
 import glob as globmod
@@ -181,8 +145,7 @@ def _have_executable(tool):
 def _split_glob(text):
     """`for tok in $SCAN` -- IFS word splitting, then pathname expansion.
 
-    With no `nullglob`, a pattern that matches nothing stays literal, which is
-    what `glob` returning an empty list has to be turned back into here.
+    With no `nullglob`, a pattern that matches nothing stays literal, which is what `glob` returning an empty list has to be turned back into here.
     """
     out = []
     for word in text.split():
@@ -210,21 +173,12 @@ def _is_invoked(key, scan):
     """Is `key` being RUN here, or merely NAMED?
 
     A plain `grep_q(key, scan, fixed=True)` was the rule, and it blocked reading the
-    script as well as running it. Measured 2026-09-09: `grep -n assets/videos
-    .ci/scripts/deploy/sync-media-to-r2.sh` was refused with a message about credentials
-    that a grep does not need, and `sed -n 1,5p <same path>` likewise. Only `echo
-    '<path>'` escaped, and for the wrong reason -- `scan_target` strips QUOTED spans, so
-    the guard was anchored on quoting rather than on invocation.
+    script as well as running it. Measured 2026-09-09: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` was refused with a message about credentials that a grep does not need, and `sed -n 1,5p <same path>` likewise. Only `echo '<path>'` escaped, and for the wrong reason -- `scan_target` strips QUOTED spans, so the guard was anchored on quoting rather than on
+    invocation.
 
-    The rule is command position: the token holding the key opens the command, follows a
-    separator, or is the argument of an interpreter (`bash`, `sh`, `zsh`, `source`, `.`).
-    Anything else -- a path handed to grep, sed, cat, head, wc, an editor -- is a
-    mention. `npm run <script>` and `./path/to/it` both still read as invocations.
+    The rule is command position: the token holding the key opens the command, follows a separator, or is the argument of an interpreter (`bash`, `sh`, `zsh`, `source`, `.`). Anything else -- a path handed to grep, sed, cat, head, wc, an editor -- is a mention. `npm run <script>` and `./path/to/it` both still read as invocations.
 
-    DELIBERATELY NOT A READER BLOCKLIST. Enumerating grep/sed/cat/head/less/awk means the
-    next reader command is a fresh false positive, and false positives are what teach a
-    session to route around a guard: this one cost a writer a workaround before it cost
-    me a command.
+    DELIBERATELY NOT A READER BLOCKLIST. Enumerating grep/sed/cat/head/less/awk means the next reader command is a fresh false positive, and false positives are what teach a session to route around a guard: this one cost a writer a workaround before it cost me a command.
     """
     interp = r"(bash|sh|zsh|source|\.|npm[{S}]+run|npx)"
     # ONE `rx()` OVER THE WHOLE PATTERN. The first cut put the middle class outside it,

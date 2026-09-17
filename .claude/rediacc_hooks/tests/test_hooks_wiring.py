@@ -1,11 +1,7 @@
 """WIRING: what is on disk and what settings.json registers must match.
 
-Every other case in the suite drives a hook by literal path, which proves the
-program behaves and says NOTHING about whether Claude ever invokes it. Two failures
-are invisible to all of them: a hook file nobody registered (dead code that tests
-green and never guards anything), and a registration pointing at a file that no
-longer exists (a hook that silently never fires). settings.json is READ here, never
-written.
+Every other case in the suite drives a hook by literal path, which proves the program behaves and says NOTHING about whether Claude ever invokes it. Two failures are invisible to all of them: a hook file nobody registered (dead code that tests green and never guards anything), and a registration pointing at a file that no longer exists (a hook that silently never fires).
+settings.json is READ here, never written.
 """
 
 import json
@@ -27,9 +23,7 @@ REG_RE = re.compile(r"^(?:%s)/[A-Za-z0-9._-]+\.sh$|^[A-Za-z0-9._-]+\.sh$" % "|".
 def hook_files(root) -> list[str]:
     """Relative path of every hook script under `root`, lib/ excluded.
 
-    `test-*.sh` is excluded at the root because widening this caught the harness
-    ITSELF as UNWIRED on the first run: a test file is not a hook, and the test-
-    prefix is already this tree's convention for one.
+    `test-*.sh` is excluded at the root because widening this caught the harness ITSELF as UNWIRED on the first run: a test file is not a hook, and the test- prefix is already this tree's convention for one.
     """
     found = set()
     for path in root.rglob("*.sh"):

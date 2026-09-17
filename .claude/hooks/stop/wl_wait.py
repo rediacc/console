@@ -5,42 +5,20 @@
 
 Launched as a BACKGROUND SHELL TASK. Its exit is the ping.
 
-WHY THIS SHAPE AND NOT ANOTHER. Nothing outside a session can inject a turn into
-it. The one push channel that exists is the harness notifying the session when a
-background task finishes, so "wake me when there is mail" has exactly one
-spelling: a process that blocks until there is mail and then exits. The `*/5`
-poll cron it replaces costs a full session turn every five minutes and prints
-nothing on almost every firing.
+WHY THIS SHAPE AND NOT ANOTHER. Nothing outside a session can inject a turn into it. The one push channel that exists is the harness notifying the session when a background task finishes, so "wake me when there is mail" has exactly one spelling: a process that blocks until there is mail and then exits. The `*/5` poll cron it replaces costs a full session turn every five minutes and
+prints nothing on almost every firing.
 
-NO QUOTES ANYWHERE IN THE COMMAND LINE, and that is not cosmetic. `_needle`
-(wl_liveness.py:175-187) takes the longest QUOTE-FREE segment of a background
+NO QUOTES ANYWHERE IN THE COMMAND LINE, and that is not cosmetic. `_needle` (wl_liveness.py:175-187) takes the longest QUOTE-FREE segment of a background
 task's command and requires >= 12 characters, and `verify_background`
-(wl_liveness.py:235-263) only reaches `confirmed` for a shell task with a usable
-needle. Wrap this path in quotes and a perfectly healthy waiter renders as
-`unverifiable`, which is exactly how a working waiter comes to look stuck. The
-absolute path alone is far over 12 characters, so the property holds by
-construction as long as nobody adds quotes.
+(wl_liveness.py:235-263) only reaches `confirmed` for a shell task with a usable needle. Wrap this path in quotes and a perfectly healthy waiter renders as `unverifiable`, which is exactly how a working waiter comes to look stuck. The absolute path alone is far over 12 characters, so the property holds by construction as long as nobody adds quotes.
 
 IT NEVER TAKES A LOCK, AND THAT IS THE SHARPEST HAZARD IN THE WHOLE DESIGN.
-`_append_lines` (wl_store.py) takes a BLOCKING LOCK_EX, so an hour-long holder
-would stall every --ask/--add/--tick in the repo. Worse, the two LOCK_EX|LOCK_NB
-paths that give up SILENTLY on contention -- escalation (wl_requests.py:196-199)
-and dead-session cleanup (wl_store.py) -- would become permanent no-ops with no
-error printed anywhere, so the damage would be invisible. Readers take no lock by
-design and this process only ever reads, stats, or appends a single sub-1024-byte
-line through wl_report (which is itself lock-free). Test 3 in
-test-report-inbox.sh asserts it, with a control that proves the assertion can
-fail.
+`_append_lines` (wl_store.py) takes a BLOCKING LOCK_EX, so an hour-long holder would stall every --ask/--add/--tick in the repo. Worse, the two LOCK_EX|LOCK_NB paths that give up SILENTLY on contention -- escalation (wl_requests.py:196-199) and dead-session cleanup (wl_store.py) -- would become permanent no-ops with no error printed anywhere, so the damage would be invisible.
+Readers take no lock by design and this process only ever reads, stats, or appends a single sub-1024-byte line through wl_report (which is itself lock-free). Test 3 in test-report-inbox.sh asserts it, with a control that proves the assertion can fail.
 
-IT IS A CHANGE DETECTOR, NEVER A BACKLOG DETECTOR. A request that arrived BEFORE
-the waiter launched will not wake it, by design (see `arm`). That is the one bug
-a review caught in this design rather than a test, so read `arm` before changing
-the wake condition.
+IT IS A CHANGE DETECTOR, NEVER A BACKLOG DETECTOR. A request that arrived BEFORE the waiter launched will not wake it, by design (see `arm`). That is the one bug a review caught in this design rather than a test, so read `arm` before changing the wake condition.
 
-Stdlib only. Waiting is os.stat() plus time.sleep(): epoll is linux-only, kqueue
-is absent, inotify/watchdog are not installed, and `pip install` is refused under
-PEP 668. time.monotonic() for the deadline, never the wall clock, so an NTP step
-cannot cut a wait short or extend it forever.
+Stdlib only. Waiting is os.stat() plus time.sleep(): epoll is linux-only, kqueue is absent, inotify/watchdog are not installed, and `pip install` is refused under PEP 668. time.monotonic() for the deadline, never the wall clock, so an NTP step cannot cut a wait short or extend it forever.
 """
 
 import contextlib
@@ -79,14 +57,8 @@ def arm(worklist, store, branch, me):
     relative to it.
 
     ARMING AGAINST A BASELINE RATHER THAN AGAINST EMPTINESS IS THE WHOLE
-    CORRECTNESS ARGUMENT. There is no recipient-side read marker anywhere in the
-    request system: "unread" there is computed as "not resolved and not
-    escalated", which conflates *I have not seen it* with *I have seen it and am
-    deliberately still working on it*. So the classified slice is NOT an inbox of
-    unseen things. A waiter armed on "wake when the slice is non-empty" would
-    fire instantly on launch, be relaunched, fire instantly again, and spin --
-    turning the push mechanism into a busy loop strictly worse than the cron it
-    replaces.
+    CORRECTNESS ARGUMENT. There is no recipient-side read marker anywhere in the request system: "unread" there is computed as "not resolved and not escalated", which conflates *I have not seen it* with *I have seen it and am deliberately still working on it*. So the classified slice is NOT an inbox of unseen things. A waiter armed on "wake when the slice is non-empty" would fire
+    instantly on launch, be relaunched, fire instantly again, and spin -- turning the push mechanism into a busy loop strictly worse than the cron it replaces.
 
     The baseline is process-local and deliberately NOT persisted. A waiter is one
     bounded wait; persisting its baseline would recreate that same read-marker
@@ -130,18 +102,10 @@ def _safe_scan(store, start):
 def heartbeat_path(worklist, me):
     """The file a RUNNING waiter re-touches every tick.
 
-    WHY A HEARTBEAT AND NOT `confirmed_waiters`. The Stop hook can ask the OS,
-    because its event carries `background_tasks`. `PostToolUse` DOES NOT -- I
-    checked a captured payload rather than assuming: its keys are tool_name,
-    tool_input, tool_response, tool_use_id, agent_id, agent_type, cwd,
-    duration_ms, effort, permission_mode, prompt_id, session_id,
-    transcript_path, hook_event_name. No background_tasks, no session_crons.
+    WHY A HEARTBEAT AND NOT `confirmed_waiters`. The Stop hook can ask the OS, because its event carries `background_tasks`. `PostToolUse` DOES NOT -- I checked a captured payload rather than assuming: its keys are tool_name, tool_input, tool_response, tool_use_id, agent_id, agent_type, cwd, duration_ms, effort, permission_mode, prompt_id, session_id, transcript_path,
+    hook_event_name. No background_tasks, no session_crons.
 
-    So the nudge cannot see the task table, and a marker written once at launch
-    would be a LIE the moment the waiter died. A file that only a live process
-    keeps refreshing is the same guarantee by a different route: it goes stale
-    on its own, needs no pid semantics (so it stays portable), and costs the
-    hook exactly one stat.
+    So the nudge cannot see the task table, and a marker written once at launch would be a LIE the moment the waiter died. A file that only a live process keeps refreshing is the same guarantee by a different route: it goes stale on its own, needs no pid semantics (so it stays portable), and costs the hook exactly one stat.
     """
     return worklist.with_suffix(".waiter-%s" % (me or "unknown")[:8])
 
@@ -153,13 +117,9 @@ def ask_nolisten_path(worklist, me):
 def ask_nolisten_count(worklist, me):
     """Consecutive stops where this session held an open ask and was not listening.
 
-    Drives which rung of V_ASK_NOLISTEN_LADDER fires. A plain integer in a
-    sidecar rather than an event, for the same reason nudge_path is: compact()
-    folds the event log to a known set of kinds and would destroy a novel one,
-    and this counter is worth nothing after a fold anyway.
+    Drives which rung of V_ASK_NOLISTEN_LADDER fires. A plain integer in a sidecar rather than an event, for the same reason nudge_path is: compact() folds the event log to a known set of kinds and would destroy a novel one, and this counter is worth nothing after a fold anyway.
 
-    Unreadable counts as zero. The failure direction is one extra gentle nudge,
-    never a session pinned at the terminal rung by a corrupt file.
+    Unreadable counts as zero. The failure direction is one extra gentle nudge, never a session pinned at the terminal rung by a corrupt file.
     """
     try:
         return int(ask_nolisten_path(worklist, me).read_text(encoding="utf-8").split()[0])
@@ -199,17 +159,10 @@ TOMBSTONE = "EXPIRED"
 def tombstone(path, why):
     """Mark a waiter's heartbeat DEAD instead of deleting it.
 
-    WHY THIS EXISTS. wait() used to `hb.unlink()` on both of its exits -- the
-    timeout at the top of the loop and the fired-and-returning path at the
-    bottom -- which made a LAPSED waiter byte-identical to one that was never
-    armed: in both cases there is simply no file. Combined with nudge()'s
-    counter reset (see decay_nudges), arming a single waiter therefore bought
-    30+ minutes of guaranteed silence AFTER it died. That is a perverse
-    incentive, not a gap: the cheapest way to be left alone was to arm one
-    60-minute waiter every few hours and never relaunch it.
+    WHY THIS EXISTS. wait() used to `hb.unlink()` on both of its exits -- the timeout at the top of the loop and the fired-and-returning path at the bottom -- which made a LAPSED waiter byte-identical to one that was never armed: in both cases there is simply no file. Combined with nudge()'s counter reset (see decay_nudges), arming a single waiter therefore bought 30+ minutes of
+    guaranteed silence AFTER it died. That is a perverse incentive, not a gap: the cheapest way to be left alone was to arm one 60-minute waiter every few hours and never relaunch it.
 
-    THE CARRIER IS THE SAME PATH, deliberately, and that is what makes this the
-    cheapest possible change. Every existing reader is `_fresh(hb,
+    THE CARRIER IS THE SAME PATH, deliberately, and that is what makes this the cheapest possible change. Every existing reader is `_fresh(hb,
     HEARTBEAT_STALE_S)` with HEARTBEAT_STALE_S = 60s, and a tombstone is a
     WRITE, so it ages out within a minute exactly as a real heartbeat would. No
     existing caller changes behaviour; the only new reader is waiter_lapsed()
@@ -223,10 +176,7 @@ def waiter_lapsed(worklist, me):
     """("", None) when no waiter has ever been armed for this session, or
     (why, age_minutes) when the last one EXITED and was never relaunched.
 
-    A live waiter answers ("", None) too -- a fresh heartbeat is not a lapse --
-    so the caller does not have to re-derive liveness. NO GRACE PERIOD is
-    warranted on the answer: unlike "you have never armed one", a lapse means
-    the session already accepted the contract and then stopped listening.
+    A live waiter answers ("", None) too -- a fresh heartbeat is not a lapse -- so the caller does not have to re-derive liveness. NO GRACE PERIOD is warranted on the answer: unlike "you have never armed one", a lapse means the session already accepted the contract and then stopped listening.
     """
     path = heartbeat_path(worklist, me)
     try:
@@ -408,19 +358,11 @@ def _is_tombstone(path):
 def decay_nudges(worklist, me):
     """Take ONE off the ignored-count, floor zero. Never a reset.
 
-    THE UNLINK THIS REPLACES WAS RESETTABLE BY THE FAILURE ITSELF. nudge() saw a
-    fresh heartbeat and deleted the counter outright, so arming a single waiter
+    THE UNLINK THIS REPLACES WAS RESETTABLE BY THE FAILURE ITSELF. nudge() saw a fresh heartbeat and deleted the counter outright, so arming a single waiter
     zeroed it; when that waiter lapsed the count had to climb from zero again,
-    over another WAITER_GRACE_NUDGES * NUDGE_EVERY_S (half an hour) before the
-    Stop-side `no-waiter` backstop could fire. A session that armed one
-    60-minute waiter every few hours therefore held the check permanently below
-    threshold while being deaf most of the time -- and the absent
-    `.waiternudge-<id>` file on the failing night is the evidence it happened.
+    over another WAITER_GRACE_NUDGES * NUDGE_EVERY_S (half an hour) before the Stop-side `no-waiter` backstop could fire. A session that armed one 60-minute waiter every few hours therefore held the check permanently below threshold while being deaf most of the time -- and the absent `.waiternudge-<id>` file on the failing night is the evidence it happened.
 
-    Decay keeps the counter a measure of RECENT behaviour (which is what the
-    reset was rightly for) without letting one act of compliance erase a
-    history of ignoring it. Complying repeatedly still walks it to zero, one
-    nudge window at a time.
+    Decay keeps the counter a measure of RECENT behaviour (which is what the reset was rightly for) without letting one act of compliance erase a history of ignoring it. Complying repeatedly still walks it to zero, one nudge window at a time.
     """
     n = nudges_ignored(worklist, me) - 1
     np = nudge_path(worklist, me)
@@ -435,11 +377,7 @@ def decay_nudges(worklist, me):
 def nudges_ignored(worklist, me):
     """How many times this session has been told to start a waiter and has not.
 
-    The Stop-side backstop keys on THIS rather than on "no waiter right now",
-    which is the difference between proportionate and intolerable: a waiter
-    legitimately exits every time it fires, so "no waiter right now" is true in
-    a window the session is supposed to be in, and blocking there punishes the
-    correct behaviour. A count only grows when the session has been asked,
+    The Stop-side backstop keys on THIS rather than on "no waiter right now", which is the difference between proportionate and intolerable: a waiter legitimately exits every time it fires, so "no waiter right now" is true in a window the session is supposed to be in, and blocking there punishes the correct behaviour. A count only grows when the session has been asked,
     repeatedly, over the throttle interval, and ignored it."""
     try:
         return int(nudge_path(worklist, me).read_text(encoding="utf-8").split()[0])
@@ -449,9 +387,7 @@ def nudges_ignored(worklist, me):
 
 def outstanding_work(worklist, session_id, transcript_path=""):
     """Does this session still owe anything? OPEN items, IN-FLIGHT items, and
-    pending harness tasks -- the same three slices the Stop hook already calls
-    `actionable_remains` (wl_checks.py, beside remaining_lines), computed the
-    same way so the two ends of this mechanism cannot drift apart.
+    pending harness tasks -- the same three slices the Stop hook already calls `actionable_remains` (wl_checks.py, beside remaining_lines), computed the same way so the two ends of this mechanism cannot drift apart.
 
     WHAT IS DELIBERATELY NOT COUNTED, and why:
 
@@ -471,8 +407,7 @@ def outstanding_work(worklist, session_id, transcript_path=""):
 
     ANY FAILURE ANSWERS TRUE. Silence has to be EARNED by evidence that there
     is nothing to hear; a store that will not read is not that evidence, and
-    failing the other way would switch the nudge off in exactly the window the
-    worklist is sick.
+    failing the other way would switch the nudge off in exactly the window the worklist is sick.
     """
     try:
         # Tasks first: a directory glob against a resolved path, and the transcript is consulted only on the cold path (bounded tail read, and it banks the resolution for every later process).
@@ -493,9 +428,7 @@ def nudge(event):
     """PostToolUse: tell a session with no live waiter to start one -- unless
     it has nothing left to do, in which case it is told nothing at all.
 
-    ORDERED BY COST, cheapest gate first, because this runs on every tool call:
-    one stat for the throttle, one stat for the heartbeat, then a read of the
-    briefs file, and only past all three the item fold behind outstanding_work.
+    ORDERED BY COST, cheapest gate first, because this runs on every tool call: one stat for the throttle, one stat for the heartbeat, then a read of the briefs file, and only past all three the item fold behind outstanding_work.
     """
     me = str(event.get("session_id") or "")[:8]
     if not me:

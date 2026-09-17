@@ -1,15 +1,8 @@
 """`rediacc_hooks.proc` against the real process table, on both backends.
 
-THE ORACLE IS THE REAL TOOL, as in the shellscan differential: a live child
-process is started, and `pgrep -f` / `ps` are asked about it alongside this
-module. A test that only checked internal consistency would pass on a module
-that read the wrong file, as long as it read it the same way twice.
+THE ORACLE IS THE REAL TOOL, as in the shellscan differential: a live child process is started, and `pgrep -f` / `ps` are asked about it alongside this module. A test that only checked internal consistency would pass on a module that read the wrong file, as long as it read it the same way twice.
 
-BOTH BACKENDS RUN HERE, forced through `REDIACC_PROC_BACKEND`. The `ps` backend
-is the macOS one, and it is exercised on Linux on purpose: a backend that is
-only ever run on the platform nobody tests is a backend that is broken on the
-day it is needed, and the guards it serves go quietly to sleep rather than
-failing.
+BOTH BACKENDS RUN HERE, forced through `REDIACC_PROC_BACKEND`. The `ps` backend is the macOS one, and it is exercised on Linux on purpose: a backend that is only ever run on the platform nobody tests is a backend that is broken on the day it is needed, and the guards it serves go quietly to sleep rather than failing.
 """
 
 import os
@@ -32,9 +25,7 @@ BASH = "/bin/bash"
 def child(tmp_path):
     """A real `bash <script>` process, which is the shape both guards hunt.
 
-    Not a bare `sleep`: the guards look for an INTERPRETER executing a named
-    script, so the fixture has to produce one or the assertions below would be
-    about a shape that never occurs.
+    Not a bare `sleep`: the guards look for an INTERPRETER executing a named script, so the fixture has to produce one or the assertions below would be about a shape that never occurs.
     """
     if not os.path.exists(BASH):
         pytest.skip("%s is not present on this host" % BASH)
@@ -125,9 +116,7 @@ def test_matches_real_pgrep(forced, child, backend):
 def test_cmdline_forms_agree_with_the_shell_pipeline(forced, child, backend):
     """`cmdline` is the pgrep form; `cmdline_tr` is the `tr` form.
 
-    The two differ by exactly one trailing space, and the guards consume the
-    second one. Measured on a live `sleep 19`: `pgrep -f 'sleep 19$'` matches
-    and `pgrep -f 'sleep 19 $'` does not.
+    The two differ by exactly one trailing space, and the guards consume the second one. Measured on a live `sleep 19`: `pgrep -f 'sleep 19$'` matches and `pgrep -f 'sleep 19 $'` does not.
     """
     forced(backend)
     pid = child["pid"]
@@ -149,9 +138,7 @@ def test_cmdline_forms_agree_with_the_shell_pipeline(forced, child, backend):
 def test_a_dead_process_is_absent_and_not_an_error(forced, backend):
     """A pid that exited between the listing and the read reads as None.
 
-    The distinction matters to the guards: "gone" means the script is not being
-    run, while an exception would take down the hook and, with it, every other
-    guard in the chain.
+    The distinction matters to the guards: "gone" means the script is not being run, while an exception would take down the hook and, with it, every other guard in the chain.
     """
     forced(backend)
     dead = 2**22 - 1  # above the default pid_max, so it cannot be live
@@ -171,9 +158,7 @@ def test_kernel_threads_are_invisible_the_way_pgrep_makes_them(forced, backend):
 def test_both_backends_see_this_very_process(monkeypatch):
     """The one comparison that is not about a fixture: the running pytest.
 
-    Its pid must appear in both backends' listings, which is the cheapest
-    possible proof that the ps backend is reading the same table and not, say,
-    silently returning an empty list on a host where its flags are wrong.
+    Its pid must appear in both backends' listings, which is the cheapest possible proof that the ps backend is reading the same table and not, say, silently returning an empty list on a host where its flags are wrong.
     """
     seen = {}
     for backend in BACKENDS:

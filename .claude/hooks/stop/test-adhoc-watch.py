@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Controls for wl_ci.adhoc_watch and wl_ci.ci_watch_armed.
 
-These two decide whether the Stop hook BLOCKS the turn, so both directions
-matter more than usual: a miss lets a hand-rolled CI watch keep producing the
-verdicts that cost this repo a superseded attempt and an already-cancelled run,
+These two decide whether the Stop hook BLOCKS the turn, so both directions matter more than usual: a miss lets a hand-rolled CI watch keep producing the verdicts that cost this repo a superseded attempt and an already-cancelled run,
 while a false positive stops unrelated background work and gets the guard
 deleted. Every control below is a pair.
 
-Two regressions are pinned here by name because both shipped and were caught by
-the worklist suite rather than by reasoning:
+Two regressions are pinned here by name because both shipped and were caught by the worklist suite rather than by reasoning:
 
   * `adhoc_watch` matched a generic worker whose description merely contained
     "watch" near a long number, with no gh call anywhere in it. CI_WATCH_RE is

@@ -1,36 +1,19 @@
 """A feature branch is `MMDD-N`. No suffixes, no words, no decoration.
 
-WHY. `.claude/commands/pr-babysit.md` and `.claude/commands/pr-merge.md` both
-state the convention, and pr-merge's hand-back section warns that guessing a name
-produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a
-session created `0826-1-prerebase` in the console AND in a submodule, as
-safety copies before a rebase. Reasonable intent, wrong shape: the suffix
-makes the ref sort next to a wave branch while belonging to no wave, and
-nothing downstream -- not pr-babysit's branch listing, not the submodule
-same-name matching in branch-rebase.md's submodule step, not pr-merge's coordinated-PR
-lookup -- can tell the two apart.
+WHY. `.claude/commands/pr-babysit.md` and `.claude/commands/pr-merge.md` both state the convention, and pr-merge's hand-back section warns that guessing a name produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a session created `0826-1-prerebase` in the console AND in a submodule, as safety copies before a rebase. Reasonable intent, wrong shape: the suffix
+makes the ref sort next to a wave branch while belonging to no wave, and nothing downstream -- not pr-babysit's branch listing, not the submodule same-name matching in branch-rebase.md's submodule step, not pr-merge's coordinated-PR lookup -- can tell the two apart.
 
-THE SUBMODULE POINT IS THE SHARP ONE. `/pr-merge` finds a submodule's PRs by
-matching the console branch name EXACTLY. A console branch carrying a suffix
-silently matches nothing, so a coordinated submodule PR is invisible to the
-merge path and gets left behind.
+THE SUBMODULE POINT IS THE SHARP ONE. `/pr-merge` finds a submodule's PRs by matching the console branch name EXACTLY. A console branch carrying a suffix silently matches nothing, so a coordinated submodule PR is invisible to the merge path and gets left behind.
 
 ONLY CREATION IS CHECKED. `git branch -d`, `-r`, `--list`, `--show-current`
 and `--contains` read; they are none of this hook's business. Blocking a read
 would be the over-matching that gets a guard switched off.
 
-CITED BY HEADING, NOT LINE. Three of this file's original `:NNN` references
-rotted inside the same session that wrote them, because the files they point
-at were edited in the same working tree. block-blanket-git-add.sh adopted the
-heading convention for exactly this reason.
+CITED BY HEADING, NOT LINE. Three of this file's original `:NNN` references rotted inside the same session that wrote them, because the files they point at were edited in the same working tree. block-blanket-git-add.sh adopted the heading convention for exactly this reason.
 
-`main` is allowed because it is not a feature branch. Nothing else is special
-cased: if a name is neither `main` nor `MMDD-N`, the convention does not
-describe it, and the operator is the one who decides to widen the convention.
+`main` is allowed because it is not a feature branch. Nothing else is special cased: if a name is neither `main` nor `MMDD-N`, the convention does not describe it, and the operator is the one who decides to widen the convention.
 
-PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space,
-tab, newline -- NOT `\\r`, which Python's bare `str.split()` would also eat),
-performs no pathname expansion, and reads ONE line. `BRANCH_ARGS` has already
+PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space, tab, newline -- NOT `\\r`, which Python's bare `str.split()` would also eat), performs no pathname expansion, and reads ONE line. `BRANCH_ARGS` has already
 been through `head -1`, so the single-line part is guaranteed; the split below
 is written out with the exact IFS set rather than delegated to `split()`.
 """

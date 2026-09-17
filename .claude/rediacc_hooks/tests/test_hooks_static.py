@@ -1,11 +1,7 @@
 """Drive every case in `hookcases.STATIC`, one pytest node each.
 
-ANTI-VACUITY FIRST, and the floor is DERIVED rather than typed. A number written by
-hand here would be wrong the day a case is added and, worse, would read green against
-a corpus that had collapsed to nothing if it were ever set to zero. So the floor is
-`case(` occurrences counted out of the module's own SOURCE TEXT and compared against
-the list Python actually built: two independent derivations of the same number, which
-disagree the moment an entry stops being constructed.
+ANTI-VACUITY FIRST, and the floor is DERIVED rather than typed. A number written by hand here would be wrong the day a case is added and, worse, would read green against a corpus that had collapsed to nothing if it were ever set to zero. So the floor is `case(` occurrences counted out of the module's own SOURCE TEXT and compared against the list Python actually built: two
+independent derivations of the same number, which disagree the moment an entry stops being constructed.
 """
 
 import re
@@ -36,10 +32,7 @@ def test_the_corpus_is_not_empty_and_matches_its_own_source():
 def test_every_case_names_a_guard_that_exists():
     """A KEY THAT RESOLVES TO NOTHING MUST BE LOUD.
 
-    `python3 dispatch.py <typo>` raises ModuleNotFoundError and exits 1, which a case
-    expecting 2 would report as a plain miss and a case expecting 0 would report as a
-    failure -- both wrong about the reason. Naming the missing module here says which
-    of the two it is, once, instead of 300 confusing case failures.
+    `python3 dispatch.py <typo>` raises ModuleNotFoundError and exits 1, which a case expecting 2 would report as a plain miss and a case expecting 0 would report as a failure -- both wrong about the reason. Naming the missing module here says which of the two it is, once, instead of 300 confusing case failures.
     """
     missing = []
     for key in sorted({kase.key for kase in hookcases.STATIC}):

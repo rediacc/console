@@ -1,9 +1,6 @@
 """The proof for every ported guard: a differential against its bash twin.
 
-WHY A DIFFERENTIAL, restated for this phase because the argument is not the
-same one `test_shellscan_differential` makes. That file compares 28 INTERNAL
-fields, because `command-scan.sh` is a library whose functions are the surface.
-A guard has no such surface. Its entire contract is what the harness observes:
+WHY A DIFFERENTIAL, restated for this phase because the argument is not the same one `test_shellscan_differential` makes. That file compares 28 INTERNAL fields, because `command-scan.sh` is a library whose functions are the surface. A guard has no such surface. Its entire contract is what the harness observes:
 
     the exit code            0 allows the tool call, 2 refuses it
     stdout                   what the session sees
@@ -12,16 +9,10 @@ A guard has no such surface. Its entire contract is what the harness observes:
                              code alone cannot tell 'blocked, here is the
                              correct command' from 'blocked, good luck'")
 
-So three fields are compared, byte for byte, and the richness that the other
-differential gets from field count this one gets from INPUT count: every guard
-is run against the events its own suite cases pair with it, against a
-deterministic sample of every OTHER guard's events, against 25 degenerate event
-shapes the suite never produces, and against every edge case the port module
-declares from its twin's comments. Cross-feeding is not padding: over-blocking
-only ever shows up on somebody else's input.
+So three fields are compared, byte for byte, and the richness that the other differential gets from field count this one gets from INPUT count: every guard is run against the events its own suite cases pair with it, against a deterministic sample of every OTHER guard's events, against 25 degenerate event shapes the suite never produces, and against every edge case the port module
+declares from its twin's comments. Cross-feeding is not padding: over-blocking only ever shows up on somebody else's input.
 
-WHAT MAKES THE COMPARISON FAIR, and each of these was a way to get a green that
-means nothing:
+WHAT MAKES THE COMPARISON FAIR, and each of these was a way to get a green that means nothing:
 
   * THE BASH SIDE RUNS THE REAL FILE, never a copy. A differential against a
     transcription proves the transcription.
@@ -37,8 +28,7 @@ means nothing:
     and match a port that never emitted one. `test_shellscan_differential`
     records finding this the hard way; it is not re-learned here.
 
-ANTI-VACUITY. Three separate controls, because each covers a different way this
-file could pass while proving nothing:
+ANTI-VACUITY. Three separate controls, because each covers a different way this file could pass while proving nothing:
 
   1. `test_every_guard_discriminates` -- a guard whose whole case set returns
      one exit code is a guard the corpus never exercised. Comparing two
@@ -54,8 +44,7 @@ file could pass while proving nothing:
 RUNNING THE DEEP SWEEP. `REDIACC_GUARD_DIFF_FULL=1` feeds EVERY payload to
 EVERY guard instead of the cross sample. That is the full cross product and it
 is slow, so it is not the default; the number it produced is recorded in the
-phase report rather than asserted here, because a timing-shaped assertion in a
-feature worktree is inadmissible (driver contract section 5).
+phase report rather than asserted here, because a timing-shaped assertion in a feature worktree is inadmissible (driver contract section 5).
 """
 
 import ast
@@ -189,8 +178,7 @@ def all_builders():
 
     A guard whose twin distinguishes a world nothing else needs declares it in
     its own file, as `FIXTURES = {"name": builder}`, and the name is then usable
-    in its `ENVS`. That keeps a port and the world it is judged in in ONE file,
-    which matters when several agents are porting different guards into this
+    in its `ENVS`. That keeps a port and the world it is judged in in ONE file, which matters when several agents are porting different guards into this
     package at once: a shared table is a shared edit, and a shared edit is a
     collision.
     """
@@ -227,9 +215,7 @@ def _resolve_fixtures(value, work):
 def _base_env(stub_dir, extra, work=None):
     """The environment BOTH sides run under, built rather than inherited.
 
-    `PATH` keeps the real one behind the stub directory: these guards call
-    `git`, `sed`, `awk` and `python3`, and an empty PATH would make every one
-    of them fail identically on both sides -- agreement that proves nothing.
+    `PATH` keeps the real one behind the stub directory: these guards call `git`, `sed`, `awk` and `python3`, and an empty PATH would make every one of them fail identically on both sides -- agreement that proves nothing.
     """
     env = {
         "PATH": "%s:%s" % (stub_dir, os.environ.get("PATH", "/usr/bin:/bin")),
@@ -248,10 +234,7 @@ def _base_env(stub_dir, extra, work=None):
 def environments(module):
     """`[(label, env_extra, stubs)]` for one port module.
 
-    One variant by default. A module declares `ENVS` when its twin's behaviour
-    genuinely forks on something outside the payload -- a `gh` that answers, an
-    environment variable its own comments name -- and then both sides run every
-    variant.
+    One variant by default. A module declares `ENVS` when its twin's behaviour genuinely forks on something outside the payload -- a `gh` that answers, an environment variable its own comments name -- and then both sides run every variant.
     """
     return getattr(module, "ENVS", None) or [("default", {}, {})]
 
@@ -282,25 +265,15 @@ def edge_payload(module, spec):
 def divergence_cases():
     """`[(stem, label, payload, reason)]` a port DECLARES it does not match on.
 
-    WHY A DECLARATION AND NOT A SILENT GAP, and this exists because the gap was
-    real. `block-long-sleep.sh` reads its sleep value with bash arithmetic, so
-    `sleep 08` is not a number in base 10 and the shell writes
+    WHY A DECLARATION AND NOT A SILENT GAP, and this exists because the gap was real. `block-long-sleep.sh` reads its sleep value with bash arithmetic, so `sleep 08` is not a number in base 10 and the shell writes
 
         .claude/hooks/pre-bash/block-long-sleep.sh: line 45: [[: 08: value too
         great for base (error token is "08")
 
-    to stderr and then PERMITS the command. The port cannot reproduce that line:
-    it names the twin's own path and line number, which are facts about a file
-    the port is replacing, so emitting them would be a lie rather than a
-    transliteration. No suite case carries a leading-zero sleep, so the
-    differential simply never saw it -- a divergence that exists and that
-    nothing reported, which is the failure this whole file is built against.
+    to stderr and then PERMITS the command. The port cannot reproduce that line: it names the twin's own path and line number, which are facts about a file the port is replacing, so emitting them would be a lie rather than a transliteration. No suite case carries a leading-zero sleep, so the differential simply never saw it -- a divergence that exists and that nothing reported,
+    which is the failure this whole file is built against.
 
-    So the port declares it. The harness then runs the case and asserts the
-    SHAPE of the disagreement: the exit code and stdout must still match, and
-    stderr must still DIFFER. That last assertion is what stops the entry
-    rotting: if a later change makes the two agree, the declaration is stale and
-    this says so instead of quietly excusing a match.
+    So the port declares it. The harness then runs the case and asserts the SHAPE of the disagreement: the exit code and stdout must still match, and stderr must still DIFFER. That last assertion is what stops the entry rotting: if a later change makes the two agree, the declaration is stale and this says so instead of quietly excusing a match.
     """
     out = []
     for stem in guards.stems():
@@ -313,24 +286,14 @@ def divergence_cases():
 def build_cases(twinned=True):
     """Every (guard, label, payload, env-variant) the differential will run.
 
-    Only guards that have BEEN PORTED are included. That is not a way of
-    excusing the rest: a port that does not exist has no twin to compare, and
-    `test_every_ported_guard_is_registered` is what stops a module being
-    written and then quietly left out of this list.
+    Only guards that have BEEN PORTED are included. That is not a way of excusing the rest: a port that does not exist has no twin to compare, and `test_every_ported_guard_is_registered` is what stops a module being written and then quietly left out of this list.
 
     `twinned=False` BUILDS THE COMPLEMENT: the cases for guards that were never
-    bash and therefore have no oracle. They are built by the SAME function
-    against the SAME corpus, and the split is only about which side the bash
-    driver can run. Keeping one builder means an untwinned guard is still
-    cross-fed every other guard's payloads and every degenerate shape, which is
+    bash and therefore have no oracle. They are built by the SAME function against the SAME corpus, and the split is only about which side the bash driver can run. Keeping one builder means an untwinned guard is still cross-fed every other guard's payloads and every degenerate shape, which is
     where over-blocking shows up; the only thing it loses is the comparison to
     bash, and `TWIN = None` is what declares that loss out loud.
 
-    THE INDEX ALIGNMENT IS WHY THIS IS A SPLIT AND NOT A FILTER AT USE TIME. The
-    bash driver writes one case file per element of `CASES` and the comparison
-    reads `bash_results["records"][i]`, so a single untwinned entry anywhere in
-    that list would shift every record after it by one and the differential would
-    compare each guard against its neighbour while reporting agreement.
+    THE INDEX ALIGNMENT IS WHY THIS IS A SPLIT AND NOT A FILTER AT USE TIME. The bash driver writes one case file per element of `CASES` and the comparison reads `bash_results["records"][i]`, so a single untwinned entry anywhere in that list would shift every record after it by one and the differential would compare each guard against its neighbour while reporting agreement.
     """
     harvested, stats = guardcorpus.harvest_cases()
     pool = sorted({payload for _, payload, _, _ in harvested})
@@ -485,21 +448,12 @@ def bash_results(tmp_path_factory):
 def python_fields(stem, payload, extra, stubs, work):
     """The Python side of one case, field for field with the driver above.
 
-    `os.environ` is swapped for the case environment rather than passed down,
-    because a ported guard that shells out to `git` or `gh` inherits the
-    process environment exactly as its bash twin inherits the shell's. Passing
-    an `env` only to `dispatch` would leave those children reading the test
-    runner's environment while the bash side read the case's.
+    `os.environ` is swapped for the case environment rather than passed down, because a ported guard that shells out to `git` or `gh` inherits the process environment exactly as its bash twin inherits the shell's. Passing an `env` only to `dispatch` would leave those children reading the test runner's environment while the bash side read the case's.
 
-    `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that
-    an in-process side does not get from swapping a dict. `TZ` is read by libc
-    once and cached, so `datetime.now()` here would keep answering in the test
-    runner's own zone however the case set the variable, while the bash side --
-    a fresh process per case -- read the case's zone. Measured 2026-09-07:
+    `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that an in-process side does not get from swapping a dict. `TZ` is read by libc once and cached, so `datetime.now()` here would keep answering in the test runner's own zone however the case set the variable, while the bash side -- a fresh process per case -- read the case's zone. Measured 2026-09-07:
     without this call, `block_stale_pr_branch_date` reported the port as
     diverging under a pinned `TZ=UTC` when the port was right and the HARNESS was
-    the thing ignoring the variable. Restoring the runner's own zone afterwards
-    matters for the same reason.
+    the thing ignoring the variable. Restoring the runner's own zone afterwards matters for the same reason.
     """
     env = _base_env(_stub_dir(work, dict(DEFAULT_STUBS, **stubs)), extra, work)
     saved = dict(os.environ)
@@ -553,9 +507,7 @@ def test_corpus_is_real_and_large_enough():
 def test_builders_match_the_suite():
     """The transcribed event shapes are still the suite's own.
 
-    If a builder changes and the table does not, every payload for that builder
-    is silently the wrong shape, BOTH sides get it, and this file goes on
-    passing while testing something else.
+    If a builder changes and the table does not, every payload for that builder is silently the wrong shape, BOTH sides get it, and this file goes on passing while testing something else.
     """
     drift = guardcorpus.builder_shape_drift()
     assert not drift, "suite payload builders no longer match the corpus table: %r" % (drift,)
@@ -564,9 +516,7 @@ def test_builders_match_the_suite():
 def test_every_ported_guard_is_registered():
     """A module in `guards/` that this file does not exercise is invisible.
 
-    Same failure the driver contract names for a gate the binder cannot see:
-    "it is invisible, which is worse than unregistered, because nothing reports
-    the absence".
+    Same failure the driver contract names for a gate the binder cannot see: "it is invisible, which is worse than unregistered, because nothing reports the absence".
     """
     exercised = {stem for stem, _, _, _, _, _ in CASES}
     exercised |= {stem for stem, _, _, _, _, _ in NATIVE_CASES}
@@ -578,11 +528,7 @@ def test_every_port_has_a_present_twin():
     """A twinned guard's oracle must exist. An UNTWINNED one must have a suite.
 
     THE SECOND HALF IS THE POINT, and it is what stops `TWIN = None` becoming the
-    cheap way out of this whole file. A guard with no oracle is not judged
-    against less evidence, it is judged against DIFFERENT evidence: a dedicated
-    `test-<stem>.py` beside it, which `check-hook-integrity.sh` already treats as
-    covering both directions. Without this arm, deleting a twin declaration would
-    silently remove a guard from the differential AND from every other control,
+    cheap way out of this whole file. A guard with no oracle is not judged against less evidence, it is judged against DIFFERENT evidence: a dedicated `test-<stem>.py` beside it, which `check-hook-integrity.sh` already treats as covering both directions. Without this arm, deleting a twin declaration would silently remove a guard from the differential AND from every other control,
     and the suite would go green faster than before.
     """
     for stem in guards.stems():
@@ -625,13 +571,9 @@ def test_guard_matches_bash(bash_results, index, stem, label, payload, extra, st
 def test_every_guard_discriminates(bash_results):
     """No guard may answer the same way on every case it was given.
 
-    A guard that returns 0 on all of its inputs has been compared against a
-    constant, which is the failure `test_shellscan_differential` found in its
-    own field set: "the target_root field evaluated against an absent root was
-    empty on all 385 cases -- a comparison that could not have failed".
+    A guard that returns 0 on all of its inputs has been compared against a constant, which is the failure `test_shellscan_differential` found in its own field set: "the target_root field evaluated against an absent root was empty on all 385 cases -- a comparison that could not have failed".
 
-    Exit code alone is not the test, because the four `warn-*` guards exit 0 by
-    design and speak on stderr. The predicate is that SOMETHING varies.
+    Exit code alone is not the test, because the four `warn-*` guards exit 0 by design and speak on stderr. The predicate is that SOMETHING varies.
     """
     seen = {}
     for i, (stem, _, _, _, _, _) in enumerate(CASES):
@@ -647,15 +589,11 @@ def test_every_guard_discriminates(bash_results):
 def test_every_untwinned_guard_discriminates(bash_results):
     """The same anti-vacuity control as above, for the guards with no oracle.
 
-    `test_every_guard_discriminates` reads the BASH side's records, so it cannot
-    see a guard the bash driver never ran. Without this, an untwinned guard that
-    returned 0 on all 400-odd of its cases -- a broken match, a raised-and-caught
+    `test_every_guard_discriminates` reads the BASH side's records, so it cannot see a guard the bash driver never ran. Without this, an untwinned guard that returned 0 on all 400-odd of its cases -- a broken match, a raised-and-caught
     import, a chain it is not in -- would be invisible to every control in this
     file, and the file would go green faster for having it.
 
-    THE PREDICATE IS "SOMETHING VARIES", not "some case exits 2", for the reason
-    the twinned version gives: the `warn_*` guards exit 0 by design and speak on
-    stderr, so an exit-code-only test would be wrong about them.
+    THE PREDICATE IS "SOMETHING VARIES", not "some case exits 2", for the reason the twinned version gives: the `warn_*` guards exit 0 by design and speak on stderr, so an exit-code-only test would be wrong about them.
     """
     if not NATIVE_CASES:
         # An EMPTY set is a pass, not a skip: `check:ci-pytest` refuses a skip, and a repository with no untwinned guards is an honest state rather than an unrun test. See the NO_DIVERGENCE sentinel below, same lesson.
@@ -679,10 +617,7 @@ def test_every_untwinned_guard_discriminates(bash_results):
 def test_the_differential_can_fail(tmp_path, bash_results):
     """Every port declares one defect, and the comparison must catch it.
 
-    A differential that has never failed is not evidence. This plants each
-    port's own declared defect -- a single source substitution naming the line
-    its twin's comments say cost the most -- and requires the ported guard to
-    answer differently on at least one case it was given.
+    A differential that has never failed is not evidence. This plants each port's own declared defect -- a single source substitution naming the line its twin's comments say cost the most -- and requires the ported guard to answer differently on at least one case it was given.
     """
     work = bash_results["work"]
     unproven = []
@@ -811,9 +746,7 @@ def bash_comment_bytes(path):
 def python_comment_bytes(path):
     """`#` comments plus docstrings, counted CONSERVATIVELY.
 
-    A comment token is counted from its `#` (its indentation is not counted,
-    though the bash side's is), and a docstring from its opening quote. The
-    asymmetry is deliberate and in the strict direction: the port is credited
+    A comment token is counted from its `#` (its indentation is not counted, though the bash side's is), and a docstring from its opening quote. The asymmetry is deliberate and in the strict direction: the port is credited
     with less than it has, so a ratio that clears the floor clears it honestly.
     """
     text = path.read_text(encoding="utf-8")

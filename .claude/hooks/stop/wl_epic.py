@@ -1,18 +1,10 @@
 """Epics: a label over N worklist items, for PR structure and per-epic review.
 
-WHY A SIDECAR AND NOT AN EVENT KIND. `compact()` in wl_store.py rewrites the
-event log down to the minimal item-reproducing set (md, add, lease), so a novel
-event kind there is SILENTLY DESTROYED. `record_intent` already learned this and
+WHY A SIDECAR AND NOT AN EVENT KIND. `compact()` in wl_store.py rewrites the event log down to the minimal item-reproducing set (md, add, lease), so a novel event kind there is SILENTLY DESTROYED. `record_intent` already learned this and
 says so at its own definition; `.requests` and `.intents` are the precedents this
-follows. An epic that vanished on the next compact would take a PR's whole
-structure with it, and the failure would look like an empty section rather than
-an error.
+follows. An epic that vanished on the next compact would take a PR's whole structure with it, and the failure would look like an empty section rather than an error.
 
-WHY EPICS ARE NOT WORKLIST ITEMS. `wl_planfid.is_umbrella()` actively refuses an
-item that stands for several tasks ("Waves B-D", "phases 1 through 3"), because
-one item covering many tasks is how work goes untracked. An epic is a LABEL OVER
-items, never an item: the items stay individually tracked, ticked and evidenced,
-and the epic only groups them for rendering and review.
+WHY EPICS ARE NOT WORKLIST ITEMS. `wl_planfid.is_umbrella()` actively refuses an item that stands for several tasks ("Waves B-D", "phases 1 through 3"), because one item covering many tasks is how work goes untracked. An epic is a LABEL OVER items, never an item: the items stay individually tracked, ticked and evidenced, and the epic only groups them for rendering and review.
 
 WHAT AN EPIC IS FOR. Two consumers, and both need the same grouping:
   1. the PR body, which gets one section per epic so a reader can see which
@@ -20,8 +12,7 @@ WHAT AN EPIC IS FOR. Two consumers, and both need the same grouping:
   2. the review, which runs once per epic against only that epic's commits, so a
      big-bang PR cannot starve one task's review by crowding it out.
 
-IDS ARE NOT FIXED WIDTH. Worklist item ids are 8 hex from the CLI and 12 hex when
-migrated from the old markdown. Never parse assuming a width.
+IDS ARE NOT FIXED WIDTH. Worklist item ids are 8 hex from the CLI and 12 hex when migrated from the old markdown. Never parse assuming a width.
 """
 
 import json
@@ -37,24 +28,13 @@ EPIC_MAX_COVERS = 64
 def epics_path():
     """The DURABLE epic sidecar, `agent/worklist/epics.jsonl`.
 
-    IT WAS `worklist.with_suffix(".epics")` AND THAT WAS THE WHOLE BUG. W12 P3.1a
-    is recorded as "the TMPDIR sidecar moved into agent/worklist/" and the code
-    read as if it had, because the durable-looking derivation hid where the
-    argument actually points: `worklist` is the LEGACY markdown mirror, which
-    lives at $TMPDIR/claude-worklist/<slug>.md. So the epics rode along in
-    /tmp, and a /tmp clear between branches deleted them.
+    IT WAS `worklist.with_suffix(".epics")` AND THAT WAS THE WHOLE BUG. W12 P3.1a is recorded as "the TMPDIR sidecar moved into agent/worklist/" and the code read as if it had, because the durable-looking derivation hid where the argument actually points: `worklist` is the LEGACY markdown mirror, which lives at $TMPDIR/claude-worklist/<slug>.md. So the epics rode along in /tmp, and
+    a /tmp clear between branches deleted them.
 
-    Measured 2026-09-06, and it was not hypothetical. Eighteen commits on branch
-    0906-1 carry `PR-TASK: 24c98380`, an epic whose definition was gone:
-    `check:ci-pr-task-trailers` reported them as naming no epic in the snapshot,
-    which means the review would have covered none of them. The title survived
-    only because a PREVIOUS branch's rendered snapshot, agent/pr/0903-1.md, is
+    Measured 2026-09-06, and it was not hypothetical. Eighteen commits on branch 0906-1 carry `PR-TASK: 24c98380`, an epic whose definition was gone: `check:ci-pr-task-trailers` reported them as naming no epic in the snapshot, which means the review would have covered none of them. The title survived only because a PREVIOUS branch's rendered snapshot, agent/pr/0903-1.md, is
     tracked. A generated view outliving its source is not a recovery plan.
 
-    Repo-scoped, not per-session: an epic is a label many sessions attach items
-    to, and it always behaved that way (one file, whoever wrote it). The
-    `worklist` argument is GONE rather than kept and ignored, because a parameter
-    nothing reads is the next reader's false lead about where this resolves from.
+    Repo-scoped, not per-session: an epic is a label many sessions attach items to, and it always behaved that way (one file, whoever wrote it). The `worklist` argument is GONE rather than kept and ignored, because a parameter nothing reads is the next reader's false lead about where this resolves from.
     """
     return S.store_dir() / "epics.jsonl"
 
@@ -89,9 +69,7 @@ def record_epic(me, epic_id, title, covers, order=None):
 def load_epics():
     """{epic_id: record}, later lines winning, ordered by `order` then first-seen.
 
-    A torn or malformed line is SKIPPED, never fatal: the same rule the event
-    reader follows, because a crash mid-append must not make the whole file
-    unreadable.
+    A torn or malformed line is SKIPPED, never fatal: the same rule the event reader follows, because a crash mid-append must not make the whole file unreadable.
     """
     p = epics_path()
     if not p.exists():
@@ -146,11 +124,7 @@ def add_to_epic(me, epic_id, item_ids):
 def neutralize(text):
     """Defang HTML comment delimiters in text destined for a PR body.
 
-    THIS IS NOT COSMETIC. The PR body carries managed blocks delimited by HTML
-    comments, and an item whose own text contains `-->` would TERMINATE the block
-    early, silently truncating every section after it. Found immediately: the
-    worklist item tracking this very feature had `<!-- worklist-epics:begin/end
-    -->` in its title, because that is what the task is called.
+    THIS IS NOT COSMETIC. The PR body carries managed blocks delimited by HTML comments, and an item whose own text contains `-->` would TERMINATE the block early, silently truncating every section after it. Found immediately: the worklist item tracking this very feature had `<!-- worklist-epics:begin/end -->` in its title, because that is what the task is called.
 
     Zero-width-space between the characters keeps the text readable to a human
     while making it inert to an HTML parser.
@@ -161,9 +135,7 @@ def neutralize(text):
 def render(fold, heading="###"):
     """Markdown: one section per epic, its items beneath.
 
-    Uses wl_store.brief_text, the v14 display identity (what the item FIRST said
-    plus its LATEST note), never rec["text"] which accumulates every update note
-    forever and would put twenty concatenated lines into a PR body.
+    Uses wl_store.brief_text, the v14 display identity (what the item FIRST said plus its LATEST note), never rec["text"] which accumulates every update note forever and would put twenty concatenated lines into a PR body.
     """
     epics = load_epics()
     items = {r["id"]: r for r in fold.items}

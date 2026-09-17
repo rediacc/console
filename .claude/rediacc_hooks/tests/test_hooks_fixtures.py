@@ -1,9 +1,6 @@
 """The cases that need a FIXTURE: a temp repo, a stubbed `gh`, an exported root.
 
-Everything that could be data is in hookcases.STATIC. What is left is here because
-the guard's subject is not the command string: it is the state of a git index, the
-answer a `gh` call gives, or whether a file exists. Each block builds exactly what
-its guard reads and tears it down again.
+Everything that could be data is in hookcases.STATIC. What is left is here because the guard's subject is not the command string: it is the state of a git index, the answer a `gh` call gives, or whether a file exists. Each block builds exactly what its guard reads and tears it down again.
 """
 
 import json

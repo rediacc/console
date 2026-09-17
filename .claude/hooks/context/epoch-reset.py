@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """PostCompact: open a new band epoch.
 
-Compaction is the event that makes every band the notice already announced
-untrue: usage has dropped, the transcript is a summary, and the recovery
-document matters more than it did a minute ago, not less. This hook bumps the
-epoch and clears the band ladder so `band-notice.py` will speak again on the
-way back up.
+Compaction is the event that makes every band the notice already announced untrue: usage has dropped, the transcript is a summary, and the recovery document matters more than it did a minute ago, not less. This hook bumps the epoch and clears the band ladder so `band-notice.py` will speak again on the way back up.
 
-It also records what the compaction produced. `compact_summary` is the only
-place a session can see what its own summary said, and its LENGTH is the
-cheapest available answer to "did the summary keep anything".
+It also records what the compaction produced. `compact_summary` is the only place a session can see what its own summary said, and its LENGTH is the cheapest available answer to "did the summary keep anything".
 
-PostCompact has no decision control, so there is nothing to return. Exit 0,
-always.
+PostCompact has no decision control, so there is nothing to return. Exit 0, always.
 """
 
 import sys

@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 """Control harness for block-destructive-git-restore.sh.
 
-BOTH DIRECTIONS, because a one-sided control is satisfiable by a broken hook:
-one that always blocks passes every positive case, and one that never blocks
-passes every negative case. Only the pair pins the behaviour.
+BOTH DIRECTIONS, because a one-sided control is satisfiable by a broken hook: one that always blocks passes every positive case, and one that never blocks passes every negative case. Only the pair pins the behaviour.
 
-The negative cases matter more than usual here. This guard sits on `git
-checkout`, which sessions legitimately use to switch branches all day. A guard
-that blocks that is one sessions will demand be removed, and then the tree has
-no guard at all.
+The negative cases matter more than usual here. This guard sits on `git checkout`, which sessions legitimately use to switch branches all day. A guard that blocks that is one sessions will demand be removed, and then the tree has no guard at all.
 """
 
 import atexit

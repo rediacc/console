@@ -1,35 +1,17 @@
 """Refuse `gh pr merge` while the branch still has commits that are only local.
 
-WHY, and it is a near-miss from 2026-09-01 rather than a hypothetical. A land pass had
-pushed head `a3701d631` and was one step from `gh pr merge`. A later commit --
-`23e734384`, a gate fix -- was still local. All five repos here set
-`delete_branch_on_merge: true`, so the merge would have deleted `0831-1` out from under
-it. The commit would not have been "lost" (it sits in the local reflog) but it would have
-been orphaned: not on `main`, not on any branch, not in any PR, and invisible to every
-later `git log` a session runs. It was caught by reasoning about branch deletion, which
-is exactly the kind of catch that works until the once it does not.
+WHY, and it is a near-miss from 2026-09-01 rather than a hypothetical. A land pass had pushed head `a3701d631` and was one step from `gh pr merge`. A later commit -- `23e734384`, a gate fix -- was still local. All five repos here set `delete_branch_on_merge: true`, so the merge would have deleted `0831-1` out from under it. The commit would not have been "lost" (it sits in the
+local reflog) but it would have been orphaned: not on `main`, not on any branch, not in any PR, and invisible to every later `git log` a session runs. It was caught by reasoning about branch deletion, which is exactly the kind of catch that works until the once it does not.
 
-WHY A HOOK AND NOT A CI GATE. A gate runs in CI, against the tree that was PUSHED. Local
-unpushed commits are invisible to it by construction -- the gate's own view is the
-evidence that they are missing. The only place this is checkable is the machine holding
-the commits, at the moment the merge is typed. That is here.
+WHY A HOOK AND NOT A CI GATE. A gate runs in CI, against the tree that was PUSHED. Local unpushed commits are invisible to it by construction -- the gate's own view is the evidence that they are missing. The only place this is checkable is the machine holding the commits, at the moment the merge is typed. That is here.
 
-NOT COVERED BY warn-remote-drift.sh, which is the nearest thing and looks similar: that
-guard fires only on `git push`, and it checks the OPPOSITE direction (remote moved ahead
-of local, so a push would be stale). Local-ahead-of-remote at merge time is a different
-question with a different answer.
+NOT COVERED BY warn-remote-drift.sh, which is the nearest thing and looks similar: that guard fires only on `git push`, and it checks the OPPOSITE direction (remote moved ahead of local, so a push would be stale). Local-ahead-of-remote at merge time is a different question with a different answer.
 
-FAIL OPEN on every environmental error -- detached HEAD, no such remote branch, no
-network, a merge typed for some other repo's PR. A guard against orphaning work must
-never become an outage that stops work landing.
+FAIL OPEN on every environmental error -- detached HEAD, no such remote branch, no network, a merge typed for some other repo's PR. A guard against orphaning work must never become an outage that stops work landing.
 
-PORT NOTE ON THE FAIL-OPEN CHAIN. The bash spells it as eight consecutive
-`|| exit 0` / `[ -n ... ] || exit 0` lines, and every one of them is load-bearing
+PORT NOTE ON THE FAIL-OPEN CHAIN. The bash spells it as eight consecutive `|| exit 0` / `[ -n ... ] || exit 0` lines, and every one of them is load-bearing
 prose above. In Python the same chain is `run_out(..., want_rc=True)` returning
-None, which is why `git_out` is called with `want_rc` set rather than with the
-default: the default turns a git FAILURE into an empty string, and an empty
-string here would fall through to the next test instead of allowing the merge.
-Confusing those two is how a fail-open guard becomes a fail-closed one.
+None, which is why `git_out` is called with `want_rc` set rather than with the default: the default turns a git FAILURE into an empty string, and an empty string here would fall through to the next test instead of allowing the merge. Confusing those two is how a fail-open guard becomes a fail-closed one.
 """
 
 from rediacc_hooks import hookio

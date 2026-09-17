@@ -1,12 +1,9 @@
 """Block a BLANKET `git add` -- `-A`/`--all` with no pathspec, a lone `.`, or `:/`.
 
-WHY. This checkout is routinely shared by several live sessions, so "stage
-everything" does not mean "stage my work", it means "stage whatever every
-other session happens to have uncommitted right now". The tree is the shared
+WHY. This checkout is routinely shared by several live sessions, so "stage everything" does not mean "stage my work", it means "stage whatever every other session happens to have uncommitted right now". The tree is the shared
 surface; the index is not a private scratchpad.
 
-Found live, twice, and the second one is why this exists as a HOOK rather
-than a paragraph:
+Found live, twice, and the second one is why this exists as a HOOK rather than a paragraph:
   - docs/agent-reference/TRAPS.md, "A blanket `git add -A` sweep imports
     other sessions' half-landed work" (cited by heading, not line: the two
     trap corpora were merged into that one file and every line moved):
@@ -19,24 +16,14 @@ than a paragraph:
     while an unrelated PR was being built around them. A single `git add -A`
     would have shipped a submodule bump into a PR that never reviewed it.
 
-WHY A HOOK AND NOT A RULE. CLAUDE.md session default 1 and the memory
-feedback_shared_checkout_hygiene have both said "never blanket-add in a
-shared tree" for months. The repo's own record is that written rules do not
-hold: the 2026-08-04 wave logged nine instances of one documented trap, three
-authored by the person who had just written the entry about it. A rule
-protects only the session that reads it and remembers it at the right second.
+WHY A HOOK AND NOT A RULE. CLAUDE.md session default 1 and the memory feedback_shared_checkout_hygiene have both said "never blanket-add in a shared tree" for months. The repo's own record is that written rules do not hold: the 2026-08-04 wave logged nine instances of one documented trap, three authored by the person who had just written the entry about it. A rule protects only the
+session that reads it and remembers it at the right second.
 
-THE ESCAPE IS IN THE MESSAGE, deliberately. A session that genuinely wants
-everything under one directory says so with a pathspec:
+THE ESCAPE IS IN THE MESSAGE, deliberately. A session that genuinely wants everything under one directory says so with a pathspec:
     git add -A -- packages/cli/src
-That is one edit away, it is reviewable, and it cannot reach a path its
-author did not name. Blocking without naming the escape is how a guard
-becomes something sessions route around instead of using.
+That is one edit away, it is reviewable, and it cannot reach a path its author did not name. Blocking without naming the escape is how a guard becomes something sessions route around instead of using.
 
-NO CROSS-TALK with block-worktree-add.sh: `git worktree add x` has `worktree`
-between `git` and `add`, so the pattern below cannot see it. Pinned by a case
-in test-hooks.sh, because two guards matching adjacent shapes is exactly where
-a regex change silently swallows the wrong one.
+NO CROSS-TALK with block-worktree-add.sh: `git worktree add x` has `worktree` between `git` and `add`, so the pattern below cannot see it. Pinned by a case in test-hooks.sh, because two guards matching adjacent shapes is exactly where a regex change silently swallows the wrong one.
 """
 
 import pathlib
@@ -103,8 +90,7 @@ EDGE_CASES = [
 def _is_inside(target, root):
     """Is `target` the project tree or a path beneath it?
 
-    Compared as resolved paths and not as strings, so `/home/x/console-2` is not read
-    as living inside `/home/x/console`. Unresolvable answers True -- keep guarding.
+    Compared as resolved paths and not as strings, so `/home/x/console-2` is not read as living inside `/home/x/console`. Unresolvable answers True -- keep guarding.
     """
     try:
         t = pathlib.Path(target).resolve()

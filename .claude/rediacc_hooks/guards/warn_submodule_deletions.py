@@ -1,15 +1,8 @@
 """WARN (never block) when a commit would carry a staged deletion of tracked
 files inside a submodule.
 
-Why warn and not block: removing a file from a submodule is ordinary work, so
-a guard that refuses it would be wrong most of the times it fires, and a guard
-whose usual outcome is a false positive teaches people to route around it.
-What is worth surfacing is the case where the deletion is not YOURS: a
-submodule checkout carried a staged `rm` of Formula/rediacc-cli.rb and
-README.md -- the entire content of rediacc/homebrew-tap -- from before the
-session that found it. It sat unnoticed for hours because the parent reports
-only "m private/homebrew-tap", with no per-file detail, and `git status` in
-the parent never shows what was staged inside.
+Why warn and not block: removing a file from a submodule is ordinary work, so a guard that refuses it would be wrong most of the times it fires, and a guard whose usual outcome is a false positive teaches people to route around it. What is worth surfacing is the case where the deletion is not YOURS: a submodule checkout carried a staged `rm` of Formula/rediacc-cli.rb and README.md
+-- the entire content of rediacc/homebrew-tap -- from before the session that found it. It sat unnoticed for hours because the parent reports only "m private/homebrew-tap", with no per-file detail, and `git status` in the parent never shows what was staged inside.
 
 Committing that would have deleted the published Homebrew formula.
 
@@ -17,25 +10,15 @@ Exit 0 ALWAYS. This hook's only job is to put the paths in front of you.
 
 PORT NOTE ON THE PROCESS SUBSTITUTION. The bash feeds its loop with
 `done < <(git config -f .gitmodules --get-regexp path | awk '{print $2}')`
-rather than a pipe, and the choice is load-bearing in bash for the same reason
-block-binary-deploy.sh records: a piped `while` runs in a SUBSHELL, so `found`
-would be accumulated in a child and thrown away, and the guard would report
-nothing while looking correct. Neither the subshell nor the redirection exists
-in Python, so this paragraph is the only surviving record of why the original
-is spelled the way it is.
+rather than a pipe, and the choice is load-bearing in bash for the same reason block-binary-deploy.sh records: a piped `while` runs in a SUBSHELL, so `found` would be accumulated in a child and thrown away, and the guard would report nothing while looking correct. Neither the subshell nor the redirection exists in Python, so this paragraph is the only surviving record of why the
+original is spelled the way it is.
 
-PORT NOTE ON WHERE THE `git` CALLS RUN. The bash `cd`s once, to the toplevel it
-just resolved, and every later `git -C "$sub"` is therefore relative to that
+PORT NOTE ON WHERE THE `git` CALLS RUN. The bash `cd`s once, to the toplevel it just resolved, and every later `git -C "$sub"` is therefore relative to that
 directory. The port passes `cwd=root` on each call instead of moving this
-process, because a chained dispatcher runs several guards in one interpreter
-and a guard that chdir'd would move the ones after it.
+process, because a chained dispatcher runs several guards in one interpreter and a guard that chdir'd would move the ones after it.
 
-FINDING, CARRIED ACROSS RATHER THAN FIXED. This guard matches its `git commit`
-on the RAW command, not on `hook_scan_target`, so `echo "git commit"` -- a
-worklist note, a doc line, a message explaining the rule -- reaches the
-submodule scan and can produce the note. Its neighbour warn-stale-index.sh
-routes through lib/command-scan.sh for exactly this reason and says so in its
-own header. The cost here is one spurious advisory rather than a refused
+FINDING, CARRIED ACROSS RATHER THAN FIXED. This guard matches its `git commit` on the RAW command, not on `hook_scan_target`, so `echo "git commit"` -- a worklist note, a doc line, a message explaining the rule -- reaches the submodule scan and can produce the note. Its neighbour warn-stale-index.sh routes through lib/command-scan.sh for exactly this reason and says so in its own
+header. The cost here is one spurious advisory rather than a refused
 command, which is presumably why it was never chased; the edge case below pins
 the behaviour so a future change to it is a decision and not an accident.
 """
@@ -88,20 +71,9 @@ _SUBMODULES = (
 def _submodule_tree(path):
     """A superproject with four .gitmodules entries in four different states.
 
-    WHY THE FILES SIT UNDER A DIRECTORY NAMED AFTER THE SUBMODULE, which looks
-    redundant and is not. The differential can only reach this guard through
-    the environment, and the only lever that moves `git rev-parse
-    --show-toplevel` away from this checkout is `GIT_WORK_TREE`. With it
-    exported, `git -C sub` still DISCOVERS `sub/.git` (so each submodule's own
-    index and HEAD are read, which is the whole point), but git computes the
-    cwd's prefix against the exported work tree rather than against the
-    discovered repo -- measured 2026-09-06, `git -C sub rev-parse
-    --show-prefix` answers `sub/`. `ls-tree -r HEAD` honours that prefix and
-    `diff --cached` does not, so a submodule whose files sat at its own root
-    would report `2 of 0 tracked file(s)` and the loudest arm could never fire.
-    Putting the tracked files under `sub/` inside the submodule cancels the
-    prefix, and the guard then sees exactly the counts it would see in a real
-    superproject.
+    WHY THE FILES SIT UNDER A DIRECTORY NAMED AFTER THE SUBMODULE, which looks redundant and is not. The differential can only reach this guard through the environment, and the only lever that moves `git rev-parse --show-toplevel` away from this checkout is `GIT_WORK_TREE`. With it exported, `git -C sub` still DISCOVERS `sub/.git` (so each submodule's own index and HEAD are read,
+    which is the whole point), but git computes the cwd's prefix against the exported work tree rather than against the discovered repo -- measured 2026-09-06, `git -C sub rev-parse --show-prefix` answers `sub/`. `ls-tree -r HEAD` honours that prefix and `diff --cached` does not, so a submodule whose files sat at its own root would report `2 of 0 tracked file(s)` and the loudest
+    arm could never fire. Putting the tracked files under `sub/` inside the submodule cancels the prefix, and the guard then sees exactly the counts it would see in a real superproject.
     """
     path.mkdir(parents=True)
     _fixture_git(path, "init", "-q", "--initial-branch=main")

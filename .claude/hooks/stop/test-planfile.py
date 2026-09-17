@@ -3,23 +3,12 @@
 
     python3 .claude/hooks/stop/test-planfile.py
 
-Run by `.claude/hooks/test-hooks.sh` beside the other stop-hook selftests. That
-wiring is not optional and not discovered: the suite runs an EXPLICIT list, and
-its own comment records that omitting a block once meant "WITHOUT THIS BLOCK
-THOSE CONTROLS RAN NOWHERE".
+Run by `.claude/hooks/test-hooks.sh` beside the other stop-hook selftests. That wiring is not optional and not discovered: the suite runs an EXPLICIT list, and its own comment records that omitting a block once meant "WITHOUT THIS BLOCK THOSE CONTROLS RAN NOWHERE".
 
-EVERY CASE HERE IS A PAIR, for the reason the sibling control file states: a
-check with only positive cases will happily flag the whole tree, and a matcher
-that returns None for everything produces output indistinguishable from a real
-finding. So each "this must be reported" is followed by a "this must be SILENT"
-built from the same fixture with one thing changed.
+EVERY CASE HERE IS A PAIR, for the reason the sibling control file states: a check with only positive cases will happily flag the whole tree, and a matcher that returns None for everything produces output indistinguishable from a real finding. So each "this must be reported" is followed by a "this must be SILENT" built from the same fixture with one thing changed.
 
-The two assertions at the end are about the CALL SITE rather than the module,
-and they are the ones that matter most. This check must never become a `vadd`:
-the plan it was written for carries 18 open tasks, and 18 blocking items would
-refuse every turn of every session in this repo until a multi-week migration
-finished. A regression from `outq_add` to `vadd` would look like a tightening
-and would wedge the repo, so it is pinned in source.
+The two assertions at the end are about the CALL SITE rather than the module, and they are the ones that matter most. This check must never become a `vadd`: the plan it was written for carries 18 open tasks, and 18 blocking items would refuse every turn of every session in this repo until a multi-week migration finished. A regression from `outq_add` to `vadd` would look like a
+tightening and would wedge the repo, so it is pinned in source.
 """
 
 import ast

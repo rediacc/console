@@ -3,18 +3,10 @@
 
 WHAT THIS IS. `.claude/hooks/pre-bash/lib/command-scan.sh` already had a name
 for this idea: `hook_init` was extracted there "after
-check:ci-shape-duplication counted three identical copies", and its header
-argues that centralising the preamble matters more than the line count
-suggests, because "a guard that hand-rolls its own preamble is a guard that can
-drift away from that fix without anything noticing". This module is that
-argument applied to the whole chain rather than to three files: every ported
-guard reads its event, its command, its file path and its cwd from here.
+check:ci-shape-duplication counted three identical copies", and its header argues that centralising the preamble matters more than the line count suggests, because "a guard that hand-rolls its own preamble is a guard that can drift away from that fix without anything noticing". This module is that argument applied to the whole chain rather than to three files: every ported guard
+reads its event, its command, its file path and its cwd from here.
 
-WHY IT IS SEPARATE FROM `shellscan`. `shellscan` is the transliteration of ONE
-bash file and is judged by a differential against it. Nothing here has a bash
-twin of its own: it is the union of the preambles that were copied into 46
-separate guards, so it has no single oracle. Keeping the two apart keeps
-`shellscan`'s differential honest, because a helper added here can never change
+WHY IT IS SEPARATE FROM `shellscan`. `shellscan` is the transliteration of ONE bash file and is judged by a differential against it. Nothing here has a bash twin of its own: it is the union of the preambles that were copied into 46 separate guards, so it has no single oracle. Keeping the two apart keeps `shellscan`'s differential honest, because a helper added here can never change
 what that differential is comparing.
 
 =============================================================================
@@ -84,9 +76,7 @@ _RX_CLASSES = (("{S}", SPACE), ("{B}", BLANK))
 def rx(pattern):
     """A guard's regex written as ONE raw string, with `{S}` / `{B}` for the classes.
 
-    WHAT IT REPLACES, AND WHY THAT WAS WORTH A FUNCTION. A guard that needs the
-    space class inside a character class cannot interpolate a constant into a
-    raw literal, so twenty-three of them built the pattern by concatenation::
+    WHAT IT REPLACES, AND WHY THAT WAS WORTH A FUNCTION. A guard that needs the space class inside a character class cannot interpolate a constant into a raw literal, so twenty-three of them built the pattern by concatenation::
 
         NODE_BUNDLE = (
             r"(^|[;&|(]|["
@@ -96,19 +86,12 @@ def rx(pattern):
             + r"]+..."
         )
 
-    Every line of that except the fragments is scaffolding, and the scaffolding
-    is IDENTICAL in every guard that has one: `check:ci-shape-duplication`
-    reported it as its two largest Python findings the moment the guards entered
-    its corpus, ten copies of one six-line window and eight of another. There is
-    nothing per-guard in those lines to preserve -- the regex fragments are the
+    Every line of that except the fragments is scaffolding, and the scaffolding is IDENTICAL in every guard that has one: `check:ci-shape-duplication` reported it as its two largest Python findings the moment the guards entered its corpus, ten copies of one six-line window and eight of another. There is nothing per-guard in those lines to preserve -- the regex fragments are the
     content, and they survive here verbatim inside a single readable string.
 
-    IT REFUSES A PATTERN WITH NO PLACEHOLDER, and that refusal is the point
-    rather than tidiness. `rx(r"git push")` would return its argument unchanged
-    and read, at every call site, as though the space class were involved when it
+    IT REFUSES A PATTERN WITH NO PLACEHOLDER, and that refusal is the point rather than tidiness. `rx(r"git push")` would return its argument unchanged and read, at every call site, as though the space class were involved when it
     is not; the next edit would add `[ ]` by hand and the two spellings this
-    module exists to prevent would be back. A call that buys nothing is a
-    mistake, so it says so.
+    module exists to prevent would be back. A call that buys nothing is a mistake, so it says so.
     """
     if not any(token in pattern for token, _ in _RX_CLASSES):
         raise ValueError(
@@ -123,12 +106,7 @@ def rx(pattern):
 class Event:
     """One hook invocation: the payload in, the three results out.
 
-    `payload` is the RAW stdin text and not a parsed document, because that is
-    what the guards see. Two of them (`require-jq.sh`, and the `nojq` arm of
-    `block-settled-questions.sh`) deliberately read the raw JSON body rather
-    than a parsed value, on the stated grounds that they run exactly when the
-    parser is missing. A class that only offered parsed access could not
-    express them.
+    `payload` is the RAW stdin text and not a parsed document, because that is what the guards see. Two of them (`require-jq.sh`, and the `nojq` arm of `block-settled-questions.sh`) deliberately read the raw JSON body rather than a parsed value, on the stated grounds that they run exactly when the parser is missing. A class that only offered parsed access could not express them.
     """
 
     def __init__(self, payload, cwd=None, env=None):
@@ -145,10 +123,7 @@ class Event:
     def doc(self):
         """The parsed payload, or None when jq would have failed.
 
-        Parsed lazily and cached: a guard that never asks pays nothing, and a
-        guard that asks four times forks jq four times in bash but parses once
-        here. That is a performance difference and not a behavioural one,
-        because the payload cannot change mid-run.
+        Parsed lazily and cached: a guard that never asks pays nothing, and a guard that asks four times forks jq four times in bash but parses once here. That is a performance difference and not a behavioural one, because the payload cannot change mid-run.
         """
         if self._doc is _UNPARSED:
             try:
@@ -170,10 +145,7 @@ class Event:
     def field(self, *path):
         """`jq -r '.a.b // empty'` -- "" for absent, null, false OR broken.
 
-        `//` is jq's ALTERNATIVE operator, and its left side is falsy for
-        `null` AND for `false`. That matters for exactly one call site,
-        `.tool_input.run_in_background // false`, which is why `flag()` below
-        exists rather than being folded in here.
+        `//` is jq's ALTERNATIVE operator, and its left side is falsy for `null` AND for `false`. That matters for exactly one call site, `.tool_input.run_in_background // false`, which is why `flag()` below exists rather than being folded in here.
         """
         return _jq_raw(self.doc, path, empty=True)
 
@@ -188,8 +160,7 @@ class Event:
     def flag(self, *path):
         """`jq -r '.a // false'` -- the literal words `true` or `false`.
 
-        `block-shell-background-waiter.sh` compares the RESULT to the string
-        `true`, so a Python bool here would silently never match.
+        `block-shell-background-waiter.sh` compares the RESULT to the string `true`, so a Python bool here would silently never match.
         """
         got = _jq_raw(self.doc, path, empty=True)
         return got if got in ("true", "false") else "false"
@@ -203,9 +174,7 @@ class Event:
         """The `[.content, .new_string, .new_source, (.edits[]?.new_string)]`
         collector four pre-edit guards share, joined by newlines.
 
-        jq prints an array under `-r` as one element per line, so the bash
-        receives a newline-joined string and greps it as a whole. Nulls are
-        printed as the word `null` by `-r`, and the four guards that use this
+        jq prints an array under `-r` as one element per line, so the bash receives a newline-joined string and greps it as a whole. Nulls are printed as the word `null` by `-r`, and the four guards that use this
         all filter them out with `| select(. != null)`, so this does too.
         """
         out = []
@@ -222,9 +191,7 @@ class Event:
     def project_dir(self):
         """`${CLAUDE_PROJECT_DIR:-.}`, the root nearly every guard cd's into.
 
-        `:-` and not `-`: an EMPTY variable takes the fallback too, which is
-        what the guards spell and what a harness that exports the variable as
-        "" would otherwise defeat.
+        `:-` and not `-`: an EMPTY variable takes the fallback too, which is what the guards spell and what a harness that exports the variable as "" would otherwise defeat.
         """
         return self._env.get("CLAUDE_PROJECT_DIR") or "."
 
@@ -245,9 +212,7 @@ class Event:
     def warn_raw(self, text):
         """`cat >&2 <<MSG` -- the heredoc body, already carrying its newlines.
 
-        Separate from `warn` because a heredoc's final newline is part of the
-        body, and appending another would put a blank line at the end of every
-        multi-paragraph message. That is a byte the differential compares.
+        Separate from `warn` because a heredoc's final newline is part of the body, and appending another would put a blank line at the end of every multi-paragraph message. That is a byte the differential compares.
         """
         self.err.write(text)
 
@@ -263,10 +228,7 @@ _BROKEN = object()
 def _jq_raw(doc, path, empty):
     """One `jq -r` field read, with jq's own type rules.
 
-    jq indexes only objects and null. Handed a number, a string or an array it
-    exits 5 with nothing on stdout, which the command substitution turns into
-    "" -- the same value as a parse failure, and the guards cannot tell the two
-    apart either.
+    jq indexes only objects and null. Handed a number, a string or an array it exits 5 with nothing on stdout, which the command substitution turns into "" -- the same value as a parse failure, and the guards cannot tell the two apart either.
     """
     if doc is _BROKEN:
         return ""
@@ -293,9 +255,7 @@ def _jq_raw(doc, path, empty):
 def _jq_collect(doc, path):
     """`.a.b[]?.c` -- every element, nulls dropped, as `-r` would print them.
 
-    A `[]?` step over anything that is not an array yields nothing rather than
-    an error, which is what the `?` means and what the four pre-edit guards
-    rely on for a payload with no `edits` key.
+    A `[]?` step over anything that is not an array yields nothing rather than an error, which is what the `?` means and what the four pre-edit guards rely on for a payload with no `edits` key.
     """
     if doc is _BROKEN:
         return []
@@ -324,12 +284,7 @@ def _jq_collect(doc, path):
 def grep_q(pattern, text, ignore_case=False, fixed=False):
     """`grep -qE <pattern>` over `printf '%s' "$text"`.
 
-    NO HERE-STRING HERE. `printf '%s' "$x" | grep` and `grep <<<"$x"` differ on
-    the empty subject: the pipe gives grep zero records so it cannot match, the
-    here-string gives it one empty record so `^$` would. The guards use both
-    spellings, so both are available and the caller picks the one its original
-    wrote. `echo "$x" | grep` is `here_string` too, since echo appends a
-    newline.
+    NO HERE-STRING HERE. `printf '%s' "$x" | grep` and `grep <<<"$x"` differ on the empty subject: the pipe gives grep zero records so it cannot match, the here-string gives it one empty record so `^$` would. The guards use both spellings, so both are available and the caller picks the one its original wrote. `echo "$x" | grep` is `here_string` too, since echo appends a newline.
     """
     flags = re.IGNORECASE if ignore_case else 0
     compiled = re.compile(re.escape(pattern) if fixed else pattern, flags)
@@ -396,9 +351,7 @@ def awk_field(text, index):
 def case_glob(value, *patterns):
     """`case "$x" in <pattern>) ... esac` -- shell globbing, not regex.
 
-    `fnmatch` is NOT this: it special-cases a leading dot and, on some
-    platforms, normalises case. A shell `case` does neither, so the glob is
-    translated by hand.
+    `fnmatch` is NOT this: it special-cases a leading dot and, on some platforms, normalises case. A shell `case` does neither, so the glob is translated by hand.
     """
     return any(re.fullmatch(_glob_to_re(p), value, re.DOTALL) for p in patterns)
 
@@ -439,8 +392,7 @@ def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
     `2>/dev/null`. `want_rc=True` returns None on a non-zero exit, which is the
     `x=$(cmd) || exit 0` shape; the default returns the (possibly empty) output
     and drops the status, which is the `x=$(cmd 2>/dev/null)` shape. Confusing
-    the two is how a failing command becomes an empty string that reads as a
-    real answer, so the caller has to choose.
+    the two is how a failing command becomes an empty string that reads as a real answer, so the caller has to choose.
     """
     try:
         proc = subprocess.run(
@@ -470,9 +422,7 @@ def run_rc(argv, cwd=None, env=None):
 def have(name):
     """`command -v <name> >/dev/null 2>&1`.
 
-    PATH is read at CALL time, never cached: the differential prepends a stub
-    directory between two calls in one process, and a cached answer would make
-    every case after the first read the wrong PATH.
+    PATH is read at CALL time, never cached: the differential prepends a stub directory between two calls in one process, and a cached answer would make every case after the first read the wrong PATH.
     """
     for directory in os.environ.get("PATH", "").split(os.pathsep):
         if directory and os.access(os.path.join(directory, name), os.X_OK):

@@ -1,8 +1,6 @@
 """wl_rules: the plumbing shared by the judged stop rules.
 
-Two things live here, both needed by wl_classsweep and wl_bravedefault, and
-neither written twice -- writing it twice is precisely the defect wl_classsweep
-exists to catch.
+Two things live here, both needed by wl_classsweep and wl_bravedefault, and neither written twice -- writing it twice is precisely the defect wl_classsweep exists to catch.
 
   Demand      a per-checkout, TTL'd, hard-capped "you still owe this" marker,
               because an order issued on one stop has to survive onto the next:
@@ -14,13 +12,9 @@ exists to catch.
 
 WHY A FILE AND NOT A TRACKED ITEM. The durable mechanism this repo actually uses
 for "you still owe this" is a worklist item, whose creation needs the session id
-and the store handle -- both of which live in wl_checks, which the change that
-introduced these rules deliberately did not touch. A file marker is the weaker
-substitute, so it is bounded hard enough that it can never wedge a session: past
-`max_fires`, or past `ttl_min`, the demand simply stops existing.
+and the store handle -- both of which live in wl_checks, which the change that introduced these rules deliberately did not touch. A file marker is the weaker substitute, so it is bounded hard enough that it can never wedge a session: past `max_fires`, or past `ttl_min`, the demand simply stops existing.
 
-Keyed by the checkout path, so two worktrees never share a demand, and stored
-under the judge's own scratch dir, which the harness already owns.
+Keyed by the checkout path, so two worktrees never share a demand, and stored under the judge's own scratch dir, which the harness already owns.
 """
 
 import contextlib
@@ -71,10 +65,7 @@ TREE_DESTROYING = frozenset(("checkout", "restore", "stash", "clean", "reset"))
 def names_write(text, verbs=None, git_subs=None):
     """The write verb this PROSE names, or "".
 
-    Word boundaries are load-bearing in both directions: "remove the duplicate
-    line" must not trip on `rm` and "move the check" must not trip on `mv`, while
-    "rm the stale entries" and "git clean -xdf" must. An instruction is prose,
-    where ordinary English words are expected.
+    Word boundaries are load-bearing in both directions: "remove the duplicate line" must not trip on `rm` and "move the check" must not trip on `mv`, while "rm the stale entries" and "git clean -xdf" must. An instruction is prose, where ordinary English words are expected.
     """
     verbs = WRITE_VERBS if verbs is None else verbs
     git_subs = WRITE_GIT if git_subs is None else git_subs
@@ -116,9 +107,7 @@ OPERATOR_RESERVED_RE = re.compile(
 def names_operator_reserved(text):
     """The commit/push/PR phrase this PROSE names, or "".
 
-    Not a safety guard like `names_tree_destroying` -- nothing here destroys
-    anything. It is a STANDING-ORDER guard: these acts need the operator's ask,
-    so a generated order must never contain one.
+    Not a safety guard like `names_tree_destroying` -- nothing here destroys anything. It is a STANDING-ORDER guard: these acts need the operator's ask, so a generated order must never contain one.
     """
     m = OPERATOR_RESERVED_RE.search((text or "").replace("`", " ").replace("\n", " "))
     return " ".join(m.group(0).split()) if m else ""
@@ -185,12 +174,9 @@ class Demand:
 def apply_order(out, reason, action):
     """Write a rule's finding into a judge verdict. Returns nothing; mutates.
 
-    A STOP becomes a CONTINUE carrying this rule's reason and order, which is
-    how the rule blocks: wl_checks turns any "continue" into a block.
+    A STOP becomes a CONTINUE carrying this rule's reason and order, which is how the rule blocks: wl_checks turns any "continue" into a block.
 
-    A verdict that is ALREADY "continue" is APPENDED to, never overwritten. The
-    judge's own order ("three items are open, work #a1b2") is not less important
-    than a rule's, and a rule that clobbered it would trade one true instruction
+    A verdict that is ALREADY "continue" is APPENDED to, never overwritten. The judge's own order ("three items are open, work #a1b2") is not less important than a rule's, and a rule that clobbered it would trade one true instruction
     for another and hide the trade. The session then sees both, and the block it
     was getting anyway now carries the extra finding.
     """

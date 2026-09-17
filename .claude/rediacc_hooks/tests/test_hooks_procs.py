@@ -1,31 +1,20 @@
 """The guards whose subject is the PROCESS TABLE, and the hazard one of them names.
 
-Editing a shell script a process is RUNNING corrupts the running interpreter: bash
-reads lazily by byte offset, so the edit lands under its feet and it dies at an
-innocent line while `bash -n` stays clean. Documented at TRAPS.md since 2026-08-09
-and hit again on 2026-08-26, on the harness itself, costing a suite pass.
+Editing a shell script a process is RUNNING corrupts the running interpreter: bash reads lazily by byte offset, so the edit lands under its feet and it dies at an innocent line while `bash -n` stays clean. Documented at TRAPS.md since 2026-08-09 and hit again on 2026-08-26, on the harness itself, costing a suite pass.
 
-THESE NEED A GENUINELY LIVE PROCESS, not a stubbed pgrep. Each guard's whole claim
-is that it reads the process table, and a stub would prove the arithmetic while
-leaving that claim untested. So the fixtures spawn real ones, and every block also
-carries the LIVENESS control -- the same payload once the process is gone -- because
-without it the guard could be keyed on the filename and every case would still pass.
+THESE NEED A GENUINELY LIVE PROCESS, not a stubbed pgrep. Each guard's whole claim is that it reads the process table, and a stub would prove the arithmetic while leaving that claim untested. So the fixtures spawn real ones, and every block also carries the LIVENESS control -- the same payload once the process is gone -- because without it the guard could be keyed on the filename
+and every case would still pass.
 
 WHY THEY SHARE test_guards_differential's XDIST GROUP, and not one of their own.
 A group pins its own tests to ONE worker; it does NOT stop a DIFFERENT group running
-beside it on another. These fixtures are visible to every process on the machine, and
-`test_guards_differential` asks the process table the same question about the same two
-guards. Measured 2026-09-09: run concurrently, its anti-vacuity controls both went red
---
+beside it on another. These fixtures are visible to every process on the machine, and `test_guards_differential` asks the process table the same question about the same two guards. Measured 2026-09-09: run concurrently, its anti-vacuity controls both went red --
 
     these guards answered identically on every case, so comparing them proves
     nothing: ['block_bash_write_to_running_script']
     these ports answered identically with their declared defect planted, so this
     file's green does not depend on that branch being right
 
--- and the same test passed in isolation (`-k test_the_differential_can_fail`, 1 passed
-in 316.07s). Sharing the group serialises them onto one worker, which costs about ten
-seconds against that file's five minutes.
+-- and the same test passed in isolation (`-k test_the_differential_can_fail`, 1 passed in 316.07s). Sharing the group serialises them onto one worker, which costs about ten seconds against that file's five minutes.
 """
 
 import os
@@ -55,12 +44,9 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     """THE PREMISE, MEASURED RATHER THAN ASSERTED.
 
     Every control around block_self_matching_pgrep proves the GUARD fires; none
-    proved the hazard is real. This spawns the two loops for real and times them, so
-    "a self-matching pgrep never exits" stops being a claim inherited from a comment.
+    proved the hazard is real. This spawns the two loops for real and times them, so "a self-matching pgrep never exits" stops being a claim inherited from a comment.
 
-    BOUNDED ON BOTH SIDES, deliberately. The deadlock case is capped at 3s, which is
-    the whole reason this can live in a test suite at all -- an unbounded reproduction
-    of a hang IS the hang. The remedy case is given the same 3s and must finish well
+    BOUNDED ON BOTH SIDES, deliberately. The deadlock case is capped at 3s, which is the whole reason this can live in a test suite at all -- an unbounded reproduction of a hang IS the hang. The remedy case is given the same 3s and must finish well
     inside it; if the bracket form ever started hanging too, the guard's advice would
     be worthless and this goes red.
     """
@@ -210,8 +196,7 @@ def test_block_edit_of_running_script(tmp_path):
 @pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)
 def test_block_bash_write_to_running_script(tmp_path):
     """block_bash_write_to_running_script shipped 2026-08-27 with ZERO cases in either
-    direction -- the only guard in the tree in that state, and the reason
-    check:ci-hook-integrity was red.
+    direction -- the only guard in the tree in that state, and the reason check:ci-hook-integrity was red.
     """
     block = hookblocks.Block("bash-write")
     bash_json = hookcases.bash_json

@@ -1,7 +1,6 @@
 """wl_judge: the stop-legitimacy judge call and its v10 verdict cache.
 
-Fail CLOSED by contract: every error path returns an error string, and the
-caller turns that into a block. See "NO ESCAPE HATCH" in worklist.py.
+Fail CLOSED by contract: every error path returns an error string, and the caller turns that into a block. See "NO ESCAPE HATCH" in worklist.py.
 """
 
 import copy
@@ -152,8 +151,7 @@ def _budget_headroom(env_out):
     """True when this call ended well inside its budget, so a retry is not a re-wander.
 
     A budget-exhausted call that produced nothing will exhaust it again; asking twice
-    just doubles the bill for the same silence. Below 80% of the cap, whatever went
-    wrong was not the cap.
+    just doubles the bill for the same silence. Below 80% of the cap, whatever went wrong was not the cap.
     """
     cost = (env_out or {}).get("total_cost_usd")
     if not isinstance(cost, (int, float)):
@@ -176,25 +174,12 @@ def retry_schema_exhaustion(label, proc, call):
     cost=$0.0112 of budget $0.25", and the message that follows such a failure
     tells the session the gate is broken and offers WORKLIST_JUDGE=off.
 
-    Neither claim was true. The model was reachable (a probe answered), and the
-    REAL call -- same schema, same model, same budget -- returned a valid verdict
-    three times out of three at $0.05-0.06 each, which is five times what the
-    failing run spent. So the run did not hit its cap and the schema is not
-    unsatisfiable: one sample simply failed to emit a conforming object.
+    Neither claim was true. The model was reachable (a probe answered), and the REAL call -- same schema, same model, same budget -- returned a valid verdict three times out of three at $0.05-0.06 each, which is five times what the failing run spent. So the run did not hit its cap and the schema is not unsatisfiable: one sample simply failed to emit a conforming object.
 
-    That is the SAME condition the exit-0 path a few lines down already retries,
-    and calls "a sample, not a broken gate". The two differ only in how the CLI
-    reports them: wandering to the end of the turn exits 0 with
-    structured_output null, while exhausting the CLI's own schema retries exits
-    1 with this subtype. Keying the retry on the exit code rather than on what
-    actually happened meant the identical failure was a flake in one spelling
-    and a "BUG in the gate" in the other -- and the harsher spelling is the one
-    that points a session at the disable switch.
+    That is the SAME condition the exit-0 path a few lines down already retries, and calls "a sample, not a broken gate". The two differ only in how the CLI reports them: wandering to the end of the turn exits 0 with structured_output null, while exhausting the CLI's own schema retries exits 1 with this subtype. Keying the retry on the exit code rather than on what actually
+    happened meant the identical failure was a flake in one spelling and a "BUG in the gate" in the other -- and the harsher spelling is the one that points a session at the disable switch.
 
-    Bounded exactly as the other retry is: only this subtype, only with budget
-    headroom (a call that spent its cap will spend it again), only once, and
-    never after a transport failure -- a launch error or a timeout raises before
-    reaching here and is not routed through this path at all.
+    Bounded exactly as the other retry is: only this subtype, only with budget headroom (a call that spent its cap will spend it again), only once, and never after a transport failure -- a launch error or a timeout raises before reaching here and is not routed through this path at all.
     """
     first = _explain_failed_exit(label, proc)
     env_out = None
@@ -220,10 +205,7 @@ def retry_schema_exhaustion(label, proc, call):
 def _explain_no_output(label, env_out, out):
     """Exit 0, is_error false, and no usable structured_output: say WHY.
 
-    This is the shape a budget-capped schema-constrained call takes when it
-    wanders: the transport worked, so none of the failure branches above fire,
-    and the bare repr of `None` tells the reading session nothing. The envelope
-    still carries the cost, the stop_reason and the turn count.
+    This is the shape a budget-capped schema-constrained call takes when it wanders: the transport worked, so none of the failure branches above fire, and the bare repr of `None` tells the reading session nothing. The envelope still carries the cost, the stop_reason and the turn count.
     """
     bits = ["%s produced no usable structured_output: %s" % (label, repr(out)[:200])]
     if isinstance(env_out, dict):
@@ -234,16 +216,8 @@ def _explain_no_output(label, env_out, out):
 def _envelope_bits(env_out):
     """The actionable fields of a `claude -p` result envelope, as report bits.
 
-    EXTRACTED 2026-08-26 because these lived only on the non-zero-exit path,
-    and the failure that actually happened exits ZERO. A budget-capped,
-    schema-constrained call that wanders can return exit 0, is_error false, and
-    `structured_output: null` -- and the gate reported exactly that, "produced
-    no usable structured_output: None", while the same envelope was holding the
-    cost, the stop_reason and the turn count that name the cause. The next
-    session then reads a line whose following sentence offers to DISABLE the
-    gate, with no evidence either way. Measured the same day: a trivial
-    schema-constrained haiku call costs $0.0566 of the $0.25 default, so a long
-    prompt exhausting it is the expected failure, not an exotic one.
+    EXTRACTED 2026-08-26 because these lived only on the non-zero-exit path, and the failure that actually happened exits ZERO. A budget-capped, schema-constrained call that wanders can return exit 0, is_error false, and `structured_output: null` -- and the gate reported exactly that, "produced no usable structured_output: None", while the same envelope was holding the cost, the
+    stop_reason and the turn count that name the cause. The next session then reads a line whose following sentence offers to DISABLE the gate, with no evidence either way. Measured the same day: a trivial schema-constrained haiku call costs $0.0566 of the $0.25 default, so a long prompt exhausting it is the expected failure, not an exotic one.
     """
     bits = []
     if env_out.get("subtype"):
@@ -273,14 +247,10 @@ def _envelope_bits(env_out):
 def _explain_failed_exit(label, proc):
     """Why a `claude -p` child exited non-zero, in a line an operator can act on.
 
-    THE BUG THIS FIXES (2026-08-05): these paths reported `proc.stderr` only, and
-    the CLI writes its error ENVELOPE TO STDOUT, leaving stderr empty. The gate
-    therefore surfaced the unactionable "judge exited 1: " with nothing after the
-    colon, while stdout was holding is_error, the stop_reason, and the exact cost
-    against the budget. The `is_error` branch further down never ran, because it
+    THE BUG THIS FIXES (2026-08-05): these paths reported `proc.stderr` only, and the CLI writes its error ENVELOPE TO STDOUT, leaving stderr empty. The gate therefore surfaced the unactionable "judge exited 1: " with nothing after the colon, while stdout was holding is_error, the stop_reason, and the exact cost against the budget. The `is_error` branch further down never ran,
+    because it
     sits behind returncode == 0. A judge that cannot say why it failed is an
-    escape hatch wearing a gate's clothes -- the same swallowed-failure class the
-    repo scans for, inside the thing that audits it.
+    escape hatch wearing a gate's clothes -- the same swallowed-failure class the repo scans for, inside the thing that audits it.
     """
     # A SIGNAL IS NOT A FAILURE TO ANSWER, and conflating the two cost a full turn on 2026-09-08. The child was SIGTERMed because the outer Stop-hook deadline
     # was shorter than this judge's own; the gate reported "exited 143" with empty
@@ -320,8 +290,7 @@ def _explain_failed_exit(label, proc):
 def run_triage(finding, context):
     """(verdict_dict, error_string). Exactly one is non-None.
 
-    Modeled on run_judge down to the recursion guard and the workdir, because
-    the transport is the same and a second copy that drifts is a second bug.
+    Modeled on run_judge down to the recursion guard and the workdir, because the transport is the same and a second copy that drifts is a second bug.
     The CALLER decides what an error means; here every failure is simply
     reported, never swallowed, so a degraded triage can name what broke.
     """
@@ -415,17 +384,10 @@ PLANFID_SCHEMA = {
 def _run_structured(label, prompt, schema, extract):
     """(payload, error_string). Exactly one is non-None. ONE transport.
 
-    run_judge, run_triage and run_admission are three near-identical copies of
-    this, and wl_judge's own comment on the second one ("the transport is the
-    same and a second copy that drifts is a second bug") is the argument against
-    adding a fourth. Only the NEW caller is routed through here: folding the
-    three live paths in would be a behaviour change to the stop gate itself,
-    which is not this change's business. That is a named residual, not an
-    oversight -- the next module that needs a model call should use this and the
-    three copies should follow when something else forces them open.
+    run_judge, run_triage and run_admission are three near-identical copies of this, and wl_judge's own comment on the second one ("the transport is the same and a second copy that drifts is a second bug") is the argument against adding a fourth. Only the NEW caller is routed through here: folding the three live paths in would be a behaviour change to the stop gate itself, which is
+    not this change's business. That is a named residual, not an oversight -- the next module that needs a model call should use this and the three copies should follow when something else forces them open.
 
-    Failure semantics are the CALLER's business, exactly as for run_triage: every
-    error is reported, never swallowed.
+    Failure semantics are the CALLER's business, exactly as for run_triage: every error is reported, never swallowed.
     """
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -498,10 +460,7 @@ def _run_structured(label, prompt, schema, extract):
 def run_planfid(plan_text, items_rendered, message):
     """(plan_fidelity_dict, error_string). Exactly one is non-None.
 
-    DEGRADES, never blocks on its own unavailability. See wl_planfid's header:
-    this check triggers on a heuristic about item shape rather than on an
-    artifact, so an unreachable model must not wall in every session that has an
-    approved plan. The caller reports the error on the systemMessage line.
+    DEGRADES, never blocks on its own unavailability. See wl_planfid's header: this check triggers on a heuristic about item shape rather than on an artifact, so an unreachable model must not wall in every session that has an approved plan. The caller reports the error on the systemMessage line.
     """
     prompt = M.PLANFID_PROMPT % {
         "plan": (plan_text or "")[:14000],
@@ -529,13 +488,9 @@ ADMISSION_SCHEMA = {
 def run_admission(message):
     """(admission_dict, error_string). Exactly one is non-None.
 
-    The standalone path, for a stop where the prefilter fired but the main judge
-    was never invoked (nothing else remained to judge). Modeled on run_triage
-    down to the recursion guard and the workdir, because the transport is the
-    same and a second copy that drifts is a second bug.
+    The standalone path, for a stop where the prefilter fired but the main judge was never invoked (nothing else remained to judge). Modeled on run_triage down to the recursion guard and the workdir, because the transport is the same and a second copy that drifts is a second bug.
 
-    It DEGRADES, never blocks, like run_triage and unlike run_judge. An admission
-    detector that could block on its own unavailability would punish a session
+    It DEGRADES, never blocks, like run_triage and unlike run_judge. An admission detector that could block on its own unavailability would punish a session
     for the honesty that triggered it.
     """
     exe = resolve_claude()
@@ -605,12 +560,8 @@ def apply_defer_audit(rows, batch):
     """(kind, valids, orders) from the judge's defer_audit answer.
 
     kind is 'ok' or 'malformed'; valids is [(id, upd_stamp, reason)] to bank,
-    orders is [(id, order_text)] to enforce. STRICT by contract: every
-    audited item must come back with a usable verdict, and anything else --
-    no array, a non-dict entry, an invalid verdict, a batch id missing --
-    is 'malformed', which the caller turns into a fail-closed block. An id
-    the judge invented is ignored rather than acted on: reopening an item
-    nobody audited would let a hallucination edit the store.
+    orders is [(id, order_text)] to enforce. STRICT by contract: every audited item must come back with a usable verdict, and anything else -- no array, a non-dict entry, an invalid verdict, a batch id missing -- is 'malformed', which the caller turns into a fail-closed block. An id the judge invented is ignored rather than acted on: reopening an item nobody audited would let a
+    hallucination edit the store.
     """
     if not isinstance(rows, list):
         return "malformed", [], []
@@ -739,13 +690,8 @@ def is_fix_stop(extra):
 def judge_schema_for(extra):
     """JUDGE_SCHEMA, with each optional object required iff the prompt asks for it.
 
-    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER,
-    class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER. The
-    three markers are INDEPENDENT and must not collapse into one boolean: the
-    sweep section is also appended on a carried-forward demand, and the brave
-    section triggers on the remaining list, so either can arrive on a stop where
-    no fix landed at all. Requiring regression_gate on such a stop would fail
-    the judge closed for a question nobody asked.
+    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER, class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER. The three markers are INDEPENDENT and must not collapse into one boolean: the sweep section is also appended on a carried-forward demand, and the brave section triggers on the remaining list, so either can arrive on a stop where no fix landed at
+    all. Requiring regression_gate on such a stop would fail the judge closed for a question nobody asked.
     """
     text = extra or ""
     wanted = []
@@ -927,10 +873,7 @@ FORBIDDEN_ORDERS = (
 def sanitize_next_action(out):
     """Strip an operator-only directive from a judge verdict, in place.
 
-    Matches on the ORDER, not on politeness: "merge 563" and "you should probably
-    merge 563" are the same instruction. Deliberately narrow about `release`, since
-    "release notes" and "the release channel" are ordinary nouns a legitimate next
-    action may name, while "cut the release" is an order.
+    Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
     action = out.get("next_action")
     if not isinstance(action, str) or not action.strip():

@@ -1,11 +1,8 @@
 """Block `git worktree add` from the assistant's own Bash tool, unconditionally.
 
-WHY UNCONDITIONAL. A hook has no reliable, verified way to tell "a live
-operator just approved this" from "an autonomous/cron-fired continuation
+WHY UNCONDITIONAL. A hook has no reliable, verified way to tell "a live operator just approved this" from "an autonomous/cron-fired continuation
 with nobody watching" -- there is no session field this codebase's other
-hooks rely on for that distinction, and inventing one on an unverified
-guess is worse than not trying. So the policy is enforced by WHO can get
-the command to run at all, not by the hook reading intent:
+hooks rely on for that distinction, and inventing one on an unverified guess is worse than not trying. So the policy is enforced by WHO can get the command to run at all, not by the hook reading intent:
   - An operator who wants a worktree created can run the command
     themselves via the `!` prefix (CLAUDE.md's documented escape hatch),
     which never reaches this hook -- that IS "asked the operator, they
@@ -14,13 +11,8 @@ the command to run at all, not by the hook reading intent:
     to, so the practical effect is worktree creation never happens there,
     which is exactly the "non-interactive: not allowed" requirement.
 
-Found live 2026-08-01: a session created a throwaway worktree+branch for a
-small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix,
-after the operator had already twice said to keep changes local instead.
-The operator then found six PRE-EXISTING worktrees holding real, unrelated
-work from other sessions sitting untouched in the same repo. Worktrees are
-cheap to create and easy to forget, and each one is a place uncommitted
-work can silently strand outside the one tree everyone actually watches.
+Found live 2026-08-01: a session created a throwaway worktree+branch for a small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix, after the operator had already twice said to keep changes local instead. The operator then found six PRE-EXISTING worktrees holding real, unrelated work from other sessions sitting untouched in the same repo. Worktrees are cheap to
+create and easy to forget, and each one is a place uncommitted work can silently strand outside the one tree everyone actually watches.
 """
 
 from rediacc_hooks import hookio, shellscan

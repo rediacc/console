@@ -1,32 +1,18 @@
 """ONE OPEN PR AT A TIME. Refuse `gh pr create` when this author already has an
 open PR in the target repo.
 
-WHY THIS IS A HOOK AND NOT A LINE IN CLAUDE.md. The operator's ruling, and the
-incident behind it: a single session opened FOUR stacked PRs over one night,
-each one individually reasonable (new work arrived, it needed a base, the
-previous PR was not merged yet), and the result was four unmerged PRs waiting
-on one person. Nothing in CLAUDE.md or the pr-babysit command stopped it,
-because instructions only bind a session that reads them, remembers them, and
-applies them at the one second that matters. PreToolUse is the only surface
-that can DENY the command before it runs, which is the difference between a
-preference and a control.
+WHY THIS IS A HOOK AND NOT A LINE IN CLAUDE.md. The operator's ruling, and the incident behind it: a single session opened FOUR stacked PRs over one night, each one individually reasonable (new work arrived, it needed a base, the previous PR was not merged yet), and the result was four unmerged PRs waiting on one person. Nothing in CLAUDE.md or the pr-babysit command stopped it,
+because instructions only bind a session that reads them, remembers them, and applies them at the one second that matters. PreToolUse is the only surface that can DENY the command before it runs, which is the difference between a preference and a control.
 
-WHAT TO DO INSTEAD, and the message says so, because a block without a next
-step just gets worked around: push the new work onto the EXISTING PR's branch.
-That is almost always what was wanted anyway. A second PR is the right answer
-only when the work is genuinely independent and the operator has said so.
+WHAT TO DO INSTEAD, and the message says so, because a block without a next step just gets worked around: push the new work onto the EXISTING PR's branch. That is almost always what was wanted anyway. A second PR is the right answer only when the work is genuinely independent and the operator has said so.
 
-FAILS CLOSED. If the open-PR list cannot be read, this refuses rather than
-waving the create through: `gh` being unreachable is not evidence that no PR
-exists, and creating a duplicate is the expensive direction of the error.
+FAILS CLOSED. If the open-PR list cannot be read, this refuses rather than waving the create through: `gh` being unreachable is not evidence that no PR exists, and creating a duplicate is the expensive direction of the error.
 
 PORT NOTE ON THE TWO SHELL IDIOMS THIS FILE TURNS ON. `LIST=$(gh ... 2>&1)`
 followed by `RC=$?` keeps BOTH streams and the status, which no helper in
-`hookio` offers (every call site there writes `2>/dev/null` and drops one or
-the other), so `_run_capture` is private to this module. And
+`hookio` offers (every call site there writes `2>/dev/null` and drops one or the other), so `_run_capture` is private to this module. And
 `COUNT=$(... | jq 'length' 2>/dev/null || echo 0)` has three outcomes, not two:
-a JSON array gives its length, a jq FAILURE gives the literal `0`, and an EMPTY
-input gives the EMPTY STRING, because jq with no input prints nothing and exits
+a JSON array gives its length, a jq FAILURE gives the literal `0`, and an EMPTY input gives the EMPTY STRING, because jq with no input prints nothing and exits
 0. `[[ "" -gt 0 ]]` is false, so the empty case allows -- the same answer as
 zero, by a different route.
 """

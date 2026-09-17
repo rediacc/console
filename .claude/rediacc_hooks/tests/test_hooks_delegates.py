@@ -1,28 +1,15 @@
 """The sub-suites this harness RUNS, and the floor under each fold.
 
-WHY DELEGATE AT ALL. Every case in hookcases.py is one JSON payload on one guard's
-stdin. These programs are not that shape: they need a fake task directory, a planted
-transcript, a real halted rebase. Delegating keeps both readable, and running them
+WHY DELEGATE AT ALL. Every case in hookcases.py is one JSON payload on one guard's stdin. These programs are not that shape: they need a fake task directory, a planted transcript, a real halted rebase. Delegating keeps both readable, and running them
 from here is what makes them REACHABLE -- a test nothing invokes is dead code, and
-`check_test_file_orphans.py` exists because exactly that happened to
-test-teammate-idle.py.
+`check_test_file_orphans.py` exists because exactly that happened to test-teammate-idle.py.
 
-THE FLOOR IS THE POINT, NOT THE EXIT CODE. `python3 wl_reggate.py --selftest` also
-exits 0 -- not because it has a vacuous selftest but because it has NO selftest and
-no __main__ at all, so running a library module as a script does nothing and
-succeeds. A wiring that trusted the exit code would have reported that as a passing
-suite. An unrun suite, a vacuous one, and a module that ignores its argv are
-indistinguishable from outside unless you count what came back.
+THE FLOOR IS THE POINT, NOT THE EXIT CODE. `python3 wl_reggate.py --selftest` also exits 0 -- not because it has a vacuous selftest but because it has NO selftest and no __main__ at all, so running a library module as a script does nothing and succeeds. A wiring that trusted the exit code would have reported that as a passing suite. An unrun suite, a vacuous one, and a module that
+ignores its argv are indistinguishable from outside unless you count what came back.
 
-FLOORS SIT BELOW THE MEASURED COUNT, NEVER AT IT. A floor equal to today's count
-turns every added control into a failure, which teaches people to lower the floor,
-and a floor someone edits routinely is not a floor. What it has to catch is a
-selftest that STOPPED RUNNING: zero, or a handful left after a module half-broke.
+FLOORS SIT BELOW THE MEASURED COUNT, NEVER AT IT. A floor equal to today's count turns every added control into a failure, which teaches people to lower the floor, and a floor someone edits routinely is not a floor. What it has to catch is a selftest that STOPPED RUNNING: zero, or a handful left after a module half-broke.
 
-TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py and
-wl_admit.py, 18 controls each, invoked by no suite and no gate. Sharpest detail:
-test-worklist-v5.sh exempts `--git` from its verb-coverage table and CITES "18
-controls in wl_git.py --selftest" as the justification. Coverage was being claimed
+TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py and wl_admit.py, 18 controls each, invoked by no suite and no gate. Sharpest detail: test-worklist-v5.sh exempts `--git` from its verb-coverage table and CITES "18 controls in wl_git.py --selftest" as the justification. Coverage was being claimed
 from a suite that never executed.
 """
 
@@ -214,16 +201,10 @@ def test_an_orphan_control_suite_runs_and_says_something(relative):
 def test_a_delegated_bash_suite_is_reachable(relative, npm_key):
     """Reachability is asserted, NOT re-established by running the suite again.
 
-    This module's rationale for executing these was reachability -- "a test nothing
-    invokes is dead code". `test-hooks.sh` invokes both itself (lines 2698 and 2743),
-    and that harness is executed by the registered gate `gate-test:claude-hooks`. So
-    running them here re-did work already done: measured 866.78s and 56.16s, against a
-    harness that is 931.14s in total and was being billed three times inside one
-    1200s-capped job.
+    This module's rationale for executing these was reachability -- "a test nothing invokes is dead code". `test-hooks.sh` invokes both itself (lines 2698 and 2743), and that harness is executed by the registered gate `gate-test:claude-hooks`. So running them here re-did work already done: measured 866.78s and 56.16s, against a harness that is 931.14s in total and was being billed
+    three times inside one 1200s-capped job.
 
-    The reachability CLAIM still has to hold, and a broken one is invisible -- a suite
-    the aggregate stopped invoking looks exactly like a suite that ran and passed. So
-    the claim is asserted directly and nothing is executed.
+    The reachability CLAIM still has to hold, and a broken one is invisible -- a suite the aggregate stopped invoking looks exactly like a suite that ran and passed. So the claim is asserted directly and nothing is executed.
     """
     problem = bash_suite_problem(
         relative,
@@ -238,8 +219,7 @@ def test_a_delegated_bash_suite_is_reachable(relative, npm_key):
 def test_the_reachability_assertion_fires_when_the_aggregate_drops_a_suite():
     """CONTROL. A reachability claim that cannot fail is not a claim.
 
-    Driven against an aggregate source with the suite's invocation stripped. Operates
-    on a STRING, never on the real file, so no tracked file is written (T-12).
+    Driven against an aggregate source with the suite's invocation stripped. Operates on a STRING, never on the real file, so no tracked file is written (T-12).
     """
     relative, npm_key = BASH_SUITES[0]
     real = AGGREGATE.read_text(encoding="utf-8")

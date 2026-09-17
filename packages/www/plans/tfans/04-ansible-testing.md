@@ -19,31 +19,31 @@ Layer 4: Inventory Tests               ← Dynamic inventory plugin
 ## Key Testing Principles
 
 1. **Unit tests must mock the JSON envelope format.** Query commands return
-`{success, command, data, ...}` — the runner unwraps this. Test mocks must produce envelope-wrapped responses, not raw data.
+   `{success, command, data, ...}` — the runner unwraps this. Test mocks must produce envelope-wrapped responses, not raw data.
 
 2. **Unit tests for lifecycle commands must use `run_lifecycle()`.** These
-commands don't return JSON. Mock only the exit code and stderr.
+   commands don't return JSON. Mock only the exit code and stderr.
 
 3. **Check mode tests should use `--dry-run`.** `repo up/down/delete` support
-`--dry-run` which returns structured JSON. Check mode should invoke this and report what would change without executing.
+   `--dry-run` which returns structured JSON. Check mode should invoke this and report what would change without executing.
 
 4. **Integration tests need resource cleanup.** Use test name prefixes
-(`test-ansible-*`) and a cleanup fixture that deletes matching repos even if tests fail mid-run.
+   (`test-ansible-*`) and a cleanup fixture that deletes matching repos even if tests fail mid-run.
 
 5. **Error handling tests must cover `retryable` flag.** The error envelope
-includes `retryable: true/false` — test that modules surface this correctly for playbook retry logic.
+   includes `retryable: true/false` — test that modules surface this correctly for playbook retry logic.
 
 6. **Test argument validation declaratively.** Verify `mutually_exclusive`,
-`required_if`, and `required_together` constraints produce proper errors before the module code runs (Ansible validates these at module init).
+   `required_if`, and `required_together` constraints produce proper errors before the module code runs (Ansible validates these at module init).
 
 7. **Test diff mode output.** When `_diff=True`, verify modules return
-`before` and `after` dicts that accurately show state transitions.
+   `before` and `after` dicts that accurately show state transitions.
 
 8. **Test `state` parameter naming.** Verify backup modules use `direction`
-(not `action`), schedule modules use `state` (not `action`), and all state-based modules accept standard values (`present`, `absent`, etc.).
+   (not `action`), schedule modules use `state` (not `action`), and all state-based modules accept standard values (`present`, `absent`, etc.).
 
 9. **Test Ceph fork lifecycle.** Fork tests must verify: `datastore status`
-shows `cow_mode: true` after fork, unfork restores original mount, and fork metadata (snapshot, clone, source_image) is captured correctly for cleanup. Mock the streamed JSON output from `datastore status` (plain JSON, no envelope wrapping).
+   shows `cow_mode: true` after fork, unfork restores original mount, and fork metadata (snapshot, clone, source_image) is captured correctly for cleanup. Mock the streamed JSON output from `datastore status` (plain JSON, no envelope wrapping).
 
 ## Layer 1: Unit Tests
 

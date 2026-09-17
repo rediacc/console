@@ -1,25 +1,13 @@
 """wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the
-worklist IN STEP, so a plan survives compaction as something traceable rather
-than as eighteen boxes nobody can account for.
+worklist IN STEP, so a plan survives compaction as something traceable rather than as eighteen boxes nobody can account for.
 
-WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02
-`agent/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4
-ticked ones, and its own `## Tasks` section stated the contract in as many
-words:
+WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02 `agent/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4 ticked ones, and its own `## Tasks` section stated the contract in as many words:
 
     "Checkbox lines are what `wl_planfid.plan_tasks` parses, so this list and
      the worklist must stay in step: one `worklist.py --add` item per line."
 
-The worklist held ZERO of them. Nothing in this directory read the file: the
-only mention of `agent/PLAN-*.md` in worklist.py is the SUGGESTION string
-triage prints when it tells you where to write a plan, and `wl_planfid` -- the
-one module that does parse checkbox tasks -- reads the HARNESS plan named by
-the transcript's `plan_mode_exit` record, never a committed one. So the durable
-document that exists precisely to outlive a compaction could go stale in the
-one way that makes it useless: you can read the 18 boxes and not know which are
-live. The operator's words: "the stop hook doesn't really enforce for todo
-items in the planning file but it should ... otherwise we cannot trace/update
-the planfile in sake of multiple contexts because of compaction".
+The worklist held ZERO of them. Nothing in this directory read the file: the only mention of `agent/PLAN-*.md` in worklist.py is the SUGGESTION string triage prints when it tells you where to write a plan, and `wl_planfid` -- the one module that does parse checkbox tasks -- reads the HARNESS plan named by the transcript's `plan_mode_exit` record, never a committed one. So the
+durable document that exists precisely to outlive a compaction could go stale in the one way that makes it useless: you can read the 18 boxes and not know which are live. The operator's words: "the stop hook doesn't really enforce for todo items in the planning file but it should ... otherwise we cannot trace/update the planfile in sake of multiple contexts because of compaction".
 
 ------------------------------------------------------------------------------
 THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
@@ -88,35 +76,21 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
 ------------------------------------------------------------------------------
 PARSING IS `wl_planfid.plan_tasks`, CALLED THREE TIMES, NOT FORKED.
 
-`plan_tasks` returns the plan's tasks but throws away WHICH BOX each came from,
-and this check needs open-versus-done. Copying its body to keep the mark would
-fork a parser whose rules are load-bearing (fence tracking, action-heading
-bullets, the `[?]`/`[>]` exclusion, dedup, the 8-char floor). Instead the split
-is derived from the real parser by set difference:
+`plan_tasks` returns the plan's tasks but throws away WHICH BOX each came from, and this check needs open-versus-done. Copying its body to keep the mark would fork a parser whose rules are load-bearing (fence tracking, action-heading bullets, the `[?]`/`[>]` exclusion, dedup, the 8-char floor). Instead the split is derived from the real parser by set difference:
 
     every    = plan_tasks(text)                        # boxes + action bullets
     no_open  = plan_tasks(text minus `- [ ]` lines)
     no_done  = plan_tasks(text minus `- [x]` lines)
     open     = every - no_open      done = every - no_done
 
-A plain bullet under an action heading survives both deletions, so it lands in
-NEITHER set and is never reported -- which is the conservative reading of the
-contract, whose subject is checkbox lines. `- [?]` and `- [>]` lines are not
-checkboxes to `CHECKBOX_RE` and survive both deletions too, so they are
-excluded for free rather than by a second rule that could drift out of step.
+A plain bullet under an action heading survives both deletions, so it lands in NEITHER set and is never reported -- which is the conservative reading of the contract, whose subject is checkbox lines. `- [?]` and `- [>]` lines are not checkboxes to `CHECKBOX_RE` and survive both deletions too, so they are excluded for free rather than by a second rule that could drift out of step.
 
 ------------------------------------------------------------------------------
-WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session
-to `--add` an item that already exists, which is duplicate tracking and real
+WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session to `--add` an item that already exists, which is duplicate tracking and real
 harm; a missed one leaves today's status quo. So matching is GENEROUS: a plan
-task counts as tracked when any worklist item in ANY state (open, done,
-deferred, leased) contains it or is contained by it at `wl_planfid.TASK_MATCH`,
-in EITHER direction, and items belonging to any session count. The constants are
-imported rather than restated so the calibration stays in one place.
+task counts as tracked when any worklist item in ANY state (open, done, deferred, leased) contains it or is contained by it at `wl_planfid.TASK_MATCH`, in EITHER direction, and items belonging to any session count. The constants are imported rather than restated so the calibration stays in one place.
 
-BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the
-parser resolves to zero open tasks is named as unreadable rather than counted as
-clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
+BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the parser resolves to zero open tasks is named as unreadable rather than counted as clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
 """
 
 import os
@@ -206,9 +180,7 @@ def _drop_lines(text, rx):
 def plan_boxes(text):
     """(open_tasks, done_tasks) for one plan body, via wl_planfid.plan_tasks.
 
-    Three calls to the REAL parser and two set differences -- see the module
-    docstring for why this is not a re-implementation. Order is the plan's own,
-    which is the order a reader will find them in the file.
+    Three calls to the REAL parser and two set differences -- see the module docstring for why this is not a re-implementation. Order is the plan's own, which is the order a reader will find them in the file.
     """
     every = P.plan_tasks(text)
     if not every:
@@ -221,8 +193,7 @@ def plan_boxes(text):
 def raw_box_counts(text):
     """(open, done) counted straight off the raw lines, with no parser at all.
 
-    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and
-    plan_boxes resolves none of them, the check is BLIND on that file and says
+    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and plan_boxes resolves none of them, the check is BLIND on that file and says
     so; without this second, dumber count there is nothing to compare against
     and 'no findings' would be indistinguishable from 'saw nothing'.
     """
@@ -238,16 +209,10 @@ def raw_box_counts(text):
 def item_rows(fold):
     """[(id, state, base_text)] for every item in the fold, any owner, any state.
 
-    ANY OWNER: the question is "is this task tracked", and a peer tracking it
-    is tracked. ANY STATE: a ticked item is what a `- [x]` box should match, so
-    filtering to open items would report every finished task as untracked.
+    ANY OWNER: the question is "is this task tracked", and a peer tracking it is tracked. ANY STATE: a ticked item is what a `- [x]` box should match, so filtering to open items would report every finished task as untracked.
 
-    BASE text, not `rec['text']`: that field accumulates every update note
-    forever (one live item reached ~20 concatenated lines), and a token bag
-    inflated by twenty notes matches almost anything -- which would silently
-    turn this check off by declaring everything tracked. The extraction mirrors
-    wl_store.brief_text's own fallback rather than importing it, because
-    brief_text appends the LATEST note, which is the part being excluded.
+    BASE text, not `rec['text']`: that field accumulates every update note forever (one live item reached ~20 concatenated lines), and a token bag inflated by twenty notes matches almost anything -- which would silently turn this check off by declaring everything tracked. The extraction mirrors wl_store.brief_text's own fallback rather than importing it, because brief_text appends
+    the LATEST note, which is the part being excluded.
     """
     rows = []
     for r in list(getattr(fold, "items", None) or []):
@@ -266,9 +231,7 @@ def item_rows(fold):
 def _toks(s):
     """wl_planfid's own normalisation, deliberately NOT a variant of it.
 
-    No stopword list: TASK_MATCH was calibrated at 0.7 against text tokenised
-    exactly this way, and stripping connectives would move the threshold's
-    meaning while leaving its number alone.
+    No stopword list: TASK_MATCH was calibrated at 0.7 against text tokenised exactly this way, and stripping connectives would move the threshold's meaning while leaving its number alone.
     """
     return set(P._norm(s).split())
 
@@ -276,9 +239,7 @@ def _toks(s):
 def prepare(rows):
     """[(id, state, tokens)] -- the item side tokenised ONCE.
 
-    Not an optimisation for its own sake: `reconcile` asks about every task, so
-    tokenising inside the inner loop is items x tasks (48 x 22 on this repo's
-    live plan) of work on the path that lets every session end a turn.
+    Not an optimisation for its own sake: `reconcile` asks about every task, so tokenising inside the inner loop is items x tasks (48 x 22 on this repo's live plan) of work on the path that lets every session end a turn.
     """
     out = []
     for iid, state, text in rows:
@@ -291,15 +252,9 @@ def prepare(rows):
 def match_item(task, prepared):
     """(item_id, state) of the worklist item that stands for this task, or None.
 
-    Takes PREPARED rows (see `prepare`), not raw ones: `reconcile` asks about
-    every task, and tokenising the item side inside that loop is items x tasks
-    of work on the path that lets every session in this repo end a turn.
+    Takes PREPARED rows (see `prepare`), not raw ones: `reconcile` asks about every task, and tokenising the item side inside that loop is items x tasks of work on the path that lets every session in this repo end a turn.
 
-    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that
-    quotes a long task line, and an item whose wording the task line is a short
-    version of, are both tracking. Generous on purpose -- see the module
-    docstring on which direction a wrong answer costs more. Ties break on the
-    strongest overlap so the id quoted back is the best one, not the first one.
+    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that quotes a long task line, and an item whose wording the task line is a short version of, are both tracking. Generous on purpose -- see the module docstring on which direction a wrong answer costs more. Ties break on the strongest overlap so the id quoted back is the best one, not the first one.
     """
     tt = _toks(task)
     if len(tt) < P.MIN_MATCH_TOKENS:
@@ -319,10 +274,9 @@ def match_item(task, prepared):
 def reconcile(open_tasks, done_tasks, rows):
     """The three findings for one plan, as ([untracked], [stale_open], n_reopened).
 
-    untracked    open `- [ ]` boxes with no worklist item at all -- the core.
-    stale_open   open `- [ ]` boxes whose item is TICKED: the plan is behind the
+    untracked open `- [ ]` boxes with no worklist item at all -- the core. stale_open open `- [ ]` boxes whose item is TICKED: the plan is behind the
                  work, and the fix is one character in a file this session owns.
-    n_reopened   `- [x]` boxes whose item is still open. COUNT ONLY, no quotes:
+    n_reopened `- [x]` boxes whose item is still open. COUNT ONLY, no quotes:
                  the remedy is a tick, and ticks already have a gate of their
                  own with evidence rules this check has no business restating.
     """
@@ -356,10 +310,7 @@ def _read(path):
 def _owner(plan_owner, root, rel):
     """The plan's declared Owner, or None when it cannot be read.
 
-    None means UNOWNED, which `wl_core.owned_by_me` treats as in scope. That is
-    the deliberate direction: a header this cannot parse should make the check
-    noisy, never silent, for the same reason an untagged worklist item counts as
-    yours.
+    None means UNOWNED, which `wl_core.owned_by_me` treats as in scope. That is the deliberate direction: a header this cannot parse should make the check noisy, never silent, for the same reason an untagged worklist item counts as yours.
     """
     try:
         return plan_owner(root, rel)
@@ -374,16 +325,12 @@ def in_scope_status(status):
 
 def plan_rows(root, recs, fold, session_id, plan_owner):
     """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed
-    in rather than imported so this module never depends on wl_checks, which
-    imports it (and so the selftest can drive it with fixtures).
+    in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures).
 
-    Returns (rows, unread) where `unread` is how many in-scope plans the read
-    cap kept this stop from opening. Never silently zero-truncated: see
+    Returns (rows, unread) where `unread` is how many in-scope plans the read cap kept this stop from opening. Never silently zero-truncated: see
     PLAN_MAX_READ.
 
-    Each dict: rel, status, n_open, n_done, untracked, stale_open, reopened,
-    blind. `blind` is a string when the parser could not resolve boxes the raw
-    text plainly holds, and is a FINDING rather than a skip.
+    Each dict: rel, status, n_open, n_done, untracked, stale_open, reopened, blind. `blind` is a string when the parser could not resolve boxes the raw text plainly holds, and is a FINDING rather than a skip.
     """
     rows = item_rows(fold)
     # Status first because it is free (plan_records already parsed it), then ownership, which costs a header read. Only what survives both is capped, so the cap counts plans this session actually had a reason to open. S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that history stay in step with a live worklist is how a check earns its way into being
@@ -466,14 +413,10 @@ def _quote(t):
 def render(row, n_more_plans=0, unread=0, budget=None):
     """The advisory body for ONE plan, or "" when there is nothing to say.
 
-    Prints the SHAPE (boxes seen, open, done, items scanned is implicit in the
-    verdicts) and not merely the verdict, so a reader can tell a real finding
+    Prints the SHAPE (boxes seen, open, done, items scanned is implicit in the verdicts) and not merely the verdict, so a reader can tell a real finding
     from a parser that saw nothing.
 
-    `budget` is S2's SHARED quote allowance: render_all hands each plan whatever
-    is left of PLAN_TASK_SHOW rather than giving every plan its own. That is what
-    lets three plans be shown without tripling the wall design note 2 was about --
-    the note's number moves, its reason does not.
+    `budget` is S2's SHARED quote allowance: render_all hands each plan whatever is left of PLAN_TASK_SHOW rather than giving every plan its own. That is what lets three plans be shown without tripling the wall design note 2 was about -- the note's number moves, its reason does not.
     """
     if not row:
         return ""
@@ -544,12 +487,8 @@ def render(row, n_more_plans=0, unread=0, budget=None):
 def render_all(rows, unread=0):
     """S2: up to PLAN_PLANS_SHOW plans in one advisory, sharing ONE quote budget.
 
-    The budget is why three plans is not three times the noise. Each plan spends
-    what it needs of PLAN_TASK_SHOW and the next one gets the remainder, so the
-    total number of quoted `--add` recipes is the same as it was when exactly one
-    plan was rendered. A plan whose budget has run out still gets its header and
-    its counts -- it is named, not hidden, which is the difference between a cap
-    and a silence.
+    The budget is why three plans is not three times the noise. Each plan spends what it needs of PLAN_TASK_SHOW and the next one gets the remainder, so the total number of quoted `--add` recipes is the same as it was when exactly one plan was rendered. A plan whose budget has run out still gets its header and its counts -- it is named, not hidden, which is the difference between a
+    cap and a silence.
     """
     if not rows:
         return ""
