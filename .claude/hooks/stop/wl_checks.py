@@ -4189,6 +4189,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         extras = ("\n\n" + ci_report if ci_report else "") + (
             "\n\n" + queue_note if queue_note else ""
         )
+        # THE ADVISORY QUEUE IS STARVED BY A PRODUCTIVE SESSION, which is the opposite of what it was built for. `outq_drain` runs on the allow path only, so a session that blocks at every stop never releases a single section, and the plan-task census rides that queue: a plan's open boxes stay invisible for exactly as long as the session keeps finding real work.
+        # Measured 2026-09-17, ten parsed boxes in a freshly written plan went unseen across roughly twenty consecutive blocked stops, and the operator noticed before the hook said anything. Only the COUNT rides along here, never a body, on the same reasoning `ci_report` and `queue_note` above already use: a body would displace the focused violation this block exists to deliver.
+        pending_outq = len(_outq(state_doc).get("items") or [])
+        if pending_outq:
+            extras += "\n\n" + M.N_OUTQ_BLOCKED % (pending_outq, pending_outq)
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
             spend_display_latches([k for k, _a, _t in violations])

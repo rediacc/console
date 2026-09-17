@@ -47,7 +47,16 @@ TOKENS='eslint-disabl[e]|@ts-ignor[e]|@ts-nochec[k]|@ts-expect-erro[r]|biome-ign
 OPENER='(//+|/\*+|\{[[:space:]]*/\*+|^[[:space:]]*\*+|#)'
 
 if printf '%s' "$CONTENT" | grep -qE "${OPENER}[[:space:]]*(${TOKENS})"; then
-    echo "❌ BLOCKED: Do not use eslint-disabl""e, @ts-ignor""e, @ts-nochec""k, @ts-expect-erro""r, or biome-ignor""e. Fix the issue properly." >&2
+    # "Fix it properly" names a diagnosis and no remedy. There is no repair TOOL to name here,
+    # since the fix is whatever the underlying lint error wants, but there IS a documented
+    # process, and pointing at it is the difference between a session rewriting code it did not
+    # need to rewrite and one finding its case already provided for. Kept byte-identical to the
+    # port's MESSAGE, which the differential requires.
+    echo "❌ BLOCKED: Do not use eslint-disabl""e, @ts-ignor""e, @ts-nochec""k, @ts-expect-erro""r, or biome-ignor""e. Fix the issue properly.
+If the suppression is genuinely unavoidable, it is an allowlist entry and it needs a
+BLOCKER: reason that a liveness gate will re-check. The escape hatches, and what each
+one must carry, are in docs/agent-reference/suppressions.md -- read it before adding one,
+and never suppress a gate merely to get past it." >&2
     exit 2
 fi
 exit 0

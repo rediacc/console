@@ -66,7 +66,15 @@ PATTERN = OPENER + hookio.rx(r"[{S}]*(") + TOKENS + r")"
 
 # The message's tokens, kept in halves in the SOURCE and whole in the OUTPUT.
 # See the port note above; this is the `""` concatenation the bash uses.
-MESSAGE = "❌ BLOCKED: Do not use %s, %s, %s, %s, or %s. Fix the issue properly." % (
+# "FIX IT PROPERLY" NAMES A DIAGNOSIS AND NO REMEDY, which is the class swept on 2026-09-17 after the width guard was found reporting R18 and R19 without ever naming `reflow --write`, the one command that repairs them. This guard has no repair TOOL to name, because the fix is whatever the underlying lint error actually wants, but it does have a documented PROCESS: the repository
+# keeps every sanctioned escape hatch in one place, each entry carrying a `BLOCKER:` reason and a liveness check that proves the reason is still true. Pointing at that file is the difference between a session rewriting code it did not need to rewrite and a session discovering that its case may already be provided for.
+MESSAGE = (
+    "❌ BLOCKED: Do not use %s, %s, %s, %s, or %s. Fix the issue properly.\n"
+    "If the suppression is genuinely unavoidable, it is an allowlist entry and it needs a\n"
+    "BLOCKER: reason that a liveness gate will re-check. The escape hatches, and what each\n"
+    "one must carry, are in docs/agent-reference/suppressions.md -- read it before adding one,\n"
+    "and never suppress a gate merely to get past it."
+) % (
     "eslint-disabl" + "e",
     "@ts-ignor" + "e",
     "@ts-nochec" + "k",

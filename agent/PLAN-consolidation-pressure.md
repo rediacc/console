@@ -1,5 +1,5 @@
 # PLAN: Agreement detection and proof obligations for bulk change
-Status: draft
+Status: executing
 Owner: d778be9d
 Updated: 2026-09-17
 
