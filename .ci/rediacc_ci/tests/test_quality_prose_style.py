@@ -30,9 +30,11 @@ nothing.
 """
 
 import ast
+import contextlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 
 import pytest
@@ -722,42 +724,198 @@ def test_reflow_comments_over_the_width_rewraps_and_loses_no_word():
     assert ps.reflow_comments(out, ".py", 80) == out
 
 
+def _docstring_normalized_dump(tree):
+    """`ast.dump`, with every module/class/function docstring's TEXT blanked out.
+
+    A docstring is a string literal, so reflowing one changes `ast.dump` BY DESIGN -- the whole point of this refactor is that R19 and reflow can now see one, where before neither ever looked inside a docstring at all.
+    The safety proof this module used to run (exact `ast.dump` equality across a reflow) asserted something no longer true and that must not become true again: this is its replacement, proving a reflow never touches anything OUTSIDE a docstring node.
+    `node.body[0]` is only ever a docstring when it is an `Expr` wrapping a string `Constant` as the FIRST statement of a module, class or function -- the same grammar `_is_docstring` already checks token-by-token in `prose_style.py`.
+    Walking the AST for it here is independent confirmation, not a restatement of that same code.
+    """
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        body = node.body
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body[0].value.value = ""
+    return ast.dump(tree)
+
+
 def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
     """THE test that caught the regex version: 52 of 1051 files, silently rewritten.
 
-    A comment is not part of the AST, so a reflow that only ever touches comments
-    cannot move `ast.dump`. A reflow that mistakes a docstring line for a comment
-    moves it on the first file that quotes one, which is what this asserts against
-    the real corpus rather than a fixture.
+    A comment is not part of the AST, and a reflowed docstring is a CHANGED string constant by design -- both facts are folded into one property here: a reflow may change a docstring's own text and NOTHING else.
+    Blanking every docstring's value in both trees before comparing turns that into an assertable claim instead of "trust the diff": anything outside a docstring that moves is a real corruption and fails loudly, a docstring's text changing is the feature under test, and the two are told apart by construction rather than by inspection.
 
-    WIDTH 40, NOT 384. The real corpus was reflowed to 384 tree-wide the same
-    session this test was written, so a 384-width run now finds almost nothing
-    LEFT to join -- not because the property stopped holding, but because the
-    debt it used to measure is gone. A narrow width forces real multi-line
-    comment blocks to rejoin regardless of the tree's current wrap state, so
-    the vacuity floor stays meaningful independent of when this runs.
+    WIDTH 40, NOT 384. The real corpus was reflowed to 384 tree-wide in an earlier session, so a 384-width run now finds almost nothing left to join -- not because the property stopped holding, but because the debt it used to measure is gone.
+    A narrow width forces real multi-line comment AND docstring paragraphs to rejoin regardless of the tree's current wrap state, so the vacuity floor stays meaningful independent of when this runs.
     """
     files = gitx.ls_files("*.py", root=ROOT, existing=True)
     assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
     mismatched = []
     reflowed = 0
+    docstrings_reflowed = 0
     for rel in files:
         before = (ROOT / rel).read_text(encoding="utf-8")
         try:
-            expected = ast.dump(ast.parse(before))
+            expected = _docstring_normalized_dump(ast.parse(before))
         except SyntaxError:
             continue
         after = ps.reflow_comments(before, ".py", 40)
         reflowed += after != before
+        if after != before:
+            with contextlib.suppress(SyntaxError):
+                docstrings_reflowed += ast.dump(ast.parse(before)) != ast.dump(ast.parse(after))
         try:
-            if ast.dump(ast.parse(after)) != expected:
+            if _docstring_normalized_dump(ast.parse(after)) != expected:
                 mismatched.append(rel)
         except SyntaxError:
             mismatched.append(rel)
     assert reflowed > 100, "only %d file(s) changed at all; this asserts nothing" % reflowed
-    assert not mismatched, "reflow_comments changed the AST of %d file(s): %s" % (
+    assert docstrings_reflowed > 0, (
+        "not one file's reflow touched a docstring's own AST value; the corpus proof this "
+        "refactor exists for would then be vacuous for the hazard it is meant to catch"
+    )
+    assert not mismatched, "reflow_comments changed the AST outside a docstring in %d file(s): %s" % (
         len(mismatched),
         mismatched[:10],
+    )
+
+
+# --------------------------------------------------------------------------- Docstrings are reflow-eligible and R19-visible now, and the hazards that come with it ---------------------------------------------------------------------------
+
+
+def test_a_narrow_docstring_paragraph_is_r19_visible_and_gets_rejoined():
+    """THE HOLE THIS REFACTOR CLOSES. Before it, `_python_reflow_lines` never looked at a STRING token at all, so a docstring's prose was invisible to both `comment_segments` and the R19 pass it feeds, no matter how narrow-wrapped it was -- 9,932 such paragraphs across 1,021 files, measured live on this corpus.
+    """
+    text = (
+        'def f():\n    """Summary.\n\n    one two three\n    four five six\n'
+        '    seven eight nine\n    """\n'
+    )
+    findings, note = ps.lint_text("a.py", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" in [f.rule for f in findings], "a narrow docstring paragraph must fire R19 now"
+    after = ps.reflow_comments(text, ".py", 384)
+    assert after == (
+        'def f():\n    """Summary.\n\n    one two three four five six seven eight nine\n    """\n'
+    )
+
+
+def test_a_verbatim_usage_docstring_is_never_rewrapped():
+    """A REAL, currently-tracked shape, not a hypothetical: `.ci/scripts/housekeeping/retire-shadowed-secrets.py`'s module docstring `print(__doc__)`s a `Usage:` block at 2-space indent -- shallower than the `base + 4` code-block rule, and exactly what a naive "join every flush docstring line" reflow would corrupt into one unreadable line."""
+    text = (
+        '"""Retire a thing.\n\nUsage:\n'
+        '  retire-thing.py <NAME> [<NAME>...]            # report only, default\n'
+        '  retire-thing.py --apply <NAME> [<NAME>...]    # rewrite the files\n'
+        '  retire-thing.py --selftest\n\n'
+        'Exit: 0 clean, 1 nothing to do, 2 a failed control.\n"""\n'
+    )
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_an_indented_code_block_inside_a_docstring_is_never_rewrapped():
+    """The `base + 4` rule (hazard 3 of this refactor) has to survive on the reflow side exactly as it always worked on the lint side, not merely be re-derived and hoped equivalent."""
+    text = 'def f():\n    """An example::\n\n        x = 1\n        y = 2\n        z = 3\n    """\n'
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_doctest_block_inside_a_docstring_is_never_rewrapped():
+    """A NEW gap this refactor opens if left unhandled: before it, nothing ever reflowed a docstring at all, so a doctest block was safe by omission rather than by any explicit stop."""
+    text = 'def f():\n    """Example.\n\n    >>> f()\n    >>> f()\n    >>> f()\n    """\n'
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_rest_field_list_inside_a_docstring_is_never_rewrapped():
+    text = (
+        'def f():\n    """Do a thing.\n\n    :param x: the value\n    :param y: another one\n'
+        '    :returns: the result\n    """\n'
+    )
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_rest_directive_inside_a_docstring_is_never_rewrapped():
+    text = 'def f():\n    """Do a thing.\n\n    .. note::\n\n       an aside\n    """\n'
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def _cstyle_comment_spans(text):
+    """Character `[start, end)` spans covering every `//`/`/* */` comment span, walked INDEPENDENTLY of `prose_style._cstyle_scan` on purpose: this is the proof that `reflow_comments` never touches a byte outside one, and reusing the very walk reflow is fed from would let one bug shared by both sides of the proof pass silently."""
+    spans = []
+    i = 0
+    length = len(text)
+    quote = None
+    while i < length:
+        char = text[i]
+        if quote is not None:
+            if char == "\\":
+                i += 2
+                continue
+            if char == quote:
+                quote = None
+            i += 1
+            continue
+        if char in "\"'`":
+            quote = char
+            i += 1
+            continue
+        if char == "/" and i + 1 < length and text[i + 1] == "/":
+            end = text.find("\n", i)
+            end = length if end == -1 else end
+            spans.append((i, end))
+            i = end
+            continue
+        if char == "/" and i + 1 < length and text[i + 1] == "*":
+            close = text.find("*/", i + 2)
+            end = length if close == -1 else min(close + 2, length)
+            spans.append((i, end))
+            i = end
+            continue
+        i += 1
+    return spans
+
+
+def _mask_comments(text):
+    out = []
+    pos = 0
+    for start, end in _cstyle_comment_spans(text):
+        out.append(text[pos:start])
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def test_reflow_comments_preserves_non_comment_bytes_of_every_tracked_cstyle_file():
+    """The C-style analogue of the Python AST proof above. A `//`/`/* */` language has no docstring convention this module reflows, so the claim is simpler and stronger: every character OUTSIDE a comment span must be byte-identical before and after, in the same relative order.
+
+    WHITESPACE-RUNS ARE COLLAPSED BEFORE COMPARING, and that is a stated relaxation rather than a blind spot: joining several whole-line `//` comments into fewer physical lines removes newlines that sat BETWEEN those comment lines, which shrinks the amount of connective whitespace outside the masked spans too, exactly as expected.
+    A real corruption -- a code token deleted, altered or reordered -- survives whitespace collapsing and still fails this assertion; only the benign, expected shrinkage from line-count reduction does not.
+    """
+    files = gitx.ls_files(
+        "*.ts", "*.tsx", "*.js", "*.cjs", "*.mjs", "*.go", root=ROOT, existing=True
+    )
+    assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
+    reflowed = 0
+    corrupted = []
+    for rel in files:
+        suffix = pathlib.Path(rel).suffix
+        before = (ROOT / rel).read_text(encoding="utf-8", errors="surrogateescape")
+        after = ps.reflow_comments(before, suffix, 40)
+        if after == before:
+            continue
+        reflowed += 1
+        before_skel = re.sub(r"\s+", " ", _mask_comments(before))
+        after_skel = re.sub(r"\s+", " ", _mask_comments(after))
+        if before_skel != after_skel:
+            corrupted.append(rel)
+    assert reflowed > 50, "only %d file(s) changed at all; this asserts nothing" % reflowed
+    assert not corrupted, "reflow_comments changed non-comment bytes in %d file(s): %s" % (
+        len(corrupted),
+        corrupted[:10],
     )
 
 

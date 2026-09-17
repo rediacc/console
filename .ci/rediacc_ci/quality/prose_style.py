@@ -399,43 +399,66 @@ def markdown_lines(text, markers=DEFAULT_MARKERS):
     return lines
 
 
-def python_comment_lines(text, markers=DEFAULT_MARKERS):
-    """Comments and docstrings of a Python module, by TOKENIZING it.
+class _PyChunk:
+    """One COMMENT token or docstring-shaped STRING token, tokenized once.
 
-    NOT A REGEX OVER `#`. `re.split("#")` reports the fragment identifier inside
-    `"https://x/#frag"` as a comment, and a string containing the word `you` as
-    prose. `tokenize` knows which is which because it is the same lexer the
-    interpreter uses, and on a file it cannot lex it raises rather than guessing,
-    at which point the caller falls back and SAYS it fell back.
+    THE SINGLE SOURCE OF TRUTH FOR WHETHER A LINE IS A COMMENT OR A DOCSTRING. `python_comment_lines` (feeding `extract()`, R1-R18) and `_python_reflow_lines` (feeding `comment_segments()`, reflow and R19) used to run this tokenize walk independently.
+    The reflow side never looked at a STRING token at all -- a docstring was invisible to it no matter what the lint side had already decided about the identical bytes. Both now read the same chunk list and cannot disagree.
     """
-    lines = []
-    reader = io.StringIO(text).readline
-    stream = list(tokenize.generate_tokens(reader))
+
+    __slots__ = ("col", "kind", "start", "text")
+
+    def __init__(self, kind, start, col, text):
+        self.kind = kind
+        self.start = start
+        self.col = col
+        self.text = text
+
+
+def _python_scan(text):
+    """Every COMMENT token and every docstring-shaped STRING token, in source order.
+
+    NOT A REGEX OVER `#`. `re.split("#")` reports the fragment identifier inside `"https://x/#frag"` as a comment, and a string containing the word `you` as prose. `tokenize` knows which is which because it is the same lexer the interpreter uses.
+    `_is_docstring` (unchanged; see its own docstring for the grammar) is what keeps a list/dict/call-argument string OUT of this scan.
+    `list(...)` materializes the whole token stream up front, exactly as the single walk this factors out of always did, so a file Python itself cannot lex raises HERE rather than partway through a caller's own loop, and the caller falls back and SAYS it fell back.
+    """
+    stream = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    chunks = []
     for index, token in enumerate(stream):
         if token.type == tokenize.COMMENT:
-            # `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block. The gate found a false positive in the comment
-            # explaining its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
-            after_hash = token.string.lstrip("#")
+            chunks.append(_PyChunk("comment", token.start[0], token.start[1], token.string))
+        elif token.type == tokenize.STRING and _is_docstring(stream, index):
+            chunks.append(_PyChunk("docstring", token.start[0], token.start[1], token.string))
+    return chunks
+
+
+def python_comment_lines(text, markers=DEFAULT_MARKERS):
+    """Comments and docstrings of a Python module, from `_python_scan`.
+
+    `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block.
+    The gate found a false positive in the comment explaining its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
+
+    THE DOCSTRING'S OWN INDENT is what makes an indented block inside it detectable at all. A markdown document's code block is four spaces from column zero; a docstring's is four spaces from wherever the docstring starts, and a function's docstring already starts at four.
+    MEASURED, NOT ANTICIPATED: `prose_style.py:404` -- this file -- once carried a reStructuredText literal block holding the very test label that exposed the docstring bug above, and R2 flagged the capital `I` inside it before the indent rule covered docstrings too.
+    """
+    lines = []
+    for chunk in _python_scan(text):
+        if chunk.kind == "comment":
+            after_hash = chunk.text.lstrip("#")
             if _indent(after_hash) >= 4:
                 continue
+            lineno = chunk.start
+            raw = _nth_line(text, lineno)
             body = after_hash.strip()
-        elif token.type == tokenize.STRING and _is_docstring(stream, index):
-            body = token.string
-        else:
+            if is_marked(raw, markers) or BAD_EXAMPLE.match(body):
+                continue
+            scrubbed = scrub(_strip_quotes(body)).strip()
+            if scrubbed:
+                lines.append(Line(lineno, raw, scrubbed))
             continue
-        start = token.start[0]
-        # THE DOCSTRING'S OWN INDENT, which is what makes an indented block inside it detectable at all. A markdown document's code block is four
-        # spaces from column zero; a docstring's is four spaces from wherever the
-        # docstring starts, and a function's docstring already starts at four.
-        #
-        # MEASURED, NOT ANTICIPATED. `prose_style.py:404` -- this file -- carries a reStructuredText literal block holding the very test label that exposed the docstring bug above::
-        #
-        # "an edit whose new_string says I",
-        #
-        # and R2 flagged its capital `I`. The gate found a false positive in the comment explaining its own last false positive, which is as good an argument as there is for treating an indented block as code everywhere rather than only in markdown.
-        base = token.start[1] if token.type == tokenize.STRING else 0
-        for offset, piece in enumerate(body.splitlines()):
-            lineno = start + offset
+        base = chunk.col
+        for offset, piece in enumerate(chunk.text.splitlines()):
+            lineno = chunk.start + offset
             raw = _nth_line(text, lineno)
             if is_marked(raw, markers) or BAD_EXAMPLE.match(piece):
                 continue
@@ -534,11 +557,19 @@ def _nth_line(text, lineno):
 
 # `//` and `/* */`, found by a scanner rather than a regex, for the same reason the Python side tokenizes: `"https://x"` contains `//` and is not a comment, and a regex that excluded it by looking for a preceding `:` would then miss
 # `const a = b // c`.
-def cstyle_comment_lines(text, markers=DEFAULT_MARKERS):
-    """Comments of a `//` + `/* */` language, string and template literals skipped."""
-    lines = []
+def _cstyle_scan(text):
+    """Every `//` line comment and `/* */` block comment, walked once.
+
+    THE SINGLE SOURCE OF TRUTH for the same reason `_python_scan` is: `cstyle_comment_lines` (feeding `extract()`, every comment, INCLUDING a trailing one and a block's interior) and `_cstyle_reflow_lines` (feeding `comment_segments()`, whole-line `//` only, a block left entirely alone) used to run this quote/template state machine as two independently maintained copies.
+    They agreed on everything except one thing neither copy's author noticed: the lint copy advanced past a backslash-escaped newline inside a string WITHOUT counting the line, so a comment after a multi-line string with a line-continuation backslash was reported at the wrong line number.
+    Fixed here, in the one walk both consumers now share, rather than carried forward into a merge that kept it broken in exactly one of the two former copies.
+
+    Yields `("line", lineno, indent, body)` for a `//` comment -- `indent` is the raw text before the `//` on its physical line, which is how the reflow side tells a whole-line comment from a trailing one.
+    And `("block", start_lineno, raw_text)` for a `/* */` span, UNSPLIT into physical lines, because the two consumers break it apart differently (one strips a leading `*` per line for lint; the other never touches a block at all).
+    """
     i = 0
     lineno = 1
+    line_start = 0
     length = len(text)
     quote = None
     while i < length:
@@ -546,9 +577,15 @@ def cstyle_comment_lines(text, markers=DEFAULT_MARKERS):
         if char == "\n":
             lineno += 1
             i += 1
+            line_start = i
             continue
         if quote is not None:
             if char == "\\":
+                if i + 1 < length and text[i + 1] == "\n":
+                    lineno += 1
+                    i += 2
+                    line_start = i
+                    continue
                 i += 2
                 continue
             if char == quote:
@@ -562,19 +599,31 @@ def cstyle_comment_lines(text, markers=DEFAULT_MARKERS):
         if char == "/" and i + 1 < length and text[i + 1] == "/":
             end = text.find("\n", i)
             end = length if end == -1 else end
-            _emit(lines, text, lineno, text[i + 2 : end], markers)
+            yield "line", lineno, text[line_start:i], text[i + 2 : end]
             i = end
             continue
         if char == "/" and i + 1 < length and text[i + 1] == "*":
             end = text.find("*/", i + 2)
             end = length if end == -1 else end
-            block = text[i + 2 : end]
-            for offset, piece in enumerate(block.splitlines()):
-                _emit(lines, text, lineno + offset, piece.lstrip().lstrip("*"), markers)
-            lineno += block.count("\n")
-            i = end + 2
+            yield "block", lineno, text[i + 2 : end]
+            lineno += text.count("\n", i, end)
+            i = min(end + 2, length)
+            line_start = text.rfind("\n", 0, i) + 1
             continue
         i += 1
+
+
+def cstyle_comment_lines(text, markers=DEFAULT_MARKERS):
+    """Comments of a `//` + `/* */` language, string and template literals skipped."""
+    lines = []
+    for item in _cstyle_scan(text):
+        if item[0] == "line":
+            _, lineno, _indent_text, body = item
+            _emit(lines, text, lineno, body, markers)
+        else:
+            _, start, block = item
+            for offset, piece in enumerate(block.splitlines()):
+                _emit(lines, text, start + offset, piece.lstrip().lstrip("*"), markers)
     return lines
 
 
@@ -1077,7 +1126,7 @@ def underwrap_findings(path, text, rule, scope, max_len):
             if item[0] != "para":
                 continue
             _, start, indent, marker, payload = item
-            avail = max(max_len - len(indent + marker + " "), 20)
+            avail = max(max_len - len(_comment_prefix(indent, marker)), 20)
             if _looks_hard_wrapped(payload, avail):
                 findings.append(
                     Finding(
@@ -1454,100 +1503,79 @@ COMMENT_LINE_BY_SUFFIX = {
 }
 
 
-# A LEXER DECIDES WHAT A COMMENT IS, never `^\s*#`. Measured 2026-09-17: the regex version of this map rewrote 52 of 1051 `.py` files in this repository into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real comment paragraph underneath it, and the two were joined into one line -- moving the closing quotes
-# and silently rewriting the string's own content. The equivalent line-prefix survey of the `.ts`/`.js`/`.go` corpus reported zero damage, but it shared the blind spot of the thing it was checking, so it was evidence of nothing. `python_comment_lines` and `cstyle_comment_lines` already resolve
-# strings correctly for the LINT path; these two are the same resolution kept
-# addressable by physical line, which is what reconstruction needs and what `_emit` throws away.
-def _python_reflow_lines(text):
-    """1-based line number -> (indent, body) for each WHOLE-LINE `#` comment.
+# A doctest prompt/continuation and a reST field list or directive, never joined into a paragraph: each one's own line structure IS its content, exactly like `LIST_ITEM`/`REFLOW_STOP` already protect for markdown. Checked against the docstring's own interior lines only (see `_python_reflow_lines` below);
+# these three never applied to a `#`/`//` comment in the first place, since a comment has no equivalent convention.
+DOCTEST_PROMPT = re.compile(r"^\s*(?:>>>|\.\.\.) ")
+REST_FIELD = re.compile(r"^\s*:[^:\s][^:]*:")
+REST_DIRECTIVE = re.compile(r"^\s*\.\.\s+\S")
 
-    `tokenize` is the interpreter's own lexer, so a `#` inside a string or a
-    docstring is never a `COMMENT` token and can never reach this map. A
-    comment whose physical line carries code before it is TRAILING and is
-    dropped here, which leaves it unjoinable and makes it end a paragraph.
+
+# A LEXER DECIDES WHAT A COMMENT OR A DOCSTRING IS, never `^\s*#`. Measured 2026-09-17: a regex version of this map once rewrote 52 of 1051 `.py` files in this repository into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real comment paragraph underneath it. `_python_scan` is the fix: ONE tokenize pass,
+# shared with `python_comment_lines` above, so the reflow side sees a docstring as a docstring instead of never seeing it at all -- which was the actual defect this pair of functions used to carry: the reflow map had no entry for a docstring's prose whatsoever, so R19 (fed from this same map, see `comment_segments`/`underwrap_findings`) could not see a single narrow-wrapped
+# docstring paragraph in the whole tree.
+def _python_reflow_lines(text):
+    """1-based line number -> (indent, body, marker) for each Python line SAFE to fold into a reflowed paragraph.
+
+    Two shapes, sharing one map so `comment_segments` need not know which kind it is looking at: a WHOLE-LINE `#` comment (`marker` is `"#"`; a comment whose physical line carries code before it is TRAILING and is absent here).
+    Or a FLUSH interior line of a docstring (`marker` is `None`, meaning "prose text, no marker to reproduce").
+
+    A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE NEVER INCLUDED. The first carries the opening quote (and, for a one-line docstring, the whole thing); the last carries the closing quote, sometimes with a trailing comment beside it.
+    Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk a `#` comment never carries, since it owns no delimiter to protect.
+    Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a document.
+
+    AN INTERIOR LINE ONLY JOINS WHEN IT SITS FLUSH WITH THE DOCSTRING'S OWN LEFT MARGIN -- the same `base` column `python_comment_lines` already measures indentation against for its own `>= base + 4` code-block rule.
+    A line indented by 1-3 columns is neither prose nor a code block by that rule, and is exactly the shape a hand-written flag list or enumerated block uses in this repository's own docstrings (`retire-shadowed-secrets.py`'s `Usage:` section is a real, currently-tracked example).
+    Never joined, each such line is kept on its own. A doctest prompt/continuation or a reST field/directive is excluded the same way and for the same reason: its line structure is its content, not a paragraph waiting to be rewrapped.
     """
     found = {}
-    for token in tokenize.generate_tokens(io.StringIO(text).readline):
-        if token.type != tokenize.COMMENT:
+    for chunk in _python_scan(text):
+        if chunk.kind == "comment":
+            indent = _nth_line(text, chunk.start)[: chunk.col]
+            if indent.strip():
+                continue
+            found[chunk.start] = (indent, chunk.text[1:], "#")
             continue
-        row, col = token.start
-        indent = token.line[:col]
-        if indent.strip():
-            continue
-        found[row] = (indent, token.string[1:])
+        base = chunk.col
+        body_lines = chunk.text.splitlines()
+        last = len(body_lines) - 1
+        for offset, piece in enumerate(body_lines):
+            if offset in (0, last):
+                continue
+            if _indent(piece) != base or not piece.strip():
+                continue
+            if DOCTEST_PROMPT.match(piece) or REST_FIELD.match(piece) or REST_DIRECTIVE.match(piece):
+                continue
+            indent_text = piece[: len(piece) - len(piece.lstrip(" \t"))]
+            found[chunk.start + offset] = (indent_text, piece[len(indent_text) :], None)
     return found
 
 
 def _cstyle_reflow_lines(text):
-    """The same map for a `//` language, from `cstyle_comment_lines`' scanner.
+    """The same shape for a `//` language, from `_cstyle_scan`'s shared walk.
 
-    The state machine is that function's, with two additions reconstruction
-    needs: the offset each physical line starts at, so a comment's column
-    separates whole-line from trailing, and a `/* */` span consumed WITHOUT
-    recording anything. A block comment is left entirely alone -- rewrapping
-    one risks its own asterisk alignment, and there is no reader benefit that
-    pays for that.
+    Only a WHOLE-LINE `//` comment is eligible (`marker` is always `"//"`
+    here; a C-style language has no docstring convention this module reflows).
+    A `/* */` span is a STOP, never a paragraph: rewrapping one risks its own
+    asterisk alignment, and there is no reader benefit that pays for that.
     """
     found = {}
-    i = 0
-    lineno = 1
-    line_start = 0
-    length = len(text)
-    quote = None
-    while i < length:
-        char = text[i]
-        if char == "\n":
-            lineno += 1
-            i += 1
-            line_start = i
+    for item in _cstyle_scan(text):
+        if item[0] != "line":
             continue
-        if quote is not None:
-            if char == "\\":
-                if i + 1 < length and text[i + 1] == "\n":
-                    lineno += 1
-                    line_start = i + 2
-                i += 2
-                continue
-            if char == quote:
-                quote = None
-            i += 1
-            continue
-        if char in "\"'`":
-            quote = char
-            i += 1
-            continue
-        if char == "/" and i + 1 < length and text[i + 1] == "/":
-            end = text.find("\n", i)
-            end = length if end == -1 else end
-            indent = text[line_start:i]
-            if not indent.strip():
-                found[lineno] = (indent, text[i + 2 : end])
-            i = end
-            continue
-        if char == "/" and i + 1 < length and text[i + 1] == "*":
-            end = text.find("*/", i + 2)
-            end = length if end == -1 else end
-            lineno += text.count("\n", i, end)
-            i = min(end + 2, length)
-            line_start = text.rfind("\n", 0, i) + 1
-            continue
-        i += 1
+        _, lineno, indent, body = item
+        if not indent.strip():
+            found[lineno] = (indent, body, "//")
     return found
 
 
 def comment_segments(text, suffix):
-    """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker,
-    [bodies])` for `text`'s whole-line comments -- the single source of truth
-    for a COMMENT paragraph boundary, factored out of `reflow_comments`'s own
-    loop for the same reason `markdown_segments` was: `underwrap_findings`
-    (R19) must consume the IDENTICAL boundary logic, not a second copy of it.
-    `None, None, None` for `marker`/`eligible` means the suffix is not a known
-    comment language, or the lexer could not read the file -- both cases the
-    caller must treat as "nothing to say", never as an empty result implying a
-    clean file.
+    """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker, [bodies])` for `text`'s whole-line comments AND (Python only) its flush docstring interior lines.
+
+    THE SINGLE SOURCE OF TRUTH FOR A COMMENT-OR-DOCSTRING PARAGRAPH BOUNDARY, factored out of `reflow_comments`'s own loop for the same reason `markdown_segments` was: `underwrap_findings` (R19) must consume the IDENTICAL boundary logic, not a second copy of it.
+    `marker` is `"#"`/`"//"` for a real comment paragraph and `None` for a docstring paragraph, which is how `reflow_comments` knows not to invent a marker that was never there.
+    Nothing yielded at all means the suffix is not a known comment language, or the lexer could not read the file -- both cases the caller must treat as "nothing to say", never as an empty result implying a clean file.
     """
-    marker = COMMENT_LINE_BY_SUFFIX.get(suffix)
-    if marker is None:
+    if COMMENT_LINE_BY_SUFFIX.get(suffix) is None:
         return
     try:
         eligible = _python_reflow_lines(text) if suffix == ".py" else _cstyle_reflow_lines(text)
@@ -1557,8 +1585,9 @@ def comment_segments(text, suffix):
     buffer = []
     start = None
     buf_indent = None
+    buf_marker = None
 
-    # `split("\n")`, not `splitlines()`. The lexers above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
+    # `split("\n")`, not `splitlines()`. The scanners above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
     # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
     # the round trip exact, so the trailing newline needs no special case.
     for offset, raw in enumerate(text.split("\n")):
@@ -1566,52 +1595,55 @@ def comment_segments(text, suffix):
         entry = eligible.get(lineno)
         if entry is None:
             if buffer:
-                yield "para", start, buf_indent, marker, buffer
+                yield "para", start, buf_indent, buf_marker, buffer
                 buffer = []
             yield "raw", lineno, raw
             continue
-        indent, body = entry
+        indent, body, marker = entry
+        # The "does the body start with a space" directive check (`#!shebang`, `##header`, an ASCII `#---` divider) only means something for a real comment, where a marker and its text are conventionally separated by one space. A docstring interior line carries no marker to separate from, so
+        # that check is skipped for it (`marker is not None` below); `DOCTEST_PROMPT`/`REST_FIELD`/`REST_DIRECTIVE` already excluded the docstring shapes that need the same protection, one level up in `_python_reflow_lines`.
         if (
             not body.strip()
             or COMMENT_DIRECTIVE.search(raw)
             or CODE_SHAPED_COMMENT.search(body)
-            or (body and not body[0].isspace())
+            or (marker is not None and body and not body[0].isspace())
         ):
             if buffer:
-                yield "para", start, buf_indent, marker, buffer
+                yield "para", start, buf_indent, buf_marker, buffer
                 buffer = []
             yield "raw", lineno, raw
             continue
-        if buffer and indent != buf_indent:
-            yield "para", start, buf_indent, marker, buffer
+        if buffer and (indent != buf_indent or marker != buf_marker):
+            yield "para", start, buf_indent, buf_marker, buffer
             buffer = []
         if not buffer:
             start = lineno
             buf_indent = indent
+            buf_marker = marker
         buffer.append(body)
     if buffer:
-        yield "para", start, buf_indent, marker, buffer
+        yield "para", start, buf_indent, buf_marker, buffer
+
+
+def _comment_prefix(indent, marker):
+    """The exact text a reconstructed line starts with: `indent + marker + " "`
+    for a real comment, or plain `indent` for a docstring paragraph, which has
+    no marker to reproduce. One function so `reflow_comments` and
+    `underwrap_findings` cannot compute this two different ways.
+    """
+    return indent + (marker + " " if marker else "")
 
 
 def reflow_comments(text, suffix, width):
-    """Join hard-wrapped WHOLE-LINE comment paragraphs, then wrap at `width`.
+    """Join hard-wrapped WHOLE-LINE comment or docstring paragraphs, then wrap at `width`.
 
-    Same join-then-wrap contract as `reflow_markdown`, over a narrower and
-    more conservative corpus. A paragraph ends on: a blank line, a code line
-    (including a line with a TRAILING comment -- `x = 1  # note` is left
-    alone, not partially joined), an indentation change (a different nesting
-    level, not a continuation), a marker this suffix does not use, a
-    `COMMENT_DIRECTIVE` line, a `CODE_SHAPED_COMMENT` line, or a body whose
-    first character is not whitespace (`#!shebang`, `##header`, `///
-    <reference>`, an ASCII divider `#---`) -- none of which is prose a reader
-    would want rewrapped with its neighbours, and each is emitted unchanged.
+    Same join-then-wrap contract as `reflow_markdown`, over a narrower and more conservative corpus.
+    A paragraph ends on: a blank line, a code line (including a line with a TRAILING comment -- `x = 1  # note` is left alone, not partially joined), an indentation change (a different nesting level, not a continuation, and -- for a docstring -- anything other than its own flush margin), a marker this suffix does not use, a `COMMENT_DIRECTIVE` line, or a `CODE_SHAPED_COMMENT` line.
+    Or, for a comment only, a body whose first character is not whitespace (`#!shebang`, `##header`, `/// <reference>`, an ASCII divider `#---`).
+    None of that is prose a reader would want rewrapped with its neighbours, and each is emitted unchanged. A docstring's own first and last physical line, an indented sub-block inside one, a doctest line and a reST field or directive are excluded one level down, in `_python_reflow_lines`.
 
-    A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this
-    contract differs from `python_comment_lines`. That function lets the error
-    reach a caller that reports the file as UNCHECKED, because a lint result
-    nobody produced must not read as clean. A rewriter has no equivalent
-    honest partial answer: guessing at the shape of a file Python itself
-    rejects is how a broken file becomes a differently broken file.
+    A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this contract differs from `python_comment_lines`. That function lets the error reach a caller that reports the file as UNCHECKED, because a lint result nobody produced must not read as clean.
+    A rewriter has no equivalent honest partial answer: guessing at the shape of a file Python itself rejects is how a broken file becomes a differently broken file.
     """
     if COMMENT_LINE_BY_SUFFIX.get(suffix) is None:
         return text
@@ -1627,7 +1659,7 @@ def reflow_comments(text, suffix, width):
             out.append(raw)
             continue
         _, _start, indent, marker, buffer = item
-        prefix = indent + marker + " "
+        prefix = _comment_prefix(indent, marker)
         avail = max(width - len(prefix), 20)
         out.extend(prefix + piece for piece in _join_and_wrap(buffer, avail))
     return "\n".join(out)
